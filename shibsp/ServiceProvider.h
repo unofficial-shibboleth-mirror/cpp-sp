@@ -118,13 +118,12 @@ namespace shibsp {
         virtual const std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id) const=0;
 
         /**
-         * Sets implementation-specific transport options for an identified policy.
+         * Sets implementation-specific transport options.
          *
-		 * @param id        identifies the policy to return
          * @param transport a SOAPTransport object
          * @return  true iff all options were successfully set
          */
-        virtual bool setTransportOptions(const char* id, xmltooling::SOAPTransport& transport) const=0;
+        virtual bool setTransportOptions(xmltooling::SOAPTransport& transport) const=0;
 #endif
 
         /**

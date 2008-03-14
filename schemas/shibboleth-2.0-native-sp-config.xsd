@@ -83,6 +83,7 @@
                 <element name="RequestMapper" type="conf:PluggableType" minOccurs="0"/>
 				<element ref="conf:ApplicationDefaults"/>
 				<element ref="conf:SecurityPolicies"/>
+                <element ref="conf:TransportOption" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>
 			<attribute name="clockSkew" type="unsignedInt"/>
@@ -677,7 +678,6 @@
 					</annotation>
 					<complexType>
 						<sequence>
-							<element ref="conf:TransportOption" minOccurs="0" maxOccurs="unbounded"/>
 							<element name="Rule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
 						</sequence>
 						<attribute name="id" type="conf:string" use="required"/>

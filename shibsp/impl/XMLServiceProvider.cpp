@@ -226,7 +226,7 @@ namespace {
         map<string,Application*> m_appmap;
 #ifndef SHIBSP_LITE
         map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > > m_policyMap;
-        map< string, vector< pair< string, pair<string,string> > > > m_transportOptionMap;
+        vector< pair< string, pair<string,string> > > m_transportOptions;
 #endif
         
         // Provides filter to exclude special config elements.
@@ -345,14 +345,10 @@ namespace {
             throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
         }
 
-        bool setTransportOptions(const char* id, SOAPTransport& transport) const {
+        bool setTransportOptions(SOAPTransport& transport) const {
             bool ret = true;
-            map< string, vector< pair< string, pair<string,string> > > >::const_iterator p =
-                m_impl->m_transportOptionMap.find(id);
-            if (p == m_impl->m_transportOptionMap.end())
-                return ret;
             vector< pair< string, pair<string,string> > >::const_iterator opt;
-            for (opt = p->second.begin(); opt != p->second.end(); ++opt) {
+            for (opt = m_impl->m_transportOptions.begin(); opt != m_impl->m_transportOptions.end(); ++opt) {
                 if (!transport.setProviderOption(opt->first.c_str(), opt->second.first.c_str(), opt->second.second.c_str())) {
                     m_log.error("failed to set SOAPTransport option (%s)", opt->second.first.c_str());
                     ret = false;
@@ -1130,6 +1126,7 @@ short XMLConfigImpl::acceptNode(const DOMNode* node) const
         XMLString::equals(name,Site) ||
         XMLString::equals(name,_StorageService) ||
         XMLString::equals(name,TCPListener) ||
+        XMLString::equals(name,TransportOption) ||
         XMLString::equals(name,UnixListener))
         return FILTER_REJECT;
 
@@ -1363,24 +1360,22 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     rule = XMLHelper::getNextSiblingElement(rule,Rule);
                 }
                 
-                // Process TransportOption elements.
-                rule = XMLHelper::getFirstChildElement(child,TransportOption);
-                while (rule) {
-                    if (rule->hasChildNodes()) {
-                        auto_ptr_char provider(rule->getAttributeNS(NULL,_provider));
-                        auto_ptr_char option(rule->getAttributeNS(NULL,_option));
-                        auto_ptr_char value(rule->getFirstChild()->getNodeValue());
-                        if (provider.get() && *provider.get() && option.get() && *option.get() && value.get() && *value.get()) {
-                            m_transportOptionMap[id.get()].push_back(
-                                make_pair(string(provider.get()), make_pair(string(option.get()), string(value.get())))
-                                );
-                        }
-                    }
-                    rule = XMLHelper::getNextSiblingElement(rule,TransportOption);
-                }
-                
                 child = XMLHelper::getNextSiblingElement(child,Policy);
             }
+        }
+
+        // Process TransportOption elements.
+        child = XMLHelper::getLastChildElement(e,TransportOption);
+        while (child) {
+            if (child->hasChildNodes()) {
+                auto_ptr_char provider(child->getAttributeNS(NULL,_provider));
+                auto_ptr_char option(child->getAttributeNS(NULL,_option));
+                auto_ptr_char value(child->getFirstChild()->getNodeValue());
+                if (provider.get() && *provider.get() && option.get() && *option.get() && value.get() && *value.get()) {
+                    m_transportOptions.push_back(make_pair(string(provider.get()), make_pair(string(option.get()), string(value.get()))));
+                }
+            }
+            child = XMLHelper::getPreviousSiblingElement(child,TransportOption);
         }
 #endif
 
