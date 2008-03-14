@@ -104,19 +104,21 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 #ifdef _DEBUG
     NDC ndc("init");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
-    log.debug("%s library initialization started", PACKAGE_STRING);
-
-    const char* loglevel=getenv("SHIBSP_LOGGING");
-    if (!loglevel)
-        loglevel = SHIBSP_LOGGING;
-    XMLToolingConfig::getConfig().log_config(loglevel);
-
     if (!inst_prefix)
         inst_prefix = getenv("SHIBSP_PREFIX");
     if (!inst_prefix)
         inst_prefix = SHIBSP_PREFIX;
     
+    const char* loglevel=getenv("SHIBSP_LOGGING");
+    if (!loglevel)
+        loglevel = SHIBSP_LOGGING;
+    std::string ll(loglevel);
+    PathResolver localpr;
+    XMLToolingConfig::getConfig().log_config(localpr.resolve(ll, PathResolver::XMLTOOLING_CFG_FILE, PACKAGE_NAME, inst_prefix).c_str());
+
+    Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
+    log.debug("%s library initialization started", PACKAGE_STRING);
+
     if (!catalog_path)
         catalog_path = getenv("SHIBSP_SCHEMAS");
     if (!catalog_path)
