@@ -181,7 +181,6 @@ sh ./keygen.sh -b
 %docdir %{_datadir}/doc/%{name}
 %{_datadir}/doc/%{name}/CREDITS.txt
 %{_datadir}/doc/%{name}/FASTCGI.LICENSE
-%{_datadir}/doc/%{name}/INSTALL.txt
 %{_datadir}/doc/%{name}/LICENSE.txt
 %{_datadir}/doc/%{name}/LOG4CPP.LICENSE
 %{_datadir}/doc/%{name}/logo.jpg
@@ -190,7 +189,6 @@ sh ./keygen.sh -b
 %{_datadir}/doc/%{name}/OPENSSL.LICENSE
 %{_datadir}/doc/%{name}/README.txt
 %{_datadir}/doc/%{name}/RELEASE.txt
-%exclude %{_datadir}/doc/%{name}/INSTALL-WIN32.txt
 
 %files devel
 %defattr(-,root,root,-)

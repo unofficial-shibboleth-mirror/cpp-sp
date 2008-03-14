@@ -1,15 +1,15 @@
 Release Notes
 
 Shibboleth Native SP
-2.0RC1
-1/23/2007
+2.0
+3/17/2008
 
 NOTE: The shibboleth2.xml configuration format in this release
-is not compatible with earlier releases. Please start from scratch
-or manually copy settings over. This version will remain compatible
-with the final release.
+is compatible with the RC1 release. Upgrading from earlier
+releases is NOT supported without replacing the configuration
+file and reapplying changes.
 
-Fully Supported (no major changes planned prior to stable release)
+Fully Supported
 
 - SAML 1.0, 1.1, 2.0 Single Sign-On
 	- Shibboleth 1.x request profile
@@ -30,6 +30,7 @@ Fully Supported (no major changes planned prior to stable release)
 
 - ADFS WS-Federation Support
     - SSO and SLO
+    - experimental support for SAML 2.0 assertions
 
 - Shibboleth WAYF and SAML DS protocols for IdP Discovery
 
@@ -57,11 +58,11 @@ Fully Supported (no major changes planned prior to stable release)
 	- Simple "blob" signing
 	- TLS X.509 certificate authentication
 
-- Client transport authentication to SOAP endpoints
+- Client transport authentication to SOAP endpoints via libcurl
 	- TLS X.509 client certificates
 	- Basic-Auth
-	- Digest-Auth
-	- NTLM
+	- Digest-Auth (untested)
+	- NTLM (untested)
 
 - Encryption
 	- All incoming SAML 2 encrypted element types (Assertion, NameID, Attribute)
@@ -87,9 +88,10 @@ Fully Supported (no major changes planned prior to stable release)
 
 - Enhanced Spoofing Detection
 	- Detects and blocks client headers that would match known attribute headers
+	- Does not support Apache mod_rewrite, but can be disabled when necessary
 
 - ODBC Clustering Support
-	- Only tested against Microsoft SQL Server using MS and FreeDTS ODBC drivers
+	- Tested against a few different servers with various drivers
 
 - RequestMap enhancements
     - Regular expression matching for hosts and paths
@@ -108,10 +110,5 @@ Fully Supported (no major changes planned prior to stable release)
     - mdquery for interrogating via metadata configuration
     - resolvertest for exercising attribute extraction, filtering, and resolution
 
-------
-
-Not Yet Supported
-
-- Migrating 1.3 configuration files
-
-------
+- Migrating 1.3 core configuration file
+    - Stylesheet can handle some common options

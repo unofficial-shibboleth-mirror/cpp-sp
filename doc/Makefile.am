@@ -4,8 +4,6 @@ pkgdocdir = $(datadir)/doc/@PACKAGE@
 
 docfiles = \
 	CREDITS.txt \
-	INSTALL.txt \
-	INSTALL-WIN32.txt \
 	LICENSE.txt \
 	NOTICE.txt \
 	README.txt \
@@ -19,4 +17,3 @@ docfiles = \
 pkgdoc_DATA = $(docfiles)
 
 EXTRA_DIST = $(docfiles) api
-

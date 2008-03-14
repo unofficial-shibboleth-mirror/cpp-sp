@@ -1,6 +1,0 @@
-Binary distributions of the Shibboleth code are available.
-Information on obtaining and installing binaries can be found at
-http://shibboleth.internet2.edu/
-
-The Wiki contains additional information and more up to date build
-notes at https://spaces.internet2.edu/display/SHIB/BuildingShibboleth
