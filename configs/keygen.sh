@@ -17,7 +17,7 @@ if [ -n "$FORCE" ] ; then
     rm sp-key.pem sp-cert.pem
 fi
 
-if  [ -e sp-key.pem -o -e sp-cert.pem ] ; then
+if  [ -s sp-key.pem -o -s sp-cert.pem ] ; then
     if [ -z "$BATCH" ] ; then  
         echo The files sp-key.pem and/or sp-cert.pem already exist!
         echo Use -f option to force recreation of keypair.
