@@ -61,6 +61,9 @@
 # include <xmltooling/impl/AnyElement.h>
 # include <xmltooling/validation/ValidatorSuite.h>
 using namespace opensaml::saml2md;
+# ifndef min
+#  define min(a,b)            (((a) < (b)) ? (a) : (b))
+# endif
 #endif
 using namespace shibsp;
 using namespace opensaml;
