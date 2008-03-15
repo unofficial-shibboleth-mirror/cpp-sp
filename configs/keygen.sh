@@ -17,8 +17,8 @@ if [ -n "$FORCE" ] ; then
     rm sp-key.pem sp-cert.pem
 fi
 
-if  [ -e sp-key.pem ] || [ -e sp-cert.pem ] ; then
-    if [ -z $BATCH ] ; then  
+if  [ -e sp-key.pem -o -e sp-cert.pem ] ; then
+    if [ -z "$BATCH" ] ; then  
         echo The files sp-key.pem and/or sp-cert.pem already exist!
         echo Use -f option to force recreation of keypair.
         exit 2
@@ -26,17 +26,17 @@ if  [ -e sp-key.pem ] || [ -e sp-cert.pem ] ; then
     exit 0
 fi
 
-if [ -z $FQDN ] ; then
+if [ -z "$FQDN" ] ; then
     FQDN=`hostname`
 fi
 
-if [ -z $YEARS ] ; then
+if [ -z "$YEARS" ] ; then
     YEARS=10
 fi
 
-DAYS=$(($YEARS*365))
+DAYS=`expr $YEARS \* 365`
 
-if [ -z $ENTITYID ] ; then
+if [ -z "$ENTITYID" ] ; then
     ALTNAME=DNS:$FQDN
 else
     ALTNAME=DNS:$FQDN,URI:$ENTITYID
@@ -60,7 +60,7 @@ subjectAltName=$ALTNAME
 subjectKeyIdentifier=hash
 EOF
 
-if [ -z $BATCH ] ; then
+if [ -z "$BATCH" ] ; then
     openssl req -config sp-cert.cnf -new -x509 -days $DAYS -keyout sp-key.pem -out sp-cert.pem
 else
     openssl req -config sp-cert.cnf -new -x509 -days $DAYS -keyout sp-key.pem -out sp-cert.pem 2> /dev/null
