@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
     if (parse_args(argc, argv) != 0)
         usage(argv[0]);
     else if (shar_version) {
-        fprintf(stdout, PACKAGE_STRING);
+        fprintf(stdout, PACKAGE_STRING"\n");
         return 0;
     }
 
