@@ -10,7 +10,7 @@
 		<string>@-PREFIX-@/sbin/shibd</string>
 		<string>-f</string>
 		<string>-p</string>
-		<string> @-PKGRUNDIR-@/shibd.pid</string>
+		<string>@-PKGRUNDIR-@/shibd.pid</string>
 	</array>
 
 	<key>RunAtLoad</key> <false/>
