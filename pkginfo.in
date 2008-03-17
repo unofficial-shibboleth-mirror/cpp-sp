@@ -1,5 +1,4 @@
 PKG=SHIBsp
-ARCH=sparc
 VERSION=@-VERSION-@
 BASEDIR=/
 NAME=shibboleth-sp

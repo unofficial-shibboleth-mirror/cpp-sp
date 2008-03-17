@@ -17,6 +17,7 @@ CONFIGFILES=" \
     globalLogout.html \
     attribute-map.xml \
     attribute-policy.xml \
+    example-metadata.xml \
     shibboleth2.xml"
 
 for f in $CONFIGFILES; do
