@@ -242,11 +242,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         }
 
         option = request.getParameter("target");
-        if (option)
+        if (option) {
             target = option;
-        if (acsByIndex.first && !acsByIndex.second) {
-            // Since we're passing the ACS by value, we need to compute the return URL,
-            // so we'll need the target resource for real.
+            // Always need to recover target URL to compute handler below.
             recoverRelayState(request.getApplication(), request, request, target, false);
         }
 
