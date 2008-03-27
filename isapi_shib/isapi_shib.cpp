@@ -563,9 +563,8 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificationType, LPVOID pvNotification)
 {
     // Is this a log notification?
-    if (notificationType==SF_NOTIFY_LOG)
-    {
-        if (pfc->pFilterContext)
+    if (notificationType==SF_NOTIFY_LOG) {
+        if (pfc->pFilterContext && static_cast<context_t*>(pfc->pFilterContext)->m_user)
         	((PHTTP_FILTER_LOG)pvNotification)->pszClientUserName=static_cast<context_t*>(pfc->pFilterContext)->m_user;
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
     }
