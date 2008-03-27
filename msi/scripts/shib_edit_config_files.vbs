@@ -35,7 +35,7 @@ Sub ReplaceInFile( filePath, lookForStr, replaceWithStr )
 End Sub
 
 
-Dim FileSystemObj, ConvertedDir, ConfigFile, XMLDir
+Dim FileSystemObj, ConvertedDir, ConfigFile, XMLDir, WshShell
 Dim customData, msiProperties, InstallDir, ShibdPort
 
 on error resume next
@@ -55,6 +55,10 @@ if (Err = 0) then
   ConvertedDir = Replace(InstallDir, "\", "/")
   ConfigDir = InstallDir & "\etc\shibboleth\"
   DistDir = ConfigDir & "dist\"
+
+  'Set ConvertedDir as the SHIBSP_PREFIX system variable.
+  Set WshShell = CreateObject("WScript.Shell")
+  WshShell.RegWrite "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\SHIBSP_PREFIX", ConvertedDir, "REG_SZ"
 
   'Perform actual Substitutions
   'Afterwards, if the config file doesn't already exist, copy up to etc/shibboleth
