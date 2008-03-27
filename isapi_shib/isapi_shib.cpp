@@ -524,7 +524,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 {
     // Is this a log notification?
     if (notificationType==SF_NOTIFY_LOG) {
-        if (pfc->pFilterContext)
+        if (pfc->pFilterContext && static_cast<context_t*>(pfc->pFilterContext)->m_user)
             ((PHTTP_FILTER_LOG)pvNotification)->pszClientUserName=static_cast<context_t*>(pfc->pFilterContext)->m_user;
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
     }

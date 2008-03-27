@@ -1,7 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<?fileVersion 4.0.0?>
-
-<cproject>
+<?xml version="1.0" encoding="UTF-8"?><?fileVersion 4.0.0?><cproject>
 <storageModule moduleId="org.eclipse.cdt.core.settings">
 <cconfiguration id="converted.config.1765078528">
 <storageModule moduleId="org.eclipse.cdt.core.pathentry">
@@ -28,6 +25,7 @@
 <extension id="org.eclipse.cdt.core.PE" point="org.eclipse.cdt.core.BinaryParser"/>
 </extensions>
 </storageModule>
+<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 </cconfiguration>
 </storageModule>
 </cproject>
