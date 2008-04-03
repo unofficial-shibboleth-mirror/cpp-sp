@@ -540,8 +540,10 @@ XMLObject* ADFSDecoder::decode(string& relayState, const GenericRequest& generic
     auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
     janitor.release();
 
-    if (!XMLHelper::isNodeNamed(xmlObject->getDOM(), m_ns.get(), RequestSecurityTokenResponse))
+    if (!XMLString::equals(xmlObject->getElementQName().getLocalPart(), RequestSecurityTokenResponse)) {
+    	log.error("unrecognized root element on message: %s", xmlObject->getElementQName().toString().c_str());
         throw BindingException("Decoded message was not of the appropriate type.");
+    }
 
     if (!policy.getValidating())
         SchemaValidators.validate(xmlObject.get());
@@ -569,13 +571,21 @@ void ADFSConsumer::implementProtocol(
     const ElementProxy* response = dynamic_cast<const ElementProxy*>(&xmlObject);
     if (!response || !response->hasChildren())
         throw FatalProfileException("Incoming message was not of the proper type or contains no security token.");
-    response = dynamic_cast<const ElementProxy*>(response->getUnknownXMLObjects().front());
-    if (!response || !response->hasChildren())
-        throw FatalProfileException("Token wrapper element did not contain a security token.");
-    const Assertion* token = dynamic_cast<const Assertion*>(response->getUnknownXMLObjects().front());
-    if (!token || !token->getSignature())
-        throw FatalProfileException("Incoming message did not contain a signed SAML assertion.");
-
+    
+    const Assertion* token = NULL;
+    for (vector<XMLObject*>::const_iterator xo = response->getUnknownXMLObjects().begin(); xo != response->getUnknownXMLObjects().end(); ++xo) {
+    	// Look for the RequestedSecurityToken element.
+    	if (XMLString::equals((*xo)->getElementQName().getLocalPart(), RequestedSecurityToken)) {
+    	    response = dynamic_cast<const ElementProxy*>(*xo);
+    	    if (!response || !response->hasChildren())
+    	        throw FatalProfileException("Token wrapper element did not contain a security token.");
+    	    token = dynamic_cast<const Assertion*>(response->getUnknownXMLObjects().front());
+    	    if (!token || !token->getSignature())
+    	        throw FatalProfileException("Incoming message did not contain a signed SAML assertion.");
+    	    break;
+    	}
+    }
+    
     // Extract message and issuer details from assertion.
     extractMessageDetails(*token, m_protocol.get(), policy);
 
