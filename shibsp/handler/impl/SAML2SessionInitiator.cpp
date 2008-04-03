@@ -608,8 +608,11 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
             cref->setReference(wideclass.get());
             reqContext->getAuthnContextClassRefs().push_back(cref);
         }
-        if (authnContextComparison &&
-                (!reqContext->getAuthnContextClassRefs().empty() || !reqContext->getAuthnContextDeclRefs().empty())) {
+        
+        if (reqContext->getAuthnContextClassRefs().empty() && reqContext->getAuthnContextDeclRefs().empty()) {
+        	req->setRequestedAuthnContext(NULL);
+        }
+        else if (authnContextComparison) {
             auto_ptr_XMLCh widecomp(authnContextComparison);
             reqContext->setComparison(widecomp.get());
         }
