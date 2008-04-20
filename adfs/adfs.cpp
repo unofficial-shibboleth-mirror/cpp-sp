@@ -877,18 +877,12 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
                 );
         }
 
-        // Save off return location as RelayState.
-        string relayState;
+        const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
         const char* returnloc = httpRequest.getParameter("return");
-        if (returnloc) {
-            relayState = returnloc;
-            preserveRelayState(application, httpResponse, relayState);
-        }
-        
         auto_ptr_char dest(ep->getLocation());
         string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "wa=wsignout1.0";
-        if (!relayState.empty())
-            req += "&wreply=" + relayState;
+        if (returnloc)
+            req += "&wreply=" + urlenc->encode(returnloc);
         ret.second = httpResponse.sendRedirect(req.c_str());
         ret.first = true;
     }
