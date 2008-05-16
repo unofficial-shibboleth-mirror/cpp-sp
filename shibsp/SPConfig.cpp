@@ -114,7 +114,8 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         loglevel = SHIBSP_LOGGING;
     std::string ll(loglevel);
     PathResolver localpr;
-    XMLToolingConfig::getConfig().log_config(localpr.resolve(ll, PathResolver::XMLTOOLING_CFG_FILE, PACKAGE_NAME, inst_prefix).c_str());
+    localpr.setDefaultPrefix(inst_prefix);
+    XMLToolingConfig::getConfig().log_config(localpr.resolve(ll, PathResolver::XMLTOOLING_CFG_FILE, PACKAGE_NAME).c_str());
 
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
     log.debug("%s library initialization started", PACKAGE_STRING);
