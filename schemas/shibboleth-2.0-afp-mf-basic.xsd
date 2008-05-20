@@ -4,7 +4,8 @@
     xmlns="http://www.w3.org/2001/XMLSchema"
     xmlns:basic="urn:mace:shibboleth:2.0:afp:mf:basic"
     xmlns:afp="urn:mace:shibboleth:2.0:afp"
-    elementFormDefault="qualified">
+    elementFormDefault="qualified"
+    version="2.1">
 
     <import namespace="urn:mace:shibboleth:2.0:afp" schemaLocation="classpath:/schema/shibboleth-2.0-afp.xsd" />
 
@@ -78,7 +79,7 @@
     <complexType name="NOT">
         <annotation>
             <documentation>
-                A match function that performs a logical NOT on the resultof the contained matching function.
+                A match function that performs a logical NOT on the result of the contained matching function.
             </documentation>
         </annotation>
         <complexContent>
@@ -252,7 +253,7 @@
         <annotation>
             <documentation>
                 A match function that matches an attribute value against the specified regular expression. This function
-                evaluates to true if any value matches the given expression
+                evaluates to true if any value matches the given expression.
             </documentation>
         </annotation>
         <complexContent>
@@ -271,7 +272,7 @@
         </complexContent>
     </complexType>
 
-    <complexType name="AttributeTargetedRegexMatchType">
+    <complexType name="AttributeTargetedRegexMatchType" abstract="true">
         <complexContent>
             <extension base="basic:RegexMatchType">
                 <attribute name="attributeID" type="string">
