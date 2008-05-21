@@ -23,6 +23,5 @@ site. Mailing lists and a bug database (https://bugs.internet2.edu/) are also
 available. Not all of the lists are open, but a general support list is
 available and is open.
 
-For basic information on installing binaries and deploying Shibboleth, refer
-to the web site and Wiki for the latest documentation. For source build assistance,
-see the INSTALL.txt file and the Wiki.
+For basic information on building from source, installing binaries, and deploying
+Shibboleth, refer to the web site and Wiki for the latest documentation.
