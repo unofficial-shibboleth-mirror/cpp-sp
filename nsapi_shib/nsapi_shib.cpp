@@ -44,6 +44,7 @@
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
+#include <memory>
 #include <fstream>
 #include <sstream>
 

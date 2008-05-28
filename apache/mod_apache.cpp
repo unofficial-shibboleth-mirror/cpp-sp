@@ -69,6 +69,7 @@
 #include <apr_pools.h>
 #endif
 
+#include <memory>
 #include <fstream>
 #include <sstream>
 

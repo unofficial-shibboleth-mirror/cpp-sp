@@ -34,6 +34,8 @@
 # define ADFS_EXPORTS
 #endif
 
+#include <memory>
+
 #include <shibsp/base.h>
 #include <shibsp/exceptions.h>
 #include <shibsp/Application.h>
