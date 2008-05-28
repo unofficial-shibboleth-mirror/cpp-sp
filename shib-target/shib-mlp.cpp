@@ -24,6 +24,7 @@
 
 #include "internal.h"
 
+#include <typeinfo>
 #include <sstream>
 #include <ctype.h>
 #include <xercesc/util/XercesDefs.hpp>
