@@ -108,13 +108,18 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         inst_prefix = getenv("SHIBSP_PREFIX");
     if (!inst_prefix)
         inst_prefix = SHIBSP_PREFIX;
+    std::string inst_prefix2;
+    while (*inst_prefix) {
+        inst_prefix2.push_back((*inst_prefix=='\\') ? ('/') : (*inst_prefix));
+        ++inst_prefix;
+    }
     
     const char* loglevel=getenv("SHIBSP_LOGGING");
     if (!loglevel)
         loglevel = SHIBSP_LOGGING;
     std::string ll(loglevel);
     PathResolver localpr;
-    localpr.setDefaultPrefix(inst_prefix);
+    localpr.setDefaultPrefix(inst_prefix2.c_str());
     XMLToolingConfig::getConfig().log_config(localpr.resolve(ll, PathResolver::XMLTOOLING_CFG_FILE, PACKAGE_NAME).c_str());
 
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
@@ -139,7 +144,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     }
 #endif    
     XMLToolingConfig::getConfig().getPathResolver()->setDefaultPackageName(PACKAGE_NAME);
-    XMLToolingConfig::getConfig().getPathResolver()->setDefaultPrefix(inst_prefix);
+    XMLToolingConfig::getConfig().getPathResolver()->setDefaultPrefix(inst_prefix2.c_str());
     XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
     XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
     
