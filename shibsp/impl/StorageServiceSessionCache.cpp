@@ -136,6 +136,7 @@ namespace shibsp {
         unsigned long m_cacheTimeout;
 #ifndef SHIBSP_LITE
         StorageService* m_storage;
+        StorageService* m_storage_lite;
 #endif
 
     private:
@@ -676,13 +677,14 @@ void StoredSession::addAssertion(Assertion* assertion)
 SSCache::SSCache(const DOMElement* e)
     : m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), inproc(true), m_cacheTimeout(3600),
 #ifndef SHIBSP_LITE
-        m_storage(NULL),
+      m_storage(NULL), m_storage_lite(NULL),
 #endif
         m_root(e), m_inprocTimeout(900), m_lock(NULL), shutdown(false), shutdown_wait(NULL), cleanup_thread(NULL)
 {
     static const XMLCh cacheTimeout[] =     UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
     static const XMLCh inprocTimeout[] =    UNICODE_LITERAL_13(i,n,p,r,o,c,T,i,m,e,o,u,t);
     static const XMLCh _StorageService[] =  UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
+    static const XMLCh _StorageServiceLite[] = UNICODE_LITERAL_18(S,t,o,r,a,g,e,S,e,r,v,i,c,e,L,i,t,e);
 
     SPConfig& conf = SPConfig::getConfig();
     inproc = conf.isEnabled(SPConfig::InProcess);
@@ -715,6 +717,18 @@ SSCache::SSCache(const DOMElement* e)
         }
         if (!m_storage)
             throw ConfigurationException("SessionCache unable to locate StorageService, check configuration.");
+
+        tag = e ? e->getAttributeNS(NULL,_StorageServiceLite) : NULL;
+        if (tag && *tag) {
+            auto_ptr_char ssid(tag);
+            m_storage_lite = conf.getServiceProvider()->getStorageService(ssid.get());
+            if (m_storage_lite)
+                m_log.info("bound to StorageServiceLite (%s)", ssid.get());
+        }
+        if (!m_storage_lite) {
+            m_log.info("No StorageServiceLite specified. Using standard StorageService.");
+            m_storage_lite = m_storage;
+        }
     }
 #endif
 
@@ -788,7 +802,7 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
     // Since we can't guarantee uniqueness, check for an existing record.
     string record;
     time_t recordexp;
-    int ver = m_storage->readText("NameID", name, &record, &recordexp);
+    int ver = m_storage_lite->readText("NameID", name, &record, &recordexp);
     if (ver > 0) {
         // Existing record, so we need to unmarshall it.
         istringstream in(record);
@@ -813,13 +827,13 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
 
     // Try and store it back...
     if (ver > 0) {
-        ver = m_storage->updateText("NameID", name, out.str().c_str(), max(expires, recordexp), ver);
+        ver = m_storage_lite->updateText("NameID", name, out.str().c_str(), max(expires, recordexp), ver);
         if (ver <= 0) {
             // Out of sync, or went missing, so retry.
             return insert(key, expires, name, index);
         }
     }
-    else if (!m_storage->createText("NameID", name, out.str().c_str(), expires)) {
+    else if (!m_storage_lite->createText("NameID", name, out.str().c_str(), expires)) {
         // Hit a dup, so just retry, hopefully hitting the other branch.
         return insert(key, expires, name, index);
     }
@@ -859,7 +873,7 @@ void SSCache::insert(
         if (strlen(name.get()) > 255)
             const_cast<char*>(name.get())[255] = 0;
         string pending;
-        int ver = m_storage->readText("Logout", name.get(), &pending);
+        int ver = m_storage_lite->readText("Logout", name.get(), &pending);
         if (ver > 0) {
             DDF pendobj;
             DDFJanitor jpend(pendobj);
@@ -1084,7 +1098,7 @@ vector<string>::size_type SSCache::logout(
         strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
 
         time_t oldexp = 0;
-        ver = m_storage->readText("Logout", name.get(), &record, &oldexp);
+        ver = m_storage_lite->readText("Logout", name.get(), &record, &oldexp);
         if (ver > 0) {
             istringstream lin(record);
             lin >> obj;
@@ -1108,13 +1122,13 @@ vector<string>::size_type SSCache::logout(
         lout << obj;
 
         if (ver > 0) {
-            ver = m_storage->updateText("Logout", name.get(), lout.str().c_str(), max(expires, oldexp), ver);
+            ver = m_storage_lite->updateText("Logout", name.get(), lout.str().c_str(), max(expires, oldexp), ver);
             if (ver <= 0) {
                 // Out of sync, or went missing, so retry.
                 return logout(application, issuer, nameid, indexes, expires, sessionsKilled);
             }
         }
-        else if (!m_storage->createText("Logout", name.get(), lout.str().c_str(), expires)) {
+        else if (!m_storage_lite->createText("Logout", name.get(), lout.str().c_str(), expires)) {
             // Hit a dup, so just retry, hopefully hitting the other branch.
             return logout(application, issuer, nameid, indexes, expires, sessionsKilled);
         }
@@ -1124,7 +1138,7 @@ vector<string>::size_type SSCache::logout(
     }
 
     // Read in potentially matching sessions.
-    ver = m_storage->readText("NameID", name.get(), &record);
+    ver = m_storage_lite->readText("NameID", name.get(), &record);
     if (ver == 0) {
         m_log.debug("no active sessions to logout for supplied issuer and subject");
         return 0;
@@ -1187,12 +1201,12 @@ vector<string>::size_type SSCache::logout(
     // If possible, write back the mapping record (this isn't crucial).
     try {
         if (obj.isnull()) {
-            m_storage->deleteText("NameID", name.get());
+            m_storage_lite->deleteText("NameID", name.get());
         }
         else if (!sessionsKilled.empty()) {
             ostringstream out;
             out << obj;
-            if (m_storage->updateText("NameID", name.get(), out.str().c_str(), 0, ver) <= 0)
+            if (m_storage_lite->updateText("NameID", name.get(), out.str().c_str(), 0, ver) <= 0)
                 m_log.warn("logout mapping record changed behind us, leaving it alone");
         }
     }
