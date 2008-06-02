@@ -1383,8 +1383,6 @@ static command_rec shire_cmds[] = {
    RSRC_CONF, TAKE1, "Path to shibboleth.xml config file"},
   {"ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
    RSRC_CONF, TAKE1, "Paths of XML schema catalogs"},
-  {"ShibSchemaDir", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-   RSRC_CONF, TAKE1, "Paths of XML schema catalogs (deprecated in favor of ShibCatalogs)"},
 
   {"ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szScheme),
@@ -1489,8 +1487,6 @@ static command_rec shib_cmds[] = {
         RSRC_CONF, "Path to shibboleth.xml config file"),
     AP_INIT_TAKE1("ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
         RSRC_CONF, "Paths of XML schema catalogs"),
-    AP_INIT_TAKE1("ShibSchemaDir", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-        RSRC_CONF, "Paths of XML schema catalogs (deprecated in favor of ShibCatalogs)"),
 
     AP_INIT_TAKE1("ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
         (void *) offsetof (shib_server_config, szScheme),
