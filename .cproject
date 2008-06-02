@@ -36,6 +36,7 @@
 <pathentry kind="src" path="isapi_shib"/>
 <pathentry kind="src" path="nsapi_shib"/>
 <pathentry kind="src" path="odbc-store"/>
+<pathentry kind="src" path="memcache-store"/>
 <pathentry kind="src" path="util"/>
 <pathentry kind="src" path="adfs"/>
 <pathentry kind="src" path="fastcgi"/>
