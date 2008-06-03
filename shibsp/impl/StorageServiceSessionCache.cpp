@@ -123,8 +123,11 @@ namespace shibsp {
             pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
             const char* session_id = request.getCookie(shib_cookie.first.c_str());
             if (session_id && *session_id) {
-                if (response)
-                    response->setCookie(shib_cookie.first.c_str(), shib_cookie.second);
+                if (response) {
+                    string exp(shib_cookie.second);
+                    exp += "; expires=Mon, 01-Jan-2001 00:00:00 GMT";
+                    response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+                }
                 remove(application, session_id);
             }
         }
