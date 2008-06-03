@@ -60,6 +60,7 @@
 # include <xmltooling/XMLToolingConfig.h>
 #endif
 
+#include <ctime>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/TemplateEngine.h>
@@ -201,6 +202,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     if (isEnabled(OutOfProcess))
         m_artifactResolver = new ArtifactResolver();
 #endif
+    srand(static_cast<unsigned int>(std::time(NULL)));
 
     log.info("%s library initialization complete", PACKAGE_STRING);
     return true;
