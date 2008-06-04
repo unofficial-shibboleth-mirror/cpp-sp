@@ -1,7 +1,7 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth], [2.0], [shibboleth-users@internet2.edu], [shibboleth])
+AC_INIT([shibboleth], [2.1], [shibboleth-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE([shibboleth],[2.0])
+AM_INIT_AUTOMAKE([shibboleth],[2.1])
 
 sinclude(doxygen.m4)
 sinclude(acx_pthread.m4)
