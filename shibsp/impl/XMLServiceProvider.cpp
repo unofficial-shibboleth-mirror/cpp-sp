@@ -1394,8 +1394,10 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,child,defapp));
             if (m_appmap.count(iapp->getId()))
                 log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
-            else
-                m_appmap[iapp->getId()]=iapp.release();
+            else {
+                const char* iappid=iapp->getId();
+                m_appmap[iappid]=iapp.release();
+            }
 
             child = XMLHelper::getNextSiblingElement(child,ApplicationOverride);
         }
