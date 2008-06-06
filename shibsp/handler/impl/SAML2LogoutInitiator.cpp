@@ -432,6 +432,9 @@ LogoutRequest* SAML2LogoutInitiator::buildRequest(
             );
         msg->setEncryptedID(encrypted.release());
     }
+    else {
+        msg->setNameID(nameid->cloneNameID());
+    }
 
     if (!encoder) {
         // No encoder being used, so sign for SOAP client manually.
