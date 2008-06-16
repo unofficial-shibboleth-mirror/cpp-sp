@@ -242,11 +242,11 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         }
 
         option = request.getParameter("target");
-        if (option) {
+        if (option)
             target = option;
-            // Always need to recover target URL to compute handler below.
-            recoverRelayState(request.getApplication(), request, request, target, false);
-        }
+            
+        // Always need to recover target URL to compute handler below.
+        recoverRelayState(request.getApplication(), request, request, target, false);
 
         pair<bool,bool> flag;
         option = request.getParameter("isPassive");
