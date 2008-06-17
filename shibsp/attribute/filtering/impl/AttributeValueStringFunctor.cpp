@@ -33,6 +33,7 @@ namespace shibsp {
 
     static const XMLCh attributeID[] =  UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
     static const XMLCh value[] =        UNICODE_LITERAL_5(v,a,l,u,e);
+    static const XMLCh ignoreCase[] =   UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
 
     /**
      * A match function that matches the value of an attribute against the specified value.
@@ -50,6 +51,11 @@ namespace shibsp {
             : m_value(e ? e->getAttributeNS(NULL,value) : NULL), m_attributeID(e ? e->getAttributeNS(NULL,attributeID) : NULL) {
             if (!m_value.get() || !*m_value.get())
                 throw ConfigurationException("AttributeValueString MatchFunctor requires non-empty value attribute.");
+            if (e && e->hasAttributeNS(NULL,ignoreCase)) {
+                xmltooling::logging::Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+                    "ignoreCase property ignored by AttributeValueString MatchFunctor in favor of attribute's caseSensitive property"
+                    );
+            }
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
