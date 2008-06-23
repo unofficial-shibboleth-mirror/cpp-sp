@@ -52,7 +52,10 @@ else
 			if test "$CXX" = "CC" ; then
 				CXXFLAGS="$CXXFLAGS -Qoption ccfe -stabs=no%dfltlit+no%dflthlp"
 			fi
-	        ;;
+			;;
+	        *osf*)
+			CXXFLAGS="$CXXFLAGS -D_POSIX_PII_SOCKET"
+			;;
 	esac
 fi
 
