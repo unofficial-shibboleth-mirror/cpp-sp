@@ -1,5 +1,5 @@
 /*.user
-/shibauthorizer___Win32_Debug
-/shibresponder___Win32_Debug
-/shibauthorizer___Win32_Release
-/shibresponder___Win32_Release
+/shibauthorizer-Release
+/shibresponder-Release
+/shibresponder-Debug
+/shibauthorizer-Debug

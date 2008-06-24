@@ -9,9 +9,10 @@
 /Release
 /*.dep
 /*.mak
-/mod_shib20___Win32_Debug
-/mod_shib20___Win32_Release
 /*.aps
 /*.user
-/mod_shib22___Win32_Debug
-/mod_shib22___Win32_Release
+/mod_shib20-Debug
+/mod_shib22-Debug
+/mod_shib22-Release
+/mod_shib20-Release
+/x64
