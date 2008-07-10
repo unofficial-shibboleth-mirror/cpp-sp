@@ -30,6 +30,7 @@
 
 #ifndef SHIBSP_LITE
 # include "binding/SOAPClient.h"
+# include "metadata/MetadataProviderCriteria.h"
 # include <saml/SAMLConfig.h>
 # include <saml/saml2/core/Protocols.h>
 # include <saml/saml2/binding/SAML2SOAPClient.h>
@@ -284,7 +285,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         // With a session in hand, we can create a LogoutRequest message, if we can find a compatible endpoint.
         MetadataProvider* m = application.getMetadataProvider();
         Locker metadataLocker(m);
-        MetadataProvider::Criteria mc(session->getEntityID(), &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
+        MetadataProviderCriteria mc(application, session->getEntityID(), &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
         pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
         if (!entity.first) {
             throw MetadataException(

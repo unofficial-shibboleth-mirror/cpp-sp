@@ -31,6 +31,7 @@
 #include "attribute/resolver/AttributeResolver.h"
 #include "attribute/resolver/ResolutionContext.h"
 #include "binding/SOAPClient.h"
+#include "metadata/MetadataProviderCriteria.h"
 #include "util/SPConstants.h"
 
 #include <saml/exceptions.h>
@@ -124,7 +125,7 @@ namespace shibsp {
                 m_metadata = m_app.getMetadataProvider(false);
                 if (m_metadata) {
                     m_metadata->lock();
-                    return m_entity = m_metadata->getEntityDescriptor(MetadataProvider::Criteria(m_session->getEntityID())).first;
+                    return m_entity = m_metadata->getEntityDescriptor(MetadataProviderCriteria(m_app, m_session->getEntityID())).first;
                 }
             }
             return NULL;

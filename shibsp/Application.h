@@ -172,6 +172,14 @@ namespace shibsp {
         virtual const PropertySet* getRelyingParty(const opensaml::saml2md::EntityDescriptor* provider) const=0;
 
         /**
+         * Returns configuration properties governing security interactions with a named peer.
+         * 
+         * @param entityID  a peer name
+         * @return  the applicable PropertySet
+         */
+        virtual const PropertySet* getRelyingParty(const XMLCh* entityID) const=0;
+
+        /**
          * Returns any additional audience values associated with this Application.
          * 
          * @return additional audience values associated with the Application, or NULL

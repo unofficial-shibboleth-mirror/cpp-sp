@@ -124,6 +124,7 @@ namespace {
             return (!m_credResolver && m_base) ? m_base->getCredentialResolver() : m_credResolver;
         }
         const PropertySet* getRelyingParty(const EntityDescriptor* provider) const;
+        const PropertySet* getRelyingParty(const XMLCh* entityID) const;
         const vector<const XMLCh*>* getAudiences() const {
             return (m_audiences.empty() && m_base) ? m_base->getAudiences() : &m_audiences;
         }
@@ -972,6 +973,25 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
                 return i->second;
             group=dynamic_cast<const EntitiesDescriptor*>(group->getParent());
         }
+    }
+#endif
+    return this;
+}
+
+const PropertySet* XMLApplication::getRelyingParty(const XMLCh* entityID) const
+{
+    if (!entityID)
+        return this;
+        
+#ifdef HAVE_GOOD_STL
+    map<xstring,PropertySet*>::const_iterator i=m_partyMap.find(entityID);
+    if (i!=m_partyMap.end())
+        return i->second;
+#else
+    map<const XMLCh*,PropertySet*>::const_iterator i=m_partyMap.begin();
+    for (; i!=m_partyMap.end(); i++) {
+        if (XMLString::equals(i->first,entityID))
+            return i->second;
     }
 #endif
     return this;

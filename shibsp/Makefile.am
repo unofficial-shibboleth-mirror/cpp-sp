@@ -79,7 +79,8 @@ liteinclude_HEADERS = \
 	lite/SAMLConstants.h
 
 mdinclude_HEADERS = \
-	metadata/MetadataExt.h
+	metadata/MetadataExt.h \
+	metadata/MetadataProviderCriteria.h
 
 reminclude_HEADERS = \
 	remoting/ddf.h \
@@ -183,6 +184,7 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \
+	metadata/DynamicMetadataProvider.cpp \
 	metadata/MetadataExtImpl.cpp \
 	metadata/MetadataExtSchemaValidators.cpp \
 	security/PKIXTrustEngine.cpp \

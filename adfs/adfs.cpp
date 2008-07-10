@@ -53,6 +53,7 @@
 
 #ifndef SHIBSP_LITE
 # include <shibsp/attribute/resolver/ResolutionContext.h>
+# include <shibsp/metadata/MetadataProviderCriteria.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml1/profile/AssertionValidator.h>
@@ -455,7 +456,7 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     // Use metadata to invoke the SSO service directly.
     MetadataProvider* m=app.getMetadataProvider();
     Locker locker(m);
-    MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, m_binding.get());
+    MetadataProviderCriteria mc(app, entityID, &IDPSSODescriptor::ELEMENT_QNAME, m_binding.get());
     pair<const EntityDescriptor*,const RoleDescriptor*> entity=m->getEntityDescriptor(mc);
     if (!entity.first) {
         m_log.warn("unable to locate metadata for provider (%s)", entityID);
@@ -857,7 +858,7 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
         // With a session in hand, we can create a request message, if we can find a compatible endpoint.
         MetadataProvider* m=application.getMetadataProvider();
         Locker metadataLocker(m);
-        MetadataProvider::Criteria mc(session->getEntityID(), &IDPSSODescriptor::ELEMENT_QNAME, m_binding.get());
+        MetadataProviderCriteria mc(application, session->getEntityID(), &IDPSSODescriptor::ELEMENT_QNAME, m_binding.get());
         pair<const EntityDescriptor*,const RoleDescriptor*> entity=m->getEntityDescriptor(mc);
         if (!entity.first) {
             throw MetadataException(

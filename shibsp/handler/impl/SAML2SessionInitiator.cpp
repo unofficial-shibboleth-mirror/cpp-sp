@@ -31,6 +31,7 @@
 #include "util/SPConstants.h"
 
 #ifndef SHIBSP_LITE
+# include "metadata/MetadataProviderCriteria.h"
 # include <saml/SAMLConfig.h>
 # include <saml/saml2/core/Protocols.h>
 # include <saml/saml2/metadata/EndpointManager.h>
@@ -530,7 +531,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     }
     else {
         // Use metadata to locate the IdP's SSO service.
-        MetadataProvider::Criteria mc(entityID, &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
+        MetadataProviderCriteria mc(app, entityID, &IDPSSODescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
         entity=m->getEntityDescriptor(mc);
         if (!entity.first) {
             m_log.warn("unable to locate metadata for provider (%s)", entityID);
