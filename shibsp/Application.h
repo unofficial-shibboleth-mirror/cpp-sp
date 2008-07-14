@@ -114,9 +114,10 @@ namespace shibsp {
          * Returns the name and cookie properties to use for this Application.
          * 
          * @param prefix    a value to prepend to the base cookie name
+         * @param lifetime  if non-null, will be populated with a suggested lifetime for the cookie, or 0 if session-bound
          * @return  a pair containing the cookie name and the string to append to the cookie value
          */
-        virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix) const;
+        virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix, time_t* lifetime=NULL) const;
 
 #ifndef SHIBSP_LITE
         /**

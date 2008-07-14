@@ -131,7 +131,7 @@ namespace shibsp {
                 if (response) {
                     pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
                     string exp(shib_cookie.second);
-                    exp += "; expires=Mon, 01-Jan-2001 00:00:00 GMT";
+                    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
                     response->setCookie(shib_cookie.first.c_str(), exp.c_str());
                 }
             }
@@ -140,7 +140,7 @@ namespace shibsp {
                 if (response) {
                     pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
                     string exp(shib_cookie.second);
-                    exp += "; expires=Mon, 01-Jan-2001 00:00:00 GMT";
+                    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
                     response->setCookie(shib_cookie.first.c_str(), exp.c_str());
                 }
                 throw;
@@ -154,7 +154,7 @@ namespace shibsp {
             if (session_id && *session_id) {
                 if (response) {
                     string exp(shib_cookie.second);
-                    exp += "; expires=Mon, 01-Jan-2001 00:00:00 GMT";
+                    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
                     response->setCookie(shib_cookie.first.c_str(), exp.c_str());
                 }
                 remove(application, session_id);
@@ -1065,9 +1065,23 @@ void SSCache::insert(
         xlog->log.info("}");
     }
 
-    pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_");
+    time_t cookieLifetime = 0;
+    pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibsession_", &cookieLifetime);
     string k(key.get());
     k += shib_cookie.second;
+
+    if (cookieLifetime > 0) {
+        cookieLifetime += now;
+#ifndef HAVE_GMTIME_R
+        ptime=gmtime(&cookieLifetime);
+#else
+        ptime=gmtime_r(&cookieLifetime,&res);
+#endif
+        char cookietimebuf[64];
+        strftime(cookietimebuf,64,"; expires=%a, %d %b %Y %H:%M:%S GMT",ptime);
+        k += cookietimebuf;
+    }
+
     httpResponse.setCookie(shib_cookie.first.c_str(), k.c_str());
 }
 

@@ -8,7 +8,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="2.0">
+	version="2.1">
 
 	<import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
 	<import namespace="urn:oasis:names:tc:SAML:2.0:protocol" schemaLocation="saml-schema-protocol-2.0.xsd"/>
@@ -542,6 +542,7 @@
 			<attribute name="exportACL" type="conf:listOfStrings" default="127.0.0.1"/>
 			<attribute name="cookieName" type="conf:string"/>
 			<attribute name="cookieProps" type="conf:string"/>
+            <attribute name="cookieLifetime" type="unsignedInt"/>
 			<attribute name="idpHistory" type="boolean" default="false"/>
 			<attribute name="idpHistoryDays" type="unsignedInt"/>
 			<attribute name="lifetime" type="unsignedInt" default="28800"/>
