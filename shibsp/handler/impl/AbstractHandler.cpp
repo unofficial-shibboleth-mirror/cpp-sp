@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,8 +16,8 @@
 
 /**
  * AbstractHandler.cpp
- * 
- * Base class for handlers based on a DOMPropertySet. 
+ *
+ * Base class for handlers based on a DOMPropertySet.
  */
 
 #include "internal.h"
@@ -86,7 +86,7 @@ namespace shibsp {
 void SHIBSP_API shibsp::registerHandlers()
 {
     SPConfig& conf=SPConfig::getConfig();
-    
+
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_ARTIFACT, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_POST, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
@@ -374,7 +374,7 @@ void AbstractHandler::recoverRelayState(
             }
         }
     }
-    
+
     // Look for cookie-backed state of the form "cookie:key".
     if (strstr(state,"cookie:")==state) {
         state += 7;
@@ -389,10 +389,10 @@ void AbstractHandler::recoverRelayState(
                 XMLToolingConfig::getConfig().getURLEncoder()->decode(rscopy);
                 relayState = rscopy;
                 free(rscopy);
-                
+
                 if (clear) {
                     string exp(relay_cookie.second);
-                    exp += "; expires=Mon, 01-Jan-2001 00:00:00 GMT";
+                    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
                     response.setCookie(relay_cookie.first.c_str(), exp.c_str());
                 }
                 return;
