@@ -936,6 +936,7 @@ void SSCache::insert(
 
     // Store session properties in DDF.
     DDF obj = DDF(key.get()).structure();
+    DDFJanitor entryobj(obj);
     obj.addmember("version").integer(1);
     obj.addmember("application_id").string(application.getId());
 
@@ -1048,6 +1049,8 @@ void SSCache::insert(
             (nameid ? name.get() : "none") <<
         ") using (Protocol: " <<
             (prot ? prot : "none") <<
+        ") from (AssertionID: " <<
+            (tokens ? obj["assertions"].first().string() : "none") <<
         ")";
 
     if (attributes) {
