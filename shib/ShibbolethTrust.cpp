@@ -28,6 +28,7 @@
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 #include <xsec/dsig/DSIGKeyInfoX509.hpp>
+#include <xsec/enc/XSECCryptoException.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
 
 using namespace shibboleth::logging;
@@ -496,7 +497,7 @@ bool ShibbolethTrust::validate(const saml::SAMLSignedObject& token, const IRoleD
             x->loadX509Base64Bin(cert.get(),strlen(cert.get()));
             certs.push_back(x.release());
         }
-        catch (...) {
+        catch (XSECCryptoException&) {
             log.error("unable to load certificate from signature, skipping it");
         }
     }

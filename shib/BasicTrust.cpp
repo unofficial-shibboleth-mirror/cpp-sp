@@ -25,6 +25,7 @@
 #include "internal.h"
 
 #include <openssl/x509.h>
+#include <xsec/enc/XSECCryptoException.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoKeyDSA.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoKeyRSA.hpp>
 #include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
@@ -117,7 +118,13 @@ bool BasicTrust::validate(void* certEE, const Iterator<void*>& certChain, const 
             continue;
         Iterator<KeyInfoResolver*> resolvers(m_resolvers);
         while (resolvers.hasNext()) {
-            XSECCryptoKey* key=((XSECKeyInfoResolver*)*resolvers.next())->resolveKey(KIL);
+            XSECCryptoKey* key=NULL;
+            try {
+                key=((XSECKeyInfoResolver*)*resolvers.next())->resolveKey(KIL);
+            }
+            catch (XSECCryptoException& ex) {
+                log.error("caught an XMLSec crypto exception while resolving key: %s", ex.getMsg());
+            }
             if (key) {
                 log.debug("KeyDescriptor resolved into a key, comparing it...");
                 if (key->getProviderName()!=DSIGConstants::s_unicodeStrPROVOpenSSL) {
@@ -197,7 +204,13 @@ bool BasicTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescri
             continue;
         Iterator<KeyInfoResolver*> resolvers(m_resolvers);
         while (resolvers.hasNext()) {
-            XSECCryptoKey* key=((XSECKeyInfoResolver*)*resolvers.next())->resolveKey(KIL);
+            XSECCryptoKey* key=NULL;
+            try {
+                key=((XSECKeyInfoResolver*)*resolvers.next())->resolveKey(KIL);
+            }
+            catch (XSECCryptoException& ex) {
+                log.error("caught an XMLSec crypto exception while resolving key: %s", ex.getMsg());
+            }
             if (key) {
                 log.debug("KeyDescriptor resolved into a key, trying it...");
                 try {

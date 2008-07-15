@@ -298,7 +298,13 @@ void XMLTrustImpl::init()
             }
             
             // Dry run...can we resolve to a key?
-            XSECCryptoKey* key=resolver.resolveKey(KIL);
+            XSECCryptoKey* key=NULL;
+            try {
+                key = resolver.resolveKey(KIL);
+            }
+            catch (XSECCryptoException& xe) {
+                log.error("unable to resolver key from ds:KeyInfo element (%d): %s", count, xe.getMsg());
+            }
             if (key) {
                 // So far so good, now look for the name binding(s).
                 delete key;
@@ -754,7 +760,13 @@ bool XMLTrust::validate(const saml::SAMLSignedObject& token, const IRoleDescript
             // Any inline KeyInfo should ostensibly resolve to a key we can try.
             Iterator<KeyInfoResolver*> resolvers(m_resolvers);
             while (resolvers.hasNext()) {
-                XSECCryptoKey* key=((XSECKeyInfoResolver*)*resolvers.next())->resolveKey(KIL);
+                XSECCryptoKey* key=NULL;
+                try {
+                    key=((XSECKeyInfoResolver*)*resolvers.next())->resolveKey(KIL);
+                }
+                catch (XSECCryptoException& xe) {
+                    log.error("unable to resolver ds:KeyInfo element into key: %s", xe.getMsg());
+                }
                 if (key) {
                     log.debug("resolved key, trying it...");
                     try {
