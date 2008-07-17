@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * QueryAttributeResolver.cpp
- * 
+ *
  * AttributeResolver based on SAML queries.
  */
 
@@ -70,7 +70,7 @@ namespace shibsp {
             m_class = XMLString::transcode(session.getAuthnContextClassRef());
             m_decl = XMLString::transcode(session.getAuthnContextDeclRef());
         }
-        
+
         QueryContext(
             const Application& application,
             const EntityDescriptor* issuer,
@@ -98,7 +98,7 @@ namespace shibsp {
                 }
             }
         }
-        
+
         ~QueryContext() {
             if (m_session) {
                 XMLString::release((XMLCh**)&m_protocol);
@@ -110,7 +110,7 @@ namespace shibsp {
             for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<shibsp::Attribute>());
             for_each(m_assertions.begin(), m_assertions.end(), xmltooling::cleanup<opensaml::Assertion>());
         }
-    
+
         bool doQuery() const {
             return m_query;
         }
@@ -165,7 +165,7 @@ namespace shibsp {
         vector<shibsp::Attribute*> m_attributes;
         vector<opensaml::Assertion*> m_assertions;
     };
-    
+
     class SHIBSP_DLLLOCAL QueryResolver : public AttributeResolver
     {
     public:
@@ -177,7 +177,7 @@ namespace shibsp {
 
         Lockable* lock() {return this;}
         void unlock() {}
-        
+
         ResolutionContext* createResolutionContext(
             const Application& application,
             const EntityDescriptor* issuer,
@@ -214,15 +214,15 @@ namespace shibsp {
     {
         return new QueryResolver(e);
     }
-    
+
 };
 
-QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver"))
+QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Query"))
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("QueryResolver");
 #endif
-    
+
     DOMElement* child = XMLHelper::getFirstChildElement(e);
     while (child) {
         try {
