@@ -116,7 +116,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
                 val = toUTF8((*v)->getTextContent());
                 if (val && *val) {
                     const AttributeExtensibleXMLObject* aexo=dynamic_cast<const AttributeExtensibleXMLObject*>(*v);
-                    xmlscope = aexo->getAttribute(scopeqname);
+                    xmlscope = aexo ? aexo->getAttribute(scopeqname) : NULL;
                     if (xmlscope && *xmlscope) {
                         scope = toUTF8(xmlscope);
                         dest.push_back(pair<string,string>(val,scope));
