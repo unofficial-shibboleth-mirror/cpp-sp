@@ -472,6 +472,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\NameIDFromScopedAttributeDecoder.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\ScopedAttributeDecoder.cpp"
 					>
 				</File>

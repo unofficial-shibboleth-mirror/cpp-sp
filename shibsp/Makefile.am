@@ -154,6 +154,7 @@ libshibsp_lite_la_SOURCES = \
 libshibsp_la_SOURCES = \
 	${common_sources} \
 	attribute/NameIDAttributeDecoder.cpp \
+	attribute/NameIDFromScopedAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
 	attribute/StringAttributeDecoder.cpp \
 	attribute/filtering/impl/AttributeFilter.cpp \

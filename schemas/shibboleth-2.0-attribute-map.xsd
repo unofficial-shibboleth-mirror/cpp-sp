@@ -17,6 +17,12 @@
         </restriction>
     </simpleType>
 
+    <simpleType name="anyURI">
+        <restriction base="anyURI">
+            <minLength value="1"/>
+        </restriction>
+    </simpleType>
+
     <simpleType name="listOfStrings">
         <list itemType="am:string"/>
     </simpleType>
@@ -114,6 +120,33 @@
         </annotation>
         <complexContent>
             <extension base="am:AttributeDecoderType">
+                <attribute name="formatter" type="am:string">
+                    <annotation>
+                        <documentation>
+                            The pattern used to generate string versions of the attribute's values.
+                        </documentation>
+                    </annotation>
+                </attribute>
+            </extension>
+        </complexContent>
+    </complexType>
+
+    <complexType name="NameIDFromScopedAttributeDecoder">
+        <annotation>
+            <documentation>
+                Decoder for attributes with scoped values that produces a NameID attribute with
+                the scope dropped and the NameQualifiers defaulted.
+            </documentation>
+        </annotation>
+        <complexContent>
+            <extension base="am:ScopedAttributeDecoder">
+                <attribute name="format" type="am:anyURI">
+                    <annotation>
+                        <documentation>
+                            Value to use as the NameID Format.
+                        </documentation>
+                    </annotation>
+                </attribute>
                 <attribute name="formatter" type="am:string">
                     <annotation>
                         <documentation>
