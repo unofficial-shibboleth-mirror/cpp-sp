@@ -2,7 +2,8 @@
 <schema targetNamespace="urn:mace:shibboleth:2.0:attribute-map"
         xmlns="http://www.w3.org/2001/XMLSchema"
         xmlns:am="urn:mace:shibboleth:2.0:attribute-map"
-        elementFormDefault="qualified">
+        elementFormDefault="qualified"
+        version="2.1">
 
     <annotation>
         <documentation>
@@ -94,7 +95,7 @@
         </annotation>
         <complexContent>
             <extension base="am:AttributeDecoderType">
-                <attribute name="scopeDelimiter" type="am:string" default="@">
+                <attribute name="scopeDelimiter" type="am:string">
                     <annotation>
                         <documentation>
                             The character(s) used to delimit the scoped information from the scope.
@@ -113,7 +114,7 @@
         </annotation>
         <complexContent>
             <extension base="am:AttributeDecoderType">
-                <attribute name="formatter" type="am:string" default="$Name!!$NameQualifier!!$SPNameQualifier">
+                <attribute name="formatter" type="am:string">
                     <annotation>
                         <documentation>
                             The pattern used to generate string versions of the attribute's values.
