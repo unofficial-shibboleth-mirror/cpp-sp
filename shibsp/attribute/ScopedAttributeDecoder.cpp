@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * ScopedAttributeDecoder.cpp
- * 
+ *
  * Decodes SAML into ScopedAttributes
  */
 
@@ -41,11 +41,9 @@ namespace shibsp {
     {
     public:
         ScopedAttributeDecoder(const DOMElement* e) : AttributeDecoder(e), m_delimeter('@') {
-            if (e) {
-                if (e->hasAttributeNS(NULL,scopeDelimeter)) {
-                    auto_ptr_char d(e->getAttributeNS(NULL,scopeDelimeter));
-                    m_delimeter = *(d.get());
-                }
+            if (e && e->hasAttributeNS(NULL,scopeDelimeter)) {
+                auto_ptr_char d(e->getAttributeNS(NULL,scopeDelimeter));
+                m_delimeter = *(d.get());
             }
         }
         ~ScopedAttributeDecoder() {}
@@ -78,7 +76,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
     vector<XMLObject*>::const_iterator v,stop;
 
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder");
-    
+
     if (xmlObject && XMLString::equals(opensaml::saml1::Attribute::LOCAL_NAME,xmlObject->getElementQName().getLocalPart())) {
         const opensaml::saml2::Attribute* saml2attr = dynamic_cast<const opensaml::saml2::Attribute*>(xmlObject);
         if (saml2attr) {
