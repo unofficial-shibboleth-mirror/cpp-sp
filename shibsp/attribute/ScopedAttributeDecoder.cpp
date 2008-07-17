@@ -75,7 +75,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
     vector< pair<string,string> >& dest = scoped->getValues();
     vector<XMLObject*>::const_iterator v,stop;
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.Scoped");
 
     if (xmlObject && XMLString::equals(opensaml::saml1::Attribute::LOCAL_NAME,xmlObject->getElementQName().getLocalPart())) {
         const opensaml::saml2::Attribute* saml2attr = dynamic_cast<const opensaml::saml2::Attribute*>(xmlObject);

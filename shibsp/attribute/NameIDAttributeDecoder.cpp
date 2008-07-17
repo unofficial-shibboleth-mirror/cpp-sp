@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * NameIDAttributeDecoder.cpp
- * 
+ *
  * Decodes SAML into NameIDAttributes
  */
 
@@ -73,8 +73,8 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
     vector<XMLObject*>::const_iterator v,stop;
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder");
-    
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.NameID");
+
     if (xmlObject && XMLString::equals(opensaml::saml1::Attribute::LOCAL_NAME,xmlObject->getElementQName().getLocalPart())) {
         const opensaml::saml2::Attribute* saml2attr = dynamic_cast<const opensaml::saml2::Attribute*>(xmlObject);
         if (saml2attr) {
@@ -177,21 +177,21 @@ void NameIDAttributeDecoder::extract(
             val.m_Format = str;
             delete[] str;
         }
-        
+
         str = toUTF8(n->getNameQualifier());
         if (str && *str)
             val.m_NameQualifier = str;
         else if (assertingParty)
             val.m_NameQualifier = assertingParty;
         delete[] str;
-        
+
         str = toUTF8(n->getSPNameQualifier());
         if (str && *str)
             val.m_SPNameQualifier = str;
         else if (relyingParty)
             val.m_SPNameQualifier = relyingParty;
         delete[] str;
-        
+
         str = toUTF8(n->getSPProvidedID());
         if (str) {
             val.m_SPProvidedID = str;
@@ -221,7 +221,7 @@ void NameIDAttributeDecoder::extract(
         else if (assertingParty)
             val.m_NameQualifier = assertingParty;
         delete[] str;
-        
+
         if (relyingParty)
             val.m_SPNameQualifier = relyingParty;
     }
