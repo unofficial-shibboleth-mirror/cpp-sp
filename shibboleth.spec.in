@@ -1,7 +1,7 @@
 Name:		shibboleth
 Summary:	Open source system for attribute-based Web SSO
 Version:	@-VERSION-@
-Release:	6
+Release:	1
 #Copyright:	Internet2
 Group:		System Environment/Libraries
 License:	Apache style
@@ -11,7 +11,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 BuildRequires:	openssl-devel
 BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0
 BuildRequires:  xml-security-c-devel >= 1.4.0
-BuildRequires:	zlib-devel, opensaml-devel >= 2.0
+BuildRequires:	zlib-devel, opensaml-devel >= 2.1
 %{?_with_log4cpp:BuildRequires:	log4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: log4shib-devel}
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
