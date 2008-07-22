@@ -93,17 +93,16 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
             APACHE_CONFD="%{_sysconfdir}/apache2/conf.d"
     fi
     if [ "$APACHE_CONFD" != "no" ] ; then
-        if [ ! -f $APACHE_CONFD/shib.conf ] ; then
+        %{__mkdir} -p $RPM_BUILD_ROOT/$APACHE_CONFD
 %if "%{_vendor}" == "suse"
-            %{__sed} "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/packages\/%{name}/g" \
-                %{_sysconfdir}/%{name}/$APACHE_CONFIG \
-                > $APACHE_CONFD/shib.conf
+        %{__sed} "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/packages\/%{name}/g" \
+            %{_sysconfdir}/%{name}/$APACHE_CONFIG \
+            > $RPM_BUILD_ROOT/$APACHE_CONFD/shib.conf
 %else
-            %{__sed} "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/%{name}-@-VERSION-@/g" \
-                %{_sysconfdir}/%{name}/$APACHE_CONFIG \
-                > $APACHE_CONFD/shib.conf
+        %{__sed} "s/\/usr\/doc\/%{name}/\/usr\/share\/doc\/%{name}-@-VERSION-@/g" \
+            %{_sysconfdir}/%{name}/$APACHE_CONFIG \
+            > $RPM_BUILD_ROOT/$APACHE_CONFD/shib.conf
 %endif
-        fi
     fi
 fi
 
