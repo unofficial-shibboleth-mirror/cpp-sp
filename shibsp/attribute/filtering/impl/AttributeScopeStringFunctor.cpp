@@ -40,19 +40,25 @@ namespace shibsp {
      */
     class SHIBSP_DLLLOCAL AttributeScopeStringFunctor : public MatchFunctor
     {
-        xmltooling::auto_ptr_char m_value;
         xmltooling::auto_ptr_char m_attributeID;
+        char* m_value;
         bool m_ignoreCase;
 
         bool hasScope(const FilteringContext& filterContext) const;
 
     public:
         AttributeScopeStringFunctor(const DOMElement* e)
-            : m_value(e ? e->getAttributeNS(NULL,value) : NULL), m_attributeID(e ? e->getAttributeNS(NULL,attributeID) : NULL) {
-            if (!m_value.get() || !*m_value.get())
+            : m_value(e ? xmltooling::toUTF8(e->getAttributeNS(NULL,value)) : NULL), m_attributeID(e ? e->getAttributeNS(NULL,attributeID) : NULL) {
+            if (!m_value || !*m_value) {
+                delete[] m_value;
                 throw ConfigurationException("AttributeScopeString MatchFunctor requires non-empty value attribute.");
+            }
             const XMLCh* flag = e ? e->getAttributeNS(NULL,ignoreCase) : NULL;
             m_ignoreCase = (flag && (*flag == chLatin_t || *flag == chDigit_1)); 
+        }
+
+        virtual ~AttributeScopeStringFunctor() {
+            delete[] m_value;
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
@@ -65,13 +71,13 @@ namespace shibsp {
             if (!m_attributeID.get() || !*m_attributeID.get() || XMLString::equals(m_attributeID.get(), attribute.getId())) {
                 if (m_ignoreCase) {
 #ifdef HAVE_STRCASECMP
-                    return !strcasecmp(attribute.getScope(index), m_value.get());
+                    return !strcasecmp(attribute.getScope(index), m_value);
 #else
-                    return !stricmp(attribute.getScope(index), m_value.get());
+                    return !stricmp(attribute.getScope(index), m_value);
 #endif
                 }
                 else
-                    return !strcmp(attribute.getScope(index), m_value.get());
+                    return !strcmp(attribute.getScope(index), m_value);
             }
             return hasScope(filterContext);
         }
@@ -94,15 +100,15 @@ bool AttributeScopeStringFunctor::hasScope(const FilteringContext& filterContext
         for (size_t index = 0; index < count; ++index) {
             if (m_ignoreCase) {
 #ifdef HAVE_STRCASECMP
-                if (!strcasecmp(attrs.first->second->getScope(index), m_value.get()))
+                if (!strcasecmp(attrs.first->second->getScope(index), m_value))
                     return true;
 #else
-                if (!stricmp(attrs.first->second->getScope(index), m_value.get()))
+                if (!stricmp(attrs.first->second->getScope(index), m_value))
                     return true;
 #endif
             }
             else {
-                if (!strcmp(attrs.first->second->getScope(index), m_value.get()))
+                if (!strcmp(attrs.first->second->getScope(index), m_value))
                     return true;
             }
         }

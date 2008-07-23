@@ -40,22 +40,28 @@ namespace shibsp {
      */
     class SHIBSP_DLLLOCAL AttributeValueStringFunctor : public MatchFunctor
     {
-        xmltooling::auto_ptr_char m_value;
         xmltooling::auto_ptr_char m_attributeID;
+        char* m_value;
 
         bool hasValue(const FilteringContext& filterContext) const;
         bool matches(const Attribute& attribute, size_t index) const;
 
     public:
         AttributeValueStringFunctor(const DOMElement* e)
-            : m_value(e ? e->getAttributeNS(NULL,value) : NULL), m_attributeID(e ? e->getAttributeNS(NULL,attributeID) : NULL) {
-            if (!m_value.get() || !*m_value.get())
+            : m_value(e ? xmltooling::toUTF8(e->getAttributeNS(NULL,value)) : NULL), m_attributeID(e ? e->getAttributeNS(NULL,attributeID) : NULL) {
+            if (!m_value || !*m_value) {
+                delete[] m_value;
                 throw ConfigurationException("AttributeValueString MatchFunctor requires non-empty value attribute.");
+            }
             if (e && e->hasAttributeNS(NULL,ignoreCase)) {
                 xmltooling::logging::Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
                     "ignoreCase property ignored by AttributeValueString MatchFunctor in favor of attribute's caseSensitive property"
                     );
             }
+        }
+
+        virtual ~AttributeValueStringFunctor() {
+            delete[] m_value;
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
@@ -99,11 +105,11 @@ bool AttributeValueStringFunctor::matches(const Attribute& attribute, size_t ind
     if (!val)
         return false;
     if (attribute.isCaseSensitive())
-        return !strcmp(m_value.get(), val);
+        return !strcmp(m_value, val);
 
 #ifdef HAVE_STRCASECMP
-    return !strcasecmp(m_value.get(), val);
+    return !strcasecmp(m_value, val);
 #else
-    return !stricmp(m_value.get(), val);
+    return !stricmp(m_value, val);
 #endif
 }
