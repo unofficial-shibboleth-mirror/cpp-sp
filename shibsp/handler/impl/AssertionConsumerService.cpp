@@ -445,7 +445,7 @@ void AssertionConsumerService::maintainHistory(
     const PropertySet* sessionProps=application.getPropertySet("Sessions");
     pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
 
-    if (!idpHistory.first || idpHistory.second) {
+    if (idpHistory.first && idpHistory.second) {
         pair<bool,const char*> cookieProps=sessionProps->getString("cookieProps");
         if (!cookieProps.first)
             cookieProps.second=defProps;

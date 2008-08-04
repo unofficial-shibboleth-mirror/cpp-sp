@@ -82,7 +82,7 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
         m_sessionTried = true;
 
     // Need address checking and timeout settings.
-    time_t timeout=0;
+    time_t timeout=3600;
     if (checkTimeout || !ignoreAddress) {
         const PropertySet* props=getApplication().getPropertySet("Sessions");
         if (props) {
@@ -207,7 +207,7 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 #endif
         throw ConfigurationException("Target resource was not an absolute URL.");
 
-    bool ssl_only=false;
+    bool ssl_only=true;
     const char* handler=NULL;
     const PropertySet* props=m_app->getPropertySet("Sessions");
     if (props) {

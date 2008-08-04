@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * isapi_shib.cpp
- * 
+ *
  * Shibboleth ISAPI filter
  */
 
@@ -60,9 +60,7 @@ namespace {
     static const XMLCh sslport[] =          UNICODE_LITERAL_7(s,s,l,p,o,r,t);
     static const XMLCh scheme[] =           UNICODE_LITERAL_6(s,c,h,e,m,e);
     static const XMLCh id[] =               UNICODE_LITERAL_2(i,d);
-    static const XMLCh ISAPI[] =            UNICODE_LITERAL_5(I,S,A,P,I);
     static const XMLCh Alias[] =            UNICODE_LITERAL_5(A,l,i,a,s);
-    static const XMLCh normalizeRequest[] = UNICODE_LITERAL_16(n,o,r,m,a,l,i,z,e,R,e,q,u,e,s,t);
     static const XMLCh Site[] =             UNICODE_LITERAL_4(S,i,t,e);
 
     struct site_t {
@@ -93,7 +91,7 @@ namespace {
     	char* m_user;
     	bool m_checked;
     };
-    
+
     HINSTANCE g_hinstDLL;
     SPConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
@@ -112,7 +110,7 @@ BOOL LogEvent(
     LPCSTR  message)
 {
     LPCSTR  messages[] = {message, NULL};
-    
+
     HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth ISAPI Filter");
     BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, NULL);
     return (DeregisterEventSource(hElog) && res);
@@ -129,7 +127,7 @@ extern "C" BOOL WINAPI GetExtensionVersion(HSE_VERSION_INFO* pVer)
 {
     if (!pVer)
         return FALSE;
-        
+
     if (!g_Config) {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
                 "Extension mode startup not possible, is the DLL loaded as a filter?");
@@ -195,7 +193,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 "Filter startup failed to load configuration, check native log for details.");
         return FALSE;
     }
-    
+
     // Access implementation-specifics and site mappings.
     ServiceProvider* sp=g_Config->getServiceProvider();
     Locker locker(sp);
@@ -381,7 +379,7 @@ public:
     else {
         m_port = atoi(site.m_port.c_str());
     }
-    
+
     // Scheme may come from site def or be derived from IIS.
     m_scheme=site.m_scheme;
     if (m_scheme.empty() || !g_bNormalizeRequest)
@@ -393,14 +391,14 @@ public:
     m_hostname = var;
     if (site.m_name!=m_hostname && site.m_aliases.find(m_hostname)==site.m_aliases.end())
         m_hostname=site.m_name;
-    
+
     if (!pfc->pFilterContext) {
         pfc->pFilterContext = pfc->AllocMem(pfc, sizeof(context_t), NULL);
         if (static_cast<context_t*>(pfc->pFilterContext)) {
             static_cast<context_t*>(pfc->pFilterContext)->m_user = NULL;
             static_cast<context_t*>(pfc->pFilterContext)->m_checked = false;
         }
-    }    
+    }
   }
   ~ShibTargetIsapiF() { }
 
@@ -537,7 +535,7 @@ public:
   const vector<string>& getClientCertificates() const {
       return g_NoCerts;
   }
-  
+
   // The filter never processes the POST, so stub these methods.
   const char* getQueryString() const { throw IOException("getQueryString not implemented"); }
   const char* getRequestBody() const { throw IOException("getRequestBody not implemented"); }
@@ -580,7 +578,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
         if (map_i==g_Sites.end())
             return SF_STATUS_REQ_NEXT_NOTIFICATION;
-            
+
         ostringstream threadid;
         threadid << "[" << getpid() << "] isapi_shib" << '\0';
         xmltooling::NDC ndc(threadid.str().c_str());
@@ -624,7 +622,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
     return WriteClientError(pfc,"Shibboleth Filter reached unreachable code, save my walrus!");
 }
-        
+
 
 /****************************************************************************/
 // ISAPI Extension
@@ -656,7 +654,7 @@ class ShibTargetIsapiE : public AbstractSPRequest
   int m_port;
   string m_scheme,m_hostname,m_uri;
   mutable string m_remote_addr,m_remote_user;
-  
+
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
       : AbstractSPRequest(SHIBSP_LOGCAT".ISAPI"), m_lpECB(lpECB), m_gotBody(false) {
@@ -700,18 +698,18 @@ public:
      * the server is set up for proper PATH_INFO handling, or "IIS sucks rabid weasels mode",
      * which is the default. No perfect way to tell, but we can take a good guess by checking
      * whether the URL is a substring of the PATH_INFO:
-     * 
+     *
      * e.g. for /Shibboleth.sso/SAML/POST
-     * 
+     *
      *  Bad mode (default):
      *      URL:        /Shibboleth.sso
      *      PathInfo:   /Shibboleth.sso/SAML/POST
-     * 
+     *
      *  Good mode:
      *      URL:        /Shibboleth.sso
      *      PathInfo:   /SAML/POST
      */
-    
+
     string uri;
 
     // Clearly we're only in bad mode if path info exists at all.
@@ -727,7 +725,7 @@ public:
     else {
         uri = url;
     }
-    
+
     // For consistency with Apache, let's add the query string.
     if (lpECB->lpszQueryString && *(lpECB->lpszQueryString)) {
         uri += '?';
@@ -919,7 +917,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         ShibTargetIsapiE ste(lpECB, map_i->second);
         pair<bool,long> res = ste.getServiceProvider().doHandler(ste);
         if (res.first) return res.second;
-        
+
         return WriteClientError(lpECB, "Shibboleth Extension failed to process request");
 
     }

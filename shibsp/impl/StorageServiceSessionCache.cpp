@@ -712,7 +712,7 @@ void StoredSession::addAssertion(Assertion* assertion)
 #endif
 
 SSCache::SSCache(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), inproc(true), m_cacheTimeout(3600),
+    : m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), inproc(true), m_cacheTimeout(28800),
 #ifndef SHIBSP_LITE
       m_storage(NULL), m_storage_lite(NULL),
 #endif
@@ -731,7 +731,7 @@ SSCache::SSCache(const DOMElement* e)
         if (tag && *tag) {
             m_cacheTimeout = XMLString::parseInt(tag);
             if (!m_cacheTimeout)
-                m_cacheTimeout=3600;
+                m_cacheTimeout=28800;
         }
         if (inproc) {
             const XMLCh* tag=e->getAttributeNS(NULL,inprocTimeout);
@@ -1541,10 +1541,11 @@ void SSCache::cleanup()
     static const XMLCh cleanupInterval[] = UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
     const XMLCh* tag=m_root ? m_root->getAttributeNS(NULL,cleanupInterval) : NULL;
     int rerun_timer = 900;
-    if (tag && *tag)
+    if (tag && *tag) {
         rerun_timer = XMLString::parseInt(tag);
-    if (rerun_timer <= 0)
-        rerun_timer = 900;
+        if (rerun_timer <= 0)
+            rerun_timer = 900;
+    }
 
     mutex->lock();
 
