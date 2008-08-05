@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -169,7 +169,7 @@ public:
     const char* getRequestBody() const {
         throw runtime_error("getRequestBody not implemented by FastCGI authorizer.");
     }
- 
+
     long sendResponse(istream& in, long status) {
         string hdr = string("Connection: close\r\n");
         for (multimap<string,string>::const_iterator i=m_response_headers.begin(); i!=m_response_headers.end(); ++i)
@@ -206,7 +206,7 @@ public:
         return SHIB_RETURN_DONE;
     }
 
-    long returnDecline() { 
+    long returnDecline() {
         return SHIB_RETURN_KO;
     }
 
@@ -250,20 +250,9 @@ int main(void)
         exit(1);
     }
 
-    const char* config=getenv("SHIBSP_CONFIG");
-    if (!config)
-        config=SHIBSP_CONFIG;
-
     try {
-        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
-        XercesJanitor<DOMDocument> docjanitor(dummydoc);
-        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
-        auto_ptr_XMLCh src(config);
-        dummy->setAttributeNS(NULL,path,src.get());
-        dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
-
-        g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
-        g_Config->getServiceProvider()->init();
+        if (!g_Config->instantiate(NULL, true))
+            throw exception("unknown error");
     }
     catch (exception& ex) {
         g_Config->term();
@@ -293,7 +282,7 @@ int main(void)
 
     FCGX_Init();
     FCGX_InitRequest(&request, 0, 0);
-    
+
     cout << "Shibboleth initialization complete. Starting request loop." << endl;
     while (FCGX_Accept_r(&request) == 0)
     {
@@ -309,7 +298,7 @@ int main(void)
         try {
             xmltooling::NDC ndc("FastCGI shibauthorizer");
             ShibTargetFCGIAuth sta(&request, g_ServerScheme.c_str(), g_ServerName.c_str(), g_ServerPort);
-          
+
             pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta);
             if (res.first) {
 #ifdef _DEBUG
@@ -319,21 +308,21 @@ int main(void)
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
                         continue;
-              
+
                     case SHIB_RETURN_KO:
                         print_ok(sta.m_request_headers);
                         continue;
 
                     case SHIB_RETURN_DONE:
                         continue;
-              
+
                     default:
                         cerr << "shib: doAuthentication returned an unexpected result: " << res.second << endl;
                         print_error("<html><body>FastCGI Shibboleth authorizer returned an unexpected result.</body></html>");
                         continue;
                 }
             }
-          
+
             res = sta.getServiceProvider().doExport(sta);
             if (res.first) {
 #ifdef _DEBUG
@@ -343,14 +332,14 @@ int main(void)
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
                         continue;
-              
+
                     case SHIB_RETURN_KO:
                         print_ok(sta.m_request_headers);
                         continue;
 
                     case SHIB_RETURN_DONE:
                         continue;
-              
+
                     default:
                         cerr << "shib: doExport returned an unexpected result: " << res.second << endl;
                         print_error("<html><body>FastCGI Shibboleth authorizer returned an unexpected result.</body></html>");
@@ -367,14 +356,14 @@ int main(void)
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
                         continue;
-              
+
                     case SHIB_RETURN_KO:
                         print_ok(sta.m_request_headers);
                         continue;
 
                     case SHIB_RETURN_DONE:
                         continue;
-              
+
                     default:
                         cerr << "shib: doAuthorization returned an unexpected result: " << res.second << endl;
                         print_error("<html><body>FastCGI Shibboleth authorizer returned an unexpected result.</body></html>");
@@ -383,7 +372,7 @@ int main(void)
             }
 
             print_ok(sta.m_request_headers);
-          
+
         }
         catch (exception& e) {
             cerr << "shib: FastCGI authorizer caught an exception: " << e.what() << endl;
@@ -402,6 +391,6 @@ int main(void)
 
     if (g_Config)
         g_Config->term();
- 
+
     return 0;
 }

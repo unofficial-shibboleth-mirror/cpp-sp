@@ -170,20 +170,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         return FALSE;
     }
 
-    LPCSTR config=getenv("SHIBSP_CONFIG");
-    if (!config)
-        config=SHIBSP_CONFIG;
-
     try {
-        DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
-        XercesJanitor<DOMDocument> docjanitor(dummydoc);
-        DOMElement* dummy = dummydoc->createElementNS(NULL,path);
-        auto_ptr_XMLCh src(config);
-        dummy->setAttributeNS(NULL,path,src.get());
-        dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
-
-        g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
-        g_Config->getServiceProvider()->init();
+        if (!g_Config->instantiate(NULL, true))
+            throw exception("unknown error");
     }
     catch (exception& ex) {
         g_Config->term();

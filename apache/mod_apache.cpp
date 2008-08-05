@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * mod_apache.cpp
- * 
+ *
  * Apache module implementation
  */
 
@@ -545,7 +545,7 @@ extern "C" int shib_check_user(request_rec* r)
   // Short-circuit entirely?
   if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
     return DECLINED;
-    
+
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
 
   ostringstream threadid;
@@ -688,7 +688,7 @@ public:
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(const HTTPRequest& request) const;
-    
+
     const PropertySet* getParent() const { return NULL; }
     void setParent(const PropertySet*) {}
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
@@ -944,7 +944,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
     int m=sta->m_req->method_number;
     bool method_restricted=false;
     const char *t, *w;
-    
+
     const array_header* reqs_arr=ap_requires(sta->m_req);
     if (!reqs_arr)
         return shib_acl_indeterminate;  // should never happen
@@ -1028,7 +1028,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                     request.log(SPRequest::SPDebug,string("htaccess plugin using groups file: ") + sta->m_dc->szAuthGrpFile);
                 grpstatus=groups_for_user(sta->m_req,remote_user.c_str(),sta->m_dc->szAuthGrpFile);
             }
-    
+
             bool negate=false;
             while (*t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
@@ -1113,7 +1113,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                         auto_ptr<xercesc::RegularExpression> temp(new xercesc::RegularExpression(trans.get()));
                         re=temp;
                     }
-                    
+
                     for (; !status && attrs.first!=attrs.second; ++attrs.first) {
                         if (checkAttribute(request, attrs.first->second, w, regexp ? re.get() : NULL)) {
                             status = true;
@@ -1236,7 +1236,7 @@ extern "C" apr_status_t shib_exit(void* data)
 }
 #endif
 
-/* 
+/*
  * shire_child_init()
  *  Things to do when the child process is initialized.
  *  (or after the configs are read in apache-2)
@@ -1272,21 +1272,9 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     g_Config->AccessControlManager.registerFactory(HT_ACCESS_CONTROL,&htAccessFactory);
     g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER,&ApacheRequestMapFactory);
 
-    if (!g_szSHIBConfig)
-        g_szSHIBConfig=getenv("SHIBSP_CONFIG");
-    if (!g_szSHIBConfig)
-        g_szSHIBConfig=SHIBSP_CONFIG;
-    
     try {
-        xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
-        XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
-        xercesc::DOMElement* dummy = dummydoc->createElementNS(NULL,path);
-        auto_ptr_XMLCh src(g_szSHIBConfig);
-        dummy->setAttributeNS(NULL,path,src.get());
-        dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
-
-        g_Config->setServiceProvider(g_Config->ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
-        g_Config->getServiceProvider()->init();
+        if (!g_Config->instantiate(g_szSHIBConfig, true))
+            throw exception("unknown error");
     }
     catch (exception& ex) {
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),ex.what());
@@ -1387,7 +1375,7 @@ static command_rec shire_cmds[] = {
   {"ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szScheme),
    RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost"},
-   
+
   {"ShibRequestSetting", (config_fn_t)shib_table_set, NULL,
    OR_AUTHCFG, TAKE2, "Set arbitrary Shibboleth request property for content"},
 
