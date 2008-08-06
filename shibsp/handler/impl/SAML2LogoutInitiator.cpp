@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * SAML2LogoutInitiator.cpp
- * 
+ *
  * Triggers SP-initiated logout for SAML 2.0 sessions.
  */
 
@@ -54,7 +54,7 @@ namespace shibsp {
     #pragma warning( push )
     #pragma warning( disable : 4250 )
 #endif
-    
+
     class SHIBSP_DLLLOCAL SAML2LogoutInitiator : public AbstractHandler, public LogoutHandler
     {
     public:
@@ -67,7 +67,7 @@ namespace shibsp {
             }
 #endif
         }
-        
+
         void setParent(const PropertySet* parent);
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
@@ -230,7 +230,7 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
         m_log.error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
         throw ConfigurationException("Unable to locate application for logout, deleted?");
     }
-    
+
     // Unpack the request.
     auto_ptr<HTTPRequest> req(getRequest(in));
 
@@ -238,7 +238,7 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
     DDF ret(NULL);
     DDFJanitor jout(ret);
     auto_ptr<HTTPResponse> resp(getResponse(ret));
-    
+
     Session* session = NULL;
     try {
          session = app->getServiceProvider().getSessionCache()->find(*app, *req.get(), NULL, NULL);
@@ -340,8 +340,14 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                 }
             }
 
-            if (!logoutResponse)
-                ret = sendLogoutPage(application, httpRequest, httpResponse, false, "Identity provider did not respond to logout request.");
+            if (!logoutResponse) {
+                ret = sendLogoutPage(
+                    application, httpRequest, httpResponse, false,
+                    endpoints.empty() ?
+                        "Identity provider does not support SAML 2 Single Logout protocol." :
+                            "Identity provider did not respond to logout request."
+                    );
+            }
             else if (!logoutResponse->getStatus() || !logoutResponse->getStatus()->getStatusCode() ||
                    !XMLString::equals(logoutResponse->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
                 delete logoutResponse;
@@ -465,7 +471,7 @@ LogoutRequest* SAML2LogoutInitiator::buildRequest(
                         if (cr)
                             cr->setDigestAlgorithm(sigalg.second);
                     }
-            
+
                     // Sign response while marshalling.
                     vector<xmlsignature::Signature*> sigs(1,sig);
                     msg->marshall((DOMDocument*)NULL,&sigs,cred);
