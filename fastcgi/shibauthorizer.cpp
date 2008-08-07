@@ -63,7 +63,6 @@ class ShibTargetFCGIAuth : public AbstractSPRequest
     FCGX_Request* m_req;
     int m_port;
     string m_scheme,m_hostname;
-    set<string> m_cleared_headers;
     multimap<string,string> m_response_headers;
 public:
     map<string,string> m_request_headers;
@@ -125,8 +124,7 @@ public:
             cerr << "shib: " << msg;
     }
     void clearHeader(const char* rawname, const char* cginame) {
-        // Need to save off the name to prevent access to the header later.
-        m_cleared_headers.insert(rawname);
+        // No need, since we use environment variables.
     }
     void setHeader(const char* name, const char* value) {
         if (value)
@@ -134,16 +132,12 @@ public:
         else
             m_request_headers.erase(name);
     }
-    virtual string getHeader(const char* name) const {
+    string getHeader(const char* name) const {
         // Look in the local map first.
         map<string,string>::const_iterator i = m_request_headers.find(name);
         if (i != m_request_headers.end())
             return i->second;
-        // If not in the local set, see if it's a "controlled" header by
-        // checking the cleared list.
-        if (m_cleared_headers.count(name) > 0)
-            return "";
-        // Nothing set locally and it's safe, so try the request.
+        // Nothing set locally and this isn't a "secure" call, so check the request.
         string hdr("HTTP_");
         for (; *name; ++name) {
             if (*name=='-')
@@ -153,6 +147,13 @@ public:
         }
         char* s = FCGX_GetParam(hdr.c_str(), m_req->envp);
         return s ? s : "";
+    }
+    string getSecureHeader(const char* name) const {
+        // Look in the local map only.
+        map<string,string>::const_iterator i = m_request_headers.find(name);
+        if (i != m_request_headers.end())
+            return i->second;
+        return "";
     }
     void setRemoteUser(const char* user) {
         if (user)
