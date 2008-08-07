@@ -133,11 +133,20 @@ public:
             m_request_headers.erase(name);
     }
     virtual string getHeader(const char* name) const {
+        // Look in the local map first.
         map<string,string>::const_iterator i = m_request_headers.find(name);
         if (i != m_request_headers.end())
             return i->second;
-        else
-            return "";
+        // Nothing set locally, so try the request.
+        string hdr("HTTP_");
+        for (; *name; ++name) {
+            if (*name=='-')
+                hdr += '_';
+            else
+                hdr += toupper(*name);
+        }
+        char* s = FCGX_GetParam(hdr.c_str(), m_req->envp);
+        return s ? s : "";
     }
     void setRemoteUser(const char* user) {
         if (user)
