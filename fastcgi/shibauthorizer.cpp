@@ -63,6 +63,7 @@ class ShibTargetFCGIAuth : public AbstractSPRequest
     FCGX_Request* m_req;
     int m_port;
     string m_scheme,m_hostname;
+    set<string> m_cleared_headers;
     multimap<string,string> m_response_headers;
 public:
     map<string,string> m_request_headers;
@@ -124,7 +125,8 @@ public:
             cerr << "shib: " << msg;
     }
     void clearHeader(const char* rawname, const char* cginame) {
-        // no need, since request headers turn into actual environment variables
+        // Need to save off the name to prevent access to the header later.
+        m_cleared_headers.insert(rawname);
     }
     void setHeader(const char* name, const char* value) {
         if (value)
@@ -137,7 +139,11 @@ public:
         map<string,string>::const_iterator i = m_request_headers.find(name);
         if (i != m_request_headers.end())
             return i->second;
-        // Nothing set locally, so try the request.
+        // If not in the local set, see if it's a "controlled" header by
+        // checking the cleared list.
+        if (m_cleared_headers.count(name) > 0)
+            return "";
+        // Nothing set locally and it's safe, so try the request.
         string hdr("HTTP_");
         for (; *name; ++name) {
             if (*name=='-')
