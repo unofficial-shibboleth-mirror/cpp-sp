@@ -342,9 +342,7 @@ int main(void)
 
             pair<bool,long> res = stf.getServiceProvider().doHandler(stf);
             if (res.first) {
-#ifdef _DEBUG
-                cerr << "shib: doHandler handled the request" << endl;
-#endif
+                stf.log(SPRequest::SPDebug, "shib: doHandler handled the request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok();

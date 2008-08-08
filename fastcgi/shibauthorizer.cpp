@@ -317,9 +317,7 @@ int main(void)
 
             pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta);
             if (res.first) {
-#ifdef _DEBUG
-                cerr << "shib: doAuthentication handled the request" << endl;
-#endif
+                sta.log(SPRequest::SPDebug, "shib: doAuthentication handled the request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
@@ -341,9 +339,7 @@ int main(void)
 
             res = sta.getServiceProvider().doExport(sta);
             if (res.first) {
-#ifdef _DEBUG
-                cerr << "shib: doExport handled request" << endl;
-#endif
+                sta.log(SPRequest::SPDebug, "shib: doExport handled request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
@@ -365,9 +361,7 @@ int main(void)
 
             res = sta.getServiceProvider().doAuthorization(sta);
             if (res.first) {
-#ifdef _DEBUG
-                cerr << "shib: doAuthorization handled request" << endl;
-#endif
+                sta.log(SPRequest::SPDebug, "shib: doAuthorization handled request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
