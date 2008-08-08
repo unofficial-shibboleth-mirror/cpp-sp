@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * XMLAttributeFilter.cpp
- * 
+ *
  * AttributeFilter based on an XML policy language.
  */
 
@@ -91,7 +91,7 @@ namespace shibsp {
         multimap<string,MatchFunctor*> m_permitValRules;
         multimap<string,MatchFunctor*> m_denyValRules;
     };
-    
+
     class SHIBSP_DLLLOCAL XMLFilter : public AttributeFilter, public ReloadableXMLFile
     {
     public:
@@ -101,7 +101,7 @@ namespace shibsp {
         ~XMLFilter() {
             delete m_impl;
         }
-        
+
         void filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const {
             m_impl->filterAttributes(context, attributes);
         }
@@ -121,7 +121,7 @@ namespace shibsp {
     {
         return new XMLFilter(e);
     }
-    
+
     static const XMLCh AttributeFilterPolicyGroup[] =   UNICODE_LITERAL_26(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r,P,o,l,i,c,y,G,r,o,u,p);
     static const XMLCh AttributeFilterPolicy[] =        UNICODE_LITERAL_21(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r,P,o,l,i,c,y);
     static const XMLCh AttributeRule[] =                UNICODE_LITERAL_13(A,t,t,r,i,b,u,t,e,R,u,l,e);
@@ -142,7 +142,7 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLFilterImpl");
 #endif
-    
+
     if (!XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, AttributeFilterPolicyGroup))
         throw ConfigurationException("XML AttributeFilter requires afp:AttributeFilterPolicyGroup at root of configuration.");
 
@@ -307,7 +307,7 @@ pair< string,pair<const MatchFunctor*,const MatchFunctor*> > XMLFilterImpl::buil
     }
 
     m_log.warn("skipping AttributeRule (%s), permit and denial rule(s) invalid or missing", id);
-    return make_pair(string(),pair<const MatchFunctor*,const MatchFunctor*>(NULL,NULL));
+    return pair< string,pair<const MatchFunctor*,const MatchFunctor*> >(string(),pair<const MatchFunctor*,const MatchFunctor*>(NULL,NULL));
 }
 
 void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const
@@ -450,12 +450,12 @@ pair<bool,DOMElement*> XMLFilter::load()
 {
     // Load from source using base class.
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
-    
+
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
 
     XMLFilterImpl* impl = new XMLFilterImpl(raw.second, m_log);
-    
+
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
 
