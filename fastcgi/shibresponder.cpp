@@ -285,7 +285,7 @@ int main(void)
 
     try {
         if (!g_Config->instantiate(NULL, true))
-            throw exception("unknown error");
+            throw runtime_error("unknown error");
     }
     catch (exception& ex) {
         g_Config->term();

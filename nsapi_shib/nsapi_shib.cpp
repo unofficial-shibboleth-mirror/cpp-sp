@@ -142,7 +142,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
 
     try {
         if (!g_Config->instantiate(pblock_findval("shib-config",pb), true))
-            throw exception("unknown error");
+            throw runtime_error("unknown error");
     }
     catch (exception& ex) {
         pblock_nvinsert("error",ex.what(),pb);

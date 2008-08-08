@@ -1274,7 +1274,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 
     try {
         if (!g_Config->instantiate(g_szSHIBConfig, true))
-            throw exception("unknown error");
+            throw runtime_error("unknown error");
     }
     catch (exception& ex) {
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),ex.what());
