@@ -40,6 +40,7 @@
 #include <set>
 #include <sstream>
 #include <fstream>
+#include <stdexcept>
 #include <process.h>
 
 #include <windows.h>

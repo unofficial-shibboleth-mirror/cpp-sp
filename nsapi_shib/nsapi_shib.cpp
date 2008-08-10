@@ -47,6 +47,7 @@
 #include <memory>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
 #ifdef WIN32
 # include <process.h>
