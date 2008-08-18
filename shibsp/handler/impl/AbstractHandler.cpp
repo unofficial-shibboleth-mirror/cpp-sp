@@ -402,13 +402,9 @@ void AbstractHandler::recoverRelayState(
         relayState.erase();
     }
 
-    // Check for "default" value.
-    if (relayState.empty() || relayState == "default") {
+    // Check for "default" value (or the old "cookie" value that might come from stale bookmarks).
+    if (relayState.empty() || relayState == "default" || relayState == "cookie") {
         pair<bool,const char*> homeURL=application.getString("homeURL");
         relayState=homeURL.first ? homeURL.second : "/";
-        return;
     }
-
-    if (relayState == "default")
-        relayState.empty();
 }
