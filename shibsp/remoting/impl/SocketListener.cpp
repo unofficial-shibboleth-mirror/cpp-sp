@@ -241,8 +241,11 @@ bool SocketListener::run(bool* shutdown)
                 try {
                     new ServerThread(newsock,this,++count);
                 }
+                catch (exception& ex) {
+                    log->crit("exception starting new server thread to service incoming request: %s", ex.what());
+                }
                 catch (...) {
-                    log->crit("error starting new server thread to service incoming request");
+                    log->crit("unknown error starting new server thread to service incoming request");
                     if (!m_catchAll)
                         *m_shutdown = true;
                 }
