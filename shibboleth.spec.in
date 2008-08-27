@@ -106,7 +106,7 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
     fi
 fi
 
-%check || :
+%check
 %{__make} check
 
 %clean
