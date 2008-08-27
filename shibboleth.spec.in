@@ -63,7 +63,7 @@ extensions using the Shibboleth runtime libraries.
 find $RPM_BUILD_ROOT/%{_libexecdir} -type f -or -type l |
   %{__sed} -e "s|$RPM_BUILD_ROOT||" | sort > rpm.filelist
 
-%check || :
+%check
 %{__make} check
 
 %clean
