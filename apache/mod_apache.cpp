@@ -91,7 +91,7 @@ namespace {
     char* g_szSchemaDir = NULL;
     char* g_szPrefix = NULL;
     SPConfig* g_Config = NULL;
-    string g_unsetHeaderValue;
+    string g_unsetHeaderValue,g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
     static const char* g_UserDataKey = "_shib_check_user_";
@@ -302,7 +302,7 @@ class ShibTargetApache : public AbstractSPRequest
 {
   bool m_handler;
   mutable string m_body;
-  mutable bool m_gotBody;
+  mutable bool m_gotBody,m_firsttime;
   mutable vector<string> m_certs;
   set<string> m_allhttp;
 
@@ -312,13 +312,29 @@ public:
   shib_server_config* m_sc;
   shib_request_config* m_rc;
 
-  ShibTargetApache(request_rec* req, bool handler) : AbstractSPRequest(SHIBSP_LOGCAT".Apache"), m_handler(handler), m_gotBody(false) {
+  ShibTargetApache(request_rec* req, bool handler, bool shib_check_user)
+      : AbstractSPRequest(SHIBSP_LOGCAT".Apache"), m_handler(handler), m_gotBody(false),m_firsttime(true) {
     m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
     m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
     m_req = req;
 
     setRequestURI(m_req->unparsed_uri);
+
+    if (shib_check_user && m_dc->bUseHeaders == 1) {
+        // Try and see if this request was already processed, to skip spoof checking.
+        if (!ap_is_initial_req(m_req)) {
+            m_firsttime = false;
+        }
+        else if (!g_spoofKey.empty()) {
+            const char* hdr = ap_table_get(m_req->headers_in, "Shib-Spoof-Check");
+            if (hdr && g_spoofKey == hdr)
+                m_firsttime=false;
+        }
+
+        if (!m_firsttime)
+            log(SPDebug, "shib_check_user running more than once");
+    }
   }
   virtual ~ShibTargetApache() {}
 
@@ -421,7 +437,7 @@ public:
   void clearHeader(const char* rawname, const char* cginame) {
     if (m_dc->bUseHeaders == 1) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr\n");
-        if (g_checkSpoofing && ap_is_initial_req(m_req)) {
+        if (g_checkSpoofing && m_firsttime) {
             if (m_allhttp.empty()) {
                 // First time, so populate set with "CGI" versions of client-supplied headers.
 #ifdef SHIB_APACHE_13
@@ -554,11 +570,14 @@ extern "C" int shib_check_user(request_rec* r)
   xmltooling::NDC ndc(threadid.str().c_str());
 
   try {
-    ShibTargetApache sta(r,false);
+    ShibTargetApache sta(r,false,true);
 
     // Check user authentication and export information, then set the handler bypass
     pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta,true);
     apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
+    // If directed, install a spoof key to recognize when we've already cleared headers.
+    if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bUseHeaders==1))
+        ap_table_set(r->headers_in, "Shib-Spoof-Check", g_spoofKey.c_str());
     if (res.first) return res.second;
 
     // user auth was okay -- export the assertions now
@@ -605,7 +624,7 @@ extern "C" int shib_handler(request_rec* r)
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
 
   try {
-    ShibTargetApache sta(r,true);
+    ShibTargetApache sta(r,true,false);
 
     pair<bool,long> res = sta.getServiceProvider().doHandler(sta);
     if (res.first) return res.second;
@@ -642,7 +661,7 @@ extern "C" int shib_auth_checker(request_rec* r)
   xmltooling::NDC ndc(threadid.str().c_str());
 
   try {
-    ShibTargetApache sta(r,false);
+    ShibTargetApache sta(r,false,false);
 
     pair<bool,long> res = sta.getServiceProvider().doAuthorization(sta);
     if (res.first) return res.second;
@@ -1292,6 +1311,11 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             g_unsetHeaderValue = unsetValue.second;
         pair<bool,bool> flag=props->getBool("checkSpoofing");
         g_checkSpoofing = !flag.first || flag.second;
+        if (g_checkSpoofing) {
+            unsetValue=props->getString("spoofKey");
+            if (unsetValue.first)
+                g_spoofKey = unsetValue.second;
+        }
         flag=props->getBool("catchAll");
         g_catchAll = flag.first && flag.second;
     }

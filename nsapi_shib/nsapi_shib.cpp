@@ -77,6 +77,7 @@ namespace {
     string g_ServerName;
     string g_ServerScheme;
     string g_unsetHeaderValue;
+    string g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
 
@@ -163,6 +164,11 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
             g_unsetHeaderValue = unsetValue.second;
         pair<bool,bool> flag=props->getBool("checkSpoofing");
         g_checkSpoofing = !flag.first || flag.second;
+        if (g_checkSpoofing) {
+            unsetValue=props->getString("spoofKey");
+            if (unsetValue.first)
+                g_spoofKey = unsetValue.second;
+        }
         flag=props->getBool("catchAll");
         g_catchAll = flag.first && flag.second;
     }
@@ -199,9 +205,11 @@ public:
     }
 
     // See if this is the first time we've run.
-    qstr = pblock_findval("auth-type", rq->vars);
-    if (qstr && !strcmp(qstr, "shibboleth"))
-        m_firsttime = false;
+    if (!g_spoofKey.empty()) {
+        qstr = pblock_findval("Shib-Spoof-Check", rq->headers);
+        if (qstr && g_spoofKey == qstr)
+            m_firsttime = false;
+    }
     if (!m_firsttime || rq->orig_rq)
         log(SPDebug, "nsapi_shib function running more than once");
   }
@@ -399,13 +407,20 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
 
     // Check user authentication
     pair<bool,long> res = stn.getServiceProvider().doAuthentication(stn);
+    // If directed, install a spoof key to recognize when we've already cleared headers.
+    if (!g_spoofKey.empty()) {
+      param_free(pblock_remove("Shib-Spoof-Check", rq->headers));
+      pblock_nvinsert("Shib-Spoof-Check", g_spoofKey.c_str(), rq->headers);
+    }
     if (res.first) return (int)res.second;
 
     // user authN was okay -- export the assertions now
     param_free(pblock_remove("auth-user",rq->vars));
+    
     // This seems to be required in order to eventually set
     // the auth-user var.
     pblock_nvinsert("auth-type","shibboleth",rq->vars);
+
     res = stn.getServiceProvider().doExport(stn);
     if (res.first) return (int)res.second;
 

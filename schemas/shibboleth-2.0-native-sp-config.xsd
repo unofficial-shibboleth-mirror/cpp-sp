@@ -201,6 +201,7 @@
 			<attribute name="logger" type="anyURI"/>
 			<attribute name="unsetHeaderValue" type="string"/>
 			<attribute name="checkSpoofing" type="boolean"/>
+            <attribute name="spoofKey" type="string"/>
 		    <attribute name="catchAll" type="boolean"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
