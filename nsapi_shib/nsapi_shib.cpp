@@ -281,6 +281,7 @@ public:
             throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, name.c_str()));
         param_free(pblock_remove("auth-user",m_rq->vars));
         param_free(pblock_remove("remote-user",m_rq->headers));
+        pblock_nvinsert("remote-user", g_unsetHeaderValue.c_str(), m_rq->headers);
     }
     else {
         if (g_checkSpoofing && m_firsttime && !m_rq->orig_rq) {
@@ -315,6 +316,7 @@ public:
     return string(hdr ? hdr : "");
   }
   virtual void setRemoteUser(const string &user) {
+    param_free(pblock_remove("remote-user",m_rq->headers));
     pblock_nvinsert("remote-user", user.c_str(), m_rq->headers);
     pblock_nvinsert("auth-user", user.c_str(), m_rq->vars);
   }
