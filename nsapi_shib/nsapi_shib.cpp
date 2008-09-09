@@ -139,7 +139,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         return REQ_ABORTED;
     }
 
-    g_Config->RequestMapperManager.registerFactory(XML_REQUEST_MAPPER,&SunRequestMapFactory);
+    g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER,&SunRequestMapFactory);
 
     try {
         if (!g_Config->instantiate(pblock_findval("shib-config",pb), true))
@@ -156,7 +156,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
 
     ServiceProvider* sp=g_Config->getServiceProvider();
     Locker locker(sp);
-    const PropertySet* props=sp->getPropertySet("Local");
+    const PropertySet* props=sp->getPropertySet("InProcess");
     if (props) {
         pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
         if (unsetValue.first)
@@ -296,8 +296,14 @@ public:
         if (m_allhttp.count(cginame) > 0)
             throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, rawname));
     }
-    param_free(pblock_remove(rawname, m_rq->headers));
-    pblock_nvinsert(rawname, g_unsetHeaderValue.c_str(), m_rq->headers);
+    if (strcmp(rawname, "REMOTE_USER") == 0) {
+        param_free(pblock_remove("remote-user", m_rq->headers));
+        pblock_nvinsert("remote-user", g_unsetHeaderValue.c_str(), m_rq->headers);
+    }
+    else {
+        param_free(pblock_remove(rawname, m_rq->headers));
+        pblock_nvinsert(rawname, g_unsetHeaderValue.c_str(), m_rq->headers);
+    }
   }
   void setHeader(const char* name, const char* value) {
     param_free(pblock_remove(name, m_rq->headers));
@@ -323,6 +329,8 @@ public:
   }
   void setRemoteUser(const char* user) {
     pblock_nvinsert("auth-user", user, m_rq->vars);
+    param_free(pblock_remove("remote-user", m_rq->headers));
+    pblock_nvinsert("remote-user", user, m_rq->headers);
   }
   string getRemoteUser() const {
     const char* ru = pblock_findval("auth-user", m_rq->vars);
