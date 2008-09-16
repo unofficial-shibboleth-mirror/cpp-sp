@@ -416,7 +416,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
 
     // user authN was okay -- export the assertions now
     param_free(pblock_remove("auth-user",rq->vars));
-    
+
     // This seems to be required in order to eventually set
     // the auth-user var.
     pblock_nvinsert("auth-type","shibboleth",rq->vars);
@@ -465,6 +465,7 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
     return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an exception, see web server log for error.");
   }
   catch (...) {
+    log_error(LOG_FAILURE,FUNC,sn,rq,"unknown exception caught in Shibboleth handler");
     if (g_catchAll)
         return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an unknown exception.");
     throw;
