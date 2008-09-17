@@ -237,16 +237,18 @@ public:
     return pblock_findval("method", m_rq->reqpb);
   }
   string getContentType() const {
-    char* content_type = "";
-    request_header("content-type", &content_type, m_sn, m_rq);
-    return content_type;
+    char* content_type = NULL;
+    if (request_header("content-type", &content_type, m_sn, m_rq) != REQ_PROCEED)
+        return "";
+    return content_type ? content_type : "";
   }
   long getContentLength() const {
     if (m_gotBody)
         return m_body.length();
-    char* content_length="";
-    request_header("content-length", &content_length, m_sn, m_rq);
-    return atoi(content_length);
+    char* content_length=NULL;
+    if (request_header("content-length", &content_length, m_sn, m_rq) != REQ_PROCEED)
+        return 0;
+    return content_length ? atoi(content_length) : 0;
   }
   string getRemoteAddr() const {
     return pblock_findval("ip", m_sn->client);
@@ -263,7 +265,11 @@ public:
     if (m_gotBody)
         return m_body.c_str();
     char* content_length=NULL;
-    if (request_header("content-length", &content_length, m_sn, m_rq)!=REQ_PROCEED || atoi(content_length) > 1024*1024) // 1MB?
+    if (request_header("content-length", &content_length, m_sn, m_rq) != REQ_PROCEED || !content_length) {
+        m_gotBody = true;
+        return NULL;
+    }
+    else if (atoi(content_length) > 1024*1024) // 1MB?
       throw opensaml::SecurityPolicyException("Blocked request body exceeding 1M size limit.");
     else {
       char ch=IO_EOF+1;
