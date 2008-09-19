@@ -66,6 +66,7 @@ namespace shibsp {
                 XMLString::release(&m_outgoing);
                 for_each(m_encoders.begin(), m_encoders.end(), cleanup_pair<const XMLCh*,MessageEncoder>());
                 delete m_requestTemplate;
+                delete m_ecp;
             }
 #endif
         }
