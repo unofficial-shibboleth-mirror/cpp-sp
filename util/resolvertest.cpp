@@ -115,8 +115,6 @@ int main(int argc,char* argv[])
     char* i_param=NULL;
     char* prot = NULL;
     const XMLCh* protocol = NULL;
-    char* path=NULL;
-    char* config=NULL;
 
     for (int i=1; i<argc; i++) {
         if (!strcmp(argv[i],"-n") && i+1<argc)
@@ -139,19 +137,22 @@ int main(int argc,char* argv[])
 
     if (n_param && !i_param) {
         usage();
-        exit(-10);
+        return -10;
     }
 
-    path=getenv("SHIBSP_SCHEMAS");
-    if (!path)
-        path=SHIBSP_SCHEMAS;
-    config=getenv("SHIBSP_CONFIG");
-    if (!config)
-        config=SHIBSP_CONFIG;
     if (!a_param)
         a_param="default";
 
-    XMLToolingConfig::getConfig().log_config(getenv("SHIBSP_LOGGING") ? getenv("SHIBSP_LOGGING") : SHIBSP_LOGGING);
+    if (n_param) {
+        if (!protocol) {
+            if (prot)
+                protocol = XMLString::transcode(prot);
+        }
+        if (!protocol) {
+            usage();
+            return -10;
+        }
+    }
 
     SPConfig& conf=SPConfig::getConfig();
     conf.setFeatures(
@@ -161,35 +162,9 @@ int main(int argc,char* argv[])
         SPConfig::Credentials |
         SPConfig::OutOfProcess
         );
-    if (!conf.init(path))
+    if (!conf.init())
         return -1;
-
-    if (n_param) {
-        if (!protocol) {
-            if (prot)
-                protocol = XMLString::transcode(prot);
-        }
-        if (!protocol) {
-            conf.term();
-            usage();
-            exit(-10);
-        }
-    }
-   
-    try {
-        static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
-        static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
-        xercesc::DOMDocument* dummydoc=XMLToolingConfig::getConfig().getParser().newDocument();
-        XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
-        xercesc::DOMElement* dummy = dummydoc->createElementNS(NULL,path);
-        auto_ptr_XMLCh src(config);
-        dummy->setAttributeNS(NULL,path,src.get());
-        dummy->setAttributeNS(NULL,validate,xmlconstants::XML_ONE);
-
-        conf.setServiceProvider(conf.ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER,dummy));
-        conf.getServiceProvider()->init();
-    }
-    catch (exception&) {
+    if (!conf.instantiate()) {
         conf.term();
         return -2;
     }
