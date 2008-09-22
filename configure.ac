@@ -305,10 +305,10 @@ AC_CHECK_HEADER([saml/saml2/metadata/Metadata.h],,
 AC_TRY_LINK(
 	[#include <saml/SAMLConfig.h>
 #include <saml/version.h>],
-	[#if _OPENSAML_VERSION >= 20000
+	[#if _OPENSAML_VERSION >= 20100
 opensaml::SAMLConfig::getConfig();
 #else
-#error Need OpenSAML version 2.0 or higher
+#error Need OpenSAML version 2.1 or higher
 #endif],
         [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
         [AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])])
