@@ -1,7 +1,7 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth], [2.1], [shibboleth-users@internet2.edu], [shibboleth])
+AC_INIT([shibboleth], [2.2], [shibboleth-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE([shibboleth],[2.1])
+AM_INIT_AUTOMAKE([shibboleth],[2.2])
 
 sinclude(doxygen.m4)
 sinclude(acx_pthread.m4)
@@ -305,10 +305,10 @@ AC_CHECK_HEADER([saml/saml2/metadata/Metadata.h],,
 AC_TRY_LINK(
 	[#include <saml/SAMLConfig.h>
 #include <saml/version.h>],
-	[#if _OPENSAML_VERSION >= 20100
+	[#if _OPENSAML_VERSION >= 20200
 opensaml::SAMLConfig::getConfig();
 #else
-#error Need OpenSAML version 2.1 or higher
+#error Need OpenSAML version 2.2 or higher
 #endif],
         [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
         [AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])])

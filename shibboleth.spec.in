@@ -11,7 +11,7 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 BuildRequires:	openssl-devel
 BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0
 BuildRequires:  xml-security-c-devel >= 1.4.0
-BuildRequires:	zlib-devel, opensaml-devel >= 2.1
+BuildRequires:	zlib-devel, opensaml-devel >= 2.2
 %{?_with_log4cpp:BuildRequires:	log4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: log4shib-devel}
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
@@ -197,6 +197,9 @@ sh ./keygen.sh -b
 %doc %{_datadir}/doc/%{name}/api
 
 %changelog
+* Tue Sep 23 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.2-1
+- Bump minor version.
+
 * Tue Jun 10 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.1-1
 - Change shib.conf handling to treat as config file.
 
