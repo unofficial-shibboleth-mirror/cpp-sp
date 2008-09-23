@@ -109,6 +109,7 @@ install-data-local:	all-data-local
         done
 
 install-data-hook:
+	chmod +x $(DESTDIR)$(pkgsysconfdir)/keygen.sh
 	if test -z "$(NOKEYGEN)"; then \
 		cd $(DESTDIR)$(pkgsysconfdir); \
 		sh ./keygen.sh -b ; \

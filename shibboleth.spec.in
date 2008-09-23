@@ -172,7 +172,7 @@ sh ./keygen.sh -b
 %{_sysconfdir}/%{name}/shibd-redhat
 %{_sysconfdir}/%{name}/shibd-debian
 %{_sysconfdir}/%{name}/shibd-osx.plist
-%{_sysconfdir}/%{name}/keygen.sh
+%attr(755, root, root) %{_sysconfdir}/%{name}/keygen.sh
 %{_sysconfdir}/%{name}/*.xsl
 %docdir %{_datadir}/doc/%{name}
 %{_datadir}/doc/%{name}/CREDITS.txt
@@ -199,6 +199,7 @@ sh ./keygen.sh -b
 %changelog
 * Tue Sep 23 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.2-1
 - Bump minor version.
+- Make keygen.sh executable.
 
 * Tue Jun 10 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.1-1
 - Change shib.conf handling to treat as config file.
