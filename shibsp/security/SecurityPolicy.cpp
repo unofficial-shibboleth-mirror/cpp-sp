@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,13 +16,14 @@
 
 /**
  * SecurityPolicy.cpp
- * 
+ *
  * SP-specific SecurityPolicy subclass.
  */
 
 #include "internal.h"
 #include "Application.h"
 #include "ServiceProvider.h"
+#include "metadata/MetadataProviderCriteria.h"
 #include "security/SecurityPolicy.h"
 
 using namespace shibsp;
@@ -33,4 +34,11 @@ SecurityPolicy::SecurityPolicy(const Application& application, const xmltooling:
     const std::vector<const opensaml::SecurityPolicyRule*>& rules =
         application.getServiceProvider().getPolicyRules(application.getString("policyId").second);
     getRules().assign(rules.begin(), rules.end());
+}
+
+opensaml::saml2md::MetadataProvider::Criteria& SecurityPolicy::getMetadataProviderCriteria() const
+{
+    if (!m_metadataCriteria)
+        m_metadataCriteria=new MetadataProviderCriteria(m_application);
+    return *m_metadataCriteria;
 }

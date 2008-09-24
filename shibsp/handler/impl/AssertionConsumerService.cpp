@@ -412,15 +412,11 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
         }
         m_log.debug("searching metadata for assertion issuer...");
         pair<const EntityDescriptor*,const RoleDescriptor*> entity;
-        shibsp::SecurityPolicy* sppol = dynamic_cast<shibsp::SecurityPolicy*>(&policy);
-        if (sppol) {
-            MetadataProviderCriteria mc(sppol->getApplication(), policy.getIssuer()->getName(), &IDPSSODescriptor::ELEMENT_QNAME, protocol);
-            entity = policy.getMetadataProvider()->getEntityDescriptor(mc);
-        }
-        else {
-            MetadataProvider::Criteria mc(policy.getIssuer()->getName(), &IDPSSODescriptor::ELEMENT_QNAME, protocol);
-            entity = policy.getMetadataProvider()->getEntityDescriptor(mc);
-        }
+        MetadataProvider::Criteria& mc = policy.getMetadataProviderCriteria();
+        mc.entityID_unicode = policy.getIssuer()->getName();
+        mc.role = &IDPSSODescriptor::ELEMENT_QNAME;
+        mc.protocol = protocol;
+        entity = policy.getMetadataProvider()->getEntityDescriptor(mc);
         if (!entity.first) {
             auto_ptr_char iname(policy.getIssuer()->getName());
             m_log.warn("no metadata found, can't establish identity of issuer (%s)", iname.get());
