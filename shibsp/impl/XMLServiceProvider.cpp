@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -70,6 +70,10 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
+#ifndef min
+# define min(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
+
 namespace {
 
 #if defined (_MSC_VER)
@@ -85,7 +89,7 @@ namespace {
     public:
         XMLApplication(const ServiceProvider*, const DOMElement* e, const XMLApplication* base=NULL);
         ~XMLApplication() { cleanup(); }
-    
+
         const char* getHash() const {return m_hash.c_str();}
 
 #ifndef SHIBSP_LITE
@@ -157,7 +161,7 @@ namespace {
 
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
-    
+
     private:
         void cleanup();
         const XMLApplication* m_base;
@@ -188,7 +192,7 @@ namespace {
 
         // maps unique indexes to consumer services
         map<unsigned int,const Handler*> m_acsIndexMap;
-        
+
         // pointer to default consumer service
         const Handler* m_acsDefault;
 
@@ -222,14 +226,14 @@ namespace {
     public:
         XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer, Category& log);
         ~XMLConfigImpl();
-        
+
         RequestMapper* m_requestMapper;
         map<string,Application*> m_appmap;
 #ifndef SHIBSP_LITE
         map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > > m_policyMap;
         vector< pair< string, pair<string,string> > > m_transportOptions;
 #endif
-        
+
         // Provides filter to exclude special config elements.
         short acceptNode(const DOMNode* node) const;
 
@@ -258,7 +262,7 @@ namespace {
 #endif
         {
         }
-        
+
         void init() {
             load();
         }
@@ -595,7 +599,7 @@ XMLApplication::XMLApplication(
                     m_acsBindingMap[handler->getString("Binding").second].push_back(handler);
 #endif
                     m_acsIndexMap[handler->getUnsignedInt("index").second]=handler;
-                    
+
                     if (!hardACS) {
                         pair<bool,bool> defprop=handler->getBool("isDefault");
                         if (defprop.first) {
@@ -649,7 +653,7 @@ XMLApplication::XMLApplication(
                         continue;
                     }
                     handler=conf.ArtifactResolutionServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
-                    
+
                     if (!hardArt) {
                         pair<bool,bool> defprop=handler->getBool("isDefault");
                         if (defprop.first) {
@@ -703,7 +707,7 @@ XMLApplication::XMLApplication(
             catch (exception& ex) {
                 log.error("caught exception processing handler element: %s", ex.what());
             }
-            
+
             child = XMLHelper::getNextSiblingElement(child);
         }
 
@@ -948,7 +952,7 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
 {
     if (!provider)
         return this;
-        
+
 #ifdef HAVE_GOOD_STL
     map<xstring,PropertySet*>::const_iterator i=m_partyMap.find(provider->getEntityID());
     if (i!=m_partyMap.end())
@@ -982,7 +986,7 @@ const PropertySet* XMLApplication::getRelyingParty(const XMLCh* entityID) const
 {
     if (!entityID)
         return this;
-        
+
 #ifdef HAVE_GOOD_STL
     map<xstring,PropertySet*>::const_iterator i=m_partyMap.find(entityID);
     if (i!=m_partyMap.end())
@@ -1015,7 +1019,7 @@ string XMLApplication::getNotificationURL(const char* resource, bool front, unsi
         throw ConfigurationException("Request URL was not absolute.");
 
     const char* handler=locs[index].c_str();
-    
+
     // Should never happen...
     if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
         throw ConfigurationException(
@@ -1211,13 +1215,13 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
                 XMLToolingConfig::getConfig().log_config(logpath.get());
             }
-            
+
 #ifndef SHIBSP_LITE
             if (first)
                 m_outer->m_tranLog = new TransactionLog();
 #endif
         }
-        
+
         // First load any property sets.
         load(e,NULL,this);
 
@@ -1229,7 +1233,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             // Set clock skew.
             pair<bool,unsigned int> skew=getUnsignedInt("clockSkew");
             if (skew.first)
-                xmlConf.clock_skew_secs=skew.second;
+                xmlConf.clock_skew_secs=min(skew.second,(60*60*24*7*28));
 
             // Extensions
             doExtensions(e, "global", log);
@@ -1238,7 +1242,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
             if (conf.isEnabled(SPConfig::InProcess))
                 doExtensions(SHIRE, "in process", log);
-            
+
             // Instantiate the ListenerService and SessionCache objects.
             if (conf.isEnabled(SPConfig::Listener)) {
                 child=XMLHelper::getFirstChildElement(e,UnixListener);
@@ -1310,7 +1314,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     else {
                         log.warn("no ReplayCache built, missing conf:ReplayCache element?");
                     }
-                    
+
                     // ArtifactMap
                     child=XMLHelper::getFirstChildElement(e,_ArtifactMap);
                     if (child) {
@@ -1338,7 +1342,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 }
             }
         } // end of first-time-only stuff
-        
+
         // Back to the fully dynamic stuff...next up is the RequestMapper.
         if (conf.isEnabled(SPConfig::RequestMapping)) {
             child=XMLHelper::getFirstChildElement(e,_RequestMapper);
@@ -1352,7 +1356,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 throw ConfigurationException("Can't build RequestMapper, missing conf:RequestMapper element?");
             }
         }
-        
+
 #ifndef SHIBSP_LITE
         // Load security policies.
         child = XMLHelper::getLastChildElement(e,SecurityPolicies);
@@ -1366,7 +1370,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 auto_ptr<DOMPropertySet> settings(new DOMPropertySet());
                 settings->load(child, NULL, &filter);
                 rules.first = settings.release();
-                
+
                 // Process Rule elements.
                 const DOMElement* rule = XMLHelper::getFirstChildElement(child,Rule);
                 while (rule) {
@@ -1379,7 +1383,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     }
                     rule = XMLHelper::getNextSiblingElement(rule,Rule);
                 }
-                
+
                 child = XMLHelper::getNextSiblingElement(child,Policy);
             }
         }
@@ -1407,7 +1411,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         }
         XMLApplication* defapp=new XMLApplication(m_outer,child);
         m_appmap[defapp->getId()]=defapp;
-        
+
         // Load any overrides.
         child = XMLHelper::getFirstChildElement(child,ApplicationOverride);
         while (child) {
@@ -1510,12 +1514,12 @@ pair<bool,DOMElement*> XMLConfig::load()
 {
     // Load from source using base class.
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
-    
+
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
 
     XMLConfigImpl* impl = new XMLConfigImpl(raw.second,(m_impl==NULL),this,m_log);
-    
+
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
 
