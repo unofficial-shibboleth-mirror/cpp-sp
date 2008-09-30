@@ -26,16 +26,23 @@
 # include "config.h"
 #endif
 
+#ifdef WIN32
+# define _CRT_NONSTDC_NO_DEPRECATE 1
+# define _CRT_SECURE_NO_DEPRECATE 1
+# define MCEXT_EXPORTS __declspec(dllexport)
+#else
+# define MCEXT_EXPORTS
+#endif
+
+#include <xmltooling/base.h>
+#include <libmemcached/memcached.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #include <xmltooling/logging.h>
-
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/StorageService.h>
 #include <xmltooling/util/XMLHelper.h>
-
-#include <libmemcached/memcached.h>
 
 using namespace xmltooling::logging;
 using namespace xmltooling;
@@ -158,8 +165,12 @@ bool MemcacheBase::addLock(string what, bool use_prefix) {
     log.debug("Unable to get lock %s... Retrying.", lock_name.c_str());
     
     // sleep 100ms
+#ifdef WIN32
+    Sleep(100);
+#else
     struct timeval tv = { 0, 100000 };
-    select(0, 0, 0, 0, &tv);    
+    select(0, 0, 0, 0, &tv);
+#endif
   }
   return true;
 }
@@ -727,12 +738,12 @@ void MemcacheStorageService::deleteContext(const char* context) {
 
 }
 
-extern "C" int xmltooling_extension_init(void*) {
+extern "C" int MCEXT_EXPORTS xmltooling_extension_init(void*) {
     // Register this SS type
     XMLToolingConfig::getConfig().StorageServiceManager.registerFactory("MEMCACHE", MemcacheStorageServiceFactory);
     return 0;
 }
 
-extern "C" void xmltooling_extension_term() {
+extern "C" void MCEXT_EXPORTS xmltooling_extension_term() {
     XMLToolingConfig::getConfig().StorageServiceManager.deregisterFactory("MEMCACHE");
 }
