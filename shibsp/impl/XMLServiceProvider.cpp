@@ -1166,7 +1166,8 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
             auto_ptr_char path(exts->getAttributeNS(NULL,_path));
             try {
                 if (path.get()) {
-                    XMLToolingConfig::getConfig().load_library(path.get(),(void*)exts);
+                    if (!XMLToolingConfig::getConfig().load_library(path.get(),(void*)exts))
+                        throw ConfigurationException("XMLToolingConfig::load_library failed.");
                     log.debug("loaded %s extension library (%s)", label, path.get());
                 }
             }
