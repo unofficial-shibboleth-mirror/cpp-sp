@@ -341,7 +341,8 @@ void SAML2Consumer::implementProtocol(
     // Now we have to extract the authentication details for session setup.
 
     // Session expiration for SAML 2.0 is jointly IdP- and SP-driven.
-    time_t sessionExp = ssoStatement->getSessionNotOnOrAfter() ? ssoStatement->getSessionNotOnOrAfterEpoch() : 0;
+    time_t sessionExp = ssoStatement->getSessionNotOnOrAfter() ?
+        (ssoStatement->getSessionNotOnOrAfterEpoch() + XMLToolingConfig::getConfig().clock_skew_secs) : 0;
     pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
     if (!lifetime.first || lifetime.second == 0)
         lifetime.second = 28800;
