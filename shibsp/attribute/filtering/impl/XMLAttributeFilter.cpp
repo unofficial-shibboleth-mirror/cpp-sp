@@ -300,10 +300,13 @@ pair< string,pair<const MatchFunctor*,const MatchFunctor*> > XMLFilterImpl::buil
     }
 
     if (perm || deny) {
-        if (*id)
-            return m_attrRules[id] = pair< string,pair<const MatchFunctor*,const MatchFunctor*> >(attrID.get(), pair<const MatchFunctor*,const MatchFunctor*>(perm,deny));
-        else
+        if (*id) {
+            m_attrRules[id] = pair< string,pair<const MatchFunctor*,const MatchFunctor*> >(attrID.get(), pair<const MatchFunctor*,const MatchFunctor*>(perm,deny));
+            return m_attrRules[id];
+        }
+        else {
             return pair< string,pair<const MatchFunctor*,const MatchFunctor*> >(attrID.get(), pair<const MatchFunctor*,const MatchFunctor*>(perm,deny));
+        }
     }
 
     m_log.warn("skipping AttributeRule (%s), permit and denial rule(s) invalid or missing", id);
