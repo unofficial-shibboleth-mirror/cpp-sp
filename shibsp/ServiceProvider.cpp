@@ -107,7 +107,7 @@ namespace shibsp {
 
         if (!strcmp(page,"access")) {
             istringstream msg("Access Denied");
-            return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_UNAUTHORIZED);
+            return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN);
         }
 
         log.error("sendError could not process error template (%s)", page);
