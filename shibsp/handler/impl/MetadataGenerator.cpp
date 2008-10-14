@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * MetadataGenerator.cpp
- * 
+ *
  * Handler for generating "approximate" metadata based on SP configuration.
  */
 
@@ -121,14 +121,14 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
 
 #ifndef SHIBSP_LITE
     static XMLCh EndpointBase[] = UNICODE_LITERAL_12(E,n,d,p,o,i,n,t,B,a,s,e);
-    
+
     pair<bool,bool> flag = getBool("http");
     if (flag.first)
         m_http = flag.second ? 1 : -1;
     flag = getBool("https");
     if (flag.first)
         m_https = flag.second ? 1 : -1;
-    
+
     e = XMLHelper::getFirstChildElement(e, EndpointBase);
     while (e) {
         if (e->hasChildNodes()) {
@@ -151,7 +151,7 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
             return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_UNAUTHORIZED));
         }
     }
-    
+
     try {
         if (conf.isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
@@ -165,7 +165,7 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
             if (request.getParameter("entityID"))
                 in.addmember("entity_id").string(request.getParameter("entityID"));
             DDFJanitor jin(in), jout(out);
-            
+
             out=request.getServiceProvider().getListenerService()->send(in);
             return unwrap(request, out);
         }
@@ -191,12 +191,12 @@ void MetadataGenerator::receive(DDF& in, ostream& out)
     else if (!hurl) {
         throw ConfigurationException("Missing handler_url parameter in remoted method call.");
     }
-    
+
     // Wrap a response shim.
     DDF ret(NULL);
     DDFJanitor jout(ret);
     auto_ptr<HTTPResponse> resp(getResponse(ret));
-        
+
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
@@ -243,8 +243,14 @@ pair<bool,long> MetadataGenerator::processMessage(
 
     auto_ptr<EntityDescriptor> wrapper(entity);
     pair<bool,unsigned int> cache = getUnsignedInt("cacheDuration");
-    if (cache.first)
-        entity->setValidUntil(time(NULL) + cache.second);
+    if (cache.first) {
+        entity->setCacheDuration(cache.second);
+    }
+    else {
+        cache = getUnsignedInt("validUntil");
+        if (cache.first)
+            entity->setValidUntil(time(NULL) + cache.second);
+    }
     entity->setEntityID(relyingParty->getXMLString("entityID").second);
 
     SPSSODescriptor* role;
@@ -355,7 +361,7 @@ pair<bool,long> MetadataGenerator::processMessage(
             XMLHelper::serialize(entity->marshall(), pretty, true);
             DOMDocument* prettydoc = XMLToolingConfig::getConfig().getParser().parse(pretty);
             auto_ptr<XMLObject> prettyentity(XMLObjectBuilder::buildOneFromElement(prettydoc->getDocumentElement(), true));
-    
+
             Signature* sig = SignatureBuilder::buildSignature();
             dynamic_cast<EntityDescriptor*>(prettyentity.get())->setSignature(sig);
             if (sigalg.first)
