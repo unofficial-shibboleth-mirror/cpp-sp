@@ -206,6 +206,33 @@ namespace shibsp {
         virtual const std::vector<std::string>& getRemoteUserAttributeIds() const=0;
 
         /**
+         * Ensures no value exists for a request header, allowing for application-specific customization.
+         * 
+         * @param request  SP request to modify
+         * @param rawname  raw name of header to clear
+         * @param cginame  CGI-equivalent name of header, <strong>MUST</strong> begin with "HTTP_".
+         */
+        virtual void clearHeader(SPRequest& request, const char* rawname, const char* cginame) const;
+
+        /**
+         * Sets a value for a request header allowing for application-specific customization.
+         * 
+         * @param request   SP request to modify
+         * @param name      name of header to set
+         * @param value     value to set
+         */
+        virtual void setHeader(SPRequest& request, const char* name, const char* value) const;
+
+        /**
+         * Returns a non-spoofable request header value allowing for application-specific customization.
+         * 
+         * @param request   SP request to access
+         * @param name      the name of the secure header to return
+         * @return  the header's value, or an empty string
+         */
+        virtual std::string getSecureHeader(const SPRequest& request, const char* name) const;
+
+        /**
          * Clears any headers that may be used to hold attributes after export.
          *
          * @param request   SP request to clear

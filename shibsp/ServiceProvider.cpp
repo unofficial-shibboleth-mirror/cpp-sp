@@ -116,16 +116,16 @@ namespace shibsp {
     }
 
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
-        request.clearHeader("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
-        request.clearHeader("Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
-        request.clearHeader("Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
-        request.clearHeader("Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
-        request.clearHeader("Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
-        request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
-        request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
+        const Application& app = request.getApplication();
+        app.clearHeader(request, "Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
+        app.clearHeader(request, "Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
+        app.clearHeader(request, "Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
+        app.clearHeader(request, "Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
+        app.clearHeader(request, "Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
+        app.clearHeader(request, "Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
+        app.clearHeader(request, "Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
+        app.clearAttributeHeaders(request);
         request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
-        //request.clearHeader("Shib-Application-ID");   handle inside app method
-        request.getApplication().clearAttributeHeaders(request);
     }
 };
 
@@ -355,24 +355,24 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         		return make_pair(false,0L);	// just bail silently
         }
 
-        request.setHeader("Shib-Application-ID", app->getId());
-        request.setHeader("Shib-Session-ID", session->getID());
+        app->setHeader(request, "Shib-Application-ID", app->getId());
+        app->setHeader(request, "Shib-Session-ID", session->getID());
 
         // Export the IdP name and Authn method/context info.
         const char* hval = session->getEntityID();
         if (hval)
-            request.setHeader("Shib-Identity-Provider", hval);
+            app->setHeader(request, "Shib-Identity-Provider", hval);
         hval = session->getAuthnInstant();
         if (hval)
-            request.setHeader("Shib-Authentication-Instant", hval);
+            app->setHeader(request, "Shib-Authentication-Instant", hval);
         hval = session->getAuthnContextClassRef();
         if (hval) {
-            request.setHeader("Shib-Authentication-Method", hval);
-            request.setHeader("Shib-AuthnContext-Class", hval);
+            app->setHeader(request, "Shib-Authentication-Method", hval);
+            app->setHeader(request, "Shib-AuthnContext-Class", hval);
         }
         hval = session->getAuthnContextDeclRef();
         if (hval)
-            request.setHeader("Shib-AuthnContext-Decl", hval);
+            app->setHeader(request, "Shib-AuthnContext-Decl", hval);
 
         // Maybe export the assertion keys.
         pair<bool,bool> exp=settings.first->getBool("exportAssertion");
@@ -397,16 +397,16 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
                     *(exportName.rbegin()) = '0' + (count%10);
                     *(++exportName.rbegin()) = '0' + (count/10);
                     string fullURL = baseURL + encoder->encode(*tokenids);
-                    request.setHeader(exportName.c_str(), fullURL.c_str());
+                    app->setHeader(request, exportName.c_str(), fullURL.c_str());
                 }
-                request.setHeader("Shib-Assertion-Count", exportName.c_str() + 15);
+                app->setHeader(request, "Shib-Assertion-Count", exportName.c_str() + 15);
             }
         }
 
         // Export the attributes.
         const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
         for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
-            string header(request.getSecureHeader(a->first.c_str()));
+            string header(app->getSecureHeader(request, a->first.c_str()));
             const vector<string>& vals = a->second->getSerializedValues();
             for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
                 if (!header.empty())
@@ -424,7 +424,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
                     header += (*v);
                 }
             }
-            request.setHeader(a->first.c_str(), header.c_str());
+            app->setHeader(request, a->first.c_str(), header.c_str());
         }
 
         // Check for REMOTE_USER.

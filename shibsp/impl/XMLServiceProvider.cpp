@@ -28,6 +28,7 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPConfig.h"
+#include "SPRequest.h"
 #include "handler/SessionInitiator.h"
 #include "remoting/ListenerService.h"
 #include "util/DOMPropertySet.h"
@@ -139,6 +140,10 @@ namespace {
             return (m_remoteUsers.empty() && m_base) ? m_base->getRemoteUserAttributeIds() : m_remoteUsers;
         }
 
+        void clearHeader(SPRequest& request, const char* rawname, const char* cginame) const;
+        void setHeader(SPRequest& request, const char* name, const char* value) const;
+        string getSecureHeader(const SPRequest& request, const char* name) const;
+
         const SessionInitiator* getDefaultSessionInitiator() const;
         const SessionInitiator* getSessionInitiatorById(const char* id) const;
         const Handler* getDefaultAssertionConsumerService() const;
@@ -166,6 +171,7 @@ namespace {
         void cleanup();
         const XMLApplication* m_base;
         string m_hash;
+        std::pair<std::string,std::string> m_attributePrefix;
 #ifndef SHIBSP_LITE
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
@@ -483,6 +489,18 @@ XMLApplication::XMLApplication(
             m_hash += (DIGITS[0x0F & *ch]);
         }
 
+        // Populate prefix pair.
+        m_attributePrefix.second = "HTTP_";
+        pair<bool,const char*> prefix = getString("attributePrefix");
+        if (prefix.first) {
+            m_attributePrefix.first = prefix.second;
+            const char* pch = prefix.second;
+            while (*pch) {
+                m_attributePrefix.second += (isalnum(*pch) ? toupper(*pch) : '_');
+                pch++;
+            }
+        }
+
         // Load attribute ID lists for REMOTE_USER and header clearing.
         if (conf.isEnabled(SPConfig::InProcess)) {
             pair<bool,const char*> attributes = getString("REMOTE_USER");
@@ -506,9 +524,9 @@ XMLApplication::XMLApplication(
 
             attributes = getString("unsetHeaders");
             if (attributes.first) {
-                string transformedprefix("HTTP_");
+                string transformedprefix(m_attributePrefix.second);
                 const char* pch;
-                pair<bool,const char*> prefix = getString("metadataAttributePrefix");
+                prefix = getString("metadataAttributePrefix");
                 if (prefix.first) {
                     pch = prefix.second;
                     while (*pch) {
@@ -534,13 +552,14 @@ XMLApplication::XMLApplication(
                         transformed += (isalnum(*pch) ? toupper(*pch) : '_');
                         pch++;
                     }
-                    m_unsetHeaders.push_back(pair<string,string>(start,string("HTTP_") + transformed));
+
+                    m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + start, m_attributePrefix.second + transformed));
                     if (prefix.first)
-                        m_unsetHeaders.push_back(pair<string,string>(string(prefix.second) + start, transformedprefix + transformed));
+                        m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + prefix.second + start, transformedprefix + transformed));
                     start = pos ? pos+1 : NULL;
                 }
                 free(dup);
-                m_unsetHeaders.push_back(pair<string,string>("Shib-Application-ID","HTTP_SHIB_APPLICATION_ID"));
+                m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + "Shib-Application-ID", m_attributePrefix.second + "SHIB_APPLICATION_ID"));
             }
         }
 
@@ -805,18 +824,20 @@ XMLApplication::XMLApplication(
                     Locker extlock(m_attrExtractor);
                     m_attrExtractor->getAttributeIds(unsetHeaders);
                 }
+                else if (m_base && m_base->m_attrExtractor) {
+                    Locker extlock(m_base->m_attrExtractor);
+                    m_base->m_attrExtractor->getAttributeIds(unsetHeaders);
+                }
                 if (m_attrResolver) {
                     Locker reslock(m_attrResolver);
                     m_attrResolver->getAttributeIds(unsetHeaders);
                 }
-                if (unsetHeaders.empty()) {
-                    if (m_base)
-                        m_unsetHeaders.insert(m_unsetHeaders.end(), m_base->m_unsetHeaders.begin(), m_base->m_unsetHeaders.end());
-                    else
-                        m_unsetHeaders.push_back(pair<string,string>("Shib-Application-ID","HTTP_SHIB_APPLICATION_ID"));
+                else if (m_base && m_base->m_attrResolver) {
+                    Locker extlock(m_base->m_attrResolver);
+                    m_base->m_attrResolver->getAttributeIds(unsetHeaders);
                 }
-                else {
-                    string transformedprefix("HTTP_");
+                if (!unsetHeaders.empty()) {
+                    string transformedprefix(m_attributePrefix.second);
                     const char* pch;
                     pair<bool,const char*> prefix = getString("metadataAttributePrefix");
                     if (prefix.first) {
@@ -833,12 +854,12 @@ XMLApplication::XMLApplication(
                             transformed += (isalnum(*pch) ? toupper(*pch) : '_');
                             pch++;
                         }
-                        m_unsetHeaders.push_back(pair<string,string>(*hdr, string("HTTP_") + transformed));
+                        m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + *hdr, m_attributePrefix.second + transformed));
                         if (prefix.first)
-                            m_unsetHeaders.push_back(pair<string,string>(string(prefix.second) + *hdr, transformedprefix + transformed));
+                            m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + prefix.second + *hdr, transformedprefix + transformed));
                     }
-                    m_unsetHeaders.push_back(pair<string,string>("Shib-Application-ID","HTTP_SHIB_APPLICATION_ID"));
                 }
+                m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + "Shib-Application-ID", m_attributePrefix.second + "SHIB_APPLICATION_ID"));
             }
         }
 
@@ -1073,6 +1094,49 @@ string XMLApplication::getNotificationURL(const char* resource, bool front, unsi
     // Build the URL
     notifyURL += host + path;
     return notifyURL;
+}
+
+void XMLApplication::clearHeader(SPRequest& request, const char* rawname, const char* cginame) const
+{
+    if (!m_attributePrefix.first.empty()) {
+        string temp = m_attributePrefix.first + rawname;
+        string temp2 = m_attributePrefix.second + (cginame + 5);
+        request.clearHeader(temp.c_str(), temp2.c_str());
+    }
+    else if (m_base) {
+        m_base->clearHeader(request, rawname, cginame);
+    }
+    else {
+        request.clearHeader(rawname, cginame);
+    }
+}
+
+void XMLApplication::setHeader(SPRequest& request, const char* name, const char* value) const
+{
+    if (!m_attributePrefix.first.empty()) {
+        string temp = m_attributePrefix.first + name;
+        request.setHeader(temp.c_str(), value);
+    }
+    else if (m_base) {
+        m_base->setHeader(request, name, value);
+    }
+    else {
+        request.setHeader(name, value);
+    }
+}
+
+string XMLApplication::getSecureHeader(const SPRequest& request, const char* name) const
+{
+    if (!m_attributePrefix.first.empty()) {
+        string temp = m_attributePrefix.first + name;
+        return request.getSecureHeader(temp.c_str());
+    }
+    else if (m_base) {
+        return m_base->getSecureHeader(request,name);
+    }
+    else {
+        return request.getSecureHeader(name);
+    }
 }
 
 const SessionInitiator* XMLApplication::getDefaultSessionInitiator() const
