@@ -499,6 +499,15 @@ public:
   }
   void setRemoteUser(const char* user) {
       SH_AP_USER(m_req) = user ? ap_pstrdup(m_req->pool, user) : NULL;
+      if (m_dc->bUseHeaders == 1) {
+          if (user) {
+              ap_table_set(m_req->headers_in, "REMOTE_USER", user);
+          }
+          else {
+              ap_table_unset(m_req->headers_in, "REMOTE_USER");
+              ap_table_set(m_req->headers_in, "REMOTE_USER", g_unsetHeaderValue.c_str());
+          }
+      }
   }
   string getRemoteUser() const {
     return string(SH_AP_USER(m_req) ? SH_AP_USER(m_req) : "");
