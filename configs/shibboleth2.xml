@@ -119,7 +119,7 @@
             <SessionInitiator type="Chaining" Location="/DS" id="DS" relayState="cookie">
                 <SessionInitiator type="SAML2" defaultACSIndex="1" acsByIndex="false" template="bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" defaultACSIndex="5"/>
-                <SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS"/>
+                <SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS/WAYF"/>
             </SessionInitiator>
             
             <!--
