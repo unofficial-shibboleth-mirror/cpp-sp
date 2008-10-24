@@ -209,7 +209,7 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 
     bool ssl_only=true;
     const char* handler=NULL;
-    const PropertySet* props=m_app->getPropertySet("Sessions");
+    const PropertySet* props=getApplication().getPropertySet("Sessions");
     if (props) {
         pair<bool,bool> p=props->getBool("handlerSSL");
         if (p.first)
