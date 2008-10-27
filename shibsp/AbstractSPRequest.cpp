@@ -170,6 +170,12 @@ const char* AbstractSPRequest::getRequestURL() const
     return m_url.c_str();
 }
 
+string AbstractSPRequest::getRemoteAddr() const
+{
+    pair<bool,const char*> addr = getRequestSettings().first->getString("REMOTE_ADDR");
+    return addr.first ? getHeader(addr.second) : "";
+}
+
 const char* AbstractSPRequest::getParameter(const char* name) const
 {
     if (!m_parser)

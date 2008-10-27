@@ -251,7 +251,8 @@ public:
     return content_length ? atoi(content_length) : 0;
   }
   string getRemoteAddr() const {
-    return pblock_findval("ip", m_sn->client);
+    string ret = AbstractSPRequest::getRemoteAddr();
+    return ret.empty() ? pblock_findval("ip", m_sn->client) : ret;
   }
   void log(SPLogLevel level, const string& msg) const {
     AbstractSPRequest::log(level,msg);

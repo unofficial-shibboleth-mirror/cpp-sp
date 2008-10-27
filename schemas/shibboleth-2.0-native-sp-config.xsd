@@ -8,7 +8,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="2.1">
+	version="2.2">
 
 	<import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
 	<import namespace="urn:oasis:names:tc:SAML:2.0:protocol" schemaLocation="saml-schema-protocol-2.0.xsd"/>
@@ -294,6 +294,7 @@
 		<attribute name="metadataError" type="anyURI"/>
 		<attribute name="accessError" type="anyURI"/>
 		<attribute name="sslError" type="anyURI"/>
+        <attribute name="REMOTE_ADDR" type="conf:string"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</attributeGroup>
 	<element name="AccessControlProvider" type="conf:PluggableType"/>

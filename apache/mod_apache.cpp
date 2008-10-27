@@ -358,7 +358,8 @@ public:
       return m_gotBody ? m_body.length() : m_req->remaining;
   }
   string getRemoteAddr() const {
-    return m_req->connection->remote_ip;
+    string ret = AbstractSPRequest::getRemoteAddr();
+    return ret.empty() ? m_req->connection->remote_ip : ret;
   }
   void log(SPLogLevel level, const string& msg) const {
     AbstractSPRequest::log(level,msg);

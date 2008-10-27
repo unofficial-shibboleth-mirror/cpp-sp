@@ -423,6 +423,7 @@ public:
       return 0;
   }
   string getRemoteAddr() const {
+    m_remote_addr = AbstractSPRequest::getRemoteAddr();
     if (m_remote_addr.empty()) {
         dynabuf var(16);
         GetServerVariable(m_pfc,"REMOTE_ADDR",var,16,false);
@@ -754,6 +755,7 @@ public:
     return m_remote_user;
   }
   string getRemoteAddr() const {
+    m_remote_addr = AbstractSPRequest::getRemoteAddr();
     if (m_remote_addr.empty()) {
         dynabuf var(16);
         GetServerVariable(m_lpECB, "REMOTE_ADDR", var, 16, false);
