@@ -239,9 +239,8 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
     }
 
     try {
-        // Use an empty stream to trigger a body-less "GET" operation.
-        istringstream dummy;
-        transport->send(dummy);
+        // Use a NULL stream to trigger a body-less "GET" operation.
+        transport->send();
         istream& msg = transport->receive();
 
         DOMDocument* doc=NULL;
