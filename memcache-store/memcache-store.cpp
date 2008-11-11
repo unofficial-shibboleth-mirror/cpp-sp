@@ -284,6 +284,7 @@ bool MemcacheBase::deleteMemcache(const char *key,
     final_key = key;
   }
 
+  memset(&clone, 0 , sizeof(memcached_st));
   if (memcached_clone(&clone, memc) == NULL) {
     throw IOException("MemcacheBase::deleteMemcache(): memcached_clone() failed");
   }
@@ -321,6 +322,7 @@ bool MemcacheBase::getMemcache(const char *key,
     final_key = key;
   }
 
+  memset(&clone, 0 , sizeof(memcached_st));
   if (memcached_clone(&clone, memc) == NULL) {
     throw IOException("MemcacheBase::getMemcache(): memcached_clone() failed");
   }
@@ -359,6 +361,7 @@ bool MemcacheBase::addMemcache(const char *key,
     final_key = key;
   }
 
+  memset(&clone, 0 , sizeof(memcached_st));
   if (memcached_clone(&clone, memc) == NULL) {
     throw IOException("MemcacheBase::addMemcache(): memcached_clone() failed");
   }
@@ -396,6 +399,7 @@ bool MemcacheBase::setMemcache(const char *key,
     final_key = key;
   }
 
+  memset(&clone, 0 , sizeof(memcached_st));
   if (memcached_clone(&clone, memc) == NULL) {
     throw IOException("MemcacheBase::setMemcache(): memcached_clone() failed");
   }
@@ -430,6 +434,7 @@ bool MemcacheBase::replaceMemcache(const char *key,
     final_key = key;
   }
 
+  memset(&clone, 0 , sizeof(memcached_st));
   if (memcached_clone(&clone, memc) == NULL) {
     throw IOException("MemcacheBase::replaceMemcache(): memcached_clone() failed");
   }
