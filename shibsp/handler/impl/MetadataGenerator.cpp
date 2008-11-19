@@ -29,6 +29,7 @@
 
 #ifndef SHIBSP_LITE
 # include "metadata/MetadataProviderCriteria.h"
+# include <xmltooling/util/PathResolver.h>
 #endif
 
 #include <xercesc/framework/LocalFileInputSource.hpp>
@@ -226,7 +227,10 @@ pair<bool,long> MetadataGenerator::processMessage(
     pair<bool,const char*> prop = getString("template");
     if (prop.first) {
         // Load a template to use for our metadata.
-        LocalFileInputSource src(getXMLString("template").second);
+        string templ(prop.second);
+        XMLToolingConfig::getConfig().getPathResolver()->resolve(templ, PathResolver::XMLTOOLING_CFG_FILE);
+        auto_ptr_XMLCh widenit(templ.c_str());
+        LocalFileInputSource src(widenit.get());
         Wrapper4InputSource dsrc(&src,false);
         DOMDocument* doc=XMLToolingConfig::getConfig().getParser().parse(dsrc);
         XercesJanitor<DOMDocument> docjan(doc);
@@ -234,7 +238,7 @@ pair<bool,long> MetadataGenerator::processMessage(
         docjan.release();
         entity = dynamic_cast<EntityDescriptor*>(xmlobj.get());
         if (!entity)
-            throw ConfigurationException("Template file ($1) did not contain an EntityDescriptor", params(1, prop.second));
+            throw ConfigurationException("Template file ($1) did not contain an EntityDescriptor", params(1, templ.c_str()));
         xmlobj.release();
     }
     else {
