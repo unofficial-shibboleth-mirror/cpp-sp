@@ -228,7 +228,7 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     // Should never happen...
     if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
         throw ConfigurationException(
-            "Invalid handlerURL property ($1) in Application ($2)",
+            "Invalid handlerURL property ($1) in <Sessions> element for Application ($2)",
             params(2, handler ? handler : "null", m_app->getId())
             );
 
