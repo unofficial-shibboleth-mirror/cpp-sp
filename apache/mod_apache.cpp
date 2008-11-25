@@ -1210,7 +1210,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
 static int shib_post_read(request_rec *r)
 {
     shib_request_config* rc = init_request_config(r);
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
+    //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
     return DECLINED;
 }
 
