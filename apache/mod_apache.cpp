@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2005 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -202,7 +202,7 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
 // per-request module structure
 struct shib_request_config
 {
-    SH_AP_TABLE *env;        // environment vars 
+    SH_AP_TABLE *env;        // environment vars
 #ifdef SHIB_DEFERRED_HEADERS
     SH_AP_TABLE *hdr_out;    // headers to browser
 #endif
@@ -294,8 +294,11 @@ public:
       ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc");
       m_rc = init_request_config(m_req);
     }
-    if (m_handler)
+    if (m_handler) {
+        if (!m_rc->hdr_out)
+            m_rc->hdr_out = ap_make_table(m_req->pool, 5);
         ap_table_addn(m_rc->hdr_out, "Set-Cookie", val);
+    }
     else
 #endif
     ap_table_addn(m_req->err_headers_out, "Set-Cookie", val);
@@ -474,25 +477,25 @@ extern "C" int shib_check_user(request_rec* r)
     // Short-circuit entirely?
     if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
         return DECLINED;
-        
+
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
-    
+
     ostringstream threadid;
     threadid << "[" << getpid() << "] shib_check_user" << '\0';
     saml::NDC ndc(threadid.str().c_str());
-    
+
     try {
         ShibTargetApache sta(r, false);
-    
+
         // Check user authentication and export information, then set the handler bypass
         pair<bool,void*> res = sta.doCheckAuthN(true);
         apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
         if (res.first) return (int)(long)res.second;
-    
+
         // user auth was okay -- export the assertions now
         res = sta.doExportAssertions();
         if (res.first) return (int)(long)res.second;
-    
+
         // export happened successfully..  this user is ok.
         return OK;
     }
@@ -514,7 +517,7 @@ extern "C" int shib_handler(request_rec* r)
     // Short-circuit entirely?
     if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
         return DECLINED;
-    
+
     ostringstream threadid;
     threadid << "[" << getpid() << "] shib_handler" << '\0';
     saml::NDC ndc(threadid.str().c_str());
@@ -535,10 +538,10 @@ extern "C" int shib_handler(request_rec* r)
 
     try {
         ShibTargetApache sta(r, true);
-    
+
         pair<bool,void*> res = sta.doHandler();
         if (res.first) return (int)(long)res.second;
-    
+
         ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
         return SERVER_ERROR;
     }
@@ -564,19 +567,19 @@ extern "C" int shib_auth_checker(request_rec* r)
     // Short-circuit entirely?
     if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
         return DECLINED;
-    
+
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
-    
+
     ostringstream threadid;
     threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
     saml::NDC ndc(threadid.str().c_str());
-    
+
     try {
         ShibTargetApache sta(r, false);
-    
+
         pair<bool,void*> res = sta.doCheckAuthZ();
         if (res.first) return (int)(long)res.second;
-    
+
         // We're all okay.
         return OK;
     }
@@ -620,7 +623,7 @@ public:
     void lock() { m_mapper->lock(); }
     void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(ShibTarget* st) const;
-    
+
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
     pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
@@ -806,13 +809,13 @@ bool htAccessControl::authorized(
     int m=sta->m_req->method_number;
     bool method_restricted=false;
     const char *t, *w;
-    
+
     const array_header* reqs_arr=ap_requires(sta->m_req);
     if (!reqs_arr)
         return true;
 
     require_line* reqs=(require_line*)reqs_arr->elts;
-    
+
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(sta->m_req),"REQUIRE nelts: %d", reqs_arr->nelts);
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(sta->m_req),"REQUIRE all: %d", sta->m_dc->bRequireAll);
 
@@ -856,7 +859,7 @@ bool htAccessControl::authorized(
                     regexp=true;
                     continue;
                 }
-                
+
                 if (regexp) {
                     try {
                         // To do regex matching, we have to convert from UTF-8.
@@ -888,7 +891,7 @@ bool htAccessControl::authorized(
             }
             if (!grpstatus)
                 return false;
-    
+
             while (*t) {
                 w=ap_getword_conf(sta->m_req->pool,&t);
                 if (ap_table_get(grpstatus,w)) {
@@ -932,7 +935,7 @@ bool htAccessControl::authorized(
                         auto_ptr<RegularExpression> temp(new RegularExpression(trans.get()));
                         re=temp;
                     }
-                    
+
                     string vals_str(vals);
                     unsigned int j = 0;
                     for (unsigned int i = 0;  i < vals_str.length();  i++) {
@@ -970,7 +973,7 @@ bool htAccessControl::authorized(
                             }
                         }
                     }
-    
+
                     string val = vals_str.substr(j, vals_str.length()-j);
                     if (regexp) {
                         auto_ptr<XMLCh> trans(fromUTF8(val.c_str()));
@@ -1015,10 +1018,6 @@ static int shib_post_read(request_rec *r)
 {
     shib_request_config* rc = init_request_config(r);
     //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
-
-#ifdef SHIB_DEFERRED_HEADERS
-    rc->hdr_out = ap_make_table(r->pool, 5);
-#endif
     return DECLINED;
 }
 
@@ -1028,9 +1027,9 @@ extern "C" int shib_fixups(request_rec* r)
 {
   shib_request_config *rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
   shib_dir_config *dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib);
-  if (dc->bOff==1 || dc->bUseEnvVars!=1) 
+  if (dc->bOff==1 || dc->bUseEnvVars!=1)
     return DECLINED;
-    
+
   //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
 
   if (rc==NULL || rc->env==NULL || ap_is_empty_table(rc->env))
@@ -1072,7 +1071,7 @@ extern "C" apr_status_t shib_exit(void* data)
 }
 #endif
 
-/* 
+/*
  * shire_child_init()
  *  Things to do when the child process is initialized.
  *  (or after the configs are read in apache-2)
@@ -1111,7 +1110,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         mgr.regFactory(shibtarget::XML::NativeRequestMapType,&ApacheRequestMapFactory);
         // We hijack the legacy type so that 1.2 config files will load this plugin
         mgr.regFactory(shibtarget::XML::LegacyRequestMapType,&ApacheRequestMapFactory);
-        
+
         if (!g_Config->load(g_szSHIBConfig)) {
             ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
             exit(1);
@@ -1141,7 +1140,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
 }
 
-// Output filters 
+// Output filters
 #ifdef SHIB_DEFERRED_HEADERS
 static void set_output_filter(request_rec *r)
 {
@@ -1153,22 +1152,22 @@ static void set_error_filter(request_rec *r)
     ap_add_output_filter("SHIB_HEADERS_ERR", NULL, r, r->connection);
 }
 
-static int _table_add(void *v, const char *key, const char *value) 	 
-{ 	 
-    apr_table_addn((apr_table_t*)v, key, value); 	 
-    return 1; 	 
-} 	 
-	 
+static int _table_add(void *v, const char *key, const char *value)
+{
+    apr_table_addn((apr_table_t*)v, key, value);
+    return 1;
+}
+
 static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
 {
     request_rec *r = f->r;
     shib_request_config *rc = (shib_request_config*) ap_get_module_config(r->request_config, &mod_shib);
 
-    if (rc) {
+    if (rc && rc->hdr_out) {
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_out_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
-        apr_table_do(_table_add,r->headers_out, rc->hdr_out,NULL);
         // can't use overlap call because it will collapse Set-Cookie headers
         // apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
+        apr_table_do(_table_add,r->headers_out, rc->hdr_out,NULL);
     }
 
     /* remove ourselves from the filter chain */
@@ -1183,11 +1182,11 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
     request_rec *r = f->r;
     shib_request_config *rc = (shib_request_config*) ap_get_module_config(r->request_config, &mod_shib);
 
-    if (rc) {
+    if (rc && rc->hdr_out) {
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
-        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,NULL);
         // can't use overlap call because it will collapse Set-Cookie headers
         // apr_table_overlap(r->err_headers_out, rc->hdr_err, APR_OVERLAP_TABLES_MERGE);
+        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,NULL);
     }
 
     /* remove ourselves from the filter chain */
@@ -1216,7 +1215,7 @@ static command_rec shire_cmds[] = {
   {"ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szScheme),
    RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost"},
-   
+
   {"ShibDisable", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bOff),
    OR_AUTHCFG, FLAG, "Disable all Shib module activity here to save processing effort"},
