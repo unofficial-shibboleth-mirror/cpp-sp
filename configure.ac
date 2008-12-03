@@ -66,36 +66,6 @@ else
     CXXFLAGS="$PTHREAD_CFLAGS $CXXFLAGS"
 fi
 
-# Thank you Solaris, really.
-AC_MSG_CHECKING(for ctime_r)
- if test -z "$ac_cv_ctime_args"; then
-     AC_TRY_COMPILE(
-     [#include <time.h>],
-     [
-         time_t clock;
-         char buf[26];
-         ctime_r(&clock, buf);
-     ], ac_cv_ctime_args=2)
-
-     AC_TRY_COMPILE(
-     [#include <time.h>],
-     [
-         time_t clock;
-         char buf[26];
-         ctime_r(&clock, buf, 26);
-     ], ac_cv_ctime_args=3)
- fi
- if test -z "$ac_cv_ctime_args"; then
-     AC_MSG_RESULT(no)
- else
-     if test "$ac_cv_ctime_args" = 2; then
-         AC_DEFINE(HAVE_CTIME_R_2,1,[Define if ctime_r is present with 2 parameters.])
-     elif test "$ac_cv_ctime_args" = 3; then
-         AC_DEFINE(HAVE_CTIME_R_3,1,[Define if ctime_r is present with 3 parameters.])
-     fi
-     AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
- fi 
-
 # Test RPC now -- finish dealing with it later
 AC_ARG_ENABLE(native-rpc,
 	AC_HELP_STRING([--enable-native-rpc], [use the OS-supplied Sun RPC library, default is NO, except Linux]),
@@ -183,6 +153,36 @@ AC_TRY_LINK_FUNC([SSL_library_init],,
 AC_MSG_RESULT(yes)
 
 AC_LANG(C++)
+
+# Thank you Solaris, really.
+AC_MSG_CHECKING(for ctime_r)
+ if test -z "$ac_cv_ctime_args"; then
+     AC_TRY_COMPILE(
+     [#include <time.h>],
+     [
+         time_t clock;
+         char buf[26];
+         ctime_r(&clock, buf);
+     ], ac_cv_ctime_args=2)
+
+     AC_TRY_COMPILE(
+     [#include <time.h>],
+     [
+         time_t clock;
+         char buf[26];
+         ctime_r(&clock, buf, 26);
+     ], ac_cv_ctime_args=3)
+ fi
+ if test -z "$ac_cv_ctime_args"; then
+     AC_MSG_RESULT(no)
+ else
+     if test "$ac_cv_ctime_args" = 2; then
+         AC_DEFINE(HAVE_CTIME_R_2,1,[Define if ctime_r is present with 2 parameters.])
+     elif test "$ac_cv_ctime_args" = 3; then
+         AC_DEFINE(HAVE_CTIME_R_3,1,[Define if ctime_r is present with 3 parameters.])
+     fi
+     AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
+ fi 
 
 # log4shib settings (favor this version over the log4cpp code)
 AC_PATH_PROG(LOG4SHIB_CONFIG,log4shib-config)
