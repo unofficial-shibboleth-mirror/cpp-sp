@@ -9,7 +9,11 @@ URL:		http://shibboleth.internet2.edu/
 Source0:	http://shibboleth.internet2.edu/downloads/%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 BuildRequires:	openssl-devel
-BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0
+%if 0%{?suse_version} > 1030
+BuildRequires:  libXerces-c-devel >= 2.8.0
+%else
+BuildRequires:  xerces%{?xercesver}-c-devel >= 2.8.0
+%endif
 BuildRequires:  xml-security-c-devel >= 1.4.0
 BuildRequires:	zlib-devel, opensaml-devel >= 2.2
 %{?_with_log4cpp:BuildRequires:	log4cpp-devel >= 1.0}
@@ -197,9 +201,10 @@ sh ./keygen.sh -b
 %doc %{_datadir}/doc/%{name}/api
 
 %changelog
-* Tue Sep 23 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.2-1
+* Wed Dec 3 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.2-1
 - Bump minor version.
 - Make keygen.sh executable.
+- Fixing SUSE Xerces dependency name.
 
 * Tue Jun 10 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.1-1
 - Change shib.conf handling to treat as config file.
