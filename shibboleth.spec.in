@@ -10,7 +10,12 @@ Source0:	%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6
-BuildRequires:	xerces%{?xercesver}-c-devel >= 2.8.0, xml-security-c-devel >= 1.3.0
+%if 0%{?suse_version} > 1030
+BuildRequires:  libXerces-c-devel >= 2.8.0
+%else
+BuildRequires:  xerces%{?xercesver}-c-devel >= 2.8.0
+%endif
+BuildRequires:	xml-security-c-devel >= 1.3.0
 BuildRequires:	zlib-devel, opensaml-devel >= 1.1.1, opensaml-devel < 2.0
 %{?_with_log4cpp:BuildRequires: log4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: log4shib-devel}
