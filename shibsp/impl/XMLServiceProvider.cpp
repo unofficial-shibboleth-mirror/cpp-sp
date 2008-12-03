@@ -22,6 +22,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "version.h"
 #include "AccessControl.h"
 #include "Application.h"
 #include "RequestMapper.h"
@@ -43,6 +44,7 @@
 #endif
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/version.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -54,6 +56,7 @@
 # include "attribute/resolver/AttributeResolver.h"
 # include "security/PKIXTrustEngine.h"
 # include <saml/SAMLConfig.h>
+# include <saml/version.h>
 # include <saml/binding/ArtifactMap.h>
 # include <saml/binding/SAMLArtifact.h>
 # include <saml/saml1/core/Assertions.h>
@@ -1286,6 +1289,19 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 m_outer->m_tranLog = new TransactionLog();
 #endif
         }
+
+        // Re-log library versions now that logging is set up.
+#ifndef SHIBSP_LITE
+        log.info(
+            "Library versions: Xerces-C %s, XML-Security-C %s, XMLTooling-C %s, OpenSAML-C %s, Shibboleth %s",
+            XERCES_FULLVERSIONDOT, XSEC_FULLVERSIONDOT, XMLTOOLING_FULLVERSIONDOT, OPENSAML_FULLVERSIONDOT, SHIBSP_FULLVERSIONDOT
+            );
+#else
+        log.info(
+            "Library versions: Xerces-C %s, XMLTooling-C %s, Shibboleth %s",
+            XERCES_FULLVERSIONDOT, XMLTOOLING_FULLVERSIONDOT, SHIBSP_FULLVERSIONDOT
+            );
+#endif
 
         // First load any property sets.
         load(e,NULL,this);
