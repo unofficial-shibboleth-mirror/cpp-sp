@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,8 +16,8 @@
 
 /**
  * SAML2Consumer.cpp
- * 
- * SAML 2.0 assertion consumer service 
+ *
+ * SAML 2.0 assertion consumer service
  */
 
 #include "internal.h"
@@ -52,7 +52,7 @@ namespace shibsp {
     #pragma warning( push )
     #pragma warning( disable : 4250 )
 #endif
-    
+
     class SHIBSP_DLLLOCAL SAML2Consumer : public AssertionConsumerService
     {
     public:
@@ -60,7 +60,7 @@ namespace shibsp {
             : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SSO.SAML2")) {
         }
         virtual ~SAML2Consumer() {}
-        
+
 #ifndef SHIBSP_LITE
         void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
             AssertionConsumerService::generateMetadata(role, handlerURL);
@@ -87,7 +87,7 @@ namespace shibsp {
     {
         return new SAML2Consumer(p.first, p.second);
     }
-    
+
 };
 
 #ifndef SHIBSP_LITE
@@ -109,7 +109,7 @@ void SAML2Consumer::implementProtocol(
     bool alreadySecured = policy.isAuthenticated();
 
     // Check for errors...this will throw if it's not a successful message.
-    checkError(&xmlObject);
+    checkError(&xmlObject, policy.getIssuerMetadata());
 
     const Response* response = dynamic_cast<const Response*>(&xmlObject);
     if (!response)
@@ -166,7 +166,7 @@ void SAML2Consumer::implementProtocol(
             // Run the policy over the assertion. Handles replay, freshness, and
             // signature verification, assuming the relevant rules are configured.
             policy.evaluate(*(*a));
-            
+
             // If no security is in place now, we kick it.
             if (!alreadySecured && !policy.isAuthenticated())
                 throw SecurityPolicyException("Unable to establish security of incoming assertion.");
@@ -258,7 +258,7 @@ void SAML2Consumer::implementProtocol(
             if (!decrypted->getDOM())
                 decrypted->marshall();
             policy.evaluate(*decrypted);
-            
+
             // If no security is in place now, we kick it.
             if (!alreadySecured && !policy.isAuthenticated())
                 throw SecurityPolicyException("Unable to establish security of incoming assertion.");

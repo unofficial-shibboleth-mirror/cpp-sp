@@ -169,6 +169,15 @@ pair<bool,long> AssertionConsumerService::processMessage(
         return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
     }
     catch (XMLToolingException& ex) {
+        // Check for isPassive error condition.
+        const char* sc2 = ex.getProperty("statusCode2");
+        if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
+            validate = getBool("ignoreNoPassive", m_configNS.get());  // namespace-qualified if inside handler element
+            if (validate.first && validate.second && !relayState.empty()) {
+                m_log.debug("ignoring SAML status of NoPassive and redirecting to resource...");
+                return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+            }
+        }
         if (!relayState.empty())
             ex.addProperty("RelayState", relayState.c_str());
         throw;
