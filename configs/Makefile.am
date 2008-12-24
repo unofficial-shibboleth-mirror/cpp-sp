@@ -17,6 +17,7 @@ pkgsysconf_DATA = \
 	apache2.config \
 	apache22.config \
 	keygen.sh \
+	metagen.sh \
 	upgrade.xsl
 
 # The config files are installed "special".  Unlike the entries in
@@ -110,6 +111,7 @@ install-data-local:	all-data-local
 
 install-data-hook:
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/keygen.sh
+	chmod +x $(DESTDIR)$(pkgsysconfdir)/metagen.sh
 	if test -z "$(NOKEYGEN)"; then \
 		cd $(DESTDIR)$(pkgsysconfdir); \
 		sh ./keygen.sh -b ; \
@@ -136,6 +138,7 @@ EXTRA_DIST = \
 	shibd-osx.plist.in \
 	keygen.bat \
 	keygen.sh \
+	metagen.sh \
 	upgrade.xsl \
 	xsltproc.js \
 	$(CONFIGFILES)
