@@ -62,7 +62,12 @@ namespace shibsp {
         ~Override();
 
         // Provides filter to exclude special config elements.
-        short acceptNode(const DOMNode* node) const {
+#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
+        short
+#else
+        FilterAction
+#endif
+        acceptNode(const DOMNode* node) const {
             return FILTER_REJECT;
         }
 

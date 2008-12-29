@@ -109,7 +109,7 @@ namespace shibsp {
             bool front
             ) const;
 
-        QName m_role;
+        xmltooling::QName m_role;
         MessageDecoder* m_decoder;
         XMLCh* m_outgoing;
         vector<const XMLCh*> m_bindings;

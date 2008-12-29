@@ -40,6 +40,13 @@
 /* Define if Xerces-C library was found */
 #define HAVE_LIBXERCESC 1
 
+#include <xercesc/util/XercesVersion.hpp>
+
+#if (XERCES_VERSION_MAJOR < 3)
+# define SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE 1
+# define SHIBSP_XERCESC_SHORT_ACCEPTNODE 1
+#endif
+
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 

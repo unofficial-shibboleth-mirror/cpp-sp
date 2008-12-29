@@ -222,6 +222,30 @@ AC_TRY_LINK(
         [AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
         [AC_MSG_ERROR([unable to link with Xerces])])
 
+AC_MSG_CHECKING([whether Xerces XMLString::release(XMLByte**) exists])
+AC_TRY_COMPILE([#include <xercesc/util/XMLString.hpp>],
+    [using namespace XERCES_CPP_NAMESPACE;
+      XMLByte* buf=NULL;
+      XMLString::release(&buf);
+    ],
+    [AC_MSG_RESULT([yes])]
+    [AC_DEFINE([SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE], [1], [Define to 1 if Xerces XMLString includes XMLByte release.])],
+    [AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([whether Xerces DOMNodeFilter API returns a short])
+AC_TRY_COMPILE([#include <xercesc/dom/DOM.hpp>],
+    [using namespace XERCES_CPP_NAMESPACE;
+      class Blocker : public DOMNodeFilter {
+      public:
+        short acceptNode(const DOMNode* node) const {
+            return FILTER_REJECT;
+        }
+      };
+      static Blocker g_Blocker;
+    ],
+    [AC_MSG_RESULT([yes])]
+    [AC_DEFINE([SHIBSP_XERCESC_SHORT_ACCEPTNODE], [1], [Define to 1 if Xerces DOMNodeFilter API returns a short.])],
+    [AC_MSG_RESULT([no])])
 
 #XML-Tooling settings
 AC_ARG_WITH(xmltooling,

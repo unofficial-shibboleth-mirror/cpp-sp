@@ -228,7 +228,7 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
             id = "";
     }
 
-    auto_ptr<QName> type(XMLHelper::getXSIType(e));
+    auto_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
     if (type.get()) {
         try {
             MatchFunctor* func = SPConfig::getConfig().MatchFunctorManager.newPlugin(*type.get(), make_pair(&functorMap,e));

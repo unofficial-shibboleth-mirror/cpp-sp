@@ -176,7 +176,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log) : m_log(l
         try {
             DOMElement* dchild = XMLHelper::getFirstChildElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeDecoder);
             if (dchild) {
-                auto_ptr<QName> q(XMLHelper::getXSIType(dchild));
+                auto_ptr<xmltooling::QName> q(XMLHelper::getXSIType(dchild));
                 if (q.get())
                     decoder = SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q.get(), dchild);
             }

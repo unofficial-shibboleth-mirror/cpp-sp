@@ -145,7 +145,7 @@ void AbstractHandler::checkError(const XMLObject* response, const saml2md::RoleD
         const saml1p::Status* status = r1->getStatus();
         if (status) {
             const saml1p::StatusCode* sc = status->getStatusCode();
-            const QName* code = sc ? sc->getValue() : NULL;
+            const xmltooling::QName* code = sc ? sc->getValue() : NULL;
             if (code && *code != saml1p::StatusCode::SUCCESS) {
                 FatalProfileException ex("SAML response contained an error.");
                 ex.addProperty("statusCode", code->toString().c_str());

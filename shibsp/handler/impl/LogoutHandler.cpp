@@ -216,7 +216,7 @@ bool LogoutHandler::notifyBackChannel(
         env->setBody(body);
         ElementProxy* msg = new AnyElementImpl(shibspconstants::SHIB2SPNOTIFY_NS, LogoutNotification);
         body->getUnknownXMLObjects().push_back(msg);
-        msg->setAttribute(QName(NULL, _type), local ? _local : _global);
+        msg->setAttribute(xmltooling::QName(NULL, _type), local ? _local : _global);
         for (vector<string>::const_iterator s = sessions.begin(); s!=sessions.end(); ++s) {
             auto_ptr_XMLCh temp(s->c_str());
             ElementProxy* child = new AnyElementImpl(shibspconstants::SHIB2SPNOTIFY_NS, SessionID);

@@ -168,7 +168,12 @@ namespace {
         }
 
         // Provides filter to exclude special config elements.
-        short acceptNode(const DOMNode* node) const;
+#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
+        short
+#else
+        FilterAction
+#endif
+        acceptNode(const DOMNode* node) const;
 
     private:
         void cleanup();
@@ -244,7 +249,12 @@ namespace {
 #endif
 
         // Provides filter to exclude special config elements.
-        short acceptNode(const DOMNode* node) const;
+#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
+        short
+#else
+        FilterAction
+#endif
+        acceptNode(const DOMNode* node) const;
 
         void setDocument(DOMDocument* doc) {
             m_document = doc;
@@ -440,7 +450,12 @@ namespace {
     class SHIBSP_DLLLOCAL PolicyNodeFilter : public DOMNodeFilter
     {
     public:
-        short acceptNode(const DOMNode* node) const {
+#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
+        short
+#else
+        FilterAction
+#endif
+        acceptNode(const DOMNode* node) const {
             return FILTER_REJECT;
         }
     };
@@ -945,7 +960,12 @@ void XMLApplication::cleanup()
 #endif
 }
 
-short XMLApplication::acceptNode(const DOMNode* node) const
+#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
+short
+#else
+DOMNodeFilter::FilterAction
+#endif
+XMLApplication::acceptNode(const DOMNode* node) const
 {
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,ApplicationOverride) ||
@@ -1201,7 +1221,12 @@ void XMLApplication::getHandlers(vector<const Handler*>& handlers) const
     }
 }
 
-short XMLConfigImpl::acceptNode(const DOMNode* node) const
+#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
+short
+#else
+DOMNodeFilter::FilterAction
+#endif
+XMLConfigImpl::acceptNode(const DOMNode* node) const
 {
     if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB2SPCONFIG_NS))
         return FILTER_ACCEPT;

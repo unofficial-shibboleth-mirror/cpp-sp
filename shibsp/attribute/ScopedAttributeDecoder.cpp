@@ -69,7 +69,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
     char* val;
     char* scope;
     const XMLCh* xmlscope;
-    QName scopeqname(NULL,Scope);
+    xmltooling::QName scopeqname(NULL,Scope);
     auto_ptr<ScopedAttribute> scoped(new ScopedAttribute(ids, m_delimeter));
     scoped->setCaseSensitive(m_caseSensitive);
     vector< pair<string,string> >& dest = scoped->getValues();

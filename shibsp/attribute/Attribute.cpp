@@ -51,10 +51,10 @@ namespace shibsp {
     }
 
 #ifndef SHIBSP_LITE
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory StringAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory ScopedAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,QName,const DOMElement*>::Factory NameIDFromScopedAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory StringAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory ScopedAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory NameIDFromScopedAttributeDecoderFactory;
 
     static const XMLCh _StringAttributeDecoder[] = UNICODE_LITERAL_22(S,t,r,i,n,g,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
     static const XMLCh _ScopedAttributeDecoder[] = UNICODE_LITERAL_22(S,c,o,p,e,d,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
@@ -66,10 +66,10 @@ namespace shibsp {
 };
 
 #ifndef SHIBSP_LITE
-QName shibsp::StringAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _StringAttributeDecoder);
-QName shibsp::ScopedAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _ScopedAttributeDecoder);
-QName shibsp::NameIDAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _NameIDAttributeDecoder);
-QName shibsp::NameIDFromScopedAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _NameIDFromScopedAttributeDecoder);
+xmltooling::QName shibsp::StringAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _StringAttributeDecoder);
+xmltooling::QName shibsp::ScopedAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _ScopedAttributeDecoder);
+xmltooling::QName shibsp::NameIDAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _NameIDAttributeDecoder);
+xmltooling::QName shibsp::NameIDFromScopedAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _NameIDFromScopedAttributeDecoder);
 
 void shibsp::registerAttributeDecoders()
 {

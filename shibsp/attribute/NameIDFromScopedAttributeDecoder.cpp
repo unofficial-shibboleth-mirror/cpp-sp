@@ -75,7 +75,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
     char* val;
     char* scope;
     const XMLCh* xmlscope;
-    QName scopeqname(NULL,Scope);
+    xmltooling::QName scopeqname(NULL,Scope);
     auto_ptr<NameIDAttribute> nameid(
         new NameIDAttribute(ids, (m_formatter.get() && *m_formatter.get()) ? m_formatter.get() : DEFAULT_NAMEID_FORMATTER)
         );

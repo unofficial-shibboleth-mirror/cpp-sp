@@ -78,10 +78,10 @@ namespace shibsp {
             hurl += loc;
             auto_ptr_XMLCh widen(hurl.c_str());
             ElementProxy* ep = new AnyElementImpl(m_discoNS.get(), LOCAL_NAME);
-            ep->setAttribute(QName(NULL,EndpointType::LOCATION_ATTRIB_NAME), widen.get());
-            ep->setAttribute(QName(NULL,EndpointType::BINDING_ATTRIB_NAME), m_discoNS.get());
+            ep->setAttribute(xmltooling::QName(NULL,EndpointType::LOCATION_ATTRIB_NAME), widen.get());
+            ep->setAttribute(xmltooling::QName(NULL,EndpointType::BINDING_ATTRIB_NAME), m_discoNS.get());
             pair<bool,const XMLCh*> ix = getXMLString("index");
-            ep->setAttribute(QName(NULL,IndexedEndpointType::INDEX_ATTRIB_NAME), ix.first ? ix.second : xmlconstants::XML_ONE);
+            ep->setAttribute(xmltooling::QName(NULL,IndexedEndpointType::INDEX_ATTRIB_NAME), ix.first ? ix.second : xmlconstants::XML_ONE);
 
             Extensions* ext = role.getExtensions();
             if (!ext) {
