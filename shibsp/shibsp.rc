@@ -65,7 +65,7 @@ BEGIN
             VALUE "InternalName", "shibsp1_2\0"
 #endif
 #endif
-            VALUE "LegalCopyright", "Copyright © 2008 Internet2\0"
+            VALUE "LegalCopyright", "Copyright © 2009 Internet2\0"
             VALUE "LegalTrademarks", "\0"
 #ifdef SHIBSP_LITE
 #ifdef _DEBUG
