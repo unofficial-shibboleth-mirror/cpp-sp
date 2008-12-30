@@ -65,7 +65,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4shib1D.lib xerces-c_2D.lib xmltooling1D.lib"
+				AdditionalDependencies="log4shib1D.lib xerces-c_3D.lib xmltooling1D.lib"
 				OutputFile="$(OutDir)\$(ProjectName).so"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\cpp-xmltooling\$(ConfigurationName)"
@@ -141,7 +141,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4shib1.lib xerces-c_2.lib xmltooling1.lib"
+				AdditionalDependencies="log4shib1.lib xerces-c_3.lib xmltooling1.lib"
 				OutputFile="$(OutDir)\$(ProjectName).so"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\cpp-xmltooling\$(ConfigurationName)"
@@ -223,7 +223,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4shib1D.lib xerces-c_2D.lib xmltooling1D.lib"
+				AdditionalDependencies="log4shib1D.lib xerces-c_3D.lib xmltooling1D.lib"
 				OutputFile="$(OutDir)\$(ProjectName).so"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)"
@@ -300,7 +300,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="log4shib1.lib xerces-c_2.lib xmltooling1.lib"
+				AdditionalDependencies="log4shib1.lib xerces-c_3.lib xmltooling1.lib"
 				OutputFile="$(OutDir)\$(ProjectName).so"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)"

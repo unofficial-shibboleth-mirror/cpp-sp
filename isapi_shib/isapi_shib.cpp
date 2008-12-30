@@ -874,10 +874,14 @@ public:
 
         if (m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_GET_CERT_INFO_EX, (LPVOID)&ccex, (LPDWORD)dwSize, NULL)) {
             if (ccex.CertContext.cbCertEncoded) {
-                unsigned int outlen;
+                xsecsize_t outlen;
                 XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(CertificateBuf), ccex.CertContext.cbCertEncoded, &outlen);
                 m_certs.push_back(reinterpret_cast<char*>(serialized));
+#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
                 XMLString::release(&serialized);
+#else
+                XMLString::release((char**)&serialized);
+#endif
             }
         }
       }

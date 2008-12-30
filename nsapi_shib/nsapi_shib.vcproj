@@ -74,7 +74,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2.lib xmltooling-lite1.lib ns-httpd30.lib"
+				AdditionalDependencies="xerces-c_3.lib xmltooling-lite1.lib ns-httpd30.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(ConfigurationName)&quot;"
@@ -163,7 +163,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2D.lib xmltooling-lite1D.lib ns-httpd30.lib"
+				AdditionalDependencies="xerces-c_3D.lib xmltooling-lite1D.lib ns-httpd30.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(ConfigurationName)&quot;"
@@ -253,7 +253,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2.lib xmltooling-lite1.lib ns-httpd30.lib"
+				AdditionalDependencies="xerces-c_3.lib xmltooling-lite1.lib ns-httpd30.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)&quot;"
@@ -343,7 +343,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2D.lib xmltooling-lite1D.lib ns-httpd30.lib"
+				AdditionalDependencies="xerces-c_3D.lib xmltooling-lite1D.lib ns-httpd30.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)&quot;"

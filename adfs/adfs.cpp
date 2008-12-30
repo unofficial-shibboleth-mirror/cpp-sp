@@ -295,8 +295,8 @@ extern "C" int ADFS_EXPORTS xmltooling_extension_init(void*)
     conf.AssertionConsumerServiceManager.registerFactory(WSFED_NS, ADFSLogoutFactory);
 #ifndef SHIBSP_LITE
     SAMLConfig::getConfig().MessageDecoderManager.registerFactory(WSFED_NS, ADFSDecoderFactory);
-    XMLObjectBuilder::registerBuilder(QName(WSTRUST_NS,"RequestedSecurityToken"), new AnyElementBuilder());
-    XMLObjectBuilder::registerBuilder(QName(WSTRUST_NS,"RequestSecurityTokenResponse"), new AnyElementBuilder());
+    XMLObjectBuilder::registerBuilder(xmltooling::QName(WSTRUST_NS,"RequestedSecurityToken"), new AnyElementBuilder());
+    XMLObjectBuilder::registerBuilder(xmltooling::QName(WSTRUST_NS,"RequestSecurityTokenResponse"), new AnyElementBuilder());
 #endif
     return 0;
 }

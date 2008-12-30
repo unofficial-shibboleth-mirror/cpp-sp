@@ -70,7 +70,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib log4shib1.lib xmltooling1.lib xerces-c_2.lib"
+				AdditionalDependencies="wsock32.lib log4shib1.lib xmltooling1.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\cpp-opensaml2\$(ConfigurationName);..\..\cpp-xmltooling\$(ConfigurationName)"
@@ -242,7 +242,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="wsock32.lib log4shib1.lib xmltooling1.lib xerces-c_2.lib"
+				AdditionalDependencies="wsock32.lib log4shib1.lib xmltooling1.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="..\..\cpp-opensaml2\$(PlatformName)\$(ConfigurationName);..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)"

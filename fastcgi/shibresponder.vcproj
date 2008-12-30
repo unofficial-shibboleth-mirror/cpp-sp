@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2.lib xmltooling1.lib libfcgi.lib"
+				AdditionalDependencies="xerces-c_3.lib xmltooling1.lib libfcgi.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(ConfigurationName)&quot;,\fcgi-2.4.0-VC8\libfcgi\$(ConfigurationName)"
@@ -153,7 +153,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2D.lib xmltooling1D.lib libfcgi.lib"
+				AdditionalDependencies="xerces-c_3D.lib xmltooling1D.lib libfcgi.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(ConfigurationName)&quot;,\fcgi-2.4.0-VC8\libfcgi\$(ConfigurationName)"
@@ -239,7 +239,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2.lib xmltooling1.lib libfcgi.lib"
+				AdditionalDependencies="xerces-c_3.lib xmltooling1.lib libfcgi.lib"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)&quot;,\fcgi-2.4.0-VC8\libfcgi\$(ConfigurationName)"
@@ -326,7 +326,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="xerces-c_2D.lib xmltooling1D.lib libfcgi.lib"
+				AdditionalDependencies="xerces-c_3D.lib xmltooling1D.lib libfcgi.lib"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)&quot;,\fcgi-2.4.0-VC8\libfcgi\$(ConfigurationName)"
