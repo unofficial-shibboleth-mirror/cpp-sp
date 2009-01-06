@@ -351,6 +351,11 @@ public:
     const char* ru = pblock_findval("auth-user", m_rq->vars);
     return ru ? ru : "";
   }
+  void setContentType(const char* type) {
+      // iPlanet seems to have a case folding problem.
+      param_free(pblock_remove("content-type", m_rq->srvhdrs));
+      setResponseHeader("Content-Type", type);
+  }
   void setResponseHeader(const char* name, const char* value) {
     pblock_nvinsert(name, value, m_rq->srvhdrs);
   }
