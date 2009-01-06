@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2005 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -186,7 +186,7 @@ public:
         url=uri;
     if (qstr)
         url=url + '?' + qstr;
-    
+
 #ifdef vs_is_default_vs
     // This is 6.0 or later, so we can distinguish requests to name-based vhosts.
     if (!vs_is_default_vs(request_get_vs(m_rq)))
@@ -200,12 +200,12 @@ public:
 
     char* content_type = "";
     request_header("content-type", &content_type, sn, rq);
-      
+
     const char* remote_ip = pblock_findval("ip", sn->client);
     const char* method = pblock_findval("method", rq->reqpb);
 
     init(scheme, host, port, url.c_str(), content_type, remote_ip, method);
-    
+
     // See if this is the first time we've run.
     method = pblock_findval("auth-type", rq->vars);
     if (method && !strcmp(method, "shibboleth"))
@@ -231,7 +231,7 @@ public:
     string cookie = name + '=' + value;
     pblock_nvinsert("Set-Cookie", cookie.c_str(), m_rq->srvhdrs);
   }
-  virtual string getArgs(void) { 
+  virtual string getArgs(void) {
     const char *q = pblock_findval("query", m_rq->reqpb);
     return string(q ? q : "");
   }
@@ -246,7 +246,7 @@ public:
       string cgistr;
       while (cl && ch != IO_EOF) {
         ch=netbuf_getc(m_sn->inbuf);
-      
+
         // Check for error.
         if(ch==IO_ERROR)
           break;
@@ -381,14 +381,14 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
     ostringstream threadid;
     threadid << "[" << getpid() << "] nsapi_shib" << '\0';
     saml::NDC ndc(threadid.str().c_str());
-    
+
     try {
         ShibTargetNSAPI stn(pb, sn, rq);
-    
+
         // Check user authentication
         pair<bool,void*> res = stn.doCheckAuthN();
         if (res.first) return (int)res.second;
-    
+
         // user authN was okay -- export the assertions now
         param_free(pblock_remove("auth-user",rq->vars));
         // This seems to be required in order to eventually set
@@ -396,11 +396,11 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, Session* sn, Request* rq)
         pblock_nvinsert("auth-type","shibboleth",rq->vars);
         res = stn.doExportAssertions();
         if (res.first) return (int)res.second;
-    
+
         // Check the Authorization
         res = stn.doCheckAuthZ();
         if (res.first) return (int)res.second;
-    
+
         // this user is ok.
         return REQ_PROCEED;
     }
@@ -423,13 +423,13 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, Session* sn, Request* rq)
     ostringstream threadid;
     threadid << "[" << getpid() << "] shib_handler" << '\0';
     saml::NDC ndc(threadid.str().c_str());
-    
+
     try {
         ShibTargetNSAPI stn(pb, sn, rq);
-    
+
         pair<bool,void*> res = stn.doHandler();
         if (res.first) return (int)res.second;
-    
+
         return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");
     }
     catch (exception& e) {
@@ -452,7 +452,7 @@ public:
     void lock() { m_mapper->lock(); }
     void unlock() { m_stKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
     Settings getSettings(ShibTarget* st) const;
-    
+
     pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
     pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
