@@ -75,7 +75,6 @@ using namespace std;
 namespace {
     SPConfig* g_Config=NULL;
     string g_ServerName;
-    string g_ServerScheme;
     string g_unsetHeaderValue;
     string g_spoofKey;
     bool g_checkSpoofing = true;
@@ -116,9 +115,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
             }
         }
     }
-    name=pblock_findval("server-scheme",pb);
-    if (name)
-        g_ServerScheme=name;
 
     log_error(LOG_INFORM,"nsapi_shib_init",sn,rq,"nsapi_shib loaded for host (%s)",g_ServerName.c_str());
 
@@ -182,6 +178,8 @@ class ShibTargetNSAPI : public AbstractSPRequest
 {
   mutable string m_body;
   mutable bool m_gotBody,m_firsttime;
+  bool m_security_active;
+  int m_server_portnum;
   mutable vector<string> m_certs;
   set<string> m_allhttp;
 
@@ -191,10 +189,34 @@ public:
   Request* m_rq;
 
   ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq)
-      : AbstractSPRequest(SHIBSP_LOGCAT".NSAPI"), m_gotBody(false), m_firsttime(true), m_pb(pb), m_sn(sn), m_rq(rq) {
+      : AbstractSPRequest(SHIBSP_LOGCAT".NSAPI"),
+        m_gotBody(false), m_firsttime(true), m_security_active(false), m_server_portnum(0), m_pb(pb), m_sn(sn), m_rq(rq) {
 
-    const char* uri=pblock_findval("uri", rq->reqpb);
-    const char* qstr=pblock_findval("query", rq->reqpb);
+    // To determine whether SSL is active or not, we're supposed to rely
+    // on the security_active macro. For iPlanet 4.x, this works.
+    // For Sun 7.x, it's useless and appears to be on or off based
+    // on whether ANY SSL support is enabled for a vhost. Sun 6.x is unknown.
+    // As a fix, there's a conf variable called $security that can be mapped
+    // into a function parameter: security_active="$security"
+    // We check for this parameter, and rely on the macro if it isn't set.
+    // This doubles as a scheme virtualizer for load balanced scenarios
+    // since you can set the parameter to 1 or 0 as needed.
+    const char* sa = pblock_findval("security_active", m_pb);
+    if (sa)
+        m_security_active = (*sa == '1');
+    else if (security_active)
+        m_security_active = true;
+    else
+        m_security_active = false;
+
+    // A similar issue exists for the port. server_portnum is no longer
+    // working on at least Sun 7.x, and returns the first listener's port
+    // rather than whatever port is actually used for the request. Nice job, Sun.
+    sa = pblock_findval("server_portnum", m_pb);
+    m_server_portnum = (sa && *sa) ? atoi(sa) : server_portnum;
+
+    const char* uri = pblock_findval("uri", rq->reqpb);
+    const char* qstr = pblock_findval("query", rq->reqpb);
 
     if (qstr) {
         string temp = string(uri) + '?' + qstr;
@@ -216,7 +238,7 @@ public:
   ~ShibTargetNSAPI() { }
 
   const char* getScheme() const {
-    return security_active ? "https" : "http";
+    return m_security_active ? "https" : "http";
   }
   const char* getHostname() const {
 #ifdef vs_is_default_vs
@@ -231,7 +253,7 @@ public:
     return g_ServerName.c_str();
   }
   int getPort() const {
-    return server_portnum;
+    return m_server_portnum;
   }
   const char* getMethod() const {
     return pblock_findval("method", m_rq->reqpb);
