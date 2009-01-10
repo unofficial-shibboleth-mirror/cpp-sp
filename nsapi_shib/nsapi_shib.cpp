@@ -65,7 +65,6 @@ using namespace shibtarget;
 namespace {
     ShibTargetConfig* g_Config=NULL;
     string g_ServerName;
-    string g_ServerScheme;
     string g_unsetHeaderValue;
     bool g_checkSpoofing = false;
     bool g_catchAll = true;
@@ -102,9 +101,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
             }
         }
     }
-    name=pblock_findval("server-scheme",pb);
-    if (name)
-        g_ServerScheme=name;
 
     log_error(LOG_INFORM,"nsapi_shib_init",sn,rq,"nsapi_shib loaded for host (%s)",g_ServerName.c_str());
 
@@ -174,11 +170,34 @@ class ShibTargetNSAPI : public ShibTarget
 {
 public:
   ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) : m_pb(pb), m_sn(sn), m_rq(rq), m_firsttime(true) {
-    // Get everything but hostname...
+
+      // To determine whether SSL is active or not, we're supposed to rely
+      // on the security_active macro. For iPlanet 4.x, this works.
+      // For Sun 7.x, it's useless and appears to be on or off based
+      // on whether ANY SSL support is enabled for a vhost. Sun 6.x is unknown.
+      // As a fix, there's a conf variable called $security that can be mapped
+      // into a function parameter: security_active="$security"
+      // We check for this parameter, and rely on the macro if it isn't set.
+      // This doubles as a scheme virtualizer for load balanced scenarios
+      // since you can set the parameter to 1 or 0 as needed.
+      const char* scheme;
+      const char* sa = pblock_findval("security_active", pb);
+      if (sa)
+          scheme = (*sa == '1') ? "https" : "http";
+      else if (security_active)
+          scheme = "https";
+      else
+          scheme = "http";
+
+      // A similar issue exists for the port. server_portnum is no longer
+      // working on at least Sun 7.x, and returns the first listener's port
+      // rather than whatever port is actually used for the request. Nice job, Sun.
+      sa = pblock_findval("server_portnum", pb);
+      int port = (sa && *sa) ? atoi(sa) : server_portnum;
+
+    // Get everything else but hostname...
     const char* uri=pblock_findval("uri", rq->reqpb);
     const char* qstr=pblock_findval("query", rq->reqpb);
-    int port=server_portnum;
-    const char* scheme=security_active ? "https" : "http";
     const char* host=NULL;
 
     string url;
