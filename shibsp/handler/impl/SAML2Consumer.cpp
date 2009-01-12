@@ -241,10 +241,6 @@ void SAML2Consumer::implementProtocol(
             continue;
 
         try {
-            // Skip unsigned assertion?
-            if (!decrypted->getSignature() && flag.first && flag.second)
-                throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
-
             // We clear the security flag, so we can tell whether the token was secured on its own.
             policy.setAuthenticated(false);
             policy.reset(true);
@@ -262,6 +258,14 @@ void SAML2Consumer::implementProtocol(
             // If no security is in place now, we kick it.
             if (!alreadySecured && !policy.isAuthenticated())
                 throw SecurityPolicyException("Unable to establish security of incoming assertion.");
+
+            // If we hadn't established Issuer yet, redo the signedAssertions check.
+            if (!entity && policy.getIssuerMetadata()) {
+                entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
+                flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
+                if (!decrypted->getSignature() && flag.first && flag.second)
+                    throw SecurityPolicyException("The decrypted assertion was unsigned, violating local security policy.");
+            }
 
             // Now do profile and core semantic validation to ensure we can use it for SSO.
             BrowserSSOProfileValidator ssoValidator(
