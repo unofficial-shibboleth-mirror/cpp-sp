@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2007 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * TCPListener.cpp
- * 
+ *
  * TCP-based SocketListener implementation
  */
 
@@ -31,6 +31,7 @@
 # include <sys/un.h>
 # include <unistd.h>
 # include <arpa/inet.h>
+# include <netinet/in.h>
 #endif
 
 #include <sys/types.h>
@@ -60,15 +61,15 @@ namespace shibsp {
         bool connect(ShibSocket& s) const;
         bool close(ShibSocket& s) const;
         bool accept(ShibSocket& listener, ShibSocket& s) const;
-        
+
         int send(ShibSocket& s, const char* buf, int len) const {
             return ::send(s, buf, len, 0);
         }
-        
+
         int recv(ShibSocket& s, char* buf, int buflen) const {
             return ::recv(s, buf, buflen, 0);
         }
-        
+
     private:
         void setup_tcp_sockaddr(struct sockaddr_in* addr) const;
 
@@ -91,14 +92,14 @@ TCPListener::TCPListener(const DOMElement* e) : SocketListener(e), m_address("12
         auto_ptr_char a(tag);
         m_address=a.get();
     }
-    
+
     tag=e->getAttributeNS(NULL,port);
     if (tag && *tag) {
         m_port=XMLString::parseInt(tag);
         if (m_port==0)
             m_port=12345;
     }
-    
+
     tag=e->getAttributeNS(NULL,acl);
     if (tag && *tag) {
         auto_ptr_char temp(tag);
