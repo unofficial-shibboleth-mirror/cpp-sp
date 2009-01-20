@@ -55,7 +55,12 @@ namespace shibsp {
         bool mderror = dynamic_cast<const opensaml::saml2md::MetadataException*>(tp.getRichException())!=NULL;
         pair<bool,const char*> redirectErrors = pair<bool,const char*>(false,NULL);
         pair<bool,const char*> pathname = pair<bool,const char*>(false,NULL);
-        const PropertySet* props=app ? app->getPropertySet("Errors") : NULL;
+
+        // Strictly for error handling, detect a NULL application and point at the default.
+        if (!app)
+            app = request.getServiceProvider().getApplication("default");
+
+        const PropertySet* props=app->getPropertySet("Errors");
 
         try {
             RequestMapper::Settings settings = request.getRequestSettings();
