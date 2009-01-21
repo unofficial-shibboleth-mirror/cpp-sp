@@ -52,14 +52,19 @@ AbstractSPRequest::~AbstractSPRequest()
 
 RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
 {
-    if (m_mapper)
-        return m_settings;
+    if (!m_mapper) {
+        // Map request to application and content settings.
+        m_mapper=m_sp->getRequestMapper();
+        m_mapper->lock();
+        m_settings = m_mapper->getSettings(*this);
 
-    // Map request to application and content settings.
-    m_mapper=m_sp->getRequestMapper();
-    m_mapper->lock();
-    return m_settings = m_mapper->getSettings(*this);
-
+        if (reinterpret_cast<Category*>(m_log)->isDebugEnabled()) {
+            reinterpret_cast<Category*>(m_log)->debug(
+                "mapped %s to %s", getRequestURL(), m_settings.first->getString("applicationId").second
+                );
+        }
+    }
+    return m_settings;
 }
 
 const Application& AbstractSPRequest::getApplication() const
@@ -68,7 +73,7 @@ const Application& AbstractSPRequest::getApplication() const
         // Now find the application from the URL settings
         m_app=m_sp->getApplication(getRequestSettings().first->getString("applicationId").second);
         if (!m_app)
-            throw ConfigurationException("Unable to map request to application settings, check configuration.");
+            throw ConfigurationException("Unable to map request to ApplicationOverride settings, check configuration.");
     }
     return *m_app;
 }
