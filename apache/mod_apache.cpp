@@ -1312,7 +1312,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 
     ServiceProvider* sp=g_Config->getServiceProvider();
     xmltooling::Locker locker(sp);
-    const PropertySet* props=sp->getPropertySet("Local");
+    const PropertySet* props=sp->getPropertySet("InProcess");
     if (props) {
         pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
         if (unsetValue.first)
