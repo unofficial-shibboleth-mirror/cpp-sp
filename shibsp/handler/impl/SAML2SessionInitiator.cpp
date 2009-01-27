@@ -1,6 +1,6 @@
 /*
- *  Copyright 2001-2007 Internet2
- * 
+ *  Copyright 2001-2009 Internet2
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * SAML2SessionInitiator.cpp
- * 
+ *
  * SAML 2.0 AuthnRequest support.
  */
 
@@ -70,7 +70,7 @@ namespace shibsp {
             }
 #endif
         }
-        
+
         void setParent(const PropertySet* parent);
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
@@ -81,6 +81,7 @@ namespace shibsp {
             HTTPResponse& httpResponse,
             const char* entityID,
             const XMLCh* acsIndex,
+            bool artifactInbound,
             const char* acsLocation,
             const XMLCh* acsBinding,
             bool isPassive,
@@ -246,7 +247,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         option = request.getParameter("target");
         if (option)
             target = option;
-            
+
         // Always need to recover target URL to compute handler below.
         recoverRelayState(request.getApplication(), request, request, target, false);
 
@@ -334,7 +335,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     // We have to compute the handlerURL no matter what, because we may need to
     // flip the index to an SSL-version.
     string ACSloc=request.getHandlerURL(target.c_str());
-    
+
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
     	if (!acsByIndex.first || acsByIndex.second) {
@@ -347,7 +348,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 if (option)
                     target = option;
             }
-            
+
             // Determine index to use.
             pair<bool,const XMLCh*> ix = pair<bool,const XMLCh*>(false,NULL);
             if (ACS) {
@@ -360,10 +361,12 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             		ix = ACS->getXMLString("index");
             	}
             }
-            
+
             return doRequest(
                 app, request, entityID.c_str(),
-                ix.second, NULL, NULL,
+                ix.second,
+                ACS ? XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT) : false,
+                NULL, NULL,
                 isPassive, forceAuthn,
                 acClass.first ? acClass.second : NULL,
                 acComp.first ? acComp.second : NULL,
@@ -387,7 +390,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
         return doRequest(
             app, request, entityID.c_str(),
-            NULL, ACSloc.c_str(), ACS ? ACS->getXMLString("Binding").second : NULL,
+            NULL,
+            ACS ? XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT) : false,
+            ACSloc.c_str(), ACS ? ACS->getXMLString("Binding").second : NULL,
             isPassive, forceAuthn,
             acClass.first ? acClass.second : NULL,
             acComp.first ? acComp.second : NULL,
@@ -422,6 +427,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         		ix = ACS->getString("index");
         	}
             in.addmember("acsIndex").string(ix.second);
+            if (XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT))
+                in.addmember("artifact").integer(1);
         }
     }
     else {
@@ -430,8 +437,12 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
         if (loc.first) ACSloc+=loc.second;
         in.addmember("acsLocation").string(ACSloc.c_str());
-        if (ACS)
-            in.addmember("acsBinding").string(ACS->getString("Binding").second);
+        if (ACS) {
+            loc = ACS->getString("Binding");
+            in.addmember("acsBinding").string(loc.second);
+            if (XMLString::equals(loc.second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT))
+                in.addmember("artifact").integer(1);
+        }
     }
 
     if (isHandler) {
@@ -477,7 +488,9 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
     // which we capture in the facade and send back.
     doRequest(
         *app, *http.get(), in["entity_id"].string(),
-        index.get(), in["acsLocation"].string(), bind.get(),
+        index.get(),
+        (in["artifact"].integer() != 0),
+        in["acsLocation"].string(), bind.get(),
         in["isPassive"].integer()==1, in["forceAuthn"].integer()==1,
         in["authnContextClassRef"].string(), in["authnContextComparison"].string(),
         relayState
@@ -502,6 +515,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     HTTPResponse& httpResponse,
     const char* entityID,
     const XMLCh* acsIndex,
+    bool artifactInbound,
     const char* acsLocation,
     const XMLCh* acsBinding,
     bool isPassive,
@@ -522,7 +536,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     // We won't need this for ECP, but safety dictates we get the lock here.
     MetadataProvider* m=app.getMetadataProvider();
     Locker locker(m);
-    
+
     if (ECP) {
         encoder = m_ecp;
         if (!encoder) {
@@ -543,6 +557,12 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
             if (getParent())
                 return make_pair(false,0L);
             throw MetadataException("Unable to locate SAML 2.0 identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));
+        }
+        else if (artifactInbound && !SPConfig::getConfig().getArtifactResolver()->isSupported(dynamic_cast<const SSODescriptorType&>(*entity.second))) {
+            m_log.warn("artifact binding selected for response, but identity provider lacks support");
+            if (getParent())
+                return make_pair(false,0L);
+            throw MetadataException("Identity provider ($entityID) lacks SAML 2.0 artifact support.", namedparams(1, "entityID", entityID));
         }
 
         // Loop over the supportable outgoing bindings.
@@ -610,7 +630,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
             cref->setReference(wideclass.get());
             reqContext->getAuthnContextClassRefs().push_back(cref);
         }
-        
+
         if (reqContext->getAuthnContextClassRefs().empty() && reqContext->getAuthnContextDeclRefs().empty()) {
         	req->setRequestedAuthnContext(NULL);
         }

@@ -1,6 +1,6 @@
 /*
- *  Copyright 2001-2007 Internet2
- * 
+ *  Copyright 2001-2009 Internet2
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * Shib1SessionInitiator.cpp
- * 
+ *
  * Shibboleth 1.x AuthnRequest support.
  */
 
@@ -64,7 +64,7 @@ namespace shibsp {
             }
         }
         virtual ~Shib1SessionInitiator() {}
-        
+
         void setParent(const PropertySet* parent);
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
@@ -75,6 +75,7 @@ namespace shibsp {
             HTTPResponse& httpResponse,
             const char* entityID,
             const char* acsLocation,
+            bool artifact,
             string& relayState
             ) const;
         string m_appId;
@@ -163,10 +164,13 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
             target = option;
     }
 
+    // Is the in-bound binding artifact?
+    bool artifactInbound = ACS ? XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT) : false;
+
     m_log.debug("attempting to initiate session using Shibboleth with provider (%s)", entityID.c_str());
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), target);
+        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), artifactInbound, target);
 
     // Remote the call.
     DDF out,in = DDF(m_address.c_str()).structure();
@@ -174,6 +178,8 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
     in.addmember("application_id").string(app.getId());
     in.addmember("entity_id").string(entityID.c_str());
     in.addmember("acsLocation").string(ACSloc.c_str());
+    if (artifactInbound)
+        in.addmember("artifact").integer(1);
     if (!target.empty())
         in.addmember("RelayState").string(target.c_str());
 
@@ -209,7 +215,7 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, *http.get(), entityID, acsLocation, relayState);
+    doRequest(*app, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState);
     out << ret;
 }
 
@@ -218,6 +224,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     HTTPResponse& httpResponse,
     const char* entityID,
     const char* acsLocation,
+    bool artifact,
     string& relayState
     ) const
 {
@@ -237,6 +244,13 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
             return make_pair(false,0L);
         throw MetadataException("Unable to locate Shibboleth-aware identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
+    else if (artifact && !SPConfig::getConfig().getArtifactResolver()->isSupported(dynamic_cast<const SSODescriptorType&>(*entity.second))) {
+        m_log.warn("artifact profile selected for response, but identity provider lacks support");
+        if (getParent())
+            return make_pair(false,0L);
+        throw MetadataException("Identity provider ($entityID) lacks SAML artifact support.", namedparams(1, "entityID", entityID));
+    }
+
     const EndpointType* ep=EndpointManager<SingleSignOnService>(
         dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
         ).getByBinding(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);

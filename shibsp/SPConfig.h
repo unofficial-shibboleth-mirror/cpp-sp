@@ -185,7 +185,7 @@ namespace shibsp {
          *
          * @return  global ArtifactResolver or NULL
          */
-        opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const {
+        const opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const {
             return m_artifactResolver;
         }
 #endif
