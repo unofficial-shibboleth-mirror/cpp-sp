@@ -1,6 +1,6 @@
 
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,6 @@
 # include "metadata/MetadataExt.h"
 # include "security/PKIXTrustEngine.h"
 # include <saml/SAMLConfig.h>
-# include <xmltooling/util/CurlNetAccessor.hpp>
 #else
 # include <xmltooling/XMLToolingConfig.h>
 #endif
@@ -140,7 +139,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         log.fatal("failed to initialize OpenSAML library");
         return false;
     }
-    XMLPlatformUtils::fgNetAccessor = new CurlNetAccessor();
 #else
     if (!XMLToolingConfig::getConfig().init()) {
         log.fatal("failed to initialize XMLTooling library");
@@ -220,6 +218,9 @@ void SPConfig::term()
     log.info("%s library shutting down", PACKAGE_STRING);
 
     setServiceProvider(NULL);
+    if (m_configDoc)
+        m_configDoc->release();
+    m_configDoc = NULL;
 #ifndef SHIBSP_LITE
     setArtifactResolver(NULL);
 #endif
@@ -289,6 +290,9 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
             dummydoc = XMLToolingConfig::getConfig().getParser().parse(snippet);
             XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
             setServiceProvider(ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER, dummydoc->getDocumentElement()));
+            if (m_configDoc)
+                m_configDoc->release();
+            m_configDoc = docjanitor.release();
         }
         else {
             stringstream snippet(config);
@@ -300,6 +304,9 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
                 setServiceProvider(ServiceProviderManager.newPlugin(type.get(), dummydoc->getDocumentElement()));
             else
                 throw ConfigurationException("The supplied XML bootstrapping configuration did not include a type attribute.");
+            if (m_configDoc)
+                m_configDoc->release();
+            m_configDoc = docjanitor.release();
         }
 
         getServiceProvider()->init();

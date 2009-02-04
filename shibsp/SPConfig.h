@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,8 @@ namespace shibsp {
 #ifndef SHIBSP_LITE
             m_artifactResolver(NULL),
 #endif
-            m_features(0) {}
+            m_features(0), m_configDoc(NULL) {
+        }
 
         virtual ~SPConfig() {}
 
@@ -291,6 +292,7 @@ namespace shibsp {
 
     private:
         unsigned long m_features;
+        xercesc::DOMDocument* m_configDoc;
     };
 
 #if defined (_MSC_VER)
