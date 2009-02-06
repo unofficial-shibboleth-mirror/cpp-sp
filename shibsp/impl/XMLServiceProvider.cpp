@@ -47,6 +47,7 @@
 #include <xmltooling/version.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
+#include <xmltooling/util/TemplateEngine.h>
 #include <xmltooling/util/XMLHelper.h>
 
 #ifndef SHIBSP_LITE
@@ -1340,6 +1341,10 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             pair<bool,unsigned int> skew=getUnsignedInt("clockSkew");
             if (skew.first)
                 xmlConf.clock_skew_secs=min(skew.second,(60*60*24*7*28));
+
+            pair<bool,const char*> unsafe = getString("unsafeChars");
+            if (unsafe.first)
+                TemplateEngine::unsafe_chars = unsafe.second;
 
             // Extensions
             doExtensions(e, "global", log);
