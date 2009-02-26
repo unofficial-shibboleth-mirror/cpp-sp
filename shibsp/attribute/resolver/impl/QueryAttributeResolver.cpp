@@ -274,7 +274,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     saml1p::Response* response=NULL;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
-        if (!XMLString::equals((*ep)->getBinding(),binding.get()))
+        if (!XMLString::equals((*ep)->getBinding(),binding.get()) || !(*ep)->getLocation())
             continue;
         auto_ptr_char loc((*ep)->getLocation());
         try {
@@ -408,7 +408,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     saml2p::StatusResponseType* srt=NULL;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !srt && ep!=endpoints.end(); ++ep) {
-        if (!XMLString::equals((*ep)->getBinding(),binding.get()))
+        if (!XMLString::equals((*ep)->getBinding(),binding.get())  || !(*ep)->getLocation())
             continue;
         auto_ptr_char loc((*ep)->getLocation());
         try {
