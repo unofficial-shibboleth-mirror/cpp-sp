@@ -438,7 +438,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         for (vector<string>::const_iterator rmid = rmids.begin(); !remoteUserSet && rmid != rmids.end(); ++rmid) {
             pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> matches =
                 attributes.equal_range(*rmid);
-            while (matches.first != matches.second) {
+            for (; matches.first != matches.second; ++matches.first) {
                 const vector<string>& vals = matches.first->second->getSerializedValues();
                 if (!vals.empty()) {
                     request.setRemoteUser(vals.front().c_str());
