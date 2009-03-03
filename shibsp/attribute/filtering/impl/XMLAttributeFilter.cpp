@@ -433,18 +433,19 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
                 if (row[index-1])
                     attr->removeValue(index-1);
             }
-
-            // Check for no values.
-            if (attr->valueCount() == 0) {
-                m_log.warn(
-                    "no values left, removing attribute (%s) from (%s)",
-                    attr->getId(), issuer.get() ? issuer.get() : "unknown source"
-                    );
-                delete attr;
-                attributes.erase(attributes.begin() + a);
-                continue;
-            }
         }
+
+        // Check for no values.
+        if (attr->valueCount() == 0) {
+            m_log.warn(
+                "no values left, removing attribute (%s) from (%s)",
+                attr->getId(), issuer.get() ? issuer.get() : "unknown source"
+                );
+            delete attr;
+            attributes.erase(attributes.begin() + a);
+            continue;
+        }
+
         ++a;
     }
 }
