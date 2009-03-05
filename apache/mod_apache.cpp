@@ -1401,7 +1401,7 @@ static command_rec shire_cmds[] = {
   {"ShibPrefix", (config_fn_t)ap_set_global_string_slot, &g_szPrefix,
    RSRC_CONF, TAKE1, "Shibboleth installation directory"},
   {"ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
-   RSRC_CONF, TAKE1, "Path to shibboleth.xml config file"},
+   RSRC_CONF, TAKE1, "Path to shibboleth2.xml config file"},
   {"ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
    RSRC_CONF, TAKE1, "Paths of XML schema catalogs"},
 
@@ -1505,7 +1505,7 @@ static command_rec shib_cmds[] = {
     AP_INIT_TAKE1("ShibPrefix", (config_fn_t)ap_set_global_string_slot, &g_szPrefix,
         RSRC_CONF, "Shibboleth installation directory"),
     AP_INIT_TAKE1("ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
-        RSRC_CONF, "Path to shibboleth.xml config file"),
+        RSRC_CONF, "Path to shibboleth2.xml config file"),
     AP_INIT_TAKE1("ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
         RSRC_CONF, "Paths of XML schema catalogs"),
 
