@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -766,9 +766,12 @@ XMLApplication::XMLApplication(
 
 #ifndef SHIBSP_LITE
         nlist=e->getElementsByTagNameNS(samlconstants::SAML20_NS,Audience::LOCAL_NAME);
-        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++)
-            if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
-                m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
+        if (nlist) {
+            log.warn("use of <saml:Audience> elements outside of a Security Policy Rule is deprecated");
+            for (XMLSize_t i=0; i<nlist->getLength(); i++)
+                if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
+                    m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
+        }
 
         if (conf.isEnabled(SPConfig::Metadata)) {
             child = XMLHelper::getFirstChildElement(e,_MetadataProvider);
@@ -1384,8 +1387,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
 #ifndef SHIBSP_LITE
             if (m_outer->m_listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
-                m_outer->m_listener->regListener("set::RelayState", m_outer->m_listener);
-                m_outer->m_listener->regListener("get::RelayState", m_outer->m_listener);
+                m_outer->m_listener->regListener("set::RelayState", const_cast<XMLConfig*>(m_outer));
+                m_outer->m_listener->regListener("get::RelayState", const_cast<XMLConfig*>(m_outer));
             }
 #endif
 
