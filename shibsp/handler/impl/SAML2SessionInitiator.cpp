@@ -88,7 +88,8 @@ namespace shibsp {
             bool forceAuthn,
             const char* authnContextClassRef,
             const char* authnContextComparison,
-            string& relayState
+            string& relayState,
+            string& postData
             ) const;
 
         string m_appId;
@@ -222,6 +223,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         return make_pair(false,0L);
 
     string target;
+    string postData;
     const Handler* ACS=NULL;
     const char* option;
     pair<bool,const char*> acClass;
@@ -249,6 +251,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             target = option;
 
         // Always need to recover target URL to compute handler below.
+        // don't think we need to recover post data here though
         recoverRelayState(request.getApplication(), request, request, target, false);
 
         pair<bool,bool> flag;
@@ -285,6 +288,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
         target=request.getRequestURL();
+        postData = getPostData(request);
         const PropertySet* settings = request.getRequestSettings().first;
 
         pair<bool,bool> flag = settings->getBool("isPassive");
@@ -370,7 +374,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 isPassive, forceAuthn,
                 acClass.first ? acClass.second : NULL,
                 acComp.first ? acComp.second : NULL,
-                target
+                target,
+                postData
                 );
         }
 
@@ -396,7 +401,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             isPassive, forceAuthn,
             acClass.first ? acClass.second : NULL,
             acComp.first ? acComp.second : NULL,
-            target
+            target,
+            postData
             );
     }
 
@@ -456,6 +462,11 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     if (!target.empty())
         in.addmember("RelayState").string(target.c_str());
 
+    if (!postData.empty()) {
+        in.addmember("PostData").string(postData.c_str());
+        m_log.debug("saml2SI remoting %d posted bytes", postData.length());
+    }
+
     // Remote the processing.
     out = request.getServiceProvider().getListenerService()->send(in);
     return unwrap(request, out);
@@ -482,6 +493,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
     auto_ptr_XMLCh bind(in["acsBinding"].string());
 
     string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
+    string postData(in["PostData"].string() ? in["PostData"].string() : "");
 
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
@@ -493,7 +505,8 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         in["acsLocation"].string(), bind.get(),
         in["isPassive"].integer()==1, in["forceAuthn"].integer()==1,
         in["authnContextClassRef"].string(), in["authnContextComparison"].string(),
-        relayState
+        relayState,
+        postData
         );
     out << ret;
 }
@@ -522,7 +535,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     bool forceAuthn,
     const char* authnContextClassRef,
     const char* authnContextComparison,
-    string& relayState
+    string& relayState,
+    string& postData
     ) const
 {
 #ifndef SHIBSP_LITE
@@ -585,6 +599,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     }
 
     preserveRelayState(app, httpResponse, relayState);
+    preservePostData(app, httpResponse, postData, relayState);
 
     auto_ptr<AuthnRequest> req(m_requestTemplate ? m_requestTemplate->cloneAuthnRequest() : AuthnRequestBuilder::buildAuthnRequest());
     if (m_requestTemplate) {

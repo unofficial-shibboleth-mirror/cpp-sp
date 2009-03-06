@@ -76,7 +76,8 @@ namespace shibsp {
             const char* entityID,
             const char* acsLocation,
             bool artifact,
-            string& relayState
+            string& relayState,
+            string& postData
             ) const;
         string m_appId;
     };
@@ -112,6 +113,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
         return make_pair(false,0L);
 
     string target;
+    string postData;
     const Handler* ACS=NULL;
     const char* option;
     const Application& app=request.getApplication();
@@ -136,6 +138,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
         target=request.getRequestURL();
+        postData = getPostData(request);
     }
 
     // Since we're not passing by index, we need to fully compute the return URL.
@@ -170,7 +173,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
     m_log.debug("attempting to initiate session using Shibboleth with provider (%s)", entityID.c_str());
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), artifactInbound, target);
+        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), artifactInbound, target, postData);
 
     // Remote the call.
     DDF out,in = DDF(m_address.c_str()).structure();
@@ -182,6 +185,11 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("artifact").integer(1);
     if (!target.empty())
         in.addmember("RelayState").string(target.c_str());
+
+    if (!postData.empty()) {
+        in.addmember("PostData").string(postData.c_str());
+        m_log.debug("shib1SI remoting %d posted bytes", postData.length());
+    }
 
     // Remote the processing.
     out = request.getServiceProvider().getListenerService()->send(in);
@@ -211,11 +219,12 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
     auto_ptr<HTTPResponse> http(getResponse(ret));
 
     string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
+    string postData(in["PostData"].string() ? in["PostData"].string() : "");
 
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState);
+    doRequest(*app, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState, postData);
     out << ret;
 }
 
@@ -225,7 +234,8 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     const char* entityID,
     const char* acsLocation,
     bool artifact,
-    string& relayState
+    string& relayState,
+    string& postData
     ) const
 {
 #ifndef SHIBSP_LITE
@@ -262,6 +272,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     }
 
     preserveRelayState(app, httpResponse, relayState);
+    preservePostData(app, httpResponse, postData, relayState);
 
     // Shib 1.x requires a target value.
     if (relayState.empty())

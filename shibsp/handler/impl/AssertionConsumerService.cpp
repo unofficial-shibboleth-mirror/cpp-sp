@@ -150,12 +150,15 @@ pair<bool,long> AssertionConsumerService::processMessage(
     shibsp::SecurityPolicy policy(application, &m_role, validate.first && validate.second);
 
     string relayState;
+    const char* m_template =  getString("postTemplate").second;
 
     try {
         // Decode the message and process it in a protocol-specific way.
         auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));
         if (!msg.get())
             throw BindingException("Failed to decode an SSO protocol response.");
+        string postData;
+        recoverPostData(application, httpRequest, httpResponse, postData, relayState);
         recoverRelayState(application, httpRequest, httpResponse, relayState);
         implementProtocol(application, httpRequest, httpResponse, policy, settings, *msg.get());
 
@@ -166,7 +169,13 @@ pair<bool,long> AssertionConsumerService::processMessage(
             maintainHistory(application, httpRequest, httpResponse, issuer.get());
 
         // Now redirect to the state value. By now, it should be set to *something* usable.
-        return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+        if (postData.empty()) {
+          m_log.debug("ACS returning via redirect to: %s", relayState.c_str());
+          return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+        } else {
+          m_log.debug("ACS returning via post to: %s", relayState.c_str());
+          return make_pair(true,sendPostResponse(application, httpResponse, relayState, postData));
+        }
     }
     catch (XMLToolingException& ex) {
         // Check for isPassive error condition.

@@ -155,6 +155,66 @@ namespace shibsp {
             bool clear=true
             ) const;
         
+        /**
+         * Implements storage service and cookie mechanism to preserve PostData,
+         *
+         * <p>If a supported mechanism can be identified, the input parameter will be
+         * replaced with a suitable state key.
+         *
+         * @param application   the associated Application
+         * @param response      outgoing HTTP response
+         * @param postData      Posted data to preserve
+         * @param relayState    relayState ( with key value )
+         */
+        virtual void preservePostData(
+            const Application& application, xmltooling::HTTPResponse& response, std::string& postData, std::string& relayState
+            ) const;
+
+        /**
+         * Implements storage service and cookie mechanism to recover PostData,
+         *
+         * <p>If a supported mechanism can be identified, the input parameter will be
+         * replaced with the recovered state information.
+         *
+         * @param application   the associated Application
+         * @param request       incoming HTTP request
+         * @param response      outgoing HTTP response
+         * @param postData      recovered posted data token supplied with message
+         * @param relayState    relayState ( with key value )
+         */
+        virtual void recoverPostData(
+            const Application& application,
+            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPResponse& response,
+            std::string& postData,
+            std::string& relayState
+            ) const;
+
+        /**
+         * URL decodes a string inplace
+         * 
+         * @param in            the encoded string
+         */
+        virtual void urlDecode(std::string &in) const;
+
+        /**
+         * Get the data posted with a request
+         * 
+         * @param request       incoming HTTP request
+         */
+        virtual std::string getPostData(SPRequest& request) const;
+
+        /**
+         * Post a redirect response with post data
+         * 
+         * @param application   the associated Application
+         * @param response      outgoing HTTP response
+         * @param request       incoming HTTP request
+         * @param url           action url for the form
+         * @param postData      posted data to load into the form
+         */
+        virtual long sendPostResponse(const Application& application, xmltooling::HTTPResponse& httpResponse, std::string& url, std::string& postData) const;
+
         /** Logging object. */
         xmltooling::logging::Category& m_log;
         

@@ -29,6 +29,14 @@
 #include "handler/LogoutHandler.h"
 #include "remoting/ListenerService.h"
 #include "util/SPConstants.h"
+#include "util/TemplateParameters.h"
+
+#include <vector>
+#include <fstream>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/PathResolver.h>
+#include <xmltooling/util/URLEncoder.h>
+
 
 #ifndef SHIBSP_LITE
 # include <saml/saml1/core/Protocols.h>
@@ -36,6 +44,8 @@
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 # include <saml/util/SAMLConstants.h>
+# include <saml/SAMLConfig.h>
+# include <saml/binding/SAMLArtifact.h>
 # include <xmltooling/util/StorageService.h>
 using namespace opensaml::saml2md;
 #else
@@ -408,3 +418,246 @@ void AbstractHandler::recoverRelayState(
         relayState=homeURL.first ? homeURL.second : "/";
     }
 }
+
+// postdata tools
+
+inline int hex2int(const char& hex)
+{
+   return ((hex>='0'&&hex<='9')?(hex-'0'):(std::toupper(hex)-'A'+10));
+}
+
+// remove the '+' and '%xx' from a string
+void AbstractHandler::urlDecode(string &in) const
+{
+    const char *cin(in.c_str());
+    string out;
+
+    for (; *cin; cin++) {
+       if(*cin!='%' || !std::isxdigit(cin[1]) || !std::isxdigit(cin[2])) {
+          // same char or space
+          if(*cin=='+') out += ' ';
+          else out += *cin;
+       } else {
+          // convert hex char
+          out += static_cast<char>(hex2int(cin[1])*16+hex2int(cin[2]));
+          cin += 2;
+       }
+    }
+    in = out;
+}
+
+// get posted data from a request (limit should be parameter?)
+#define MAX_POST_DATA (1024*1024)
+string AbstractHandler::getPostData(SPRequest& request) const
+{
+    string contentType = request.getContentType();
+    string postData;
+    if (contentType.compare("application/x-www-form-urlencoded")==0) {
+       if (request.getContentLength()<MAX_POST_DATA) {
+          postData = request.getRequestBody();
+          m_log.debug("processed %d bytes of posted data", postData.length());
+       } else {
+          m_log.debug("ignoring %d bytes of posted data", request.getContentLength());
+       }
+    } else {
+       m_log.warn("ignoring '%s' posted data.", contentType.c_str());
+    }
+    urlDecode(postData);
+    return (postData);
+}
+
+
+// postdata name is base + relaystate key
+inline string postCookieName(string& relayState)
+{
+    string name = "_shibpost_";
+    string::size_type rp = string::npos;
+    if (relayState.find("cookie:")==0) rp = 6;
+    else if (relayState.find("ss:")==0) rp = relayState.find(':', 3);
+    if (rp!=string::npos) name += relayState.substr(rp+1);
+    return (name);
+}
+
+/* Save posted data to a storage service.
+   We may not have to key the postdata cookie to the relay state,
+   but doing so gives a better assurance that the recovered data really belongs to the relayed request. */
+
+void AbstractHandler::preservePostData(const Application& application, HTTPResponse& response,  string& postData, string& relayState) const
+{
+    if (postData.empty()) return;
+
+    // No specs mean no save
+    const PropertySet* props=application.getPropertySet("Sessions");
+    pair<bool,const char*> mech = props->getString("postData");
+    pair<bool,const char*> mecht = props->getString("postTemplate");
+    if (!mech.first || !mech.second || !*mech.second || !mecht.first || !mecht.second || !*mecht.second) {
+        m_log.warn("post data save requires postData and postTemplate specification.");
+        return;
+    }
+
+    if (strstr(mech.second,"ss:")==mech.second) {
+            mech.second+=3;
+            if (*mech.second) {
+                if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+#ifndef SHIBSP_LITE
+                    StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
+                    if (storage) {
+
+                        // Use a random key
+                        string rsKey;
+                        SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+                        rsKey = SAMLArtifact::toHex(rsKey);
+
+                        if (!storage->createString("PostData", rsKey.c_str(), postData.c_str(), time(NULL) + 600))
+                            throw IOException("Attempted to insert duplicate storage key.");
+                        postData = string(mech.second-3) + ':' + rsKey;
+                    }
+                    else {
+                        m_log.error("Storage-backed PostData with invalid StorageService ID (%s)", mech.second);
+                        postData.erase();
+                    }
+#endif
+                }
+                else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+                    DDF out,in = DDF("set::PostData").structure();
+                    in.addmember("id").string(mech.second);
+                    in.addmember("value").string(postData.c_str());
+                    DDFJanitor jin(in),jout(out);
+                    out = application.getServiceProvider().getListenerService()->send(in);
+                    if (!out.isstring())
+                        throw IOException("StorageService-backed PostData mechanism did not return a state key.");
+                    postData = string(mech.second-3) + ':' + out.string();
+                }
+            }
+
+            // set cookie with ss key info
+            string ckname = postCookieName(relayState);
+            string ckval = postData + ";path=/; secure";
+            response.setCookie(ckname.c_str(),ckval.c_str());
+            m_log.debug("post cookie, name=%s, value=%s", ckname.c_str(), ckval.c_str());
+
+    }
+    else
+        throw ConfigurationException("Unsupported postData mechanism ($1).", params(1,mech.second));
+}
+
+void AbstractHandler::recoverPostData(
+    const Application& application, const HTTPRequest& request, HTTPResponse& response, string& postData, string& relayState
+    ) const
+{
+    SPConfig& conf = SPConfig::getConfig();
+
+    /** get ss key from our cookie **/
+
+    string ckname = postCookieName(relayState);
+    const char *ck = request.getCookie(ckname.c_str());
+    if (ck && *ck) {
+       postData = ck;
+       m_log.debug("found post cookie, name=%s, value=%s", ckname.c_str(), postData.c_str());
+       if (true ) {
+          response.setCookie(ckname.c_str(), ";path=/; expires=Mon, 01 Jan 2001 00:00:00 GMT");
+       }
+    } else {
+       m_log.debug("data cookie (%s) not found", ckname.c_str());
+       return;
+    }
+
+    // Look for StorageService-backed state of the form "ss:SSID:key".
+    const char* state = postData.c_str();
+    if (strstr(state,"ss:")==state) {
+        state += 3;
+        const char* key = strchr(state,':');
+        if (key) {
+            string ssid = postData.substr(3, key - state);
+            key++;
+
+            if (!ssid.empty() && *key) {
+                if (conf.isEnabled(SPConfig::OutOfProcess)) {
+#ifndef SHIBSP_LITE
+                    StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
+                    if (storage) {
+                        ssid = key;
+                        if (storage->readString("PostData",ssid.c_str(),&postData)>0) {
+                            if (true )
+                                storage->deleteString("PostData",ssid.c_str());
+                            return;
+                        }
+                        else
+                            postData.erase();
+                    }
+                    else {
+                        Category::getInstance(SHIBSP_LOGCAT".Handler").error(
+                            "Storage-backed PostData with invalid StorageService ID (%s)", ssid.c_str()
+                            );
+                        postData.erase();
+                    }
+#endif
+                }
+                else if (conf.isEnabled(SPConfig::InProcess)) {
+                    DDF out,in = DDF("get::PostData").structure();
+                    in.addmember("id").string(ssid.c_str());
+                    in.addmember("key").string(key);
+                    DDFJanitor jin(in),jout(out);
+                    out = application.getServiceProvider().getListenerService()->send(in);
+                    if (!out.isstring()) {
+                        m_log.error("StorageService-backed PostData mechanism did not return a state value.");
+                        postData.erase();
+                    }
+                    else {
+                        postData = out.string();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    if (postData == "default")
+        postData.empty();
+}
+
+/* Send recovered data via template to browser for re-post */
+
+long AbstractHandler::sendPostResponse(const Application& application, HTTPResponse& httpResponse, string& url, string& postData) const
+{
+    httpResponse.setContentType("text/html");
+    httpResponse.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
+    httpResponse.setResponseHeader("Cache-Control","private,no-store,no-cache");
+
+    const PropertySet* props=application.getPropertySet("Sessions");
+    const char* postTemplate =  props->getString("postTemplate").second;
+    m_log.debug("send post, template=%s", postTemplate);
+
+    string fname(postTemplate);
+    ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
+    if (!infile)
+          throw ConfigurationException("Unable to access HTML template ($1).", params(1, postTemplate));
+    TemplateParameters respParam;
+    respParam.m_map["action"] = url.c_str();
+
+    // parse the posted data into form elements
+    vector<xmltooling::TemplateEngine::TemplateParameters> dataParams;
+    string::size_type startPos = 0;
+    for (int n=0;;n++) {
+       string::size_type ampPos = postData.find("&", startPos);
+       if (ampPos==string::npos) ampPos = postData.length();
+
+       string::size_type eqPos = postData.find("=", startPos);
+       if (eqPos>=ampPos) eqPos = ampPos - 1;
+
+       // add these name/values to the vector
+       dataParams.resize(n+1);
+       TemplateParameters *xp = static_cast<TemplateParameters*>(&dataParams.at(n));
+       xp->m_map["_name_"] = postData.substr(startPos,eqPos-startPos).c_str();
+       xp->m_map["_value_"] = postData.substr(eqPos+1,ampPos-eqPos-1).c_str();
+       if (ampPos==postData.length()) break;
+       startPos = ampPos+1;
+    } 
+    respParam.m_collectionMap["PostedData"] = dataParams;
+
+    stringstream str;
+    XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, respParam);
+    return (httpResponse.sendResponse(str));
+}
+
+

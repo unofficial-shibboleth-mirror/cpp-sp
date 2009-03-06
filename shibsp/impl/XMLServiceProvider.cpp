@@ -1389,6 +1389,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             if (m_outer->m_listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
                 m_outer->m_listener->regListener("set::RelayState", const_cast<XMLConfig*>(m_outer));
                 m_outer->m_listener->regListener("get::RelayState", const_cast<XMLConfig*>(m_outer));
+                m_outer->m_listener->regListener("set::PostData", const_cast<XMLConfig*>(m_outer));
+                m_outer->m_listener->regListener("get::PostData", const_cast<XMLConfig*>(m_outer));
             }
 #endif
 
@@ -1621,6 +1623,55 @@ void XMLConfig::receive(DDF& in, ostream& out)
         DDFJanitor jret(ret);
         out << ret;
     }
+    else if (!strcmp(in.name(), "get::PostData")) {
+        const char* id = in["id"].string();
+        const char* key = in["key"].string();
+        if (!id || !key)
+            throw ListenerException("Required parameters missing for PostData recovery.");
+
+        string postData;
+        StorageService* storage = getStorageService(id);
+        if (storage) {
+            if (storage->readString("PostData",key,&postData)>0) {
+               storage->deleteString("PostData",key);
+            }
+        }
+        else {
+            Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
+                "Storage-backed PostData with invalid StorageService ID (%s)", id
+                );
+        }
+
+        // Repack for return to caller.
+        DDF ret=DDF(NULL).string(postData.c_str());
+        DDFJanitor jret(ret);
+        out << ret;
+    }
+    else if (!strcmp(in.name(), "set::PostData")) {
+        const char* id = in["id"].string();
+        const char* value = in["value"].string();
+        if (!id || !value)
+            throw ListenerException("Required parameters missing for PostData creation.");
+
+        string rsKey;
+        StorageService* storage = getStorageService(id);
+        if (storage) {
+            SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+            rsKey = SAMLArtifact::toHex(rsKey);
+            storage->createString("PostData", rsKey.c_str(), value, time(NULL) + 600);
+        }
+        else {
+            Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
+                "Storage-backed PostData with invalid StorageService ID (%s)", id
+                );
+        }
+
+        // Repack for return to caller.
+        DDF ret=DDF(NULL).string(rsKey.c_str());
+        DDFJanitor jret(ret);
+        out << ret;
+    }
+
 }
 #endif
 

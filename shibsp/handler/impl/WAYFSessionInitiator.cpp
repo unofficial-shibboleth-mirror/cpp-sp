@@ -80,6 +80,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         return make_pair(false,0L);
 
     string target;
+    string postData;
     const char* option;
     const Handler* ACS=NULL;
     const Application& app=request.getApplication();
@@ -130,6 +131,8 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
             target = option;
     }
     preserveRelayState(request.getApplication(), request, target);
+    postData = getPostData(request);
+    preservePostData(request.getApplication(), request, postData, target);
 
     // WAYF requires a target value.
     if (target.empty())

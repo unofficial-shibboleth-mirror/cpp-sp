@@ -166,6 +166,8 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
             target = option;
     }
     preserveRelayState(request.getApplication(), request, target);
+    string postData = getPostData(request);
+    preservePostData(request.getApplication(), request, postData, target);
 
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     if (isHandler) {
