@@ -1,0 +1,27 @@
+<html>
+	<head>
+		<title>Shibboleth Login Post</title>
+	</head>
+	<body onload="document.forms[0].submit()">
+
+		<!-- <h1>Shibboleth Login Post</h1> -->
+		
+		<noscript>
+		<p>
+		<strong>Note:</strong> Since your browser does not support JavaScript, you must press the
+		Continue button to proceed.
+		</p>
+		</noscript>
+	
+		<form method="POST" action="<shibmlp action/>">
+		<shibmlpfor PostedData>
+			<input type="hidden" name="<shibmlp _name_/>" value="<shibmlp _value_/>"/>
+		</shibmlpfor>
+		<noscript>
+		<div>
+		<input type="submit" name="_shib_continue_" value="Continue"/>
+		</div>
+		</noscript>
+		</form>
+	</body>
+</html>
