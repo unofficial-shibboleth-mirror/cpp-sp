@@ -554,6 +554,7 @@
 			<attribute name="checkAddress" type="boolean"/>
 			<attribute name="consistentAddress" type="boolean"/>
 			<attribute name="postData" type="conf:string"/>
+            <attribute name="postLimit" type="positiveInteger"/>
 			<attribute name="postTemplate" type="conf:string"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
