@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2005 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,11 +135,13 @@ namespace {
         }
 
         void receive(DDF& in, ostream& out);
+        pair<bool,long> unwrap(SPRequest& request, DDF& out) const;
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
     private:
         pair<bool,long> doRequest(
             const Application& application,
+            const HTTPRequest* httpRequest,
             HTTPResponse& httpResponse,
             const char* entityID,
             const char* acsLocation,
@@ -393,8 +395,12 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
 
     m_log.debug("attempting to initiate session using ADFS with provider (%s)", entityID.c_str());
 
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), (acClass.first ? acClass.second : NULL), target);
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        // Out of process means the POST data via the request can be exposed directly to the private method.
+        // The method will handle POST preservation if necessary *before* issuing the response, but only if
+        // it dispatches to an IdP.
+        return doRequest(app, &request, request, entityID.c_str(), ACSloc.c_str(), (acClass.first ? acClass.second : NULL), target);
+    }
 
     // Remote the call.
     DDF out,in = DDF(m_address.c_str()).structure();
@@ -410,6 +416,16 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
     // Remote the processing.
     out = request.getServiceProvider().getListenerService()->send(in);
     return unwrap(request, out);
+}
+
+pair<bool,long> ADFSSessionInitiator::unwrap(SPRequest& request, DDF& out) const
+{
+    // See if there's any response to send back.
+    if (!out["redirect"].isnull() || !out["response"].isnull()) {
+        // If so, we're responsible for handling the POST data, probably by dropping a cookie.
+        preservePostData(request.getApplication(), request, request, out["RelayState"].string());
+    }
+    return RemotedHandler::unwrap(request, out);
 }
 
 void ADFSSessionInitiator::receive(DDF& in, ostream& out)
@@ -439,12 +455,16 @@ void ADFSSessionInitiator::receive(DDF& in, ostream& out)
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, *http.get(), entityID, acsLocation, in["authnContextClassRef"].string(), relayState);
+    doRequest(*app, NULL, *http.get(), entityID, acsLocation, in["authnContextClassRef"].string(), relayState);
+    if (!ret.isstruct())
+        ret.structure();
+    ret.addmember("RelayState").string(relayState.c_str());
     out << ret;
 }
 
 pair<bool,long> ADFSSessionInitiator::doRequest(
     const Application& app,
+    const HTTPRequest* httpRequest,
     HTTPResponse& httpResponse,
     const char* entityID,
     const char* acsLocation,
@@ -500,6 +520,11 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
         req += "&wauth=" + urlenc->encode(authnContextClassRef);
     if (!relayState.empty())
         req += "&wctx=" + urlenc->encode(relayState.c_str());
+
+    if (httpRequest) {
+        // If the request object is available, we're responsible for the POST data.
+        preservePostData(app, *httpRequest, httpResponse, relayState.c_str());
+    }
 
     return make_pair(true, httpResponse.sendRedirect(req.c_str()));
 #else

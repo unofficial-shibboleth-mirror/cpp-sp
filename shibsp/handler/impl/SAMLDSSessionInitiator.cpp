@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,8 +166,8 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
             target = option;
     }
     preserveRelayState(request.getApplication(), request, target);
-    string postData = getPostData(request);
-    preservePostData(request.getApplication(), request, postData, target);
+    if (!isHandler)
+        preservePostData(request.getApplication(), request, request, target.c_str());
 
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     if (isHandler) {

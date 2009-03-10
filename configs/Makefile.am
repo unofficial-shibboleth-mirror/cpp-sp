@@ -42,6 +42,7 @@ CONFIGFILES = \
 	metadataError.html \
 	bindingTemplate.html \
 	discoveryTemplate.html \
+    postTemplate.html \
 	localLogout.html \
 	globalLogout.html \
 	sslError.html

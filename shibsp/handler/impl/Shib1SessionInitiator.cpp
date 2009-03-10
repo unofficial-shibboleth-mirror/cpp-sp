@@ -67,17 +67,18 @@ namespace shibsp {
 
         void setParent(const PropertySet* parent);
         void receive(DDF& in, ostream& out);
+        pair<bool,long> unwrap(SPRequest& request, DDF& out) const;
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
     private:
         pair<bool,long> doRequest(
             const Application& application,
+            const HTTPRequest* httpRequest,
             HTTPResponse& httpResponse,
             const char* entityID,
             const char* acsLocation,
             bool artifact,
-            string& relayState,
-            string& postData
+            string& relayState
             ) const;
         string m_appId;
     };
@@ -138,7 +139,6 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
         target=request.getRequestURL();
-        postData = getPostData(request);
     }
 
     // Since we're not passing by index, we need to fully compute the return URL.
@@ -172,8 +172,12 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
 
     m_log.debug("attempting to initiate session using Shibboleth with provider (%s)", entityID.c_str());
 
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-        return doRequest(app, request, entityID.c_str(), ACSloc.c_str(), artifactInbound, target, postData);
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        // Out of process means the POST data via the request can be exposed directly to the private method.
+        // The method will handle POST preservation if necessary *before* issuing the response, but only if
+        // it dispatches to an IdP.
+        return doRequest(app, &request, request, entityID.c_str(), ACSloc.c_str(), artifactInbound, target);
+    }
 
     // Remote the call.
     DDF out,in = DDF(m_address.c_str()).structure();
@@ -186,14 +190,19 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
     if (!target.empty())
         in.addmember("RelayState").string(target.c_str());
 
-    if (!postData.empty()) {
-        in.addmember("PostData").string(postData.c_str());
-        m_log.debug("shib1SI remoting %d posted bytes", postData.length());
-    }
-
-    // Remote the processing.
+    // Remote the processing. Our unwrap method will handle POST data if necessary.
     out = request.getServiceProvider().getListenerService()->send(in);
     return unwrap(request, out);
+}
+
+pair<bool,long> Shib1SessionInitiator::unwrap(SPRequest& request, DDF& out) const
+{
+    // See if there's any response to send back.
+    if (!out["redirect"].isnull() || !out["response"].isnull()) {
+        // If so, we're responsible for handling the POST data, probably by dropping a cookie.
+        preservePostData(request.getApplication(), request, request, out["RelayState"].string());
+    }
+    return RemotedHandler::unwrap(request, out);
 }
 
 void Shib1SessionInitiator::receive(DDF& in, ostream& out)
@@ -219,23 +228,25 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
     auto_ptr<HTTPResponse> http(getResponse(ret));
 
     string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
-    string postData(in["PostData"].string() ? in["PostData"].string() : "");
 
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState, postData);
+    doRequest(*app, NULL, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState);
+    if (!ret.isstruct())
+        ret.structure();
+    ret.addmember("RelayState").string(relayState.c_str());
     out << ret;
 }
 
 pair<bool,long> Shib1SessionInitiator::doRequest(
     const Application& app,
+    const HTTPRequest* httpRequest,
     HTTPResponse& httpResponse,
     const char* entityID,
     const char* acsLocation,
     bool artifact,
-    string& relayState,
-    string& postData
+    string& relayState
     ) const
 {
 #ifndef SHIBSP_LITE
@@ -272,7 +283,6 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     }
 
     preserveRelayState(app, httpResponse, relayState);
-    preservePostData(app, httpResponse, postData, relayState);
 
     // Shib 1.x requires a target value.
     if (relayState.empty())
@@ -285,6 +295,11 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "shire=" + urlenc->encode(acsLocation) +
         "&time=" + timebuf + "&target=" + urlenc->encode(relayState.c_str()) +
         "&providerId=" + urlenc->encode(app.getRelyingParty(entity.first)->getString("entityID").second);
+
+    if (httpRequest) {
+        // If the request object is available, we're responsible for the POST data.
+        preservePostData(app, *httpRequest, httpResponse, relayState.c_str());
+    }
 
     return make_pair(true, httpResponse.sendRedirect(req.c_str()));
 #else

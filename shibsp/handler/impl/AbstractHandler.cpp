@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutHandler.h"
 #include "remoting/ListenerService.h"
+#include "util/CGIParser.h"
 #include "util/SPConstants.h"
 #include "util/TemplateParameters.h"
 
@@ -358,9 +359,7 @@ void AbstractHandler::recoverRelayState(
                             relayState.erase();
                     }
                     else {
-                        Category::getInstance(SHIBSP_LOGCAT".Handler").error(
-                            "Storage-backed RelayState with invalid StorageService ID (%s)", ssid.c_str()
-                            );
+                        m_log.error("Storage-backed RelayState with invalid StorageService ID (%s)", ssid.c_str());
                         relayState.erase();
                     }
 #endif
@@ -419,245 +418,222 @@ void AbstractHandler::recoverRelayState(
     }
 }
 
-// postdata tools
-
-inline int hex2int(const char& hex)
-{
-   return ((hex>='0'&&hex<='9')?(hex-'0'):(std::toupper(hex)-'A'+10));
-}
-
-// remove the '+' and '%xx' from a string
-void AbstractHandler::urlDecode(string &in) const
-{
-    const char *cin(in.c_str());
-    string out;
-
-    for (; *cin; cin++) {
-       if(*cin!='%' || !std::isxdigit(cin[1]) || !std::isxdigit(cin[2])) {
-          // same char or space
-          if(*cin=='+') out += ' ';
-          else out += *cin;
-       } else {
-          // convert hex char
-          out += static_cast<char>(hex2int(cin[1])*16+hex2int(cin[2]));
-          cin += 2;
-       }
-    }
-    in = out;
-}
-
-// get posted data from a request (limit should be parameter?)
-#define MAX_POST_DATA (1024*1024)
-string AbstractHandler::getPostData(SPRequest& request) const
-{
-    string contentType = request.getContentType();
-    string postData;
-    if (contentType.compare("application/x-www-form-urlencoded")==0) {
-       if (request.getContentLength()<MAX_POST_DATA) {
-          postData = request.getRequestBody();
-          m_log.debug("processed %d bytes of posted data", postData.length());
-       } else {
-          m_log.debug("ignoring %d bytes of posted data", request.getContentLength());
-       }
-    } else {
-       m_log.warn("ignoring '%s' posted data.", contentType.c_str());
-    }
-    urlDecode(postData);
-    return (postData);
-}
-
-
-// postdata name is base + relaystate key
-inline string postCookieName(string& relayState)
-{
-    string name = "_shibpost_";
-    string::size_type rp = string::npos;
-    if (relayState.find("cookie:")==0) rp = 6;
-    else if (relayState.find("ss:")==0) rp = relayState.find(':', 3);
-    if (rp!=string::npos) name += relayState.substr(rp+1);
-    return (name);
-}
-
 /* Save posted data to a storage service.
    We may not have to key the postdata cookie to the relay state,
    but doing so gives a better assurance that the recovered data really belongs to the relayed request. */
-
-void AbstractHandler::preservePostData(const Application& application, HTTPResponse& response,  string& postData, string& relayState) const
+void AbstractHandler::preservePostData(
+    const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* relayState
+    ) const
 {
-    if (postData.empty()) return;
+    if (strcmp(request.getMethod(), "POST"))
+        return;
 
-    // No specs mean no save
+    // No specs mean no save.
     const PropertySet* props=application.getPropertySet("Sessions");
     pair<bool,const char*> mech = props->getString("postData");
-    pair<bool,const char*> mecht = props->getString("postTemplate");
-    if (!mech.first || !mech.second || !*mech.second || !mecht.first || !mecht.second || !*mecht.second) {
-        m_log.warn("post data save requires postData and postTemplate specification.");
+    if (!mech.first) {
+        m_log.info("postData property not supplied, form data will not be preserved across SSO");
         return;
     }
 
-    if (strstr(mech.second,"ss:")==mech.second) {
-            mech.second+=3;
-            if (*mech.second) {
-                if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+    DDF postData = getPostData(application, request);
+    if (postData.isnull())
+        return;
+
+    if (strstr(mech.second,"ss:") == mech.second) {
+        mech.second+=3;
+        if (!*mech.second) {
+            postData.destroy();
+            throw ConfigurationException("Unsupported postData mechanism ($1).", params(1, mech.second - 3));
+        }
+
+        string postkey;
+        if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+            DDFJanitor postjan(postData);
 #ifndef SHIBSP_LITE
-                    StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
-                    if (storage) {
-
-                        // Use a random key
-                        string rsKey;
-                        SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
-                        rsKey = SAMLArtifact::toHex(rsKey);
-
-                        if (!storage->createString("PostData", rsKey.c_str(), postData.c_str(), time(NULL) + 600))
-                            throw IOException("Attempted to insert duplicate storage key.");
-                        postData = string(mech.second-3) + ':' + rsKey;
-                    }
-                    else {
-                        m_log.error("Storage-backed PostData with invalid StorageService ID (%s)", mech.second);
-                        postData.erase();
-                    }
-#endif
-                }
-                else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
-                    DDF out,in = DDF("set::PostData").structure();
-                    in.addmember("id").string(mech.second);
-                    in.addmember("value").string(postData.c_str());
-                    DDFJanitor jin(in),jout(out);
-                    out = application.getServiceProvider().getListenerService()->send(in);
-                    if (!out.isstring())
-                        throw IOException("StorageService-backed PostData mechanism did not return a state key.");
-                    postData = string(mech.second-3) + ':' + out.string();
-                }
+            StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
+            if (storage) {
+                // Use a random key
+                string rsKey;
+                SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+                rsKey = SAMLArtifact::toHex(rsKey);
+                ostringstream out;
+                out << postData;
+                if (!storage->createString("PostData", rsKey.c_str(), out.str().c_str(), time(NULL) + 600))
+                    throw IOException("Attempted to insert duplicate storage key.");
+                postkey = string(mech.second-3) + ':' + rsKey;
             }
+            else {
+                m_log.error("storage-backed PostData mechanism with invalid StorageService ID (%s)", mech.second);
+            }
+#endif
+        }
+        else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+            DDF out,in = DDF("set::PostData").structure();
+            DDFJanitor jin(in),jout(out);
+            in.addmember("id").string(mech.second);
+            in.add(postData);
+            out = application.getServiceProvider().getListenerService()->send(in);
+            if (!out.isstring())
+                throw IOException("StorageService-backed PostData mechanism did not return a state key.");
+            postkey = string(mech.second-3) + ':' + out.string();
+        }
 
-            // set cookie with ss key info
-            string ckname = postCookieName(relayState);
-            string ckval = postData + ";path=/; secure";
-            response.setCookie(ckname.c_str(),ckval.c_str());
-            m_log.debug("post cookie, name=%s, value=%s", ckname.c_str(), ckval.c_str());
-
+        // Set a cookie with key info.
+        pair<string,const char*> shib_cookie = getPostCookieNameProps(application, relayState);
+        postkey += shib_cookie.second;
+        response.setCookie(shib_cookie.first.c_str(), postkey.c_str());
     }
-    else
+    else {
+        postData.destroy();
         throw ConfigurationException("Unsupported postData mechanism ($1).", params(1,mech.second));
+    }
 }
 
-void AbstractHandler::recoverPostData(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response, string& postData, string& relayState
+DDF AbstractHandler::recoverPostData(
+    const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* relayState
     ) const
 {
-    SPConfig& conf = SPConfig::getConfig();
+    // First we need the post recovery cookie.
+    pair<string,const char*> shib_cookie = getPostCookieNameProps(application, relayState);
+    const char* cookie = request.getCookie(shib_cookie.first.c_str());
+    if (!cookie || !*cookie)
+        return DDF();
 
-    /** get ss key from our cookie **/
-
-    string ckname = postCookieName(relayState);
-    const char *ck = request.getCookie(ckname.c_str());
-    if (ck && *ck) {
-       postData = ck;
-       m_log.debug("found post cookie, name=%s, value=%s", ckname.c_str(), postData.c_str());
-       if (true ) {
-          response.setCookie(ckname.c_str(), ";path=/; expires=Mon, 01 Jan 2001 00:00:00 GMT");
-       }
-    } else {
-       m_log.debug("data cookie (%s) not found", ckname.c_str());
-       return;
-    }
+    // Clear the cookie.
+    string exp(shib_cookie.second);
+    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
+    response.setCookie(shib_cookie.first.c_str(), exp.c_str());
 
     // Look for StorageService-backed state of the form "ss:SSID:key".
-    const char* state = postData.c_str();
-    if (strstr(state,"ss:")==state) {
+    const char* state = cookie;
+    if (strstr(state, "ss:") == state) {
         state += 3;
-        const char* key = strchr(state,':');
+        const char* key = strchr(state, ':');
         if (key) {
-            string ssid = postData.substr(3, key - state);
+            string ssid = string(cookie).substr(3, key - state);
             key++;
-
             if (!ssid.empty() && *key) {
+                SPConfig& conf = SPConfig::getConfig();
                 if (conf.isEnabled(SPConfig::OutOfProcess)) {
 #ifndef SHIBSP_LITE
                     StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
                     if (storage) {
-                        ssid = key;
-                        if (storage->readString("PostData",ssid.c_str(),&postData)>0) {
-                            if (true )
-                                storage->deleteString("PostData",ssid.c_str());
-                            return;
+                        if (storage->readString("PostData", key, &ssid) > 0) {
+                            storage->deleteString("PostData", key);
+                            istringstream inret(ssid);
+                            DDF ret;
+                            inret >> ret;
+                            return ret;
                         }
-                        else
-                            postData.erase();
+                        else {
+                            m_log.error("failed to recover form post data using key (%s)", key);
+                        }
                     }
                     else {
-                        Category::getInstance(SHIBSP_LOGCAT".Handler").error(
-                            "Storage-backed PostData with invalid StorageService ID (%s)", ssid.c_str()
-                            );
-                        postData.erase();
+                        m_log.error("storage-backed PostData with invalid StorageService ID (%s)", ssid.c_str());
                     }
 #endif
                 }
                 else if (conf.isEnabled(SPConfig::InProcess)) {
-                    DDF out,in = DDF("get::PostData").structure();
+                    DDF in = DDF("get::PostData").structure();
+                    DDFJanitor jin(in);
                     in.addmember("id").string(ssid.c_str());
                     in.addmember("key").string(key);
-                    DDFJanitor jin(in),jout(out);
-                    out = application.getServiceProvider().getListenerService()->send(in);
-                    if (!out.isstring()) {
-                        m_log.error("StorageService-backed PostData mechanism did not return a state value.");
-                        postData.erase();
-                    }
-                    else {
-                        postData = out.string();
-                        return;
-                    }
+                    DDF out = application.getServiceProvider().getListenerService()->send(in);
+                    if (out.islist())
+                        return out;
+                    out.destroy();
+                    m_log.error("storageService-backed PostData mechanism did not return preserved data.");
                 }
             }
         }
     }
-
-    if (postData == "default")
-        postData.empty();
+    return DDF();
 }
 
-/* Send recovered data via template to browser for re-post */
-
-long AbstractHandler::sendPostResponse(const Application& application, HTTPResponse& httpResponse, string& url, string& postData) const
+long AbstractHandler::sendPostResponse(
+    const Application& application, HTTPResponse& httpResponse, const char* url, DDF& postData
+    ) const
 {
-    httpResponse.setContentType("text/html");
-    httpResponse.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-    httpResponse.setResponseHeader("Cache-Control","private,no-store,no-cache");
-
     const PropertySet* props=application.getPropertySet("Sessions");
-    const char* postTemplate =  props->getString("postTemplate").second;
-    m_log.debug("send post, template=%s", postTemplate);
+    pair<bool,const char*> postTemplate = props->getString("postTemplate");
+    if (!postTemplate.first)
+        throw ConfigurationException("Missing postTemplate property, unable to recreate form post.");
 
-    string fname(postTemplate);
+    string fname(postTemplate.second);
     ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
     if (!infile)
-          throw ConfigurationException("Unable to access HTML template ($1).", params(1, postTemplate));
+        throw ConfigurationException("Unable to access HTML template ($1).", params(1, fname.c_str()));
     TemplateParameters respParam;
-    respParam.m_map["action"] = url.c_str();
+    respParam.m_map["action"] = url;
 
-    // parse the posted data into form elements
-    vector<xmltooling::TemplateEngine::TemplateParameters> dataParams;
-    string::size_type startPos = 0;
-    for (int n=0;;n++) {
-       string::size_type ampPos = postData.find("&", startPos);
-       if (ampPos==string::npos) ampPos = postData.length();
+    // Load the parameters into objects for the template.
+    // TODO: rework the TemplateEngine to require only a single TemplateParameters object
+    vector<TemplateEngine::TemplateParameters> dataParams;
 
-       string::size_type eqPos = postData.find("=", startPos);
-       if (eqPos>=ampPos) eqPos = ampPos - 1;
-
-       // add these name/values to the vector
-       dataParams.resize(n+1);
-       TemplateParameters *xp = static_cast<TemplateParameters*>(&dataParams.at(n));
-       xp->m_map["_name_"] = postData.substr(startPos,eqPos-startPos).c_str();
-       xp->m_map["_value_"] = postData.substr(eqPos+1,ampPos-eqPos-1).c_str();
-       if (ampPos==postData.length()) break;
-       startPos = ampPos+1;
-    } 
+    DDF param = postData.first();
+    while (param.isstring()) {
+        dataParams.push_back(TemplateEngine::TemplateParameters());
+        TemplateEngine::TemplateParameters& xp = dataParams.back();
+        xp.m_map["_name_"] = param.name();
+        xp.m_map["_value_"] = param.string();
+        param = postData.next();
+    }
     respParam.m_collectionMap["PostedData"] = dataParams;
 
     stringstream str;
     XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, respParam);
-    return (httpResponse.sendResponse(str));
+
+    httpResponse.setContentType("text/html");
+    httpResponse.setResponseHeader("Expires", "01-Jan-1997 12:00:00 GMT");
+    httpResponse.setResponseHeader("Cache-Control", "no-cache, no-store, must-revalidate, private");
+    httpResponse.setResponseHeader("Pragma", "no-cache");
+    return httpResponse.sendResponse(str);
 }
 
+// Decorates the name of the cookie with the relay state key, if any.
+pair<string,const char*> AbstractHandler::getPostCookieNameProps(const Application& app, const char* relayState) const
+{
+    pair<string,const char*> shib_cookie=app.getCookieNameProps("_shibpost_");
+    if (strstr(relayState, "cookie:") == relayState) {
+        shib_cookie.first += (relayState + 7);
+    }
+    else if (strstr(relayState, "ss:") == relayState) {
+        const char* pch = strchr(relayState + 3, ':');
+        if (pch)
+            shib_cookie.first += (pch + 1);
+    }
+    return shib_cookie;
+}
 
+DDF AbstractHandler::getPostData(const Application& application, const HTTPRequest& request) const
+{
+    string contentType = request.getContentType();
+    if (contentType.compare("application/x-www-form-urlencoded") == 0) {
+        const PropertySet* props=application.getPropertySet("Sessions");
+        pair<bool,unsigned int> plimit = props->getUnsignedInt("postLimit");
+        if (!plimit.first)
+            plimit.second = 1024 * 1024;
+        if (plimit.second == 0 || request.getContentLength() <= plimit.second) {
+            CGIParser cgi(request);
+            pair<CGIParser::walker,CGIParser::walker> params = cgi.getParameters(NULL);
+            if (params.first == params.second)
+                return DDF();
+            DDF child;
+            DDF ret = DDF("parameters").list();
+            for (; params.first != params.second; ++params.first) {
+                child = DDF(params.first->first.c_str()).string(params.first->second);
+                ret.add(child);
+            }
+            return ret;
+        }
+        else {
+            m_log.warn("POST limit exceeded, ignoring %d bytes of posted data", request.getContentLength());
+        }
+    }
+    else {
+        m_log.info("ignoring POST data with non-standard encoding (%s)", contentType.c_str());
+    }
+    return NULL;
+}

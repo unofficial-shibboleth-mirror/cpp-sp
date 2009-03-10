@@ -1632,8 +1632,8 @@ void XMLConfig::receive(DDF& in, ostream& out)
         string postData;
         StorageService* storage = getStorageService(id);
         if (storage) {
-            if (storage->readString("PostData",key,&postData)>0) {
-               storage->deleteString("PostData",key);
+            if (storage->readString("PostData",key,&postData) > 0) {
+                storage->deleteString("PostData",key);
             }
         }
         else {
@@ -1641,16 +1641,20 @@ void XMLConfig::receive(DDF& in, ostream& out)
                 "Storage-backed PostData with invalid StorageService ID (%s)", id
                 );
         }
-
-        // Repack for return to caller.
-        DDF ret=DDF(NULL).string(postData.c_str());
-        DDFJanitor jret(ret);
-        out << ret;
+        // If the data's empty, we'll send nothing back.
+        // If not, we don't need to round trip it, just send back the serialized DDF list.
+        if (postData.empty()) {
+            DDF ret(NULL);
+            DDFJanitor jret(ret);
+            out << ret;
+        }
+        else {
+            out << postData;
+        }
     }
     else if (!strcmp(in.name(), "set::PostData")) {
         const char* id = in["id"].string();
-        const char* value = in["value"].string();
-        if (!id || !value)
+        if (!id || !in["parameters"].islist())
             throw ListenerException("Required parameters missing for PostData creation.");
 
         string rsKey;
@@ -1658,7 +1662,9 @@ void XMLConfig::receive(DDF& in, ostream& out)
         if (storage) {
             SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
             rsKey = SAMLArtifact::toHex(rsKey);
-            storage->createString("PostData", rsKey.c_str(), value, time(NULL) + 600);
+            ostringstream params;
+            params << in["parameters"];
+            storage->createString("PostData", rsKey.c_str(), params.str().c_str(), time(NULL) + 600);
         }
         else {
             Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
@@ -1671,7 +1677,6 @@ void XMLConfig::receive(DDF& in, ostream& out)
         DDFJanitor jret(ret);
         out << ret;
     }
-
 }
 #endif
 
