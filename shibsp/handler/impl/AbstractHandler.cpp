@@ -418,9 +418,6 @@ void AbstractHandler::recoverRelayState(
     }
 }
 
-/* Save posted data to a storage service.
-   We may not have to key the postdata cookie to the relay state,
-   but doing so gives a better assurance that the recovered data really belongs to the relayed request. */
 void AbstractHandler::preservePostData(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* relayState
     ) const
@@ -586,17 +583,19 @@ long AbstractHandler::sendPostResponse(
     return httpResponse.sendResponse(str);
 }
 
-// Decorates the name of the cookie with the relay state key, if any.
 pair<string,const char*> AbstractHandler::getPostCookieNameProps(const Application& app, const char* relayState) const
 {
+    // Decorates the name of the cookie with the relay state key, if any.
+    // Doing so gives a better assurance that the recovered data really
+    // belongs to the relayed request.
     pair<string,const char*> shib_cookie=app.getCookieNameProps("_shibpost_");
     if (strstr(relayState, "cookie:") == relayState) {
-        shib_cookie.first += (relayState + 7);
+        shib_cookie.first = string("_shibpost_") + (relayState + 7);
     }
     else if (strstr(relayState, "ss:") == relayState) {
         const char* pch = strchr(relayState + 3, ':');
         if (pch)
-            shib_cookie.first += (pch + 1);
+            shib_cookie.first = string("_shibpost_") + (pch + 1);
     }
     return shib_cookie;
 }
