@@ -569,18 +569,12 @@ long AbstractHandler::sendPostResponse(
     respParam.m_map["action"] = url;
 
     // Load the parameters into objects for the template.
-    // TODO: rework the TemplateEngine to require only a single TemplateParameters object
-    vector<TemplateEngine::TemplateParameters> dataParams;
-
+    multimap<string,string>& collection = respParam.m_collectionMap["PostedData"];
     DDF param = postData.first();
     while (param.isstring()) {
-        dataParams.push_back(TemplateEngine::TemplateParameters());
-        TemplateEngine::TemplateParameters& xp = dataParams.back();
-        xp.m_map["_name_"] = param.name();
-        xp.m_map["_value_"] = param.string();
+        collection.insert(pair<string,string>(param.name(), (param.string() ? param.string() : "")));
         param = postData.next();
     }
-    respParam.m_collectionMap["PostedData"] = dataParams;
 
     stringstream str;
     XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, respParam);
@@ -623,8 +617,10 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
             DDF child;
             DDF ret = DDF("parameters").list();
             for (; params.first != params.second; ++params.first) {
-                child = DDF(params.first->first.c_str()).string(params.first->second);
-                ret.add(child);
+                if (!params.first->first.empty()) {
+                    child = DDF(params.first->first.c_str()).string(params.first->second);
+                    ret.add(child);
+                }
             }
             return ret;
         }
