@@ -556,6 +556,7 @@
 			<attribute name="postData" type="conf:string"/>
             <attribute name="postLimit" type="positiveInteger"/>
 			<attribute name="postTemplate" type="conf:string"/>
+            <attribute name="postExpire" type="boolean"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
