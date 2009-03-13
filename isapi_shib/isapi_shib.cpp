@@ -401,10 +401,15 @@ public:
   int getPort() const {
     return m_port;
   }
+  const char* getQueryString() const {
+      const char* uri = getRequestURI();
+      uri = (uri ? strchr(uri, '?') : NULL);
+      return uri ? (uri + 1) : NULL;
+  }
   const char* getMethod() const {
     if (m_method.empty()) {
         dynabuf var(5);
-        GetServerVariable(m_pfc,"REQUEST_METHOD",var,5,false);
+        GetServerVariable(m_pfc,"HTTP_METHOD",var,5,false);
         if (!var.empty())
             m_method = var;
     }
@@ -413,14 +418,11 @@ public:
   string getContentType() const {
     if (m_content_type.empty()) {
         dynabuf var(32);
-        GetServerVariable(m_pfc,"CONTENT_TYPE",var,32,false);
+        GetServerVariable(m_pfc,"HTTP_CONTENT_TYPE",var,32,false);
         if (!var.empty())
             m_content_type = var;
     }
     return m_content_type;
-  }
-  long getContentLength() const {
-      return 0;
   }
   string getRemoteAddr() const {
     m_remote_addr = AbstractSPRequest::getRemoteAddr();
@@ -528,8 +530,8 @@ public:
   }
 
   // The filter never processes the POST, so stub these methods.
-  const char* getQueryString() const { throw IOException("getQueryString not implemented"); }
-  const char* getRequestBody() const { throw IOException("getRequestBody not implemented"); }
+  long getContentLength() const { throw IOException("The request's Content-Length is not available to an ISAPI filter."); }
+  const char* getRequestBody() const { throw IOException("The request body is not available to an ISAPI filter."); }
 };
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)

@@ -422,8 +422,11 @@ void AbstractHandler::preservePostData(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* relayState
     ) const
 {
-    if (strcmp(request.getMethod(), "POST"))
-        return;
+#ifdef HAVE_STRCASECMP
+    if (strcasecmp(request.getMethod(), "POST")) return;
+#else
+    if (stricmp(request.getMethod(), "POST")) return;
+#endif
 
     // No specs mean no save.
     const PropertySet* props=application.getPropertySet("Sessions");
@@ -634,5 +637,5 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
     else {
         m_log.info("ignoring POST data with non-standard encoding (%s)", contentType.c_str());
     }
-    return NULL;
+    return DDF();
 }
