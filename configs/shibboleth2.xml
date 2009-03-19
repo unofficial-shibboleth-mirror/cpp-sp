@@ -210,7 +210,8 @@
             <!--
             <MetadataProvider type="XML" uri="http://federation.org/federation-metadata.xml"
                  backingFilePath="federation-metadata.xml" reloadInterval="7200">
-               <SignatureMetadataFilter certificate="fedsigner.pem"/>
+               <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
+               <MetadataFilter type="Signature" certificate="fedsigner.pem"/>
             </MetadataProvider>
             -->
 
