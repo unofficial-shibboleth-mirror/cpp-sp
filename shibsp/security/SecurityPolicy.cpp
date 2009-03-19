@@ -26,15 +26,21 @@
 #include "metadata/MetadataProviderCriteria.h"
 #include "security/SecurityPolicy.h"
 
-using namespace opensaml::saml2;
 using namespace shibsp;
+using namespace opensaml::saml2;
+using namespace std;
 
 SecurityPolicy::SecurityPolicy(const Application& application, const xmltooling::QName* role, bool validate, const char* policyId)
-    : opensaml::SecurityPolicy(application.getMetadataProvider(), role, application.getTrustEngine(), validate), m_application(application) {
-
-    const std::vector<const opensaml::SecurityPolicyRule*>& rules =
+        : opensaml::SecurityPolicy(application.getMetadataProvider(), role, application.getTrustEngine(), validate), m_application(application) {
+    const vector<const opensaml::SecurityPolicyRule*>& rules =
         application.getServiceProvider().getPolicyRules(policyId ? policyId : application.getString("policyId").second);
     getRules().assign(rules.begin(), rules.end());
+
+    // Populate audiences.
+    if (application.getAudiences()) {
+        for (vector<const XMLCh*>::const_iterator a = application.getAudiences()->begin(); a != application.getAudiences()->end(); ++a)
+            getAudiences().push_back(*a);
+    }
 }
 
 opensaml::saml2md::MetadataProvider::Criteria& SecurityPolicy::getMetadataProviderCriteria() const

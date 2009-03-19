@@ -246,12 +246,16 @@
     
     <!-- Each policy defines a set of rules to use to secure messages. -->
     <SecurityPolicies>
-        <!-- The predefined policy enforces replay/freshness and permits signing and client TLS. -->
+        <!--
+        The predefined policy enforces replay/freshness, standard
+        condition processing, and permits signing and client TLS.
+        -->
         <Policy id="default" validate="false">
-            <Rule type="MessageFlow" checkReplay="true" expires="60"/>
-            <Rule type="ClientCertAuth" errorFatal="true"/>
-            <Rule type="XMLSigning" errorFatal="true"/>
-            <Rule type="SimpleSigning" errorFatal="true"/>
+            <PolicyRule type="MessageFlow" checkReplay="true" expires="60"/>
+            <PolicyRule type="Conditions"/>
+            <PolicyRule type="ClientCertAuth" errorFatal="true"/>
+            <PolicyRule type="XMLSigning" errorFatal="true"/>
+            <PolicyRule type="SimpleSigning" errorFatal="true"/>
         </Policy>
     </SecurityPolicies>
 

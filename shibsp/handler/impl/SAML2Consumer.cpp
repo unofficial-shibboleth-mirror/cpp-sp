@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,11 @@
 # include "ServiceProvider.h"
 # include "SessionCache.h"
 # include "attribute/resolver/ResolutionContext.h"
+# include <saml/SAMLConfig.h>
 # include <saml/saml2/core/Protocols.h>
-# include <saml/saml2/profile/BrowserSSOProfileValidator.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataCredentialCriteria.h>
+# include <saml/saml2/profile/SAML2AssertionPolicy.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
@@ -58,8 +59,17 @@ namespace shibsp {
     public:
         SAML2Consumer(const DOMElement* e, const char* appId)
             : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SSO.SAML2")) {
+#ifndef SHIBSP_LITE
+            m_ssoRule = NULL;
+            if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
+                m_ssoRule = SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(BEARER_POLICY_RULE, e);
+#endif
         }
-        virtual ~SAML2Consumer() {}
+        virtual ~SAML2Consumer() {
+#ifndef SHIBSP_LITE
+            delete m_ssoRule;
+#endif
+        }
 
 #ifndef SHIBSP_LITE
         void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
@@ -76,6 +86,8 @@ namespace shibsp {
             const PropertySet* settings,
             const XMLObject& xmlObject
             ) const;
+
+        SecurityPolicyRule* m_ssoRule;
 #endif
     };
 
@@ -88,6 +100,18 @@ namespace shibsp {
         return new SAML2Consumer(p.first, p.second);
     }
 
+#ifndef SHIBSP_LITE
+    class SHIBSP_DLLLOCAL _rulenamed : std::unary_function<const SecurityPolicyRule*,bool>
+    {
+    public:
+        _rulenamed(const char* name) : m_name(name) {}
+        bool operator()(const SecurityPolicyRule* rule) const {
+            return rule ? !strcmp(m_name, rule->getType()) : false;
+        }
+    private:
+        const char* m_name;
+    };
+#endif
 };
 
 #ifndef SHIBSP_LITE
@@ -140,9 +164,6 @@ void SAML2Consumer::implementProtocol(
         flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
     }
 
-    time_t now = time(NULL);
-    string dest = httpRequest.getRequestURL();
-
     // authnskew allows rejection of SSO if AuthnInstant is too old.
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
     pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
@@ -150,6 +171,14 @@ void SAML2Consumer::implementProtocol(
     // Saves off error messages potentially helpful for users.
     string contextualError;
 
+    // Ensure the Bearer rule is in the policy set.
+    if (find_if(policy.getRules(), _rulenamed(BEARER_POLICY_RULE)) == NULL)
+        policy.getRules().push_back(m_ssoRule);
+
+    // Populate recipient as audience.
+    policy.getAudiences().push_back(application.getRelyingParty(entity)->getXMLString("entityID").second);
+
+    time_t now = time(NULL);
     for (vector<saml2::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
         try {
             // Skip unsigned assertion?
@@ -164,7 +193,8 @@ void SAML2Consumer::implementProtocol(
             extractMessageDetails(*(*a), samlconstants::SAML20P_NS, policy);
 
             // Run the policy over the assertion. Handles replay, freshness, and
-            // signature verification, assuming the relevant rules are configured.
+            // signature verification, assuming the relevant rules are configured,
+            // along with condition and profile enforcement.
             policy.evaluate(*(*a));
 
             // If no security is in place now, we kick it.
@@ -179,14 +209,14 @@ void SAML2Consumer::implementProtocol(
                     throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
             }
 
-            // Now do profile and core semantic validation to ensure we can use it for SSO.
-            BrowserSSOProfileValidator ssoValidator(
-                application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now, dest.substr(0,dest.find('?')).c_str()
-                );
-            ssoValidator.validateAssertion(*(*a));
-
             // Address checking.
-            checkAddress(application, httpRequest, ssoValidator.getAddress());
+            SubjectConfirmationData* subcondata = dynamic_cast<SubjectConfirmationData*>(
+                dynamic_cast<SAML2AssertionPolicy&>(policy).getSubjectConfirmation()->getSubjectConfirmationData()
+                );
+            if (subcondata && subcondata->getAddress()) {
+                auto_ptr_char boundip(subcondata->getAddress());
+                checkAddress(application, httpRequest, boundip.get());
+            }
 
             // Track it as a valid token.
             tokens.push_back(*a);
@@ -249,7 +279,8 @@ void SAML2Consumer::implementProtocol(
             extractMessageDetails(*decrypted, samlconstants::SAML20P_NS, policy);
 
             // Run the policy over the assertion. Handles replay, freshness, and
-            // signature verification, assuming the relevant rules are configured.
+            // signature verification, assuming the relevant rules are configured,
+            // along with condition and profile enforcement.
             // We have to marshall the object first to ensure signatures can be checked.
             if (!decrypted->getDOM())
                 decrypted->marshall();
@@ -267,14 +298,14 @@ void SAML2Consumer::implementProtocol(
                     throw SecurityPolicyException("The decrypted assertion was unsigned, violating local security policy.");
             }
 
-            // Now do profile and core semantic validation to ensure we can use it for SSO.
-            BrowserSSOProfileValidator ssoValidator(
-                application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now, dest.substr(0,dest.find('?')).c_str()
-                );
-            ssoValidator.validateAssertion(*decrypted);
-
             // Address checking.
-            checkAddress(application, httpRequest, ssoValidator.getAddress());
+            SubjectConfirmationData* subcondata = dynamic_cast<SubjectConfirmationData*>(
+                dynamic_cast<SAML2AssertionPolicy&>(policy).getSubjectConfirmation()->getSubjectConfirmationData()
+                );
+            if (subcondata && subcondata->getAddress()) {
+                auto_ptr_char boundip(subcondata->getAddress());
+                checkAddress(application, httpRequest, boundip.get());
+            }
 
             // Track it as a valid token.
             tokens.push_back(decrypted);

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -441,6 +441,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
             if (cacheex) {
                 time_t expires = logoutRequest->getNotOnOrAfter() ? logoutRequest->getNotOnOrAfterEpoch() : 0;
                 cacheex->logout(application, entity, *nameid, &indexes, expires, sessions);
+                m_log.debug("session cache returned %d sessions bound to NameID in logout request", sessions.size());
 
                 // Now we actually terminate everything except for the active session,
                 // if this is front-channel, for notification purposes.

@@ -685,9 +685,10 @@
 						<documentation>Specifies a set of SecurityPolicyRule plugins</documentation>
 					</annotation>
 					<complexType>
-						<sequence>
+						<choice>
 							<element name="Rule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
-						</sequence>
+                            <element name="PolicyRule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
+						</choice>
 						<attribute name="id" type="conf:string" use="required"/>
 						<attribute name="validate" type="boolean"/>
 						<anyAttribute namespace="##any" processContents="lax"/>

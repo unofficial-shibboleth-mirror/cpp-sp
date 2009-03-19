@@ -430,6 +430,7 @@ namespace {
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh Policy[] =               UNICODE_LITERAL_6(P,o,l,i,c,y);
+    static const XMLCh PolicyRule[] =           UNICODE_LITERAL_10(P,o,l,i,c,y,R,u,l,e);
     static const XMLCh _provider[] =            UNICODE_LITERAL_8(p,r,o,v,i,d,e,r);
     static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _ReplayCache[] =         UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
@@ -766,7 +767,7 @@ XMLApplication::XMLApplication(
 
 #ifndef SHIBSP_LITE
         nlist=e->getElementsByTagNameNS(samlconstants::SAML20_NS,Audience::LOCAL_NAME);
-        if (nlist) {
+        if (nlist && nlist->getLength()) {
             log.warn("use of <saml:Audience> elements outside of a Security Policy Rule is deprecated");
             for (XMLSize_t i=0; i<nlist->getLength(); i++)
                 if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
@@ -1487,8 +1488,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 settings->load(child, NULL, &filter);
                 rules.first = settings.release();
 
-                // Process Rule elements.
-                const DOMElement* rule = XMLHelper::getFirstChildElement(child,Rule);
+                // Process PolicyRule elements.
+                const DOMElement* rule = XMLHelper::getFirstChildElement(child,PolicyRule);
                 while (rule) {
                     auto_ptr_char type(rule->getAttributeNS(NULL,_type));
                     try {
@@ -1497,7 +1498,27 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     catch (exception& ex) {
                         log.crit("error instantiating policy rule (%s) in policy (%s): %s", type.get(), id.get(), ex.what());
                     }
-                    rule = XMLHelper::getNextSiblingElement(rule,Rule);
+                    rule = XMLHelper::getNextSiblingElement(rule,PolicyRule);
+                }
+
+                if (rules.second.size() == 0) {
+                    // Process Rule elements.
+                    log.warn("detected legacy Policy configuration, please convert to new PolicyRule syntax");
+                    rule = XMLHelper::getFirstChildElement(child,Rule);
+                    while (rule) {
+                        auto_ptr_char type(rule->getAttributeNS(NULL,_type));
+                        try {
+                            rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(type.get(),rule));
+                        }
+                        catch (exception& ex) {
+                            log.crit("error instantiating policy rule (%s) in policy (%s): %s", type.get(), id.get(), ex.what());
+                        }
+                        rule = XMLHelper::getNextSiblingElement(rule,Rule);
+                    }
+
+                    // Manually add a basic Conditions rule.
+                    log.info("installing a default Conditions rule in policy (%s) for compatibility with legacy configuration", id.get());
+                    rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(CONDITIONS_POLICY_RULE, NULL));
                 }
 
                 child = XMLHelper::getNextSiblingElement(child,Policy);

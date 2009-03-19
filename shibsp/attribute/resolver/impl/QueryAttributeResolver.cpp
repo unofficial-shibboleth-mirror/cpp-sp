@@ -206,6 +206,7 @@ namespace shibsp {
         bool SAML2Query(QueryContext& ctx) const;
 
         Category& m_log;
+        string m_policyId;
         vector<AttributeDesignator*> m_SAML1Designators;
         vector<saml2::Attribute*> m_SAML2Designators;
     };
@@ -215,6 +216,7 @@ namespace shibsp {
         return new QueryResolver(e);
     }
 
+    static const XMLCh _policyId[] = UNICODE_LITERAL_8(p,o,l,i,c,y,I,d);
 };
 
 QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Query"))
@@ -222,6 +224,12 @@ QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(
 #ifdef _DEBUG
     xmltooling::NDC ndc("QueryResolver");
 #endif
+
+    const XMLCh* pid = e ? e->getAttributeNS(NULL, _policyId) : NULL;
+    if (pid && *pid) {
+        auto_ptr_char temp(pid);
+        m_policyId = temp.get();
+    }
 
     DOMElement* child = XMLHelper::getFirstChildElement(e);
     while (child) {
@@ -266,7 +274,16 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
 
     const Application& application = ctx.getApplication();
     const PropertySet* relyingParty = application.getRelyingParty(ctx.getEntityDescriptor());
-    shibsp::SecurityPolicy policy(application);
+
+    // Locate policy key.
+    const char* policyId = m_policyId.empty() ? application.getString("policyId").second : m_policyId.c_str();
+
+    // Access policy properties.
+    const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId);
+    pair<bool,bool> validate = settings->getBool("validate");
+
+    shibsp::SecurityPolicy policy(application, NULL, validate.first && validate.second, policyId);
+    policy.getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(policy);
 
@@ -396,13 +413,22 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     }
 
     const Application& application = ctx.getApplication();
-    shibsp::SecurityPolicy policy(application);
-    MetadataCredentialCriteria mcc(*AA);
-    shibsp::SOAPClient soaper(policy);
-
     const PropertySet* relyingParty = application.getRelyingParty(ctx.getEntityDescriptor());
+
+    // Locate policy key.
+    const char* policyId = m_policyId.empty() ? application.getString("policyId").second : m_policyId.c_str();
+
+    // Access policy properties.
+    const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId);
+    pair<bool,bool> validate = settings->getBool("validate");
+
     pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
     pair<bool,const char*> encryption = relyingParty->getString("encryption");
+
+    shibsp::SecurityPolicy policy(application, NULL, validate.first && validate.second, policyId);
+    policy.getAudiences().push_back(relyingParty->getXMLString("entityID").second);
+    MetadataCredentialCriteria mcc(*AA);
+    shibsp::SOAPClient soaper(policy);
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
     saml2p::StatusResponseType* srt=NULL;

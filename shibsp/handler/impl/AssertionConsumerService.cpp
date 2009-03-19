@@ -147,20 +147,22 @@ pair<bool,long> AssertionConsumerService::processMessage(
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
-    shibsp::SecurityPolicy policy(application, &m_role, validate.first && validate.second, policyId.second);
+    auto_ptr<opensaml::SecurityPolicy> policy(
+        createSecurityPolicy(application, &m_role, validate.first && validate.second, policyId.second)
+        );
 
     string relayState;
     try {
         // Decode the message and process it in a protocol-specific way.
-        auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));
+        auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, *(policy.get())));
         if (!msg.get())
             throw BindingException("Failed to decode an SSO protocol response.");
         DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
         DDFJanitor postjan(postData);
         recoverRelayState(application, httpRequest, httpResponse, relayState);
-        implementProtocol(application, httpRequest, httpResponse, policy, settings, *msg.get());
+        implementProtocol(application, httpRequest, httpResponse, *(policy.get()), settings, *msg.get());
 
-        auto_ptr_char issuer(policy.getIssuer() ? policy.getIssuer()->getName() : NULL);
+        auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : NULL);
 
         // History cookie.
         if (issuer.get() && *issuer.get())
@@ -221,7 +223,8 @@ void AssertionConsumerService::checkAddress(const Application& application, cons
 
 #ifndef SHIBSP_LITE
 
-void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const
+{
     const char* loc = getString("Location").second;
     string hurl(handlerURL);
     if (*loc != '/')
@@ -242,6 +245,13 @@ void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const cha
     	ep->setIndex(getXMLString("index").second);
     }
     role.getAssertionConsumerServices().push_back(ep);
+}
+
+opensaml::SecurityPolicy* AssertionConsumerService::createSecurityPolicy(
+    const Application& application, const xmltooling::QName* role, bool validate, const char* policyId
+    ) const
+{
+    return new SecurityPolicy(application, role, validate, policyId);
 }
 
 class SHIBSP_DLLLOCAL DummyContext : public ResolutionContext
