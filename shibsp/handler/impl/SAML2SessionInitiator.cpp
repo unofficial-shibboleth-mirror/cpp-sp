@@ -457,7 +457,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             target = option;
     }
     if (!target.empty())
-        in.addmember("RelayState").string(target.c_str());
+        in.addmember("RelayState").unsafe_string(target.c_str());
 
     // Remote the processing.
     out = request.getServiceProvider().getListenerService()->send(in);
@@ -511,7 +511,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         );
     if (!ret.isstruct())
         ret.structure();
-    ret.addmember("RelayState").string(relayState.c_str());
+    ret.addmember("RelayState").unsafe_string(relayState.c_str());
     out << ret;
 }
 

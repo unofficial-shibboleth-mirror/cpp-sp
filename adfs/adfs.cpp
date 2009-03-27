@@ -409,7 +409,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
     in.addmember("entity_id").string(entityID.c_str());
     in.addmember("acsLocation").string(ACSloc.c_str());
     if (!target.empty())
-        in.addmember("RelayState").string(target.c_str());
+        in.addmember("RelayState").unsafe_string(target.c_str());
     if (acClass.first)
         in.addmember("authnContextClassRef").string(acClass.second);
 
@@ -458,7 +458,7 @@ void ADFSSessionInitiator::receive(DDF& in, ostream& out)
     doRequest(*app, NULL, *http.get(), entityID, acsLocation, in["authnContextClassRef"].string(), relayState);
     if (!ret.isstruct())
         ret.structure();
-    ret.addmember("RelayState").string(relayState.c_str());
+    ret.addmember("RelayState").unsafe_string(relayState.c_str());
     out << ret;
 }
 

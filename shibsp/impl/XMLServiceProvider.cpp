@@ -1616,7 +1616,7 @@ void XMLConfig::receive(DDF& in, ostream& out)
         }
 
         // Repack for return to caller.
-        DDF ret=DDF(NULL).string(relayState.c_str());
+        DDF ret=DDF(NULL).unsafe_string(relayState.c_str());
         DDFJanitor jret(ret);
         out << ret;
     }

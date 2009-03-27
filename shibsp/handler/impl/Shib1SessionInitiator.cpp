@@ -188,7 +188,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
     if (artifactInbound)
         in.addmember("artifact").integer(1);
     if (!target.empty())
-        in.addmember("RelayState").string(target.c_str());
+        in.addmember("RelayState").unsafe_string(target.c_str());
 
     // Remote the processing. Our unwrap method will handle POST data if necessary.
     out = request.getServiceProvider().getListenerService()->send(in);
@@ -235,7 +235,7 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
     doRequest(*app, NULL, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState);
     if (!ret.isstruct())
         ret.structure();
-    ret.addmember("RelayState").string(relayState.c_str());
+    ret.addmember("RelayState").unsafe_string(relayState.c_str());
     out << ret;
 }
 

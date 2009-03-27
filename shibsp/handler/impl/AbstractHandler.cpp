@@ -316,7 +316,7 @@ void AbstractHandler::preserveRelayState(const Application& application, HTTPRes
                 else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
                     DDF out,in = DDF("set::RelayState").structure();
                     in.addmember("id").string(mech.second);
-                    in.addmember("value").string(relayState.c_str());
+                    in.addmember("value").unsafe_string(relayState.c_str());
                     DDFJanitor jin(in),jout(out);
                     out = application.getServiceProvider().getListenerService()->send(in);
                     if (!out.isstring())
@@ -624,7 +624,7 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
             DDF ret = DDF("parameters").list();
             for (; params.first != params.second; ++params.first) {
                 if (!params.first->first.empty()) {
-                    child = DDF(params.first->first.c_str()).string(params.first->second);
+                    child = DDF(params.first->first.c_str()).unsafe_string(params.first->second);
                     ret.add(child);
                 }
             }
