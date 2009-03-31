@@ -204,6 +204,11 @@ bool LogoutHandler::notifyBackChannel(
     const Application& application, const char* requestURL, const vector<string>& sessions, bool local
     ) const
 {
+    if (sessions.empty()) {
+        Category::getInstance(SHIBSP_LOGCAT".Logout").error("no sessions supplied to back channel notification method");
+        return false;
+    }
+
     unsigned int index = 0;
     string endpoint = application.getNotificationURL(requestURL, false, index++);
     if (endpoint.empty())
