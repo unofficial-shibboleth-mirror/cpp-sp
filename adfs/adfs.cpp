@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2009 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -87,7 +87,7 @@ namespace {
     public:
         ADFSDecoder() : m_ns(WSTRUST_NS) {}
         virtual ~ADFSDecoder() {}
-        
+
         XMLObject* decode(string& relayState, const GenericRequest& genericRequest, SecurityPolicy& policy) const;
 
     protected:
@@ -121,7 +121,7 @@ namespace {
             }
         }
         virtual ~ADFSSessionInitiator() {}
-        
+
         void setParent(const PropertySet* parent) {
             DOMPropertySet::setParent(parent);
             pair<bool,const char*> loc = getString("Location");
@@ -196,7 +196,7 @@ namespace {
             }
         }
         virtual ~ADFSLogoutInitiator() {}
-        
+
         void setParent(const PropertySet* parent) {
             DOMPropertySet::setParent(parent);
             pair<bool,const char*> loc = getString("Location");
@@ -230,8 +230,8 @@ namespace {
     public:
         ADFSLogout(const DOMElement* e, const char* appId)
                 : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".Logout.ADFS")), m_login(e, appId) {
-#ifndef SHIBSP_LITE
             m_initiator = false;
+#ifndef SHIBSP_LITE
             m_preserve.push_back("wreply");
             string address = string(appId) + getString("Location").second + "::run::ADFSLO";
             setAddress(address.c_str());
@@ -563,7 +563,7 @@ XMLObject* ADFSDecoder::decode(string& relayState, const GenericRequest& generic
     // Parse and bind the document into an XMLObject.
     istringstream is(param);
     DOMDocument* doc = (policy.getValidating() ? XMLToolingConfig::getConfig().getValidatingParser()
-        : XMLToolingConfig::getConfig().getParser()).parse(is); 
+        : XMLToolingConfig::getConfig().getParser()).parse(is);
     XercesJanitor<DOMDocument> janitor(doc);
     auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
     janitor.release();
@@ -578,7 +578,7 @@ XMLObject* ADFSDecoder::decode(string& relayState, const GenericRequest& generic
 
     // Skip policy step here, there's no security in the wrapper.
     // policy.evaluate(*xmlObject.get(), &genericRequest);
-    
+
     return xmlObject.release();
 }
 
@@ -599,7 +599,7 @@ void ADFSConsumer::implementProtocol(
     const ElementProxy* response = dynamic_cast<const ElementProxy*>(&xmlObject);
     if (!response || !response->hasChildren())
         throw FatalProfileException("Incoming message was not of the proper type or contains no security token.");
-    
+
     const Assertion* token = NULL;
     for (vector<XMLObject*>::const_iterator xo = response->getUnknownXMLObjects().begin(); xo != response->getUnknownXMLObjects().end(); ++xo) {
     	// Look for the RequestedSecurityToken element.
@@ -613,20 +613,20 @@ void ADFSConsumer::implementProtocol(
     	    break;
     	}
     }
-    
+
     // Extract message and issuer details from assertion.
     extractMessageDetails(*token, m_protocol.get(), policy);
 
     // Run the policy over the assertion. Handles replay, freshness, and
     // signature verification, assuming the relevant rules are configured.
     policy.evaluate(*token);
-    
+
     // If no security is in place now, we kick it.
     if (!policy.isAuthenticated())
         throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
     time_t now = time(NULL);
-    
+
     const PropertySet* sessionProps = application.getPropertySet("Sessions");
     const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
 
@@ -635,7 +635,7 @@ void ADFSConsumer::implementProtocol(
     const XMLCh* authMethod=NULL;
     const XMLCh* authInstant=NULL;
     time_t sessionExp = 0;
-    
+
     const saml1::Assertion* saml1token = dynamic_cast<const saml1::Assertion*>(token);
     if (saml1token) {
         // Now do profile and core semantic validation to ensure we can use it for SSO.
@@ -645,7 +645,7 @@ void ADFSConsumer::implementProtocol(
             throw FatalProfileException("Assertion did not contain time conditions.");
         else if (saml1token->getAuthenticationStatements().empty())
             throw FatalProfileException("Assertion did not contain an authentication statement.");
-        
+
         // authnskew allows rejection of SSO if AuthnInstant is too old.
         pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
 
@@ -684,7 +684,7 @@ void ADFSConsumer::implementProtocol(
             throw FatalProfileException("Assertion did not contain time conditions.");
         else if (saml2token->getAuthnStatements().empty())
             throw FatalProfileException("Assertion did not contain an authentication statement.");
-        
+
         // authnskew allows rejection of SSO if AuthnInstant is too old.
         pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
 
@@ -716,7 +716,7 @@ void ADFSConsumer::implementProtocol(
         else
             sessionExp = min(sessionExp, now + lifetime.second);    // Use the lowest.
     }
-    
+
     m_log.debug("ADFS profile processing completed successfully");
 
     // We've successfully "accepted" the SSO token.
@@ -827,7 +827,7 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
         m_log.error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
         throw ConfigurationException("Unable to locate application for logout, deleted?");
     }
-    
+
     // Unpack the request.
     auto_ptr<HTTPRequest> req(getRequest(in));
 
@@ -835,7 +835,7 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
     DDF ret(NULL);
     DDFJanitor jout(ret);
     auto_ptr<HTTPResponse> resp(getResponse(ret));
-    
+
     Session* session = NULL;
     try {
          session = app->getServiceProvider().getSessionCache()->find(*app, *req.get(), NULL, NULL);
@@ -895,7 +895,7 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
                 "Unable to locate ADFS IdP role for identity provider ($entityID).", namedparams(1, "entityID", session->getEntityID())
                 );
         }
-        
+
         const EndpointType* ep = EndpointManager<SingleLogoutService>(
             dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleLogoutServices()
             ).getByBinding(m_binding.get());
