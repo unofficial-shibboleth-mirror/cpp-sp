@@ -1,6 +1,6 @@
 /*
  *  Copyright 2001-2005 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -58,7 +58,7 @@ namespace {
                 delete[] m_surName;
                 delete[] m_company;
             }
-        
+
             ContactType getType() const { return m_type; }
             const char* getCompany() const { return m_company; }
             const char* getGivenName() const { return m_givenName; }
@@ -66,7 +66,7 @@ namespace {
             Iterator<string> getEmailAddresses() const { return m_emails; }
             Iterator<string> getTelephoneNumbers() const { return m_phones; }
             const DOMElement* getElement() const { return m_root; }
-        
+
         private:
             const DOMElement* m_root;
             ContactType m_type;
@@ -75,18 +75,18 @@ namespace {
             char* m_company;
             vector<string> m_emails,m_phones;
         };
-        
+
         class Organization : public IOrganization
         {
         public:
             Organization(const DOMElement* e);
             ~Organization() {}
-            
+
             const char* getName(const char* lang="en") const { return forLang(m_names,lang); }
             const char* getDisplayName(const char* lang="en") const { return forLang(m_displays,lang); }
             const char* getURL(const char* lang="en") const { return forLang(m_urls,lang); }
             const DOMElement* getElement() const { return m_root; }
-        
+
         private:
             const char* forLang(const map<string,string>& m, const char* lang) const {
                 map<string,string>::const_iterator i=m.find(lang);
@@ -97,13 +97,13 @@ namespace {
         };
 
         class EntityDescriptor;
-        
+
         class EncryptionMethod : public XENCEncryptionMethod
         {
         public:
             EncryptionMethod(const DOMElement* e);
             ~EncryptionMethod() {}
-            
+
             const XMLCh * getAlgorithm(void) const { return m_alg; }
             const XMLCh * getDigestMethod(void) const { return m_digest; }
             const XMLCh * getOAEPparams(void) const { return m_params; }
@@ -112,7 +112,7 @@ namespace {
             void setDigestMethod(const XMLCh * method) {throw exception();}
             void setOAEPparams(const XMLCh * params) {throw exception();}
             void setKeySize(int size) {throw exception();}
-        
+
         private:
             const DOMElement* m_root;
             const XMLCh* m_alg;
@@ -120,45 +120,45 @@ namespace {
             const XMLCh* m_params;
             int m_size;
         };
-        
+
         class KeyDescriptor : public IKeyDescriptor
         {
         public:
             KeyDescriptor(const DOMElement* e);
             ~KeyDescriptor();
-            
+
             KeyUse getUse() const { return m_use; }
             DSIGKeyInfoList* getKeyInfo() const { return m_klist; }
             saml::Iterator<const XENCEncryptionMethod*> getEncryptionMethods() const { return m_methods; }
             const DOMElement* getElement() const { return m_root; }
-        
+
         private:
             const DOMElement* m_root;
             KeyUse m_use;
             mutable DSIGKeyInfoList* m_klist;
             vector<const XENCEncryptionMethod*> m_methods;
         };
-        
+
         class KeyAuthority : public IKeyAuthority
         {
         public:
             KeyAuthority(const DOMElement* e);
             ~KeyAuthority();
-            
+
             int getVerifyDepth() const { return m_depth; }
             Iterator<DSIGKeyInfoList*> getKeyInfos() const { return m_klists; }
-        
+
         private:
             int m_depth;
             vector<DSIGKeyInfoList*> m_klists;
         };
-        
+
         class Role : public virtual IRoleDescriptor
         {
         public:
             Role(const EntityDescriptor* provider, time_t validUntil, const DOMElement* e);
             ~Role();
-            
+
             // External contract
             const IEntityDescriptor* getEntityDescriptor() const {return m_provider;}
             Iterator<const XMLCh*> getProtocolSupportEnumeration() const {return m_protocolEnum;}
@@ -170,7 +170,7 @@ namespace {
             Iterator<const IContactPerson*> getContactPersons() const
                 {return (m_contacts.empty() ? m_provider->getContactPersons() : m_contacts);}
             const DOMElement* getElement() const {return m_root;}
-        
+
         protected:
             vector<const XMLCh*> m_protocolEnum;
             vector<const IKeyDescriptor*> m_keys;
@@ -184,7 +184,7 @@ namespace {
             vector<const IContactPerson*> m_contacts;
             time_t m_validUntil;
         };
-        
+
         class Endpoint : public virtual IEndpoint
         {
         public:
@@ -195,29 +195,29 @@ namespace {
             Endpoint(const XMLCh* binding, const XMLCh* loc)
                 : m_root(NULL), m_binding(binding), m_location(loc), m_resploc(NULL) {}
             ~Endpoint() {}
-            
+
             const XMLCh* getBinding() const { return m_binding; }
             const XMLCh* getLocation() const { return m_location; }
             const XMLCh* getResponseLocation() const { return m_resploc; }
             const DOMElement* getElement() const { return m_root; }
-        
+
         private:
             const DOMElement* m_root;
             const XMLCh* m_binding;
             const XMLCh* m_location;
             const XMLCh* m_resploc;
         };
-        
+
         class IndexedEndpoint : public Endpoint, public virtual IIndexedEndpoint
         {
         public:
             IndexedEndpoint(const DOMElement* e) : Endpoint(e), m_index(XMLString::parseInt(e->getAttributeNS(NULL,SHIB_L(index)))) {}
             unsigned short getIndex() const {return m_index;}
-            
+
         private:
             unsigned short m_index;
         };
-        
+
         class EndpointManager : public IEndpointManager
         {
         public:
@@ -261,13 +261,13 @@ namespace {
                     m_soft=e;
                 }
             }
-            
+
         private:
             vector<const IEndpoint*> m_endpoints;
             const IEndpoint* m_soft;    // Soft default (not explicit)
             const IEndpoint* m_hard;    // Hard default (explicit)
         };
-        
+
         class SSORole : public Role, public virtual ISSODescriptor
         {
         public:
@@ -277,7 +277,7 @@ namespace {
             const IEndpointManager* getSingleLogoutServiceManager() const {return &m_logout;}
             const IEndpointManager* getManageNameIDServiceManager() const {return &m_nameid;}
             saml::Iterator<const XMLCh*> getNameIDFormats() const {return m_formats;}
-            
+
         private:
             EndpointManager m_artifact,m_logout,m_nameid;
             vector<const XMLCh*> m_formats;
@@ -292,7 +292,7 @@ namespace {
         private:
             vector<pair<const XMLCh*,bool> > m_scopes;
         };
-        
+
         class IDPRole : public SSORole, public ScopedRole, public virtual IIDPSSODescriptor
         {
         public:
@@ -304,7 +304,7 @@ namespace {
             const IEndpointManager* getAssertionIDRequestServiceManager() const {return &m_idreq;}
             saml::Iterator<const XMLCh*> getAttributeProfiles() const {return m_attrprofs;}
             saml::Iterator<const saml::SAMLAttribute*> getAttributes() const {return m_attrs;}
-        
+
         private:
             EndpointManager m_sso,m_mapping,m_idreq;
             vector<const XMLCh*> m_attrprofs;
@@ -324,13 +324,13 @@ namespace {
             saml::Iterator<const XMLCh*> getNameIDFormats() const {return m_formats;}
             saml::Iterator<const XMLCh*> getAttributeProfiles() const {return m_attrprofs;}
             saml::Iterator<const saml::SAMLAttribute*> getAttributes() const {return m_attrs;}
-        
+
         private:
             EndpointManager m_query,m_idreq;
             vector<const XMLCh*> m_formats,m_attrprofs;
             vector<const SAMLAttribute*> m_attrs;
         };
-    
+
         class EntityDescriptor : public IExtendedEntityDescriptor
         {
         public:
@@ -341,7 +341,7 @@ namespace {
                 const IEntitiesDescriptor* parent=NULL
                 );
             ~EntityDescriptor();
-        
+
             // External contract
             const XMLCh* getId() const {return m_id;}
             bool isValid() const {return time(NULL) < m_validUntil;}
@@ -385,7 +385,7 @@ namespace {
                 const IEntitiesDescriptor* parent=NULL
                 );
             ~EntitiesDescriptor();
-            
+
             const XMLCh* getName() const {return m_name;}
             bool isValid() const {return time(NULL) < m_validUntil;}
             const IEntitiesDescriptor* getEntitiesDescriptor() const {return m_parent;}
@@ -393,7 +393,7 @@ namespace {
             Iterator<const IEntityDescriptor*> getEntityDescriptors() const {return m_providers;}
             Iterator<const IKeyAuthority*> getKeyAuthorities() const {return m_keyauths;}
             const DOMElement* getElement() const {return m_root;}
-        
+
             // Used internally
             time_t getValidUntil() const {return m_validUntil;}
         private:
@@ -435,13 +435,13 @@ namespace {
         const IEntitiesDescriptor* lookupGroup(const char* name, bool strict=true) const;
         const IEntitiesDescriptor* lookupGroup(const XMLCh* name, bool strict=true) const;
         pair<const IEntitiesDescriptor*,const IEntityDescriptor*> getRoot() const;
-        
+
         bool verifySignature(DOMDocument* doc, const DOMElement* parent, bool failUnsigned) const;
-        
+
     protected:
         virtual ReloadableXMLFileImpl* newImplementation(const char* pathname, bool first=true) const;
         virtual ReloadableXMLFileImpl* newImplementation(const DOMElement* e, bool first=true) const;
-        
+
     private:
         bool m_exclusions,m_verify;
         set<string> m_set;
@@ -470,7 +470,7 @@ XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e)
     : m_root(e), m_type(IContactPerson::other), m_givenName(NULL), m_surName(NULL), m_company(NULL)
 {
     const XMLCh* type=NULL;
-    
+
     // Old metadata or new?
     if (saml::XML::isElementNamed(e,::XML::SHIB_NS,SHIB_L(Contact))) {
         type=e->getAttributeNS(NULL,SHIB_L(Type));
@@ -518,7 +518,7 @@ XMLMetadataImpl::ContactPerson::ContactPerson(const DOMElement* e)
             e=saml::XML::getNextSiblingElement(e);
         }
     }
-    
+
     if (!XMLString::compareString(type,SHIB_L(technical)))
         m_type=IContactPerson::technical;
     else if (!XMLString::compareString(type,SHIB_L(support)))
@@ -595,7 +595,7 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
         m_use=encryption;
     else if (!XMLString::compareString(e->getAttributeNS(NULL,SHIB_L(use)),SHIB_L(signing)))
         m_use=signing;
-    
+
     m_klist = new DSIGKeyInfoList(NULL);
 
     // Process ds:KeyInfo
@@ -609,10 +609,14 @@ XMLMetadataImpl::KeyDescriptor::KeyDescriptor(const DOMElement* e) : m_root(e), 
                 "skipping ds:KeyInfo element containing unsupported children"
                 );
     }
+    catch (XSECException& xe) {
+        auto_ptr_char msg(xe.getMsg());
+        Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").error("unable to process ds:KeyInfo element: %s",msg.get());
+    }
     catch (XSECCryptoException& xe) {
         Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata").error("unable to process ds:KeyInfo element: %s",xe.getMsg());
     }
-    
+
     // Check for encryption methods.
     e=saml::XML::getNextSiblingElement(e,::XML::SAML2META_NS,SHIB_L(EncryptionMethod));
     while (e) {
@@ -635,7 +639,7 @@ XMLMetadataImpl::KeyAuthority::KeyAuthority(const DOMElement* e) : m_depth(1)
 #endif
     if (e->hasAttributeNS(NULL,SHIB_L(VerifyDepth)))
         m_depth=XMLString::parseInt(e->getAttributeNS(NULL,SHIB_L(VerifyDepth)));
-    
+
     // Process ds:KeyInfo children
     e=saml::XML::getFirstChildElement(e,saml::XML::XMLSIG_NS,L(KeyInfo));
     while (e) {
@@ -657,7 +661,7 @@ XMLMetadataImpl::KeyAuthority::KeyAuthority(const DOMElement* e) : m_depth(1)
             }
             child=saml::XML::getNextSiblingElement(child);
         }
-        
+
         if (klist->getSize()>0)
             m_klists.push_back(klist.release());
         else
@@ -678,16 +682,16 @@ XMLMetadataImpl::Role::Role(const EntityDescriptor* provider, time_t validUntil,
 {
     // Check the root element namespace. If SAML2, assume it's the std schema.
     if (e && !XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
-       
+
         if (e->hasAttributeNS(NULL,SHIB_L(validUntil))) {
             SAMLDateTime exp(e->getAttributeNS(NULL,SHIB_L(validUntil)));
             exp.parseDateTime();
             m_validUntil=min(m_validUntil,exp.getEpoch());
         }
-        
+
         if (e->hasAttributeNS(NULL,SHIB_L(errorURL)))
             m_errorURL=toUTF8(e->getAttributeNS(NULL,SHIB_L(errorURL)));
-        
+
         // Chop the protocol list into pieces...assume any whitespace can appear in between.
         m_protocolEnumCopy=XMLString::replicate(e->getAttributeNS(NULL,SHIB_L(protocolSupportEnumeration)));
         XMLCh* temp=m_protocolEnumCopy;
@@ -699,7 +703,7 @@ XMLMetadataImpl::Role::Role(const EntityDescriptor* provider, time_t validUntil,
             m_protocolEnum.push_back(start);
             while (*temp && XMLChar1_1::isWhitespace(*temp)) temp++;
         }
-        
+
         e=saml::XML::getFirstChildElement(m_root,::XML::SAML2META_NS,SHIB_L(KeyDescriptor));
         while (e) {
             m_keys.push_back(new KeyDescriptor(e));
@@ -781,7 +785,7 @@ XMLMetadataImpl::ScopedRole::ScopedRole(const DOMElement* e)
     else {
         nlist=e->getElementsByTagNameNS(::XML::SHIB_NS,SHIB_L(Domain));
     }
-    
+
     for (XMLSize_t i=0; nlist && i < nlist->getLength(); i++) {
         const XMLCh* dom=(nlist->item(i)->hasChildNodes()) ? nlist->item(i)->getFirstChild()->getNodeValue() : NULL;
         if (dom && *dom) {
@@ -800,7 +804,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
     if (!XMLString::compareString(e->getNamespaceURI(),::XML::SAML2META_NS)) {
         const XMLCh* flag=e->getAttributeNS(NULL,SHIB_L(WantAuthnRequestsSigned));
         m_wantAuthnRequestsSigned=(flag && (*flag==chDigit_1 || *flag==chLatin_t));
-        
+
         // Check for SourceID extension.
         DOMElement* ext=saml::XML::getFirstChildElement(e,::XML::SAML2META_NS,SHIB_L(Extensions));
         if (ext) {
@@ -808,7 +812,7 @@ XMLMetadataImpl::IDPRole::IDPRole(const EntityDescriptor* provider, time_t valid
             if (ext && ext->hasChildNodes())
                 m_sourceId=ext->getFirstChild()->getNodeValue();
         }
-        
+
         XMLSize_t i;
         DOMNodeList* nlist=e->getElementsByTagNameNS(::XML::SAML2META_NS,SHIB_L(SingleSignOnService));
         for (i=0; nlist && i<nlist->getLength(); i++)
@@ -1019,7 +1023,7 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
     else {
         m_id=e->getAttributeNS(NULL,SHIB_L(Name));
         m_errorURL=toUTF8(e->getAttributeNS(NULL,SHIB_L(ErrorURL)));
-        
+
         bool idp=false,aa=false;    // only want to build a role once
         DOMElement* child=saml::XML::getFirstChildElement(e);
         while (child) {
@@ -1044,7 +1048,7 @@ XMLMetadataImpl::EntityDescriptor::EntityDescriptor(
     if (m_id && *m_id) {
         auto_ptr_char id(m_id);
         wrapper->m_sites.insert(pair<const string,const EntityDescriptor*>(id.get(),this));
-        
+
         // Look for an IdP role, and register the artifact source ID and endpoints.
         const IDPRole* idp=NULL;
         for (vector<const IRoleDescriptor*>::const_iterator r=m_roles.begin(); r!=m_roles.end(); r++) {
@@ -1247,14 +1251,14 @@ XMLMetadata::XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusio
             }
         }
     }
-    
+
     const XMLCh* v=e->getAttributeNS(NULL,SHIB_L(verify));
     m_verify=(v && (*v==chLatin_t || *v==chDigit_1));
 
     string cr_type;
     DOMElement* r=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(FileResolver));
     if (r)
-        cr_type="edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver";            
+        cr_type="edu.internet2.middleware.shibboleth.common.Credentials.FileCredentialResolver";
     else {
         r=saml::XML::getFirstChildElement(e,::XML::CREDS_NS,SHIB_L(CustomResolver));
         if (r) {
@@ -1262,7 +1266,7 @@ XMLMetadata::XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusio
             cr_type=c.get();
         }
     }
-    
+
     if (!cr_type.empty()) {
         try {
             IPlugIn* plugin=SAMLConfig::getConfig().getPlugMgr().newPlugin(cr_type.c_str(),r);
@@ -1280,7 +1284,7 @@ XMLMetadata::XMLMetadata(const DOMElement* e) : ReloadableXMLFile(e), m_exclusio
             throw;
         }
     }
-    
+
     if (m_verify && !m_credResolver) {
         delete m_credResolver;
         throw MalformedException("Metadata provider told to verify signatures, but a verification key is not available.");
@@ -1296,7 +1300,7 @@ bool XMLMetadata::verifySignature(DOMDocument* doc, const DOMElement* parent, bo
     saml::NDC ndc("verifySignature");
 #endif
     Category& log=Category::getInstance(XMLPROVIDERS_LOGCAT".Metadata");
-    
+
     DOMElement* sigNode=saml::XML::getFirstChildElement(parent,saml::XML::XMLSIG_NS,L(Signature));
     if (!sigNode) {
         if (failUnsigned) {
@@ -1305,7 +1309,7 @@ bool XMLMetadata::verifySignature(DOMDocument* doc, const DOMElement* parent, bo
         }
         return true;
     }
-    
+
     XSECCryptoX509* cert=NULL;
     Iterator<XSECCryptoX509*> certs=m_credResolver->getCertificates();
     if (certs.hasNext())
@@ -1349,20 +1353,20 @@ bool XMLMetadata::verifySignature(DOMDocument* doc, const DOMElement* parent, bo
                 }
             }
         }
-    
+
         if (!valid) {
             auto_ptr_char temp((URI && *URI) ? URI : null);
             log.error("detected an invalid signature profile (Reference URI was %s)",temp.get());
             return false;
         }
-        
+
         sig->setSigningKey(cert->clonePublicKey());
         if (!sig->verify()) {
             auto_ptr_char temp((URI && *URI) ? URI : null);
             log.error("detected an invalid signature value (Reference URI was %s)",temp.get());
             return false;
         }
-        
+
         prov.releaseSignature(sig);
     }
     catch(XSECException& e) {
@@ -1393,7 +1397,7 @@ const IEntityDescriptor* XMLMetadata::lookup(const char* providerId, bool strict
         return NULL;
     else if (strict && !m_exclusions && m_set.find(providerId)==m_set.end())
         return NULL;
-        
+
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
     pair<XMLMetadataImpl::sitemap_t::iterator,XMLMetadataImpl::sitemap_t::iterator> range=
         impl->m_sites.equal_range(providerId);
@@ -1402,10 +1406,10 @@ const IEntityDescriptor* XMLMetadata::lookup(const char* providerId, bool strict
     for (XMLMetadataImpl::sitemap_t::const_iterator i=range.first; i!=range.second; i++)
         if (now < i->second->getValidUntil())
             return i->second;
-    
+
     if (!strict && range.first!=range.second)
         return range.first->second;
-        
+
     return NULL;
 }
 
@@ -1420,7 +1424,7 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
     time_t now=time(NULL);
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
     pair<XMLMetadataImpl::sitemap_t::iterator,XMLMetadataImpl::sitemap_t::iterator> range;
-    
+
     // Depends on type of artifact.
     const SAMLArtifactType0001* type1=dynamic_cast<const SAMLArtifactType0001*>(artifact);
     if (type1) {
@@ -1447,7 +1451,7 @@ const IEntityDescriptor* XMLMetadata::lookup(const SAMLArtifact* artifact) const
             if (now < i->second->getValidUntil())
                 return i->second;
     }
-    
+
     return NULL;
 }
 
@@ -1457,7 +1461,7 @@ const IEntitiesDescriptor* XMLMetadata::lookupGroup(const char* name, bool stric
         return NULL;
     else if (strict && !m_exclusions && m_set.find(name)==m_set.end())
         return NULL;
-        
+
     XMLMetadataImpl* impl=dynamic_cast<XMLMetadataImpl*>(getImplementation());
     pair<XMLMetadataImpl::groupmap_t::iterator,XMLMetadataImpl::groupmap_t::iterator> range=
         impl->m_groups.equal_range(name);
@@ -1466,10 +1470,10 @@ const IEntitiesDescriptor* XMLMetadata::lookupGroup(const char* name, bool stric
     for (XMLMetadataImpl::groupmap_t::iterator i=range.first; i!=range.second; i++)
         if (now < i->second->getValidUntil())
             return i->second;
-    
+
     if (!strict && range.first!=range.second)
         return range.first->second;
-        
+
     return NULL;
 }
 
