@@ -46,6 +46,7 @@ libshibspinclude_HEADERS = \
 attrinclude_HEADERS = \
 	attribute/Attribute.h \
 	attribute/AttributeDecoder.h \
+	attribute/ExtensibleAttribute.h \
 	attribute/NameIDAttribute.h \
 	attribute/ScopedAttribute.h \
 	attribute/SimpleAttribute.h
@@ -107,6 +108,7 @@ common_sources = \
 	ServiceProvider.cpp \
 	SPConfig.cpp \
 	attribute/Attribute.cpp \
+	attribute/ExtensibleAttribute.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/AssertionLookup.cpp \

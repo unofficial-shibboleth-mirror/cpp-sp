@@ -465,6 +465,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\ExtensibleAttribute.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\NameIDAttributeDecoder.cpp"
 					>
 				</File>
@@ -492,6 +496,10 @@
 						</File>
 						<File
 							RelativePath=".\attribute\resolver\impl\ChainingAttributeResolver.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\resolver\impl\DelegationAttributeExtractor.cpp"
 							>
 						</File>
 						<File
@@ -848,6 +856,10 @@
 				</File>
 				<File
 					RelativePath=".\attribute\AttributeDecoder.h"
+					>
+				</File>
+				<File
+					RelativePath=".\attribute\ExtensibleAttribute.h"
 					>
 				</File>
 				<File

@@ -28,6 +28,7 @@
 #include "attribute/SimpleAttribute.h"
 #include "attribute/ScopedAttribute.h"
 #include "attribute/NameIDAttribute.h"
+#include "attribute/ExtensibleAttribute.h"
 #include "util/SPConstants.h"
 
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -48,6 +49,10 @@ namespace shibsp {
 
     SHIBSP_DLLLOCAL Attribute* NameIDAttributeFactory(DDF& in) {
         return new NameIDAttribute(in);
+    }
+
+    SHIBSP_DLLLOCAL Attribute* ExtensibleAttributeFactory(DDF& in) {
+        return new ExtensibleAttribute(in);
     }
 
 #ifndef SHIBSP_LITE
@@ -96,14 +101,15 @@ void shibsp::registerAttributeFactories()
     Attribute::registerFactory("Simple", SimpleAttributeFactory);
     Attribute::registerFactory("Scoped", ScopedAttributeFactory);
     Attribute::registerFactory("NameID", NameIDAttributeFactory);
+    Attribute::registerFactory("Extensible", ExtensibleAttributeFactory);
 }
 
-std::map<std::string,Attribute::AttributeFactory*> Attribute::m_factoryMap;
+map<string,Attribute::AttributeFactory*> Attribute::m_factoryMap;
 
 Attribute* Attribute::unmarshall(DDF& in)
 {
     map<string,AttributeFactory*>::const_iterator i = m_factoryMap.find(in.name() ? in.name() : "");
     if (i == m_factoryMap.end())
-        throw AttributeException("No registered factory for Attribute of type ($1).", xmltooling::params(1,in.name()));
+        throw AttributeException("No registered factory for Attribute of type ($1).", params(1,in.name()));
     return (i->second)(in);
 }

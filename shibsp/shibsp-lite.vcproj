@@ -438,6 +438,10 @@
 					RelativePath=".\attribute\Attribute.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\attribute\ExtensibleAttribute.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="handler"
@@ -666,6 +670,10 @@
 				>
 				<File
 					RelativePath=".\attribute\Attribute.h"
+					>
+				</File>
+				<File
+					RelativePath=".\attribute\ExtensibleAttribute.h"
 					>
 				</File>
 				<File

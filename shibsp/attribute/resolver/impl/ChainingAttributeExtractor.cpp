@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ namespace shibsp {
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory XMLAttributeExtractorFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory DelegationAttributeExtractorFactory;
     AttributeExtractor* SHIBSP_DLLLOCAL ChainingExtractorFactory(const DOMElement* const & e)
     {
         return new ChainingAttributeExtractor(e);
@@ -80,6 +81,7 @@ namespace shibsp {
 
 void SHIBSP_API shibsp::registerAttributeExtractors()
 {
+    SPConfig::getConfig().AttributeExtractorManager.registerFactory(DELEGATION_ATTRIBUTE_EXTRACTOR, DelegationAttributeExtractorFactory);
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(XML_ATTRIBUTE_EXTRACTOR, XMLAttributeExtractorFactory);
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(CHAINING_ATTRIBUTE_EXTRACTOR, ChainingExtractorFactory);
 }

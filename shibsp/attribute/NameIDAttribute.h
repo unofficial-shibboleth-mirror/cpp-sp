@@ -17,7 +17,7 @@
 /**
  * @file shibsp/attribute/NameIDAttribute.h
  * 
- * An Attribute whose values are relations of a value and a scope.
+ * An Attribute whose values are derived from or mappable to a SAML NameID.
  */
 
 #ifndef __shibsp_nameidattr_h__
