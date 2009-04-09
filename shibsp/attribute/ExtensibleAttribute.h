@@ -59,7 +59,9 @@ namespace shibsp {
         ExtensibleAttribute(DDF& in) : Attribute(in), m_obj(in.copy()) {
         }
         
-        virtual ~ExtensibleAttribute() {}
+        virtual ~ExtensibleAttribute() {
+            m_obj.destroy();
+        }
         
         /**
          * Returns the set of values in a DDF list.
