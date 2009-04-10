@@ -39,7 +39,7 @@ const vector<string>& ExtensibleAttribute::getSerializedValues() const
             DDF val = m_obj.first().first();
             while (!val.isnull()) {
 
-                static const char* legal="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_";
+                static const char* legal="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_.";
 
                 m_serialized.push_back(string());
                 string& processed = m_serialized.back();
