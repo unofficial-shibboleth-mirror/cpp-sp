@@ -148,7 +148,6 @@ void DelegationExtractor::extractAttributes(
                     }
                     catch (exception& ex) {
                         log.error("caught exception decrypting Delegate: %s", ex.what());
-                        return;
                     }
                 }
                 else {
