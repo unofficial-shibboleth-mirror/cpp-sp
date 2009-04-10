@@ -107,6 +107,8 @@ void DelegationExtractor::extractAttributes(
     if (!assertion || !assertion->getConditions())
         return;
 
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.Delegation");
+
     const vector<saml2::Condition*>& conditions = const_cast<const saml2::Conditions*>(assertion->getConditions())->getConditions();
     for (vector<saml2::Condition*>::const_iterator c = conditions.begin(); c != conditions.end(); ++c) {
         const saml2::DelegationRestrictionType* drt = dynamic_cast<const saml2::DelegationRestrictionType*>(*c);
@@ -116,19 +118,43 @@ void DelegationExtractor::extractAttributes(
             const vector<saml2::Delegate*>& dels = drt->getDelegates();
             for (vector<saml2::Delegate*>::const_iterator d = dels.begin(); d != dels.end(); ++d) {
                 if ((*d)->getBaseID()) {
-                    Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.Delegation").error(
-                        "delegate identified by saml:BaseID cannot be processed into an attribute value"
-                        );
+                    log.error("delegate identified by saml:BaseID cannot be processed into an attribute value");
                     continue;
                 }
 
                 saml2::NameID* n = NULL;
                 if ((*d)->getEncryptedID()) {
-                    // TODO: add decryption
+                    CredentialResolver* cr = application.getCredentialResolver();
+                    if (!cr) {
+                        log.warn("found encrypted Delegate, but no CredentialResolver was available");
+                    }
+
+                    try {
+                        const XMLCh* recipient = application.getRelyingParty(
+                            issuer ? dynamic_cast<EntityDescriptor*>(issuer->getParent()) : NULL
+                            )->getXMLString("entityID").second;
+                        Locker credlocker(cr);
+                        if (issuer) {
+                            MetadataCredentialCriteria mcc(*issuer);
+                            auto_ptr<XMLObject> decrypted((*d)->getEncryptedID()->decrypt(*cr, recipient, &mcc));
+                            n = dynamic_cast<saml2::NameID*>(decrypted.release());
+                        }
+                        else {
+                            auto_ptr<XMLObject> decrypted((*d)->getEncryptedID()->decrypt(*cr, recipient));
+                            n = dynamic_cast<saml2::NameID*>(decrypted.release());
+                        }
+                        if (n && log.isDebugEnabled())
+                            log.debugStream() << "decrypted Delegate: " << *n << logging::eol;
+                    }
+                    catch (exception& ex) {
+                        log.error("caught exception decrypting Delegate: %s", ex.what());
+                        return;
+                    }
                 }
                 else {
                     n = (*d)->getNameID();
                 }
+
                 if (n) {
                     DDF val = DDF(NULL).structure();
                     if ((*d)->getConfirmationMethod()) {
