@@ -16,7 +16,7 @@
 
 /**
  * ddf.cpp
- * 
+ *
  * C++ DDF abstraction for interpretive RPC
  */
 
@@ -63,7 +63,7 @@ char* ddf_strdup(const char* s)
 char* ddf_token(const char** path, char* name)
 {
     const char* temp=NULL;
-    
+
     *name='\0';
     if (*path==NULL || **path=='\0')
         return name;
@@ -285,6 +285,7 @@ long DDF::integer() const
             case ddf_body_t::DDF_FLOAT:
                 return static_cast<long>(m_handle->value.floating);
             case ddf_body_t::DDF_STRING:
+            case ddf_body_t::DDF_STRING_UNSAFE:
                 return m_handle->value.string ? atol(m_handle->value.string) : 0;
             case ddf_body_t::DDF_STRUCT:
             case ddf_body_t::DDF_LIST:
@@ -303,6 +304,7 @@ double DDF::floating() const
             case ddf_body_t::DDF_FLOAT:
                 return m_handle->value.floating;
             case ddf_body_t::DDF_STRING:
+            case ddf_body_t::DDF_STRING_UNSAFE:
                 return m_handle->value.string ? atof(m_handle->value.string) : 0;
             case ddf_body_t::DDF_STRUCT:
             case ddf_body_t::DDF_LIST:
@@ -335,6 +337,7 @@ DDF& DDF::empty()
     if (m_handle) {
         switch (m_handle->type) {
             case ddf_body_t::DDF_STRING:
+            case ddf_body_t::DDF_STRING_UNSAFE:
                 if (m_handle->value.string)
                     free(m_handle->value.string);
                 break;
@@ -617,7 +620,7 @@ DDF DDF::addmember(const char* path)
 {
     char name[MAX_NAME_LEN+1];
     const char* path_ptr=path;
-    
+
     if (m_handle && ddf_strlen(ddf_token(&path_ptr,name))>0) {
         if (!isstruct())
             structure();
@@ -675,7 +678,7 @@ void DDF::dump(FILE* f, int indent) const
     ddf_print_indent(f,indent);
     if (m_handle) {
         switch (m_handle->type) {
-            
+
             case ddf_body_t::DDF_EMPTY:
                 fprintf(f,"empty");
                 if (m_handle->name)
@@ -800,7 +803,7 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
 {
     if (p) {
         switch (p->type) {
-            
+
             case ddf_body_t::DDF_STRING:
             case ddf_body_t::DDF_STRING_UNSAFE:
                 os << "<string";
