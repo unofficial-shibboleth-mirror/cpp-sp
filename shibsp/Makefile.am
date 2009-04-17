@@ -155,6 +155,7 @@ libshibsp_lite_la_SOURCES = \
 
 libshibsp_la_SOURCES = \
 	${common_sources} \
+	attribute/KeyInfoAttributeDecoder.cpp \
 	attribute/NameIDAttributeDecoder.cpp \
 	attribute/NameIDFromScopedAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
@@ -185,6 +186,7 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
 	attribute/resolver/impl/ChainingAttributeExtractor.cpp \
 	attribute/resolver/impl/DelegationAttributeExtractor.cpp \
+	attribute/resolver/impl/KeyDescriptorAttributeExtractor.cpp \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \

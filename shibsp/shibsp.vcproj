@@ -469,6 +469,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\KeyInfoAttributeDecoder.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\NameIDAttributeDecoder.cpp"
 					>
 				</File>
@@ -500,6 +504,10 @@
 						</File>
 						<File
 							RelativePath=".\attribute\resolver\impl\DelegationAttributeExtractor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\resolver\impl\KeyDescriptorAttributeExtractor.cpp"
 							>
 						</File>
 						<File

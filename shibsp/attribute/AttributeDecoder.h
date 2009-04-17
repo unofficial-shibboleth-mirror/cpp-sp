@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,9 @@ namespace shibsp {
 
     /** Decodes scoped attributes into a NameIDAttribute. */
     extern SHIBSP_API xmltooling::QName NameIDFromScopedAttributeDecoderType;
+
+    /** Decodes KeyInfo information into a SimpleAttribute. */
+    extern SHIBSP_API xmltooling::QName KeyInfoAttributeDecoderType;
 
     /** Registers built-in AttributeDecoders into the runtime. */
     void registerAttributeDecoders();

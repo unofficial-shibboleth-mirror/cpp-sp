@@ -20,7 +20,7 @@
 
 <storageModule moduleId="org.eclipse.cdt.core.pathentry">
 <pathentry include="C:/log4shib-1.0/include" kind="inc" path="" system="true"/>
-<pathentry include="C:/xerces-c_2_8_0-x86-windows-vc_8_0/include" kind="inc" path="" system="true"/>
+<pathentry include="C:/xerces-c-3.0.1-x86-windows-vc-9.0/include" kind="inc" path="" system="true"/>
 <pathentry base-path="cpp-xmltooling" include="" kind="inc" path="" system="true"/>
 <pathentry base-path="cpp-opensaml2" include="" kind="inc" path="" system="true"/>
 <pathentry base-path="cpp-sp" include="shibsp" kind="inc" path="" system="true"/>
