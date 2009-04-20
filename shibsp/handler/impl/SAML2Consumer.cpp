@@ -195,7 +195,7 @@ void SAML2Consumer::implementProtocol(
             // Run the policy over the assertion. Handles replay, freshness, and
             // signature verification, assuming the relevant rules are configured,
             // along with condition and profile enforcement.
-            policy.evaluate(*(*a));
+            policy.evaluate(*(*a), &httpRequest);
 
             // If no security is in place now, we kick it.
             if (!alreadySecured && !policy.isAuthenticated())
@@ -284,7 +284,7 @@ void SAML2Consumer::implementProtocol(
             // We have to marshall the object first to ensure signatures can be checked.
             if (!decrypted->getDOM())
                 decrypted->marshall();
-            policy.evaluate(*decrypted);
+            policy.evaluate(*decrypted, &httpRequest);
 
             // If no security is in place now, we kick it.
             if (!alreadySecured && !policy.isAuthenticated())

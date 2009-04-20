@@ -205,7 +205,7 @@ void SAML1Consumer::implementProtocol(
             // Run the policy over the assertion. Handles replay, freshness, and
             // signature verification, assuming the relevant rules are configured,
             // along with condition and profile enforcement.
-            policy.evaluate(*(*a));
+            policy.evaluate(*(*a), &httpRequest);
 
             // If no security is in place now, we kick it.
             if (!alreadySecured && !policy.isAuthenticated())

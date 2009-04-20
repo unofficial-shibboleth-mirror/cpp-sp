@@ -619,7 +619,7 @@ void ADFSConsumer::implementProtocol(
 
     // Run the policy over the assertion. Handles replay, freshness, and
     // signature verification, assuming the relevant rules are configured.
-    policy.evaluate(*token);
+    policy.evaluate(*token, &httpRequest);
 
     // If no security is in place now, we kick it.
     if (!policy.isAuthenticated())
