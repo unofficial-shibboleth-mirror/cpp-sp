@@ -106,7 +106,7 @@ namespace shibsp {
                 tp.setPropertySet(props);
                 stringstream str;
                 XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
-                return request.sendResponse(str);
+                return request.sendError(str);
             }
         }
 
