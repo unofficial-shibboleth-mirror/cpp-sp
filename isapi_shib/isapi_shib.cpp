@@ -1,6 +1,6 @@
 /*
- *  Copyright 2001-2005 Internet2
- * 
+ *  Copyright 2001-2009 Internet2
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -81,12 +81,12 @@ namespace {
         string m_scheme,m_port,m_sslport,m_name;
         set<string> m_aliases;
     };
-    
+
     struct context_t {
         char* m_user;
         bool m_checked;
     };
-    
+
     HINSTANCE g_hinstDLL;
     ShibTargetConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
@@ -104,7 +104,7 @@ BOOL LogEvent(
     LPCSTR  message)
 {
     LPCSTR  messages[] = {message, NULL};
-    
+
     HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth ISAPI Filter");
     BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, NULL);
     return (DeregisterEventSource(hElog) && res);
@@ -121,7 +121,7 @@ extern "C" BOOL WINAPI GetExtensionVersion(HSE_VERSION_INFO* pVer)
 {
     if (!pVer)
         return FALSE;
-        
+
     if (!g_Config)
     {
         LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
@@ -177,7 +177,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                     "Filter startup failed to load configuration, check native log for help.");
             return FALSE;
         }
-        
+
         // Access the implementation-specifics for site mappings.
         IConfig* conf=g_Config->getINI();
         Locker locker(conf);
@@ -190,7 +190,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             g_checkSpoofing = !flag.first || flag.second;
             flag=props->getBool("catchAll");
             g_catchAll = !flag.first || flag.second;
-            
+
             const DOMElement* impl=saml::XML::getFirstChildElement(
                 props->getElement(),shibtarget::XML::SHIBTARGET_NS,Implementation
                 );
@@ -373,7 +373,7 @@ public:
         strncpy(port,site.m_port.c_str(),10);
         static_cast<char*>(port)[10]=0;
     }
-    
+
     // Scheme may come from site def or be derived from IIS.
     const char* scheme=site.m_scheme.c_str();
     if (!scheme || !*scheme || !g_bNormalizeRequest)
@@ -410,7 +410,7 @@ public:
     GetHeader(m_pn, m_pfc, "Cookie:", buf, 128, false);
     return buf.empty() ? "" : buf;
   }
-  
+
   virtual void clearHeader(const string &name) {
     if (g_checkSpoofing && m_pfc->pFilterContext && !static_cast<context_t*>(m_pfc->pFilterContext)->m_checked) {
         if (m_allhttp.empty())
@@ -539,7 +539,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
         if (map_i==g_Sites.end())
             return SF_STATUS_REQ_NEXT_NOTIFICATION;
-            
+
         ostringstream threadid;
         threadid << "[" << getpid() << "] isapi_shib" << '\0';
         saml::NDC ndc(threadid.str().c_str());
@@ -551,7 +551,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         if (pfc->pFilterContext)
             static_cast<context_t*>(pfc->pFilterContext)->m_checked = true;
         if (res.first) return (DWORD)res.second;
-        
+
         // "false" because we don't override the Shib settings
         res = stf.doExportAssertions();
         if (res.first) return (DWORD)res.second;
@@ -582,7 +582,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
     return WriteClientError(pfc,"Shibboleth Filter reached unreachable code, save my walrus!");
 }
-        
+
 
 /****************************************************************************/
 // ISAPI Extension
@@ -608,7 +608,7 @@ class ShibTargetIsapiE : public ShibTarget
 {
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
   string m_cookie;
-  
+
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) {
     dynabuf ssl(5);
@@ -653,20 +653,20 @@ public:
      * the server is set up for proper PATH_INFO handling, or "IIS sucks rabid weasels mode",
      * which is the default. No perfect way to tell, but we can take a good guess by checking
      * whether the URL is a substring of the PATH_INFO:
-     * 
+     *
      * e.g. for /Shibboleth.sso/SAML/POST
-     * 
+     *
      *  Bad mode (default):
      *      URL:        /Shibboleth.sso
      *      PathInfo:   /Shibboleth.sso/SAML/POST
-     * 
+     *
      *  Good mode:
      *      URL:        /Shibboleth.sso
      *      PathInfo:   /SAML/POST
      */
-    
+
     string fullurl;
-    
+
     // Clearly we're only in bad mode if path info exists at all.
     if (lpECB->lpszPathInfo && *(lpECB->lpszPathInfo)) {
         if (strstr(lpECB->lpszPathInfo,url))
@@ -680,7 +680,7 @@ public:
     else {
         fullurl = url;
     }
-    
+
     // For consistency with Apache, let's add the query string.
     if (lpECB->lpszQueryString && *(lpECB->lpszQueryString)) {
         fullurl+='?';
@@ -712,10 +712,10 @@ public:
   virtual string getPostData(void) {
     if (m_lpECB->cbTotalBytes > 1024*1024) // 1MB?
       throw FatalProfileException("Blocked too-large a submission to profile endpoint.");
-    else if (m_lpECB->cbTotalBytes != m_lpECB->cbAvailable) {
-      string cgistr;
+    else if (m_lpECB->cbTotalBytes > m_lpECB->cbAvailable) {
+      string cgistr(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
       char buf[8192];
-      DWORD datalen=m_lpECB->cbTotalBytes;
+      DWORD datalen=m_lpECB->cbTotalBytes - m_lpECB->cbAvailable;
       while (datalen) {
         DWORD buflen=8192;
         BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
@@ -726,8 +726,9 @@ public:
       }
       return cgistr;
     }
-    else
+    else {
       return string(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
+    }
   }
   virtual void* sendPage(
     const string &msg,
@@ -800,7 +801,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         ShibTargetIsapiE ste(lpECB, map_i->second);
         pair<bool,void*> res = ste.doHandler();
         if (res.first) return (DWORD)res.second;
-        
+
         return WriteClientError(lpECB, "Shibboleth Extension failed to process request");
 
     }
