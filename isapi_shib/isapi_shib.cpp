@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -800,8 +800,12 @@ public:
         throw opensaml::SecurityPolicyException("Size of request body exceeded 1M size limit.");
     else if (m_lpECB->cbTotalBytes > m_lpECB->cbAvailable) {
       m_gotBody=true;
-      char buf[8192];
       DWORD datalen=m_lpECB->cbTotalBytes;
+      if (m_lpECB->cbAvailable > 0) {
+        m_body.assign(reinterpret_cast<char*>(m_lpECB->lpbData),m_lpECB->cbAvailable);
+        datalen-=m_lpECB->cbAvailable;
+      }
+      char buf[8192];
       while (datalen) {
         DWORD buflen=8192;
         BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
