@@ -109,7 +109,7 @@ Attribute* KeyInfoAttributeDecoder::decode(
         if (log.isDebugEnabled()) {
             auto_ptr_char n(saml2attr->getName());
             log.debug(
-                "decoding SimpleAttribute (%s) from SAML 2 Attribute (%s) with %lu value(s)",
+                "decoding KeyInfo information (%s) from SAML 2 Attribute (%s) with %lu value(s)",
                 ids.front().c_str(), n.get() ? n.get() : "unnamed", values.size()
                 );
         }
@@ -123,7 +123,7 @@ Attribute* KeyInfoAttributeDecoder::decode(
             if (log.isDebugEnabled()) {
                 auto_ptr_char n(saml1attr->getAttributeName());
                 log.debug(
-                    "decoding NameIDAttribute (%s) from SAML 1 Attribute (%s) with %lu value(s)",
+                    "decoding KeyInfo information (%s) from SAML 1 Attribute (%s) with %lu value(s)",
                     ids.front().c_str(), n.get() ? n.get() : "unnamed", values.size()
                     );
             }
