@@ -660,6 +660,11 @@ DDF DDF::getmember(const char* path) const
         if (current.m_handle && ddf_strlen(path_ptr)>0)
             current=current.getmember(path_ptr);
     }
+    else if (islist() && ddf_strlen(ddf_token(&path_ptr,name))>0 && *name=='#') {
+        current=operator[](strtoul(name+1, NULL, 10));
+        if (current.m_handle && ddf_strlen(path_ptr)>0)
+            current=current.getmember(path_ptr);
+    }
     return current;
 }
 
