@@ -465,6 +465,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\DOMAttributeDecoder.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\ExtensibleAttribute.cpp"
 					>
 				</File>

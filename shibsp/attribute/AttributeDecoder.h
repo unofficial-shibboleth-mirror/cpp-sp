@@ -81,6 +81,9 @@ namespace shibsp {
     /** Decodes KeyInfo information into a SimpleAttribute. */
     extern SHIBSP_API xmltooling::QName KeyInfoAttributeDecoderType;
 
+    /** Decodes arbitrary DOM information into an ExtensibleAttribute. */
+    extern SHIBSP_API xmltooling::QName DOMAttributeDecoderType;
+
     /** Registers built-in AttributeDecoders into the runtime. */
     void registerAttributeDecoders();
 };

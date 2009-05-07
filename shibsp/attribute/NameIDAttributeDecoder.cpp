@@ -34,7 +34,7 @@ using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    static XMLCh formatter[] = UNICODE_LITERAL_9(f,o,r,m,a,t,t,e,r);
+    static const XMLCh formatter[] = UNICODE_LITERAL_9(f,o,r,m,a,t,t,e,r);
 
     class SHIBSP_DLLLOCAL NameIDAttributeDecoder : virtual public AttributeDecoder
     {
