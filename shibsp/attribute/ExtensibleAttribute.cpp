@@ -64,6 +64,8 @@ const vector<string>& ExtensibleAttribute::getSerializedValues() const
                         DDF child = val.getmember(tag.c_str());
                         if (child.string())
                             processed += child.string();
+                        else if (child.isstruct() && child["_string"].string())
+                            processed += child["_string"].string();
                         start=i;
                     }
                 }

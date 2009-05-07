@@ -189,7 +189,7 @@ DDF DOMAttributeDecoder::convert(DOMElement* e, bool nameit) const
     DOMElement* child = XMLHelper::getFirstChildElement(e);
     if (!child && e->hasChildNodes() && e->getFirstChild()->getNodeType() == DOMNode::TEXT_NODE) {
         // Attach a _text member if a text node is present.
-        obj.addmember("_text").string(toUTF8(e->getFirstChild()->getNodeValue(), true), false);
+        obj.addmember("_string").string(toUTF8(e->getFirstChild()->getNodeValue(), true), false);
     }
     else {
         while (child) {
