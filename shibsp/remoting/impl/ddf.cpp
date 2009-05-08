@@ -62,22 +62,19 @@ char* ddf_strdup(const char* s)
    The name buffer is returned from the function. */
 char* ddf_token(const char** path, char* name)
 {
-    const char* temp=NULL;
-
-    *name='\0';
-    if (*path==NULL || **path=='\0')
+    *name=0;
+    if (*path==NULL || **path==0)
         return name;
 
-    temp=strchr(*path,'.');
-    if (temp==NULL)
-    {
-        strcpy(name,*path);
+    const char* temp=strchr(*path,'.');
+    if (temp==NULL) {
+        strncpy(name,*path,MAX_NAME_LEN);
+        name[MAX_NAME_LEN]=0;
         *path=NULL;
     }
-    else if (temp>*path)
-    {
+    else if (temp>*path) {
         strncpy(name,*path,temp-*path);
-        name[temp-*path]='\0';
+        name[temp-*path]=0;
         *path=temp+1;
     }
     else
@@ -648,23 +645,32 @@ DDF DDF::addmember(const char* path)
 
 DDF DDF::getmember(const char* path) const
 {
+    DDF current;
     char name[MAX_NAME_LEN+1];
     const char* path_ptr=path;
-    DDF current;
 
-    if (isstruct() && ddf_strlen(ddf_token(&path_ptr,name))>0) {
-        current.m_handle=m_handle->value.children.first;
-        while (current.m_handle && strcmp(current.m_handle->name,name)!=0)
-            current.m_handle=current.m_handle->next;
+    ddf_token(&path_ptr, name);
+    if (*name == 0)
+        return current;
+    else if (*name == '[') {
+        unsigned long i = strtoul(name+1, NULL, 10);
+        if (islist() && i < m_handle->value.children.count)
+            current=operator[](i);
+        else if (i == 0)
+            current = *this;
+    }
+    else if (isstruct()) {
+        current.m_handle = m_handle->value.children.first;
+        while (current.m_handle && strcmp(current.m_handle->name,name) != 0)
+            current.m_handle = current.m_handle->next;
+    }
+    else if (islist()) {
+        current.m_handle = m_handle->value.children.first;
+        return current.getmember(path);
+    }
 
-        if (current.m_handle && ddf_strlen(path_ptr)>0)
-            current=current.getmember(path_ptr);
-    }
-    else if (islist() && ddf_strlen(ddf_token(&path_ptr,name))>0 && *name=='#') {
-        current=operator[](strtoul(name+1, NULL, 10));
-        if (current.m_handle && ddf_strlen(path_ptr)>0)
-            current=current.getmember(path_ptr);
-    }
+    if (current.m_handle && path_ptr && *path_ptr)
+        current = current.getmember(path_ptr);
     return current;
 }
 
