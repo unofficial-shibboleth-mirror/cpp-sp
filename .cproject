@@ -25,6 +25,7 @@
 <pathentry base-path="cpp-opensaml2" include="" kind="inc" path="" system="true"/>
 <pathentry base-path="cpp-sp" include="shibsp" kind="inc" path="" system="true"/>
 <pathentry base-path="cpp-sp" include="" kind="inc" path="" system="true"/>
+<pathentry kind="mac" name="SHIBSP_API" path="" value=""/>
 <pathentry kind="out" path=""/>
 <pathentry excluding="util/|impl/|security/|metadata/|remoting/|remoting/impl/|attribute/|binding/|binding/impl/|attribute/resolver/|attribute/resolver/impl/|handler/|handler/impl/|attribute/filtering/|attribute/filtering/impl/|lite/" kind="src" path="shibsp"/>
 <pathentry excluding="resolver/|resolver/impl/|filtering/|filtering/impl/" kind="src" path="shibsp/attribute"/>
