@@ -3,7 +3,7 @@
         xmlns="http://www.w3.org/2001/XMLSchema"
         xmlns:am="urn:mace:shibboleth:2.0:attribute-map"
         elementFormDefault="qualified"
-        version="2.1">
+        version="2.2">
 
     <annotation>
         <documentation>
@@ -26,6 +26,14 @@
     <simpleType name="listOfStrings">
         <list itemType="am:string"/>
     </simpleType>
+
+    <complexType name="PluggableType">
+        <sequence>
+            <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="type" type="am:string" use="required"/>
+        <anyAttribute namespace="##any" processContents="lax"/>
+    </complexType>
     
     <element name="Attributes">
         <annotation>
@@ -34,7 +42,11 @@
         <complexType>
             <sequence>
                 <element name="Attribute" type="am:AttributeType" maxOccurs="unbounded"/>
+                <element name="MetadataProvider" type="am:PluggableType" minOccurs="0"/>
+                <element name="TrustEngine" type="am:PluggableType" minOccurs="0"/>
+                <element name="AttributeFilter" type="am:PluggableType" minOccurs="0"/>
             </sequence>
+            <attribute name="metadataPolicyId" type="am:string"/>
         </complexType>
     </element>
 

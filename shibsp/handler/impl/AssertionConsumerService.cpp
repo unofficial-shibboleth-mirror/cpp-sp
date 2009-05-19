@@ -301,7 +301,8 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             if (mprefix.first) {
                 m_log.debug("extracting metadata-derived attributes...");
                 try {
-                    extractor->extractAttributes(application, issuer, *entity, resolvedAttributes);
+                    // We pass NULL for "issuer" because the IdP isn't the one asserting metadata-based attributes.
+                    extractor->extractAttributes(application, NULL, *entity, resolvedAttributes);
                     for (vector<Attribute*>::iterator a = resolvedAttributes.begin(); a != resolvedAttributes.end(); ++a) {
                         vector<string>& ids = (*a)->getAliases();
                         for (vector<string>::iterator id = ids.begin(); id != ids.end(); ++id)
