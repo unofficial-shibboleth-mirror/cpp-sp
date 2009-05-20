@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -373,6 +373,15 @@ public:
     const char* ru = pblock_findval("auth-user", m_rq->vars);
     return ru ? ru : "";
   }
+  void setAuthType(const char* authtype) {
+    param_free(pblock_remove("auth-type", m_rq->vars));
+    if (authtype)
+        pblock_nvinsert("auth-type", authtype, m_rq->vars);
+  }
+  string getAuthType() const {
+    const char* at = pblock_findval("auth-type", m_rq->vars);
+    return at ? at : "";
+  }
   void setContentType(const char* type) {
       // iPlanet seems to have a case folding problem.
       param_free(pblock_remove("content-type", m_rq->srvhdrs));
@@ -450,10 +459,6 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
 
     // user authN was okay -- export the assertions now
     param_free(pblock_remove("auth-user",rq->vars));
-
-    // This seems to be required in order to eventually set
-    // the auth-user var.
-    pblock_nvinsert("auth-type","shibboleth",rq->vars);
 
     res = stn.getServiceProvider().doExport(stn);
     if (res.first) return (int)res.second;

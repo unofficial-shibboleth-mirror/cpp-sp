@@ -245,6 +245,8 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
             return initiator->run(request,false);
         }
 
+        request.setAuthType("shibboleth");
+
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
         log.debug("doAuthentication succeeded");

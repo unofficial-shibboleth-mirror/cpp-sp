@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -512,6 +512,14 @@ public:
   }
   string getRemoteUser() const {
     return string(SH_AP_USER(m_req) ? SH_AP_USER(m_req) : "");
+  }
+  void setAuthType(const char* authtype) {
+      if (authtype && m_dc->bBasicHijack == 1)
+          authtype = "Basic";
+      SH_AP_AUTH_TYPE(m_req) = authtype ? ap_pstrdup(m_req->pool, authtype) : NULL;
+  }
+  string getAuthType() const {
+    return string(SH_AP_AUTH_TYPE(m_req) ? SH_AP_AUTH_TYPE(m_req) : "");
   }
   void setContentType(const char* type) {
       m_req->content_type = ap_psprintf(m_req->pool, type);
