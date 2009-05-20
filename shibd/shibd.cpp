@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ const char* shar_schemadir = NULL;
 const char* shar_prefix = NULL;
 bool shar_checkonly = false;
 bool shar_version = false;
-static int unlink_socket = 0;
+static bool unlink_socket = false;
 const char* pidfile = NULL;
 
 #ifdef WIN32
@@ -141,11 +141,9 @@ int real_main(int preinit)
 
         //_CrtSetAllocHook(MyAllocHook);
 
-        // Run the listener
         if (!shar_checkonly) {
-
             // Run the listener.
-            if (!conf.getServiceProvider()->getListenerService()->run(&shibd_shutdown)) {
+            if (!conf.getServiceProvider()->getListenerService()->run(unlink_socket, &shibd_shutdown)) {
                 fprintf(stderr, "listener failed to enter listen loop\n");
                 return -3;
             }
@@ -223,7 +221,7 @@ static int parse_args(int argc, char* argv[])
                 shar_schemadir=optarg;
                 break;
             case 'f':
-                unlink_socket = 1;
+                unlink_socket = true;
                 break;
             case 't':
                 shar_checkonly=true;
@@ -280,7 +278,6 @@ int main(int argc, char *argv[])
     if (shar_checkonly)
         fprintf(stderr, "overall configuration is loadable, check console for non-fatal problems\n");
     else {
-
         // Write the pid file
         if (pidfile) {
             FILE* pidf = fopen(pidfile, "w");
@@ -293,7 +290,7 @@ int main(int argc, char *argv[])
         }
 
         // Run the listener
-        if (!conf.getServiceProvider()->getListenerService()->run(&shibd_shutdown)) {
+        if (!conf.getServiceProvider()->getListenerService()->run(unlink_socket, &shibd_shutdown)) {
             fprintf(stderr, "listener failed to enter listen loop\n");
             return -3;
         }

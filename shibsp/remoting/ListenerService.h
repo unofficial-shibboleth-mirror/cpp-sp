@@ -116,6 +116,7 @@ namespace shibsp {
         virtual Remoted* lookup(const char* address) const;
 
         /**
+         * @deprecated
          * OutOfProcess servers can implement server-side transport handling by
          * calling the run method and supplying a flag to monitor for shutdown.
          *
@@ -123,6 +124,20 @@ namespace shibsp {
          * @return true iff the service execution was successful
          */
         virtual bool run(bool* shutdown)=0;
+
+        /**
+         * OutOfProcess servers can implement server-side transport handling by
+         * calling the run method and supplying a flag to monitor for shutdown.
+         *
+         * <p>The first parameter applies to implementations that can detect and remove
+         * the results of ungraceful shutdowns of previous executions and continue
+         * successfully. File-based sockets are the most common example.
+         *
+         * @param force     true iff remnant network state should be forcibly cleared
+         * @param shutdown  pointer to flag that caller will set when shutdown is required
+         * @return true iff the service execution was successful
+         */
+        virtual bool run(bool force, bool* shutdown);
 
     private:
         std::map<std::string,Remoted*> m_listenerMap;
