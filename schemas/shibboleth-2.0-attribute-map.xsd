@@ -41,10 +41,10 @@
         </annotation>
         <complexType>
             <sequence>
-                <element name="Attribute" type="am:AttributeType" maxOccurs="unbounded"/>
                 <element name="MetadataProvider" type="am:PluggableType" minOccurs="0"/>
                 <element name="TrustEngine" type="am:PluggableType" minOccurs="0"/>
                 <element name="AttributeFilter" type="am:PluggableType" minOccurs="0"/>
+                <element name="Attribute" type="am:AttributeType" maxOccurs="unbounded"/>
             </sequence>
             <attribute name="metadataPolicyId" type="am:string"/>
         </complexType>

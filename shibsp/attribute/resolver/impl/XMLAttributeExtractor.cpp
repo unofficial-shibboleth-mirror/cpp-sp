@@ -220,7 +220,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     if (!XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, Attributes))
         throw ConfigurationException("XML AttributeExtractor requires am:Attributes at root of configuration.");
 
-    DOMElement* child = XMLHelper::getLastChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _MetadataProvider);
+    DOMElement* child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _MetadataProvider);
     if (child) {
         try {
             auto_ptr_char type(child->getAttributeNS(NULL, _type));
@@ -244,7 +244,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     }
 
     if (m_entityAssertions) {
-        child = XMLHelper::getLastChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _TrustEngine);
+        child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _TrustEngine);
         if (child) {
             try {
                 auto_ptr_char type(child->getAttributeNS(NULL, _type));
@@ -263,7 +263,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     }
 
     if (m_entityAssertions) {
-        child = XMLHelper::getLastChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeFilter);
+        child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeFilter);
         if (child) {
             try {
                 auto_ptr_char type(child->getAttributeNS(NULL, _type));
