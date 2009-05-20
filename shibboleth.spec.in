@@ -41,6 +41,7 @@ This package contains the shibboleth runtime library and apache module.
 Summary: Shibboleth development Headers
 Group: Development/Libraries
 Requires: %{name} = %{version}
+Requires: opensaml-devel >= 2.2
 
 %description devel
 Shibboleth, a project of Internet2/MACE, is developing architectures,
