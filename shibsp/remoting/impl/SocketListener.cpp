@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -234,8 +234,10 @@ bool SocketListener::run(bool* shutdown)
             {
                 // Accept the connection.
                 SocketListener::ShibSocket newsock;
-                if (!accept(m_socket, newsock))
+                if (!accept(m_socket, newsock)) {
                     log->crit("failed to accept incoming socket connection");
+                    continue;
+                }
 
                 // We throw away the result because the children manage themselves...
                 try {
