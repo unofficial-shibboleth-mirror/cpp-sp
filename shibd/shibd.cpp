@@ -156,9 +156,17 @@ int real_main(int preinit)
 
 #else
 
+int daemon_wait = 3;
+bool shibd_running = false;
+
 static void term_handler(int arg)
 {
     shibd_shutdown = true;
+}
+
+static void run_handler(int arg)
+{
+    shibd_running = true;
 }
 
 static int setup_signals(void)
@@ -188,6 +196,14 @@ static int setup_signals(void)
     if (sigaction(SIGTERM, &sa, NULL) < 0) {
         return -1;
     }
+
+    memset(&sa, 0, sizeof (sa));
+    sa.sa_handler = run_handler;
+
+    if (sigaction(SIGUSR1, &sa, NULL) < 0) {
+        return -1;
+    }
+
     return 0;
 }
 
@@ -200,6 +216,7 @@ static void usage(char* whoami)
     fprintf(stderr, "  -t\tcheck configuration file for problems.\n");
     fprintf(stderr, "  -f\tforce removal of listener socket.\n");
     fprintf(stderr, "  -p\tpid file to use.\n");
+    fprintf(stderr, "  -w\tseconds to wait for successful daemonization.\n");
     fprintf(stderr, "  -v\tprint software version.\n");
     fprintf(stderr, "  -h\tprint this help message.\n");
     exit(1);
@@ -209,7 +226,7 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "d:c:x:p:ftvh")) > 0) {
+    while ((opt = getopt(argc, argv, "d:c:x:p:w:ftvh")) > 0) {
         switch (opt) {
             case 'd':
                 shar_prefix=optarg;
@@ -231,6 +248,12 @@ static int parse_args(int argc, char* argv[])
                 break;
             case 'p':
                 pidfile=optarg;
+                break;
+            case 'w':
+                if (optarg)
+                    daemon_wait = atoi(optarg);
+                if (daemon_wait <= 0)
+                    daemon_wait = 3;
                 break;
             default:
                 return -1;
@@ -269,6 +292,21 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    // We must fork() early, while we're single threaded.
+    // StorageService cleanup thread is about to start.
+    if (!shar_checkonly) {
+        switch (fork()) {
+            case 0:
+                break;
+            case -1:
+                perror("forking");
+                exit(EXIT_FAILURE);
+            default:
+                sleep(daemon_wait);
+                exit(shibd_running ? EXIT_SUCCESS : EXIT_FAILURE);
+        }
+    }
+
     if (!conf.instantiate(shar_config)) {
         fprintf(stderr, "configuration is invalid, check console for specific problems\n");
         conf.term();
@@ -278,6 +316,15 @@ int main(int argc, char *argv[])
     if (shar_checkonly)
         fprintf(stderr, "overall configuration is loadable, check console for non-fatal problems\n");
     else {
+        if (setsid() == -1) {
+            perror("setsid");
+            exit(EXIT_FAILURE);
+        }
+        if (chdir("/") == -1) {
+            perror("chdir to root");
+            exit(EXIT_FAILURE);
+        }
+
         // Write the pid file
         if (pidfile) {
             FILE* pidf = fopen(pidfile, "w");
@@ -288,6 +335,10 @@ int main(int argc, char *argv[])
                 perror(pidfile);  // keep running though
             }
         }
+
+        freopen("/dev/null", "r", stdin);
+        freopen("/dev/null", "w", stdout);
+        freopen("/dev/null", "w", stderr);
 
         // Run the listener
         if (!conf.getServiceProvider()->getListenerService()->run(unlink_socket, &shibd_shutdown)) {

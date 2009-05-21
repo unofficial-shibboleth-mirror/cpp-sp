@@ -115,6 +115,19 @@ namespace shibsp {
          */
         virtual Remoted* lookup(const char* address) const;
 
+#ifndef WIN32
+        /**
+         * Installs a signal that the service should raise to its parent process
+         * before entering a running state.
+         *
+         * @param s the signal to raise
+         * @return  true iff the signal was successfully installed
+         */
+        virtual bool setSignal(int s) {
+            return false;
+        }
+#endif
+
         /**
          * @deprecated
          * OutOfProcess servers can implement server-side transport handling by

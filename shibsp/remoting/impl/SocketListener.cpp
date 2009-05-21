@@ -158,8 +158,12 @@ void SocketPool::put(SocketListener::ShibSocket s)
     m_lock->unlock();
 }
 
-SocketListener::SocketListener(const DOMElement* e) : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")),
-    m_socketpool(NULL), m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_socket((ShibSocket)0)
+SocketListener::SocketListener(const DOMElement* e)
+    : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")), m_socketpool(NULL),
+#ifndef WIN32
+        m_signal(0),
+#endif
+        m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_socket((ShibSocket)0)
 {
     // Are we a client?
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
@@ -208,6 +212,15 @@ bool SocketListener::run(bool force, bool* shutdown)
         log->crit("failed to bind to socket.");
         return false;
     }
+
+#ifndef WIN32
+    if (m_signal) {
+        // Notify our parent that we're entering the select loop.
+        pid_t ppid = getppid();
+        kill(ppid, SIGUSR1);
+        log->info("notified parent (%d) upon entering select loop", ppid);
+    }
+#endif
 
     while (!*m_shutdown) {
         fd_set readfds;
