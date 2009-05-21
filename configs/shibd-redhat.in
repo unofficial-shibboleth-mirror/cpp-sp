@@ -37,7 +37,7 @@ start() {
 		/sbin/restorecon $pidfile
 	fi
 	# daemon function just hangs, so I'm using su directly
-	su - $SHIBD_USER -c "$shibd -p $pidfile -f &"
+	su - $SHIBD_USER -c "$shibd -p $pidfile -f"
 
 	RETVAL=$?
 	echo
