@@ -441,6 +441,10 @@
 				Name="impl"
 				>
 				<File
+					RelativePath=".\impl\ChainingAccessControl.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\impl\StorageServiceSessionCache.cpp"
 					>
 				</File>

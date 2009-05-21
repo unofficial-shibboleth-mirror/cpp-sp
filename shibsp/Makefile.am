@@ -134,6 +134,7 @@ common_sources = \
 	handler/impl/Shib1SessionInitiator.cpp \
 	handler/impl/TransformSessionInitiator.cpp \
 	handler/impl/WAYFSessionInitiator.cpp \
+	impl/ChainingAccessControl.cpp \
     impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
