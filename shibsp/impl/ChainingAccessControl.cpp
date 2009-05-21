@@ -33,7 +33,7 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
-namespace {
+namespace shibsp {
 
     class ChainingAccessControl : public AccessControl
     {
@@ -44,8 +44,13 @@ namespace {
             for_each(m_ac.begin(), m_ac.end(), xmltooling::cleanup<AccessControl>());
         }
 
-        Lockable* lock() {return this;}
-        void unlock() {}
+        Lockable* lock() {
+            for_each(m_ac.begin(), m_ac.end(), mem_fun<Lockable*,AccessControl>(&AccessControl::lock));
+            return this;
+        }
+        void unlock() {
+            for_each(m_ac.begin(), m_ac.end(), mem_fun<void,AccessControl>(&AccessControl::unlock));
+        }
 
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
@@ -64,9 +69,9 @@ namespace {
     static const XMLCh _type[] =            UNICODE_LITERAL_4(t,y,p,e);
     static const XMLCh AND[] =              UNICODE_LITERAL_3(A,N,D);
     static const XMLCh OR[] =               UNICODE_LITERAL_2(O,R);
-}
 
-extern AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const DOMElement* const & e);
+    extern AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const DOMElement* const & e);
+}
 
 void SHIBSP_API shibsp::registerAccessControls()
 {

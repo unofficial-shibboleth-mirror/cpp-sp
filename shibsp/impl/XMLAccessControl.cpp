@@ -40,7 +40,7 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
-namespace {
+namespace shibsp {
 
     class Rule : public AccessControl
     {
