@@ -178,6 +178,7 @@ sh ./keygen.sh -b
 %{_sysconfdir}/%{name}/shibd-debian
 %{_sysconfdir}/%{name}/shibd-osx.plist
 %attr(755, root, root) %{_sysconfdir}/%{name}/keygen.sh
+%attr(755, root, root) %{_sysconfdir}/%{name}/metagen.sh
 %{_sysconfdir}/%{name}/*.xsl
 %docdir %{_datadir}/doc/%{name}
 %{_datadir}/doc/%{name}/CREDITS.txt
