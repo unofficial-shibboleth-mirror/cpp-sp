@@ -56,7 +56,7 @@ start)
         exit 0
     fi
     echo -n "Starting $DESC: "
-    start-stop-daemon --background --start --quiet \
+    start-stop-daemon --start --quiet \
         --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
     echo "$NAME."
     ;;
@@ -71,7 +71,7 @@ restart|force-reload)
     start-stop-daemon --stop --quiet --pidfile $PIDFILE \
         --exec $DAEMON
     sleep 1
-    start-stop-daemon --background --start --quiet \
+    start-stop-daemon --start --quiet \
         --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_OPTS
     echo "$NAME."
     ;;
