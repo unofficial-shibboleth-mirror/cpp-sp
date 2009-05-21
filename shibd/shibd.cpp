@@ -341,6 +341,10 @@ int main(int argc, char *argv[])
         freopen("/dev/null", "w", stderr);
 
         // Run the listener
+        if (!conf.getServiceProvider()->getListenerService()->setSignal(SIGUSR1)) {
+            fprintf(stderr, "listener failed to accept signaling hook\n");
+            return -3;
+        }
         if (!conf.getServiceProvider()->getListenerService()->run(unlink_socket, &shibd_shutdown)) {
             fprintf(stderr, "listener failed to enter listen loop\n");
             return -3;
