@@ -106,6 +106,8 @@ ChainingAccessControl::ChainingAccessControl(const DOMElement* e)
         for_each(m_ac.begin(), m_ac.end(), xmltooling::cleanup<AccessControl>());
         throw;
     }
+    if (m_ac.empty())
+        throw ConfigurationException("Chaining AccessControl plugin requires at least one child plugin.");
 }
 
 AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& request, const Session* session) const
