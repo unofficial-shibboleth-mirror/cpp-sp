@@ -191,11 +191,7 @@ namespace {
         vector<const XMLCh*> m_audiences;
 
         // RelyingParty properties
-#ifdef HAVE_GOOD_STL
         map<xstring,PropertySet*> m_partyMap;
-#else
-        map<const XMLCh*,PropertySet*> m_partyMap;
-#endif
 #endif
         vector<string> m_remoteUsers,m_frontLogout,m_backLogout;
 
@@ -212,11 +208,7 @@ namespace {
         const Handler* m_acsDefault;
 
         // maps binding strings to supporting consumer service(s)
-#ifdef HAVE_GOOD_STL
         typedef map<xstring,vector<const Handler*> > ACSBindingMap;
-#else
-        typedef map<string,vector<const Handler*> > ACSBindingMap;
-#endif
         ACSBindingMap m_acsBindingMap;
 
         // pointer to default session initiator
@@ -632,11 +624,7 @@ XMLApplication::XMLApplication(
                     }
                     handler=conf.AssertionConsumerServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
                     // Map by binding (may be > 1 per binding, e.g. SAML 1.0 vs 1.1)
-#ifdef HAVE_GOOD_STL
                     m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
-#else
-                    m_acsBindingMap[handler->getString("Binding").second].push_back(handler);
-#endif
                     m_acsIndexMap[handler->getUnsignedInt("index").second]=handler;
 
                     if (!hardACS) {
@@ -944,11 +932,7 @@ void XMLApplication::cleanup()
     for_each(m_handlers.begin(),m_handlers.end(),xmltooling::cleanup<Handler>());
     m_handlers.clear();
 #ifndef SHIBSP_LITE
-#ifdef HAVE_GOOD_STL
     for_each(m_partyMap.begin(),m_partyMap.end(),cleanup_pair<xstring,PropertySet>());
-#else
-    for_each(m_partyMap.begin(),m_partyMap.end(),cleanup_pair<const XMLCh*,PropertySet>());
-#endif
     m_partyMap.clear();
     delete m_credResolver;
     m_credResolver = NULL;
@@ -1002,7 +986,6 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
     if (!provider)
         return this;
 
-#ifdef HAVE_GOOD_STL
     map<xstring,PropertySet*>::const_iterator i=m_partyMap.find(provider->getEntityID());
     if (i!=m_partyMap.end())
         return i->second;
@@ -1015,19 +998,6 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
         }
         group=dynamic_cast<const EntitiesDescriptor*>(group->getParent());
     }
-#else
-    map<const XMLCh*,PropertySet*>::const_iterator i=m_partyMap.begin();
-    for (; i!=m_partyMap.end(); i++) {
-        if (XMLString::equals(i->first,provider->getEntityID()))
-            return i->second;
-        const EntitiesDescriptor* group=dynamic_cast<const EntitiesDescriptor*>(provider->getParent());
-        while (group) {
-            if (XMLString::equals(i->first,group->getName()))
-                return i->second;
-            group=dynamic_cast<const EntitiesDescriptor*>(group->getParent());
-        }
-    }
-#endif
     return this;
 }
 
@@ -1036,17 +1006,9 @@ const PropertySet* XMLApplication::getRelyingParty(const XMLCh* entityID) const
     if (!entityID)
         return this;
 
-#ifdef HAVE_GOOD_STL
     map<xstring,PropertySet*>::const_iterator i=m_partyMap.find(entityID);
     if (i!=m_partyMap.end())
         return i->second;
-#else
-    map<const XMLCh*,PropertySet*>::const_iterator i=m_partyMap.begin();
-    for (; i!=m_partyMap.end(); i++) {
-        if (XMLString::equals(i->first,entityID))
-            return i->second;
-    }
-#endif
     return this;
 }
 
@@ -1195,12 +1157,7 @@ const Handler* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short
 
 const vector<const Handler*>& XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
 {
-#ifdef HAVE_GOOD_STL
     ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
-#else
-    auto_ptr_char temp(binding);
-    ACSBindingMap::const_iterator i=m_acsBindingMap.find(temp.get());
-#endif
     if (i!=m_acsBindingMap.end())
         return i->second;
     return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : g_noHandlers;
