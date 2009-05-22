@@ -158,6 +158,7 @@ int real_main(int preinit)
 
 int daemon_wait = 3;
 bool shibd_running = false;
+bool daemonize = true;
 
 static void term_handler(int arg)
 {
@@ -197,11 +198,13 @@ static int setup_signals(void)
         return -1;
     }
 
-    memset(&sa, 0, sizeof (sa));
-    sa.sa_handler = run_handler;
+    if (daemonize) {
+        memset(&sa, 0, sizeof (sa));
+        sa.sa_handler = run_handler;
 
-    if (sigaction(SIGUSR1, &sa, NULL) < 0) {
-        return -1;
+        if (sigaction(SIGUSR1, &sa, NULL) < 0) {
+            return -1;
+        }
     }
 
     return 0;
@@ -213,8 +216,9 @@ static void usage(char* whoami)
     fprintf(stderr, "  -d\tinstallation prefix to use.\n");
     fprintf(stderr, "  -c\tconfig file to use.\n");
     fprintf(stderr, "  -x\tXML schema catalogs to use.\n");
-    fprintf(stderr, "  -t\tcheck configuration file for problems.\n");
+    fprintf(stderr, "  -t\ttest configuration file for problems.\n");
     fprintf(stderr, "  -f\tforce removal of listener socket.\n");
+    fprintf(stderr, "  -F\tstay in the foreground.\n");
     fprintf(stderr, "  -p\tpid file to use.\n");
     fprintf(stderr, "  -w\tseconds to wait for successful daemonization.\n");
     fprintf(stderr, "  -v\tprint software version.\n");
@@ -226,7 +230,7 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "d:c:x:p:w:ftvh")) > 0) {
+    while ((opt = getopt(argc, argv, "d:c:x:p:w:fFtvh")) > 0) {
         switch (opt) {
             case 'd':
                 shar_prefix=optarg;
@@ -239,6 +243,9 @@ static int parse_args(int argc, char* argv[])
                 break;
             case 'f':
                 unlink_socket = true;
+                break;
+            case 'F':
+                daemonize = false;
                 break;
             case 't':
                 shar_checkonly=true;
@@ -292,18 +299,20 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    // We must fork() early, while we're single threaded.
-    // StorageService cleanup thread is about to start.
-    if (!shar_checkonly) {
-        switch (fork()) {
-            case 0:
-                break;
-            case -1:
-                perror("forking");
-                exit(EXIT_FAILURE);
-            default:
-                sleep(daemon_wait);
-                exit(shibd_running ? EXIT_SUCCESS : EXIT_FAILURE);
+    if (daemonize) {
+        // We must fork() early, while we're single threaded.
+        // StorageService cleanup thread is about to start.
+        if (!shar_checkonly) {
+            switch (fork()) {
+                case 0:
+                    break;
+                case -1:
+                    perror("forking");
+                    exit(EXIT_FAILURE);
+                default:
+                    sleep(daemon_wait);
+                    exit(shibd_running ? EXIT_SUCCESS : EXIT_FAILURE);
+            }
         }
     }
 
@@ -316,13 +325,15 @@ int main(int argc, char *argv[])
     if (shar_checkonly)
         fprintf(stderr, "overall configuration is loadable, check console for non-fatal problems\n");
     else {
-        if (setsid() == -1) {
-            perror("setsid");
-            exit(EXIT_FAILURE);
-        }
-        if (chdir("/") == -1) {
-            perror("chdir to root");
-            exit(EXIT_FAILURE);
+        if (daemonize) {
+            if (setsid() == -1) {
+                perror("setsid");
+                exit(EXIT_FAILURE);
+            }
+            if (chdir("/") == -1) {
+                perror("chdir to root");
+                exit(EXIT_FAILURE);
+            }
         }
 
         // Write the pid file
@@ -336,15 +347,17 @@ int main(int argc, char *argv[])
             }
         }
 
-        freopen("/dev/null", "r", stdin);
-        freopen("/dev/null", "w", stdout);
-        freopen("/dev/null", "w", stderr);
+        if (daemonize) {
+            freopen("/dev/null", "r", stdin);
+            freopen("/dev/null", "w", stdout);
+            freopen("/dev/null", "w", stderr);
+            if (!conf.getServiceProvider()->getListenerService()->setSignal(SIGUSR1)) {
+                fprintf(stderr, "listener failed to accept signaling hook\n");
+                return -3;
+            }
+        }
 
         // Run the listener
-        if (!conf.getServiceProvider()->getListenerService()->setSignal(SIGUSR1)) {
-            fprintf(stderr, "listener failed to accept signaling hook\n");
-            return -3;
-        }
         if (!conf.getServiceProvider()->getListenerService()->run(unlink_socket, &shibd_shutdown)) {
             fprintf(stderr, "listener failed to enter listen loop\n");
             return -3;
