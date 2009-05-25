@@ -289,20 +289,18 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     const vector<const Assertion*>* tokens
     ) const
 {
-    const saml2md::EntityDescriptor* entity = issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : NULL;
-
     // First we do the extraction of any pushed information, including from metadata.
     vector<Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
     if (extractor) {
         Locker extlocker(extractor);
-        if (entity) {
+        if (issuer) {
             pair<bool,const char*> mprefix = application.getString("metadataAttributePrefix");
             if (mprefix.first) {
                 m_log.debug("extracting metadata-derived attributes...");
                 try {
                     // We pass NULL for "issuer" because the IdP isn't the one asserting metadata-based attributes.
-                    extractor->extractAttributes(application, NULL, *entity, resolvedAttributes);
+                    extractor->extractAttributes(application, NULL, *issuer, resolvedAttributes);
                     for (vector<Attribute*>::iterator a = resolvedAttributes.begin(); a != resolvedAttributes.end(); ++a) {
                         vector<string>& ids = (*a)->getAliases();
                         for (vector<string>::iterator id = ids.begin(); id != ids.end(); ++id)
@@ -367,7 +365,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             auto_ptr<ResolutionContext> ctx(
                 resolver->createResolutionContext(
                     application,
-                    entity,
+                    issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : NULL,
                     protocol,
                     nameid,
                     authncontext_class,

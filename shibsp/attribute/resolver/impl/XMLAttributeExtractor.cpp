@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -833,7 +833,8 @@ void XMLExtractor::extractAttributes(
 
     // Check for metadata.
     if (XMLString::equals(xmlObject.getElementQName().getNamespaceURI(), samlconstants::SAML20MD_NS)) {
-        const EntityDescriptor* entityToExtract = dynamic_cast<const EntityDescriptor*>(&xmlObject);
+        const RoleDescriptor* roleToExtract = dynamic_cast<const RoleDescriptor*>(&xmlObject);
+        const EntityDescriptor* entityToExtract = roleToExtract ? dynamic_cast<const EntityDescriptor*>(roleToExtract->getParent()) : NULL;
         if (!entityToExtract)
             throw AttributeExtractionException("Unable to extract attributes, unknown metadata object type.");
         const Extensions* ext = entityToExtract->getExtensions();

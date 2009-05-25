@@ -109,12 +109,12 @@ void KeyDescriptorExtractor::extractAttributes(
     const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
     ) const
 {
-    const EntityDescriptor* entity = dynamic_cast<const EntityDescriptor*>(&xmlObject);
-    if (!entity || !issuer)
+    const RoleDescriptor* role = dynamic_cast<const RoleDescriptor*>(&xmlObject);
+    if (!role)
         return;
 
     vector<const Credential*> creds;
-    MetadataCredentialCriteria mcc(*issuer);
+    MetadataCredentialCriteria mcc(*role);
 
     if (!m_signingId.empty()) {
         mcc.setUsage(Credential::SIGNING_CREDENTIAL);
