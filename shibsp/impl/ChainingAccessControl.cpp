@@ -45,11 +45,11 @@ namespace shibsp {
         }
 
         Lockable* lock() {
-            for_each(m_ac.begin(), m_ac.end(), mem_fun<Lockable*,AccessControl>(&AccessControl::lock));
+            for_each(m_ac.begin(), m_ac.end(), mem_fun<Lockable*,Lockable>(&Lockable::lock));
             return this;
         }
         void unlock() {
-            for_each(m_ac.begin(), m_ac.end(), mem_fun<void,AccessControl>(&AccessControl::unlock));
+            for_each(m_ac.begin(), m_ac.end(), mem_fun<void,Lockable>(&Lockable::unlock));
         }
 
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
