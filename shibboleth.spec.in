@@ -89,6 +89,7 @@ fi
 if [ -f $RPM_BUILD_ROOT/%{_libdir}/%{name}/mod_shib_22.so ] ; then
     APACHE_CONFIG="apache22.config"
 fi
+%{!?_without_builtinapache:APACHE_CONFIG="no"}
 if [ "$APACHE_CONFIG" != "no" ] ; then
     APACHE_CONFD="no"
     if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
