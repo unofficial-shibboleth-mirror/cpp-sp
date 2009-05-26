@@ -212,7 +212,7 @@ paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	sed < ${srcdir}/$@.in > $@.tmp \
 	    -e 's:@-PREFIX-@:${prefix}:g' \
         -e 's:@-LIBDIR-@:${libdir}:g' \
-        -e 's:@-CFGDIR-@:${sysconfdir}:g' \
+        -e 's:@-SYSCONFDIR-@:${sysconfdir}:g' \
         -e 's:@-LOGDIR-@:${logdir}:g' \
         -e 's:@-RUNDIR-@:${rundir}:g' \
         -e 's:@-XMLDIR-@:${xmldir}:g' \
