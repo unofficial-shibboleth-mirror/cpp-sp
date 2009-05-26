@@ -1,8 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
 
-pkgsysconfdir = $(sysconfdir)/@PACKAGE@
-pkgxmldir = $(datadir)/xml/@PACKAGE@
-
 lib_LTLIBRARIES = libshibsp.la libshibsp-lite.la
 
 libshibspincludedir = $(includedir)/shibsp
@@ -204,10 +201,21 @@ libshibsp_la_LDFLAGS = $(XMLSEC_LIBS) -version-info 3:0:0
 libshibsp_lite_la_LDFLAGS = $(LITE_LIBS) -version-info 3:0:0
 libshibsp_lite_la_CPPFLAGS = -DSHIBSP_LITE
 
+pkgsysconfdir = $(sysconfdir)/@PACKAGE@
+pkgxmldir = $(datadir)/xml/@PACKAGE@
+logdir = ${localstatedir}/log
+rundir = $(localstatedir)/run
+xmldir = $(datadir)/xml
+
 paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
 	sed < ${srcdir}/$@.in > $@.tmp \
 	    -e 's:@-PREFIX-@:${prefix}:g' \
+        -e 's:@-LIBDIR-@:${libdir}:g' \
+        -e 's:@-CFGDIR-@:${sysconfdir}:g' \
+        -e 's:@-LOGDIR-@:${logdir}:g' \
+        -e 's:@-RUNDIR-@:${rundir}:g' \
+        -e 's:@-XMLDIR-@:${xmldir}:g' \
 	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
 	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
 	    -e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g' \
