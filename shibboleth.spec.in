@@ -108,7 +108,12 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
             $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/$APACHE_CONFIG \
             > $RPM_BUILD_ROOT$APACHE_CONFD/shib.conf
 %endif
+        echo "%config $APACHE_CONFD/shib.conf" > rpm.filelist
+    else
+        echo "" > rpm.filelist
     fi
+else
+    echo "" > rpm.filelist
 fi
 
 %check
@@ -149,7 +154,7 @@ sh ./keygen.sh -b
 	    %{__rm} -f %{_sysconfdir}/init.d/shibd
 %endif
 
-%files
+%files -f rpm.filelist
 %defattr(-,root,root,-)
 %{_sbindir}/shibd
 %{_bindir}/mdquery
@@ -167,11 +172,6 @@ sh ./keygen.sh -b
 %config(noreplace) %{_sysconfdir}/%{name}/*.xml
 %config(noreplace) %{_sysconfdir}/%{name}/*.html
 %config(noreplace) %{_sysconfdir}/%{name}/*.logger
-%if "%{_vendor}" == "suse"
-%config %{_sysconfdir}/apache2/conf.d/shib.conf
-%else
-%config %{_sysconfdir}/httpd/conf.d/shib.conf
-%endif
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
 %{_sysconfdir}/%{name}/shibd-redhat
@@ -207,6 +207,7 @@ sh ./keygen.sh -b
 - Bump minor version.
 - Make keygen.sh executable.
 - Fixing SUSE Xerces dependency name.
+- Optionally package shib.conf.
 
 * Tue Jun 10 2008  Scott Cantor  <cantor.2@osu.edu>  - 2.1-1
 - Change shib.conf handling to treat as config file.
