@@ -14,7 +14,6 @@ DIST_SUBDIRS = doc schemas configs shibsp shibd adfs util apache nsapi_shib fast
 
 if DX_COND_doc
 all-local: shibboleth.spec pkginfo doxygen-doc
-APIDOCS = doc/api
 else
 all-local: shibboleth.spec pkginfo
 endif
@@ -40,7 +39,6 @@ pkginfo: pkginfo.in Makefile
 	mv $@.tmp $@
 
 EXTRA_DIST = $(DX_CONFIG) \
-    $(APIDOCS) \
     isapi_shib \
     Shibboleth.sln \
     libtool.m4 \
