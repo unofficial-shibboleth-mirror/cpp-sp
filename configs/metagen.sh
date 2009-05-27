@@ -3,7 +3,7 @@
 while getopts a:c:e:h:n:o:s:t: c
      do
          case $c in
-           c)         CERT=$OPTARG;;
+           c)         CERTS[${#CERTS[*]}]=$OPTARG;;
            e)         ENTITYID=$OPTARG;;
            h)         HOSTS[${#HOSTS[*]}]=$OPTARG;;
            n)         NAKEDHOSTS[${#NAKEDHOSTS[*]}]=$OPTARG;;
@@ -11,24 +11,27 @@ while getopts a:c:e:h:n:o:s:t: c
            a)         ADMIN[${#ADMIN[*]}]=$OPTARG;;
            s)         SUP[${#SUP[*]}]=$OPTARG;;
            t)         TECH[${#TECH[*]}]=$OPTARG;;
-           \?)        echo metagen -c certificate -h host1 [-h host2 ...] [-e entityID]
+           \?)        echo metagen -c cert1 [-c cert2 ...] -h host1 [-h host2 ...] [-e entityID]
                       exit 1;;
          esac
      done
 
 if [ ${#HOSTS[*]} -eq 0 -a ${#NAKEDHOSTS[*]} -eq 0 ] ; then
-    echo metagen -c certificate -h host1 [-h host2 ...] [-e entityID]
+    echo metagen -c cert1 [-c cert2 ...] -h host1 [-h host2 ...] [-e entityID]
     exit 1
 fi
 
-if [ -z $CERT ] ; then
-    CERT=sp-cert.pem
+if [ ${#CERTS[*]} -eq 0 ] ; then
+    CERTS[${#CERTS[*]}]=sp-cert.pem
 fi
 
-if  [ ! -s $CERT ] ; then
-    echo Certificate file $CERT does not exist! 
-    exit 2
-fi
+for c in ${CERTS[@]}
+do
+    if  [ ! -s $c ] ; then
+        echo Certificate file $c does not exist! 
+        exit 2
+    fi
+done
 
 if [ -z $ENTITYID ] ; then
     ENTITYID=https://${HOSTS[0]}/shibboleth
@@ -59,19 +62,26 @@ done
 
 cat << EOF
     </md:Extensions>
+EOF
+
+for c in ${CERTS[@]}
+do
+cat << EOF
     <md:KeyDescriptor>
       <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
         <ds:X509Data>
           <ds:X509Certificate>
 EOF
-
-grep -v ^- $CERT
-
-cat <<EOF
+grep -v ^- $c
+cat << EOF
           </ds:X509Certificate>
         </ds:X509Data>
       </ds:KeyInfo>
     </md:KeyDescriptor>
+EOF
+done
+
+cat << EOF
     <!--
 EOF
 
