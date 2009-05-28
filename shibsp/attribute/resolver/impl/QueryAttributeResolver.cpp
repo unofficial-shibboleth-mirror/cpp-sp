@@ -76,8 +76,7 @@ namespace shibsp {
             const NameID* nameid=NULL,
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
-            const vector<const opensaml::Assertion*>* tokens=NULL,
-            const vector<Attribute*>* attributes=NULL
+            const vector<const opensaml::Assertion*>* tokens=NULL
             ) : m_query(true), m_app(application), m_session(NULL), m_metadata(NULL), m_entity(issuer),
                 m_protocol(protocol), m_nameid(nameid), m_class(authncontext_class), m_decl(authncontext_decl) {
 
@@ -186,7 +185,7 @@ namespace shibsp {
             const vector<const opensaml::Assertion*>* tokens=NULL,
             const vector<shibsp::Attribute*>* attributes=NULL
             ) const {
-            return new QueryContext(application,issuer,protocol,nameid,authncontext_class,authncontext_decl,tokens,attributes);
+            return new QueryContext(application,issuer,protocol,nameid,authncontext_class,authncontext_decl,tokens);
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
