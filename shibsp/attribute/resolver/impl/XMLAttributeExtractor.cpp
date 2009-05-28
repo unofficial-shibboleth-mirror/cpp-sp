@@ -249,7 +249,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             try {
                 auto_ptr_char type(child->getAttributeNS(NULL, _type));
                 if (!type.get() || !*type.get())
-                    throw ConfigurationException("MetadataProvider element missing type attribute.");
+                    throw ConfigurationException("TrustEngine element missing type attribute.");
                 m_log.info("building TrustEngine of type %s...", type.get());
                 m_trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(type.get(), child);
             }
@@ -572,7 +572,7 @@ void XMLExtractorImpl::extractAttributes(
 
                     // Prime the map reference with an empty decoded map.
                     cacheEntry = m_decodedMap.insert(make_pair(observable,decoded_t())).first;
-                    
+
                     // Downgrade the lock.
                     // We don't have to recheck because we never erase the master map entry entirely, even on changes.
                     m_attrLock->unlock();
