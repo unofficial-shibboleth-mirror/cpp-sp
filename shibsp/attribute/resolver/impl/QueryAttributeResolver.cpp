@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,12 +39,10 @@
 #include <saml/saml1/binding/SAML1SOAPClient.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml1/core/Protocols.h>
-#include <saml/saml1/profile/AssertionValidator.h>
 #include <saml/saml2/binding/SAML2SOAPClient.h>
 #include <saml/saml2/core/Protocols.h>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
-#include <saml/saml2/profile/AssertionValidator.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -361,13 +359,9 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
         // Now we can check the security status of the policy.
         if (!policy.isAuthenticated())
             throw SecurityPolicyException("Security of SAML 1.x query result not established.");
-
-        // Lastly, check it over.
-        saml1::AssertionValidator tokval(relyingParty->getXMLString("entityID").second, application.getAudiences(), time(NULL));
-        tokval.validateAssertion(*newtoken);
     }
     catch (exception& ex) {
-        m_log.error("assertion failed policy/validation: %s", ex.what());
+        m_log.error("assertion failed policy validation: %s", ex.what());
         return true;
     }
 
@@ -521,13 +515,9 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
         // Now we can check the security status of the policy.
         if (!policy.isAuthenticated())
             throw SecurityPolicyException("Security of SAML 2.0 query result not established.");
-
-        // Lastly, check it over.
-        saml2::AssertionValidator tokval(relyingParty->getXMLString("entityID").second, application.getAudiences(), time(NULL));
-        tokval.validateAssertion(*newtoken);
     }
     catch (exception& ex) {
-        m_log.error("assertion failed policy/validation: %s", ex.what());
+        m_log.error("assertion failed policy validation: %s", ex.what());
         return true;
     }
 
