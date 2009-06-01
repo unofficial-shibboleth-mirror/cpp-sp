@@ -210,7 +210,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         m_metadata(NULL),
         m_trust(NULL),
         m_filter(NULL),
-        m_entityAssertions(false),
+        m_entityAssertions(true),
         m_attrLock(NULL)
 {
 #ifdef _DEBUG
@@ -230,17 +230,12 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             auto_ptr<MetadataProvider> mp(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(type.get(), child));
             mp->init();
             m_metadata = mp.release();
-            m_entityAssertions = true;
         }
         catch (exception& ex) {
-            m_log.crit(
-                "disabling support for Assertions in EntityAttributes extension, error building/initializing MetadataProvider: %s",
-                ex.what()
-                );
+            m_entityAssertions = false;
+            m_log.crit("error building/initializing dedicated MetadataProvider: %s", ex.what());
+            m_log.crit("disabling support for Assertions in EntityAttributes extension");
         }
-    }
-    else {
-        m_log.info("no dedicated MetadataProvider supplied, disabling support for Assertions in EntityAttributes extension");
     }
 
     if (m_entityAssertions) {
@@ -254,10 +249,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                 m_trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(type.get(), child);
             }
             catch (exception& ex) {
-                m_log.crit(
-                    "disabling support for Assertions in EntityAttributes extension, error building TrustEngine: %s", ex.what()
-                    );
                 m_entityAssertions = false;
+                m_log.crit("error building/initializing dedicated TrustEngine: %s", ex.what());
+                m_log.crit("disabling support for Assertions in EntityAttributes extension");
             }
         }
     }
@@ -273,10 +267,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                 m_filter = SPConfig::getConfig().AttributeFilterManager.newPlugin(type.get(), child);
             }
             catch (exception& ex) {
-                m_log.crit(
-                    "disabling support for Assertions in EntityAttributes extension, error building AttributeFilter: %s", ex.what()
-                    );
                 m_entityAssertions = false;
+                m_log.crit("error building/initializing dedicated AttributeFilter: %s", ex.what());
+                m_log.crit("disabling support for Assertions in EntityAttributes extension");
             }
         }
     }
@@ -650,7 +643,8 @@ void XMLExtractorImpl::extractAttributes(
                     // Set up and evaluate a policy for an AA asserting attributes to us.
                     shibsp::SecurityPolicy policy(application, &AttributeAuthorityDescriptor::ELEMENT_QNAME, false, m_policyId.get());
                     Locker locker(m_metadata);
-                    policy.setMetadataProvider(m_metadata);
+                    if (m_metadata)
+                        policy.setMetadataProvider(m_metadata);
                     if (m_trust)
                         policy.setTrustEngine(m_trust);
                     // Populate recipient as audience.
