@@ -231,7 +231,7 @@ QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(
     DOMElement* child = XMLHelper::getFirstChildElement(e);
     while (child) {
         try {
-            if (XMLHelper::isNodeNamed(e, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME)) {
+            if (XMLHelper::isNodeNamed(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME)) {
                 auto_ptr<XMLObject> obj(saml2::AttributeBuilder::buildOneFromElement(child));
                 saml2::Attribute* down = dynamic_cast<saml2::Attribute*>(obj.get());
                 if (down) {
@@ -239,7 +239,7 @@ QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(
                     obj.release();
                 }
             }
-            else if (XMLHelper::isNodeNamed(e, samlconstants::SAML1P_NS, AttributeDesignator::LOCAL_NAME)) {
+            else if (XMLHelper::isNodeNamed(child, samlconstants::SAML1P_NS, AttributeDesignator::LOCAL_NAME)) {
                 auto_ptr<XMLObject> obj(AttributeDesignatorBuilder::buildOneFromElement(child));
                 AttributeDesignator* down = dynamic_cast<AttributeDesignator*>(obj.get());
                 if (down) {
