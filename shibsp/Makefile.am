@@ -183,6 +183,7 @@ libshibsp_la_SOURCES = \
 	attribute/filtering/impl/AttributeScopeMatchesShibMDScopeFunctor.cpp \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
+	attribute/resolver/impl/SimpleAggregationAttributeResolver.cpp \
 	attribute/resolver/impl/ChainingAttributeExtractor.cpp \
 	attribute/resolver/impl/DelegationAttributeExtractor.cpp \
 	attribute/resolver/impl/KeyDescriptorAttributeExtractor.cpp \

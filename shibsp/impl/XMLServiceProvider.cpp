@@ -62,8 +62,6 @@
 # include <saml/binding/SAMLArtifact.h>
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml2/binding/SAML2ArtifactType0004.h>
-# include <saml/saml2/metadata/ChainingMetadataProvider.h>
-# include <xmltooling/security/ChainingTrustEngine.h>
 # include <xmltooling/util/ReplayCache.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;

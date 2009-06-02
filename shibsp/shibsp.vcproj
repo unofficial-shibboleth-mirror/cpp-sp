@@ -523,6 +523,10 @@
 							>
 						</File>
 						<File
+							RelativePath=".\attribute\resolver\impl\SimpleAggregationAttributeResolver.cpp"
+							>
+						</File>
+						<File
 							RelativePath=".\attribute\resolver\impl\XMLAttributeExtractor.cpp"
 							>
 						</File>
