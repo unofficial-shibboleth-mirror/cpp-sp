@@ -85,7 +85,7 @@
                 Decodes a SAML attribute into its Shibboleth-internal representation.
             </documentation>
         </annotation>
-        <attribute name="caseSensitive" type="boolean" default="true">
+        <attribute name="caseSensitive" type="boolean">
             <annotation>
                 <documentation>
                     Flag controlling case sensitivity when comparisons to the attribute's values are done.
@@ -139,6 +139,13 @@
                         </documentation>
                     </annotation>
                 </attribute>
+                <attribute name="defaultQualifiers" type="boolean">
+                    <annotation>
+                        <documentation>
+                            Flag controlling whether to default in values for NameQualifier/SPNameQualifier if not set.
+                        </documentation>
+                    </annotation>
+                </attribute>
             </extension>
         </complexContent>
     </complexType>
@@ -156,6 +163,13 @@
                     <annotation>
                         <documentation>
                             Value to use as the NameID Format.
+                        </documentation>
+                    </annotation>
+                </attribute>
+                <attribute name="defaultQualifiers" type="boolean">
+                    <annotation>
+                        <documentation>
+                            Flag controlling whether to default in values for NameQualifier/SPNameQualifier if not set.
                         </documentation>
                     </annotation>
                 </attribute>
