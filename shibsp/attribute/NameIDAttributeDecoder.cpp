@@ -35,11 +35,17 @@ using namespace std;
 
 namespace shibsp {
     static const XMLCh formatter[] = UNICODE_LITERAL_9(f,o,r,m,a,t,t,e,r);
+    static const XMLCh defaultQualifiers[] = UNICODE_LITERAL_17(d,e,f,a,u,l,t,Q,u,a,l,i,f,i,e,r,s);
 
     class SHIBSP_DLLLOCAL NameIDAttributeDecoder : virtual public AttributeDecoder
     {
     public:
-        NameIDAttributeDecoder(const DOMElement* e) : AttributeDecoder(e), m_formatter(e ? e->getAttributeNS(NULL,formatter) : NULL) {}
+        NameIDAttributeDecoder(const DOMElement* e)
+                : AttributeDecoder(e), m_formatter(e ? e->getAttributeNS(NULL, formatter) : NULL), m_defaultQualifiers(false) {
+            const XMLCh* flag = e ? e->getAttributeNS(NULL, defaultQualifiers) : NULL;
+            if (flag && (*flag == chLatin_t || *flag == chDigit_1))
+                m_defaultQualifiers = true;
+        }
         ~NameIDAttributeDecoder() {}
 
         shibsp::Attribute* decode(
@@ -54,6 +60,7 @@ namespace shibsp {
             const NameIdentifier* n, vector<NameIDAttribute::Value>& dest, const char* assertingParty, const char* relyingParty
             ) const;
         auto_ptr_char m_formatter;
+        bool m_defaultQualifiers;
     };
 
     AttributeDecoder* SHIBSP_DLLLOCAL NameIDAttributeDecoderFactory(const DOMElement* const & e)
@@ -181,14 +188,14 @@ void NameIDAttributeDecoder::extract(
         str = toUTF8(n->getNameQualifier());
         if (str && *str)
             val.m_NameQualifier = str;
-        else if (assertingParty)
+        else if (m_defaultQualifiers && assertingParty)
             val.m_NameQualifier = assertingParty;
         delete[] str;
 
         str = toUTF8(n->getSPNameQualifier());
         if (str && *str)
             val.m_SPNameQualifier = str;
-        else if (relyingParty)
+        else if (m_defaultQualifiers && relyingParty)
             val.m_SPNameQualifier = relyingParty;
         delete[] str;
 
@@ -218,11 +225,11 @@ void NameIDAttributeDecoder::extract(
         str = toUTF8(n->getNameQualifier());
         if (str && *str)
             val.m_NameQualifier = str;
-        else if (assertingParty)
+        else if (m_defaultQualifiers && assertingParty)
             val.m_NameQualifier = assertingParty;
         delete[] str;
 
-        if (relyingParty)
+        if (m_defaultQualifiers && relyingParty)
             val.m_SPNameQualifier = relyingParty;
     }
 }
