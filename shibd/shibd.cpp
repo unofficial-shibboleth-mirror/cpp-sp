@@ -384,8 +384,10 @@ int main(int argc, char *argv[])
         }
 
         // Signal our parent.
-        pid_t ppid = getppid();
-        kill(ppid, SIGUSR1);
+        if (daemonize) {
+            pid_t ppid = getppid();
+            kill(ppid, SIGUSR1);
+        }
 
         // Run the listener.
         if (!listener->run(&shibd_shutdown)) {
