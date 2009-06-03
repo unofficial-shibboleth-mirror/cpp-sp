@@ -54,17 +54,9 @@ namespace shibsp {
 
         DDF send(const DDF& in);
 
-#ifndef WIN32
-        bool setSignal(int s) {
-            m_signal = s;
-            return true;
-        }
-#endif
-
-        bool run(bool* shutdown) {
-            return run(true, shutdown);
-        }
-        bool run(bool force, bool* shutdown);
+        bool init(bool force);
+        bool run(bool* shutdown);
+        void term();
 
         // Implemented by socket-specific subclasses.
 #ifdef WIN32
@@ -88,9 +80,6 @@ namespace shibsp {
 
     private:
         mutable SocketPool* m_socketpool;
-#ifndef WIN32
-        int m_signal;
-#endif
         bool* m_shutdown;
 
         // Manage child threads

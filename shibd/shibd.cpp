@@ -143,10 +143,17 @@ int real_main(int preinit)
 
         if (!shar_checkonly) {
             // Run the listener.
-            if (!conf.getServiceProvider()->getListenerService()->run(unlink_socket, &shibd_shutdown)) {
-                fprintf(stderr, "listener failed to enter listen loop\n");
+            ListenerService* listener = conf.getServiceProvider()->getListenerService();
+            if (!listener->init(unlink_socket)) {
+                fprintf(stderr, "listener failed to initialize\n");
                 return -3;
             }
+            else if (!listener->run(&shibd_shutdown)) {
+                listener->term();
+                fprintf(stderr, "listener failed to begin service\n");
+                return -3;
+            }
+            listener->term();
         }
 
         conf.term();
@@ -168,6 +175,11 @@ static void term_handler(int arg)
 static void run_handler(int arg)
 {
     shibd_running = true;
+}
+
+static void child_handler(int arg)
+{
+    // Terminate the parent's wait/sleep if the newly born daemon dies early.
 }
 
 static int setup_signals(void)
@@ -203,6 +215,13 @@ static int setup_signals(void)
         sa.sa_handler = run_handler;
 
         if (sigaction(SIGUSR1, &sa, NULL) < 0) {
+            return -1;
+        }
+
+        memset(&sa, 0, sizeof (sa));
+        sa.sa_handler = child_handler;
+
+        if (sigaction(SIGCHLD, &sa, NULL) < 0) {
             return -1;
         }
     }
@@ -249,6 +268,7 @@ static int parse_args(int argc, char* argv[])
                 break;
             case 't':
                 shar_checkonly=true;
+                daemonize=false;
                 break;
             case 'v':
                 shar_version=true;
@@ -302,17 +322,31 @@ int main(int argc, char *argv[])
     if (daemonize) {
         // We must fork() early, while we're single threaded.
         // StorageService cleanup thread is about to start.
-        if (!shar_checkonly) {
-            switch (fork()) {
-                case 0:
-                    break;
-                case -1:
-                    perror("forking");
+        pid_t pid = fork();
+        switch (pid) {
+            case 0:
+                break;
+            case -1:
+                perror("forking");
+                exit(EXIT_FAILURE);
+            default:
+                sleep(daemon_wait);
+                if (shibd_running) {
+                    if (pidfile) {
+                        FILE* pidf = fopen(pidfile, "w");
+                        if (pidf) {
+                            fprintf(pidf, "%d\n", pid);
+                            fclose(pidf);
+                        }
+                        else {
+                            perror(pidfile);
+                        }
+                    }
+                    exit(EXIT_SUCCESS);
+                }
+                else {
                     exit(EXIT_FAILURE);
-                default:
-                    sleep(daemon_wait);
-                    exit(shibd_running ? EXIT_SUCCESS : EXIT_FAILURE);
-            }
+                }
         }
     }
 
@@ -336,32 +370,30 @@ int main(int argc, char *argv[])
             }
         }
 
-        // Write the pid file
-        if (pidfile) {
-            FILE* pidf = fopen(pidfile, "w");
-            if (pidf) {
-                fprintf(pidf, "%d\n", getpid());
-                fclose(pidf);
-            } else {
-                perror(pidfile);  // keep running though
-            }
-        }
-
         if (daemonize) {
             freopen("/dev/null", "r", stdin);
             freopen("/dev/null", "w", stdout);
             freopen("/dev/null", "w", stderr);
-            if (!conf.getServiceProvider()->getListenerService()->setSignal(SIGUSR1)) {
-                fprintf(stderr, "listener failed to accept signaling hook\n");
-                return -3;
-            }
         }
 
-        // Run the listener
-        if (!conf.getServiceProvider()->getListenerService()->run(unlink_socket, &shibd_shutdown)) {
-            fprintf(stderr, "listener failed to enter listen loop\n");
+        // Init the listener.
+        ListenerService* listener = conf.getServiceProvider()->getListenerService();
+        if (!listener->init(unlink_socket)) {
+            fprintf(stderr, "listener failed to initialize\n");
             return -3;
         }
+
+        // Signal our parent.
+        pid_t ppid = getppid();
+        kill(ppid, SIGUSR1);
+
+        // Run the listener.
+        if (!listener->run(&shibd_shutdown)) {
+            listener->term();
+            fprintf(stderr, "listener failed to begin service\n");
+            return -3;
+        }
+        listener->term();
     }
 
     conf.term();

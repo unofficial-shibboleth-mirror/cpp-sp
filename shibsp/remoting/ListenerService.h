@@ -115,21 +115,22 @@ namespace shibsp {
          */
         virtual Remoted* lookup(const char* address) const;
 
-#ifndef WIN32
         /**
-         * Installs a signal that the service should raise to its parent process
-         * before entering a running state.
+         * OutOfProcess servers can implement server-side initialization that should occur
+         * before daemonization.
          *
-         * @param s the signal to raise
-         * @return  true iff the signal was successfully installed
+         * <p>The parameter applies to implementations that can detect and remove
+         * the results of ungraceful shutdowns of previous executions and continue
+         * successfully. File-based sockets are the most common example.
+         *
+         * @param force     true iff remnant network state should be forcibly cleared
+         * @return true iff the service initialization was successful
          */
-        virtual bool setSignal(int s) {
-            return false;
+        virtual bool init(bool force) {
+            return true;
         }
-#endif
 
         /**
-         * @deprecated
          * OutOfProcess servers can implement server-side transport handling by
          * calling the run method and supplying a flag to monitor for shutdown.
          *
@@ -139,18 +140,10 @@ namespace shibsp {
         virtual bool run(bool* shutdown)=0;
 
         /**
-         * OutOfProcess servers can implement server-side transport handling by
-         * calling the run method and supplying a flag to monitor for shutdown.
-         *
-         * <p>The first parameter applies to implementations that can detect and remove
-         * the results of ungraceful shutdowns of previous executions and continue
-         * successfully. File-based sockets are the most common example.
-         *
-         * @param force     true iff remnant network state should be forcibly cleared
-         * @param shutdown  pointer to flag that caller will set when shutdown is required
-         * @return true iff the service execution was successful
+         * OutOfProcess servers can implement server-side termination/cleanup.
          */
-        virtual bool run(bool force, bool* shutdown);
+        virtual void term() {
+        }
 
     private:
         std::map<std::string,Remoted*> m_listenerMap;

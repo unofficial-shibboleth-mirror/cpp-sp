@@ -183,10 +183,10 @@ SocketListener::~SocketListener()
     delete m_child_lock;
 }
 
-bool SocketListener::run(bool force, bool* shutdown)
+bool SocketListener::init(bool force)
 {
 #ifdef _DEBUG
-    NDC ndc("run");
+    NDC ndc("init");
 #endif
     log->info("listener service starting");
 
@@ -199,10 +199,6 @@ bool SocketListener::run(bool force, bool* shutdown)
     }
     sp->unlock();
 
-    // Save flag to monitor for shutdown request.
-    m_shutdown=shutdown;
-    unsigned long count = 0;
-
     if (!create(m_socket)) {
         log->crit("failed to create socket");
         return false;
@@ -213,14 +209,17 @@ bool SocketListener::run(bool force, bool* shutdown)
         return false;
     }
 
-#ifndef WIN32
-    if (m_signal) {
-        // Notify our parent that we're entering the select loop.
-        pid_t ppid = getppid();
-        kill(ppid, SIGUSR1);
-        log->info("notified parent (%d) upon entering select loop", ppid);
-    }
+    return true;
+}
+
+bool SocketListener::run(bool* shutdown)
+{
+#ifdef _DEBUG
+    NDC ndc("run");
 #endif
+    // Save flag to monitor for shutdown request.
+    m_shutdown=shutdown;
+    unsigned long count = 0;
 
     while (!*m_shutdown) {
         fd_set readfds;
@@ -238,7 +237,8 @@ bool SocketListener::run(bool force, bool* shutdown)
                 if (errno == EINTR) continue;
                 log_error();
                 log->error("select() on main listener socket failed");
-                return false;
+                *m_shutdown = true;
+                break;
 
             case 0:
                 continue;
@@ -275,9 +275,13 @@ bool SocketListener::run(bool force, bool* shutdown)
         m_child_wait->wait(m_child_lock);
     m_child_lock->unlock();
 
+    return true;
+}
+
+void SocketListener::term()
+{
     this->close(m_socket);
     m_socket=(ShibSocket)0;
-    return true;
 }
 
 DDF SocketListener::send(const DDF& in)

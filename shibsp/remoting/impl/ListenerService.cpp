@@ -96,8 +96,3 @@ void ListenerService::receive(DDF &in, ostream& out)
 
     dest->receive(in, out);
 }
-
-bool ListenerService::run(bool force, bool* shutdown)
-{
-    return run(shutdown);
-}
