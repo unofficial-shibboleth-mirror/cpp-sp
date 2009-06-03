@@ -146,11 +146,13 @@ int real_main(int preinit)
             ListenerService* listener = conf.getServiceProvider()->getListenerService();
             if (!listener->init(unlink_socket)) {
                 fprintf(stderr, "listener failed to initialize\n");
+                conf.term();
                 return -3;
             }
             else if (!listener->run(&shibd_shutdown)) {
-                listener->term();
                 fprintf(stderr, "listener failed to begin service\n");
+                listener->term();
+                conf.term();
                 return -3;
             }
             listener->term();
@@ -380,6 +382,7 @@ int main(int argc, char *argv[])
         ListenerService* listener = conf.getServiceProvider()->getListenerService();
         if (!listener->init(unlink_socket)) {
             fprintf(stderr, "listener failed to initialize\n");
+            conf.term();
             return -3;
         }
 
@@ -391,8 +394,11 @@ int main(int argc, char *argv[])
 
         // Run the listener.
         if (!listener->run(&shibd_shutdown)) {
-            listener->term();
             fprintf(stderr, "listener failed to begin service\n");
+            listener->term();
+            conf.term();
+            if (pidfile)
+                unlink(pidfile);
             return -3;
         }
         listener->term();
