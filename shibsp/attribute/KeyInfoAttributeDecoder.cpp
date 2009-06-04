@@ -53,7 +53,7 @@ namespace shibsp {
             auto_ptr<Credential> cred (getKeyInfoResolver()->resolve(k, Credential::RESOLVE_KEYS));
             if (cred.get()) {
                 dest.push_back(string());
-                dest.back() = SecurityHelper::getDEREncoding(*cred.get());
+                dest.back() = SecurityHelper::getDEREncoding(*cred.get(), m_hash);
                 if (dest.back().empty())
                     dest.pop_back();
             }
@@ -63,6 +63,7 @@ namespace shibsp {
             return m_keyInfoResolver ? m_keyInfoResolver : XMLToolingConfig::getConfig().getKeyInfoResolver();
         }
 
+        bool m_hash;
         KeyInfoResolver* m_keyInfoResolver;
     };
 
@@ -72,13 +73,16 @@ namespace shibsp {
     }
 
     static const XMLCh _KeyInfoResolver[] = UNICODE_LITERAL_15(K,e,y,I,n,f,o,R,e,s,o,l,v,e,r);
-    static const XMLCh type[] =             UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh _hash[] =            UNICODE_LITERAL_4(h,a,s,h);
+    static const XMLCh _type[] =            UNICODE_LITERAL_4(t,y,p,e);
 };
 
-KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e) : AttributeDecoder(e), m_keyInfoResolver(NULL) {
+KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e) : AttributeDecoder(e), m_hash(false), m_keyInfoResolver(NULL) {
+    const XMLCh* flag = e ? e->getAttributeNS(NULL, _hash) : NULL;
+    m_hash = (flag && (*flag == chLatin_t || *flag == chDigit_1));
     e = e ? XMLHelper::getFirstChildElement(e,_KeyInfoResolver) : NULL;
     if (e) {
-        auto_ptr_char t(e->getAttributeNS(NULL,type));
+        auto_ptr_char t(e->getAttributeNS(NULL, _type));
         if (t.get() && *t.get())
             m_keyInfoResolver = XMLToolingConfig::getConfig().KeyInfoResolverManager.newPlugin(t.get(), e);
         else

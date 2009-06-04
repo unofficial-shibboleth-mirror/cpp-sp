@@ -63,6 +63,8 @@ namespace shibsp {
             ) const;
 
         void getAttributeIds(std::vector<std::string>& attributes) const {
+            if (!m_hashId.empty())
+                attributes.push_back(m_hashId.front());
             if (!m_signingId.empty())
                 attributes.push_back(m_signingId.front());
             if (!m_encryptionId.empty())
@@ -70,6 +72,7 @@ namespace shibsp {
         }
 
     private:
+        vector<string> m_hashId;
         vector<string> m_signingId;
         vector<string> m_encryptionId;
     };
@@ -84,13 +87,19 @@ namespace shibsp {
     }
 
     static const XMLCh encryptionId[] = UNICODE_LITERAL_12(e,n,c,r,y,p,t,i,o,n,I,d);
+    static const XMLCh hashId[] =       UNICODE_LITERAL_6(h,a,s,h,I,d);
     static const XMLCh signingId[] =    UNICODE_LITERAL_9(s,i,g,n,i,n,g,I,d);
 };
 
 KeyDescriptorExtractor::KeyDescriptorExtractor(const DOMElement* e)
 {
     if (e) {
-        const XMLCh* a = e->getAttributeNS(NULL, signingId);
+        const XMLCh* a = e->getAttributeNS(NULL, hashId);
+        if (a && *a) {
+            auto_ptr_char temp(a);
+            m_hashId.push_back(temp.get());
+        }
+        a = e->getAttributeNS(NULL, signingId);
         if (a && *a) {
             auto_ptr_char temp(a);
             m_signingId.push_back(temp.get());
@@ -101,8 +110,8 @@ KeyDescriptorExtractor::KeyDescriptorExtractor(const DOMElement* e)
             m_encryptionId.push_back(temp.get());
         }
     }
-    if (m_signingId.empty() && m_encryptionId.empty())
-        throw ConfigurationException("KeyDescriptor AttributeExtractor requires signingId or encryptionId property.");
+    if (m_hashId.empty() && m_signingId.empty() && m_encryptionId.empty())
+        throw ConfigurationException("KeyDescriptor AttributeExtractor requires hashId, signingId, or encryptionId property.");
 }
 
 void KeyDescriptorExtractor::extractAttributes(
@@ -116,20 +125,35 @@ void KeyDescriptorExtractor::extractAttributes(
     vector<const Credential*> creds;
     MetadataCredentialCriteria mcc(*role);
 
-    if (!m_signingId.empty()) {
+    if (!m_signingId.empty() || !m_hashId.empty()) {
         mcc.setUsage(Credential::SIGNING_CREDENTIAL);
         if (application.getMetadataProvider()->resolve(creds, &mcc)) {
-            auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_signingId));
-            vector<string>& vals = attr->getValues();
-            for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
-                if (vals.empty() || !vals.back().empty())
-                    vals.push_back(string());
-                vals.back() = SecurityHelper::getDEREncoding(*(*c));
+            if (!m_hashId.empty()) {
+                auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_hashId));
+                vector<string>& vals = attr->getValues();
+                for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+                    if (vals.empty() || !vals.back().empty())
+                        vals.push_back(string());
+                    vals.back() = SecurityHelper::getDEREncoding(*(*c), true);
+                }
+                if (vals.back().empty())
+                    vals.pop_back();
+                if (!vals.empty())
+                    attributes.push_back(attr.release());
             }
-            if (vals.back().empty())
-                vals.pop_back();
-            if (!vals.empty())
-                attributes.push_back(attr.release());
+            if (!m_signingId.empty()) {
+                auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_signingId));
+                vector<string>& vals = attr->getValues();
+                for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+                    if (vals.empty() || !vals.back().empty())
+                        vals.push_back(string());
+                    vals.back() = SecurityHelper::getDEREncoding(*(*c));
+                }
+                if (vals.back().empty())
+                    vals.pop_back();
+                if (!vals.empty())
+                    attributes.push_back(attr.release());
+            }
             creds.clear();
         }
     }
