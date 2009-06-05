@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -245,21 +245,25 @@ int main(int argc,char* argv[])
                     protocol = samlconstants::SAML11_PROTOCOL_ENUM;
                 v1name = a1->getAuthenticationStatements().size() ?
                     a1->getAuthenticationStatements().front()->getSubject()->getNameIdentifier() : NULL;
-                // Normalize the SAML 1.x NameIdentifier...
-                v2name = saml2::NameIDBuilder::buildNameID();
-                v2name->setName(v1name->getName());
-                v2name->setFormat(v1name->getFormat());
-                v2name->setNameQualifier(v1name->getNameQualifier());
+                if (!v1name)
+                    v1name = a1->getAttributeStatements().size() ?
+                    a1->getAttributeStatements().front()->getSubject()->getNameIdentifier() : NULL;
+                if (v1name) {
+                    // Normalize the SAML 1.x NameIdentifier...
+                    v2name = saml2::NameIDBuilder::buildNameID();
+                    v2name->setName(v1name->getName());
+                    v2name->setFormat(v1name->getFormat());
+                    v2name->setNameQualifier(v1name->getNameQualifier());
+                }
             }
             else {
                 throw FatalProfileException("Unknown assertion type.");
             }
 
-            if (!issuer) {
-                if (v1name)
-                    delete v2name;
+            auto_ptr<saml2::NameID> nameidwrapper(v1name ? v2name : NULL);
+
+            if (!issuer)
                 throw FatalProfileException("Unable to determine issuer.");
-            }
 
             MetadataProvider* m=app->getMetadataProvider();
             xmltooling::Locker mlocker(m);
@@ -272,23 +276,20 @@ int main(int argc,char* argv[])
             
             vector<const Assertion*> tokens(1, dynamic_cast<Assertion*>(token.get()));
             ResolverTest rt(NULL, a_param);
-            try {
-                ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name, NULL, NULL, &tokens);
-            }
-            catch (...) {
-                if (v1name)
-                    delete v2name;
-                throw;
-            }
+            ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name, NULL, NULL, &tokens);
         }
 
         auto_ptr<ResolutionContext> wrapper(ctx);
         for (vector<Attribute*>::const_iterator a = ctx->getResolvedAttributes().begin(); a != ctx->getResolvedAttributes().end(); ++a) {
-            cout << endl;
-            for (vector<string>::const_iterator s = (*a)->getAliases().begin(); s != (*a)->getAliases().end(); ++s)
-                cout << "ID: " << *s << endl;
-            for (vector<string>::const_iterator s = (*a)->getSerializedValues().begin(); s != (*a)->getSerializedValues().end(); ++s)
-                cout << "Value: " << *s << endl;
+            for (vector<string>::const_iterator s = (*a)->getAliases().begin(); s != (*a)->getAliases().end(); ++s) {
+                cout << *s << ": ";
+                for (vector<string>::const_iterator v = (*a)->getSerializedValues().begin(); v != (*a)->getSerializedValues().end(); ++v) {
+                    if (v != (*a)->getSerializedValues().begin())
+                        cout << ';';
+                    cout << *v;
+                }
+                cout << endl;
+            }
         }
         cout << endl;
     }
