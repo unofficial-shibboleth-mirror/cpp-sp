@@ -1,6 +1,6 @@
 /*
  *  Copyright 2009 Internet2
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 
 /**
  * @file shibsp/attribute/ExtensibleAttribute.h
- * 
+ *
  * An Attribute whose values are arbitrary structures.
  */
 
@@ -41,7 +41,7 @@ namespace shibsp {
     public:
         /**
          * Constructor.
-         * 
+         *
          * @param ids       array with primary identifier in first position, followed by any aliases
          * @param formatter template for serialization of values
          */
@@ -53,29 +53,29 @@ namespace shibsp {
 
         /**
          * Constructs based on a remoted ExtensibleAttribute.
-         * 
+         *
          * @param in    input object containing marshalled ExtensibleAttribute
          */
         ExtensibleAttribute(DDF& in) : Attribute(in), m_obj(in.copy()) {
         }
-        
+
         virtual ~ExtensibleAttribute() {
             m_obj.destroy();
         }
-        
+
         /**
          * Returns the set of values in a DDF list.
-         * 
+         *
          * @return  a mutable list object containing the values
          */
         DDF getValues() {
             return m_obj.first();
         }
-        
+
         size_t valueCount() const {
             return m_obj.first().integer();
         }
-        
+
         void clearSerializedValues() {
             m_serialized.clear();
         }
@@ -96,11 +96,15 @@ namespace shibsp {
         }
 
         const std::vector<std::string>& getSerializedValues() const;
-    
+
         DDF marshall() const {
+            if (!isCaseSensitive())
+                m_obj.addmember("case_insensitive");
+            if (isInternal())
+                m_obj.addmember("internal");
             return m_obj.copy();
         }
-    
+
     private:
         mutable DDF m_obj;
     };

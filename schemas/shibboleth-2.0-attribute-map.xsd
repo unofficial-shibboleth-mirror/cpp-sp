@@ -92,6 +92,11 @@
                 </documentation>
             </annotation>
         </attribute>
+        <attribute name="internal" type="boolean">
+            <annotation>
+                <documentation>Flag controlling whether the resulting attribute should be exported for CGI use.</documentation>
+            </annotation>
+        </attribute>
     </complexType>
     
     <complexType name="StringAttributeDecoder">

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,6 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
     auto_ptr<NameIDAttribute> nameid(
         new NameIDAttribute(ids, (m_formatter.get() && *m_formatter.get()) ? m_formatter.get() : DEFAULT_NAMEID_FORMATTER)
         );
-    nameid->setCaseSensitive(m_caseSensitive);
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
     vector<XMLObject*>::const_iterator v,stop;
 
@@ -138,7 +137,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
             }
         }
 
-        return dest.empty() ? NULL : nameid.release();
+        return dest.empty() ? NULL : _decode(nameid.release());
     }
 
     const NameIDType* saml2name = dynamic_cast<const NameIDType*>(xmlObject);
@@ -167,7 +166,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
         }
     }
 
-    return dest.empty() ? NULL : nameid.release();
+    return dest.empty() ? NULL : _decode(nameid.release());
 }
 
 void NameIDAttributeDecoder::extract(

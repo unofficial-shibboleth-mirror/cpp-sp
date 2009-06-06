@@ -153,5 +153,5 @@ Attribute* KeyInfoAttributeDecoder::decode(
         }
     }
 
-    return dest.empty() ? NULL : attr.release();
+    return dest.empty() ? NULL : _decode(attr.release());
 }

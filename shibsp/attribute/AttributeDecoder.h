@@ -45,6 +45,21 @@ namespace shibsp {
         /** Flag for case sensitivity of decoded attributes. */
         bool m_caseSensitive;
 
+        /** Flag for hiding attributes from CGI export. */
+        bool m_internal;
+
+        /**
+         * Helper method to handle base class decoding housekeeping.
+         *
+         * @param attr  the new Attribute object being created
+         * @return  the attr parameter
+         */
+        virtual Attribute* _decode(Attribute* attr) const {
+            attr->setCaseSensitive(m_caseSensitive);
+            attr->setInternal(m_internal);
+            return attr;
+        }
+
     public:
         virtual ~AttributeDecoder() {}
 

@@ -144,7 +144,7 @@ Attribute* DOMAttributeDecoder::decode(
             log.warn("skipping AttributeValue without a backing DOM");
     }
 
-    return dest.integer() ? attr.release() : NULL;
+    return dest.integer() ? _decode(attr.release()) : NULL;
 }
 
 DDF DOMAttributeDecoder::convert(DOMElement* e, bool nameit) const

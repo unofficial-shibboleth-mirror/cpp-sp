@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -413,6 +413,8 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         // Export the attributes.
         const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
         for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
+            if (a->second->isInternal())
+                continue;
             string header(app->getSecureHeader(request, a->first.c_str()));
             const vector<string>& vals = a->second->getSerializedValues();
             for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {

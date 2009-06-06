@@ -71,6 +71,7 @@ namespace shibsp {
     static const XMLCh _DOMAttributeDecoder[] =    UNICODE_LITERAL_19(D,O,M,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
 
     static const XMLCh caseSensitive[] =           UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh internal[] =                UNICODE_LITERAL_8(i,n,t,e,r,n,a,l);
 #endif
 };
 
@@ -93,12 +94,16 @@ void shibsp::registerAttributeDecoders()
     conf.AttributeDecoderManager.registerFactory(DOMAttributeDecoderType, DOMAttributeDecoderFactory);
 }
 
-AttributeDecoder::AttributeDecoder(const DOMElement *e) : m_caseSensitive(true)
+AttributeDecoder::AttributeDecoder(const DOMElement *e) : m_caseSensitive(true), m_internal(false)
 {
     if (e) {
-        const XMLCh* flag = e->getAttributeNS(NULL,caseSensitive);
+        const XMLCh* flag = e->getAttributeNS(NULL, caseSensitive);
         if (flag && (*flag == chLatin_f || *flag == chDigit_0))
             m_caseSensitive = false;
+
+        flag = e->getAttributeNS(NULL, internal);
+        if (flag && (*flag == chLatin_t || *flag == chDigit_1))
+            m_internal = true;
     }
 }
 #endif
@@ -113,6 +118,42 @@ void shibsp::registerAttributeFactories()
 }
 
 map<string,Attribute::AttributeFactory*> Attribute::m_factoryMap;
+
+Attribute::Attribute(DDF& in) : m_caseSensitive(in["case_insensitive"].isnull()), m_internal(!in["internal"].isnull())
+{
+    const char* id = in.first().name();
+    if (id && *id)
+        m_id.push_back(id);
+    else
+        throw AttributeException("No id found in marshalled attribute content.");
+    DDF aliases = in["aliases"];
+    if (aliases.islist()) {
+        DDF alias = aliases.first();
+        while (alias.isstring()) {
+            m_id.push_back(alias.string());
+            alias = aliases.next();
+        }
+    }
+}
+
+DDF Attribute::marshall() const
+{
+    DDF ddf(NULL);
+    ddf.structure().addmember(m_id.front().c_str()).list();
+    if (!m_caseSensitive)
+        ddf.addmember("case_insensitive");
+    if (m_internal)
+        ddf.addmember("internal");
+    if (m_id.size() > 1) {
+        DDF alias;
+        DDF aliases = ddf.addmember("aliases").list();
+        for (std::vector<std::string>::const_iterator a = m_id.begin() + 1; a != m_id.end(); ++a) {
+            alias = DDF(NULL).string(a->c_str());
+            aliases.add(alias);
+        }
+    }
+    return ddf;
+}
 
 Attribute* Attribute::unmarshall(DDF& in)
 {
