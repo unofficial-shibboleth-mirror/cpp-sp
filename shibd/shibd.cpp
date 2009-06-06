@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
             if (pidfile) {
                 FILE* pidf = fopen(pidfile, "w");
                 if (pidf) {
-                    fprintf(pidf, "%d\n", pid);
+                    fprintf(pidf, "%d\n", getpid());
                     fclose(pidf);
                 }
                 else {
