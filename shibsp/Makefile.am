@@ -46,7 +46,8 @@ attrinclude_HEADERS = \
 	attribute/ExtensibleAttribute.h \
 	attribute/NameIDAttribute.h \
 	attribute/ScopedAttribute.h \
-	attribute/SimpleAttribute.h
+	attribute/SimpleAttribute.h \
+	attribute/XMLAttribute.h
 
 attrfiltinclude_HEADERS = \
 	attribute/filtering/AttributeFilter.h \
@@ -159,6 +160,7 @@ libshibsp_la_SOURCES = \
 	attribute/NameIDFromScopedAttributeDecoder.cpp \
 	attribute/ScopedAttributeDecoder.cpp \
 	attribute/StringAttributeDecoder.cpp \
+	attribute/XMLAttributeDecoder.cpp \
 	attribute/filtering/impl/AttributeFilter.cpp \
 	attribute/filtering/impl/ChainingAttributeFilter.cpp \
 	attribute/filtering/impl/XMLAttributeFilter.cpp \

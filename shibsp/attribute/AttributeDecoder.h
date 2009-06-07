@@ -99,6 +99,9 @@ namespace shibsp {
     /** Decodes arbitrary DOM information into an ExtensibleAttribute. */
     extern SHIBSP_API xmltooling::QName DOMAttributeDecoderType;
 
+    /** Decodes arbitrary XML into an XMLAttribute. */
+    extern SHIBSP_API xmltooling::QName XMLAttributeDecoderType;
+
     /** Registers built-in AttributeDecoders into the runtime. */
     void registerAttributeDecoders();
 };
