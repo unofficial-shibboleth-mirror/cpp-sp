@@ -544,11 +544,20 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
 
     auto_ptr<NameID> wrapper(n);
 
+    set<string> history;
+
     // We have a master loop over all the possible sources of material.
     for (vector< pair<string,bool> >::const_iterator source = m_sources.begin(); source != m_sources.end(); ++source) {
         if (source->second) {
             // A literal entityID to query.
-            doQuery(qctx, source->first.c_str(), n ? n : qctx.getNameID());
+            if (history.count(source->first) == 0) {
+                m_log.debug("issuing SAML query to (%s)", source->first.c_str());
+                doQuery(qctx, source->first.c_str(), n ? n : qctx.getNameID());
+                history.insert(source->first);
+            }
+            else {
+                m_log.debug("skipping previously queried attribute source (%s)", source->first.c_str());
+            }
         }
         else {
             m_log.debug("using attribute sources referenced in attribute (%s)", source->first.c_str());
@@ -558,8 +567,16 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
                     qctx.getSession()->getIndexedAttributes().equal_range(source->first);
                 for (; range.first != range.second; ++range.first) {
                     const vector<string>& links = range.first->second->getSerializedValues();
-                    for (vector<string>::const_iterator link = links.begin(); link != links.end(); ++link)
-                        doQuery(qctx, link->c_str(), n ? n : qctx.getNameID());
+                    for (vector<string>::const_iterator link = links.begin(); link != links.end(); ++link) {
+                        if (history.count(*link) == 0) {
+                            m_log.debug("issuing SAML query to (%s)", link->c_str());
+                            doQuery(qctx, link->c_str(), n ? n : qctx.getNameID());
+                            history.insert(*link);
+                        }
+                        else {
+                            m_log.debug("skipping previously queried attribute source (%s)", link->c_str());
+                        }
+                    }
                 }
             }
             else if (qctx.getInputAttributes()) {
@@ -568,8 +585,16 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
                 for (vector<Attribute*>::const_iterator match = matches->begin(); match != matches->end(); ++match) {
                     if (source->first == (*match)->getId()) {
                         const vector<string>& links = (*match)->getSerializedValues();
-                        for (vector<string>::const_iterator link = links.begin(); link != links.end(); ++link)
-                            doQuery(qctx, link->c_str(), n ? n : qctx.getNameID());
+                        for (vector<string>::const_iterator link = links.begin(); link != links.end(); ++link) {
+                            if (history.count(*link) == 0) {
+                                m_log.debug("issuing SAML query to (%s)", link->c_str());
+                                doQuery(qctx, link->c_str(), n ? n : qctx.getNameID());
+                                history.insert(*link);
+                            }
+                            else {
+                                m_log.debug("skipping previously queried attribute source (%s)", link->c_str());
+                            }
+                        }
                     }
                 }
             }
