@@ -341,7 +341,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
-    	if (!acsByIndex.first || acsByIndex.second) {
+    	if (acsByIndex.first && acsByIndex.second) {
             // Pass by Index.
             if (isHandler) {
                 // We may already have RelayState set if we looped back here,
@@ -417,7 +417,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("authnContextClassRef").string(acClass.second);
     if (acComp.first)
         in.addmember("authnContextComparison").string(acComp.second);
-    if (!acsByIndex.first || acsByIndex.second) {
+    if (acsByIndex.first && acsByIndex.second) {
         if (ACS) {
             // Determine index to use.
             pair<bool,const char*> ix = pair<bool,const char*>(false,NULL);
