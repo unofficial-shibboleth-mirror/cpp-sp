@@ -593,6 +593,7 @@
                     <attribute name="forceAuthn" type="boolean"/>
                     <attribute name="authnContextClassRef" type="anyURI"/>
                     <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
+                    <attribute name="requestDelegation" type="boolean"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
 			</complexContent>
