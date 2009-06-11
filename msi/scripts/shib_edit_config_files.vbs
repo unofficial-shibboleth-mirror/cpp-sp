@@ -146,6 +146,14 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "bindingTemplate.html", ConfigDir, false
   End If
 
+  If (NOT FileSystemObj.FileExists(ConfigDir & "discoveryTemplate.html")) then
+    FileSystemObj.CopyFile DistDir & "discoveryTemplate.html", ConfigDir, false
+  End If
+
+  If (NOT FileSystemObj.FileExists(ConfigDir & "postTemplate.html")) then
+    FileSystemObj.CopyFile DistDir & "postTemplate.html", ConfigDir, false
+  End If
+
   If (NOT FileSystemObj.FileExists(ConfigDir & "localLogout.html")) then
     FileSystemObj.CopyFile DistDir & "localLogout.html", ConfigDir, false
   End If
