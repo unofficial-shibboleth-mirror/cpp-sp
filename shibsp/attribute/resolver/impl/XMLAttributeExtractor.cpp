@@ -682,19 +682,18 @@ void XMLExtractorImpl::extractAttributes(
                         }
                     }
 
-                    // Authenticate the assertion. We have to marshall them to establish the signature for verification.
-                    (*assert)->marshall();
-                    policy.evaluate(*(*assert));
+                    // Authenticate the assertion. We have to clone and marshall it to establish the signature for verification.
+                    auto_ptr<saml2::Assertion> tokencopy((*assert)->cloneAssertion());
+                    tokencopy->marshall();
+                    policy.evaluate(*tokencopy);
                     if (!policy.isAuthenticated()) {
                         if (m_log.isDebugEnabled()) {
-                            auto_ptr_char tempid((*assert)->getID());
+                            auto_ptr_char tempid(tokencopy->getID());
                             auto_ptr_char eid(entityID);
                             m_log.debug(
                                 "failed to authenticate assertion (%s) in metadata extension for entity (%s)", tempid.get(), eid.get()
                                 );
                         }
-                        (*assert)->releaseThisAndChildrenDOM();
-                        (*assert)->setDocument(NULL);
                         continue;
                     }
 
@@ -704,11 +703,9 @@ void XMLExtractorImpl::extractAttributes(
                     auto_ptr_char inlineAssertingParty(inlineEntity ? inlineEntity->getEntityID() : NULL);
                     relyingParty = application.getRelyingParty(inlineEntity)->getString("entityID").second;
                     const vector<saml2::Attribute*>& attrs2 =
-                        const_cast<const saml2::AttributeStatement*>((*assert)->getAttributeStatements().front())->getAttributes();
+                        const_cast<const saml2::AttributeStatement*>(tokencopy->getAttributeStatements().front())->getAttributes();
                     for (vector<saml2::Attribute*>::const_iterator a = attrs2.begin(); a!=attrs2.end(); ++a)
                         extractAttributes(application, inlineAssertingParty.get(), relyingParty, *(*a), holding2);
-                    (*assert)->releaseThisAndChildrenDOM();
-                    (*assert)->setDocument(NULL);
 
                     // Now we locally filter the attributes so that the actual issuer can be properly set.
                     // If we relied on outside filtering, the attributes couldn't be distinguished from the
@@ -744,8 +741,6 @@ void XMLExtractorImpl::extractAttributes(
                             ex.what()
                             );
                     }
-                    (*assert)->releaseThisAndChildrenDOM();
-                    (*assert)->setDocument(NULL);
                     for_each(holding2.begin(), holding2.end(), xmltooling::cleanup<Attribute>());
                     continue;
                 }
@@ -753,8 +748,6 @@ void XMLExtractorImpl::extractAttributes(
                     // Unknown exceptions are fatal.
                     if (useCache)
                         m_attrLock->unlock();
-                    (*assert)->releaseThisAndChildrenDOM();
-                    (*assert)->setDocument(NULL);
                     for_each(holding.begin(), holding.end(), xmltooling::cleanup<Attribute>());
                     for_each(holding2.begin(), holding2.end(), xmltooling::cleanup<Attribute>());
                     throw;
