@@ -31,6 +31,7 @@
 #ifdef WIN32
 # define _CRT_NONSTDC_NO_DEPRECATE 1
 # define _CRT_SECURE_NO_DEPRECATE 1
+# define _CRT_RAND_S
 #endif
 
 #include <shibsp/AbstractSPRequest.h>
@@ -155,18 +156,35 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
     Locker locker(sp);
     const PropertySet* props=sp->getPropertySet("InProcess");
     if (props) {
+        pair<bool,bool> flag=props->getBool("checkSpoofing");
+        g_checkSpoofing = !flag.first || flag.second;
+        flag=props->getBool("catchAll");
+        g_catchAll = flag.first && flag.second;
+
         pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
         if (unsetValue.first)
             g_unsetHeaderValue = unsetValue.second;
-        pair<bool,bool> flag=props->getBool("checkSpoofing");
-        g_checkSpoofing = !flag.first || flag.second;
         if (g_checkSpoofing) {
             unsetValue=props->getString("spoofKey");
             if (unsetValue.first)
                 g_spoofKey = unsetValue.second;
+#ifdef WIN32
+            else {
+                unsigned int randkey=0,randkey2=0,randkey3=0,randkey4=0;
+                if (rand_s(&randkey) == 0 && rand_s(&randkey2) == 0 && rand_s(&randkey3) == 0 && rand_s(&randkey4) == 0) {
+                    ostringstream keystr;
+                    keystr << randkey << randkey2 << randkey3 << randkey4;
+                    g_spoofKey = keystr.str();
+                }
+                else {
+                    pblock_nvinsert("error", "module failed to generate a random anti-spoofing key (if this is Windows 2000 set one manually)", pb);
+                    g_Config->term();
+                    g_Config=NULL;
+                    return REQ_ABORTED;
+                }
+            }
+#endif
         }
-        flag=props->getBool("catchAll");
-        g_catchAll = flag.first && flag.second;
     }
     return REQ_PROCEED;
 }
