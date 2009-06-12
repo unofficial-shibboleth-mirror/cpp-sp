@@ -95,8 +95,6 @@ namespace {
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
     static const char* g_UserDataKey = "_shib_check_user_";
-    static const XMLCh path[] = UNICODE_LITERAL_4(p,a,t,h);
-    static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
 }
 
 /* Apache 2.2.x headers must be accumulated and set in the output filter.
