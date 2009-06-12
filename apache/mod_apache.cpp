@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2005 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ namespace {
     char* g_szSHIBConfig = NULL;
     char* g_szSchemaDir = NULL;
     ShibTargetConfig* g_Config = NULL;
-    string g_unsetHeaderValue;
+    string g_unsetHeaderValue,g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = true;
     static const char* g_UserDataKey = "_shib_check_user_";
@@ -251,10 +251,26 @@ extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
 class ShibTargetApache : public ShibTarget
 {
 public:
-  ShibTargetApache(request_rec* req, bool handler) : m_handler(handler) {
+  ShibTargetApache(request_rec* req, bool handler, bool shib_check_user) : m_handler(handler), m_firsttime(true) {
     m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
     m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
     m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
+    m_req = req;
+
+    if (shib_check_user && m_dc->bUseHeaders != 0) {
+        // Try and see if this request was already processed, to skip spoof checking.
+        if (!ap_is_initial_req(m_req)) {
+            m_firsttime = false;
+        }
+        else if (!g_spoofKey.empty()) {
+            const char* hdr = ap_table_get(m_req->headers_in, "Shib-Spoof-Check");
+            if (hdr && g_spoofKey == hdr)
+                m_firsttime=false;
+        }
+
+        if (!m_firsttime)
+            log(LogLevelDebug, "shib_check_user running more than once");
+    }
 
     init(
         m_sc->szScheme ? m_sc->szScheme : ap_http_method(req),
@@ -265,8 +281,6 @@ public:
 	    req->connection->remote_ip,
         req->method
         );
-
-    m_req = req;
   }
   ~ShibTargetApache() { }
 
@@ -363,7 +377,7 @@ public:
     }
     if (m_dc->bUseHeaders != 0) {
         // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_clear_header: hdr");
-        if (g_checkSpoofing && ap_is_initial_req(m_req)) {
+        if (g_checkSpoofing && m_firsttime) {
             if (m_allhttp.empty()) {
                 // First time, so populate set with "CGI" versions of client-supplied headers.
 #ifdef SHIB_APACHE_13
@@ -461,7 +475,7 @@ public:
   virtual void* returnDecline(void) { return (void*)DECLINED; }
   virtual void* returnOK(void) { return (void*)OK; }
 
-  bool m_handler;
+  bool m_handler,m_firsttime;;
   request_rec* m_req;
   shib_dir_config* m_dc;
   shib_server_config* m_sc;
@@ -485,11 +499,14 @@ extern "C" int shib_check_user(request_rec* r)
     saml::NDC ndc(threadid.str().c_str());
 
     try {
-        ShibTargetApache sta(r, false);
+        ShibTargetApache sta(r, false, true);
 
         // Check user authentication and export information, then set the handler bypass
         pair<bool,void*> res = sta.doCheckAuthN(true);
         apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
+        // If directed, install a spoof key to recognize when we've already cleared headers.
+        if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bUseHeaders!=0))
+            ap_table_set(r->headers_in, "Shib-Spoof-Check", g_spoofKey.c_str());
         if (res.first) return (int)(long)res.second;
 
         // user auth was okay -- export the assertions now
@@ -537,7 +554,7 @@ extern "C" int shib_handler(request_rec* r)
     ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
 
     try {
-        ShibTargetApache sta(r, true);
+        ShibTargetApache sta(r, true, false);
 
         pair<bool,void*> res = sta.doHandler();
         if (res.first) return (int)(long)res.second;
@@ -575,7 +592,7 @@ extern "C" int shib_auth_checker(request_rec* r)
     saml::NDC ndc(threadid.str().c_str());
 
     try {
-        ShibTargetApache sta(r, false);
+        ShibTargetApache sta(r, false, false);
 
         pair<bool,void*> res = sta.doCheckAuthZ();
         if (res.first) return (int)(long)res.second;
