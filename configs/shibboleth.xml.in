@@ -81,7 +81,7 @@
 		</RequestMapProvider>
 		
 		<Implementation>
-			<ISAPI normalizeRequest="true">
+			<ISAPI normalizeRequest="true" safeHeaderNames="true">
 				<!--
 				Maps IIS Instance ID values to the host scheme/name/port/sslport. The name is
 				required so that the proper <Host> in the request map above is found without

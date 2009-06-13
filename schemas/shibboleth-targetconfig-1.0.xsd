@@ -7,7 +7,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="1.3.1">
+	version="1.3.2">
 
 	<import namespace="urn:oasis:names:tc:SAML:1.0:assertion" schemaLocation="cs-sstc-schema-assertion-1.1.xsd"/>
 	<import namespace="urn:oasis:names:tc:SAML:2.0:metadata" schemaLocation="saml-schema-metadata-2.0.xsd"/>
@@ -190,6 +190,7 @@
 		<attribute name="localRelayState" type="boolean" use="optional" default="false"/>
 		<attribute name="unsetHeaderValue" type="conf:string" use="optional"/>
 		<attribute name="checkSpoofing" type="boolean" use="optional"/>
+        <attribute name="spoofKey" type="conf:string" use="optional"/>
 		<attribute name="catchAll" type="boolean" use="optional"/>
 		<anyAttribute namespace="##other" processContents="lax"/>
 	</complexType>
@@ -212,6 +213,7 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="normalizeRequest" type="boolean" use="optional"/>
+            <attribute name="safeHeaderNames" type="boolean" use="optional"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
