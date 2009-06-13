@@ -1,7 +1,7 @@
 Name:		shibboleth
 Summary:	Open source system to enable inter-institutional resource sharing
 Version:	@-VERSION-@
-Release:	2
+Release:	1
 Group:		System Environment/Libraries
 Vendor:		Internet2
 License:	Apache 2.0
@@ -12,8 +12,10 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 BuildRequires:	openssl-devel, curl-devel >= 7.10.6
 %if 0%{?suse_version} > 1030
 BuildRequires:  libXerces-c-devel >= 2.8.0
+BuildRequires:  libXerces-c-devel < 3.0
 %else
 BuildRequires:  xerces%{?xercesver}-c-devel >= 2.8.0
+BuildRequires:  xerces%{?xercesver}-c-devel < 3.0
 %endif
 BuildRequires:	xml-security-c-devel >= 1.3.0
 BuildRequires:	zlib-devel, opensaml-devel >= 1.1.1, opensaml-devel < 2.0
@@ -40,6 +42,7 @@ server module.
 Summary: Shibboleth development files
 Group: Development/Libraries
 Requires: %{name} = %{version}
+Requires: opensaml-devel >= 1.1.1, opensaml-devel < 2.0
 
 %description devel
 Shibboleth, a project of Internet2/MACE, is is an open source,
@@ -179,6 +182,9 @@ fi
 %{_libdir}/libshib-target.so
 
 %changelog
+* Fri Jun 12 2009  Scott Cantor  <cantor.2@osu.edu>  - 1.3.2-1
+- 1.3.2 release
+
 * Mon Dec 17 2007 Scott Cantor   <cantor.2@osu.edu>  - 1.3.1-2
 - 1.3.1 initial release
 

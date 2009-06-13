@@ -1,7 +1,7 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth], [1.3.1], [shibboleth-users@internet2.edu], [shibboleth])
+AC_INIT([shibboleth], [1.3.2], [shibboleth-users@internet2.edu], [shibboleth])
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE([shibboleth],[1.3.1])
+AM_INIT_AUTOMAKE([shibboleth],[1.3.2])
 
 sinclude(acx_pthread.m4)
 sinclude(acx_rpctest.m4)
@@ -247,13 +247,13 @@ AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
 AC_MSG_CHECKING([Xerces version])
 AC_PREPROC_IFELSE(
         [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
-[#if  _XERCES_VERSION > 20200 && _XERCES_VERSION != 20600
+[#if  _XERCES_VERSION > 20200 && _XERCES_VERSION != 20600 && _XERCES_VERSION < 30000
 int i = 0;
 #else
-#error requires version > 2.2.0 but not 2.6.0
+#error requires version > 2.2.0, < 3.0, but not 2.6.0
 #endif])],
         [AC_MSG_RESULT(OK)],
-        [AC_MSG_ERROR([Shibboleth requires patched Xerces version 2.6.1 (http://shibboleth.internet2.edu/downloads/)])])
+        [AC_MSG_ERROR([Found unsupported Xerces-C version.])])
 AC_TRY_LINK(
         [#include <xercesc/util/PlatformUtils.hpp>],
         [xercesc::XMLPlatformUtils::Initialize()],
