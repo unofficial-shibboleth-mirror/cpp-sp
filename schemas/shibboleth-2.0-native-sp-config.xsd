@@ -200,10 +200,10 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="logger" type="anyURI"/>
-			<attribute name="unsetHeaderValue" type="string"/>
+			<attribute name="unsetHeaderValue" type="conf:string"/>
 			<attribute name="checkSpoofing" type="boolean"/>
-            <attribute name="spoofKey" type="string"/>
-		    <attribute name="catchAll" type="boolean"/>
+			<attribute name="spoofKey" type="conf:string"/>
+			<attribute name="catchAll" type="boolean"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>
@@ -226,6 +226,7 @@
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
 			<attribute name="normalizeRequest" type="boolean"/>
+			<attribute name="safeHeaderNames" type="boolean"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>

@@ -16,7 +16,7 @@
     
     <!-- The InProcess section conrains settings affecting web server modules/filters. -->
     <InProcess logger="native.logger">
-        <ISAPI normalizeRequest="true">
+        <ISAPI normalizeRequest="true" safeHeaderNames="true">
             <!--
             Maps IIS Instance ID values to the host scheme/name/port. The name is
             required so that the proper <Host> in the request map above is found without
