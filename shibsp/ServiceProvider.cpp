@@ -253,6 +253,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         return make_pair(false,0L);
     }
     catch (exception& e) {
+        request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(log, request, app, "session", tp));
@@ -323,6 +324,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         }
     }
     catch (exception& e) {
+        request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(log, request, app, "access", tp));
@@ -455,6 +457,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         return make_pair(false,0L);
     }
     catch (exception& e) {
+        request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(log, request, app, "session", tp));
@@ -534,6 +537,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
     catch (exception& e) {
+        request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         tp.m_request = &request;
