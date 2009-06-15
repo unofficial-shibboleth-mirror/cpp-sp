@@ -24,7 +24,3 @@ available and is open.
 
 For basic information on building from source, installing binaries, and deploying
 Shibboleth, refer to the web site and Wiki for the latest documentation.
-
-Issues addressed by this release:
----------------------------------
-https://bugs.internet2.edu/jira/secure/IssueNavigator.jspa?reset=true&&pid=10011&fixfor=10151&status=5&status=6&sorter/field=issuekey&sorter/order=ASC
