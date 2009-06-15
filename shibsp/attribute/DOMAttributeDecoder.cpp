@@ -76,8 +76,9 @@ DOMAttributeDecoder::DOMAttributeDecoder(const DOMElement* e)
                     log.debug("mapping (%s) to (%s)", f->toString().c_str(), t.get());
                 m_tagMap.insert(
                     make_pair(
-                        pair<xstring,xstring>(f->getLocalPart(), f->hasNamespaceURI() ? f->getNamespaceURI() : &chNull),
-                        t.get())
+                        pair<const xstring,xstring>(f->getLocalPart(), f->hasNamespaceURI() ? f->getNamespaceURI() : &chNull),
+                        t.get()
+                        )
                     );
             }
         }
