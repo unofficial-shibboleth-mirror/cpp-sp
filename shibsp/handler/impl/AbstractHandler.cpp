@@ -572,7 +572,7 @@ long AbstractHandler::sendPostResponse(
     multimap<string,string>& collection = respParam.m_collectionMap["PostedData"];
     DDF param = postData.first();
     while (param.isstring()) {
-        collection.insert(pair<string,string>(param.name(), (param.string() ? param.string() : "")));
+        collection.insert(pair<const string,string>(param.name(), (param.string() ? param.string() : "")));
         param = postData.next();
     }
 
