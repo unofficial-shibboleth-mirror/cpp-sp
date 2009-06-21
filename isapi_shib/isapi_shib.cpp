@@ -57,6 +57,10 @@ namespace {
     { chLatin_n, chLatin_o, chLatin_r, chLatin_m, chLatin_a, chLatin_l, chLatin_i, chLatin_z, chLatin_e,
       chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
     };
+    static const XMLCh safeHeaderNames[] =
+    { chLatin_s, chLatin_a, chLatin_f, chLatin_e, chLatin_H, chLatin_e, chLatin_a, chLatin_d, chLatin_e, chLatin_r,
+      chLatin_N, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chNull
+    };
     static const XMLCh Site[] = { chLatin_S, chLatin_i, chLatin_t, chLatin_e, chNull };
 
     struct site_t {
@@ -82,18 +86,14 @@ namespace {
         set<string> m_aliases;
     };
 
-    struct context_t {
-        char* m_user;
-        bool m_checked;
-    };
-
     HINSTANCE g_hinstDLL;
     ShibTargetConfig* g_Config = NULL;
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
-    string g_unsetHeaderValue;
+    string g_unsetHeaderValue,g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = true;
+    bool g_bSafeHeaderNames = false;
 }
 
 BOOL LogEvent(
@@ -183,13 +183,27 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         Locker locker(conf);
         const IPropertySet* props=conf->getPropertySet("Local");
         if (props) {
-            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
-            if (unsetValue.first)
-                g_unsetHeaderValue = unsetValue.second;
             pair<bool,bool> flag=props->getBool("checkSpoofing");
             g_checkSpoofing = !flag.first || flag.second;
             flag=props->getBool("catchAll");
             g_catchAll = !flag.first || flag.second;
+
+            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+            if (unsetValue.first)
+                g_unsetHeaderValue = unsetValue.second;
+            if (g_checkSpoofing) {
+                unsetValue = props->getString("spoofKey");
+                if (unsetValue.first)
+                    g_spoofKey = unsetValue.second;
+                else {
+                    LogEvent(NULL, EVENTLOG_WARNING_TYPE, 2100, NULL,
+                            "Filter generating a pseudorandom anti-spoofing key, consider setting spoofKey yourself.");
+                    srand(time(NULL));
+                    ostringstream keystr;
+                    keystr << rand() << rand() << rand() << rand();
+                    g_spoofKey = keystr.str();
+                }
+            }
 
             const DOMElement* impl=saml::XML::getFirstChildElement(
                 props->getElement(),shibtarget::XML::SHIBTARGET_NS,Implementation
@@ -197,6 +211,8 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             if (impl && (impl=saml::XML::getFirstChildElement(impl,shibtarget::XML::SHIBTARGET_NS,ISAPI))) {
                 const XMLCh* ch=impl->getAttributeNS(NULL,normalizeRequest);
                 g_bNormalizeRequest=(!ch || !*ch || *ch==chDigit_1 || *ch==chLatin_t);
+                ch=impl->getAttributeNS(NULL,safeHeaderNames);
+                g_bSafeHeaderNames=(ch && (*ch==chDigit_1 || *ch==chLatin_t));
                 impl=saml::XML::getFirstChildElement(impl,shibtarget::XML::SHIBTARGET_NS,Site);
                 while (impl) {
                     auto_ptr_char id(impl->getAttributeNS(NULL,id));
@@ -352,10 +368,11 @@ class ShibTargetIsapiF : public ShibTarget
   PHTTP_FILTER_PREPROC_HEADERS m_pn;
   string m_cookie;
   dynabuf m_allhttp;
+  bool m_firsttime;
 
 public:
     ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
-        : m_pfc(pfc), m_pn(pn), m_allhttp(4096) {
+        : m_pfc(pfc), m_pn(pn), m_allhttp(4096), m_firsttime(true) {
 
     // URL path always come from IIS.
     dynabuf url(256);
@@ -392,13 +409,15 @@ public:
         host=site.m_name.c_str();
 
     init(scheme, host, atoi(port), url, content_type, remote_addr, method);
-    if (!pfc->pFilterContext) {
-        pfc->pFilterContext = pfc->AllocMem(pfc, sizeof(context_t), NULL);
-        if (static_cast<context_t*>(pfc->pFilterContext)) {
-            static_cast<context_t*>(pfc->pFilterContext)->m_user = NULL;
-            static_cast<context_t*>(pfc->pFilterContext)->m_checked = false;
-        }
+
+    if (!g_spoofKey.empty()) {
+        GetHeader(pn, pfc, "ShibSpoofCheck:", url, 32, false);
+        if (!url.empty() && g_spoofKey == (char*)url)
+            m_firsttime = false;
     }
+
+    if (!m_firsttime)
+        log(LogLevelDebug, "ISAPI filter running more than once");
   }
   ~ShibTargetIsapiF() {}
 
@@ -410,45 +429,67 @@ public:
     GetHeader(m_pn, m_pfc, "Cookie:", buf, 128, false);
     return buf.empty() ? "" : buf;
   }
-
+  string makeSafeHeader(const char* rawname) const {
+      string hdr;
+      for (; *rawname; ++rawname) {
+          if (isalnum(*rawname))
+              hdr += *rawname;
+      }
+      return hdr + ':';
+  }
   virtual void clearHeader(const string &name) {
-    if (g_checkSpoofing && m_pfc->pFilterContext && !static_cast<context_t*>(m_pfc->pFilterContext)->m_checked) {
+    if (g_checkSpoofing && m_firsttime) {
         if (m_allhttp.empty())
 	        GetServerVariable(m_pfc,"ALL_HTTP",m_allhttp,4096);
 
         // Map to the expected CGI variable name.
         string transformed("HTTP_");
-        const char* pch = name.c_str();
-        while (*pch) {
-            transformed += (isalnum(*pch) ? toupper(*pch) : '_');
-            pch++;
+        if (g_bSafeHeaderNames) {
+            string temp = makeSafeHeader(name.c_str());
+            for (const char* pch = temp.c_str(); *pch; ++pch) {
+                if (isalnum(*pch))
+                    transformed += toupper(*pch);
+            }
         }
-        transformed += ':';
+        else {
+            for (const char* pch = name.c_str(); *pch; ++pch)
+                transformed += (isalnum(*pch) ? toupper(*pch) : '_');
+            transformed += ':';
+        }
 
         if (strstr(m_allhttp, transformed.c_str()))
-            throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, name.c_str()));
+            throw SAMLException("Attempt to spoof header ($1) was detected.", params(1, transformed.c_str()));
     }
-    string hdr = (name=="REMOTE_USER" ? "remote-user" : name) + ":";
-    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
+    if (g_bSafeHeaderNames) {
+        string hdr = makeSafeHeader(name.c_str());
+        m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
+    }
+    else if (name == "REMOTE_USER") {
+        m_pn->SetHeader(m_pfc, "remote-user:", const_cast<char*>(g_unsetHeaderValue.c_str()));
+        m_pn->SetHeader(m_pfc, "remote_user:", const_cast<char*>(g_unsetHeaderValue.c_str()));
+    }
+    else {
+        string hdr = name + ':';
+        m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
+    }
   }
   virtual void setHeader(const string &name, const string &value) {
-    string hdr = name + ":";
-    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()),
-		    const_cast<char*>(value.c_str()));
+    string hdr = g_bSafeHeaderNames ? makeSafeHeader(name.c_str()) : (name + ':');
+    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(value.c_str()));
   }
   virtual string getHeader(const string &name) {
-    string hdr = name + ":";
-    dynabuf buf(1024);
+    string hdr = g_bSafeHeaderNames ? makeSafeHeader(name.c_str()) : (name + ':');
+    dynabuf buf(256);
     GetHeader(m_pn, m_pfc, const_cast<char*>(hdr.c_str()), buf, 1024, false);
-    return string(buf);
+    return string(buf.empty() ? "" : buf);
   }
   virtual void setRemoteUser(const string &user) {
     setHeader(string("remote-user"), user);
     if (m_pfc->pFilterContext) {
         if (user.empty())
-            static_cast<context_t*>(m_pfc->pFilterContext)->m_user = NULL;
-        else if (static_cast<context_t*>(m_pfc->pFilterContext)->m_user = (char*)m_pfc->AllocMem(m_pfc, sizeof(char) * (user.length() + 1), NULL))
-            strcpy(static_cast<context_t*>(m_pfc->pFilterContext)->m_user, user.c_str());
+            m_pfc->pFilterContext = NULL;
+        else if (m_pfc->pFilterContext = m_pfc->AllocMem(m_pfc, sizeof(char) * (user.length() + 1), NULL))
+            strcpy(reinterpret_cast<char*>(m_pfc->pFilterContext), user.c_str());
     }
   }
   virtual string getRemoteUser(void) {
@@ -524,8 +565,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 {
     // Is this a log notification?
     if (notificationType==SF_NOTIFY_LOG) {
-        if (pfc->pFilterContext && static_cast<context_t*>(pfc->pFilterContext)->m_user)
-            ((PHTTP_FILTER_LOG)pvNotification)->pszClientUserName=static_cast<context_t*>(pfc->pFilterContext)->m_user;
+        if (pfc->pFilterContext)
+            ((PHTTP_FILTER_LOG)pvNotification)->pszClientUserName=reinterpret_cast<char*>(pfc->pFilterContext);
         return SF_STATUS_REQ_NEXT_NOTIFICATION;
     }
 
@@ -548,8 +589,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         // "false" because we don't override the Shib settings
         pair<bool,void*> res = stf.doCheckAuthN();
-        if (pfc->pFilterContext)
-            static_cast<context_t*>(pfc->pFilterContext)->m_checked = true;
+        if (!g_spoofKey.empty())
+            pn->SetHeader(pfc, "ShibSpoofCheck:", const_cast<char*>(g_spoofKey.c_str()));
         if (res.first) return (DWORD)res.second;
 
         // "false" because we don't override the Shib settings
@@ -694,8 +735,6 @@ public:
 
   virtual void log(ShibLogLevel level, const string &msg) {
       ShibTarget::log(level,msg);
-      if (level == LogLevelError)
-          LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
   }
   virtual string getCookies() const {
     dynabuf buf(128);
