@@ -1,7 +1,7 @@
 Name:		shibboleth
 Summary:	Open source system for attribute-based Web SSO
 Version:	@-VERSION-@
-Release:	1
+Release:	2
 #Copyright:	Internet2
 Group:		System Environment/Libraries
 License:	Apache style
@@ -89,7 +89,7 @@ fi
 if [ -f $RPM_BUILD_ROOT/%{_libdir}/%{name}/mod_shib_22.so ] ; then
     APACHE_CONFIG="apache22.config"
 fi
-%{!?_without_builtinapache:APACHE_CONFIG="no"}
+%{?_without_builtinapache:APACHE_CONFIG="no"}
 if [ "$APACHE_CONFIG" != "no" ] ; then
     APACHE_CONFD="no"
     if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
@@ -117,6 +117,13 @@ else
     echo "" > rpm.filelist
 fi
 
+%if "%{_vendor}" == "redhat"
+	# %{_initddir} not yet in RHEL5, use deprecated %{_initrddir}
+	mkdir -p $RPM_BUILD_ROOT%{_initrddir}
+	%{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
+	%{__chmod} 755 $RPM_BUILD_ROOT%{_initrddir}/shibd
+%endif
+
 %check
 %{__make} check
 
@@ -128,31 +135,42 @@ fi
 /sbin/ldconfig
 %endif
 
-# Install the shibd init.d scripts and service
 %if "%{_vendor}" == "redhat"
-	if [ -d %{_sysconfdir}/init.d ] ; then
-		if [ ! -f %{_sysconfdir}/init.d/shibd ] ; then
-			%{__cp} -p %{_sysconfdir}/%{name}/shibd-%{_vendor} %{_sysconfdir}/init.d/shibd
-			%{__chmod} 755 %{_sysconfdir}/init.d/shibd
-			chkconfig --add shibd
-		fi
-	fi
+	# This adds the proper /etc/rc*.d links for the script
+	/sbin/chkconfig --add shibd
 %endif
 
 # Key generation
 cd %{_sysconfdir}/%{name}
 sh ./keygen.sh -b
 
+%preun
+%if "%{_vendor}" == "redhat"
+	if [ "$1" = 0 ] ; then
+		/sbin/service shibd stop >/dev/null 2>&1
+		/sbin/chkconfig --del shibd
+	fi
+%endif
+
 %postun
 %ifnos solaris2.8 solaris2.9 solaris2.10
 /sbin/ldconfig
 %endif
 
-# clear init.d state
 %if "%{_vendor}" == "redhat"
-	chkconfig --del shibd
-	[ -f %{_sysconfdir}/init.d/shibd ] && \
-	    %{__rm} -f %{_sysconfdir}/init.d/shibd
+	if [ "$1" -ge "1" ] ; then
+		#/sbin/service shibd condrestart >/dev/null 2>&1 || :
+		/etc/init.d/shibd status 1>/dev/null && /etc/init.d/shibd start 1>/dev/null
+	fi
+%endif
+
+%posttrans
+# ugly hack if init script got removed during %postun by upgraded package
+%if "%{_vendor}" == "redhat"
+	if [ ! -f %{_initrddir}/shibd ] ; then
+		%{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
+		%{__chmod} 755 $RPM_BUILD_ROOT%{_initrddir}/shibd
+	fi
 %endif
 
 %files -f rpm.filelist
@@ -173,6 +191,9 @@ sh ./keygen.sh -b
 %config(noreplace) %{_sysconfdir}/%{name}/*.xml
 %config(noreplace) %{_sysconfdir}/%{name}/*.html
 %config(noreplace) %{_sysconfdir}/%{name}/*.logger
+%if "%{_vendor}" == "redhat"
+%attr(755, root, root) %{_initrddir}/shibd
+%endif
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
 %{_sysconfdir}/%{name}/shibd-redhat
