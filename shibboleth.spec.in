@@ -164,10 +164,12 @@ sh ./keygen.sh -b
 %posttrans
 # ugly hack if init script got removed during %postun by upgraded (buggy/2.1) package
 %if "%{_vendor}" == "redhat"
-	if [ ! -f %{_initrddir}/shibd ] ; then
-		%{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
-		%{__chmod} 755 $RPM_BUILD_ROOT%{_initrddir}/shibd
-	fi
+    if [ ! -f %{_initrddir}/shibd ] ; then
+        if [ -f %{_sysconfdir}/%{name}/shibd-%{_vendor} ] ; then
+            %{__cp} -p %{_sysconfdir}/%{name}/shibd-%{_vendor} %{_initrddir}/shibd
+            %{__chmod} 755 %{_initrddir}/shibd
+        fi
+    fi
 %endif
 
 %files -f rpm.filelist
