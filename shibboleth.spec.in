@@ -1,7 +1,7 @@
 Name:		shibboleth
 Summary:	Open source system for attribute-based Web SSO
 Version:	@-VERSION-@
-Release:	2
+Release:	3
 #Copyright:	Internet2
 Group:		System Environment/Libraries
 License:	Apache style
@@ -168,6 +168,7 @@ sh ./keygen.sh -b
         if [ -f %{_sysconfdir}/%{name}/shibd-%{_vendor} ] ; then
             %{__cp} -p %{_sysconfdir}/%{name}/shibd-%{_vendor} %{_initrddir}/shibd
             %{__chmod} 755 %{_initrddir}/shibd
+            /sbin/chkconfig --add shibd
         fi
     fi
 %endif
@@ -224,6 +225,9 @@ sh ./keygen.sh -b
 %doc %{_datadir}/doc/%{name}/api
 
 %changelog
+* Thu Jun 25 2009 Scott Cantor  <cantor.2@osu.edu>  - 2.2-3
+- Add additional cleanup to posttrans fix
+
 * Tue Jun 23 2009 Scott Cantor  <cantor.2@osu.edu>  - 2.2-2
 - Reverse without_builtinapache macro test
 - Fix init script handling on Red Hat to handle upgrades
