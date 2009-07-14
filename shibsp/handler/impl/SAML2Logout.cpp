@@ -485,15 +485,15 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         }
 
         // For back-channel requests, or if no front-channel notification is needed...
-        bool worked1 = false,worked2 = false;
-        worked1 = notifyBackChannel(application, request.getRequestURL(), sessions, false);
+        bool worked1 = notifyBackChannel(application, request.getRequestURL(), sessions, false);
+        bool worked2 = true;
         if (!session_id.empty()) {
             // One last session to yoink...
             try {
                 cache->remove(application, request, &response);
-                worked2 = true;
             }
             catch (exception& ex) {
+                worked2 = false;
                 m_log.error("error removing active session (%s): %s", session_id.c_str(), ex.what());
             }
         }
