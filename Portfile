@@ -1,0 +1,62 @@
+PortSystem 1.0
+
+name               shibboleth
+version            2.2
+revision           1
+categories         shibboleth
+maintainers        cantor.2@osu.edu
+description        Shibboleth Native Service Provider
+long_description   Standards-based attribute-based Web SSO system
+homepage           http://shibboleth.internet2.edu/
+master_sites       http://shibboleth.internet2.edu/downloads/shibboleth/cppsp/${version}/
+distname           ${name}-sp-${version}
+worksrcdir         ${name}-${version}
+checksums          sha1 41d23d3585e36c232d6b038e965f71084b7b7daf
+
+depends_lib        port:opensaml \
+                   port:xmltooling \
+                   port:xercesc \
+                   port:xml-security-c \
+                   port:log4shib
+
+configure.args     --with-xmltooling=${prefix} \
+                   --with-opensaml=${prefix} \
+                   --with-xerces=${prefix} \
+                   --with-xmlsec=${prefix} \
+                   --with-log4shib=${prefix}
+
+variant odbc {
+    depends_lib-append port:unixODBC
+    configure.args-append --enable-odbc
+}
+
+platform darwin 8 {
+	configure.env-append MACOSX_DEPLOYMENT_TARGET=10.4
+	build.env-append MACOSX_DEPLOYMENT_TARGET=10.4
+	destroot.env-append MACOSX_DEPLOYMENT_TARGET=10.4
+}
+
+platform darwin 9 {
+	configure.env-append MACOSX_DEPLOYMENT_TARGET=10.4
+	build.env-append MACOSX_DEPLOYMENT_TARGET=10.4
+	destroot.env-append MACOSX_DEPLOYMENT_TARGET=10.4
+}
+
+destroot.keepdirs ${destroot}${prefix}/var/log/shibboleth ${destroot}${prefix}/var/log/httpd ${destroot}${prefix}/var/run/shibboleth
+
+destroot.args	NOKEYGEN=1
+
+post-destroot {
+	eval file delete [glob ${destroot}${prefix}/etc/shibboleth/*.logger]
+	eval file delete [glob ${destroot}${prefix}/etc/shibboleth/*.html]
+	eval file delete [glob ${destroot}${prefix}/etc/shibboleth/*.xml]
+	file delete ${destroot}${prefix}/etc/shibboleth/shibd-debian
+	file delete ${destroot}${prefix}/etc/shibboleth/shibd-redhat
+	file delete ${destroot}${prefix}/etc/shibboleth/shibd-osx.plist
+	eval file delete [glob ${destroot}${prefix}/lib/shibboleth/*.la]
+}
+
+startupitem.create      yes
+startupitem.name        shibd
+startupitem.executable  ${prefix}/sbin/shibd -F -f -p ${prefix}/var/run/shibboleth/shibd.pid
+startupitem.pidfile     clean ${prefix}/var/run/shibboleth/shibd.pid
