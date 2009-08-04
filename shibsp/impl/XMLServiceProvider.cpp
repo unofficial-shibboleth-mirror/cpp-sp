@@ -1266,7 +1266,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             if (logconf && *logconf) {
                 auto_ptr_char logpath(logconf);
                 log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
-                XMLToolingConfig::getConfig().log_config(logpath.get());
+                if (!XMLToolingConfig::getConfig().log_config(logpath.get()))
+                    log.crit("failed to load new logging configuration from (%s)", logpath.get());
             }
 
 #ifndef SHIBSP_LITE
