@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2005 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,6 +165,22 @@ namespace shibtarget {
         mutable IReplayCache* m_replayCache;
         mutable vector<IAttributeFactory*> m_attrFactories;
     };
+
+#ifdef WIN32
+    BOOL LogEvent(
+        LPCSTR  lpUNCServerName,
+        WORD  wType,
+        DWORD  dwEventID,
+        PSID  lpUserSid,
+        LPCSTR  message)
+    {
+        LPCSTR  messages[] = {message, NULL};
+
+        HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth SP Library");
+        BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, NULL);
+        return (DeregisterEventSource(hElog) && res);
+    }
+#endif
 }
 
 IConfig* STConfig::ShibTargetConfigFactory(const DOMElement* e)
@@ -868,7 +884,11 @@ void XMLConfigImpl::init(bool first)
                     PropertyConfigurator::configure(logpath.get());
                 }
                 catch (ConfigureFailure& e) {
-                    log.error("Error reading logging configuration: %s",e.what());
+                    string msg = string("Error loading logging configuration: ") + e.what();
+                    log.crit(msg);
+            #ifdef WIN32
+                    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
+            #endif
                 }
             }
         }
