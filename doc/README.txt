@@ -1,4 +1,4 @@
-Version 2.2
+Version 2.2.1
 
 Welcome to Internet2's Shibboleth
 
