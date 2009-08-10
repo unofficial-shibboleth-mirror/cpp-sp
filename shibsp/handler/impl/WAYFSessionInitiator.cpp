@@ -116,6 +116,21 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
             ACS = app.getDefaultAssertionConsumerService();
     }
 
+    // Validate the ACS for use with this protocol.
+    pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,NULL);
+    if (ACSbinding.first) {
+        pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
+        if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == NULL) {
+            m_log.info("configured or requested ACS has non-SAML 1.x binding");
+            return make_pair(false,0L);
+        }
+        else if (strcmp(ACSbinding.second, samlconstants::SAML1_PROFILE_BROWSER_POST) &&
+                 strcmp(ACSbinding.second, samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT)) {
+            m_log.info("configured or requested ACS has non-SAML 1.x binding");
+            return make_pair(false,0L);
+        }
+    }
+
     m_log.debug("sending request to WAYF (%s)", m_url);
 
     // Compute the ACS URL. We add the ACS location to the base handlerURL.

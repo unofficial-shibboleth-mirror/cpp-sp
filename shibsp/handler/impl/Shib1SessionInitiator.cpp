@@ -153,6 +153,21 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
             ACS = app.getDefaultAssertionConsumerService();
     }
 
+    // Validate the ACS for use with this protocol.
+    pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,NULL);
+    if (ACSbinding.first) {
+        pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
+        if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == NULL) {
+            m_log.info("configured or requested ACS has non-SAML 1.x binding");
+            return make_pair(false,0L);
+        }
+        else if (strcmp(ACSbinding.second, samlconstants::SAML1_PROFILE_BROWSER_POST) &&
+                 strcmp(ACSbinding.second, samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT)) {
+            m_log.info("configured or requested ACS has non-SAML 1.x binding");
+            return make_pair(false,0L);
+        }
+    }
+
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc=request.getHandlerURL(target.c_str());
     pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
@@ -260,7 +275,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
         throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     else if (!entity.second) {
-        m_log.warn("unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
+        m_log.log(getParent() ? Priority::INFO : Priority::WARN, "unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
         if (getParent())
             return make_pair(false,0L);
         throw MetadataException("Unable to locate Shibboleth-aware identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));

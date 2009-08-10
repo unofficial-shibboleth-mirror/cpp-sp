@@ -333,6 +333,24 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         }
     }
 
+    // Validate the ACS for use with this protocol.
+    if (!ECP) {
+        pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,NULL);
+        if (ACSbinding.first) {
+            pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
+            if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == NULL) {
+                m_log.info("configured or requested ACS has non-SAML 2.0 binding");
+                return make_pair(false,0L);
+            }
+            else if (strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_POST) &&
+                     strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT) &&
+                     strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_POST_SIMPLESIGN)) {
+                m_log.info("configured or requested ACS has non-SAML 2.0 binding");
+                return make_pair(false,0L);
+            }
+        }
+    }
+
     // To invoke the request builder, the key requirement is to figure out how
     // to express the ACS, by index or value, and if by value, where.
     // We have to compute the handlerURL no matter what, because we may need to
@@ -571,7 +589,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
             throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
         }
         else if (!entity.second) {
-            m_log.warn("unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
+            m_log.log(getParent() ? Priority::INFO : Priority::WARN, "unable to locate SAML 2.0 identity provider role for provider (%s)", entityID);
             if (getParent())
                 return make_pair(false,0L);
             throw MetadataException("Unable to locate SAML 2.0 identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));

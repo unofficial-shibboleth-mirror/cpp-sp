@@ -330,6 +330,13 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
     const Application& app=request.getApplication();
 
     if (isHandler) {
+        option=request.getParameter("acsIndex");
+        if (option) {
+            ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
+            if (!ACS)
+                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using default ACS location");
+        }
+
         option = request.getParameter("target");
         if (option)
             target = option;
@@ -355,29 +362,25 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
     }
 
     // Since we're not passing by index, we need to fully compute the return URL.
-    // Get all the ADFS endpoints.
-    const vector<const Handler*>& handlers = app.getAssertionConsumerServicesByBinding(m_binding.get());
-
-    // Index comes from request, or default set in the handler, or we just pick the first endpoint.
-    pair<bool,unsigned int> index(false,0);
-    if (isHandler) {
-        option = request.getParameter("acsIndex");
-        if (option)
-            index = pair<bool,unsigned int>(true, atoi(option));
+    if (!ACS) {
+        pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
+        if (index.first) {
+            ACS = app.getAssertionConsumerServiceByIndex(index.second);
+            if (!ACS)
+                request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+        }
+        if (!ACS)
+            ACS = app.getDefaultAssertionConsumerService();
     }
-    if (!index.first)
-        index = getUnsignedInt("defaultACSIndex");
-    if (index.first) {
-        for (vector<const Handler*>::const_iterator h = handlers.begin(); !ACS && h!=handlers.end(); ++h) {
-            if (index.second == (*h)->getUnsignedInt("index").second)
-                ACS = *h;
+
+    // Validate the ACS for use with this protocol.
+    pair<bool,const XMLCh*> ACSbinding = ACS ? ACS->getXMLString("Binding") : pair<bool,const XMLCh*>(false,NULL);
+    if (ACSbinding.first) {
+        if (!XMLString::equals(ACSbinding.second, m_binding.get())) {
+            m_log.info("configured or requested ACS has non-ADFS binding");
+            return make_pair(false,0L);
         }
     }
-    else if (!handlers.empty()) {
-        ACS = handlers.front();
-    }
-    if (!ACS)
-        throw ConfigurationException("Unable to locate ADFS response endpoint.");
 
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc=request.getHandlerURL(target.c_str());
@@ -483,7 +486,7 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
         throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     else if (!entity.second) {
-        m_log.warn("unable to locate ADFS-aware identity provider role for provider (%s)", entityID);
+        m_log.log(getParent() ? Priority::INFO : Priority::WARN, "unable to locate ADFS-aware identity provider role for provider (%s)", entityID);
         if (getParent())
             return make_pair(false,0L);
         throw MetadataException("Unable to locate ADFS-aware identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));
