@@ -211,11 +211,8 @@ sh ./keygen.sh -b
 %config(noreplace) %{_sysconfdir}/%{name}/*.xml
 %config(noreplace) %{_sysconfdir}/%{name}/*.html
 %config(noreplace) %{_sysconfdir}/%{name}/*.logger
-%if "%{_vendor}" == "redhat"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "suse"
 %attr(755, root, root) %{_initrddir}/shibd
-%endif
-%if "%{_vendor}" == "suse"
-%attr(755, root, root) %{_initddir}/shibd
 %endif
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
