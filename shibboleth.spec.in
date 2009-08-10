@@ -119,7 +119,7 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
     fi
 fi
 
-%if "%{_vendor}" == "redhat"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "suse"
 	# %{_initddir} not yet in RHEL5, use deprecated %{_initrddir}
 	mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 	%{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
@@ -150,10 +150,13 @@ sh ./keygen.sh -b
         %{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
     fi
 %endif
-
 %if "%{_vendor}" == "suse"
+    # This adds the proper /etc/rc*.d links for the script
+    /sbin/chkconfig --add shibd
+    cd /usr/sbin && ln -s /etc/init.d/shibd rcshibd
     # On upgrade, restart components if they're already running.
     if [ "$1" -gt "1" ] ; then
+        /etc/init.d/shibd status 1>/dev/null && /etc/init.d/shibd restart 1>/dev/null
         %{!?_without_builtinapache:/etc/init.d/apache2 status 1>/dev/null && /etc/init.d/apache2 restart 1>/dev/null}
     fi
 %endif
@@ -164,6 +167,13 @@ sh ./keygen.sh -b
 		/sbin/service shibd stop >/dev/null 2>&1
 		/sbin/chkconfig --del shibd
 	fi
+%endif
+%if "%{_vendor}" == "suse"
+    if [ "$1" = 0 ] ; then
+        /sbin/service shibd stop >/dev/null 2>&1
+        /sbin/chkconfig --del shibd
+        cd /usr/sbin && %{__rm} -f rcshibd
+    fi
 %endif
 
 %ifnos solaris2.8 solaris2.9 solaris2.10
@@ -203,6 +213,9 @@ sh ./keygen.sh -b
 %if "%{_vendor}" == "redhat"
 %attr(755, root, root) %{_initrddir}/shibd
 %endif
+%if "%{_vendor}" == "suse"
+%attr(755, root, root) %{_initddir}/shibd
+%endif
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
 %{_sysconfdir}/%{name}/shibd-*
@@ -220,8 +233,9 @@ sh ./keygen.sh -b
 %doc %{pkgdocdir}/api
 
 %changelog
-* Sat Aug 8 2009 Scott Cantor  <cantor.2@osu.edu>  - 2.2.1-1
+* Mon Aug 10 2009 Scott Cantor  <cantor.2@osu.edu>  - 2.2.1-1
 - Doc handling changes
+- SuSE init script
 
 * Tue Aug 4 2009 Scott Cantor  <cantor.2@osu.edu>  - 2.2.1-1
 - Initial version for 2.2.1, with shibd/httpd restart on upgrade

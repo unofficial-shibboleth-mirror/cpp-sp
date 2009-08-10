@@ -11,6 +11,7 @@ pkgrundir = $(localstatedir)/run/@PACKAGE@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	shibd-redhat \
+	shibd-suse \
 	shibd-debian \
 	shibd-osx.plist \
 	apache.config \
@@ -76,6 +77,9 @@ apache22.config: ${srcdir}/apache22.config.in Makefile ${top_builddir}/config.st
 shibd-redhat: ${srcdir}/shibd-redhat.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
+shibd-suse: ${srcdir}/shibd-suse.in Makefile ${top_builddir}/config.status
+    $(MAKE) do-build-file FILE=$@
+
 shibd-debian: ${srcdir}/shibd-debian.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
@@ -123,6 +127,7 @@ CLEANFILES = \
 	apache2.config \
 	apache22.config \
 	shibd-redhat \
+	shibd-suse \
 	shibd-debian \
 	shibd-osx.plist \
 	shibd.logger \
@@ -135,6 +140,7 @@ EXTRA_DIST = \
 	apache2.config.in \
 	apache22.config.in \
 	shibd-redhat.in \
+	shibd-suse.in \
 	shibd-debian.in \
 	shibd-osx.plist.in \
 	keygen.bat \
