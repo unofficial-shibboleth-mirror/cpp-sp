@@ -8,9 +8,8 @@
 ### BEGIN INIT INFO
 # Provides: shibd
 # Required-Start: network
-# Required-Stop:
+# Required-Stop: $null
 # Default-Start: 3 5
-# Default-Stop:
 # Short-Description: Shibboleth 2.x Service Provider Daemon
 # Description: Starts the separate daemon used by the Shibboleth
 # Apache module to manage state and SAML interactions.
