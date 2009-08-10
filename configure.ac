@@ -363,6 +363,8 @@ AC_SUBST(OPENSAMLXMLDIR)
 AC_SUBST(LITE_LIBS)
 AC_SUBST(XMLSEC_LIBS)
 
+AC_CONFIG_FILES([shibboleth.spec pkginfo Portfile])
+
 # output the underlying makefiles
 WANT_SUBDIRS="doc schemas configs shibsp shibd util"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
@@ -945,4 +947,3 @@ fi
 LIBTOOL="$LIBTOOL --silent"
 
 AC_OUTPUT
-

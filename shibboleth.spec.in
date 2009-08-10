@@ -1,5 +1,5 @@
-Name:		shibboleth
-Version:	@-VERSION-@
+Name:		@PACKAGE@
+Version:	@PACKAGE_VERSION@
 Release:	1
 Summary:    Open source system for attribute-based Web SSO
 Group:		System Environment/Libraries
@@ -205,9 +205,7 @@ sh ./keygen.sh -b
 %endif
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
-%{_sysconfdir}/%{name}/shibd-redhat
-%{_sysconfdir}/%{name}/shibd-debian
-%{_sysconfdir}/%{name}/shibd-osx.plist
+%{_sysconfdir}/%{name}/shibd-*
 %attr(755, root, root) %{_sysconfdir}/%{name}/keygen.sh
 %attr(755, root, root) %{_sysconfdir}/%{name}/metagen.sh
 %{_sysconfdir}/%{name}/*.xsl

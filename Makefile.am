@@ -12,24 +12,17 @@ SUBDIRS = $(WANT_SUBDIRS)
 
 DIST_SUBDIRS = doc schemas configs shibsp shibd adfs util apache nsapi_shib fastcgi odbc-store memcache-store selinux
 
-GENFILES = shibboleth.spec pkginfo Portfile
-
 if DX_COND_doc
-all-local: doxygen-doc $(GENFILES)
+all-local: doxygen-doc
 else
-all-local: $(GENFILES)
+all-local:
 endif
 
 dist-hook:
 	rm -rf `find $(distdir)/isapi_shib -name .svn`
 	rm -rf `find $(distdir)/doc/api -name .svn`
 
-$(GENFILES): %: %.in Makefile
-	rm -f $@.tmp
-	sed < $@.in > $@.tmp \
-	    -e 's:@-VERSION-@:${VERSION}:'
-	mv $@.tmp $@
-
+GENFILES = shibboleth.spec pkginfo Portfile
 
 EXTRA_DIST = $(DX_CONFIG) \
     isapi_shib \
@@ -43,5 +36,3 @@ EXTRA_DIST = $(DX_CONFIG) \
     $(GENFILES:%=%.in) \
     depend \
     postinstall
-
-DISTCLEANFILES = $(GENFILES)

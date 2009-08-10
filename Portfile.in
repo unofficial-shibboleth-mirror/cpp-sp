@@ -1,13 +1,13 @@
 PortSystem 1.0
 
-name               shibboleth
-version            @-VERSION-@
+name               @PACKAGE@
+version            @PACKAGE_VERSION@
 categories         security www shibboleth
 maintainers        scantor snc
 description        Shibboleth Native Service Provider
 long_description   Standards-based attribute-based Web SSO system
 homepage           http://shibboleth.internet2.edu/
-master_sites       http://shibboleth.internet2.edu/downloads/shibboleth/cppsp/${version}/
+master_sites       http://shibboleth.internet2.edu/downloads/${name}/cppsp/${version}/
 distname           ${name}-sp-${version}
 worksrcdir         ${name}-${version}
 checksums          sha1 @CHECKSUM@
@@ -48,23 +48,21 @@ variant odbc {
     configure.args-append --enable-odbc
 }
 
-destroot.keepdirs ${destroot}${prefix}/var/log/shibboleth ${destroot}${prefix}/var/log/httpd ${destroot}${prefix}/var/run/shibboleth
+destroot.keepdirs ${destroot}${prefix}/var/log/${name} ${destroot}${prefix}/var/log/httpd ${destroot}${prefix}/var/run/${name}
 
 destroot.args	NOKEYGEN=1
 
 post-destroot {
-	eval file delete [glob ${destroot}${prefix}/etc/shibboleth/*.logger]
-	eval file delete [glob ${destroot}${prefix}/etc/shibboleth/*.html]
-	eval file delete [glob ${destroot}${prefix}/etc/shibboleth/*.xml]
-	file delete ${destroot}${prefix}/etc/shibboleth/shibd-debian
-	file delete ${destroot}${prefix}/etc/shibboleth/shibd-redhat
-	file delete ${destroot}${prefix}/etc/shibboleth/shibd-osx.plist
-	eval file delete [glob ${destroot}${prefix}/lib/shibboleth/*.la]
+	eval file delete [glob ${destroot}${prefix}/etc/${name}/*.logger]
+	eval file delete [glob ${destroot}${prefix}/etc/${name}/*.html]
+	eval file delete [glob ${destroot}${prefix}/etc/${name}/*.xml]
+    eval file delete [glob ${destroot}${prefix}/etc/${name}/shibd-*]
+	eval file delete [glob ${destroot}${prefix}/lib/${name}/*.la]
 }
 
 startupitem.create      yes
 startupitem.name        shibd
-startupitem.executable  ${prefix}/sbin/shibd -F -f -p ${prefix}/var/run/shibboleth/shibd.pid
+startupitem.executable  ${prefix}/sbin/shibd -F -f -p ${prefix}/var/run/${name}/shibd.pid
 
 livecheck.check         regex
 livecheck.url           http://shibboleth.internet2.edu/downloads/shibboleth/cppsp/latest/mac/ports/shibboleth/shibboleth/Portfile
