@@ -75,10 +75,10 @@ apache22.config: ${srcdir}/apache22.config.in Makefile ${top_builddir}/config.st
 	$(MAKE) do-build-file FILE=$@
 
 shibd-redhat: ${srcdir}/shibd-redhat.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
+$(MAKE) do-build-file FILE=$@
 
 shibd-suse: ${srcdir}/shibd-suse.in Makefile ${top_builddir}/config.status
-    $(MAKE) do-build-file FILE=$@
+	$(MAKE) do-build-file FILE=$@
 
 shibd-debian: ${srcdir}/shibd-debian.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
