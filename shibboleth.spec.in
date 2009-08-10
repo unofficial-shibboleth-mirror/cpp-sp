@@ -25,6 +25,7 @@ BuildRequires:  opensaml-devel >= 2.2
 %endif
 BuildRequires:  gcc-c++
 %{!?_without_doxygen:BuildRequires: doxygen}
+%{!?_without_odbc:BuildRequires:unixODBC-devel}
 BuildRequires:  zlib-devel
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
 %if "%{_vendor}" == "redhat"
