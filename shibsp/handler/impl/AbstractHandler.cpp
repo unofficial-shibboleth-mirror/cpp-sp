@@ -414,7 +414,20 @@ void AbstractHandler::recoverRelayState(
     // Check for "default" value (or the old "cookie" value that might come from stale bookmarks).
     if (relayState.empty() || relayState == "default" || relayState == "cookie") {
         pair<bool,const char*> homeURL=application.getString("homeURL");
-        relayState=homeURL.first ? homeURL.second : "/";
+        if (homeURL.first)
+            relayState=homeURL.second;
+        else {
+            // Compute a URL to the root of the site.
+            int port = request.getPort();
+            const char* scheme = request.getScheme();
+            relayState = string(scheme) + "://" + request.getHostname();
+            if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
+                ostringstream portstr;
+                portstr << port;
+                relayState += ":" + portstr.str();
+            }
+            relayState += '/';
+        }
     }
 }
 

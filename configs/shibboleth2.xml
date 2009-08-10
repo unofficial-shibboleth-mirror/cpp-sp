@@ -82,7 +82,6 @@
     -->
     <ApplicationDefaults id="default" policyId="default"
         entityID="https://sp.example.org/shibboleth"
-        homeURL="https://sp.example.org/index.html"
         REMOTE_USER="eppn persistent-id targeted-id"
         signing="false" encryption="false">
 
