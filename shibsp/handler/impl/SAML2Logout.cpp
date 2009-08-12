@@ -174,8 +174,14 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
                     MessageEncoder * encoder = conf.MessageEncoderManager.newPlugin(
                         b.get(), pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
                         );
-                    m_encoders[start] = encoder;
-                    m_log.debug("supporting outgoing front-channel binding (%s)", b.get());
+                    if (encoder->isUserAgentPresent()) {
+                        m_encoders[start] = encoder;
+                        m_log.debug("supporting outgoing binding (%s)", b.get());
+                    }
+                    else {
+                        delete encoder;
+                        m_log.warn("skipping outgoing binding (%s), not a front-channel mechanism", b.get());
+                    }
                 }
                 catch (exception& ex) {
                     m_log.error("error building MessageEncoder: %s", ex.what());

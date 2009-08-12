@@ -174,8 +174,14 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
                 MessageEncoder * encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
                     b.get(),pair<const DOMElement*,const XMLCh*>(e,NULL)
                     );
-                m_encoders[start] = encoder;
-                m_log.debug("supporting outgoing binding (%s)", b.get());
+                if (encoder->isUserAgentPresent()) {
+                    m_encoders[start] = encoder;
+                    m_log.debug("supporting outgoing binding (%s)", b.get());
+                }
+                else {
+                    delete encoder;
+                    m_log.warn("skipping outgoing binding (%s), not a front-channel mechanism", b.get());
+                }
             }
             catch (exception& ex) {
                 m_log.error("error building MessageEncoder: %s", ex.what());
