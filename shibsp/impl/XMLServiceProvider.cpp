@@ -1164,6 +1164,7 @@ const vector<const Handler*>& XMLApplication::getAssertionConsumerServicesByBind
 const Handler* XMLApplication::getHandler(const char* path) const
 {
     string wrap(path);
+    wrap = wrap.substr(0,wrap.find(';'));
     map<string,const Handler*>::const_iterator i=m_handlerMap.find(wrap.substr(0,wrap.find('?')));
     if (i!=m_handlerMap.end())
         return i->second;

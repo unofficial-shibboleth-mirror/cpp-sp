@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,17 +131,6 @@ void AbstractSPRequest::setRequestURI(const char* uri)
             if (*uri == '?') {
                 m_uri += uri;
                 break;
-            }
-            else if (*uri == ';') {
-                // If this is Java being stupid, skip everything up to the query string, if any.
-                if (!strncmp(uri, ";jsessionid=", 12)) {
-                    if (uri = strchr(uri, '?'))
-                        m_uri += uri;
-                    break;
-                }
-                else {
-                    m_uri += *uri;
-                }
             }
             else if (*uri != '%') {
                 m_uri += *uri;

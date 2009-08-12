@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,17 +150,6 @@ namespace shibsp {
                 if (*slash == '?') {
                     m_uri += slash;
                     break;
-                }
-                else if (*slash == ';') {
-                    // If this is Java being stupid, skip everything up to the query string, if any.
-                    if (!strncmp(slash, ";jsessionid=", 12)) {
-                        if (slash = strchr(slash, '?'))
-                            m_uri += slash;
-                        break;
-                    }
-                    else {
-                        m_uri += *slash;
-                    }
                 }
                 else if (*slash != '%') {
                     m_uri += *slash;
