@@ -329,7 +329,6 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)&quot;;&quot;\fcgi-2.4.0-VC9\Win32\$(PlatformName)\$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\shibauthorizer___Win32_Debug/shibauthorizer.pdb"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"

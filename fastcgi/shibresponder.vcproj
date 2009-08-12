@@ -330,7 +330,6 @@
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="&quot;..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)&quot;;&quot;\fcgi-2.4.0-VC9\Win32\$(PlatformName)\$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\shibresponder___Win32_Debug/shibresponder.pdb"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
