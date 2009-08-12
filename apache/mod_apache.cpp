@@ -1152,9 +1152,10 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                         auto_ptr<xercesc::RegularExpression> temp(new xercesc::RegularExpression(trans.get()));
                         re=temp;
                     }
-
-                    for (; !status && attrs.first!=attrs.second; ++attrs.first) {
-                        if (checkAttribute(request, attrs.first->second, w, regexp ? re.get() : NULL)) {
+                    
+                    pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs2(attrs);
+                    for (; !status && attrs2.first!=attrs2.second; ++attrs2.first) {
+                        if (checkAttribute(request, attrs2.first->second, w, regexp ? re.get() : NULL)) {
                             status = true;
                         }
                     }
