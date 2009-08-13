@@ -83,6 +83,16 @@ namespace {
 
     static const XMLCh path[] =     UNICODE_LITERAL_4(p,a,t,h);
     static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
+
+    void _my_invalid_parameter_handler(
+       const wchar_t * expression,
+       const wchar_t * function,
+       const wchar_t * file,
+       unsigned int line,
+       uintptr_t pReserved
+       ) {
+        return;
+    }
 }
 
 PluginManager<RequestMapper,string,const xercesc::DOMElement*>::Factory SunRequestMapFactory;
@@ -170,14 +180,18 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
                 g_spoofKey = unsetValue.second;
 #ifdef WIN32
             else {
+                _invalid_parameter_handler old = _set_invalid_parameter_handler(_my_invalid_parameter_handler);
                 unsigned int randkey=0,randkey2=0,randkey3=0,randkey4=0;
                 if (rand_s(&randkey) == 0 && rand_s(&randkey2) == 0 && rand_s(&randkey3) == 0 && rand_s(&randkey4) == 0) {
+                    _set_invalid_parameter_handler(old);
                     ostringstream keystr;
                     keystr << randkey << randkey2 << randkey3 << randkey4;
                     g_spoofKey = keystr.str();
                 }
                 else {
+                    _set_invalid_parameter_handler(old);
                     pblock_nvinsert("error", "module failed to generate a random anti-spoofing key (if this is Windows 2000 set one manually)", pb);
+                    locker.assign(); // pops lock on SP config
                     g_Config->term();
                     g_Config=NULL;
                     return REQ_ABORTED;
