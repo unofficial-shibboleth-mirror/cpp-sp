@@ -576,8 +576,7 @@ XMLObject* ADFSDecoder::decode(string& relayState, const GenericRequest& generic
         throw BindingException("Decoded message was not of the appropriate type.");
     }
 
-    if (!policy.getValidating())
-        SchemaValidators.validate(xmlObject.get());
+    SchemaValidators.validate(xmlObject.get());
 
     // Skip policy step here, there's no security in the wrapper.
     // policy.evaluate(*xmlObject.get(), &genericRequest);
