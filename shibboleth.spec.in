@@ -10,7 +10,7 @@ Source:     %{name}-sp-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 PreReq:     openssl
 %if 0%{?suse_version} > 1030
-PreReq:         %{insserv_prere}
+PreReq:         %{insserv_prereq}
 BuildRequires:  libXerces-c-devel >= 2.8.0
 BuildRequires:  libxml-security-c-devel >= 1.4.0
 BuildRequires:  libxmltooling-devel >= 1.2
