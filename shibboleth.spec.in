@@ -10,7 +10,7 @@ Source:     %{name}-sp-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 PreReq:     openssl
 %if 0%{?suse_version} > 1030
-PreReq:         %insserv_prere
+PreReq:         %{insserv_prere}
 BuildRequires:  libXerces-c-devel >= 2.8.0
 BuildRequires:  libxml-security-c-devel >= 1.4.0
 BuildRequires:  libxmltooling-devel >= 1.2
@@ -158,7 +158,7 @@ sh ./keygen.sh -b
 %endif
 %if "%{_vendor}" == "suse"
     # This adds the proper /etc/rc*.d links for the script
-    %insserv_force_if_yast shibd
+    %{insserv_force_if_yast} shibd
 %endif
 
 %preun
@@ -169,7 +169,7 @@ sh ./keygen.sh -b
 	fi
 %endif
 %if "%{_vendor}" == "suse"
-    %stop_on_removal shibd
+    %{stop_on_removal} shibd
 %endif
 
 %postun
@@ -177,8 +177,8 @@ sh ./keygen.sh -b
 /sbin/ldconfig
 %endif
 %if "%{_vendor}" == "suse"
-%restart_on_update shibd apache2
-%insserv_cleanup
+%{restart_on_update} shibd apache2
+%{insserv_cleanup}
 %endif
 
 %posttrans
