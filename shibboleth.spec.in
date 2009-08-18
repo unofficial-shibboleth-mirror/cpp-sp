@@ -158,7 +158,8 @@ sh ./keygen.sh -b
 %endif
 %if "%{_vendor}" == "suse"
     # This adds the proper /etc/rc*.d links for the script
-    %{insserv_force_if_yast} shibd
+    cd /
+    %insserv_force_if_yast shibd
 %endif
 
 %preun
@@ -169,7 +170,7 @@ sh ./keygen.sh -b
 	fi
 %endif
 %if "%{_vendor}" == "suse"
-    %{stop_on_removal} shibd
+    %stop_on_removal shibd
 %endif
 
 %postun
@@ -177,7 +178,9 @@ sh ./keygen.sh -b
 /sbin/ldconfig
 %endif
 %if "%{_vendor}" == "suse"
-%{restart_on_update} shibd apache2
+cd /
+%restart_on_update shibd
+%{!?_without_builtinapache:%restart_on_update apache2}
 %{insserv_cleanup}
 %endif
 
