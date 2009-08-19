@@ -1,6 +1,6 @@
 Name:		@PACKAGE@
 Version:	@PACKAGE_VERSION@
-Release:	1
+Release:	2
 Summary:    Open source system for attribute-based Web SSO
 Group:		System Environment/Libraries
 Vendor:     Internet2
@@ -154,6 +154,7 @@ sh ./keygen.sh -b
     if [ "$1" -gt "1" ] ; then
         /etc/init.d/shibd status 1>/dev/null && /etc/init.d/shibd restart 1>/dev/null
         %{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
+        exit 0
     fi
 %endif
 %if "%{_vendor}" == "suse"
@@ -167,11 +168,16 @@ sh ./keygen.sh -b
 	if [ "$1" = 0 ] ; then
 		/sbin/service shibd stop >/dev/null 2>&1
 		/sbin/chkconfig --del shibd
+        %{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
 	fi
 %endif
 %if "%{_vendor}" == "suse"
     %stop_on_removal shibd
+    if [ "$1" = 0 ] ; then
+        %{!?_without_builtinapache:/etc/init.d/apache2 status 1>/dev/null && /etc/init.d/apache2 restart 1>/dev/null}
+    fi
 %endif
+exit 0
 
 %postun
 %ifnos solaris2.8 solaris2.9 solaris2.10
@@ -237,6 +243,11 @@ cd /
 %doc %{pkgdocdir}/api
 
 %changelog
+* Wed Aug 19 2009 Scott Cantor  <cantor.2@osu.edu>  - 2.2.1-2
+- SuSE init script changes
+- Restart Apache on removal, not just upgrade
+- Fix scriptlet exit values when Apache is stopped
+
 * Mon Aug 10 2009 Scott Cantor  <cantor.2@osu.edu>  - 2.2.1-1
 - Doc handling changes
 - SuSE init script
