@@ -522,7 +522,7 @@ CgiParse::url_decode(char *url)
 
     for(x=0,y=0;url[y];++x,++y)
     {
-        if((url[x] = url[y]) == '%')
+        if((url[x] = url[y]) == '%' && isxdigit(url[y+1]) && isxdigit(url[y+2]))
         {
             url[x] = x2c(&url[y+1]);
             y+=2;
@@ -538,7 +538,7 @@ static inline char hexchar(unsigned short s)
 
 string CgiParse::url_encode(const char* s)
 {
-    static char badchars[]="\"\\+<>#%{}|^~[]()'`;/?:@=&";
+    static char badchars[]="\"\\+<>#%{}|^~[](),'`;/?:@=&";
 
     string ret;
     for (; *s; s++) {
