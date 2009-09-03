@@ -239,7 +239,7 @@ QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(
                     obj.release();
                 }
             }
-            else if (XMLHelper::isNodeNamed(child, samlconstants::SAML1P_NS, AttributeDesignator::LOCAL_NAME)) {
+            else if (XMLHelper::isNodeNamed(child, samlconstants::SAML1_NS, AttributeDesignator::LOCAL_NAME)) {
                 auto_ptr<XMLObject> obj(AttributeDesignatorBuilder::buildOneFromElement(child));
                 AttributeDesignator* down = dynamic_cast<AttributeDesignator*>(obj.get());
                 if (down) {
