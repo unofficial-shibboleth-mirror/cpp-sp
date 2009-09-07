@@ -24,6 +24,7 @@ BuildRequires:	zlib-devel, opensaml-devel >= 1.1.1, opensaml-devel < 2.0
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
 %if "%{_vendor}" == "redhat"
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
+BuildRequires: redhat-rpm-config
 %endif
 %if "%{_vendor}" == "suse"
 %{!?_without_builtinapache:BuildRequires: apache2-devel}
