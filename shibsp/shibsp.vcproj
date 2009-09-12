@@ -67,7 +67,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4shib1D.lib xerces-c_3D.lib xsec_1D.lib saml2D.lib xmltooling1D.lib wsock32.lib"
-				OutputFile="$(OutDir)\$(ProjectName)1_2D.dll"
+				OutputFile="$(OutDir)\$(ProjectName)1_3D.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\cpp-opensaml2\$(ConfigurationName);..\..\cpp-xmltooling\$(ConfigurationName)"
 				GenerateDebugInformation="true"
@@ -148,7 +148,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4shib1D.lib xerces-c_3D.lib xsec_1D.lib saml2D.lib xmltooling1D.lib wsock32.lib"
-				OutputFile="$(OutDir)\$(ProjectName)1_2D.dll"
+				OutputFile="$(OutDir)\$(ProjectName)1_3D.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\cpp-opensaml2\$(PlatformName)\$(ConfigurationName);..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)"
 				GenerateDebugInformation="true"
@@ -224,7 +224,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4shib1.lib xerces-c_3.lib xsec_1.lib saml2.lib xmltooling1.lib wsock32.lib"
-				OutputFile="$(OutDir)\$(ProjectName)1_2.dll"
+				OutputFile="$(OutDir)\$(ProjectName)1_3.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\cpp-opensaml2\$(ConfigurationName);..\..\cpp-xmltooling\$(ConfigurationName)"
 				SubSystem="2"
@@ -302,7 +302,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="log4shib1.lib xerces-c_3.lib xsec_1.lib saml2.lib xmltooling1.lib wsock32.lib"
-				OutputFile="$(OutDir)\$(ProjectName)1_2.dll"
+				OutputFile="$(OutDir)\$(ProjectName)1_3.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\cpp-opensaml2\$(PlatformName)\$(ConfigurationName);..\..\cpp-xmltooling\$(PlatformName)\$(ConfigurationName)"
 				GenerateDebugInformation="true"
