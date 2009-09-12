@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ void DOMPropertySet::load(
             if (remapper) {
                 remap=remapper->find(realname);
                 if (remap!=remapper->end()) {
-                    log->warn("remapping property (%s) to (%s)",realname,remap->second.c_str());
+                    log->warn("deprecation - remapping property (%s) to (%s)",realname,remap->second.c_str());
                     realname=remap->second.c_str();
                 }
             }
@@ -102,7 +102,7 @@ void DOMPropertySet::load(
         if (remapper) {
             remap=remapper->find(realname);
             if (remap!=remapper->end()) {
-                log->warn("remapping property set (%s) to (%s)",realname,remap->second.c_str());
+                log->warn("deprecation - remapping nested property set (%s) to (%s)",realname,remap->second.c_str());
                 realname=remap->second.c_str();
             }
         }
