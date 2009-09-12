@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,11 @@ namespace shibsp {
      */
     class SHIBSP_API SessionInitiator : public virtual Handler
     {
+        friend void SHIBSP_API registerSessionInitiators();
     protected:
+        /** Property remapper for configuration compatibility. */
+        static std::map<std::string,std::string> m_remapper;
+
         SessionInitiator() {}
 
     public:

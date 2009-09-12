@@ -47,7 +47,7 @@ namespace shibsp {
     {
     public:
         WAYFSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.WAYF")), m_url(NULL) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.WAYF"), NULL, &m_remapper), m_url(NULL) {
             pair<bool,const char*> url = getString("URL");
             if (!url.first)
                 throw ConfigurationException("WAYF SessionInitiator requires a URL property.");
@@ -90,7 +90,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         if (option) {
             ACS=app.getAssertionConsumerServiceByIndex(atoi(option));
             if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using default ACS location");
+                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
         }
 
         option = request.getParameter("target");
@@ -106,11 +106,11 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     
     // Since we're not passing by index, we need to fully compute the return URL.
     if (!ACS) {
-        pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
+        pair<bool,unsigned int> index = getUnsignedInt("acsIndex");
         if (index.first) {
             ACS = app.getAssertionConsumerServiceByIndex(index.second);
             if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+                request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
         }
         if (!ACS)
             ACS = app.getDefaultAssertionConsumerService();

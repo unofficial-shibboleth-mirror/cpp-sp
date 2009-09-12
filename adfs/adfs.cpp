@@ -112,7 +112,7 @@ namespace {
     {
     public:
         ADFSSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.ADFS")), m_appId(appId), m_binding(WSFED_NS) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.ADFS"), NULL, &m_remapper), m_appId(appId), m_binding(WSFED_NS) {
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -334,7 +334,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
         if (option) {
             ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
             if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using default ACS location");
+                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
         }
 
         option = request.getParameter("target");
@@ -363,11 +363,11 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
 
     // Since we're not passing by index, we need to fully compute the return URL.
     if (!ACS) {
-        pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
+        pair<bool,unsigned int> index = getUnsignedInt("acsIndex");
         if (index.first) {
             ACS = app.getAssertionConsumerServiceByIndex(index.second);
             if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+                request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
         }
         if (!ACS)
             ACS = app.getDefaultAssertionConsumerService();

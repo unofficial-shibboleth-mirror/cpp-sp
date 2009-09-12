@@ -119,7 +119,7 @@ namespace shibsp {
 };
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAML2")), m_appId(appId),
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAML2"), NULL, &m_remapper), m_appId(appId),
         m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS)
 {
     static const XMLCh ECP[] = UNICODE_LITERAL_3(E,C,P);
@@ -246,7 +246,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         if (option) {
             ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
             if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using default ACS location");
+                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
             else if (ECP && !XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_PAOS)) {
                 request.log(SPRequest::SPWarn, "acsIndex in request referenced a non-PAOS ACS, using default ACS location");
                 ACS = NULL;
@@ -328,11 +328,11 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             ACS = handlers.front();
         }
         else {
-            pair<bool,unsigned int> index = getUnsignedInt("defaultACSIndex");
+            pair<bool,unsigned int> index = getUnsignedInt("acsIndex");
             if (index.first) {
                 ACS = app.getAssertionConsumerServiceByIndex(index.second);
                 if (!ACS)
-                    request.log(SPRequest::SPWarn, "invalid defaultACSIndex, using default ACS location");
+                    request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
             }
             if (!ACS)
                 ACS = app.getDefaultAssertionConsumerService();

@@ -8,7 +8,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="2.2">
+	version="2.3">
 
 	<import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
 	<import namespace="urn:oasis:names:tc:SAML:2.0:protocol" schemaLocation="saml-schema-protocol-2.0.xsd"/>
@@ -589,7 +589,8 @@
 					<attribute name="template" type="anyURI"/>
 					<attribute name="postArtifact" type="boolean"/>
 					<attribute name="acsByIndex" type="boolean"/>
-					<attribute name="defaultACSIndex" type="unsignedShort"/>
+                    <attribute name="acsIndex" type="unsignedShort"/>
+					<attribute name="defaultACSIndex" type="unsignedShort"/>   <!-- deprecated -->
                     <attribute name="isPassive" type="boolean"/>
                     <attribute name="forceAuthn" type="boolean"/>
                     <attribute name="authnContextClassRef" type="anyURI"/>
