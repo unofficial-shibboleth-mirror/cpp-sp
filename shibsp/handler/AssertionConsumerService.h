@@ -57,11 +57,19 @@ namespace shibsp {
         /**
          * Constructor
          * 
-         * @param e     root of DOM configuration
-         * @param appId ID of application that "owns" the handler
-         * @param log   a logging object to use
+         * @param e         root of DOM configuration
+         * @param appId     ID of application that "owns" the handler
+         * @param log       a logging object to use
+         * @param filter    optional filter controls what child elements to include as nested PropertySets
+         * @param remapper  optional map of property rename rules for legacy property support
          */
-        AssertionConsumerService(const xercesc::DOMElement* e, const char* appId, xmltooling::logging::Category& log);
+        AssertionConsumerService(
+            const xercesc::DOMElement* e,
+            const char* appId,
+            xmltooling::logging::Category& log,
+            xercesc::DOMNodeFilter* filter=NULL,
+            const std::map<std::string,std::string>* remapper=NULL
+            );
 
         /**
          * Enforce address checking requirements.
@@ -185,7 +193,6 @@ namespace shibsp {
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
-
 };
 
 #endif /* __shibsp_acshandler_h__ */

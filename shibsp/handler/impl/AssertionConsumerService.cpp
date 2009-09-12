@@ -56,8 +56,9 @@ using namespace opensaml;
 using namespace xmltooling;
 using namespace std;
 
-AssertionConsumerService::AssertionConsumerService(const DOMElement* e, const char* appId, Category& log)
-    : AbstractHandler(e, log)
+AssertionConsumerService::AssertionConsumerService(
+    const DOMElement* e, const char* appId, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
+    ) : AbstractHandler(e, log, filter, remapper)
 #ifndef SHIBSP_LITE
         ,m_decoder(NULL), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
 #endif
