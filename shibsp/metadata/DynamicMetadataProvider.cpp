@@ -31,12 +31,13 @@
 #include <saml/saml2/metadata/DynamicMetadataProvider.h>
 
 #include <xmltooling/logging.h>
-#include <xmltooling/util/NDC.h>
+#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/Credential.h>
 #include <xmltooling/security/CredentialCriteria.h>
 #include <xmltooling/security/CredentialResolver.h>
 #include <xmltooling/security/X509TrustEngine.h>
 #include <xmltooling/soap/HTTPSOAPTransport.h>
+#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
 
 #include <xercesc/framework/Wrapper4InputSource.hpp>

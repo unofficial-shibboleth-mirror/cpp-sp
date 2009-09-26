@@ -26,6 +26,8 @@
 #include "SessionCache.h"
 #include "SPRequest.h"
 
+#include <algorithm>
+#include <xmltooling/unicode.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 

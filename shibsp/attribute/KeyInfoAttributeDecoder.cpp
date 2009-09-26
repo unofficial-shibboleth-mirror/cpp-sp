@@ -26,6 +26,9 @@
 
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/core/Assertions.h>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/security/Credential.h>
+#include <xmltooling/security/KeyInfoResolver.h>
 #include <xmltooling/security/SecurityHelper.h>
 #include <xmltooling/signature/KeyInfo.h>
 

@@ -17,7 +17,7 @@
 /**
  * XMLServiceProvider.cpp
  *
- * XML-based SP configuration and mgmt
+ * XML-based SP configuration and mgmt.
  */
 
 #include "internal.h"
@@ -42,6 +42,7 @@
 #else
 # error "Supported logging library not available."
 #endif
+#include <algorithm>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/version.h>

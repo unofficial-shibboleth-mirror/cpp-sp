@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 /** XMLRequestMapper.cpp
  *
- * XML-based RequestMapper implementation
+ * XML-based RequestMapper implementation.
  */
 
 #include "internal.h"
@@ -27,6 +27,7 @@
 #include "util/DOMPropertySet.h"
 #include "util/SPConstants.h"
 
+#include <algorithm>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/XMLHelper.h>
