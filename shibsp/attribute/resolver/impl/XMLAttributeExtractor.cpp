@@ -35,6 +35,7 @@
 #include <saml/saml2/core/Assertions.h>
 #include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 #include <saml/saml2/metadata/ObservableMetadataProvider.h>
+#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/XMLHelper.h>

@@ -47,6 +47,7 @@
 # include <saml/util/SAMLConstants.h>
 # include <saml/SAMLConfig.h>
 # include <saml/binding/SAMLArtifact.h>
+# include <xmltooling/security/Credential.h>
 # include <xmltooling/util/StorageService.h>
 using namespace opensaml::saml2md;
 #else

@@ -30,6 +30,7 @@
 # include "SessionCache.h"
 # include "attribute/resolver/ResolutionContext.h"
 # include <saml/SAMLConfig.h>
+# include <saml/binding/SecurityPolicy.h>
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml1/core/Protocols.h>
 # include <saml/saml2/metadata/Metadata.h>

@@ -45,6 +45,7 @@
 
 #ifndef SHIBSP_LITE
 # include <saml/SAMLConfig.h>
+# include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/util/StorageService.h>
 using namespace opensaml::saml2md;
 #else

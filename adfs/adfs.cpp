@@ -55,12 +55,14 @@
 # include <shibsp/attribute/resolver/ResolutionContext.h>
 # include <shibsp/metadata/MetadataProviderCriteria.h>
 # include <saml/SAMLConfig.h>
+# include <saml/binding/SecurityPolicy.h>
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml1/profile/AssertionValidator.h>
 # include <saml/saml2/core/Assertions.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/EndpointManager.h>
 # include <saml/saml2/profile/AssertionValidator.h>
+# include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/impl/AnyElement.h>
 # include <xmltooling/validation/ValidatorSuite.h>
 using namespace opensaml::saml2md;

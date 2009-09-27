@@ -55,12 +55,11 @@
 # include "metadata/MetadataExt.h"
 # include "security/PKIXTrustEngine.h"
 # include <saml/SAMLConfig.h>
-#else
-# include <xmltooling/XMLToolingConfig.h>
 #endif
 
 #include <ctime>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/TemplateEngine.h>

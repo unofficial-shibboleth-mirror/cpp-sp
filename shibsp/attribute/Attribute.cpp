@@ -35,6 +35,10 @@
 #include <xercesc/util/Base64.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 
+#ifndef SHIBSP_LITE
+# include <xsec/framework/XSECDefs.hpp>
+#endif
+
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;

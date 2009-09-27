@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@
 # include <saml/saml2/binding/SAML2SOAPClient.h>
 # include <saml/saml2/metadata/EndpointManager.h>
 # include <saml/saml2/metadata/MetadataCredentialCriteria.h>
+# include <xmltooling/security/Credential.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;

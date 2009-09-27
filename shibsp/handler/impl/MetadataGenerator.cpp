@@ -30,6 +30,7 @@
 #ifndef SHIBSP_LITE
 # include "metadata/MetadataProviderCriteria.h"
 # include <xmltooling/XMLToolingConfig.h>
+# include <xmltooling/security/Credential.h>
 # include <xmltooling/util/PathResolver.h>
 #endif
 

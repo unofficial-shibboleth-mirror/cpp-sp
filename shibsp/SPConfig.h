@@ -28,6 +28,7 @@
 # include <saml/binding/MessageDecoder.h>
 #endif
 #include <xmltooling/PluginManager.h>
+#include <xmltooling/QName.h>
 #include <xercesc/dom/DOM.hpp>
 
 /**
