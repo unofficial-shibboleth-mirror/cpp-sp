@@ -122,6 +122,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
     const char* option;
     bool isPassive=false;
     const Application& app=request.getApplication();
+    pair<bool,const char*> discoveryURL = pair<bool,const char*>(true, m_url);
 
     if (isHandler) {
         option = request.getParameter("SAMLDS");
@@ -140,6 +141,10 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         option = request.getParameter("isPassive");
         if (option)
             isPassive = !strcmp(option,"true");
+
+        option = request.getParameter("discoveryURL");
+        if (option)
+            discoveryURL.second = option;
     }
     else {
         // We're running as a "virtual handler" from within the filter.
@@ -148,9 +153,12 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         target=request.getRequestURL();
         pair<bool,bool> passopt = getBool("isPassive");
         isPassive = passopt.first && passopt.second;
+        discoveryURL = request.getRequestSettings().first->getString("discoveryURL");
     }
 
-    m_log.debug("sending request to SAMLDS (%s)", m_url);
+    if (!discoveryURL.first)
+        discoveryURL.second = m_url;
+    m_log.debug("sending request to SAMLDS (%s)", discoveryURL.second);
 
     // Compute the return URL. We start with a self-referential link.
     string returnURL=request.getHandlerURL(target.c_str());
@@ -212,7 +220,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         returnURL = returnURL + "&target=" + urlenc->encode(target.c_str());;
     }
 
-    string req=string(m_url) + (strchr(m_url,'?') ? '&' : '?') + "entityID=" + urlenc->encode(app.getString("entityID").second) +
+    string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "entityID=" + urlenc->encode(app.getString("entityID").second) +
         "&return=" + urlenc->encode(returnURL.c_str());
     if (m_returnParam)
         req = req + "&returnIDParam=" + m_returnParam;

@@ -84,6 +84,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     const char* option;
     const Handler* ACS=NULL;
     const Application& app=request.getApplication();
+    pair<bool,const char*> discoveryURL = pair<bool,const char*>(true, m_url);
 
     if (isHandler) {
         option=request.getParameter("acsIndex");
@@ -97,11 +98,16 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         if (option)
             target = option;
         recoverRelayState(request.getApplication(), request, request, target, false);
+
+        option = request.getParameter("discoveryURL");
+        if (option)
+            discoveryURL.second = option;
     }
     else {
         // We're running as a "virtual handler" from within the filter.
         // The target resource is the current one and everything else is defaulted.
         target=request.getRequestURL();
+        discoveryURL = request.getRequestSettings().first->getString("discoveryURL");
     }
     
     // Since we're not passing by index, we need to fully compute the return URL.
@@ -131,7 +137,9 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         }
     }
 
-    m_log.debug("sending request to WAYF (%s)", m_url);
+    if (!discoveryURL.first)
+        discoveryURL.second = m_url;
+    m_log.debug("sending request to WAYF (%s)", discoveryURL.second);
 
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc=request.getHandlerURL(target.c_str());
@@ -156,7 +164,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     char timebuf[16];
     sprintf(timebuf,"%lu",time(NULL));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-    string req=string(m_url) + (strchr(m_url,'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
+    string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
         "&time=" + timebuf + "&target=" + urlenc->encode(target.c_str()) +
         "&providerId=" + urlenc->encode(app.getString("entityID").second);
 
