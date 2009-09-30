@@ -90,6 +90,8 @@ namespace shibsp {
             bool forceAuthn,
             const char* authnContextClassRef,
             const char* authnContextComparison,
+            const char* NameIDFormat,
+            const char* SPNameQualifier,
             string& relayState
             ) const;
 
@@ -233,8 +235,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     string postData;
     const Handler* ACS=NULL;
     const char* option;
-    pair<bool,const char*> acClass;
-    pair<bool,const char*> acComp;
+    pair<bool,const char*> acClass, acComp, nidFormat, spQual;
     bool isPassive=false,forceAuthn=false;
     const Application& app=request.getApplication();
 
@@ -289,6 +290,16 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             acComp.first = true;
         else
             acComp = getString("authnContextComparison");
+
+        if (nidFormat.second = request.getParameter("NameIDFormat"))
+            nidFormat.first = true;
+        else
+            nidFormat = getString("NameIDFormat");
+
+        if (spQual.second = request.getParameter("SPNameQualifier"))
+            spQual.first = true;
+        else
+            spQual = getString("SPNameQualifier");
     }
     else {
         // We're running as a "virtual handler" from within the filter.
@@ -313,6 +324,12 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         acComp = settings->getString("authnContextComparison");
         if (!acComp.first)
             acComp = getString("authnContextComparison");
+        nidFormat = settings->getString("NameIDFormat");
+        if (!nidFormat.first)
+            nidFormat = getString("NameIDFormat");
+        spQual = settings->getString("SPNameQualifier");
+        if (!spQual.first)
+            spQual = getString("SPNameQualifier");
     }
 
     if (ECP)
@@ -397,6 +414,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 isPassive, forceAuthn,
                 acClass.first ? acClass.second : NULL,
                 acComp.first ? acComp.second : NULL,
+                nidFormat.first ? nidFormat.second : NULL,
+                spQual.first ? spQual.second : NULL,
                 target
                 );
         }
@@ -423,6 +442,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             isPassive, forceAuthn,
             acClass.first ? acClass.second : NULL,
             acComp.first ? acComp.second : NULL,
+            nidFormat.first ? nidFormat.second : NULL,
+            spQual.first ? spQual.second : NULL,
             target
             );
     }
@@ -441,6 +462,10 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("authnContextClassRef").string(acClass.second);
     if (acComp.first)
         in.addmember("authnContextComparison").string(acComp.second);
+    if (nidFormat.first)
+        in.addmember("NameIDFormat").string(nidFormat.second);
+    if (spQual.first)
+        in.addmember("SPNameQualifier").string(spQual.second);
     if (acsByIndex.first && acsByIndex.second) {
         if (ACS) {
             // Determine index to use.
@@ -531,6 +556,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         in["acsLocation"].string(), bind.get(),
         in["isPassive"].integer()==1, in["forceAuthn"].integer()==1,
         in["authnContextClassRef"].string(), in["authnContextComparison"].string(),
+        in["NameIDFormat"].string(), in["SPNameQualifier"].string(),
         relayState
         );
     if (!ret.isstruct())
@@ -564,6 +590,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     bool forceAuthn,
     const char* authnContextClassRef,
     const char* authnContextComparison,
+    const char* NameIDFormat,
+    const char* SPNameQualifier,
     string& relayState
     ) const
 {
@@ -658,6 +686,14 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         NameIDPolicy* namepol = NameIDPolicyBuilder::buildNameIDPolicy();
         req->setNameIDPolicy(namepol);
         namepol->AllowCreate(true);
+    }
+    if (NameIDFormat && *NameIDFormat) {
+        auto_ptr_XMLCh wideform(NameIDFormat);
+        req->getNameIDPolicy()->setFormat(wideform.get());
+    }
+    if (SPNameQualifier && *SPNameQualifier) {
+        auto_ptr_XMLCh widequal(SPNameQualifier);
+        req->getNameIDPolicy()->setSPNameQualifier(widequal.get());
     }
     if (authnContextClassRef || authnContextComparison) {
         RequestedAuthnContext* reqContext = req->getRequestedAuthnContext();
