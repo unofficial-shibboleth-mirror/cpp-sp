@@ -287,10 +287,13 @@
 		<attribute name="exportAssertion" type="boolean"/>
 		<attribute name="redirectToSSL" type="unsignedInt"/>
 		<attribute name="entityID" type="anyURI"/>
+        <attribute name="discoveryURL" type="anyURI"/>
 		<attribute name="isPassive" type="boolean"/>
 		<attribute name="forceAuthn" type="boolean"/>
 		<attribute name="authnContextClassRef" type="anyURI"/>
 		<attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
+        <attribute name="NameIDFormat" type="anyURI"/>
+        <attribute name="SPNameQualifier" type="conf:string"/>
         <attribute name="redirectErrors" type="anyURI"/>
 		<attribute name="sessionError" type="anyURI"/>
 		<attribute name="metadataError" type="anyURI"/>
@@ -595,6 +598,8 @@
                     <attribute name="forceAuthn" type="boolean"/>
                     <attribute name="authnContextClassRef" type="anyURI"/>
                     <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
+                    <attribute name="NameIDFormat" type="anyURI"/>
+                    <attribute name="SPNameQualifier" type="conf:string"/>
                     <attribute name="requestDelegation" type="boolean"/>
 					<anyAttribute namespace="##any" processContents="lax"/>
 				</restriction>
