@@ -160,7 +160,8 @@ int main(int argc,char* argv[])
         SPConfig::Trust |
         SPConfig::AttributeResolution |
         SPConfig::Credentials |
-        SPConfig::OutOfProcess
+        SPConfig::OutOfProcess |
+        SPConfig::Caching
         );
     if (!conf.init())
         return -1;
