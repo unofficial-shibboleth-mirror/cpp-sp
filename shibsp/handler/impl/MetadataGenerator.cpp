@@ -29,8 +29,11 @@
 
 #ifndef SHIBSP_LITE
 # include "metadata/MetadataProviderCriteria.h"
+# include <saml/signature/ContentReference.h>
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/security/Credential.h>
+# include <xmltooling/security/CredentialCriteria.h>
+# include <xmltooling/signature/Signature.h>
 # include <xmltooling/util/PathResolver.h>
 #endif
 

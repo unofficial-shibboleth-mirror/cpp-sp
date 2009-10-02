@@ -27,7 +27,9 @@
 #include "binding/SOAPClient.h"
 
 #include <saml/saml2/metadata/Metadata.h>
+#include <saml/signature/ContentReference.h>
 #include <xmltooling/security/Credential.h>
+#include <xmltooling/signature/Signature.h>
 #include <xmltooling/soap/SOAP.h>
 #include <xmltooling/soap/HTTPSOAPTransport.h>
 #include <xmltooling/util/NDC.h>

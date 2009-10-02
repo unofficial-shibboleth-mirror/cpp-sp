@@ -39,6 +39,7 @@
 #include "util/SPConstants.h"
 
 #include <algorithm>
+#include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>

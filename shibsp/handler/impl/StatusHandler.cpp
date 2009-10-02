@@ -34,6 +34,7 @@ using namespace shibsp;
 # include "metadata/MetadataProviderCriteria.h"
 # include <saml/version.h>
 # include <xmltooling/security/Credential.h>
+# include <xmltooling/security/CredentialCriteria.h>
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmlsignature;

@@ -36,7 +36,9 @@
 # include <saml/saml2/binding/SAML2SOAPClient.h>
 # include <saml/saml2/metadata/EndpointManager.h>
 # include <saml/saml2/metadata/MetadataCredentialCriteria.h>
+# include <saml/signature/ContentReference.h>
 # include <xmltooling/security/Credential.h>
+# include <xmltooling/signature/Signature.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
