@@ -57,11 +57,9 @@
 # include <saml/SAMLConfig.h>
 # include <saml/binding/SecurityPolicy.h>
 # include <saml/saml1/core/Assertions.h>
-# include <saml/saml1/profile/AssertionValidator.h>
 # include <saml/saml2/core/Assertions.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/EndpointManager.h>
-# include <saml/saml2/profile/AssertionValidator.h>
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/impl/AnyElement.h>
 # include <xmltooling/validation/ValidatorSuite.h>
@@ -621,30 +619,29 @@ void ADFSConsumer::implementProtocol(
     // Extract message and issuer details from assertion.
     extractMessageDetails(*token, m_protocol.get(), policy);
 
+    // Populate recipient as audience.
+    const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+    policy.getAudiences().push_back(application.getRelyingParty(entity)->getXMLString("entityID").second);
+
     // Run the policy over the assertion. Handles replay, freshness, and
-    // signature verification, assuming the relevant rules are configured.
+    // signature verification, assuming the relevant rules are configured,
+    // along with condition enforcement.
     policy.evaluate(*token, &httpRequest);
 
     // If no security is in place now, we kick it.
     if (!policy.isAuthenticated())
         throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
-    time_t now = time(NULL);
-
-    const PropertySet* sessionProps = application.getPropertySet("Sessions");
-    const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
-
     saml1::NameIdentifier* saml1name=NULL;
     saml2::NameID* saml2name=NULL;
     const XMLCh* authMethod=NULL;
     const XMLCh* authInstant=NULL;
-    time_t sessionExp = 0;
+    time_t now = time(NULL), sessionExp = 0;
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
 
     const saml1::Assertion* saml1token = dynamic_cast<const saml1::Assertion*>(token);
     if (saml1token) {
-        // Now do profile and core semantic validation to ensure we can use it for SSO.
-        saml1::AssertionValidator ssoValidator(application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now);
-        ssoValidator.validateAssertion(*saml1token);
+        // Now do profile validation to ensure we can use it for SSO.
         if (!saml1token->getConditions() || !saml1token->getConditions()->getNotBefore() || !saml1token->getConditions()->getNotOnOrAfter())
             throw FatalProfileException("Assertion did not contain time conditions.");
         else if (saml1token->getAuthenticationStatements().empty())
@@ -681,9 +678,7 @@ void ADFSConsumer::implementProtocol(
         if (!saml2token)
             throw FatalProfileException("Incoming message did not contain a recognized type of SAML assertion.");
 
-        // Now do profile and core semantic validation to ensure we can use it for SSO.
-        saml2::AssertionValidator ssoValidator(application.getRelyingParty(entity)->getXMLString("entityID").second, application.getAudiences(), now);
-        ssoValidator.validateAssertion(*saml2token);
+        // Now do profile validation to ensure we can use it for SSO.
         if (!saml2token->getConditions() || !saml2token->getConditions()->getNotBefore() || !saml2token->getConditions()->getNotOnOrAfter())
             throw FatalProfileException("Assertion did not contain time conditions.");
         else if (saml2token->getAuthnStatements().empty())
