@@ -25,7 +25,12 @@
 
 #include <shibsp/base.h>
 #include <xmltooling/Lockable.h>
-#include <saml/saml2/metadata/Metadata.h>
+
+namespace opensaml {
+    namespace saml2md {
+        class SAML_API RoleDescriptor;
+    };
+};
 
 namespace shibsp {
 
@@ -39,9 +44,9 @@ namespace shibsp {
     {
         MAKE_NONCOPYABLE(AttributeExtractor);
     protected:
-        AttributeExtractor() {}
+        AttributeExtractor();
     public:
-        virtual ~AttributeExtractor() {}
+        virtual ~AttributeExtractor();
 
         /**
          * Extracts the attributes found in an XMLObject.

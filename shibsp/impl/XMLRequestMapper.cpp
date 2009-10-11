@@ -163,6 +163,14 @@ void SHIBSP_API shibsp::registerRequestMappers()
     conf.RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, XMLRequestMapperFactory);
 }
 
+RequestMapper::RequestMapper()
+{
+}
+
+RequestMapper::~RequestMapper()
+{
+}
+
 void Override::loadACL(const DOMElement* e, Category& log)
 {
     try {

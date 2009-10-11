@@ -61,13 +61,23 @@
 # include <saml/version.h>
 # include <saml/binding/ArtifactMap.h>
 # include <saml/binding/SAMLArtifact.h>
+# include <saml/binding/SecurityPolicyRule.h>
 # include <saml/saml1/core/Assertions.h>
+# include <saml/saml2/core/Assertions.h>
 # include <saml/saml2/binding/SAML2ArtifactType0004.h>
+# include <saml/saml2/metadata/Metadata.h>
+# include <saml/saml2/metadata/MetadataProvider.h>
+# include <saml/util/SAMLConstants.h>
+# include <xmltooling/security/CredentialResolver.h>
+# include <xmltooling/security/TrustEngine.h>
 # include <xmltooling/util/ReplayCache.h>
+# include <xmltooling/util/StorageService.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
+#else
+# include "lite/SAMLConstants.h"
 #endif
 
 using namespace shibsp;

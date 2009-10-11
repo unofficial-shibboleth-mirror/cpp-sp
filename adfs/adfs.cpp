@@ -34,14 +34,13 @@
 # define ADFS_EXPORTS
 #endif
 
-#include <memory>
-
 #include <shibsp/base.h>
 #include <shibsp/exceptions.h>
 #include <shibsp/Application.h>
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/SessionCache.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/SPRequest.h>
 #include <shibsp/handler/AssertionConsumerService.h>
 #include <shibsp/handler/LogoutHandler.h>
 #include <shibsp/handler/SessionInitiator.h>
@@ -49,12 +48,13 @@
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
-#include <xercesc/util/XMLUniDefs.hpp>
+#include <memory>
 
 #ifndef SHIBSP_LITE
 # include <shibsp/attribute/resolver/ResolutionContext.h>
 # include <shibsp/metadata/MetadataProviderCriteria.h>
 # include <saml/SAMLConfig.h>
+# include <saml/exceptions.h>
 # include <saml/binding/SecurityPolicy.h>
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml2/core/Assertions.h>

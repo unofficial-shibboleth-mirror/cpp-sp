@@ -32,11 +32,38 @@ using namespace xmltooling;
 using namespace xercesc;
 using namespace std;
 
+PropertySet::PropertySet()
+{
+}
+
+PropertySet::~PropertySet()
+{
+}
+
+DOMPropertySet::DOMPropertySet() : m_parent(NULL), m_root(NULL)
+{
+}
+
 DOMPropertySet::~DOMPropertySet()
 {
     for (map<string,pair<char*,const XMLCh*> >::iterator i=m_map.begin(); i!=m_map.end(); i++)
         XMLString::release(&(i->second.first));
     for_each(m_nested.begin(),m_nested.end(),cleanup_pair<string,DOMPropertySet>());
+}
+
+const PropertySet* DOMPropertySet::getParent() const
+{
+    return m_parent;
+}
+
+void DOMPropertySet::setParent(const PropertySet* parent)
+{
+    m_parent = parent;
+}
+
+const DOMElement* DOMPropertySet::getElement() const
+{
+    return m_root;
 }
 
 void DOMPropertySet::load(

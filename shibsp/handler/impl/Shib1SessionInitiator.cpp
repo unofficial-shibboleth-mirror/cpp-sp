@@ -34,6 +34,9 @@
 # include "metadata/MetadataProviderCriteria.h"
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/EndpointManager.h>
+# include <saml/util/SAMLConstants.h>
+#else
+# include "lite/SAMLConstants.h"
 #endif
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>

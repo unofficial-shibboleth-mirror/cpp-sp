@@ -22,6 +22,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "Application.h"
 #include "ServiceProvider.h"
 #include "metadata/MetadataProviderCriteria.h"
 

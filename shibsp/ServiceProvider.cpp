@@ -33,6 +33,10 @@
 
 #include <fstream>
 #include <sstream>
+#ifndef SHIBSP_LITE
+# include <saml/exceptions.h>
+# include <saml/saml2/metadata/MetadataProvider.h>
+#endif
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/PathResolver.h>
@@ -137,6 +141,14 @@ namespace shibsp {
 void SHIBSP_API shibsp::registerServiceProviders()
 {
     SPConfig::getConfig().ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
+}
+
+ServiceProvider::ServiceProvider()
+{
+}
+
+ServiceProvider::~ServiceProvider()
+{
 }
 
 pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handler) const

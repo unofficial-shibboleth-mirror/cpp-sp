@@ -25,16 +25,20 @@
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
+#include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutHandler.h"
 
 #ifndef SHIBSP_LITE
 # include "binding/SOAPClient.h"
 # include "metadata/MetadataProviderCriteria.h"
+# include "security/SecurityPolicy.h"
+# include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml2/core/Protocols.h>
 # include <saml/saml2/binding/SAML2SOAPClient.h>
 # include <saml/saml2/metadata/EndpointManager.h>
+# include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 # include <saml/signature/ContentReference.h>
 # include <xmltooling/security/Credential.h>

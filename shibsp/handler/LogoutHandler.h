@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #ifndef __shibsp_logout_h__
 #define __shibsp_logout_h__
 
-#include <shibsp/SPRequest.h>
 #include <shibsp/handler/RemotedHandler.h>
 
 namespace shibsp {
@@ -39,7 +38,7 @@ namespace shibsp {
     class SHIBSP_API LogoutHandler : public RemotedHandler
     {
     public:
-        virtual ~LogoutHandler() {}
+        virtual ~LogoutHandler();
 
         /**
          * The base method will iteratively attempt front-channel notification
@@ -69,7 +68,7 @@ namespace shibsp {
         void receive(DDF& in, std::ostream& out);
 
     protected:
-        LogoutHandler() : m_initiator(true) {}
+        LogoutHandler();
         
         /** Flag indicating whether the subclass is acting as a LogoutInitiator. */
         bool m_initiator;

@@ -107,6 +107,10 @@ common_sources = \
 	SPConfig.cpp \
 	attribute/Attribute.cpp \
 	attribute/ExtensibleAttribute.cpp \
+	attribute/NameIDAttribute.cpp \
+	attribute/SimpleAttribute.cpp \
+	attribute/ScopedAttribute.cpp \
+	attribute/XMLAttribute.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/AssertionLookup.cpp \
@@ -164,6 +168,7 @@ libshibsp_la_SOURCES = \
 	attribute/filtering/impl/AttributeFilter.cpp \
 	attribute/filtering/impl/ChainingAttributeFilter.cpp \
 	attribute/filtering/impl/XMLAttributeFilter.cpp \
+	attribute/filtering/impl/BasicFilteringContext.cpp \
 	attribute/filtering/impl/MatchFunctor.cpp \
 	attribute/filtering/impl/AndMatchFunctor.cpp \
 	attribute/filtering/impl/AnyMatchFunctor.cpp \
@@ -195,6 +200,7 @@ libshibsp_la_SOURCES = \
 	metadata/DynamicMetadataProvider.cpp \
 	metadata/MetadataExtImpl.cpp \
 	metadata/MetadataExtSchemaValidators.cpp \
+	metadata/MetadataProviderCriteria.cpp \
 	security/PKIXTrustEngine.cpp \
 	security/SecurityPolicy.cpp
 

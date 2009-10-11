@@ -56,6 +56,21 @@ void SHIBSP_API shibsp::registerSessionInitiators()
     SessionInitiator::m_remapper["defaultACSIndex"] = "acsIndex";
 }
 
+SessionInitiator::SessionInitiator()
+{
+}
+
+SessionInitiator::~SessionInitiator()
+{
+}
+
+#ifndef SHIBSP_LITE
+const char* SessionInitiator::getType() const
+{
+    return "SessionInitiator";
+}
+#endif
+
 pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 {
     const char* entityID=NULL;

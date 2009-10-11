@@ -32,7 +32,6 @@
 #endif
 
 #include <shibsp/Application.h>
-#include <shibsp/exceptions.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/attribute/Attribute.h>
@@ -41,9 +40,11 @@
 #include <shibsp/metadata/MetadataProviderCriteria.h>
 #include <shibsp/util/SPConstants.h>
 
+#include <saml/exceptions.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/core/Assertions.h>
 #include <saml/saml2/metadata/Metadata.h>
+#include <saml/saml2/metadata/MetadataProvider.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/XMLHelper.h>

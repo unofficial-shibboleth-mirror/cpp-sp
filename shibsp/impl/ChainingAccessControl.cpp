@@ -83,6 +83,14 @@ void SHIBSP_API shibsp::registerAccessControls()
     conf.AccessControlManager.registerFactory("edu.internet2.middleware.shibboleth.sp.provider.XMLAccessControl", XMLAccessControlFactory);
 }
 
+AccessControl::AccessControl()
+{
+}
+
+AccessControl::~AccessControl()
+{
+}
+
 ChainingAccessControl::ChainingAccessControl(const DOMElement* e)
 {
     const XMLCh* op = e ? e->getAttributeNS(NULL, _operator) : NULL;

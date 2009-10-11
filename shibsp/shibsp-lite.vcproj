@@ -446,6 +446,22 @@
 					RelativePath=".\attribute\ExtensibleAttribute.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\attribute\NameIDAttribute.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\attribute\ScopedAttribute.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\attribute\SimpleAttribute.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\attribute\XMLAttribute.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="handler"

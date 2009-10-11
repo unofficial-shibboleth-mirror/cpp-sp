@@ -24,8 +24,10 @@
 #define __shibsp_config_h__
 
 #include <shibsp/base.h>
+
 #ifndef SHIBSP_LITE
 # include <saml/binding/MessageDecoder.h>
+# include <saml/binding/MessageEncoder.h>
 #endif
 #include <xmltooling/PluginManager.h>
 #include <xmltooling/QName.h>

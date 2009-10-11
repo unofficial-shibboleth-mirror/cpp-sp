@@ -408,6 +408,10 @@
 					RelativePath=".\metadata\MetadataExtSchemaValidators.cpp"
 					>
 				</File>
+				<File
+					RelativePath=".\metadata\MetadataProviderCriteria.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="remoting"
@@ -481,6 +485,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\NameIDAttribute.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\NameIDAttributeDecoder.cpp"
 					>
 				</File>
@@ -489,11 +497,23 @@
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\ScopedAttribute.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\ScopedAttributeDecoder.cpp"
 					>
 				</File>
 				<File
+					RelativePath=".\attribute\SimpleAttribute.cpp"
+					>
+				</File>
+				<File
 					RelativePath=".\attribute\StringAttributeDecoder.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\attribute\XMLAttribute.cpp"
 					>
 				</File>
 				<File
@@ -604,6 +624,10 @@
 						</File>
 						<File
 							RelativePath=".\attribute\filtering\impl\AuthenticationMethodStringFunctor.cpp"
+							>
+						</File>
+						<File
+							RelativePath=".\attribute\filtering\impl\BasicFilteringContext.cpp"
 							>
 						</File>
 						<File

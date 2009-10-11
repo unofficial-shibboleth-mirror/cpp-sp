@@ -23,10 +23,19 @@
 #ifndef __shibsp_attrdecoder_h__
 #define __shibsp_attrdecoder_h__
 
-#include <shibsp/attribute/Attribute.h>
-#include <xmltooling/XMLObject.h>
+#include <shibsp/base.h>
+
+#include <string>
+#include <vector>
+
+namespace xmltooling {
+    class XMLTOOL_API QName;
+    class XMLTOOL_API XMLObject;
+};
 
 namespace shibsp {
+
+    class SHIBSP_API Attribute;
 
     /**
      * Decodes XML objects into resolved Attributes.
@@ -54,14 +63,10 @@ namespace shibsp {
          * @param attr  the new Attribute object being created
          * @return  the attr parameter
          */
-        virtual Attribute* _decode(Attribute* attr) const {
-            attr->setCaseSensitive(m_caseSensitive);
-            attr->setInternal(m_internal);
-            return attr;
-        }
+        virtual Attribute* _decode(Attribute* attr) const;
 
     public:
-        virtual ~AttributeDecoder() {}
+        virtual ~AttributeDecoder();
 
         /**
          * Decodes an XMLObject into a resolved Attribute.

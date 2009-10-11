@@ -27,6 +27,12 @@
 #include "handler/AbstractHandler.h"
 #include "handler/SessionInitiator.h"
 
+#ifndef SHIBSP_LITE
+# include <saml/util/SAMLConstants.h>
+#else
+# include "lite/SAMLConstants.h"
+#endif
+
 #include <ctime>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>

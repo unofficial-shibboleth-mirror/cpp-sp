@@ -39,13 +39,18 @@
 #include "util/SPConstants.h"
 
 #include <algorithm>
+#include <xmltooling/io/HTTPRequest.h>
+#include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #ifndef SHIBSP_LITE
+# include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
+# include <saml/saml2/core/Assertions.h>
+# include <saml/saml2/metadata/Metadata.h>
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/util/StorageService.h>
 using namespace opensaml::saml2md;
@@ -353,6 +358,14 @@ Session* SessionCache::find(const Application& application, HTTPRequest& request
 void SHIBSP_API shibsp::registerSessionCaches()
 {
     SPConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
+}
+
+Session::Session()
+{
+}
+
+Session::~Session()
+{
 }
 
 void StoredSession::unmarshallAttributes() const
@@ -713,6 +726,22 @@ void StoredSession::addAssertion(Assertion* assertion)
 }
 
 #endif
+
+SessionCache::SessionCache()
+{
+}
+
+SessionCache::~SessionCache()
+{
+}
+
+SessionCacheEx::SessionCacheEx()
+{
+}
+
+SessionCacheEx::~SessionCacheEx()
+{
+}
 
 SSCache::SSCache(const DOMElement* e)
     : m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), inproc(true), m_cacheTimeout(28800),

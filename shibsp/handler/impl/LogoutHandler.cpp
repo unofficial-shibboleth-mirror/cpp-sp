@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
+#include "SPRequest.h"
 #include "handler/LogoutHandler.h"
 #include "util/TemplateParameters.h"
 
@@ -36,6 +37,14 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
+
+LogoutHandler::LogoutHandler() : m_initiator(true)
+{
+}
+
+LogoutHandler::~LogoutHandler()
+{
+}
 
 pair<bool,long> LogoutHandler::sendLogoutPage(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, bool local, const char* status

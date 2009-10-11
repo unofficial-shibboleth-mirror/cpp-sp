@@ -21,9 +21,10 @@
  */
 
 #include "internal.h"
-#include "Application.h"
 #include "exceptions.h"
+#include "Application.h"
 #include "ServiceProvider.h"
+#include "SPRequest.h"
 #include "handler/AssertionConsumerService.h"
 #include "util/SPConstants.h"
 
@@ -37,8 +38,10 @@
 # include "attribute/resolver/ResolutionContext.h"
 # include "metadata/MetadataProviderCriteria.h"
 # include "security/SecurityPolicy.h"
+# include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml1/core/Assertions.h>
+# include <saml/saml2/metadata/Metadata.h>
 # include <saml/util/CommonDomainCookie.h>
 using namespace samlconstants;
 using opensaml::saml2md::MetadataProvider;
@@ -223,6 +226,11 @@ void AssertionConsumerService::checkAddress(const Application& application, cons
 }
 
 #ifndef SHIBSP_LITE
+
+const char* AssertionConsumerService::getType() const
+{
+    return "AssertionConsumerService";
+}
 
 void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const
 {

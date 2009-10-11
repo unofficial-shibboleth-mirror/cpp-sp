@@ -32,10 +32,10 @@
 #include "attribute/resolver/ResolutionContext.h"
 #include "binding/SOAPClient.h"
 #include "metadata/MetadataProviderCriteria.h"
+#include "security/SecurityPolicy.h"
 #include "util/SPConstants.h"
 
 #include <saml/exceptions.h>
-#include <saml/binding/SecurityPolicy.h>
 #include <saml/saml1/binding/SAML1SOAPClient.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml1/core/Protocols.h>

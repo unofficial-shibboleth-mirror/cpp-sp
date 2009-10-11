@@ -40,10 +40,10 @@ namespace shibsp {
         /** Property remapper for configuration compatibility. */
         static std::map<std::string,std::string> m_remapper;
 
-        SessionInitiator() {}
+        SessionInitiator();
 
     public:
-        virtual ~SessionInitiator() {}
+        virtual ~SessionInitiator();
 
         /**
          * Executes an incoming request.
@@ -61,9 +61,7 @@ namespace shibsp {
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
 #ifndef SHIBSP_LITE
-        const char* getType() const {
-            return "SessionInitiator";
-        }
+        const char* getType() const;
 #endif
     };
     

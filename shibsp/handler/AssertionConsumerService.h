@@ -25,12 +25,22 @@
 
 #include <shibsp/handler/AbstractHandler.h>
 #include <shibsp/handler/RemotedHandler.h>
+
 #ifndef SHIBSP_LITE
-# include <saml/binding/MessageDecoder.h>
-# include <saml/saml1/core/Assertions.h>
-# include <saml/saml2/metadata/Metadata.h>
+namespace opensaml {
+    class SAML_API Assertion;
+    class SAML_API MessageDecoder;
+    namespace saml1 {
+        class SAML_API NameIdentifier;
+    };
+    namespace saml2 {
+        class SAML_API NameID;
+    };
+    namespace saml2md {
+        class SAML_API SPSSODescriptor;
+    };
+};
 #endif
-#include <xmltooling/unicode.h>
 
 namespace shibsp {
 
@@ -162,9 +172,7 @@ namespace shibsp {
             ) const;
 
     public:
-        const char* getType() const {
-            return "AssertionConsumerService";
-        }
+        const char* getType() const;
 
 #endif
     private:

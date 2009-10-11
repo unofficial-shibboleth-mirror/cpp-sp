@@ -21,6 +21,7 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "Application.h"
 #include "attribute/AttributeDecoder.h"
 #include "attribute/SimpleAttribute.h"
@@ -28,6 +29,7 @@
 
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataCredentialCriteria.h>
+#include <saml/saml2/metadata/MetadataProvider.h>
 #include <xmltooling/security/Credential.h>
 #include <xmltooling/security/SecurityHelper.h>
 #include <xmltooling/util/XMLHelper.h>

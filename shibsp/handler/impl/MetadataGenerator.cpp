@@ -24,12 +24,16 @@
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
+#include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
 
 #ifndef SHIBSP_LITE
 # include "metadata/MetadataProviderCriteria.h"
+# include <saml/exceptions.h>
 # include <saml/signature/ContentReference.h>
+# include <saml/saml2/metadata/Metadata.h>
+# include <saml/saml2/metadata/MetadataProvider.h>
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/security/Credential.h>
 # include <xmltooling/security/CredentialCriteria.h>

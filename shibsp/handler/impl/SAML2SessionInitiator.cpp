@@ -37,10 +37,12 @@
 # include <saml/saml2/metadata/EndpointManager.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataCredentialCriteria.h>
+# include <saml/util/SAMLConstants.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 #else
+# include "lite/SAMLConstants.h"
 #include <xercesc/util/XMLUniDefs.hpp>
 #endif
 
