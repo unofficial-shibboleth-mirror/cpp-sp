@@ -38,11 +38,12 @@
 # include <xmltooling/security/Credential.h>
 # include <xmltooling/security/CredentialCriteria.h>
 # include <xmltooling/signature/Signature.h>
+# include <xmltooling/util/ParserPool.h>
 # include <xmltooling/util/PathResolver.h>
+# include <xercesc/framework/LocalFileInputSource.hpp>
+# include <xercesc/framework/Wrapper4InputSource.hpp>
 #endif
 
-#include <xercesc/framework/LocalFileInputSource.hpp>
-#include <xercesc/framework/Wrapper4InputSource.hpp>
 
 using namespace shibsp;
 #ifndef SHIBSP_LITE

@@ -26,11 +26,13 @@
 #include "ServiceProvider.h"
 #include "metadata/MetadataProviderCriteria.h"
 
+#include <xercesc/framework/Wrapper4InputSource.hpp>
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <xsec/framework/XSECDefs.hpp>
 #include <saml/version.h>
 #include <saml/binding/SAMLArtifact.h>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/DynamicMetadataProvider.h>
-
 #include <xmltooling/logging.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/Credential.h>
@@ -39,10 +41,8 @@
 #include <xmltooling/security/X509TrustEngine.h>
 #include <xmltooling/soap/HTTPSOAPTransport.h>
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/XMLHelper.h>
-
-#include <xercesc/framework/Wrapper4InputSource.hpp>
-#include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibsp;
 using namespace opensaml;

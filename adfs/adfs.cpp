@@ -63,6 +63,7 @@
 # include <saml/saml2/metadata/EndpointManager.h>
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/impl/AnyElement.h>
+# include <xmltooling/util/ParserPool.h>
 # include <xmltooling/validation/ValidatorSuite.h>
 using namespace opensaml::saml2md;
 # ifndef min

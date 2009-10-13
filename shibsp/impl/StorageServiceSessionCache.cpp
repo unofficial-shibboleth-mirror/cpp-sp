@@ -43,6 +43,7 @@
 #include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 

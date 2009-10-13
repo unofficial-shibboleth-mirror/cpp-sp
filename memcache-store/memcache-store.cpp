@@ -42,6 +42,7 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #include <xmltooling/logging.h>
+#include <xmltooling/unicode.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/StorageService.h>

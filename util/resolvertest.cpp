@@ -47,6 +47,7 @@
 #include <saml/saml2/metadata/MetadataProvider.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
