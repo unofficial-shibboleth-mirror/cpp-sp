@@ -28,6 +28,7 @@
 
 #include <saml/exceptions.h>
 #include <saml/saml2/metadata/Metadata.h>
+#include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 #include <saml/signature/ContentReference.h>
 #include <xmltooling/security/Credential.h>
 #include <xmltooling/signature/Signature.h>
