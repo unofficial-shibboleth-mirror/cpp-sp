@@ -25,6 +25,7 @@
 
 #include <shibsp/base.h>
 
+#include <string>
 #ifndef SHIBSP_LITE
 # include <saml/binding/MessageDecoder.h>
 # include <saml/binding/MessageEncoder.h>
@@ -68,14 +69,9 @@ namespace shibsp {
     {
         MAKE_NONCOPYABLE(SPConfig);
     public:
-        SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL),
-#ifndef SHIBSP_LITE
-            m_artifactResolver(NULL),
-#endif
-            m_features(0), m_configDoc(NULL) {
-        }
+        SPConfig();
 
-        virtual ~SPConfig() {}
+        virtual ~SPConfig();
 
         /**
          * Returns the global configuration object for the library.
@@ -108,9 +104,7 @@ namespace shibsp {
          *
          * @param enabled   bitmask of component constants
          */
-        void setFeatures(unsigned long enabled) {
-            m_features = enabled;
-        }
+        void setFeatures(unsigned long enabled);
 
         /**
          * Test whether a subsystem is enabled.
@@ -118,9 +112,7 @@ namespace shibsp {
          * @param feature   subsystem/component to test
          * @return true iff feature is enabled
          */
-        bool isEnabled(components_t feature) {
-            return (m_features & feature)>0;
-        }
+        bool isEnabled(components_t feature);
 
         /**
          * Initializes library
@@ -156,9 +148,7 @@ namespace shibsp {
          *
          * @return  global ServiceProvider or NULL
          */
-        ServiceProvider* getServiceProvider() const {
-            return m_serviceProvider;
-        }
+        ServiceProvider* getServiceProvider() const;
 
         /**
          * Instantiates and installs a ServiceProvider instance based on an XML configuration string
@@ -179,19 +169,14 @@ namespace shibsp {
          *
          * @param artifactResolver   new ArtifactResolver instance to store
          */
-        void setArtifactResolver(opensaml::MessageDecoder::ArtifactResolver* artifactResolver) {
-            delete m_artifactResolver;
-            m_artifactResolver = artifactResolver;
-        }
+        void setArtifactResolver(opensaml::MessageDecoder::ArtifactResolver* artifactResolver);
 
         /**
          * Returns the global ArtifactResolver instance.
          *
          * @return  global ArtifactResolver or NULL
          */
-        const opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const {
-            return m_artifactResolver;
-        }
+        const opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const;
 #endif
 
         /** Separator for serialized values of multi-valued attributes. */

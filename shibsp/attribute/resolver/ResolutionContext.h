@@ -25,6 +25,8 @@
 
 #include <shibsp/base.h>
 
+#include <vector>
+
 namespace opensaml {
     class SAML_API Assertion;
 };

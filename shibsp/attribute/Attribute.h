@@ -58,8 +58,7 @@ namespace shibsp {
          *
          * @param ids   array with primary identifier in first position, followed by any aliases
          */
-        Attribute(const std::vector<std::string>& ids) : m_id(ids), m_caseSensitive(true), m_internal(false) {
-        }
+        Attribute(const std::vector<std::string>& ids);
 
         /**
          * Constructs based on a remoted Attribute.

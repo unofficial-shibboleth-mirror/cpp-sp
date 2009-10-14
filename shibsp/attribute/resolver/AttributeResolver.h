@@ -25,6 +25,8 @@
 
 #include <shibsp/base.h>
 
+#include <string>
+#include <vector>
 #include <xmltooling/Lockable.h>
 
 namespace opensaml {

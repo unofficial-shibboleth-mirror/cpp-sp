@@ -27,9 +27,16 @@
 #define _CRT_SECURE_NO_DEPRECATE 1
 #define _CRT_RAND_S
 
+#include <shibsp/exceptions.h>
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/ServiceProvider.h>
+
+#include <set>
+#include <sstream>
+#include <fstream>
+#include <stdexcept>
+#include <process.h>
 #include <xmltooling/unicode.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
@@ -37,12 +44,6 @@
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/Base64.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
-
-#include <set>
-#include <sstream>
-#include <fstream>
-#include <stdexcept>
-#include <process.h>
 
 #include <windows.h>
 #include <httpfilt.h>

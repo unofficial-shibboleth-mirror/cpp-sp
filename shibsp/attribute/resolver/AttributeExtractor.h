@@ -24,7 +24,14 @@
 #define __shibsp_extractor_h__
 
 #include <shibsp/base.h>
+
+#include <string>
+#include <vector>
 #include <xmltooling/Lockable.h>
+
+namespace xmltooling {
+    class XMLTOOL_API XMLObject;
+};
 
 namespace opensaml {
     namespace saml2md {

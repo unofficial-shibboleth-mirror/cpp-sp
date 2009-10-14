@@ -21,10 +21,12 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "AbstractSPRequest.h"
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
+#include "util/CGIParser.h"
 
 using namespace shibsp;
 using namespace opensaml;

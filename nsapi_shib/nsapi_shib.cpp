@@ -34,22 +34,23 @@
 # define _CRT_RAND_S
 #endif
 
+#include <shibsp/exceptions.h>
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/ServiceProvider.h>
-#include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
-#include <xmltooling/util/Threads.h>
-#include <xmltooling/util/XMLConstants.h>
-#include <xmltooling/util/XMLHelper.h>
-#include <xercesc/util/XMLUniDefs.hpp>
 
 #include <set>
 #include <memory>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/NDC.h>
+#include <xmltooling/util/Threads.h>
+#include <xmltooling/util/XMLConstants.h>
+#include <xmltooling/util/XMLHelper.h>
+#include <xercesc/util/XMLUniDefs.hpp>
 
 #ifdef WIN32
 # include <process.h>

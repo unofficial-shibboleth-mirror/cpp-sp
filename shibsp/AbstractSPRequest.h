@@ -17,18 +17,18 @@
 /**
  * @file shibsp/AbstractSPRequest.h
  * 
- * Abstract base for SPRequest implementations  
+ * Abstract base for SPRequest implementations.
  */
 
 #ifndef __shibsp_abstreq_h__
 #define __shibsp_abstreq_h__
 
-#include <shibsp/exceptions.h>
 #include <shibsp/SPRequest.h>
-#include <shibsp/util/CGIParser.h>
 
 namespace shibsp {
     
+    class SHIBSP_API CGIParser;
+
 #if defined (_MSC_VER)
     #pragma warning( push )
     #pragma warning( disable : 4251 )
@@ -49,7 +49,7 @@ namespace shibsp {
         
         /**
          * Stores a normalized request URI to ensure it contains no %-encoded characters
-         * or other undesirable artifacts, such as ;jsessionid appendage.
+         * or other undesirable artifacts.
          *
          * @param uri   the request URI as obtained from the client
          */
@@ -58,6 +58,7 @@ namespace shibsp {
     public:
         virtual ~AbstractSPRequest();
 
+        // Virtual function overrides.
         const ServiceProvider& getServiceProvider() const;
         RequestMapper::Settings getRequestSettings() const;
         const Application& getApplication() const;

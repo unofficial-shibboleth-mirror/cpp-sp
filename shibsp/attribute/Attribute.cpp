@@ -141,6 +141,10 @@ void Attribute::deregisterFactories()
     m_factoryMap.clear();
 }
 
+Attribute::Attribute(const vector<string>& ids) : m_id(ids), m_caseSensitive(true), m_internal(false)
+{
+}
+
 Attribute::Attribute(DDF& in) : m_caseSensitive(in["case_insensitive"].isnull()), m_internal(!in["internal"].isnull())
 {
     const char* id = in.first().name();

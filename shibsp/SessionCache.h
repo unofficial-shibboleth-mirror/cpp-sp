@@ -25,7 +25,11 @@
 
 #include <shibsp/base.h>
 
+#include <map>
+#include <set>
+#include <string>
 #include <vector>
+#include <ctime>
 #include <xmltooling/Lockable.h>
 
 namespace xmltooling {
