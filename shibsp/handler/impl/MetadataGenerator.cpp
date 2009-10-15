@@ -397,7 +397,7 @@ pair<bool,long> MetadataGenerator::processMessage(
 
             // Sign while marshalling.
             vector<Signature*> sigs(1,sig);
-            prettyentity->marshall(prettydoc,&sigs,cred);
+            prettyentity->marshall((DOMDocument*)NULL,&sigs,cred);
             s << *prettyentity;
         }
         else {
