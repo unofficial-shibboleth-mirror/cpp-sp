@@ -31,6 +31,7 @@
 #ifndef SHIBSP_LITE
 # include "metadata/MetadataProviderCriteria.h"
 # include <saml/exceptions.h>
+# include <saml/SAMLConfig.h>
 # include <saml/signature/ContentReference.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataProvider.h>
@@ -259,6 +260,9 @@ pair<bool,long> MetadataGenerator::processMessage(
     else {
         entity = EntityDescriptorBuilder::buildEntityDescriptor();
     }
+
+    if (!entity->getID())
+        entity->setID(SAMLConfig::getConfig().generateIdentifier());
 
     auto_ptr<EntityDescriptor> wrapper(entity);
     pair<bool,unsigned int> cache = getUnsignedInt("cacheDuration");
