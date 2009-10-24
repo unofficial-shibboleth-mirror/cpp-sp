@@ -429,8 +429,19 @@ pair<bool,void*> ADFSHandler::run(ShibTarget* st, const IPropertySet* handler, b
             ret=handler->getString("ResponseLocation").second;
         if (!ret)
             ret=st->getApplication()->getString("homeURL").second;
-        if (!ret)
-            ret="/";
+        if (!ret) {
+            // No homeURL, so compute a URL to the root of the site.
+            int port = st->getPort();
+            const char* scheme = st->getProtocol();
+            string dest = string(scheme) + "://" + st->getHostname();
+            if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
+                ostringstream portstr;
+                portstr << port;
+                dest += ':' + portstr.str();
+            }
+            dest += '/';
+            return make_pair(true, st->sendRedirect(dest));
+        }
         return make_pair(true, st->sendRedirect(ret));
     }
     
@@ -469,7 +480,7 @@ pair<bool,void*> ADFSHandler::run(ShibTarget* st, const IPropertySet* handler, b
 
     if (target=="default") {
         pair<bool,const char*> homeURL=app->getString("homeURL");
-        target=homeURL.first ? homeURL.second : "/";
+        target=homeURL.first ? homeURL.second : "";
     }
     else if (target=="cookie" || target.empty()) {
         // Pull the target value from the "relay state" cookie.
@@ -478,7 +489,7 @@ pair<bool,void*> ADFSHandler::run(ShibTarget* st, const IPropertySet* handler, b
         if (!relay_state || !*relay_state) {
             // No apparent relay state value to use, so fall back on the default.
             pair<bool,const char*> homeURL=app->getString("homeURL");
-            target=homeURL.first ? homeURL.second : "/";
+            target=homeURL.first ? homeURL.second : "";
         }
         else {
             char* rscopy=strdup(relay_state);
@@ -517,6 +528,19 @@ pair<bool,void*> ADFSHandler::run(ShibTarget* st, const IPropertySet* handler, b
                     string(cdc.set(providerId.c_str())) + shib_cookie.second + "; expires=" + timebuf
                     );
         }
+    }
+
+    if (target == "") {
+        // No homeURL, so compute a URL to the root of the site.
+        int port = st->getPort();
+        const char* scheme = st->getProtocol();
+        target = string(scheme) + "://" + st->getHostname();
+        if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
+            ostringstream portstr;
+            portstr << port;
+            target += ':' + portstr.str();
+        }
+        target += '/';
     }
 
     // Now redirect to the target.
