@@ -70,9 +70,20 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
         return make_pair(true,response.sendResponse(str));
     }
     prop = application.getString("homeURL");
-    if (!prop.first)
-        prop.second = "/";
-    return make_pair(true,response.sendRedirect(prop.second));
+    if (prop.first)
+        return make_pair(true,response.sendRedirect(prop.second));
+
+    // No homeURL, so compute a URL to the root of the site.
+    int port = request.getPort();
+    const char* scheme = request.getScheme();
+    string dest = string(scheme) + "://" + request.getHostname();
+    if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
+        ostringstream portstr;
+        portstr << port;
+        dest += ":" + portstr.str();
+    }
+    dest += '/';
+    return make_pair(true,response.sendRedirect(dest.c_str()));
 }
 
 pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
