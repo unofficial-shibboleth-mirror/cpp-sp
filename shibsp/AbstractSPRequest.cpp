@@ -328,3 +328,12 @@ bool AbstractSPRequest::isPriorityEnabled(SPLogLevel level) const
         (level == SPError ? Priority::ERROR : Priority::CRIT))))
         );
 }
+
+void AbstractSPRequest::setResponseHeader(const char* name, const char* value)
+{
+}
+
+long AbstractSPRequest::sendRedirect(const char* url)
+{
+    return HTTPResponse::XMLTOOLING_HTTP_STATUS_MOVED;
+}
