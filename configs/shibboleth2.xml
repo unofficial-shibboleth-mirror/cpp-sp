@@ -232,13 +232,13 @@
         </TrustEngine>
 
         <!-- Map to extract attributes from SAML assertions. -->
-        <AttributeExtractor type="XML" path="attribute-map.xml"/>
+        <AttributeExtractor type="XML" validate="true" path="attribute-map.xml"/>
         
         <!-- Use a SAML query if no attributes are supplied during SSO. -->
         <AttributeResolver type="Query"/>
 
         <!-- Default filtering policy for recognized attributes, lets other data pass. -->
-        <AttributeFilter type="XML" path="attribute-policy.xml"/>
+        <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
 
         <!-- Simple file-based resolver for using a single keypair. -->
         <CredentialResolver type="File" key="sp-key.pem" certificate="sp-cert.pem"/>
