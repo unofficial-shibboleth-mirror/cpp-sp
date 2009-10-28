@@ -604,7 +604,7 @@ long AbstractHandler::sendPostResponse(
     // Load the parameters into objects for the template.
     multimap<string,string>& collection = respParam.m_collectionMap["PostedData"];
     DDF param = postData.first();
-    while (param.isstring()) {
+    while (!param.isnull()) {
         collection.insert(pair<const string,string>(param.name(), (param.string() ? param.string() : "")));
         param = postData.next();
     }
@@ -652,7 +652,7 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
             CGIParser cgi(request);
             pair<CGIParser::walker,CGIParser::walker> params = cgi.getParameters(NULL);
             if (params.first == params.second)
-                return DDF();
+                return DDF("parameters").list();
             DDF child;
             DDF ret = DDF("parameters").list();
             for (; params.first != params.second; ++params.first) {
