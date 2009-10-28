@@ -1016,8 +1016,7 @@ DDF deserialize(DOMElement* root, bool lowercase)
             }
             else {
                 char* val = toUTF8(child->getNodeValue(), true);    // use malloc
-                if (val)
-                    obj.string(val, false); // don't re-copy the string
+                obj.string(val, false); // don't re-copy the string
             }
         }
     }
