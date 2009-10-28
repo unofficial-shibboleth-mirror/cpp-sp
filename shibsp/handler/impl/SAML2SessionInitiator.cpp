@@ -364,14 +364,14 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         if (ACSbinding.first) {
             pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
             if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == NULL) {
-                m_log.info("configured or requested ACS has non-SAML 2.0 binding");
-                return make_pair(false,0L);
+                m_log.error("configured or requested ACS has non-SAML 2.0 binding");
+                throw ConfigurationException("Configured or requested ACS has non-SAML 2.0 binding ($1).", params(1, ACSbinding.second));
             }
             else if (strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_POST) &&
                      strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT) &&
                      strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_POST_SIMPLESIGN)) {
-                m_log.info("configured or requested ACS has non-SAML 2.0 binding");
-                return make_pair(false,0L);
+                m_log.error("configured or requested ACS has non-SAML 2.0 binding");
+                throw ConfigurationException("Configured or requested ACS has non-SAML 2.0 binding ($1).", params(1, ACSbinding.second));
             }
         }
     }

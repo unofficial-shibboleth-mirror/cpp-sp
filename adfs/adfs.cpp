@@ -363,7 +363,6 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
             acClass = getString("authnContextClassRef");
     }
 
-    // Since we're not passing by index, we need to fully compute the return URL.
     if (!ACS) {
         pair<bool,unsigned int> index = getUnsignedInt("acsIndex");
         if (index.first) {
@@ -371,22 +370,29 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
             if (!ACS)
                 request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
         }
-        if (!ACS)
-            ACS = app.getDefaultAssertionConsumerService();
-    }
-
-    // Validate the ACS for use with this protocol.
-    pair<bool,const XMLCh*> ACSbinding = ACS ? ACS->getXMLString("Binding") : pair<bool,const XMLCh*>(false,NULL);
-    if (ACSbinding.first) {
-        if (!XMLString::equals(ACSbinding.second, m_binding.get())) {
-            m_log.info("configured or requested ACS has non-ADFS binding");
-            return make_pair(false,0L);
+        if (!ACS) {
+            const vector<const Handler*>& endpoints = app.getAssertionConsumerServicesByBinding(m_binding.get());
+            if (endpoints.empty()) {
+                m_log.error("unable to locate a compatible ACS");
+                throw ConfigurationException("Unable to locate an ADFS-compatible ACS in the configuration.");
+            }
+            ACS = endpoints.front();
         }
     }
 
+    // Validate the ACS for use with this protocol.
+    pair<bool,const XMLCh*> ACSbinding = ACS->getXMLString("Binding");
+    if (ACSbinding.first) {
+        if (!XMLString::equals(ACSbinding.second, m_binding.get())) {
+            m_log.error("configured or requested ACS has non-ADFS binding");
+            throw ConfigurationException("Configured or requested ACS has non-ADFS binding ($1).", params(1, ACSbinding.second));
+        }
+    }
+
+    // Since we're not passing by index, we need to fully compute the return URL.
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc=request.getHandlerURL(target.c_str());
-    pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+    pair<bool,const char*> loc=ACS->getString("Location");
     if (loc.first) ACSloc+=loc.second;
 
     if (isHandler) {

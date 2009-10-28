@@ -133,13 +133,13 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     if (ACSbinding.first) {
         pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
         if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == NULL) {
-            m_log.info("configured or requested ACS has non-SAML 1.x binding");
-            return make_pair(false,0L);
+            m_log.error("configured or requested ACS has non-SAML 1.x binding");
+            throw ConfigurationException("Configured or requested ACS has non-SAML 1.x binding ($1).", params(1, ACSbinding.second));
         }
         else if (strcmp(ACSbinding.second, samlconstants::SAML1_PROFILE_BROWSER_POST) &&
                  strcmp(ACSbinding.second, samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT)) {
-            m_log.info("configured or requested ACS has non-SAML 1.x binding");
-            return make_pair(false,0L);
+            m_log.error("configured or requested ACS has non-SAML 1.x binding");
+            throw ConfigurationException("Configured or requested ACS has non-SAML 1.x binding ($1).", params(1, ACSbinding.second));
         }
     }
 
