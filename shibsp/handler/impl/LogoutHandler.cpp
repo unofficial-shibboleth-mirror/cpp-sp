@@ -50,40 +50,32 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, bool local, const char* status
     ) const
 {
-    const PropertySet* props = application.getPropertySet("Errors");
-    pair<bool,const char*> prop = props ? props->getString(local ? "localLogout" : "globalLogout") : pair<bool,const char*>(false,NULL);
-    if (prop.first) {
-        response.setContentType("text/html");
-        response.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-        response.setResponseHeader("Cache-Control","private,no-store,no-cache");
-        string fname(prop.second);
-        ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
-        if (!infile)
-            throw ConfigurationException("Unable to access $1 HTML template.", params(1,local ? "localLogout" : "globalLogout"));
-        TemplateParameters tp;
-        tp.m_request = &request;
-        tp.setPropertySet(props);
-        if (status)
-            tp.m_map["logoutStatus"] = status;
-        stringstream str;
-        XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
-        return make_pair(true,response.sendResponse(str));
-    }
-    prop = application.getString("homeURL");
-    if (prop.first)
-        return make_pair(true,response.sendRedirect(prop.second));
+    return sendLogoutPage(application, request, response, local ? "local" : "global");
+}
 
-    // No homeURL, so compute a URL to the root of the site.
-    int port = request.getPort();
-    const char* scheme = request.getScheme();
-    string dest = string(scheme) + "://" + request.getHostname();
-    if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
-        ostringstream portstr;
-        portstr << port;
-        dest += ":" + portstr.str();
-    }
-    dest += '/';
-    return make_pair(true,response.sendRedirect(dest.c_str()));
+pair<bool,long> LogoutHandler::sendLogoutPage(
+    const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* type
+    ) const
+{
+    string tname = string(type) + "Logout";
+    const PropertySet* props = application.getPropertySet("Errors");
+    pair<bool,const char*> prop = props ? props->getString(tname.c_str()) : pair<bool,const char*>(false,NULL);
+    if (!prop.first)
+        prop.second = tname.c_str();
+    response.setContentType("text/html");
+    response.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
+    response.setResponseHeader("Cache-Control","private,no-store,no-cache");
+    string fname(prop.second);
+    ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
+    if (!infile)
+        throw ConfigurationException("Unable to access $1 HTML template.", params(1,prop.second));
+    TemplateParameters tp;
+    tp.m_request = &request;
+    tp.setPropertySet(props);
+    tp.m_map["logoutStatus"] = "Logout completed successfully.";  // Backward compatibility.
+    stringstream str;
+    XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
+    return make_pair(true,response.sendResponse(str));
 }
 
 pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const

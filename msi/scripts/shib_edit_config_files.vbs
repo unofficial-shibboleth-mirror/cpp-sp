@@ -162,6 +162,10 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "globalLogout.html", ConfigDir, false
   End If
 
+  If (NOT FileSystemObj.FileExists(ConfigDir & "partialLogout.html")) then
+    FileSystemObj.CopyFile DistDir & "partialLogout.html", ConfigDir, false
+  End If
+
   If (NOT FileSystemObj.FileExists(ConfigDir & "console.logger")) then
     FileSystemObj.CopyFile DistDir & "console.logger", ConfigDir, false
   End If

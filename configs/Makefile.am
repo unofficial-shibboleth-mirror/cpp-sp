@@ -46,6 +46,7 @@ CONFIGFILES = \
     postTemplate.html \
 	localLogout.html \
 	globalLogout.html \
+	partialLogout.html \
 	sslError.html
 
 #

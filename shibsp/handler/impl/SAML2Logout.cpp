@@ -534,11 +534,18 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         // If relay state is set, recover the original return URL.
         if (!relayState.empty())
             recoverRelayState(application, request, response, relayState);
+
+        // Check for partial logout.
+        const StatusCode* sc = logoutResponse->getStatus() ? logoutResponse->getStatus()->getStatusCode() : NULL;
+        sc = sc ? sc->getStatusCode() : NULL;
+        if (sc && XMLString::equals(sc->getValue(), StatusCode::PARTIAL_LOGOUT))
+            return sendLogoutPage(application, request, response, "partial");
+
         if (!relayState.empty())
             return make_pair(true, response.sendRedirect(relayState.c_str()));
 
-        // Return template for completion of global logout, or redirect to homeURL.
-        return sendLogoutPage(application, request, response, false, "Global logout completed.");
+        // Return template for completion of logout.
+        return sendLogoutPage(application, request, response, "global");
     }
 
     FatalProfileException ex("Incoming message was not a samlp:LogoutRequest or samlp:LogoutResponse.");

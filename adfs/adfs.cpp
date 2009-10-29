@@ -880,7 +880,7 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
         session->unlock();
         application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
-        return sendLogoutPage(application, httpRequest, httpResponse, true, "Partial logout failure.");
+        return sendLogoutPage(application, httpRequest, httpResponse, "partial");
     }
 
 #ifndef SHIBSP_LITE
@@ -908,7 +908,8 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
             ).getByBinding(m_binding.get());
         if (!ep) {
             throw MetadataException(
-                "Unable to locate ADFS single logout service for identity provider ($entityID).", namedparams(1, "entityID", session->getEntityID())
+                "Unable to locate ADFS single logout service for identity provider ($entityID).",
+                namedparams(1, "entityID", session->getEntityID())
                 );
         }
 
@@ -987,5 +988,5 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
 
     if (param)
         return make_pair(true, request.sendRedirect(param));
-    return sendLogoutPage(app, request, request, false, "Logout complete.");
+    return sendLogoutPage(app, request, request, "global");
 }

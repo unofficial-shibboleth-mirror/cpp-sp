@@ -643,6 +643,7 @@
 			<attribute name="ssl" type="anyURI"/>
             <attribute name="localLogout" type="anyURI"/>
             <attribute name="globalLogout" type="anyURI"/>
+            <attribute name="partialLogout" type="anyURI"/>
 			<attribute name="supportContact" type="conf:string"/>
 			<attribute name="logoLocation" type="anyURI"/>
 			<attribute name="styleSheet" type="anyURI"/>
