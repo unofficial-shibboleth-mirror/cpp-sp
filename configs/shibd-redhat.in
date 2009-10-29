@@ -51,7 +51,7 @@ start() {
 
 stop() {
 	echo -n $"Stopping $prog: "
-	if [ -f $pidfile -a 5 -le $VER] ; then
+	if [ -f $pidfile -a 5 -le $VER ] ; then
 		killproc -p $pidfile shibd
 	else
 		killproc shibd
