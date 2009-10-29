@@ -712,7 +712,7 @@ if test "$WANT_APACHE_20" = "yes" ; then
         AC_PATH_PROG(APU_CONFIG, apu-config,,[`$APXS2 -q SBINDIR`]:[$PATH])
         ])
     if test -f "${APU_CONFIG}"; then
-        APU_CFLAGS="`${APU_CONFIG} --cflags` `${APU_CONFIG} --cppflags` `${APU_CONFIG} --includes`"
+        APU_CFLAGS="`${APU_CONFIG} --includes`"
     else
         AC_MSG_ERROR([Unable to locate apu-config, may need --with-apu option.])
     fi
@@ -825,7 +825,7 @@ if test "$WANT_APACHE_22" = "yes" ; then
         AC_PATH_PROG(APU1_CONFIG, apu-1-config,,[`$APXS22 -q SBINDIR`]:[$PATH])
         ])
     if test -f "${APU1_CONFIG}"; then
-        APU1_CFLAGS="`${APU1_CONFIG} --cflags` `${APU1_CONFIG} --cppflags` `${APU1_CONFIG} --includes`"
+        APU1_CFLAGS="`${APU1_CONFIG} --includes`"
     else
         AC_MSG_ERROR([Unable to locate apu-1-config, may need --with-apu1 option.])
     fi
