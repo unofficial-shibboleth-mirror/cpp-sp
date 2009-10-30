@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2005 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@
 
    Scott Cantor
    2/6/05
-
-   $History:$
 */
 
 #include "internal.h"
@@ -98,7 +96,11 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     // No metadata at all.
     if (!provider) {
         auto_ptr_char issuer(bpr.assertion->getIssuer());
-        auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
+        auto_ptr_char nq(
+            bpr.authnStatement->getSubject()->getNameIdentifier() ?
+                bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier()
+                    : NULL
+            );
         log.error("assertion issuer not found in metadata (Issuer='%s', NameQualifier='%s')",
             issuer.get(), (nq.get() ? nq.get() : "none"));
         
@@ -160,7 +162,11 @@ SAMLBrowserProfile::BrowserProfileResponse ShibBrowserProfile::receive(
     }
 
     auto_ptr_char issuer(bpr.assertion->getIssuer());
-    auto_ptr_char nq(bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier());
+    auto_ptr_char nq(
+        bpr.authnStatement->getSubject()->getNameIdentifier() ?
+            bpr.authnStatement->getSubject()->getNameIdentifier()->getNameQualifier()
+                : NULL
+        );
     log.error("metadata for assertion issuer indicates no SAML 1.%d identity provider role (Issuer='%s', NameQualifier='%s'",
         minorVersion, issuer.get(), (nq.get() ? nq.get() : "none"));
     bpr.clear();

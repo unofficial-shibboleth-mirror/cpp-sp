@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2005 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -487,8 +487,8 @@ InternalCCacheEntry::InternalCCacheEntry(
 
   m_cache->log->info("new session created with session ID (%s)", key);
   if (m_cache->log->isDebugEnabled()) {
-      auto_ptr_char h(s->getSubject()->getNameIdentifier()->getName());
-      m_cache->log->debug("NameID (%s), IdP (%s), Address (%s)", h.get(), providerId, client_addr);
+      auto_ptr_char h(s->getSubject()->getNameIdentifier() ? s->getSubject()->getNameIdentifier()->getName() : NULL);
+      m_cache->log->debug("NameID (%s), IdP (%s), Address (%s)", (h.get() ? h.get() : "none"), providerId, client_addr);
   }
 }
 
@@ -646,6 +646,11 @@ pair<SAMLResponse*,SAMLResponse*> InternalCCacheEntry::getNewResponse()
     m_lastRetry=now;
 
     m_cache->log->debug("trying to get new attributes for session (ID=%s)", m_id.c_str());
+
+    if (!m_auth_statement->getSubject()->getNameIdentifier()) {
+        m_cache->log->info("no NameIdentifier available");
+        return pair<SAMLResponse*,SAMLResponse*>(NULL,NULL);
+    }
     
     // Transaction Logging
     STConfig& stc=static_cast<STConfig&>(ShibTargetConfig::getConfig());

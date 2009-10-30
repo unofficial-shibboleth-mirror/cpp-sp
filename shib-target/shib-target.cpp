@@ -610,7 +610,7 @@ pair<bool,void*> ShibTarget::doExportAssertions(bool requireSession)
         Iterator<IAAP*> provs=m_priv->m_app->getAAPProviders();
 
         // Export NameID?
-        while (provs.hasNext()) {
+        while (provs.hasNext() && m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()) {
             IAAP* aap=provs.next();
             Locker locker(aap);
             const XMLCh* format = m_priv->m_cacheEntry->getAuthnStatement()->getSubject()->getNameIdentifier()->getFormat();
