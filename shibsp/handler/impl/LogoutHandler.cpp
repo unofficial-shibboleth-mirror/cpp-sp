@@ -60,8 +60,10 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
     string tname = string(type) + "Logout";
     const PropertySet* props = application.getPropertySet("Errors");
     pair<bool,const char*> prop = props ? props->getString(tname.c_str()) : pair<bool,const char*>(false,NULL);
-    if (!prop.first)
+    if (!prop.first) {
+        tname += ".html";
         prop.second = tname.c_str();
+    }
     response.setContentType("text/html");
     response.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
     response.setResponseHeader("Cache-Control","private,no-store,no-cache");
