@@ -103,23 +103,30 @@ namespace shibsp {
             if (!pathname.first)
                 pathname=props->getString(page);
         }
-        if (pathname.first) {
-            string fname(pathname.second);
-            ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
-            if (infile) {
-                tp.setPropertySet(props);
-                stringstream str;
-                XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
-                return request.sendError(str);
-            }
+
+        string fname;
+        if (!pathname.first) {
+            fname = string(page) + "Error.html";
+            pathname.second = fname.c_str();
+        }
+        else {
+            fname = pathname.second;
         }
 
-        if (!strcmp(page,"access")) {
+        ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
+        if (infile) {
+            tp.setPropertySet(props);
+            stringstream str;
+            XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
+            return request.sendError(str);
+        }
+
+        if (!strcmp(page, "access")) {
             istringstream msg("Access Denied");
             return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN);
         }
 
-        log.error("sendError could not process error template (%s)", page);
+        log.error("sendError could not process error template (%s)", pathname.second);
         istringstream msg("Internal Server Error. Please contact the site administrator.");
         return request.sendError(msg);
     }
