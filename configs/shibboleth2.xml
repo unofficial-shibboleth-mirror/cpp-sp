@@ -190,16 +190,10 @@
         </Sessions>
 
         <!--
-        You should customize these pages! You can add attributes with values that can be plugged
-        into your templates. You can remove the access attribute to cause the module to return a
-        standard 403 Forbidden error code if authorization fails, and then customize that condition
-        using your web server.
+        Allows overriding of error template filenames. You can also add attributes with values
+        that can be plugged into the templates.
         -->
-        <Errors session="sessionError.html"
-            metadata="metadataError.html"
-            access="accessError.html"
-            ssl="sslError.html"
-            supportContact="root@localhost"
+        <Errors supportContact="root@localhost"
             logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
         
