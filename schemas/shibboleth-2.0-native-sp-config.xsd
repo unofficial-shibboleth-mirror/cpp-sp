@@ -46,10 +46,10 @@
 	
 	<complexType name="PluggableType">
 		<sequence>
-			<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			<any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
 		</sequence>
 		<attribute name="type" type="conf:string" use="required"/>
-		<anyAttribute namespace="##any" processContents="lax"/>
+		<anyAttribute namespace="##any" processContents="skip"/>
 	</complexType>
 
 	<element name="SPConfig">
@@ -101,11 +101,11 @@
 				<element name="Library" minOccurs="0" maxOccurs="unbounded">
 					<complexType>
 						<sequence>
-							<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+							<any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
 						</sequence>
 						<attribute name="path" type="anyURI" use="required"/>
 						<attribute name="fatal" type="boolean"/>
-						<anyAttribute namespace="##any" processContents="lax"/>
+						<anyAttribute namespace="##any" processContents="skip"/>
 					</complexType>
 				</element>
 				<any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
@@ -121,11 +121,11 @@
 			<complexContent>
 				<restriction base="conf:PluggableType">
 					<sequence>
-						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+						<any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
 					<attribute name="id" type="ID" use="required"/>
 					<attribute name="cleanupInterval" type="unsignedInt"/>
-					<anyAttribute namespace="##any" processContents="lax"/>
+					<anyAttribute namespace="##any" processContents="skip"/>
 				</restriction>
 			</complexContent>
 		</complexType>
@@ -139,11 +139,11 @@
 			<complexContent>
 				<restriction base="conf:PluggableType">
 					<sequence>
-						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+						<any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
 					<attribute name="StorageService" type="IDREF"/>
 					<attribute name="cacheTimeout" type="unsignedInt"/>
-					<anyAttribute namespace="##any" processContents="lax"/>
+					<anyAttribute namespace="##any" processContents="skip"/>
 				</restriction>
 			</complexContent>
 		</complexType>
@@ -533,11 +533,11 @@
 						<complexContent>
 							<restriction base="conf:PluggableType">
 								<sequence>
-									<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+									<any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
 								</sequence>
 								<attribute name="Location" type="anyURI" use="required"/>
 							    <attribute name="acl" type="conf:listOfStrings"/>
-								<anyAttribute namespace="##any" processContents="lax"/>
+								<anyAttribute namespace="##any" processContents="skip"/>
 							</restriction>
 						</complexContent>
 					</complexType>
@@ -579,7 +579,7 @@
 			<complexContent>
 				<restriction base="conf:PluggableType">
 					<sequence>
-						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+						<any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
 					<attribute name="Location" type="anyURI"/>
 					<attribute name="id" type="conf:string"/>
@@ -601,7 +601,7 @@
                     <attribute name="NameIDFormat" type="anyURI"/>
                     <attribute name="SPNameQualifier" type="conf:string"/>
                     <attribute name="requestDelegation" type="boolean"/>
-					<anyAttribute namespace="##any" processContents="lax"/>
+					<anyAttribute namespace="##any" processContents="skip"/>
 				</restriction>
 			</complexContent>
 		</complexType>
@@ -615,14 +615,14 @@
 			<complexContent>
 				<restriction base="conf:PluggableType">
 					<sequence>
-						<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+						<any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
 					</sequence>
 					<attribute name="Location" type="anyURI"/>
 				    <attribute name="relayState" type="conf:string"/>
 					<attribute name="outgoingBindings" type="conf:listOfURIs"/>
 					<attribute name="template" type="anyURI"/>
 					<attribute name="postArtifact" type="boolean"/>
-					<anyAttribute namespace="##any" processContents="lax"/>
+					<anyAttribute namespace="##any" processContents="skip"/>
 				</restriction>
 			</complexContent>
 		</complexType>
@@ -634,7 +634,7 @@
 		</annotation>
 		<complexType>
 			<sequence>
-				<any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+				<any namespace="##any" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
 			</sequence>
             <attribute name="redirectErrors" type="anyURI"/>
 			<attribute name="session" type="anyURI"/>
@@ -647,7 +647,7 @@
 			<attribute name="supportContact" type="conf:string"/>
 			<attribute name="logoLocation" type="anyURI"/>
 			<attribute name="styleSheet" type="anyURI"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
+			<anyAttribute namespace="##any" processContents="skip"/>
 		</complexType>
 	</element>
 
@@ -679,7 +679,7 @@
 				</simpleType>
 			</attribute>
 			<attribute name="Location" type="anyURI" use="required"/>
-			<anyAttribute namespace="##any" processContents="lax"/>
+			<anyAttribute namespace="##any" processContents="skip"/>
 		</complexType>
 	</element>
 	
@@ -700,7 +700,7 @@
 						</choice>
 						<attribute name="id" type="conf:string" use="required"/>
 						<attribute name="validate" type="boolean"/>
-						<anyAttribute namespace="##any" processContents="lax"/>
+						<anyAttribute namespace="##any" processContents="skip"/>
 					</complexType>
 				</element>
 			</sequence>
