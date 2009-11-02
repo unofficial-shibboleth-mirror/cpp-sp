@@ -142,7 +142,7 @@ void KeyDescriptorExtractor::extractAttributes(
                 for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
                     if (vals.empty() || !vals.back().empty())
                         vals.push_back(string());
-                    vals.back() = SecurityHelper::getDEREncoding(*(*c), true, true, alg);
+                    vals.back() = SecurityHelper::getDEREncoding(*(*c), alg);
                 }
                 if (vals.back().empty())
                     vals.pop_back();

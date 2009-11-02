@@ -59,7 +59,7 @@ namespace shibsp {
                 if (!alg || !*alg)
                     alg = "SHA1";
                 dest.push_back(string());
-                dest.back() = SecurityHelper::getDEREncoding(*cred.get(), m_hash, true, alg);
+                dest.back() = SecurityHelper::getDEREncoding(*cred.get(), m_hash ? alg : NULL);
                 if (dest.back().empty())
                     dest.pop_back();
             }
