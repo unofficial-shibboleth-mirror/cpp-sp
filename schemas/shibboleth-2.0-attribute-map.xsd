@@ -97,6 +97,14 @@
                 <documentation>Flag controlling whether the resulting attribute should be exported for CGI use.</documentation>
             </annotation>
         </attribute>
+        <attribute name="hashAlg" type="am:string">
+            <annotation>
+                <documentation>
+                    Crypto-provider-specific name of hash algorithm to use,
+                    turning the decoded result into a simple string.
+                </documentation>
+            </annotation>
+        </attribute>
     </complexType>
     
     <complexType name="StringAttributeDecoder">
@@ -207,7 +215,7 @@
                         </documentation>
                     </annotation>
                 </attribute>
-                <attribute name="hashAlg" type="am:string">
+                <attribute name="keyInfoHashAlg" type="am:string">
                     <annotation>
                         <documentation>
                             Crypto-provider-specific name of hash algorithm to use.

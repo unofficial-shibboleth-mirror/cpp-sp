@@ -57,6 +57,9 @@ namespace shibsp {
         /** Flag for hiding attributes from CGI export. */
         bool m_internal;
 
+        /** Hash algorithm to apply to decoded values. */
+        xmltooling::auto_ptr_char m_hashAlg;
+
         /**
          * Helper method to handle base class decoding housekeeping.
          *

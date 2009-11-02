@@ -34,6 +34,7 @@
 #include "util/SPConstants.h"
 
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/security/SecurityHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -64,6 +65,7 @@ namespace shibsp {
     static const XMLCh _XMLAttributeDecoder[] =    UNICODE_LITERAL_19(X,M,L,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
 
     static const XMLCh caseSensitive[] =           UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh hashAlg[] =                 UNICODE_LITERAL_7(h,a,s,h,A,l,g);
     static const XMLCh internal[] =                UNICODE_LITERAL_8(i,n,t,e,r,n,a,l);
 #endif
 };
@@ -89,7 +91,8 @@ void shibsp::registerAttributeDecoders()
     conf.AttributeDecoderManager.registerFactory(XMLAttributeDecoderType, XMLAttributeDecoderFactory);
 }
 
-AttributeDecoder::AttributeDecoder(const DOMElement *e) : m_caseSensitive(true), m_internal(false)
+AttributeDecoder::AttributeDecoder(const DOMElement *e)
+    : m_caseSensitive(true), m_internal(false), m_hashAlg(e ? e->getAttributeNS(NULL, hashAlg) : NULL)
 {
     if (e) {
         const XMLCh* flag = e->getAttributeNS(NULL, caseSensitive);
@@ -108,8 +111,27 @@ AttributeDecoder::~AttributeDecoder()
 
 Attribute* AttributeDecoder::_decode(Attribute* attr) const
 {
-    attr->setCaseSensitive(m_caseSensitive);
-    attr->setInternal(m_internal);
+    if (attr) {
+        attr->setCaseSensitive(m_caseSensitive);
+        attr->setInternal(m_internal);
+
+        if (m_hashAlg.get() && *m_hashAlg.get()) {
+            // We turn the values into strings using the supplied hash algorithm and return a SimpleAttribute instead.
+            auto_ptr<SimpleAttribute> simple(new SimpleAttribute(attr->getAliases()));
+            simple->setCaseSensitive(false);
+            simple->setInternal(m_internal);
+            vector<string>& newdest = simple->getValues();
+            const vector<string>& serialized = attr->getSerializedValues();
+            for (vector<string>::const_iterator ser = serialized.begin(); ser != serialized.end(); ++ser) {
+                newdest.push_back(SecurityHelper::doHash(m_hashAlg.get(), ser->data(), ser->length()));
+                if (newdest.back().empty())
+                    newdest.pop_back();
+            }
+            delete attr;
+            return newdest.empty() ? NULL : simple.release();
+        }
+
+    }
     return attr;
 }
 #endif
