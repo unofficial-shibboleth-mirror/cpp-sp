@@ -17,7 +17,7 @@
 /**
  * AbstractSPRequest.cpp
  *
- * Abstract base for SPRequest implementations
+ * Abstract base for SPRequest implementations.
  */
 
 #include "internal.h"
@@ -327,13 +327,4 @@ bool AbstractSPRequest::isPriorityEnabled(SPLogLevel level) const
         (level == SPWarn ? Priority::WARN :
         (level == SPError ? Priority::ERROR : Priority::CRIT))))
         );
-}
-
-void AbstractSPRequest::setResponseHeader(const char* name, const char* value)
-{
-}
-
-long AbstractSPRequest::sendRedirect(const char* url)
-{
-    return HTTPResponse::XMLTOOLING_HTTP_STATUS_MOVED;
 }

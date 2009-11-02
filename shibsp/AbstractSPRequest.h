@@ -71,8 +71,6 @@ namespace shibsp {
         const char* getHandlerURL(const char* resource=NULL) const;
         void log(SPLogLevel level, const std::string& msg) const;
         bool isPriorityEnabled(SPLogLevel level) const;
-        void setResponseHeader(const char* name, const char* value);
-        long sendRedirect(const char* url);
 
     private:
         ServiceProvider* m_sp;
