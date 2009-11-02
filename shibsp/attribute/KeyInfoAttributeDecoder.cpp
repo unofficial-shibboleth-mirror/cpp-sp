@@ -55,8 +55,11 @@ namespace shibsp {
         void extract(const KeyInfo* k, vector<string>& dest) const {
             auto_ptr<Credential> cred (getKeyInfoResolver()->resolve(k, Credential::RESOLVE_KEYS));
             if (cred.get()) {
+                const char* alg = m_hashAlg.get();
+                if (!alg || !*alg)
+                    alg = "SHA1";
                 dest.push_back(string());
-                dest.back() = SecurityHelper::getDEREncoding(*cred.get(), m_hash);
+                dest.back() = SecurityHelper::getDEREncoding(*cred.get(), m_hash, true, alg);
                 if (dest.back().empty())
                     dest.pop_back();
             }
@@ -67,6 +70,7 @@ namespace shibsp {
         }
 
         bool m_hash;
+        auto_ptr_char m_hashAlg;
         KeyInfoResolver* m_keyInfoResolver;
     };
 
@@ -77,10 +81,12 @@ namespace shibsp {
 
     static const XMLCh _KeyInfoResolver[] = UNICODE_LITERAL_15(K,e,y,I,n,f,o,R,e,s,o,l,v,e,r);
     static const XMLCh _hash[] =            UNICODE_LITERAL_4(h,a,s,h);
+    static const XMLCh _hashAlg[] =         UNICODE_LITERAL_7(h,a,s,h,A,l,g);
     static const XMLCh _type[] =            UNICODE_LITERAL_4(t,y,p,e);
 };
 
-KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e) : AttributeDecoder(e), m_hash(false), m_keyInfoResolver(NULL) {
+KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e)
+        : AttributeDecoder(e), m_hash(false), m_hashAlg(e ? e->getAttributeNS(NULL, _hashAlg) : NULL), m_keyInfoResolver(NULL) {
     const XMLCh* flag = e ? e->getAttributeNS(NULL, _hash) : NULL;
     m_hash = (flag && (*flag == chLatin_t || *flag == chDigit_1));
     e = e ? XMLHelper::getFirstChildElement(e,_KeyInfoResolver) : NULL;
