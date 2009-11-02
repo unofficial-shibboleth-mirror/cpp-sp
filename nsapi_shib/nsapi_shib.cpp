@@ -422,7 +422,7 @@ public:
       setResponseHeader("Content-Type", type);
   }
   void setResponseHeader(const char* name, const char* value) {
-    AbstractSPRequest::setResponseHeader(name, value);
+    HTTPResponse::setResponseHeader(name, value);
     pblock_nvinsert(name, value, m_rq->srvhdrs);
   }
 
@@ -441,7 +441,7 @@ public:
     return REQ_EXIT;
   }
   long sendRedirect(const char* url) {
-    AbstractSPRequest::sendRedirect(url);
+    HTTPResponse::sendRedirect(url);
     param_free(pblock_remove("content-type", m_rq->srvhdrs));
     pblock_nninsert("content-length", 0, m_rq->srvhdrs);
     pblock_nvinsert("expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);

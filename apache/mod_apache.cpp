@@ -524,7 +524,7 @@ public:
       m_req->content_type = ap_psprintf(m_req->pool, type);
   }
   void setResponseHeader(const char* name, const char* value) {
-   AbstractSPRequest::setResponseHeader(name, value);
+   HTTPResponse::setResponseHeader(name, value);
 #ifdef SHIB_DEFERRED_HEADERS
    if (!m_rc)
       // this happens on subrequests
@@ -554,7 +554,7 @@ public:
     return DONE;
   }
   long sendRedirect(const char* url) {
-    AbstractSPRequest::sendRedirect(url);
+    HTTPResponse::sendRedirect(url);
     ap_table_set(m_req->headers_out, "Location", url);
     return REDIRECT;
   }

@@ -534,7 +534,7 @@ public:
     return getSecureHeader("remote-user");
   }
   void setResponseHeader(const char* name, const char* value) {
-    AbstractSPRequest::setResponseHeader(name, value);
+    HTTPResponse::setResponseHeader(name, value);
     // Set for later.
     if (value)
         m_headers.insert(make_pair(name,value));
@@ -563,7 +563,7 @@ public:
     return SF_STATUS_REQ_FINISHED;
   }
   long sendRedirect(const char* url) {
-    AbstractSPRequest::sendRedirect(url);
+    HTTPResponse::sendRedirect(url);
     string hdr=string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
       "Content-Length: 40\r\n"
@@ -844,7 +844,7 @@ public:
     return buf.empty() ? "" : buf;
   }
   void setResponseHeader(const char* name, const char* value) {
-    AbstractSPRequest::setResponseHeader(name, value);
+    HTTPResponse::setResponseHeader(name, value);
     // Set for later.
     if (value)
         m_headers.insert(make_pair(name,value));
@@ -906,7 +906,7 @@ public:
     return HSE_STATUS_SUCCESS;
   }
   long sendRedirect(const char* url) {
-    AbstractSPRequest::sendRedirect(url);
+    HTTPResponse::sendRedirect(url);
     string hdr=string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
       "Content-Length: 40\r\n"

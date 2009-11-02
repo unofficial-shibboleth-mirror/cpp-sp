@@ -193,7 +193,7 @@ public:
         return "";
     }
     void setResponseHeader(const char* name, const char* value) {
-        AbstractSPRequest::setResponseHeader(name, value);
+        HTTPResponse::setResponseHeader(name, value);
         // Set for later.
         if (value)
             m_response_headers.insert(make_pair(name,value));
@@ -230,7 +230,7 @@ public:
     }
 
     long sendRedirect(const char* url) {
-        AbstractSPRequest::sendRedirect(url);
+        HTTPResponse::sendRedirect(url);
         string hdr=string("Status: 302 Please Wait\r\nLocation: ") + url + "\r\n"
           "Content-Type: text/html\r\n"
           "Content-Length: 40\r\n"
