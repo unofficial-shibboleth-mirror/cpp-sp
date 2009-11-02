@@ -207,6 +207,13 @@
                         </documentation>
                     </annotation>
                 </attribute>
+                <attribute name="hashAlg" type="am:string">
+                    <annotation>
+                        <documentation>
+                            Crypto-provider-specific name of hash algorithm to use.
+                        </documentation>
+                    </annotation>
+                </attribute>
             </extension>
         </complexContent>
     </complexType>
