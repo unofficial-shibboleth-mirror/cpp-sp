@@ -4,4 +4,8 @@
 /shibsp-lite-Debug
 /Release
 /shibsp-lite-Release
+/.deps
+/Makefile.in
+/Makefile
+/paths.h
 /x64

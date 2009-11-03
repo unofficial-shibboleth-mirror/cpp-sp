@@ -4,3 +4,6 @@
 /shibresponder-Debug
 /shibauthorizer-Debug
 /x64
+/.deps
+/Makefile.in
+/Makefile

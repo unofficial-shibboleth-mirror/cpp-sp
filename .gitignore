@@ -39,3 +39,6 @@
 /debug
 /Release
 /x64
+/Portfile
+/pkginfo
+/*.gz

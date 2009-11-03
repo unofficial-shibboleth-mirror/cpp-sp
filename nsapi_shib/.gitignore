@@ -1,0 +1,11 @@
+/*.plg
+/Release
+/Debug
+/*.dep
+/*.mak
+/*.aps
+/*.use
+/.deps
+/Makefile.in
+/Makefiler
+/*.user
