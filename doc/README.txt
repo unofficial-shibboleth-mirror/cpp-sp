@@ -1,5 +1,5 @@
-Aug 26, 2009
-Version 1.3.4
+Nov 4, 2009
+Version 1.3.5
 
 Welcome to Internet2's Shibboleth
 

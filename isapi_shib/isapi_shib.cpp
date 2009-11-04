@@ -91,6 +91,7 @@ namespace {
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
     string g_unsetHeaderValue,g_spoofKey;
+    set<string> g_allowedSchemes;
     bool g_checkSpoofing = true;
     bool g_catchAll = true;
     bool g_bSafeHeaderNames = false;
@@ -188,13 +189,27 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             flag=props->getBool("catchAll");
             g_catchAll = !flag.first || flag.second;
 
-            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
-            if (unsetValue.first)
-                g_unsetHeaderValue = unsetValue.second;
+            pair<bool,const char*> str=props->getString("unsetHeaderValue");
+            if (str.first)
+                g_unsetHeaderValue = str.second;
+
+            str=props->getString("allowedSchemes");
+            if (str.first) {
+                string schemes=str.second;
+                unsigned int j=0;
+                for (unsigned int i=0;  i < schemes.length();  i++) {
+                    if (schemes.at(i)==' ') {
+                        g_allowedSchemes.insert(schemes.substr(j, i-j));
+                        j = i+1;
+                    }
+                }
+                g_allowedSchemes.insert(schemes.substr(j, schemes.length()-j));
+            }
+
             if (g_checkSpoofing) {
-                unsetValue = props->getString("spoofKey");
-                if (unsetValue.first)
-                    g_spoofKey = unsetValue.second;
+                str = props->getString("spoofKey");
+                if (str.first)
+                    g_spoofKey = str.second;
                 else {
                     LogEvent(NULL, EVENTLOG_WARNING_TYPE, 2100, NULL,
                             "Filter generating a pseudorandom anti-spoofing key, consider setting spoofKey yourself.");
@@ -221,6 +236,10 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                     impl=saml::XML::getNextSiblingElement(impl,shibtarget::XML::SHIBTARGET_NS,Site);
                 }
             }
+        }
+        if (g_allowedSchemes.empty()) {
+            g_allowedSchemes.insert("https");
+            g_allowedSchemes.insert("http");
         }
     }
     catch (exception&) {
@@ -370,6 +389,14 @@ class ShibTargetIsapiF : public ShibTarget
   dynabuf m_allhttp;
   bool m_firsttime;
 
+  void checkString(const string& s, const char* msg) {
+    string::const_iterator e = s.end();
+    for (string::const_iterator i=s.begin(); i!=e; ++i) {
+        if (iscntrl(*i))
+            throw FatalProfileException(msg);
+    }
+  }
+
 public:
     ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
         : m_pfc(pfc), m_pn(pn), m_allhttp(4096), m_firsttime(true) {
@@ -500,9 +527,12 @@ public:
     int code=200,
     const string& content_type="text/html",
     const Iterator<header_t>& headers=EMPTY(header_t)) {
+    checkString(content_type, "Detected control character in a response header.");
     string hdr = string ("Connection: close\r\nContent-type: ") + content_type + "\r\n";
     while (headers.hasNext()) {
         const header_t& h=headers.next();
+        checkString(h.first, "Detected control character in a response header.");
+        checkString(h.second, "Detected control character in a response header.");
         hdr += h.first + ": " + h.second + "\r\n";
     }
     hdr += "\r\n";
@@ -518,6 +548,9 @@ public:
     return (void*)SF_STATUS_REQ_FINISHED;
   }
   virtual void* sendRedirect(const string& url) {
+    checkString(url, "Detected control character in an attempted redirect.");
+    if (g_allowedSchemes.find(url.substr(0, url.find(':'))) == g_allowedSchemes.end())
+        throw FatalProfileException("Invalid scheme in attempted redirect.");
     // XXX: Don't support the httpRedirect option, yet.
     string hdrs=m_cookie + string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
@@ -650,6 +683,14 @@ class ShibTargetIsapiE : public ShibTarget
   LPEXTENSION_CONTROL_BLOCK m_lpECB;
   string m_cookie;
 
+  void checkString(const string& s, const char* msg) {
+    string::const_iterator e = s.end();
+    for (string::const_iterator i=s.begin(); i!=e; ++i) {
+        if (iscntrl(*i))
+            throw FatalProfileException(msg);
+    }
+  }
+
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site) {
     dynabuf ssl(5);
@@ -774,8 +815,11 @@ public:
     int code=200,
     const string& content_type="text/html",
     const Iterator<header_t>& headers=EMPTY(header_t)) {
+    checkString(content_type, "Detected control character in a response header.");
     string hdr = m_cookie + "Connection: close\r\nContent-type: " + content_type + "\r\n";
     for (int k = 0; k < headers.size(); k++) {
+      checkString(headers[k].first, "Detected control character in a response header.");
+      checkString(headers[k].second, "Detected control character in a response header.");
       hdr += headers[k].first + ": " + headers[k].second + "\r\n";
     }
     hdr += "\r\n";
@@ -792,6 +836,9 @@ public:
   }
   virtual void* sendRedirect(const string& url) {
     // XXX: Don't support the httpRedirect option, yet.
+    checkString(url, "Detected control character in an attempted redirect.");
+    if (g_allowedSchemes.find(url.substr(0, url.find(':'))) == g_allowedSchemes.end())
+        throw FatalProfileException("Invalid scheme in attempted redirect.");
     string hdrs = m_cookie + "Location: " + url + "\r\n"
       "Content-Type: text/html\r\n"
       "Content-Length: 40\r\n"

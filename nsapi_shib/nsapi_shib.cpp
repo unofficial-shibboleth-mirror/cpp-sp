@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2005 Internet2
+ *  Copyright 2001-2009 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ namespace {
     ShibTargetConfig* g_Config=NULL;
     string g_ServerName;
     string g_unsetHeaderValue;
+    set<string> g_allowedSchemes;
     bool g_checkSpoofing = false;
     bool g_catchAll = true;
 }
@@ -146,13 +147,31 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
         Locker locker(conf);
         const IPropertySet* props=conf->getPropertySet("Local");
         if (props) {
-            pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
-            if (unsetValue.first)
-                g_unsetHeaderValue = unsetValue.second;
+            pair<bool,const char*> str=props->getString("unsetHeaderValue");
+            if (str.first)
+                g_unsetHeaderValue = str.second;
+
+            str=props->getString("allowedSchemes");
+            if (str.first) {
+                string schemes=str.second;
+                unsigned int j=0;
+                for (unsigned int i=0;  i < schemes.length();  i++) {
+                    if (schemes.at(i)==' ') {
+                        g_allowedSchemes.insert(schemes.substr(j, i-j));
+                        j = i+1;
+                    }
+                }
+                g_allowedSchemes.insert(schemes.substr(j, schemes.length()-j));
+            }
+
             pair<bool,bool> flag=props->getBool("checkSpoofing");
             g_checkSpoofing = !flag.first || flag.second;
             flag=props->getBool("catchAll");
             g_catchAll = !flag.first || flag.second;
+        }
+        if (g_allowedSchemes.empty()) {
+            g_allowedSchemes.insert("https");
+            g_allowedSchemes.insert("http");
         }
     }
     catch (exception&) {
@@ -168,6 +187,14 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, Session* sn, Request* rq
 
 class ShibTargetNSAPI : public ShibTarget
 {
+  void checkString(const string& s, const char* msg) {
+    string::const_iterator e = s.end();
+    for (string::const_iterator i=s.begin(); i!=e; ++i) {
+        if (iscntrl(*i))
+            throw FatalProfileException(msg);
+    }
+  }
+
 public:
   ShibTargetNSAPI(pblock* pb, Session* sn, Request* rq) : m_pb(pb), m_sn(sn), m_rq(rq), m_firsttime(true) {
 
@@ -350,12 +377,15 @@ public:
     const string& content_type="text/html",
     const saml::Iterator<header_t>& headers=EMPTY(header_t)
     ) {
+    checkString(content_type, "Detected control character in a response header.");
     param_free(pblock_remove("content-type", m_rq->srvhdrs));
     pblock_nvinsert("content-type", content_type.c_str(), m_rq->srvhdrs);
     pblock_nninsert("content-length", msg.length(), m_rq->srvhdrs);
     pblock_nvinsert("connection","close",m_rq->srvhdrs);
     while (headers.hasNext()) {
         const header_t& h=headers.next();
+        checkString(h.first, "Detected control character in a response header.");
+        checkString(h.second, "Detected control character in a response header.");
         pblock_nvinsert(h.first.c_str(), h.second.c_str(), m_rq->srvhdrs);
     }
     protocol_status(m_sn, m_rq, code, NULL);
@@ -364,6 +394,9 @@ public:
     return (void*)REQ_EXIT;
   }
   virtual void* sendRedirect(const string& url) {
+    checkString(url, "Detected control character in an attempted redirect.");
+    if (g_allowedSchemes.find(url.substr(0, url.find(':'))) == g_allowedSchemes.end())
+        throw FatalProfileException("Invalid scheme in attempted redirect.");
     param_free(pblock_remove("content-type", m_rq->srvhdrs));
     pblock_nninsert("content-length", 0, m_rq->srvhdrs);
     pblock_nvinsert("expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);

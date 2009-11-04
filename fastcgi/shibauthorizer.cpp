@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2009 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #include <fcgio.h>
 
 using namespace shibtarget;
+using namespace saml;
 using namespace std;
 
 typedef enum {
@@ -40,10 +41,21 @@ typedef enum {
     SHIB_RETURN_DONE
 } shib_return_t;
 
+set<string> g_allowedSchemes;
+
 class ShibTargetFCGIAuth : public ShibTarget
 {
     FCGX_Request* m_req;
     string m_cookie;
+
+    void checkString(const string& s, const char* msg) {
+        string::const_iterator e = s.end();
+        for (string::const_iterator i=s.begin(); i!=e; ++i) {
+            if (iscntrl(*i))
+                throw runtime_error(msg);
+        }
+    }
+
 public:
     map<string,string> m_headers;
 
@@ -143,9 +155,12 @@ public:
         const string& content_type="text/html",
         const saml::Iterator<header_t>& headers=EMPTY(header_t)) {
 
+        checkString(content_type, "Detected control character in a response header.");
         string hdr = m_cookie + "Connection: close\r\nContent-type: " + content_type + "\r\n";
         while (headers.hasNext()) {
             const header_t& h=headers.next();
+            checkString(h.first, "Detected control character in a response header.");
+            checkString(h.second, "Detected control character in a response header.");
             hdr += h.first + ": " + h.second + "\r\n";
         }
 
@@ -162,6 +177,9 @@ public:
     }
 
     virtual void* sendRedirect(const string& url) {
+        checkString(url, "Detected control character in an attempted redirect.");
+        if (g_allowedSchemes.find(url.substr(0, url.find(':'))) == g_allowedSchemes.end())
+            throw runtime_error("Invalid scheme in attempted redirect.");
         cout << "Status: 302 Please Wait" << "\r\n"
              << "Location: " << url << "\r\n"
              <<  m_cookie << "\r\n"
@@ -227,11 +245,35 @@ int main(void)
             cerr << "failed to load Shibboleth configuration" << endl;
             exit(1);
         }
+
+        IConfig* conf=g_Config->getINI();
+        Locker locker(conf);
+        const IPropertySet* props=conf->getPropertySet("Local");
+        if (props) {
+            pair<bool,const char*> str=props->getString("allowedSchemes");
+            if (str.first) {
+                string schemes=str.second;
+                unsigned int j=0;
+                for (unsigned int i=0;  i < schemes.length();  i++) {
+                    if (schemes.at(i)==' ') {
+                        g_allowedSchemes.insert(schemes.substr(j, i-j));
+                        j = i+1;
+                    }
+                }
+                g_allowedSchemes.insert(schemes.substr(j, schemes.length()-j));
+            }
+        }
+        if (g_allowedSchemes.empty()) {
+            g_allowedSchemes.insert("https");
+            g_allowedSchemes.insert("http");
+        }
     }
     catch (exception& e) {
         cerr << "exception while initializing Shibboleth configuration: " << e.what() << endl;
         exit(1);
     }
+
+
 
     // Load "authoritative" URL fields.
     char* var = getenv("SHIBSP_SERVER_NAME");
