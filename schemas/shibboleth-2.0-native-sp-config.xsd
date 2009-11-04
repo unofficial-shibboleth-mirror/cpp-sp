@@ -88,6 +88,7 @@
 			<attribute name="logger" type="anyURI"/>
 			<attribute name="clockSkew" type="unsignedInt"/>
             <attribute name="unsafeChars" type="conf:string"/>
+            <attribute name="allowedSchemes" type="conf:listOfStrings"/>
 			<anyAttribute namespace="##other" processContents="lax"/>
 		</complexType>
 	</element>

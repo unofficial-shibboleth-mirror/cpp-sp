@@ -69,6 +69,7 @@
 # include <saml/saml2/metadata/MetadataProvider.h>
 # include <saml/util/SAMLConstants.h>
 # include <xmltooling/security/CredentialResolver.h>
+# include <xmltooling/security/SecurityHelper.h>
 # include <xmltooling/security/TrustEngine.h>
 # include <xmltooling/util/ReplayCache.h>
 # include <xmltooling/util/StorageService.h>
@@ -116,7 +117,11 @@ namespace {
             index = props->getInt("artifactEndpointIndex");
             if (!index.first)
                 index = getArtifactEndpointIndex();
-            return new SAML2ArtifactType0004(SAMLConfig::getConfig().hashSHA1(props->getString("entityID").second),index.first ? index.second : 1);
+            pair<bool,const char*> entityID = props->getString("entityID");
+            return new SAML2ArtifactType0004(
+                SecurityHelper::doHash("SHA1", entityID.second, strlen(entityID.second), false),
+                index.first ? index.second : 1
+                );
         }
 
         MetadataProvider* getMetadataProvider(bool required=true) const {
@@ -1317,6 +1322,20 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             pair<bool,const char*> unsafe = getString("unsafeChars");
             if (unsafe.first)
                 TemplateEngine::unsafe_chars = unsafe.second;
+
+            unsafe = getString("allowedSchemes");
+            if (unsafe.first) {
+                HTTPResponse::getAllowedSchemes().clear();
+                string schemes=unsafe.second;
+                unsigned int j_sch=0;
+                for (unsigned int i_sch=0;  i_sch < schemes.length();  i_sch++) {
+                    if (schemes.at(i_sch)==' ') {
+                        HTTPResponse::getAllowedSchemes().push_back(schemes.substr(j_sch, i_sch-j_sch));
+                        j_sch = i_sch + 1;
+                    }
+                }
+                HTTPResponse::getAllowedSchemes().push_back(schemes.substr(j_sch, schemes.length()-j_sch));
+            }
 
             // Extensions
             doExtensions(e, "global", log);

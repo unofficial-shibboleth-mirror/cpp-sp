@@ -589,6 +589,8 @@ long AbstractHandler::sendPostResponse(
     const Application& application, HTTPResponse& httpResponse, const char* url, DDF& postData
     ) const
 {
+    HTTPResponse::sanitizeURL(url);
+
     const PropertySet* props=application.getPropertySet("Sessions");
     pair<bool,const char*> postTemplate = props->getString("postTemplate");
     if (!postTemplate.first)

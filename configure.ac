@@ -258,6 +258,20 @@ LITE_LIBS="-lxmltooling-lite"
 XMLSEC_LIBS="-lxmltooling"
 AC_CHECK_HEADER([xmltooling/base.h],,
                 AC_MSG_ERROR([unable to find xmltooling header files]))
+                
+
+# save and append master libs
+save_LIBS="$LIBS"
+LIBS="$XMLSEC_LIBS $LIBS"
+
+AC_TRY_LINK(
+    [#include <xmltooling/io/HTTPResponse.h>],
+    [xmltooling::HTTPResponse::sanitizeURL("http://test")],
+    [AC_DEFINE(HAVE_XMLTOOLING,1,[Define if xmltooling library was found])],
+    [AC_MSG_ERROR([unable to link with XMLTooling, or version was too old])])
+
+# restore master libs
+LIBS="$save_LIBS"
 
 # Establish location of xmltooling catalog.
 XMLTOOLINGXMLDIR=""
