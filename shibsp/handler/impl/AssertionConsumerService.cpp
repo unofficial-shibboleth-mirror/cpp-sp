@@ -364,6 +364,9 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             }
         }
     }
+    else {
+        m_log.warn("no AttributeExtractor plugin installed, check log during startup");
+    }
 
     try {
         AttributeResolver* resolver = application.getAttributeResolver();
