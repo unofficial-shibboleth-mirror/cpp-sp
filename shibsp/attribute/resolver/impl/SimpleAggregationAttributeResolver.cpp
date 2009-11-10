@@ -389,33 +389,77 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         m_log.error("unable to obtain a SAML response from attribute authority (%s)", entityID);
         return false;
     }
+
+    auto_ptr<saml2p::StatusResponseType> wrapper(srt);
+
     saml2p::Response* response = dynamic_cast<saml2p::Response*>(srt);
     if (!response) {
-        delete srt;
         m_log.error("message was not a samlp:Response");
         return true;
     }
     else if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
             !XMLString::equals(response->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
-        delete srt;
         m_log.error("attribute authority (%s) returned a SAML error", entityID);
         return true;
     }
 
+    saml2::Assertion* newtoken = NULL;
     const vector<saml2::Assertion*>& assertions = const_cast<const saml2p::Response*>(response)->getAssertions();
     if (assertions.empty()) {
-        delete srt;
-        m_log.warn("response from attribute authority (%s) was empty", entityID);
-        return true;
-    }
-    else if (assertions.size()>1)
-        m_log.warn("resolver only supports one assertion in the query response");
+        // Check for encryption.
+        const vector<saml2::EncryptedAssertion*>& encassertions = const_cast<const saml2p::Response*>(response)->getEncryptedAssertions();
+        if (encassertions.empty()) {
+            m_log.warn("response from attribute authority was empty");
+            return true;
+        }
+        else if (encassertions.size() > 1) {
+            m_log.warn("simple resolver only supports one assertion in the query response");
+        }
 
-    auto_ptr<saml2p::StatusResponseType> wrapper(srt);
-    saml2::Assertion* newtoken = assertions.front();
+        CredentialResolver* cr=application.getCredentialResolver();
+        if (!cr) {
+            m_log.warn("found encrypted assertion, but no CredentialResolver was available");
+            return true;
+        }
+
+        // Attempt to decrypt it.
+        try {
+            Locker credlocker(cr);
+            auto_ptr<MetadataCredentialCriteria> mcc(
+                policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
+                );
+            auto_ptr<XMLObject> tokenwrapper(
+                encassertions.front()->decrypt(*cr, relyingParty->getXMLString("entityID").second, mcc.get())
+                );
+            newtoken = dynamic_cast<saml2::Assertion*>(tokenwrapper.get());
+            if (newtoken) {
+                tokenwrapper.release();
+                if (m_log.isDebugEnabled())
+                    m_log.debugStream() << "decrypted Assertion: " << *newtoken << logging::eol;
+            }
+        }
+        catch (exception& ex) {
+            m_log.error(ex.what());
+        }
+        if (newtoken) {
+            // Free the Response now, so we know this is a stand-alone token later.
+            delete wrapper.release();
+        }
+        else {
+            // Nothing decrypted, should already be logged.
+            return true;
+        }
+    }
+    else {
+        if (assertions.size() > 1)
+            m_log.warn("simple resolver only supports one assertion in the query response");
+        newtoken = assertions.front();
+    }
 
     if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
         m_log.error("assertion unsigned, rejecting it based on signedAssertions policy");
+        if (!wrapper.get())
+            delete newtoken;
         return true;
     }
 
@@ -434,11 +478,15 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
     }
     catch (exception& ex) {
         m_log.error("assertion failed policy validation: %s", ex.what());
+        if (!wrapper.get())
+            delete newtoken;
         return true;
     }
 
-    newtoken->detach();
-    wrapper.release();
+    if (wrapper.get()) {
+        newtoken->detach();
+        wrapper.release();  // detach blows away the Response
+    }
     ctx.getResolvedAssertions().push_back(newtoken);
 
     // Finally, extract and filter the result.
