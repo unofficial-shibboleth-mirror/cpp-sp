@@ -361,24 +361,25 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                     m_log.warn("IdP didn't respond to logout request");
                 ret = sendLogoutPage(application, httpRequest, httpResponse, "partial");
             }
-
-            // Check the status, looking for non-success or a partial logout code.
-            const StatusCode* sc = logoutResponse->getStatus() ? logoutResponse->getStatus()->getStatusCode() : NULL;
-            bool partial = (!sc || !XMLString::equals(sc->getValue(), StatusCode::SUCCESS));
-            if (!partial) {
-                // Success, but still need to check for partial.
-                partial = XMLString::equals(sc->getStatusCode()->getValue(), StatusCode::PARTIAL_LOGOUT);
-            }
-            delete logoutResponse;
-            if (partial)
-                ret = sendLogoutPage(application, httpRequest, httpResponse, "partial");
             else {
-                const char* returnloc = httpRequest.getParameter("return");
-                if (returnloc) {
-                    ret.second = httpResponse.sendRedirect(returnloc);
-                    ret.first = true;
+                // Check the status, looking for non-success or a partial logout code.
+                const StatusCode* sc = logoutResponse->getStatus() ? logoutResponse->getStatus()->getStatusCode() : NULL;
+                bool partial = (!sc || !XMLString::equals(sc->getValue(), StatusCode::SUCCESS));
+                if (!partial) {
+                    // Success, but still need to check for partial.
+                    partial = XMLString::equals(sc->getStatusCode()->getValue(), StatusCode::PARTIAL_LOGOUT);
                 }
-                ret = sendLogoutPage(application, httpRequest, httpResponse, "global");
+                delete logoutResponse;
+                if (partial)
+                    ret = sendLogoutPage(application, httpRequest, httpResponse, "partial");
+                else {
+                    const char* returnloc = httpRequest.getParameter("return");
+                    if (returnloc) {
+                        ret.second = httpResponse.sendRedirect(returnloc);
+                        ret.first = true;
+                    }
+                    ret = sendLogoutPage(application, httpRequest, httpResponse, "global");
+                }
             }
 
             if (session) {
@@ -386,6 +387,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                 session = NULL;
                 application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
             }
+
             return ret;
         }
 
