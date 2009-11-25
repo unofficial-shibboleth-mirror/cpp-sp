@@ -75,6 +75,37 @@ namespace shibsp {
         const char* getType() const {
             return "ArtifactResolutionService";
         }
+
+        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
+            // Initial guess at index to use.
+            pair<bool,unsigned int> ix = pair<bool,unsigned int>(false,0);
+            if (!strncmp(handlerURL, "https", 5))
+                ix = getUnsignedInt("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
+            if (!ix.first)
+                ix = getUnsignedInt("index");
+            if (!ix.first)
+                ix.second = 1;
+
+            // Find maximum index in use and go one higher.
+            const vector<ArtifactResolutionService*>& services = const_cast<const SPSSODescriptor&>(role).getArtifactResolutionServices();
+            for (vector<ArtifactResolutionService*>::const_iterator i = services.begin(); i != services.end(); ++i) {
+                if (ix.second <= (*i)->getIndex().second)
+                    ix.second = (*i)->getIndex().second + 1;
+            }
+
+            const char* loc = getString("Location").second;
+            string hurl(handlerURL);
+            if (*loc != '/')
+                hurl += '/';
+            hurl += loc;
+            auto_ptr_XMLCh widen(hurl.c_str());
+
+            ArtifactResolutionService* ep = ArtifactResolutionServiceBuilder::buildArtifactResolutionService();
+            ep->setLocation(widen.get());
+            ep->setBinding(getXMLString("Binding").second);
+            ep->setIndex(ix.second);
+            role.getArtifactResolutionServices().push_back(ep);
+        }
 #endif
 
     private:
