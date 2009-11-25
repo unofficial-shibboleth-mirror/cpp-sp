@@ -88,10 +88,8 @@ namespace shibsp {
 
             // Find maximum index in use and go one higher.
             const vector<ArtifactResolutionService*>& services = const_cast<const SPSSODescriptor&>(role).getArtifactResolutionServices();
-            for (vector<ArtifactResolutionService*>::const_iterator i = services.begin(); i != services.end(); ++i) {
-                if (ix.second <= (*i)->getIndex().second)
-                    ix.second = (*i)->getIndex().second + 1;
-            }
+            if (!services.empty() && ix.second <= services.back()->getIndex().second)
+                ix.second = services.back()->getIndex().second + 1;
 
             const char* loc = getString("Location").second;
             string hurl(handlerURL);
