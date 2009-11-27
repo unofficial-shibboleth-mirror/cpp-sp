@@ -365,7 +365,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                 // Check the status, looking for non-success or a partial logout code.
                 const StatusCode* sc = logoutResponse->getStatus() ? logoutResponse->getStatus()->getStatusCode() : NULL;
                 bool partial = (!sc || !XMLString::equals(sc->getValue(), StatusCode::SUCCESS));
-                if (!partial) {
+                if (!partial && sc->getStatusCode()) {
                     // Success, but still need to check for partial.
                     partial = XMLString::equals(sc->getStatusCode()->getValue(), StatusCode::PARTIAL_LOGOUT);
                 }
