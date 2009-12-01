@@ -77,6 +77,7 @@
 <listOptionValue builtIn="false" value="&quot;C:\log4shib-1.0.3\include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;C:\xerces-c-3.0.1-x86-windows-vc-9.0\include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;C:\xml-security-c-1.5.1\include&quot;"/>
+<listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio 9.0\VC\include&quot;"/>
 </option>
 <inputType id="org.eclipse.linuxtools.cdt.autotools.inputType.configure.1698708407" superClass="org.eclipse.linuxtools.cdt.autotools.inputType.configure"/>
 <inputType id="org.eclipse.linuxtools.cdt.autotools.inputType.configure1.2095849049" superClass="org.eclipse.linuxtools.cdt.autotools.inputType.configure1"/>
