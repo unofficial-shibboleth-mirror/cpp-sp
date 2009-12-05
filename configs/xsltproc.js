@@ -1,7 +1,7 @@
 var oArgs = WScript.Arguments;
 
 if (oArgs.length < 2) {
-    WScript.Echo("usage: cscript xslt.js xml xsl");
+    WScript.Echo("usage: cscript xsltproc.js xml xsl");
     WScript.Quit();
 }
 
