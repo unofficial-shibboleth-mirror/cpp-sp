@@ -223,8 +223,7 @@
        
             <xsl:for-each select="oldconf:Application">
                 <xsl:text>&#10;        </xsl:text>
-                <ApplicationOverride>
-                    <xsl:apply-templates select="@*"/>
+                <ApplicationOverride id="{@id}" entityID="{@providerId}" homeURL="{@homeURL}">
                     <xsl:apply-templates select="oldconf:Sessions"/>
                     <xsl:apply-templates select="oldconf:Errors"/>
                     <xsl:apply-templates select="oldconf:CredentialUse"/>
