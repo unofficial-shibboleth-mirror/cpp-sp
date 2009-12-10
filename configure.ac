@@ -98,7 +98,7 @@ if test "x$SSLFLAGS" = "x" ; then
         if pkg-config openssl ; then
             SSLFLAGS="`$PKG_CONFIG --cflags openssl`"
         else
-            AC_MSG_ERROR([OpenSSL not supported by pkg-config, try --with-openssl instead])
+            AC_MSG_WARN([OpenSSL not supported by pkg-config, try --with-openssl instead])
         fi
     fi
 fi
