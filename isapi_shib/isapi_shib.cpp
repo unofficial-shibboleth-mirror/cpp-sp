@@ -978,7 +978,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         // Match site instance to host name, skip if no match.
         map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
         if (map_i==g_Sites.end())
-            return WriteClientError(lpECB, "Shibboleth Extension not configured for web site (check <ISAPI> mappings in configuration).");
+            return WriteClientError(lpECB, "Shibboleth Extension not configured for web site (check ISAPI mappings in SP configuration).");
 
         ShibTargetIsapiE ste(lpECB, map_i->second);
         pair<bool,long> res = ste.getServiceProvider().doHandler(ste);
