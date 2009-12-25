@@ -22,7 +22,10 @@ dist-hook:
 	rm -rf `find $(distdir)/isapi_shib -name .svn`
 	rm -rf `find $(distdir)/doc/api -name .svn`
 
-GENFILES = shibboleth.spec pkginfo Portfile
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = @PACKAGE_NAME@.pc
+
+GENFILES = @PACKAGE_NAME@.spec pkginfo Portfile
 
 EXTRA_DIST = $(DX_CONFIG) \
     isapi_shib \

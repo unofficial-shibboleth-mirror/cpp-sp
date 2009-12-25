@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-pkgxmldir = $(datadir)/xml/@PACKAGE@
+pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@-@PACKAGE_VERSION@
 
 schemafiles = \
     shibboleth.xsd \

@@ -1,4 +1,4 @@
-Name:		@PACKAGE@
+Name:		@PACKAGE_NAME@
 Version:	@PACKAGE_VERSION@
 Release:	1
 Summary:    Open source system for attribute-based Web SSO
@@ -25,10 +25,9 @@ BuildRequires:  opensaml-devel >= 2.3
 %{?_with_log4cpp:BuildRequires: log4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: log4shib-devel}
 %endif
-BuildRequires:  gcc-c++
+BuildRequires:  gcc-c++, pkgconfig, zlib-devel
 %{!?_without_doxygen:BuildRequires: doxygen}
 %{!?_without_odbc:BuildRequires:unixODBC-devel}
-BuildRequires:  zlib-devel
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
 %if "%{_vendor}" == "redhat"
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
@@ -215,8 +214,8 @@ cd /
 %exclude %{_libdir}/%{name}/*.la
 %dir %{_localstatedir}/log/%{name}
 %dir %{_localstatedir}/run/%{name}
-%dir %{_datadir}/xml/%{name}
-%{_datadir}/xml/%{name}/*
+%dir %{_datadir}/xml/%{name}-%{version}
+%{_datadir}/xml/%{name}-%{version}/*
 %dir %{_sysconfdir}/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/*.xml
 %config(noreplace) %{_sysconfdir}/%{name}/*.html
@@ -244,6 +243,9 @@ cd /
 %doc %{pkgdocdir}/api
 
 %changelog
+* Fri Dec 25 2009  Scott Cantor  <cantor.2@osu.edu>  - 2.4-1
+- Bump version and version schema folder.
+
 * Mon Nov 23 2009 Scott Cantor  <cantor.2@osu.edu>  - 2.3.1-1
 - Reset revision for 2.3.1 release
 
