@@ -275,13 +275,13 @@ AC_TRY_LINK(
 LIBS="$save_LIBS"
 
 # Determine xmltooling version.
-XMLTOOLINGVER="1.4"
+XMLTOOLINGVER=""
 AC_ARG_WITH(xmltoolingver,
     AC_HELP_STRING([--with-xmltoolingver=VERSION], [xmltooling version, normally derived via pkg-config]),
-    [XMLTOOLINGVER="$with_xmltoolingver"],
+    [XMLTOOLINGVER="-$with_xmltoolingver"],
     [if test "x$PKG_CONFIG" != "x" && test "x$PKG_CONFIG" != "xno" ; then
         if pkg-config xmltooling ; then
-            XMLTOOLINGVER="`$PKG_CONFIG --modversion xmltooling`"
+            XMLTOOLINGVER="-`$PKG_CONFIG --modversion xmltooling`"
         fi
     fi])
 
@@ -290,17 +290,17 @@ XMLTOOLINGXMLDIR=""
 if test "x$with_xmltooling" = "x" ; then
    with_xmltooling="/usr"
 fi
-if test -f $with_xmltooling/share/xml/xmltooling-$XMLTOOLINGVER/catalog.xml ; then
+if test -f $with_xmltooling/share/xml/xmltooling$XMLTOOLINGVER/catalog.xml ; then
     XMLTOOLINGXMLDIR="$with_xmltooling"
-elif test -f $with_xerces/share/xml/xmltooling-$XMLTOOLINGVER/catalog.xml ; then
+elif test -f $with_xerces/share/xml/xmltooling$XMLTOOLINGVER/catalog.xml ; then
     XMLTOOLINGXMLDIR="$with_xerces"
-elif test -f $with_log4shib/share/xml/xmltooling-$XMLTOOLINGVER/catalog.xml ; then
+elif test -f $with_log4shib/share/xml/xmltooling$XMLTOOLINGVER/catalog.xml ; then
     XMLTOOLINGXMLDIR="$with_log4shib"
 fi
 if test "x$XMLTOOLINGXMLDIR" = "x" ; then
     AC_MSG_ERROR([xmltooling XML catalog not found, may need to use --with-xmltooling option])
 fi
-XMLTOOLINGXMLDIR="$XMLTOOLINGXMLDIR/share/xml/xmltooling-$XMLTOOLINGVER"
+XMLTOOLINGXMLDIR="$XMLTOOLINGXMLDIR/share/xml/xmltooling$XMLTOOLINGVER"
 AC_SUBST(XMLTOOLINGXMLDIR)
 
 # XML-Security settings
@@ -367,13 +367,13 @@ opensaml::SAMLConfig::getConfig();
 LIBS="$save_LIBS"
 
 # Determine opensaml version.
-OPENSAMLVER="2.4"
+OPENSAMLVER=""
 AC_ARG_WITH(samlver,
     AC_HELP_STRING([--with-samlver=VERSION], [opensaml version, normally derived via pkg-config]),
-    [OPENSAMLVER="$with_samlver"],
+    [OPENSAMLVER="-$with_samlver"],
     [if test "x$PKG_CONFIG" != "x" && test "x$PKG_CONFIG" != "xno" ; then
         if pkg-config opensaml ; then
-            OPENSAMLVER="`$PKG_CONFIG --modversion opensaml`"
+            OPENSAMLVER="-`$PKG_CONFIG --modversion opensaml`"
         fi
     fi])
 
@@ -382,19 +382,19 @@ OPENSAMLXMLDIR=""
 if test "x$with_saml" = "x" ; then
     with_saml="/usr"
 fi
-if test -f $with_saml/share/xml/opensaml-$OPENSAMLVER/saml20-catalog.xml ; then
+if test -f $with_saml/share/xml/opensaml$OPENSAMLVER/saml20-catalog.xml ; then
     OPENSAMLXMLDIR="$with_saml"
-elif test -f $with_xmltooling/share/xml/opensaml-$OPENSAMLVER/saml20-catalog.xml ; then
+elif test -f $with_xmltooling/share/xml/opensaml$OPENSAMLVER/saml20-catalog.xml ; then
     OPENSAMLXMLDIR="$with_xmltooling"
-elif test -f $with_xerces/share/xml/opensaml-$OPENSAMLVER/saml20-catalog.xml ; then
+elif test -f $with_xerces/share/xml/opensaml$OPENSAMLVER/saml20-catalog.xml ; then
     OPENSAMLXMLDIR="$with_xerces"
-elif test -f $with_log4shib/share/xml/opensaml-$OPENSAMLVER/saml20-catalog.xml ; then
+elif test -f $with_log4shib/share/xml/opensaml$OPENSAMLVER/saml20-catalog.xml ; then
     OPENSAMLXMLDIR="$with_log4shib"
 fi
 if test "x$OPENSAMLXMLDIR" = "x" ; then
     AC_MSG_ERROR([opensaml XML catalogs not found, may need to use --with-saml option])
 fi
-OPENSAMLXMLDIR="$OPENSAMLXMLDIR/share/xml/opensaml-$OPENSAMLVER"
+OPENSAMLXMLDIR="$OPENSAMLXMLDIR/share/xml/opensaml$OPENSAMLVER"
 AC_SUBST(OPENSAMLXMLDIR)
 
 AC_SUBST(LITE_LIBS)
