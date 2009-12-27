@@ -198,11 +198,11 @@ fi
 
 # Xerces settings
 AC_ARG_WITH(xerces, 
-            AC_HELP_STRING([--with-xerces=PATH], [where xerces-c is installed]),
-            [if test x_$with_xerces != x_/usr; then
-                LDFLAGS="-L${with_xerces}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_xerces}/include $CPPFLAGS"
-            fi])
+    AC_HELP_STRING([--with-xerces=PATH], [where xerces-c is installed]),
+    [if test x_$with_xerces != x_/usr; then
+        LDFLAGS="-L${with_xerces}/lib $LDFLAGS"
+        CPPFLAGS="-I${with_xerces}/include $CPPFLAGS"
+    fi])
 LIBS="-lxerces-c $LIBS"
 AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,
                 AC_MSG_ERROR([unable to find xerces header files]))
@@ -217,10 +217,10 @@ int i = 0;
     [AC_MSG_RESULT(OK)],
     [AC_MSG_FAILURE([Xerces-C v2.6.0 has bugs that inhibit use with signed XML, please use a newer version])])
 AC_TRY_LINK(
-        [#include <xercesc/util/PlatformUtils.hpp>],
-        [xercesc::XMLPlatformUtils::Initialize()],
-        [AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
-        [AC_MSG_ERROR([unable to link with Xerces])])
+    [#include <xercesc/util/PlatformUtils.hpp>],
+    [xercesc::XMLPlatformUtils::Initialize()],
+    [AC_DEFINE(HAVE_LIBXERCESC,1,[Define if Xerces-C library was found])],
+    [AC_MSG_ERROR([unable to link with Xerces])])
 
 AC_MSG_CHECKING([whether Xerces XMLString::release(XMLByte**) exists])
 AC_TRY_COMPILE([#include <xercesc/util/XMLString.hpp>],
@@ -249,12 +249,12 @@ AC_TRY_COMPILE([#include <xercesc/dom/DOM.hpp>],
 
 #XML-Tooling settings
 AC_ARG_WITH(xmltooling,
-            AC_HELP_STRING([--with-xmltooling=PATH], [where xmltooling-c is installed]),
-            [if test x_$with_xmltooling != x_/usr; then
-                LDFLAGS="-L${with_xmltooling}/lib $LDFLAGS"
-                CPPFLAGS="-I${with_xmltooling}/include $CPPFLAGS"
-                export PKG_CONFIG_PATH="${with_xmltooling}/lib/pkgconfig"
-            fi])
+    AC_HELP_STRING([--with-xmltooling=PATH], [where xmltooling-c is installed]),
+    [if test x_$with_xmltooling != x_/usr; then
+        LDFLAGS="-L${with_xmltooling}/lib $LDFLAGS"
+        CPPFLAGS="-I${with_xmltooling}/include $CPPFLAGS"
+        export PKG_CONFIG_PATH="${with_xmltooling}/lib/pkgconfig"
+    fi])
 LITE_LIBS="-lxmltooling-lite"
 XMLSEC_LIBS="-lxmltooling"
 AC_CHECK_HEADER([xmltooling/base.h],,
@@ -284,6 +284,9 @@ AC_ARG_WITH(xmltoolingver,
             XMLTOOLINGVER="-`$PKG_CONFIG --modversion xmltooling`"
         fi
     fi])
+if test "x$XMLTOOLINGVER" = "x" ; then
+    AC_MSG_WARN([pkgconfig not usable, assuming unversioned xmltooling schemas, may need --with-xmltoolingver])
+fi
 
 # Establish location of xmltooling catalog.
 XMLTOOLINGXMLDIR=""
@@ -298,15 +301,15 @@ elif test -f $with_log4shib/share/xml/xmltooling$XMLTOOLINGVER/catalog.xml ; the
     XMLTOOLINGXMLDIR="$with_log4shib"
 fi
 if test "x$XMLTOOLINGXMLDIR" = "x" ; then
-    AC_MSG_ERROR([xmltooling XML catalog not found, may need to use --with-xmltooling option])
+    AC_MSG_ERROR([xmltooling XML catalog not found, may need to use --with-xmltooling or --with-xmltoolingver options])
 fi
 XMLTOOLINGXMLDIR="$XMLTOOLINGXMLDIR/share/xml/xmltooling$XMLTOOLINGVER"
 AC_SUBST(XMLTOOLINGXMLDIR)
 
 # XML-Security settings
 AC_ARG_WITH(xmlsec,
-            AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),,
-            [with_xmlsec=/usr])
+    AC_HELP_STRING([--with-xmlsec=PATH], [where xmlsec is installed]),,
+    [with_xmlsec=/usr])
 
 if test x_$with_xmlsec != x_/usr; then
     LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
@@ -330,9 +333,9 @@ int i = 0;
     [AC_MSG_RESULT(OK)],
     [AC_MSG_FAILURE([XML-Security version 1.4.0 or greater is required.])])
 AC_TRY_LINK(
-        [#include <xsec/utils/XSECPlatformUtils.hpp>],
-        [XSECPlatformUtils::Initialise()],,
-        [AC_MSG_ERROR([unable to link with XML-Security])])
+    [#include <xsec/utils/XSECPlatformUtils.hpp>],
+    [XSECPlatformUtils::Initialise()],,
+    [AC_MSG_ERROR([unable to link with XML-Security])])
 
 # restore master libs
 LIBS="$save_LIBS"
@@ -376,6 +379,9 @@ AC_ARG_WITH(samlver,
             OPENSAMLVER="-`$PKG_CONFIG --modversion opensaml`"
         fi
     fi])
+if test "x$OPENSAMLVER" = "x" ; then
+    AC_MSG_WARN([pkgconfig not usable, assuming unversioned opensaml schemas, may need --with-samlver])
+fi
 
 # Establish location of opensaml catalogs.
 OPENSAMLXMLDIR=""
@@ -392,7 +398,7 @@ elif test -f $with_log4shib/share/xml/opensaml$OPENSAMLVER/saml20-catalog.xml ; 
     OPENSAMLXMLDIR="$with_log4shib"
 fi
 if test "x$OPENSAMLXMLDIR" = "x" ; then
-    AC_MSG_ERROR([opensaml XML catalogs not found, may need to use --with-saml option])
+    AC_MSG_ERROR([opensaml XML catalogs not found, may need to use --with-saml or --with-samlver options])
 fi
 OPENSAMLXMLDIR="$OPENSAMLXMLDIR/share/xml/opensaml$OPENSAMLVER"
 AC_SUBST(OPENSAMLXMLDIR)
