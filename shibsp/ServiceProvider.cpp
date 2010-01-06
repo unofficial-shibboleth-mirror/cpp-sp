@@ -57,6 +57,7 @@ namespace shibsp {
     {
         // The properties we need can be set in the RequestMap, or the Errors element.
         bool mderror = dynamic_cast<const opensaml::saml2md::MetadataException*>(tp.getRichException())!=NULL;
+        bool accesserror = (strcmp(page, "access")==0);
         pair<bool,const char*> redirectErrors = pair<bool,const char*>(false,NULL);
         pair<bool,const char*> pathname = pair<bool,const char*>(false,NULL);
 
@@ -66,6 +67,7 @@ namespace shibsp {
 
         const PropertySet* props=app->getPropertySet("Errors");
 
+        // First look for settings in the request map of the form pageError.
         try {
             RequestMapper::Settings settings = request.getRequestSettings();
             if (mderror)
@@ -82,8 +84,8 @@ namespace shibsp {
             log.error(ex.what());
         }
 
+        // Check for redirection on errors instead of template.
         if (mayRedirect) {
-            // Check for redirection on errors instead of template.
             if (!redirectErrors.first && props)
                 redirectErrors = props->getString("redirectErrors");
             if (redirectErrors.first) {
@@ -97,6 +99,7 @@ namespace shibsp {
         request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
         request.setResponseHeader("Cache-Control","private,no-store,no-cache");
 
+        // Nothing in the request map, so check for a property named "page" in the Errors property set.
         if (!pathname.first && props) {
             if (mderror)
                 pathname=props->getString("metadata");
@@ -104,24 +107,31 @@ namespace shibsp {
                 pathname=props->getString(page);
         }
 
+        // If there's still no template to use, just use pageError.html unless it's an access issue.
         string fname;
         if (!pathname.first) {
-            fname = string(page) + "Error.html";
-            pathname.second = fname.c_str();
+            if (!accesserror) {
+                fname = string(page) + "Error.html";
+                pathname.second = fname.c_str();
+            }
         }
         else {
             fname = pathname.second;
         }
 
-        ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
-        if (infile) {
-            tp.setPropertySet(props);
-            stringstream str;
-            XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
-            return request.sendError(str);
+        // If we have a template to use, use it.
+        if (!fname.empty()) {
+            ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
+            if (infile) {
+                tp.setPropertySet(props);
+                stringstream str;
+                XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
+                return request.sendError(str);
+            }
         }
 
-        if (!strcmp(page, "access")) {
+        // If we got here, then either it's an access error or a template failed.
+        if (accesserror) {
             istringstream msg("Access Denied");
             return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN);
         }
