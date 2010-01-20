@@ -66,6 +66,7 @@ namespace shibsp {
             : m_app(application),
               m_session(&session),
               m_nameid(NULL),
+              m_entityid(NULL),
               m_class(XMLString::transcode(session.getAuthnContextClassRef())),
               m_decl(XMLString::transcode(session.getAuthnContextDeclRef())),
               m_inputTokens(NULL),
@@ -75,6 +76,7 @@ namespace shibsp {
         SimpleAggregationContext(
             const Application& application,
             const NameID* nameid=NULL,
+            const XMLCh* entityID=NULL,
             const XMLCh* authncontext_class=NULL,
             const XMLCh* authncontext_decl=NULL,
             const vector<const opensaml::Assertion*>* tokens=NULL,
@@ -82,6 +84,7 @@ namespace shibsp {
             ) : m_app(application),
                 m_session(NULL),
                 m_nameid(nameid),
+                m_entityid(entityID ? XMLString::transcode(entityID) : NULL),
                 m_class(const_cast<XMLCh*>(authncontext_class)),
                 m_decl(const_cast<XMLCh*>(authncontext_decl)),
                 m_inputTokens(tokens),
@@ -95,10 +98,14 @@ namespace shibsp {
                 XMLString::release(&m_class);
                 XMLString::release(&m_decl);
             }
+            XMLString::release(&m_entityid);
         }
 
         const Application& getApplication() const {
             return m_app;
+        }
+        const char* getEntityID() const {
+            return m_session ? m_session->getEntityID() : m_entityid;
         }
         const NameID* getNameID() const {
             return m_session ? m_session->getNameID() : m_nameid;
@@ -129,6 +136,7 @@ namespace shibsp {
         const Application& m_app;
         const Session* m_session;
         const NameID* m_nameid;
+        char* m_entityid;
         XMLCh* m_class;
         XMLCh* m_decl;
         const vector<const opensaml::Assertion*>* m_inputTokens;
@@ -160,7 +168,9 @@ namespace shibsp {
             const vector<const opensaml::Assertion*>* tokens=NULL,
             const vector<shibsp::Attribute*>* attributes=NULL
             ) const {
-            return new SimpleAggregationContext(application,nameid,authncontext_class,authncontext_decl,tokens,attributes);
+            return new SimpleAggregationContext(
+                application, nameid, (issuer ? issuer->getEntityID() : NULL), authncontext_class, authncontext_decl, tokens, attributes
+                );
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
@@ -639,6 +649,10 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
     auto_ptr<NameID> wrapper(n);
 
     set<string> history;
+
+    // Put initial IdP into history to prevent extra query.
+    if (qctx.getEntityID())
+        history.insert(qctx.getEntityID());
 
     // We have a master loop over all the possible sources of material.
     for (vector< pair<string,bool> >::const_iterator source = m_sources.begin(); source != m_sources.end(); ++source) {
