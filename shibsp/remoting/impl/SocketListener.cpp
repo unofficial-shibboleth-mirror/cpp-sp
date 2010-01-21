@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * SocketListener.cpp
  *
- * Berkeley Socket-based ListenerService implementation
+ * Berkeley Socket-based ListenerService implementation.
  */
 
 #include "internal.h"
@@ -160,7 +160,7 @@ void SocketPool::put(SocketListener::ShibSocket s)
 
 SocketListener::SocketListener(const DOMElement* e)
     : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")), m_socketpool(NULL),
-        m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_socket((ShibSocket)0)
+        m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_stackSize(0), m_socket((ShibSocket)0)
 {
     // Are we a client?
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
@@ -170,6 +170,11 @@ SocketListener::SocketListener(const DOMElement* e)
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         m_child_lock = Mutex::create();
         m_child_wait = CondWait::create();
+
+        static const XMLCh stackSize[] = UNICODE_LITERAL_9(s,t,a,c,k,S,i,z,e);
+        const XMLCh* attr = e ? e->getAttributeNS(NULL, stackSize) : NULL;
+        if (attr && *attr)
+            m_stackSize = XMLString::parseInt(attr);
     }
 }
 
@@ -426,7 +431,7 @@ ServerThread::ServerThread(SocketListener::ShibSocket& s, SocketListener* listen
     m_id = buf.str();
 
     // Create the child thread
-    m_child = Thread::create(server_thread_fn, (void*)this);
+    m_child = Thread::create(server_thread_fn, (void*)this, m_listener->m_stackSize);
     m_child->detach();
 }
 

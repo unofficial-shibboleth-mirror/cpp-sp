@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * SocketListener.h
  *
- * Berkeley Socket-based ListenerService implementation
+ * Berkeley Socket-based ListenerService implementation.
  */
 
 #ifndef __shibsp_socklisten_h__
@@ -87,6 +87,8 @@ namespace shibsp {
         std::map<ShibSocket,xmltooling::Thread*> m_children;
         xmltooling::Mutex* m_child_lock;
         xmltooling::CondWait* m_child_wait;
+
+        unsigned int m_stackSize;
 
         // Primary socket
         ShibSocket m_socket;

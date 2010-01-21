@@ -51,6 +51,7 @@
 <listOptionValue builtIn="false" value="SHIBSP_API"/>
 <listOptionValue builtIn="false" value="SHIBSP_DLLLOCAL"/>
 <listOptionValue builtIn="false" value="SHIBSP_LOGCAT=&quot;Shibboleth&quot;"/>
+<listOptionValue builtIn="false" value="WIN32"/>
 </option>
 <option id="org.eclipse.linuxtools.cdt.autotools.option.configure.includes.1925509387" name="includes" superClass="org.eclipse.linuxtools.cdt.autotools.option.configure.includes" valueType="includePath">
 <listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-sp/cpp-xmltooling}&quot;"/>
