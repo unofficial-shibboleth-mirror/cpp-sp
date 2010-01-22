@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/security/Credential.h>
 # include <xmltooling/security/CredentialCriteria.h>
+# include <xmltooling/security/SecurityHelper.h>
 # include <xmltooling/signature/Signature.h>
 # include <xmltooling/util/ParserPool.h>
 # include <xmltooling/util/PathResolver.h>
@@ -96,6 +97,7 @@ namespace shibsp {
 
         set<string> m_acl;
 #ifndef SHIBSP_LITE
+        string m_salt;
         short m_http,m_https;
         vector<string> m_bases;
 #endif
@@ -138,6 +140,10 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
 
 #ifndef SHIBSP_LITE
     static XMLCh EndpointBase[] = UNICODE_LITERAL_12(E,n,d,p,o,i,n,t,B,a,s,e);
+
+    pair<bool,const char*> salt = getString("salt");
+    if (salt.first)
+        m_salt = salt.second;
 
     pair<bool,bool> flag = getBool("http");
     if (flag.first)
@@ -261,8 +267,12 @@ pair<bool,long> MetadataGenerator::processMessage(
         entity = EntityDescriptorBuilder::buildEntityDescriptor();
     }
 
-    if (!entity->getID())
-        entity->setID(SAMLConfig::getConfig().generateIdentifier());
+    if (!entity->getID()) {
+        string hashinput = m_salt + relyingParty->getString("entityID").second;
+        string hashed = '_' + SecurityHelper::doHash("SHA1", hashinput.c_str(), hashinput.length());
+        auto_ptr_XMLCh widenit(hashed.c_str());
+        entity->setID(widenit.get());
+    }
 
     auto_ptr<EntityDescriptor> wrapper(entity);
     pair<bool,unsigned int> cache = getUnsignedInt("cacheDuration");
