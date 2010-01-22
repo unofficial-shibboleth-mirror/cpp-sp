@@ -174,7 +174,7 @@ SocketListener::SocketListener(const DOMElement* e)
         static const XMLCh stackSize[] = UNICODE_LITERAL_9(s,t,a,c,k,S,i,z,e);
         const XMLCh* attr = e ? e->getAttributeNS(NULL, stackSize) : NULL;
         if (attr && *attr)
-            m_stackSize = XMLString::parseInt(attr);
+            m_stackSize = XMLString::parseInt(attr) * 1024;
     }
 }
 
