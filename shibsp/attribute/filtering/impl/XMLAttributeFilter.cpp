@@ -312,7 +312,10 @@ pair< string,pair<const MatchFunctor*,const MatchFunctor*> > XMLFilterImpl::buil
         }
     }
 
-    m_log.warn("skipping AttributeRule (%s), permit and denial rule(s) invalid or missing", id);
+    if (*id)
+        m_log.warn("skipping AttributeRule (%s), permit and denial rule(s) invalid or missing", id);
+    else
+        m_log.warn("skipping AttributeRule, permit and denial rule(s) invalid or missing");
     return pair< string,pair<const MatchFunctor*,const MatchFunctor*> >(string(),pair<const MatchFunctor*,const MatchFunctor*>(NULL,NULL));
 }
 
