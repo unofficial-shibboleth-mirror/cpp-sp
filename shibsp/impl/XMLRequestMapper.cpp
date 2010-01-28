@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -651,8 +651,15 @@ pair<bool,DOMElement*> XMLRequestMapper::load()
 
 RequestMapper::Settings XMLRequestMapper::getSettings(const HTTPRequest& request) const
 {
-    ostringstream vhost;
-    vhost << request.getScheme() << "://" << request.getHostname() << ':' << request.getPort();
-    const Override* o=m_impl->findOverride(vhost.str().c_str(), request);
-    return Settings(o,o->getAC());
+    try {
+        ostringstream vhost;
+        vhost << request.getScheme() << "://" << request.getHostname() << ':' << request.getPort();
+        const Override* o=m_impl->findOverride(vhost.str().c_str(), request);
+        return Settings(o,o->getAC());
+    }
+    catch (XMLException& ex) {
+        auto_ptr_char tmp(ex.getMessage());
+        m_log.error("caught exception while locating content settings: %s", tmp.get());
+        throw ConfigurationException("XML-based RequestMapper failed to retrieve content settings.");
+    }
 }
