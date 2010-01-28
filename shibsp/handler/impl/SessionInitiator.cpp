@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "SPRequest.h"
 #include "handler/SessionInitiator.h"
 
@@ -71,25 +72,101 @@ const char* SessionInitiator::getType() const
 }
 #endif
 
+const set<string>& SessionInitiator::getSupportedOptions() const
+{
+    return m_supportedOptions;
+}
+
+bool SessionInitiator::checkCompatibility(SPRequest& request, bool isHandler) const
+{
+    bool isPassive = false;
+    if (isHandler) {
+        const char* flag = request.getParameter("isPassive");
+        if (flag) {
+            isPassive = (*flag=='1' || *flag=='t');
+        }
+        else {
+            pair<bool,bool> flagprop = getBool("isPassive");
+            isPassive = (flagprop.first && flagprop.second);
+        }
+    }
+    else {
+        // It doesn't really make sense to use isPassive with automated sessions, but...
+        pair<bool,bool> flagprop = request.getRequestSettings().first->getBool("isPassive");
+        if (!flagprop.first)
+            flagprop = getBool("isPassive");
+        isPassive = (flagprop.first && flagprop.second);
+    }
+
+    // Check for support of isPassive if it's used.
+    if (isPassive && getSupportedOptions().count("isPassive") == 0) {
+        if (getParent()) {
+            log(SPRequest::SPInfo, "handler does not support isPassive option");
+            return false;
+        }
+        throw ConfigurationException("Unsupported option (isPassive) supplied to SessionInitiator.");
+    }
+
+    return true;
+}
+
 pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 {
-    const char* entityID=NULL;
+    const char* entityID = NULL;
     pair<bool,const char*> param = getString("entityIDParam");
-
     if (isHandler) {
-        entityID=request.getParameter(param.first ? param.second : "entityID");
+        entityID = request.getParameter(param.first ? param.second : "entityID");
         if (!param.first && (!entityID || !*entityID))
             entityID=request.getParameter("providerId");
     }
     if (!entityID || !*entityID) {
-        RequestMapper::Settings settings = request.getRequestSettings();
-        param = settings.first->getString("entityID");
+        param = request.getRequestSettings().first->getString("entityID");
         if (param.first)
             entityID = param.second;
     }
     if (!entityID || !*entityID)
-        entityID=getString("entityID").second;
+        entityID = getString("entityID").second;
 
     string copy(entityID ? entityID : "");
-    return run(request, copy, isHandler);
+
+    try {
+        return run(request, copy, isHandler);
+    }
+    catch (exception& ex) {
+        // If it's a handler operation, and isPassive is used or returnOnError is set, we trap the error.
+        if (isHandler) {
+            bool returnOnError = false;
+            const char* flag = request.getParameter("isPassive");
+            if (flag && (*flag == 't' || *flag == '1')) {
+                returnOnError = true;
+            }
+            else {
+                pair<bool,bool> flagprop = getBool("isPassive");
+                if (flagprop.first && flagprop.second) {
+                    returnOnError = true;
+                }
+                else {
+                    flag = request.getParameter("returnOnError");
+                    if (flag) {
+                        returnOnError = (*flag=='1' || *flag=='t');
+                    }
+                    else {
+                        flagprop = getBool("returnOnError");
+                        returnOnError = (flagprop.first && flagprop.second);
+                    }
+                }
+            }
+
+            if (returnOnError) {
+                // Log it and attempt to recover relay state so we can get back.
+                log(SPRequest::SPError, ex.what());
+                log(SPRequest::SPInfo, "trapping SessionInitiator error condition and returning to target location");
+                const char* flag = request.getParameter("target");
+                string target(flag ? flag : "");
+                recoverRelayState(request.getApplication(), request, request, target, false);
+                return make_pair(true, request.sendRedirect(target.c_str()));
+            }
+        }
+        throw;
+    }
 }

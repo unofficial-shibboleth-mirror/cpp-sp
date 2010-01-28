@@ -23,6 +23,7 @@
 #ifndef __shibsp_handler_h__
 #define __shibsp_handler_h__
 
+#include <shibsp/SPRequest.h>
 #include <shibsp/util/PropertySet.h>
 
 #ifndef SHIBSP_LITE
@@ -33,9 +34,12 @@ namespace opensaml {
 };
 #endif
 
-namespace shibsp {
+namespace xmltooling {
+    class XMLTOOL_API HTTPRequest;
+    class XMLTOOL_API HTTPResponse;
+};
 
-    class SHIBSP_API SPRequest;
+namespace shibsp {
 
     /**
      * Pluggable runtime functionality that implement protocols and services
@@ -45,6 +49,51 @@ namespace shibsp {
         MAKE_NONCOPYABLE(Handler);
     protected:
         Handler();
+
+        /**
+         * Log using handler's specific logging object.
+         *
+         * @param level logging level
+         * @param msg   message to log
+         */
+        virtual void log(SPRequest::SPLogLevel level, const std::string& msg) const;
+
+        /**
+         * Implements various mechanisms to preserve RelayState,
+         * such as cookies or StorageService-backed keys.
+         *
+         * <p>If a supported mechanism can be identified, the input parameter will be
+         * replaced with a suitable state key.
+         *
+         * @param application   the associated Application
+         * @param response      outgoing HTTP response
+         * @param relayState    RelayState token to supply with message
+         */
+        virtual void preserveRelayState(
+            const Application& application, xmltooling::HTTPResponse& response, std::string& relayState
+            ) const;
+
+        /**
+         * Implements various mechanisms to recover RelayState,
+         * such as cookies or StorageService-backed keys.
+         *
+         * <p>If a supported mechanism can be identified, the input parameter will be
+         * replaced with the recovered state information.
+         *
+         * @param application   the associated Application
+         * @param request       incoming HTTP request
+         * @param response      outgoing HTTP response
+         * @param relayState    RelayState token supplied with message
+         * @param clear         true iff the token state should be cleared
+         */
+        virtual void recoverRelayState(
+            const Application& application,
+            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPResponse& response,
+            std::string& relayState,
+            bool clear=true
+            ) const;
+
     public:
         virtual ~Handler();
 

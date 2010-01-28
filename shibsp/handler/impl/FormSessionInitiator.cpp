@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include "internal.h"
 #include "Application.h"
 #include "exceptions.h"
-#include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/SessionInitiator.h"
 #include "util/TemplateParameters.h"
@@ -74,6 +73,9 @@ namespace shibsp {
 
 pair<bool,long> FormSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
+    if (!checkCompatibility(request, isHandler))
+        return make_pair(false,0L);
+
     string target;
     const char* option;
     const Application& app=request.getApplication();

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
 {
     // The IdP CANNOT be specified for us to run. Otherwise, we'd be redirecting to a WAYF
     // anytime the IdP's metadata was wrong.
-    if (!entityID.empty())
+    if (!entityID.empty() || !checkCompatibility(request, isHandler))
         return make_pair(false,0L);
 
     string target;

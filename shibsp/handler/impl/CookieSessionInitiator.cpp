@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include "internal.h"
 #include "Application.h"
 #include "exceptions.h"
-#include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/SessionInitiator.h"
 
@@ -52,7 +51,9 @@ namespace shibsp {
     {
     public:
         CookieSessionInitiator(const DOMElement* e, const char* appId)
-            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.Cookie")), m_followMultiple(getBool("followMultiple").second) {
+            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.Cookie")),
+              m_followMultiple(getBool("followMultiple").second) {
+            m_supportedOptions.insert("isPassive");
         }
         virtual ~CookieSessionInitiator() {}
         
@@ -76,7 +77,7 @@ namespace shibsp {
 pair<bool,long> CookieSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
     // The IdP CANNOT be specified for us to run.
-    if (!entityID.empty())
+    if (!entityID.empty() || !checkCompatibility(request, isHandler))
         return make_pair(false,0L);
 
     // If there's no entityID yet, we can check for cookie processing.

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
-#include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SessionInitiator.h"
@@ -204,6 +203,8 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
         string address = m_appId + loc.second + "::run::SAML2SI";
         setAddress(address.c_str());
     }
+
+    m_supportedOptions.insert("isPassive");
 }
 
 void SAML2SessionInitiator::setParent(const PropertySet* parent)
@@ -230,7 +231,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     }
 
     // We have to know the IdP to function unless this is ECP.
-    if (!ECP && (entityID.empty()))
+    if ((!ECP && entityID.empty()) || !checkCompatibility(request, isHandler))
         return make_pair(false,0L);
 
     string target;

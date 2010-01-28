@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,9 @@
 
 #include <shibsp/handler/Handler.h>
 
+#include <set>
+#include <string>
+
 namespace shibsp {
 
     /**
@@ -40,10 +43,32 @@ namespace shibsp {
         /** Property remapper for configuration compatibility. */
         static std::map<std::string,std::string> m_remapper;
 
+        /** Set of optional settings supported by handler. */
+        std::set<std::string> m_supportedOptions;
+
         SessionInitiator();
+
+        /**
+         * Examines the request and applicable settings to determine whether
+         * the handler is able to support the request.
+         * <p>If the handler is within a chain, the method will return false,
+         * otherwise an exception will be raised.
+         *
+         * @param request   SP request context
+         * @param isHandler true iff executing in the context of a direct handler invocation
+         * @return  true iff the request appears to be compatible
+         */
+        bool checkCompatibility(SPRequest& request, bool isHandler) const;
 
     public:
         virtual ~SessionInitiator();
+
+        /**
+         * Indicates the set of optional settings supported by the handler.
+         *
+         * @return  an array of the optional settings supported
+         */
+        virtual const std::set<std::string>& getSupportedOptions() const;
 
         /**
          * Executes an incoming request.

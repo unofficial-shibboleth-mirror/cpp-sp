@@ -139,6 +139,184 @@ Handler::~Handler()
 {
 }
 
+void Handler::log(SPRequest::SPLogLevel level, const string& msg) const
+{
+    Category::getInstance(SHIBSP_LOGCAT".Handler").log(
+        (level == SPRequest::SPDebug ? Priority::DEBUG :
+        (level == SPRequest::SPInfo ? Priority::INFO :
+        (level == SPRequest::SPWarn ? Priority::WARN :
+        (level == SPRequest::SPError ? Priority::ERROR : Priority::CRIT)))),
+        msg
+        );
+}
+
+void Handler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
+{
+    if (relayState.empty())
+        return;
+
+    // No setting means just pass it by value.
+    pair<bool,const char*> mech=getString("relayState");
+    if (!mech.first || !mech.second || !*mech.second)
+        return;
+
+    if (!strcmp(mech.second, "cookie")) {
+        // Here we store the state in a cookie and send a fixed
+        // value so we can recognize it on the way back.
+        if (relayState.find("cookie:") != 0) {
+            const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
+            pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibstate_");
+            string stateval = urlenc->encode(relayState.c_str()) + shib_cookie.second;
+            // Generate a random key for the cookie name instead of the fixed name.
+            string rsKey;
+            generateRandomHex(rsKey,5);
+            shib_cookie.first = "_shibstate_" + rsKey;
+            response.setCookie(shib_cookie.first.c_str(),stateval.c_str());
+            relayState = "cookie:" + rsKey;
+        }
+    }
+    else if (strstr(mech.second,"ss:")==mech.second) {
+        if (relayState.find("ss:") != 0) {
+            mech.second+=3;
+            if (*mech.second) {
+                if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+#ifndef SHIBSP_LITE
+                    StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
+                    if (storage) {
+                        string rsKey;
+                        generateRandomHex(rsKey,5);
+                        if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(NULL) + 600))
+                            throw IOException("Attempted to insert duplicate storage key.");
+                        relayState = string(mech.second-3) + ':' + rsKey;
+                    }
+                    else {
+                        string msg("Storage-backed RelayState with invalid StorageService ID (");
+                        msg = msg + mech.second+ ')';
+                        log(SPRequest::SPError, msg);
+                        relayState.erase();
+                    }
+#endif
+                }
+                else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+                    DDF out,in = DDF("set::RelayState").structure();
+                    in.addmember("id").string(mech.second);
+                    in.addmember("value").unsafe_string(relayState.c_str());
+                    DDFJanitor jin(in),jout(out);
+                    out = application.getServiceProvider().getListenerService()->send(in);
+                    if (!out.isstring())
+                        throw IOException("StorageService-backed RelayState mechanism did not return a state key.");
+                    relayState = string(mech.second-3) + ':' + out.string();
+                }
+            }
+        }
+    }
+    else
+        throw ConfigurationException("Unsupported relayState mechanism ($1).", params(1,mech.second));
+}
+
+void Handler::recoverRelayState(
+    const Application& application, const HTTPRequest& request, HTTPResponse& response, string& relayState, bool clear
+    ) const
+{
+    SPConfig& conf = SPConfig::getConfig();
+
+    // Look for StorageService-backed state of the form "ss:SSID:key".
+    const char* state = relayState.c_str();
+    if (strstr(state,"ss:")==state) {
+        state += 3;
+        const char* key = strchr(state,':');
+        if (key) {
+            string ssid = relayState.substr(3, key - state);
+            key++;
+            if (!ssid.empty() && *key) {
+                if (conf.isEnabled(SPConfig::OutOfProcess)) {
+#ifndef SHIBSP_LITE
+                    StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
+                    if (storage) {
+                        ssid = key;
+                        if (storage->readString("RelayState",ssid.c_str(),&relayState)>0) {
+                            if (clear)
+                                storage->deleteString("RelayState",ssid.c_str());
+                            return;
+                        }
+                        else
+                            relayState.erase();
+                    }
+                    else {
+                        string msg("Storage-backed RelayState with invalid StorageService ID (");
+                        msg += ssid + ')';
+                        log(SPRequest::SPError, msg);
+                        relayState.erase();
+                    }
+#endif
+                }
+                else if (conf.isEnabled(SPConfig::InProcess)) {
+                    DDF out,in = DDF("get::RelayState").structure();
+                    in.addmember("id").string(ssid.c_str());
+                    in.addmember("key").string(key);
+                    in.addmember("clear").integer(clear ? 1 : 0);
+                    DDFJanitor jin(in),jout(out);
+                    out = application.getServiceProvider().getListenerService()->send(in);
+                    if (!out.isstring()) {
+                        log(SPRequest::SPError, "StorageService-backed RelayState mechanism did not return a state value.");
+                        relayState.erase();
+                    }
+                    else {
+                        relayState = out.string();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    // Look for cookie-backed state of the form "cookie:key".
+    if (strstr(state,"cookie:")==state) {
+        state += 7;
+        if (*state) {
+            // Pull the value from the "relay state" cookie.
+            pair<string,const char*> relay_cookie = application.getCookieNameProps("_shibstate_");
+            relay_cookie.first = string("_shibstate_") + state;
+            state = request.getCookie(relay_cookie.first.c_str());
+            if (state && *state) {
+                // URL-decode the value.
+                char* rscopy=strdup(state);
+                XMLToolingConfig::getConfig().getURLEncoder()->decode(rscopy);
+                relayState = rscopy;
+                free(rscopy);
+
+                if (clear) {
+                    string exp(relay_cookie.second);
+                    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
+                    response.setCookie(relay_cookie.first.c_str(), exp.c_str());
+                }
+                return;
+            }
+        }
+
+        relayState.erase();
+    }
+
+    // Check for "default" value (or the old "cookie" value that might come from stale bookmarks).
+    if (relayState.empty() || relayState == "default" || relayState == "cookie") {
+        pair<bool,const char*> homeURL=application.getString("homeURL");
+        if (homeURL.first)
+            relayState=homeURL.second;
+        else {
+            // Compute a URL to the root of the site.
+            int port = request.getPort();
+            const char* scheme = request.getScheme();
+            relayState = string(scheme) + "://" + request.getHostname();
+            if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
+                ostringstream portstr;
+                portstr << port;
+                relayState += ":" + portstr.str();
+            }
+            relayState += '/';
+        }
+    }
+}
+
 AbstractHandler::AbstractHandler(
     const DOMElement* e, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
     ) : m_log(log), m_configNS(shibspconstants::SHIB2SPCONFIG_NS) {
@@ -147,6 +325,17 @@ AbstractHandler::AbstractHandler(
 
 AbstractHandler::~AbstractHandler()
 {
+}
+
+void AbstractHandler::log(SPRequest::SPLogLevel level, const string& msg) const
+{
+    m_log.log(
+        (level == SPRequest::SPDebug ? Priority::DEBUG :
+        (level == SPRequest::SPInfo ? Priority::INFO :
+        (level == SPRequest::SPWarn ? Priority::WARN :
+        (level == SPRequest::SPError ? Priority::ERROR : Priority::CRIT)))),
+        msg
+        );
 }
 
 #ifndef SHIBSP_LITE
@@ -287,169 +476,6 @@ long AbstractHandler::sendMessage(
 }
 
 #endif
-
-void AbstractHandler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
-{
-    if (relayState.empty())
-        return;
-
-    // No setting means just pass it by value.
-    pair<bool,const char*> mech=getString("relayState");
-    if (!mech.first || !mech.second || !*mech.second)
-        return;
-
-    if (!strcmp(mech.second, "cookie")) {
-        // Here we store the state in a cookie and send a fixed
-        // value so we can recognize it on the way back.
-        if (relayState.find("cookie:") != 0) {
-            const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-            pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibstate_");
-            string stateval = urlenc->encode(relayState.c_str()) + shib_cookie.second;
-            // Generate a random key for the cookie name instead of the fixed name.
-            string rsKey;
-            generateRandomHex(rsKey,5);
-            shib_cookie.first = "_shibstate_" + rsKey;
-            response.setCookie(shib_cookie.first.c_str(),stateval.c_str());
-            relayState = "cookie:" + rsKey;
-        }
-    }
-    else if (strstr(mech.second,"ss:")==mech.second) {
-        if (relayState.find("ss:") != 0) {
-            mech.second+=3;
-            if (*mech.second) {
-                if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-#ifndef SHIBSP_LITE
-                    StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
-                    if (storage) {
-                        string rsKey;
-                        generateRandomHex(rsKey,5);
-                        if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(NULL) + 600))
-                            throw IOException("Attempted to insert duplicate storage key.");
-                        relayState = string(mech.second-3) + ':' + rsKey;
-                    }
-                    else {
-                        m_log.error("Storage-backed RelayState with invalid StorageService ID (%s)", mech.second);
-                        relayState.erase();
-                    }
-#endif
-                }
-                else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
-                    DDF out,in = DDF("set::RelayState").structure();
-                    in.addmember("id").string(mech.second);
-                    in.addmember("value").unsafe_string(relayState.c_str());
-                    DDFJanitor jin(in),jout(out);
-                    out = application.getServiceProvider().getListenerService()->send(in);
-                    if (!out.isstring())
-                        throw IOException("StorageService-backed RelayState mechanism did not return a state key.");
-                    relayState = string(mech.second-3) + ':' + out.string();
-                }
-            }
-        }
-    }
-    else
-        throw ConfigurationException("Unsupported relayState mechanism ($1).", params(1,mech.second));
-}
-
-void AbstractHandler::recoverRelayState(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response, string& relayState, bool clear
-    ) const
-{
-    SPConfig& conf = SPConfig::getConfig();
-
-    // Look for StorageService-backed state of the form "ss:SSID:key".
-    const char* state = relayState.c_str();
-    if (strstr(state,"ss:")==state) {
-        state += 3;
-        const char* key = strchr(state,':');
-        if (key) {
-            string ssid = relayState.substr(3, key - state);
-            key++;
-            if (!ssid.empty() && *key) {
-                if (conf.isEnabled(SPConfig::OutOfProcess)) {
-#ifndef SHIBSP_LITE
-                    StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
-                    if (storage) {
-                        ssid = key;
-                        if (storage->readString("RelayState",ssid.c_str(),&relayState)>0) {
-                            if (clear)
-                                storage->deleteString("RelayState",ssid.c_str());
-                            return;
-                        }
-                        else
-                            relayState.erase();
-                    }
-                    else {
-                        m_log.error("Storage-backed RelayState with invalid StorageService ID (%s)", ssid.c_str());
-                        relayState.erase();
-                    }
-#endif
-                }
-                else if (conf.isEnabled(SPConfig::InProcess)) {
-                    DDF out,in = DDF("get::RelayState").structure();
-                    in.addmember("id").string(ssid.c_str());
-                    in.addmember("key").string(key);
-                    in.addmember("clear").integer(clear ? 1 : 0);
-                    DDFJanitor jin(in),jout(out);
-                    out = application.getServiceProvider().getListenerService()->send(in);
-                    if (!out.isstring()) {
-                        m_log.error("StorageService-backed RelayState mechanism did not return a state value.");
-                        relayState.erase();
-                    }
-                    else {
-                        relayState = out.string();
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
-    // Look for cookie-backed state of the form "cookie:key".
-    if (strstr(state,"cookie:")==state) {
-        state += 7;
-        if (*state) {
-            // Pull the value from the "relay state" cookie.
-            pair<string,const char*> relay_cookie = application.getCookieNameProps("_shibstate_");
-            relay_cookie.first = string("_shibstate_") + state;
-            state = request.getCookie(relay_cookie.first.c_str());
-            if (state && *state) {
-                // URL-decode the value.
-                char* rscopy=strdup(state);
-                XMLToolingConfig::getConfig().getURLEncoder()->decode(rscopy);
-                relayState = rscopy;
-                free(rscopy);
-
-                if (clear) {
-                    string exp(relay_cookie.second);
-                    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-                    response.setCookie(relay_cookie.first.c_str(), exp.c_str());
-                }
-                return;
-            }
-        }
-
-        relayState.erase();
-    }
-
-    // Check for "default" value (or the old "cookie" value that might come from stale bookmarks).
-    if (relayState.empty() || relayState == "default" || relayState == "cookie") {
-        pair<bool,const char*> homeURL=application.getString("homeURL");
-        if (homeURL.first)
-            relayState=homeURL.second;
-        else {
-            // Compute a URL to the root of the site.
-            int port = request.getPort();
-            const char* scheme = request.getScheme();
-            relayState = string(scheme) + "://" + request.getHostname();
-            if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
-                ostringstream portstr;
-                portstr << port;
-                relayState += ":" + portstr.str();
-            }
-            relayState += '/';
-        }
-    }
-}
 
 void AbstractHandler::preservePostData(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* relayState

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 #include "internal.h"
 #include "Application.h"
 #include "exceptions.h"
-#include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/SessionInitiator.h"
 
@@ -65,6 +64,7 @@ namespace shibsp {
             url = getString("entityIDParam");
             if (url.first)
                 m_returnParam = url.second;
+            m_supportedOptions.insert("isPassive");
         }
         virtual ~SAMLDSSessionInitiator() {}
 
@@ -146,7 +146,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
 {
     // The IdP CANNOT be specified for us to run. Otherwise, we'd be redirecting to a DS
     // anytime the IdP's metadata was wrong.
-    if (!entityID.empty())
+    if (!entityID.empty() || !checkCompatibility(request, isHandler))
         return make_pair(false,0L);
 
     string target;
@@ -171,7 +171,11 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
 
         option = request.getParameter("isPassive");
         if (option)
-            isPassive = !strcmp(option,"true");
+            isPassive = (*option=='t' || *option=='1');
+        else {
+            pair<bool,bool> passopt = getBool("isPassive");
+            isPassive = passopt.first && passopt.second;
+        }
 
         option = request.getParameter("discoveryURL");
         if (option)
@@ -182,7 +186,9 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         // The target resource is the current one and everything else is
         // defaulted or set by content policy.
         target=request.getRequestURL();
-        pair<bool,bool> passopt = getBool("isPassive");
+        pair<bool,bool> passopt = request.getRequestSettings().first->getBool("isPassive");
+        if (!passopt.first)
+            passopt = getBool("isPassive");
         isPassive = passopt.first && passopt.second;
         discoveryURL = request.getRequestSettings().first->getString("discoveryURL");
     }

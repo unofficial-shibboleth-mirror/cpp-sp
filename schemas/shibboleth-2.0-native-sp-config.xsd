@@ -292,6 +292,7 @@
 		<attribute name="entityID" type="anyURI"/>
         <attribute name="discoveryURL" type="anyURI"/>
 		<attribute name="isPassive" type="boolean"/>
+        <attribute name="returnOnError" type="boolean"/>
 		<attribute name="forceAuthn" type="boolean"/>
 		<attribute name="authnContextClassRef" type="anyURI"/>
 		<attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
@@ -598,6 +599,7 @@
                     <attribute name="acsIndex" type="unsignedShort"/>
 					<attribute name="defaultACSIndex" type="unsignedShort"/>   <!-- deprecated -->
                     <attribute name="isPassive" type="boolean"/>
+                    <attribute name="returnOnError" type="boolean"/>
                     <attribute name="forceAuthn" type="boolean"/>
                     <attribute name="authnContextClassRef" type="anyURI"/>
                     <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>

@@ -44,15 +44,12 @@ namespace opensaml {
 #endif
 
 namespace xmltooling {
-    class XMLTOOL_API HTTPRequest;
-    class XMLTOOL_API HTTPResponse;
     class XMLTOOL_API XMLObject;
 };
 
 namespace shibsp {
 
     class SHIBSP_API Application;
-    class SHIBSP_API SPRequest;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -79,6 +76,8 @@ namespace shibsp {
             xercesc::DOMNodeFilter* filter=NULL,
             const std::map<std::string,std::string>* remapper=NULL
             );
+
+        void log(SPRequest::SPLogLevel level, const std::string& msg) const;
 
 #ifndef SHIBSP_LITE
         /**
@@ -134,42 +133,6 @@ namespace shibsp {
 #endif
 
         /**
-         * Implements various mechanisms to preserve RelayState,
-         * such as cookies or StorageService-backed keys.
-         * 
-         * <p>If a supported mechanism can be identified, the input parameter will be
-         * replaced with a suitable state key.
-         * 
-         * @param application   the associated Application
-         * @param response      outgoing HTTP response
-         * @param relayState    RelayState token to supply with message
-         */
-        virtual void preserveRelayState(
-            const Application& application, xmltooling::HTTPResponse& response, std::string& relayState
-            ) const;
-
-        /**
-         * Implements various mechanisms to recover RelayState,
-         * such as cookies or StorageService-backed keys.
-         * 
-         * <p>If a supported mechanism can be identified, the input parameter will be
-         * replaced with the recovered state information.
-         * 
-         * @param application   the associated Application
-         * @param request       incoming HTTP request
-         * @param response      outgoing HTTP response
-         * @param relayState    RelayState token supplied with message
-         * @param clear         true iff the token state should be cleared
-         */
-        virtual void recoverRelayState(
-            const Application& application,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse& response,
-            std::string& relayState,
-            bool clear=true
-            ) const;
-        
-        /**
          * Implements a mechanism to preserve form post data.
          *
          * @param application   the associated Application
@@ -205,7 +168,7 @@ namespace shibsp {
 
         /**
          * Post a redirect response with post data.
-         * 
+         *
          * @param application   the associated Application
          * @param response      outgoing HTTP response
          * @param request       incoming HTTP request

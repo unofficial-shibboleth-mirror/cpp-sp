@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,10 +111,15 @@ ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const ch
         }
         e = XMLHelper::getNextSiblingElement(e, _SessionInitiator);
     }
+
+    m_supportedOptions.insert("isPassive");
 }
 
 pair<bool,long> ChainingSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
+    if (!checkCompatibility(request, isHandler))
+        return make_pair(false,0L);
+
     pair<bool,long> ret;
     for (vector<SessionInitiator*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i) {
         ret = (*i)->run(request, entityID, isHandler);

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +85,7 @@ namespace shibsp {
                 string address = m_appId + loc.second + "::run::TransformSI";
                 setAddress(address.c_str());
             }
+            m_supportedOptions.insert("isPassive");
 
 #ifndef SHIBSP_LITE
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
@@ -157,7 +158,7 @@ void TransformSessionInitiator::setParent(const PropertySet* parent)
 pair<bool,long> TransformSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
     // We have to have a candidate name to function.
-    if (entityID.empty())
+    if (entityID.empty() || !checkCompatibility(request, isHandler))
         return make_pair(false,0L);
 
     string target;
