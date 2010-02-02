@@ -161,7 +161,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 // Log it and attempt to recover relay state so we can get back.
                 log(SPRequest::SPError, ex.what());
                 log(SPRequest::SPInfo, "trapping SessionInitiator error condition and returning to target location");
-                const char* flag = request.getParameter("target");
+                flag = request.getParameter("target");
                 string target(flag ? flag : "");
                 recoverRelayState(request.getApplication(), request, request, target, false);
                 return make_pair(true, request.sendRedirect(target.c_str()));
