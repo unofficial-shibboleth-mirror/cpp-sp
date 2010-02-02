@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
-#include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutHandler.h"
 
@@ -266,7 +265,7 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
             doRequest(*app, *req.get(), *resp.get(), session);
         }
         else {
-             m_log.error("no NameID or issuing entityID found in session");
+             m_log.log(getParent() ? Priority::WARN : Priority::ERROR, "bypassing SAML 2.0 logout, no NameID or issuing entityID found in session");
              session->unlock();
              app->getServiceProvider().getSessionCache()->remove(*app, *req.get(), resp.get());
         }
@@ -309,6 +308,12 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         }
 
         const IDPSSODescriptor* role = dynamic_cast<const IDPSSODescriptor*>(entity.second);
+        if (role->getSingleLogoutServices().empty()) {
+            throw MetadataException(
+                "No SingleLogoutService endpoints in metadata for identity provider ($entityID).", namedparams(1, "entityID", session->getEntityID())
+                );
+        }
+
         const EndpointType* ep=NULL;
         const MessageEncoder* encoder=NULL;
         vector<const XMLCh*>::const_iterator b;
