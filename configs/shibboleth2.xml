@@ -257,6 +257,12 @@
             <PolicyRule type="XMLSigning" errorFatal="true"/>
             <PolicyRule type="SimpleSigning" errorFatal="true"/>
         </Policy>
+        
+        <!-- Disables known weak algorithms. -->
+        <AlgorithmBlacklist>
+        http://www.w3.org/2001/04/xmldsig-more#md5
+        http://www.w3.org/2001/04/xmldsig-more#rsa-md5
+        </AlgorithmBlacklist>
     </SecurityPolicies>
 
 </SPConfig>

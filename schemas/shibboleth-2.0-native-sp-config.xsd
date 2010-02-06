@@ -708,6 +708,10 @@
 						<anyAttribute namespace="##any" processContents="skip"/>
 					</complexType>
 				</element>
+                <choice minOccurs="0">
+                    <element name="AlgorithmWhitelist" type="conf:listOfURIs"/>
+                    <element name="AlgorithmBlacklist" type="conf:listOfURIs"/>
+                </choice>
 			</sequence>
 		</complexType>
 	</element>

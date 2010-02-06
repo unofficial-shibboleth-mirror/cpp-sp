@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,8 @@
 # include <xmltooling/security/TrustEngine.h>
 # include <xmltooling/util/ReplayCache.h>
 # include <xmltooling/util/StorageService.h>
+# include <xercesc/util/XMLStringTokenizer.hpp>
+# include <xsec/utils/XSECPlatformUtils.hpp>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
@@ -407,6 +409,8 @@ namespace {
     #pragma warning( pop )
 #endif
 
+    static const XMLCh AlgorithmBlacklist[] =   UNICODE_LITERAL_18(A,l,g,o,r,i,t,h,m,B,l,a,c,k,l,i,s,t);
+    static const XMLCh AlgorithmWhitelist[] =   UNICODE_LITERAL_18(A,l,g,o,r,i,t,h,m,W,h,i,t,e,l,i,s,t);
     static const XMLCh ApplicationOverride[] =  UNICODE_LITERAL_19(A,p,p,l,i,c,a,t,i,o,n,O,v,e,r,r,i,d,e);
     static const XMLCh ApplicationDefaults[] =  UNICODE_LITERAL_19(A,p,p,l,i,c,a,t,i,o,n,D,e,f,a,u,l,t,s);
     static const XMLCh _ArtifactMap[] =         UNICODE_LITERAL_11(A,r,t,i,f,a,c,t,M,a,p);
@@ -1446,6 +1450,38 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     throw ConfigurationException("Can't build SessionCache, missing conf:SessionCache element?");
                 }
             }
+
+#ifndef SHIBSP_LITE
+            child = XMLHelper::getLastChildElement(e, SecurityPolicies);
+            if (child) {
+                const XMLCh* algs = NULL;
+                const DOMElement* alglist = XMLHelper::getLastChildElement(child, AlgorithmBlacklist);
+                if (alglist && alglist->hasChildNodes()) {
+                    algs = alglist->getFirstChild()->getNodeValue();
+                }
+                else if ((alglist = XMLHelper::getLastChildElement(child, AlgorithmWhitelist)) && alglist->hasChildNodes()) {
+                    algs = alglist->getFirstChild()->getNodeValue();
+                }
+                if (algs) {
+#ifdef SHIBSP_XMLSEC_WHITELISTING
+                    const XMLCh* token;
+                    XMLStringTokenizer tokenizer(algs);
+                    while (tokenizer.hasMoreTokens()) {
+                        token = tokenizer.nextToken();
+                        if (token) {
+                            if (XMLString::equals(alglist->getLocalName(), AlgorithmBlacklist))
+                                XSECPlatformUtils::blacklistAlgorithm(token);
+                            else
+                                XSECPlatformUtils::whitelistAlgorithm(token);
+                        }
+                    }
+#else
+                    log.fatal("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
+                    throw ConfigurationException("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists.");
+#endif
+                }
+            }
+#endif
         } // end of first-time-only stuff
 
         // Back to the fully dynamic stuff...next up is the RequestMapper.
