@@ -742,7 +742,7 @@ if test "$WANT_APACHE_20" = "yes" ; then
 
     # extract settings we need from APXS2 -q
     APXS2_CC="`$APXS2 -q CC`"
-    APXS2_CFLAGS="`$APXS2 -q CPPFLAGS` `$APXS2 -q CFLAGS` $APU_CFLAGS"
+    APXS2_CFLAGS="`$APXS2 -q CPPFLAGS` `$APXS2 -q CFLAGS` $APR_CFLAGS $APU_CFLAGS"
     APXS2_INCLUDE="`$APXS2 -q INCLUDEDIR`"
 fi
 
