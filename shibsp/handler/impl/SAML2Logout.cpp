@@ -342,7 +342,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
-    shibsp::SecurityPolicy policy(application, &m_role, validate.first && validate.second);
+    shibsp::SecurityPolicy policy(application, &m_role, validate.first && validate.second, policyId.second);
 
     // Decode the message.
     string relayState;
