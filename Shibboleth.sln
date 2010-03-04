@@ -135,6 +135,26 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		configs\xsltproc.js = configs\xsltproc.js
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{31B171C1-E06C-464F-A541-38724AB52D79}"
+	ProjectSection(SolutionItems) = preProject
+		acinclude.m4 = acinclude.m4
+		acx_pthread.m4 = acx_pthread.m4
+		bootstrap = bootstrap
+		config_win32.h = config_win32.h
+		configure.ac = configure.ac
+		depend = depend
+		doxygen.am = doxygen.am
+		doxygen.cfg = doxygen.cfg
+		doxygen.m4 = doxygen.m4
+		libtool.m4 = libtool.m4
+		ltmain.sh = ltmain.sh
+		Makefile.am = Makefile.am
+		pkginfo.in = pkginfo.in
+		Portfile.in = Portfile.in
+		postinstall = postinstall
+		shibboleth.spec.in = shibboleth.spec.in
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
