@@ -351,6 +351,10 @@
 			>
 		</File>
 		<File
+			RelativePath=".\Makefile.am"
+			>
+		</File>
+		<File
 			RelativePath=".\resource.h"
 			>
 		</File>

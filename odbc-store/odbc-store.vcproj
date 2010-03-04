@@ -337,6 +337,10 @@
 	</References>
 	<Files>
 		<File
+			RelativePath=".\Makefile.am"
+			>
+		</File>
+		<File
 			RelativePath=".\odbc-store.cpp"
 			>
 		</File>

@@ -5,8 +5,14 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", "{96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utilities", "Utilities", "{FED80230-119E-4B2F-9F53-D2660A5F022B}"
+	ProjectSection(SolutionItems) = preProject
+		util\Makefile.am = util\Makefile.am
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "fastcgi", "fastcgi", "{8E1AF2CF-24E1-4983-8681-394D89DF9AD2}"
+	ProjectSection(SolutionItems) = preProject
+		fastcgi\Makefile.am = fastcgi\Makefile.am
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isapi_shib", "isapi_shib\isapi_shib.vcproj", "{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -77,6 +83,56 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memcache-store", "memcache-store\memcache-store.vcproj", "{666A63A7-983F-4C19-8411-207F24305198}"
 	ProjectSection(ProjectDependencies) = postProject
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Schemas", "Schemas", "{0F172F71-BDD7-44D1-9147-061DC20683BD}"
+	ProjectSection(SolutionItems) = preProject
+		schemas\catalog.xml.in = schemas\catalog.xml.in
+		schemas\Makefile.am = schemas\Makefile.am
+		schemas\shibboleth-2.0-afp-mf-basic.xsd = schemas\shibboleth-2.0-afp-mf-basic.xsd
+		schemas\shibboleth-2.0-afp-mf-saml.xsd = schemas\shibboleth-2.0-afp-mf-saml.xsd
+		schemas\shibboleth-2.0-afp.xsd = schemas\shibboleth-2.0-afp.xsd
+		schemas\shibboleth-2.0-attribute-map.xsd = schemas\shibboleth-2.0-attribute-map.xsd
+		schemas\shibboleth-2.0-native-sp-config.xsd = schemas\shibboleth-2.0-native-sp-config.xsd
+		schemas\shibboleth-2.0-sp-notify.xsd = schemas\shibboleth-2.0-sp-notify.xsd
+		schemas\shibboleth-metadata-1.0.xsd = schemas\shibboleth-metadata-1.0.xsd
+		schemas\shibboleth.xsd = schemas\shibboleth.xsd
+		schemas\WS-Trust.xsd = schemas\WS-Trust.xsd
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BCFE-B3D7-4D08-AAA5-2E284903890E}"
+	ProjectSection(SolutionItems) = preProject
+		configs\accessError.html = configs\accessError.html
+		configs\apache.config.in = configs\apache.config.in
+		configs\apache2.config.in = configs\apache2.config.in
+		configs\apache22.config.in = configs\apache22.config.in
+		configs\attribute-map.xml = configs\attribute-map.xml
+		configs\attribute-policy.xml = configs\attribute-policy.xml
+		configs\bindingTemplate.html = configs\bindingTemplate.html
+		configs\console.logger = configs\console.logger
+		configs\discoveryTemplate.html = configs\discoveryTemplate.html
+		configs\example-metadata.xml = configs\example-metadata.xml
+		configs\globalLogout.html = configs\globalLogout.html
+		configs\keygen.bat = configs\keygen.bat
+		configs\keygen.sh = configs\keygen.sh
+		configs\localLogout.html = configs\localLogout.html
+		configs\Makefile.am = configs\Makefile.am
+		configs\metadataError.html = configs\metadataError.html
+		configs\metagen.sh = configs\metagen.sh
+		configs\native.logger.in = configs\native.logger.in
+		configs\partialLogout.html = configs\partialLogout.html
+		configs\postTemplate.html = configs\postTemplate.html
+		configs\sessionError.html = configs\sessionError.html
+		configs\shibboleth2.xml = configs\shibboleth2.xml
+		configs\shibd-debian.in = configs\shibd-debian.in
+		configs\shibd-osx.plist.in = configs\shibd-osx.plist.in
+		configs\shibd-redhat.in = configs\shibd-redhat.in
+		configs\shibd-suse.in = configs\shibd-suse.in
+		configs\shibd.logger.in = configs\shibd.logger.in
+		configs\sslError.html = configs\sslError.html
+		configs\syslog.logger = configs\syslog.logger
+		configs\upgrade.xsl = configs\upgrade.xsl
+		configs\xsltproc.js = configs\xsltproc.js
 	EndProjectSection
 EndProject
 Global

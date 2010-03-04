@@ -386,6 +386,10 @@
 	</References>
 	<Files>
 		<File
+			RelativePath=".\Makefile.am"
+			>
+		</File>
+		<File
 			RelativePath=".\mod_apache.cpp"
 			>
 			<FileConfiguration

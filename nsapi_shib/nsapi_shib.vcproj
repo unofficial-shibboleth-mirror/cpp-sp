@@ -377,6 +377,10 @@
 	</References>
 	<Files>
 		<File
+			RelativePath=".\Makefile.am"
+			>
+		</File>
+		<File
 			RelativePath="nsapi_shib.cpp"
 			>
 		</File>

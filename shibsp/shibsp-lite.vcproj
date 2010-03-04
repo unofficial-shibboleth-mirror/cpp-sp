@@ -764,6 +764,14 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\Makefile.am"
+			>
+		</File>
+		<File
+			RelativePath=".\paths.h.in"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
