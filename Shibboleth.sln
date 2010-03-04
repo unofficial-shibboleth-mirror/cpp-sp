@@ -155,6 +155,21 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{31B171C1-E
 		shibboleth.spec.in = shibboleth.spec.in
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Doc", "Doc", "{6ED5E3E7-1B0E-43FB-A8D1-77A0FCAE9AC8}"
+	ProjectSection(SolutionItems) = preProject
+		doc\CREDITS.txt = doc\CREDITS.txt
+		doc\FASTCGI.LICENSE = doc\FASTCGI.LICENSE
+		doc\LICENSE.txt = doc\LICENSE.txt
+		doc\LOG4CPP.LICENSE = doc\LOG4CPP.LICENSE
+		doc\logo.jpg = doc\logo.jpg
+		doc\main.css = doc\main.css
+		doc\Makefile.am = doc\Makefile.am
+		doc\NOTICE.txt = doc\NOTICE.txt
+		doc\OPENSSL.LICENSE = doc\OPENSSL.LICENSE
+		doc\README.txt = doc\README.txt
+		doc\RELEASE.txt = doc\RELEASE.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
