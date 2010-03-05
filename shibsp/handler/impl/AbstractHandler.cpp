@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -699,4 +699,88 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
         m_log.info("ignoring POST data with non-standard encoding (%s)", contentType.c_str());
     }
     return DDF();
+}
+
+pair<bool,bool> AbstractHandler::getBool(const char* name, const SPRequest& request, unsigned int type) const
+{
+    if (type & HANDLER_PROPERTY_REQUEST) {
+        const char* param = request.getParameter(name);
+        if (param && *param)
+            return make_pair(true, (*param=='t' || *param=='1'));
+    }
+    
+    if (type & HANDLER_PROPERTY_MAP) {
+        pair<bool,bool> ret = request.getRequestSettings().first->getBool(name);
+        if (ret.first)
+            return ret;
+    }
+
+    if (type & HANDLER_PROPERTY_FIXED) {
+        return getBool(name);
+    }
+
+    return make_pair(false,false);
+}
+
+pair<bool,const char*> AbstractHandler::getString(const char* name, const SPRequest& request, unsigned int type) const
+{
+    if (type & HANDLER_PROPERTY_REQUEST) {
+        const char* param = request.getParameter(name);
+        if (param && *param)
+            return make_pair(true, param);
+    }
+    
+    if (type & HANDLER_PROPERTY_MAP) {
+        pair<bool,const char*> ret = request.getRequestSettings().first->getString(name);
+        if (ret.first)
+            return ret;
+    }
+
+    if (type & HANDLER_PROPERTY_FIXED) {
+        return getString(name);
+    }
+
+    return pair<bool,const char*>(false,NULL);
+}
+
+pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const SPRequest& request, unsigned int type) const
+{
+    if (type & HANDLER_PROPERTY_REQUEST) {
+        const char* param = request.getParameter(name);
+        if (param && *param)
+            return pair<bool,unsigned int>(true, strtol(param,NULL,10));
+    }
+    
+    if (type & HANDLER_PROPERTY_MAP) {
+        pair<bool,unsigned int> ret = request.getRequestSettings().first->getUnsignedInt(name);
+        if (ret.first)
+            return ret;
+    }
+
+    if (type & HANDLER_PROPERTY_FIXED) {
+        return getUnsignedInt(name);
+    }
+
+    return pair<bool,unsigned int>(false,0);
+}
+
+pair<bool,int> AbstractHandler::getInt(const char* name, const SPRequest& request, unsigned int type) const
+{
+    if (type & HANDLER_PROPERTY_REQUEST) {
+        const char* param = request.getParameter(name);
+        if (param && *param)
+            return pair<bool,int>(true, atoi(param));
+    }
+    
+    if (type & HANDLER_PROPERTY_MAP) {
+        pair<bool,int> ret = request.getRequestSettings().first->getInt(name);
+        if (ret.first)
+            return ret;
+    }
+
+    if (type & HANDLER_PROPERTY_FIXED) {
+        return getInt(name);
+    }
+
+    return pair<bool,int>(false,0);
 }

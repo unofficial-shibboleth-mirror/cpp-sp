@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -181,6 +181,62 @@ namespace shibsp {
             const char* url,
             DDF& postData
             ) const;
+
+        /**
+         * Bitmask of property sources to read from
+         * (request query parameter, request mapper, fixed handler property).
+         */
+        enum PropertySourceTypes {
+            HANDLER_PROPERTY_REQUEST = 1,
+            HANDLER_PROPERTY_MAP = 2,
+            HANDLER_PROPERTY_FIXED = 4,
+            HANDLER_PROPERTY_ALL = 255
+        };
+
+        using DOMPropertySet::getBool;
+        using DOMPropertySet::getString;
+        using DOMPropertySet::getUnsignedInt;
+        using DOMPropertySet::getInt;
+
+        /**
+         * Returns a boolean-valued property.
+         * 
+         * @param name      property name
+         * @param request   reference to incoming request
+         * @param type      bitmask of property sources to use
+         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         */
+        std::pair<bool,bool> getBool(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+
+        /**
+         * Returns a string-valued property.
+         * 
+         * @param name      property name
+         * @param request   reference to incoming request
+         * @param type      bitmask of property sources to use
+         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         */
+        std::pair<bool,const char*> getString(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+
+        /**
+         * Returns an unsigned integer-valued property.
+         * 
+         * @param name      property name
+         * @param request   reference to incoming request
+         * @param type      bitmask of property sources to use
+         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         */
+        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+
+        /**
+         * Returns an integer-valued property.
+         * 
+         * @param name      property name
+         * @param request   reference to incoming request
+         * @param type      bitmask of property sources to use
+         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         */
+        std::pair<bool,int> getInt(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /** Logging object. */
         xmltooling::logging::Category& m_log;
