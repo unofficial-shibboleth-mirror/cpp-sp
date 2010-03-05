@@ -98,12 +98,14 @@ namespace shibsp {
                             flag = &chNull;
                         if (XMLString::equals(e->getLocalName(), Subst)) {
                             auto_ptr_char temp(e->getFirstChild()->getNodeValue());
-                            m_subst.push_back(pair<bool,string>((*flag==chDigit_1 || *flag==chLatin_t), temp.get()));
+                            if (temp.get() && *temp.get())
+                                m_subst.push_back(pair<bool,string>((*flag==chDigit_1 || *flag==chLatin_t), temp.get()));
                         }
                         else if (XMLString::equals(e->getLocalName(), Regex) && e->hasAttributeNS(NULL, match)) {
                             auto_ptr_char m(e->getAttributeNS(NULL, match));
                             auto_ptr_char repl(e->getFirstChild()->getNodeValue());
-                            m_regex.push_back(make_pair((*flag==chDigit_1 || *flag==chLatin_t), pair<string,string>(m.get(), repl.get())));
+                            if (m.get() && *m.get() && repl.get() && *repl.get())
+                                m_regex.push_back(make_pair((*flag==chDigit_1 || *flag==chLatin_t), pair<string,string>(m.get(), repl.get())));
                         }
                         else {
                             m_log.warn("Unknown element found in Transform SessionInitiator configuration, check for errors.");
