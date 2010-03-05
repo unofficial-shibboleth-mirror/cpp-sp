@@ -63,6 +63,7 @@ namespace xmltooling {
   static const XMLCh pollTimeout[] = UNICODE_LITERAL_11(p,o,l,l,T,i,m,e,o,u,t);
   static const XMLCh failLimit[] = UNICODE_LITERAL_9(f,a,i,l,L,i,m,i,t);
   static const XMLCh retryTimeout[] = UNICODE_LITERAL_12(r,e,t,r,y,T,i,m,e,o,u,t);
+  static const XMLCh nonBlocking[] = UNICODE_LITERAL_11(n,o,n,B,l,o,c,k,i,n,g);
   
   class mc_record {
   public:
@@ -492,7 +493,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_HASH, hash);
   log.debug("CRC hash set");
 
-  int32_t send_timeout = 1000000;
+  int32_t send_timeout = 999999;
   const XMLCh* tag = e ? e->getAttributeNS(NULL, sendTimeout) : NULL;
   if (tag && *tag) {
     send_timeout = XMLString::parseInt(tag);
@@ -500,7 +501,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   log.debug("MEMCACHED_BEHAVIOR_SND_TIMEOUT will be set to %d", send_timeout);
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_SND_TIMEOUT, send_timeout);
 
-  int32_t recv_timeout = 1000000;
+  int32_t recv_timeout = 999999;
   tag = e ? e->getAttributeNS(NULL, sendTimeout) : NULL;
   if (tag && *tag) {
     recv_timeout = XMLString::parseInt(tag);
@@ -531,6 +532,14 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   }
   log.debug("MEMCACHED_BEHAVIOR_RETRY_TIMEOUT will be set to %d", retry_timeout);
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_RETRY_TIMEOUT, retry_timeout);
+
+  int32_t nonblock_set = 1;
+  tag = e ? e->getAttributeNS(NULL, nonBlocking) : NULL;
+  if (tag && *tag) {
+    nonblock_set = XMLString::parseInt(tag);
+  }
+  log.debug("MEMCACHED_BEHAVIOR_NO_BLOCK will be set to %d", nonblock_set);
+  memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_NO_BLOCK, nonblock_set);
 
   // Grab hosts from the configuration.
   e = e ? XMLHelper::getFirstChildElement(e,Hosts) : NULL;
