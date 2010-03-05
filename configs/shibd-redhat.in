@@ -17,6 +17,10 @@ prog=shibd
 #VER=`cat /etc/redhat-release | awk '{print $3}' | awk -F . '{print $1}'`
 RETVAL=0
 
+if [ -f /etc/sysconfig/shibd ] ; then
+    . /etc/sysconfig/shibd
+fi
+
 start() {
 	echo -n $"Starting $prog: "
 	if [ -f /var/lock/subsys/shibd ] ; then
