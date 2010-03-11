@@ -235,9 +235,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         return make_pair(false,0L);
 
     string target;
-    string postData;
+    pair<bool,const char*> prop;
     const Handler* ACS=NULL;
-    const char* option;
     pair<bool,const char*> acClass, acComp, nidFormat, spQual;
     bool isPassive=false,forceAuthn=false;
     const Application& app=request.getApplication();
@@ -246,9 +245,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     pair<bool,bool> acsByIndex = ECP ? make_pair(true,false) : getBool("acsByIndex");
 
     if (isHandler) {
-        option=request.getParameter("acsIndex");
-        if (option) {
-            ACS = app.getAssertionConsumerServiceByIndex(atoi(option));
+        prop.second = request.getParameter("acsIndex");
+        if (prop.second && *prop.second) {
+            ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
             if (!ACS)
                 request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
             else if (ECP && !XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_PAOS)) {
@@ -257,82 +256,47 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             }
         }
 
-        option = request.getParameter("target");
-        if (option)
-            target = option;
+        prop = getString("target", request);
+        if (prop.first)
+            target = prop.second;
 
         // Always need to recover target URL to compute handler below.
-        recoverRelayState(request.getApplication(), request, request, target, false);
+        recoverRelayState(app, request, request, target, false);
 
-        pair<bool,bool> flag;
-        option = request.getParameter("isPassive");
-        if (option) {
-            isPassive = (*option=='1' || *option=='t');
-        }
-        else {
-            flag = getBool("isPassive");
-            isPassive = (flag.first && flag.second);
-        }
+        pair<bool,bool> flag = getBool("isPassive", request);
+        isPassive = (flag.first && flag.second);
+
         if (!isPassive) {
-            option = request.getParameter("forceAuthn");
-            if (option) {
-                forceAuthn = (*option=='1' || *option=='t');
-            }
-            else {
-                flag = getBool("forceAuthn");
-                forceAuthn = (flag.first && flag.second);
-            }
+            flag = getBool("forceAuthn", request);
+            forceAuthn = (flag.first && flag.second);
         }
 
-        if (acClass.second = request.getParameter("authnContextClassRef"))
-            acClass.first = true;
-        else
-            acClass = getString("authnContextClassRef");
-
-        if (acComp.second = request.getParameter("authnContextComparison"))
-            acComp.first = true;
-        else
-            acComp = getString("authnContextComparison");
-
-        if (nidFormat.second = request.getParameter("NameIDFormat"))
-            nidFormat.first = true;
-        else
-            nidFormat = getString("NameIDFormat");
-
-        if (spQual.second = request.getParameter("SPNameQualifier"))
-            spQual.first = true;
-        else
-            spQual = getString("SPNameQualifier");
+        // Populate via parameter, map, or property.
+        acClass = getString("authnContextClassRef", request);
+        acComp = getString("authnContextComparison", request);
+        nidFormat = getString("NameIDFormat", request);
+        spQual = getString("SPNameQualifier", request);
     }
     else {
-        // We're running as a "virtual handler" from within the filter.
-        // The target resource is the current one and everything else is defaulted.
-        target=request.getRequestURL();
-        const PropertySet* settings = request.getRequestSettings().first;
+        // Check for a hardwired target value in the map or handler.
+        prop = getString("target", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
+        if (prop.first)
+            target = prop.second;
+        else
+            target = request.getRequestURL();
 
-        pair<bool,bool> flag = settings->getBool("isPassive");
-        if (!flag.first)
-            flag = getBool("isPassive");
+        pair<bool,bool> flag = getBool("isPassive", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
         isPassive = flag.first && flag.second;
         if (!isPassive) {
-            flag = settings->getBool("forceAuthn");
-            if (!flag.first)
-                flag = getBool("forceAuthn");
+            flag = getBool("forceAuthn", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
             forceAuthn = flag.first && flag.second;
         }
 
-        acClass = settings->getString("authnContextClassRef");
-        if (!acClass.first)
-            acClass = getString("authnContextClassRef");
-        acComp = settings->getString("authnContextComparison");
-        if (!acComp.first)
-            acComp = getString("authnContextComparison");
-        nidFormat = settings->getString("NameIDFormat");
-        if (!nidFormat.first)
-            nidFormat = getString("NameIDFormat");
-        spQual = settings->getString("SPNameQualifier");
-        if (!spQual.first)
-            spQual = getString("SPNameQualifier");
+        // Populate via map or property.
+        acClass = getString("authnContextClassRef", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
+        acComp = getString("authnContextComparison", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
+        nidFormat = getString("NameIDFormat", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
+        spQual = getString("SPNameQualifier", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
     }
 
     if (ECP)
@@ -348,7 +312,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             ACS = handlers.front();
         }
         else {
-            pair<bool,unsigned int> index = getUnsignedInt("acsIndex");
+            pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
             if (index.first) {
                 ACS = app.getAssertionConsumerServiceByIndex(index.second);
                 if (!ACS)
@@ -381,7 +345,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     // to express the ACS, by index or value, and if by value, where.
     // We have to compute the handlerURL no matter what, because we may need to
     // flip the index to an SSL-version.
-    string ACSloc=request.getHandlerURL(target.c_str());
+    string ACSloc = request.getHandlerURL(target.c_str());
 
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
@@ -389,11 +353,11 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             // Pass by Index.
             if (isHandler) {
                 // We may already have RelayState set if we looped back here,
-                // but just in case target is a resource, we reset it back.
-                target.erase();
-                option = request.getParameter("target");
-                if (option)
-                    target = option;
+                // but we've turned it back into a resource by this point, so if there's
+                // a target on the URL, reset to that value.
+                prop.second = request.getParameter("target");
+                if (prop.second && *prop.second)
+                    target = prop.second;
             }
 
             // Determine index to use.
@@ -425,16 +389,17 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
         // Since we're not passing by index, we need to fully compute the return URL and binding.
         // Compute the ACS URL. We add the ACS location to the base handlerURL.
-        pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
-        if (loc.first) ACSloc+=loc.second;
+        prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+        if (prop.first)
+            ACSloc += prop.second;
 
         if (isHandler) {
             // We may already have RelayState set if we looped back here,
-            // but just in case target is a resource, we reset it back.
-            target.erase();
-            option = request.getParameter("target");
-            if (option)
-                target = option;
+            // but we've turned it back into a resource by this point, so if there's
+            // a target on the URL, reset to that value.
+            prop.second = request.getParameter("target");
+            if (prop.second && *prop.second)
+                target = prop.second;
         }
 
         return doRequest(
@@ -489,24 +454,25 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     else {
         // Since we're not passing by index, we need to fully compute the return URL and binding.
         // Compute the ACS URL. We add the ACS location to the base handlerURL.
-        pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
-        if (loc.first) ACSloc+=loc.second;
+        prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+        if (prop.first)
+            ACSloc += prop.second;
         in.addmember("acsLocation").string(ACSloc.c_str());
         if (ACS) {
-            loc = ACS->getString("Binding");
-            in.addmember("acsBinding").string(loc.second);
-            if (XMLString::equals(loc.second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT))
+            prop = ACS->getString("Binding");
+            in.addmember("acsBinding").string(prop.second);
+            if (XMLString::equals(prop.second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT))
                 in.addmember("artifact").integer(1);
         }
     }
 
     if (isHandler) {
         // We may already have RelayState set if we looped back here,
-        // but just in case target is a resource, we reset it back.
-        target.erase();
-        option = request.getParameter("target");
-        if (option)
-            target = option;
+        // but we've turned it back into a resource by this point, so if there's
+        // a target on the URL, reset to that value.
+        prop.second = request.getParameter("target");
+        if (prop.second && *prop.second)
+            target = prop.second;
     }
     if (!target.empty())
         in.addmember("RelayState").unsafe_string(target.c_str());

@@ -86,39 +86,45 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         return make_pair(false,0L);
 
     string target;
-    string postData;
-    const char* option;
+    pair<bool,const char*> prop;
     const Handler* ACS=NULL;
     const Application& app=request.getApplication();
     pair<bool,const char*> discoveryURL = pair<bool,const char*>(true, m_url);
 
     if (isHandler) {
-        option=request.getParameter("acsIndex");
-        if (option) {
-            ACS=app.getAssertionConsumerServiceByIndex(atoi(option));
+        prop.second = request.getParameter("acsIndex");
+        if (prop.second && *prop.second) {
+            ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
             if (!ACS)
                 request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
         }
 
-        option = request.getParameter("target");
-        if (option)
-            target = option;
+        prop = getString("target", request);
+        if (prop.first)
+            target = prop.second;
+
+        // Since we're passing the ACS by value, we need to compute the return URL,
+        // so we'll need the target resource for real.
         recoverRelayState(request.getApplication(), request, request, target, false);
 
-        option = request.getParameter("discoveryURL");
-        if (option)
-            discoveryURL.second = option;
+        prop.second = request.getParameter("discoveryURL");
+        if (prop.second && *prop.second)
+            discoveryURL.second = prop.second;
     }
     else {
-        // We're running as a "virtual handler" from within the filter.
-        // The target resource is the current one and everything else is defaulted.
-        target=request.getRequestURL();
+        // Check for a hardwired target value in the map or handler.
+        prop = getString("target", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
+        if (prop.first)
+            target = prop.second;
+        else
+            target = request.getRequestURL();
+
         discoveryURL = request.getRequestSettings().first->getString("discoveryURL");
     }
     
     // Since we're not passing by index, we need to fully compute the return URL.
     if (!ACS) {
-        pair<bool,unsigned int> index = getUnsignedInt("acsIndex");
+        pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
         if (index.first) {
             ACS = app.getAssertionConsumerServiceByIndex(index.second);
             if (!ACS)
@@ -148,20 +154,23 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     m_log.debug("sending request to WAYF (%s)", discoveryURL.second);
 
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
-    string ACSloc=request.getHandlerURL(target.c_str());
-    pair<bool,const char*> loc=ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
-    if (loc.first) ACSloc+=loc.second;
+    string ACSloc = request.getHandlerURL(target.c_str());
+    prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+    if (prop.first)
+        ACSloc += prop.second;
 
     if (isHandler) {
         // We may already have RelayState set if we looped back here,
-        // but just in case target is a resource, we reset it back.
-        option = request.getParameter("target");
-        if (option)
-            target = option;
+        // but we've turned it back into a resource by this point, so if there's
+        // a target on the URL, reset to that value.
+        prop.second = request.getParameter("target");
+        if (prop.second && *prop.second)
+            target = prop.second;
     }
-    preserveRelayState(request.getApplication(), request, target);
+
+    preserveRelayState(app, request, target);
     if (!isHandler)
-        preservePostData(request.getApplication(), request, request, target.c_str());
+        preservePostData(app, request, request, target.c_str());
 
     // WAYF requires a target value.
     if (target.empty())

@@ -80,6 +80,23 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory StatusHandlerFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SessionHandlerFactory;
 
+    void SHIBSP_DLLLOCAL absolutize(const HTTPRequest& request, string& url) {
+        if (url.empty())
+            url = '/';
+        if (url[0] == '/') {
+            // Compute a URL to the root of the site.
+            int port = request.getPort();
+            const char* scheme = request.getScheme();
+            string root = string(scheme) + "://" + request.getHostname();
+            if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
+                ostringstream portstr;
+                portstr << port;
+                root += ":" + portstr.str();
+            }
+            url = root + url;
+        }
+    }
+
     void SHIBSP_DLLLOCAL generateRandomHex(std::string& buf, unsigned int len) {
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         int r;
@@ -95,6 +112,8 @@ namespace shibsp {
             buf += (DIGITS[0x0F & b2]);
         }
     }
+
+
 };
 
 void SHIBSP_API shibsp::registerHandlers()
@@ -234,9 +253,10 @@ void Handler::recoverRelayState(
                     StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
                     if (storage) {
                         ssid = key;
-                        if (storage->readString("RelayState",ssid.c_str(),&relayState)>0) {
+                        if (storage->readString("RelayState",ssid.c_str(),&relayState) > 0) {
                             if (clear)
                                 storage->deleteString("RelayState",ssid.c_str());
+                            absolutize(request, relayState);
                             return;
                         }
                         else
@@ -263,6 +283,7 @@ void Handler::recoverRelayState(
                     }
                     else {
                         relayState = out.string();
+                        absolutize(request, relayState);
                         return;
                     }
                 }
@@ -290,6 +311,7 @@ void Handler::recoverRelayState(
                     exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
                     response.setCookie(relay_cookie.first.c_str(), exp.c_str());
                 }
+                absolutize(request, relayState);
                 return;
             }
         }
@@ -301,20 +323,12 @@ void Handler::recoverRelayState(
     if (relayState.empty() || relayState == "default" || relayState == "cookie") {
         pair<bool,const char*> homeURL=application.getString("homeURL");
         if (homeURL.first)
-            relayState=homeURL.second;
-        else {
-            // Compute a URL to the root of the site.
-            int port = request.getPort();
-            const char* scheme = request.getScheme();
-            relayState = string(scheme) + "://" + request.getHostname();
-            if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
-                ostringstream portstr;
-                portstr << port;
-                relayState += ":" + portstr.str();
-            }
-            relayState += '/';
-        }
+            relayState = homeURL.second;
+        else
+            relayState = '/';
     }
+
+    absolutize(request, relayState);
 }
 
 AbstractHandler::AbstractHandler(

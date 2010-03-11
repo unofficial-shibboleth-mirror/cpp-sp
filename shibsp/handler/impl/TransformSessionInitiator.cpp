@@ -163,7 +163,6 @@ pair<bool,long> TransformSessionInitiator::run(SPRequest& request, string& entit
     if (entityID.empty() || !checkCompatibility(request, isHandler))
         return make_pair(false,0L);
 
-    string target;
     const Application& app=request.getApplication();
 
     m_log.debug("attempting to transform input (%s) into a valid entityID", entityID.c_str());

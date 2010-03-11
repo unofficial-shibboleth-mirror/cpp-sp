@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -228,6 +228,21 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 
     if (!m_handlerURL.empty() && resource && !strcmp(getRequestURL(),resource))
         return m_handlerURL.c_str();
+
+    string stackresource;
+    if (resource && *resource == '/') {
+        // Compute a URL to the root of the site and point resource at constructed string.
+        int port = getPort();
+        const char* scheme = getScheme();
+        stackresource = string(scheme) + "://" + getHostname();
+        if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
+            ostringstream portstr;
+            portstr << port;
+            stackresource += ":" + portstr.str();
+        }
+        stackresource += resource;
+        resource = stackresource.c_str();
+    }
 
 #ifdef HAVE_STRCASECMP
     if (!resource || (strncasecmp(resource,"http://",7) && strncasecmp(resource,"https://",8)))
