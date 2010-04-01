@@ -279,11 +279,9 @@ pair<bool,long> MetadataGenerator::processMessage(
     if (cache.first) {
         entity->setCacheDuration(cache.second);
     }
-    else {
-        cache = getUnsignedInt("validUntil");
-        if (cache.first)
-            entity->setValidUntil(time(NULL) + cache.second);
-    }
+    cache = getUnsignedInt("validUntil");
+    if (cache.first)
+        entity->setValidUntil(time(NULL) + cache.second);
     entity->setEntityID(relyingParty->getXMLString("entityID").second);
 
     SPSSODescriptor* role;
