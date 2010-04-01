@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
+#include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
@@ -116,7 +117,7 @@ namespace shibsp {
     {
     public:
         XMLRequestMapper(const DOMElement* e) : ReloadableXMLFile(e,Category::getInstance(SHIBSP_LOGCAT".RequestMapper")), m_impl(NULL) {
-            load();
+            background_load();
         }
 
         ~XMLRequestMapper() {
@@ -126,7 +127,7 @@ namespace shibsp {
         Settings getSettings(const HTTPRequest& request) const;
 
     protected:
-        pair<bool,DOMElement*> load();
+        pair<bool,DOMElement*> background_load();
 
     private:
         XMLRequestMapperImpl* m_impl;
@@ -630,7 +631,7 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const HTTP
     return o ? o->locate(request) : this;
 }
 
-pair<bool,DOMElement*> XMLRequestMapper::load()
+pair<bool,DOMElement*> XMLRequestMapper::background_load()
 {
     // Load from source using base class.
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
@@ -638,11 +639,15 @@ pair<bool,DOMElement*> XMLRequestMapper::load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
 
-    XMLRequestMapperImpl* impl = new XMLRequestMapperImpl(raw.second,m_log);
+    XMLRequestMapperImpl* impl = new XMLRequestMapperImpl(raw.second, m_log);
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
 
+    // Perform the swap inside a lock.
+    if (m_lock)
+        m_lock->wrlock();
+    SharedLock locker(m_lock, false);
     delete m_impl;
     m_impl = impl;
 

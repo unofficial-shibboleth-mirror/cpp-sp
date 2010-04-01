@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <xmltooling/unicode.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
+#include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
@@ -105,7 +106,7 @@ namespace shibsp {
     public:
         XMLAccessControl(const DOMElement* e)
                 : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AccessControl.XML")), m_rootAuthz(NULL) {
-            load(); // guarantees an exception or the policy is loaded
+            background_load(); // guarantees an exception or the policy is loaded
         }
 
         ~XMLAccessControl() {
@@ -115,7 +116,7 @@ namespace shibsp {
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
     protected:
-        pair<bool,DOMElement*> load();
+        pair<bool,DOMElement*> background_load();
 
     private:
         AccessControl* m_rootAuthz;
@@ -414,7 +415,7 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
     return shib_acl_false;
 }
 
-pair<bool,DOMElement*> XMLAccessControl::load()
+pair<bool,DOMElement*> XMLAccessControl::background_load()
 {
     // Load from source using base class.
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
@@ -434,8 +435,13 @@ pair<bool,DOMElement*> XMLAccessControl::load()
     else
         authz=new Operator(raw.second);
 
+    // Perform the swap inside a lock.
+    if (m_lock)
+        m_lock->wrlock();
+    SharedLock locker(m_lock, false);
     delete m_rootAuthz;
     m_rootAuthz = authz;
+
     return make_pair(false,(DOMElement*)NULL);
 }
 

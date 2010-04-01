@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,7 @@ namespace shibsp {
     {
     public:
         XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.XML")), m_impl(NULL) {
-            load();
+            background_load();
         }
         ~XMLExtractor() {
             delete m_impl;
@@ -196,7 +196,7 @@ namespace shibsp {
         }
 
     protected:
-        pair<bool,DOMElement*> load();
+        pair<bool,DOMElement*> background_load();
 
     private:
         XMLExtractorImpl* m_impl;
@@ -981,7 +981,7 @@ void XMLExtractor::extractAttributes(
     throw AttributeExtractionException("Unable to extract attributes, unknown object type.");
 }
 
-pair<bool,DOMElement*> XMLExtractor::load()
+pair<bool,DOMElement*> XMLExtractor::background_load()
 {
     // Load from source using base class.
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
@@ -994,6 +994,10 @@ pair<bool,DOMElement*> XMLExtractor::load()
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
 
+    // Perform the swap inside a lock.
+    if (m_lock)
+        m_lock->wrlock();
+    SharedLock locker(m_lock, false);
     delete m_impl;
     m_impl = impl;
 

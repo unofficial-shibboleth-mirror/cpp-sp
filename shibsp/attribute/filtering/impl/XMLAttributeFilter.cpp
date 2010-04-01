@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@
 
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
+#include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
@@ -99,7 +100,7 @@ namespace shibsp {
     {
     public:
         XMLFilter(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeFilter")), m_impl(NULL) {
-            load();
+            background_load();
         }
         ~XMLFilter() {
             delete m_impl;
@@ -110,7 +111,7 @@ namespace shibsp {
         }
 
     protected:
-        pair<bool,DOMElement*> load();
+        pair<bool,DOMElement*> background_load();
 
     private:
         XMLFilterImpl* m_impl;
@@ -456,7 +457,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
     }
 }
 
-pair<bool,DOMElement*> XMLFilter::load()
+pair<bool,DOMElement*> XMLFilter::background_load()
 {
     // Load from source using base class.
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
@@ -469,6 +470,10 @@ pair<bool,DOMElement*> XMLFilter::load()
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
 
+    // Perform the swap inside a lock.
+    if (m_lock)
+        m_lock->wrlock();
+    SharedLock locker(m_lock, false);
     delete m_impl;
     m_impl = impl;
 

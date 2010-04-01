@@ -49,6 +49,7 @@
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/TemplateEngine.h>
+#include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
 
 #ifndef SHIBSP_LITE
@@ -292,7 +293,7 @@ namespace {
         }
 
         void init() {
-            load();
+            background_load();
         }
 
         ~XMLConfig() {
@@ -392,7 +393,7 @@ namespace {
 #endif
 
     protected:
-        pair<bool,DOMElement*> load();
+        pair<bool,DOMElement*> background_load();
 
     private:
         friend class XMLConfigImpl;
@@ -1725,7 +1726,7 @@ void XMLConfig::receive(DDF& in, ostream& out)
 }
 #endif
 
-pair<bool,DOMElement*> XMLConfig::load()
+pair<bool,DOMElement*> XMLConfig::background_load()
 {
     // Load from source using base class.
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
@@ -1733,11 +1734,15 @@ pair<bool,DOMElement*> XMLConfig::load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
 
-    XMLConfigImpl* impl = new XMLConfigImpl(raw.second,(m_impl==NULL),this,m_log);
+    XMLConfigImpl* impl = new XMLConfigImpl(raw.second, (m_impl==NULL), this, m_log);
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
 
+    // Perform the swap inside a lock.
+    if (m_lock)
+        m_lock->wrlock();
+    SharedLock locker(m_lock, false);
     delete m_impl;
     m_impl = impl;
 
