@@ -121,6 +121,7 @@ namespace shibsp {
         }
 
         ~XMLRequestMapper() {
+            shutdown();
             delete m_impl;
         }
 

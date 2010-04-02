@@ -183,6 +183,7 @@ namespace shibsp {
             background_load();
         }
         ~XMLExtractor() {
+            shutdown();
             delete m_impl;
         }
 

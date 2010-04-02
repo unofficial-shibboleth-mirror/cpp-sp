@@ -110,6 +110,7 @@ namespace shibsp {
         }
 
         ~XMLAccessControl() {
+            shutdown();
             delete m_rootAuthz;
         }
 

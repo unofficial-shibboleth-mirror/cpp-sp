@@ -103,6 +103,7 @@ namespace shibsp {
             background_load();
         }
         ~XMLFilter() {
+            shutdown();
             delete m_impl;
         }
 

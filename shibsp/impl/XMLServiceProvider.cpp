@@ -297,6 +297,7 @@ namespace {
         }
 
         ~XMLConfig() {
+            shutdown();
             delete m_impl;
             delete m_sessionCache;
             delete m_listener;
