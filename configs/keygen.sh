@@ -60,7 +60,8 @@ subjectAltName=$ALTNAME
 subjectKeyIdentifier=hash
 EOF
 
-umask 177
+touch sp-key.pem
+chmod 600 sp-key.pem
 if [ -z "$BATCH" ] ; then
     openssl req -config sp-cert.cnf -new -x509 -days $DAYS -keyout sp-key.pem -out sp-cert.pem
 else
