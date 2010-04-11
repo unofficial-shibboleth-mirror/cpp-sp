@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,8 +186,9 @@ namespace shibsp {
         // maintain back-mappings of NameID/SessionIndex -> session key
         void insert(const char* key, time_t expires, const char* name, const char* index);
         bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
-#endif
 
+        bool m_cacheAssertions;
+#endif
         const DOMElement* m_root;         // Only valid during initialization
         unsigned long m_inprocTimeout;
 
@@ -748,10 +749,11 @@ SessionCacheEx::~SessionCacheEx()
 SSCache::SSCache(const DOMElement* e)
     : m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), inproc(true), m_cacheTimeout(28800),
 #ifndef SHIBSP_LITE
-      m_storage(NULL), m_storage_lite(NULL),
+      m_storage(NULL), m_storage_lite(NULL), m_cacheAssertions(true),
 #endif
-        m_root(e), m_inprocTimeout(900), m_lock(NULL), shutdown(false), shutdown_wait(NULL), cleanup_thread(NULL)
+      m_root(e), m_inprocTimeout(900), m_lock(NULL), shutdown(false), shutdown_wait(NULL), cleanup_thread(NULL)
 {
+    static const XMLCh cacheAssertions[] =  UNICODE_LITERAL_15(c,a,c,h,e,A,s,s,e,r,t,i,o,n,s);
     static const XMLCh cacheTimeout[] =     UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
     static const XMLCh inprocTimeout[] =    UNICODE_LITERAL_13(i,n,p,r,o,c,T,i,m,e,o,u,t);
     static const XMLCh _StorageService[] =  UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
@@ -800,6 +802,9 @@ SSCache::SSCache(const DOMElement* e)
             m_log.info("No StorageServiceLite specified. Using standard StorageService.");
             m_storage_lite = m_storage;
         }
+        tag = e ? e->getAttributeNS(NULL, cacheAssertions) : NULL;
+        if (tag && (*tag == chLatin_f || *tag == chDigit_0))
+            m_cacheAssertions = false;
     }
 #endif
 
@@ -1013,7 +1018,7 @@ void SSCache::insert(
         obj.addmember("nameid").string(namestr.str().c_str());
     }
 
-    if (tokens) {
+    if (tokens && m_cacheAssertions) {
         obj.addmember("assertions").list();
         for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
             auto_ptr_char tokenid((*t)->getID());
@@ -1047,7 +1052,7 @@ void SSCache::insert(
         m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
     }
 
-    if (tokens) {
+    if (tokens && m_cacheAssertions) {
         try {
             for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
                 ostringstream tokenstr;
@@ -1068,6 +1073,15 @@ void SSCache::insert(
         key.get(), pid ? pid : "none", prot ? prot : "none", httpRequest.getRemoteAddr().c_str());
 
     // Transaction Logging
+    string primaryAssertionID("none");
+    if (m_cacheAssertions) {
+        if (tokens)
+            primaryAssertionID = obj["assertions"].first().string();
+    }
+    else if (tokens) {
+        auto_ptr_char tokenid(tokens->front()->getID());
+        primaryAssertionID = tokenid.get();
+    }
     TransactionLog* xlog = application.getServiceProvider().getTransactionLog();
     Locker locker(xlog);
     xlog->log.infoStream() <<
@@ -1084,7 +1098,7 @@ void SSCache::insert(
         ") using (Protocol: " <<
             (prot ? prot : "none") <<
         ") from (AssertionID: " <<
-            (tokens ? obj["assertions"].first().string() : "none") <<
+            primaryAssertionID <<
         ")";
 
     if (attributes) {
