@@ -49,7 +49,7 @@ and Apache module(s).
 %package devel
 Summary:	Shibboleth development Headers
 Group:		Development/Libraries
-Requires:	%{name} = %{version}
+Requires:	%{name} = %{version}-%{release}
 %if 0%{?suse_version} > 1030
 Requires:	libXerces-c-devel >= 2.8.0
 %else
