@@ -157,7 +157,7 @@ AC_ARG_WITH(log4shib,
     fi
     ])
 if test -f "${LOG4SHIB_CONFIG}"; then
-    LDFLAGS="`${LOG4SHIB_CONFIG} --libs` $LDFLAGS"
+    LIBS="`${LOG4SHIB_CONFIG} --libs` $LIBS"
     CPPFLAGS="`${LOG4SHIB_CONFIG} --cflags` $CPPFLAGS"
 	AC_CHECK_HEADER([log4shib/CategoryStream.hh],,AC_MSG_ERROR([unable to find log4shib header files]))
 	AC_TRY_LINK(
@@ -182,7 +182,7 @@ else
 	    ])
 	if test -f "${LOG4CPP_CONFIG}"; then
 		AC_MSG_WARN([will try to use log4cpp, note that most non-Internet2 supplied versions are not thread-safe])
-	    LDFLAGS="`${LOG4CPP_CONFIG} --libs` $LDFLAGS"
+	    LIBS="`${LOG4CPP_CONFIG} --libs` $LIBS"
 	    CPPFLAGS="`${LOG4CPP_CONFIG} --cflags` $CPPFLAGS"
 		AC_CHECK_HEADER([log4cpp/CategoryStream.hh],,AC_MSG_ERROR([unable to find log4cpp header files]))
 		AC_TRY_LINK(
