@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ using namespace xmltooling;
 using namespace std;
 
 SOAPClient::SOAPClient(SecurityPolicy& policy)
-    : opensaml::SOAPClient(policy), m_app(policy.getApplication()), m_relyingParty(NULL), m_credResolver(NULL)
+    : opensaml::SOAPClient(policy), m_app(policy.getApplication()), m_relyingParty(nullptr), m_credResolver(nullptr)
 {
 }
 
@@ -72,7 +72,7 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
                 to.setXMLAlgorithm(sigalg.second);
             const Credential* cred = m_credResolver->resolve(&to);
             // Reset criteria back.
-            to.setKeyAlgorithm(NULL);
+            to.setKeyAlgorithm(nullptr);
             to.setKeySize(0);
             to.getKeyNames().clear();
 
@@ -93,7 +93,7 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
 
                         // Sign it. The marshalling step in the base class should be a no-op.
                         vector<Signature*> sigs(1,sig);
-                        env.marshall((DOMDocument*)NULL,&sigs,cred);
+                        env.marshall((DOMDocument*)nullptr,&sigs,cred);
                     }
                 }
             }
@@ -194,10 +194,10 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
 
 void SOAPClient::reset()
 {
-    m_relyingParty = NULL;
+    m_relyingParty = nullptr;
     if (m_credResolver)
         m_credResolver->unlock();
-    m_credResolver = NULL;
+    m_credResolver = nullptr;
     opensaml::SOAPClient::reset();
 }
 

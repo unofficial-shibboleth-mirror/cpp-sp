@@ -1,5 +1,5 @@
 /*
- *  Copyright 2009 Internet2
+ *  Copyright 2009-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,6 @@ DDF XMLAttribute::marshall() const
     ddf.name("XML");
     DDF vlist = ddf.first();
     for (vector<string>::const_iterator i=m_values.begin(); i!=m_values.end(); ++i)
-        vlist.add(DDF(NULL).string(i->c_str()));
+        vlist.add(DDF(nullptr).string(i->c_str()));
     return ddf;
 }

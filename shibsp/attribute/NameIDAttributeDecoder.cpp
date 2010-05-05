@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * NameIDAttributeDecoder.cpp
  *
- * Decodes SAML into NameIDAttributes
+ * Decodes SAML into NameIDAttributes.
  */
 
 #include "internal.h"
@@ -41,15 +41,15 @@ namespace shibsp {
     {
     public:
         NameIDAttributeDecoder(const DOMElement* e)
-                : AttributeDecoder(e), m_formatter(e ? e->getAttributeNS(NULL, formatter) : NULL), m_defaultQualifiers(false) {
-            const XMLCh* flag = e ? e->getAttributeNS(NULL, defaultQualifiers) : NULL;
+                : AttributeDecoder(e), m_formatter(e ? e->getAttributeNS(nullptr, formatter) : nullptr), m_defaultQualifiers(false) {
+            const XMLCh* flag = e ? e->getAttributeNS(nullptr, defaultQualifiers) : nullptr;
             if (flag && (*flag == chLatin_t || *flag == chDigit_1))
                 m_defaultQualifiers = true;
         }
         ~NameIDAttributeDecoder() {}
 
         shibsp::Attribute* decode(
-            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -111,7 +111,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
             }
             else {
                 log.warn("XMLObject type not recognized by NameIDAttributeDecoder, no values returned");
-                return NULL;
+                return nullptr;
             }
         }
 
@@ -137,7 +137,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
             }
         }
 
-        return dest.empty() ? NULL : _decode(nameid.release());
+        return dest.empty() ? nullptr : _decode(nameid.release());
     }
 
     const NameIDType* saml2name = dynamic_cast<const NameIDType*>(xmlObject);
@@ -162,11 +162,11 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
         }
         else {
             log.warn("XMLObject type not recognized by NameIDAttributeDecoder, no values returned");
-            return NULL;
+            return nullptr;
         }
     }
 
-    return dest.empty() ? NULL : _decode(nameid.release());
+    return dest.empty() ? nullptr : _decode(nameid.release());
 }
 
 void NameIDAttributeDecoder::extract(

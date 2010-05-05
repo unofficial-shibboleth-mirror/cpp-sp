@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ namespace shibsp {
         mutable CGIParser* m_parser;
         mutable vector<XSECCryptoX509*> m_certs;
     public:
-        RemotedRequest(DDF& input) : m_input(input), m_parser(NULL) {}
+        RemotedRequest(DDF& input) : m_input(input), m_parser(nullptr) {}
         virtual ~RemotedRequest() {
             for_each(m_certs.begin(), m_certs.end(), xmltooling::cleanup<XSECCryptoX509>());
             delete m_parser;
@@ -134,7 +134,7 @@ const char* RemotedRequest::getParameter(const char* name) const
         m_parser=new CGIParser(*this);
     
     pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
-    return (bounds.first==bounds.second) ? NULL : bounds.first->second;
+    return (bounds.first==bounds.second) ? nullptr : bounds.first->second;
 }
 
 std::vector<const char*>::size_type RemotedRequest::getParameters(const char* name, std::vector<const char*>& values) const
@@ -273,7 +273,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
         if (!xvec.empty()) {
             DDF clist = in.addmember("certificates").list();
             for (vector<XSECCryptoX509*>::const_iterator x = xvec.begin(); x!=xvec.end(); ++x) {
-                DDF x509 = DDF(NULL).string((*x)->getDEREncodingSB().rawCharBuffer());
+                DDF x509 = DDF(nullptr).string((*x)->getDEREncodingSB().rawCharBuffer());
                 clist.add(x509);
             }
         }
@@ -282,7 +282,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
         if (!xvec.empty()) {
             DDF clist = in.addmember("certificates").list();
             for (vector<string>::const_iterator x = xvec.begin(); x!=xvec.end(); ++x) {
-                DDF x509 = DDF(NULL).string(x->c_str());
+                DDF x509 = DDF(nullptr).string(x->c_str());
                 clist.add(x509);
             }
         }

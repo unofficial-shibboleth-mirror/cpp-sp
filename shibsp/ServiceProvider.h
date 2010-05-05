@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,8 +85,8 @@ namespace shibsp {
         /**
          * Returns a StorageService instance based on an ID.
          * 
-         * @param id    a NULL-terminated key identifying the StorageService to the configuration 
-         * @return  a StorageService if available, or NULL
+         * @param id    a nullptr-terminated key identifying the StorageService to the configuration 
+         * @return  a StorageService if available, or nullptr
          */
         virtual xmltooling::StorageService* getStorageService(const char* id) const=0;
 #endif
@@ -145,7 +145,7 @@ namespace shibsp {
          * Returns an Application instance matching the specified ID.
          * 
          * @param applicationId the ID of the application
-         * @return  pointer to the application, or NULL
+         * @return  pointer to the application, or nullptr
          */
         virtual const Application* getApplication(const char* applicationId) const=0;
 

@@ -53,7 +53,7 @@ namespace shibsp {
     {
     public:
         WAYFSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.WAYF"), NULL, &m_remapper), m_url(NULL) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.WAYF"), nullptr, &m_remapper), m_url(nullptr) {
             pair<bool,const char*> url = getString("URL");
             if (!url.first)
                 throw ConfigurationException("WAYF SessionInitiator requires a URL property.");
@@ -87,7 +87,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
 
     string target;
     pair<bool,const char*> prop;
-    const Handler* ACS=NULL;
+    const Handler* ACS=nullptr;
     const Application& app=request.getApplication();
     pair<bool,const char*> discoveryURL = pair<bool,const char*>(true, m_url);
 
@@ -135,10 +135,10 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     }
 
     // Validate the ACS for use with this protocol.
-    pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,NULL);
+    pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,nullptr);
     if (ACSbinding.first) {
         pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
-        if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == NULL) {
+        if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == nullptr) {
             m_log.error("configured or requested ACS has non-SAML 1.x binding");
             throw ConfigurationException("Configured or requested ACS has non-SAML 1.x binding ($1).", params(1, ACSbinding.second));
         }
@@ -155,7 +155,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
 
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc = request.getHandlerURL(target.c_str());
-    prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+    prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,nullptr);
     if (prop.first)
         ACSloc += prop.second;
 
@@ -177,7 +177,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         target = "default";
 
     char timebuf[16];
-    sprintf(timebuf,"%lu",time(NULL));
+    sprintf(timebuf,"%lu",time(nullptr));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
         "&time=" + timebuf + "&target=" + urlenc->encode(target.c_str()) +

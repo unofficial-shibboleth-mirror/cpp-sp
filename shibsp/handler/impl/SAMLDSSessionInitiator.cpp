@@ -52,7 +52,7 @@ namespace shibsp {
     {
     public:
         SAMLDSSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(NULL), m_returnParam(NULL)
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(nullptr), m_returnParam(nullptr)
 #ifndef SHIBSP_LITE
                     ,m_discoNS("urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol")
 #endif
@@ -87,7 +87,7 @@ namespace shibsp {
                         XMLString::equals((*i)->getElementQName().getNamespaceURI(), m_discoNS.get())) {
                         const AttributeExtensibleXMLObject* sub = dynamic_cast<const AttributeExtensibleXMLObject*>(*i);
                         if (sub) {
-                            const XMLCh* val = sub->getAttribute(xmltooling::QName(NULL,IndexedEndpointType::INDEX_ATTRIB_NAME));
+                            const XMLCh* val = sub->getAttribute(xmltooling::QName(nullptr,IndexedEndpointType::INDEX_ATTRIB_NAME));
                             if (val) {
                                 int maxindex = XMLString::parseInt(val);
                                 if (ix.second <= maxindex)
@@ -111,9 +111,9 @@ namespace shibsp {
             auto_ptr_XMLCh widen2(os.str().c_str());
 
             ElementProxy* ep = new AnyElementImpl(m_discoNS.get(), LOCAL_NAME);
-            ep->setAttribute(xmltooling::QName(NULL,EndpointType::LOCATION_ATTRIB_NAME), widen.get());
-            ep->setAttribute(xmltooling::QName(NULL,EndpointType::BINDING_ATTRIB_NAME), m_discoNS.get());
-            ep->setAttribute(xmltooling::QName(NULL,IndexedEndpointType::INDEX_ATTRIB_NAME), widen2.get());
+            ep->setAttribute(xmltooling::QName(nullptr,EndpointType::LOCATION_ATTRIB_NAME), widen.get());
+            ep->setAttribute(xmltooling::QName(nullptr,EndpointType::BINDING_ATTRIB_NAME), m_discoNS.get());
+            ep->setAttribute(xmltooling::QName(nullptr,IndexedEndpointType::INDEX_ATTRIB_NAME), widen2.get());
             Extensions* ext = role.getExtensions();
             if (!ext) {
                 ext = ExtensionsBuilder::buildExtensions();

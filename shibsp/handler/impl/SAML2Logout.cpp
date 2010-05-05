@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,7 +133,7 @@ namespace shibsp {
 SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".Logout.SAML2"))
 #ifndef SHIBSP_LITE
-        ,m_role(samlconstants::SAML20MD_NS, IDPSSODescriptor::LOCAL_NAME), m_decoder(NULL), m_outgoing(NULL)
+        ,m_role(samlconstants::SAML20MD_NS, IDPSSODescriptor::LOCAL_NAME), m_decoder(nullptr), m_outgoing(nullptr)
 #endif
 {
     m_initiator = false;
@@ -199,7 +199,7 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
             MessageEncoder* encoder = conf.MessageEncoderManager.newPlugin(
                 getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
                 );
-            m_encoders.insert(pair<const XMLCh*,MessageEncoder*>(NULL, encoder));
+            m_encoders.insert(pair<const XMLCh*,MessageEncoder*>(nullptr, encoder));
         }
     }
 #endif
@@ -236,7 +236,7 @@ void SAML2Logout::receive(DDF& in, ostream& out)
 {
     // Find application.
     const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
@@ -247,7 +247,7 @@ void SAML2Logout::receive(DDF& in, ostream& out)
     auto_ptr<HTTPRequest> req(getRequest(in));
 
     // Wrap a response shim.
-    DDF ret(NULL);
+    DDF ret(nullptr);
     DDFJanitor jout(ret);
     auto_ptr<HTTPResponse> resp(getResponse(ret));
 
@@ -312,13 +312,13 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         if (worked1 && worked2) {
             // Successful LogoutResponse. Has to be front-channel or we couldn't be here.
             return sendResponse(
-                reqid.get(), StatusCode::SUCCESS, NULL, NULL, request.getParameter("RelayState"), entity.second, application, response, true
+                reqid.get(), StatusCode::SUCCESS, nullptr, nullptr, request.getParameter("RelayState"), entity.second, application, response, true
                 );
         }
 
         return sendResponse(
             reqid.get(),
-            StatusCode::RESPONDER, NULL, "Unable to fully destroy principal's session.",
+            StatusCode::RESPONDER, nullptr, "Unable to fully destroy principal's session.",
             request.getParameter("RelayState"),
             entity.second,
             application,
@@ -380,13 +380,13 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                 else {
                     Locker credlocker(cr);
                     auto_ptr<MetadataCredentialCriteria> mcc(
-                        policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
+                        policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : nullptr
                         );
                     try {
                         auto_ptr<XMLObject> decryptedID(
                             encname->decrypt(
                                 *cr,
-                                application.getRelyingParty(policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL)->getXMLString("entityID").second,
+                                application.getRelyingParty(policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : nullptr)->getXMLString("entityID").second,
                                 mcc.get()
                                 )
                             );
@@ -416,11 +416,11 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                 );
         }
 
-        auto_ptr<NameID> namewrapper(ownedName ? nameid : NULL);
+        auto_ptr<NameID> namewrapper(ownedName ? nameid : nullptr);
 
         // Suck indexes out of the request for next steps.
         set<string> indexes;
-        EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+        EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : nullptr;
         const vector<SessionIndex*> sindexes = logoutRequest->getSessionIndexs();
         for (vector<SessionIndex*>::const_iterator i = sindexes.begin(); i != sindexes.end(); ++i) {
             auto_ptr_char sindex((*i)->getSessionIndex());
@@ -468,7 +468,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
             m_log.error("error while logging out matching sessions: %s", ex.what());
             return sendResponse(
                 logoutRequest->getID(),
-                StatusCode::RESPONDER, NULL, ex.what(),
+                StatusCode::RESPONDER, nullptr, ex.what(),
                 relayState.c_str(),
                 policy.getIssuerMetadata(),
                 application,
@@ -482,7 +482,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
             map<string,string> parammap;
             if (!relayState.empty())
                 parammap["RelayState"] = relayState;
-            auto_ptr_char entityID(entity ? entity->getEntityID() : NULL);
+            auto_ptr_char entityID(entity ? entity->getEntityID() : nullptr);
             if (entityID.get())
                 parammap["entityID"] = entityID.get();
             auto_ptr_char reqID(logoutRequest->getID());
@@ -510,8 +510,8 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         return sendResponse(
             logoutRequest->getID(),
             (worked1 && worked2) ? StatusCode::SUCCESS : StatusCode::RESPONDER,
-            (worked1 && worked2) ? NULL : StatusCode::PARTIAL_LOGOUT,
-            NULL,
+            (worked1 && worked2) ? nullptr : StatusCode::PARTIAL_LOGOUT,
+            nullptr,
             relayState.c_str(),
             policy.getIssuerMetadata(),
             application,
@@ -536,8 +536,8 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
             recoverRelayState(application, request, response, relayState);
 
         // Check for partial logout.
-        const StatusCode* sc = logoutResponse->getStatus() ? logoutResponse->getStatus()->getStatusCode() : NULL;
-        sc = sc ? sc->getStatusCode() : NULL;
+        const StatusCode* sc = logoutResponse->getStatus() ? logoutResponse->getStatus()->getStatusCode() : nullptr;
+        sc = sc ? sc->getStatusCode() : nullptr;
         if (sc && XMLString::equals(sc->getValue(), StatusCode::PARTIAL_LOGOUT))
             return sendLogoutPage(application, request, response, "partial");
 
@@ -573,8 +573,8 @@ pair<bool,long> SAML2Logout::sendResponse(
     ) const
 {
     // Get endpoint and encoder to use.
-    const EndpointType* ep = NULL;
-    const MessageEncoder* encoder = NULL;
+    const EndpointType* ep = nullptr;
+    const MessageEncoder* encoder = nullptr;
     if (front) {
         const IDPSSODescriptor* idp = dynamic_cast<const IDPSSODescriptor*>(role);
         for (vector<const XMLCh*>::const_iterator b = m_bindings.begin(); idp && b!=m_bindings.end(); ++b) {

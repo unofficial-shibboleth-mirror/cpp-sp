@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,15 +83,15 @@ AndMatchFunctor::AndMatchFunctor(const pair<const FilterPolicyContext*,const DOM
     MatchFunctor* func;
     const DOMElement* e = XMLHelper::getFirstChildElement(p.second);
     while (e) {
-        func = NULL;
+        func = nullptr;
         if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, Rule)) {
             func = buildFunctor(e, p.first);
         }
         else if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, RuleReference)) {
-            auto_ptr_char ref(e->getAttributeNS(NULL, _ref));
+            auto_ptr_char ref(e->getAttributeNS(nullptr, _ref));
             if (ref.get() && *ref.get()) {
                 multimap<string,MatchFunctor*>::const_iterator rule = p.first->getMatchFunctors().find(ref.get());
-                func = (rule!=p.first->getMatchFunctors().end()) ? rule->second : NULL;
+                func = (rule!=p.first->getMatchFunctors().end()) ? rule->second : nullptr;
             }
         }
 
@@ -105,7 +105,7 @@ AndMatchFunctor::AndMatchFunctor(const pair<const FilterPolicyContext*,const DOM
 MatchFunctor* AndMatchFunctor::buildFunctor(const DOMElement* e, const FilterPolicyContext* functorMap)
 {
     // We'll track and map IDs just for consistency, but don't require them or worry about dups.
-    auto_ptr_char temp(e->getAttributeNS(NULL,_id));
+    auto_ptr_char temp(e->getAttributeNS(nullptr,_id));
     const char* id = (temp.get() && *temp.get()) ? temp.get() : "";
     if (*id && functorMap->getMatchFunctors().count(id))
         id = "";

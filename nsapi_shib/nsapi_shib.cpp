@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * nsapi_shib.cpp
  *
- * Shibboleth NSAPI filter
+ * Shibboleth NSAPI filter.
  */
 
 #define SHIBSP_LITE
@@ -76,7 +76,7 @@ using namespace std;
     if (IO_ERROR==net_write(sn->csd,str,strlen(str))) return REQ_EXIT
 
 namespace {
-    SPConfig* g_Config=NULL;
+    SPConfig* g_Config=nullptr;
     string g_ServerName;
     string g_unsetHeaderValue;
     string g_spoofKey;
@@ -103,7 +103,7 @@ extern "C" NSAPI_PUBLIC void nsapi_shib_exit(void*)
 {
     if (g_Config)
         g_Config->term();
-    g_Config = NULL;
+    g_Config = nullptr;
 }
 
 extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* rq)
@@ -144,7 +144,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         SPConfig::Handlers
         );
     if (!g_Config->init(schemadir,prefix)) {
-        g_Config=NULL;
+        g_Config=nullptr;
         pblock_nvinsert("error","unable to initialize Shibboleth libraries",pb);
         return REQ_ABORTED;
     }
@@ -158,11 +158,11 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
     catch (exception& ex) {
         pblock_nvinsert("error",ex.what(),pb);
         g_Config->term();
-        g_Config=NULL;
+        g_Config=nullptr;
         return REQ_ABORTED;
     }
 
-    daemon_atrestart(nsapi_shib_exit,NULL);
+    daemon_atrestart(nsapi_shib_exit,nullptr);
 
     ServiceProvider* sp=g_Config->getServiceProvider();
     Locker locker(sp);
@@ -195,7 +195,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
                     pblock_nvinsert("error", "module failed to generate a random anti-spoofing key (if this is Windows 2000 set one manually)", pb);
                     locker.assign(); // pops lock on SP config
                     g_Config->term();
-                    g_Config=NULL;
+                    g_Config=nullptr;
                     return REQ_ABORTED;
                 }
             }
@@ -293,7 +293,7 @@ public:
     return pblock_findval("method", m_rq->reqpb);
   }
   string getContentType() const {
-    char* content_type = NULL;
+    char* content_type = nullptr;
     if (request_header("content-type", &content_type, m_sn, m_rq) != REQ_PROCEED)
         return "";
     return content_type ? content_type : "";
@@ -301,7 +301,7 @@ public:
   long getContentLength() const {
     if (m_gotBody)
         return m_body.length();
-    char* content_length=NULL;
+    char* content_length=nullptr;
     if (request_header("content-length", &content_length, m_sn, m_rq) != REQ_PROCEED)
         return 0;
     return content_length ? atoi(content_length) : 0;
@@ -321,10 +321,10 @@ public:
   const char* getRequestBody() const {
     if (m_gotBody)
         return m_body.c_str();
-    char* content_length=NULL;
+    char* content_length=nullptr;
     if (request_header("content-length", &content_length, m_sn, m_rq) != REQ_PROCEED || !content_length) {
         m_gotBody = true;
-        return NULL;
+        return nullptr;
     }
     else if (atoi(content_length) > 1024*1024) // 1MB?
       throw opensaml::SecurityPolicyException("Blocked request body exceeding 1M size limit.");
@@ -382,7 +382,7 @@ public:
   }
   string getHeader(const char* name) const {
     // NSAPI headers tend to be lower case. We'll special case "cookie" since it's used a lot.
-    char* hdr = NULL;
+    char* hdr = nullptr;
     int cookie = strcmp(name, "Cookie");
     if (cookie == 0)
         name = "cookie";
@@ -435,7 +435,7 @@ public:
     }
     pblock_nvinsert("connection","close",m_rq->srvhdrs);
     pblock_nninsert("content-length", msg.length(), m_rq->srvhdrs);
-    protocol_status(m_sn, m_rq, status, NULL);
+    protocol_status(m_sn, m_rq, status, nullptr);
     protocol_start_response(m_sn, m_rq);
     net_write(m_sn->csd,const_cast<char*>(msg.c_str()),msg.length());
     return REQ_EXIT;
@@ -448,7 +448,7 @@ public:
     pblock_nvinsert("cache-control", "private,no-store,no-cache", m_rq->srvhdrs);
     pblock_nvinsert("location", url, m_rq->srvhdrs);
     pblock_nvinsert("connection","close",m_rq->srvhdrs);
-    protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, NULL);
+    protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, nullptr);
     protocol_start_response(m_sn, m_rq);
     return REQ_ABORTED;
   }
@@ -554,16 +554,16 @@ public:
     SunRequestMapper(const xercesc::DOMElement* e);
     ~SunRequestMapper() { delete m_mapper; delete m_stKey; delete m_propsKey; }
     Lockable* lock() { return m_mapper->lock(); }
-    void unlock() { m_stKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
+    void unlock() { m_stKey->setData(nullptr); m_propsKey->setData(nullptr); m_mapper->unlock(); }
     Settings getSettings(const HTTPRequest& request) const;
 
-    const PropertySet* getParent() const { return NULL; }
+    const PropertySet* getParent() const { return nullptr; }
     void setParent(const PropertySet*) {}
-    pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
-    pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
-    pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
-    pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
-    pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
+    pair<bool,bool> getBool(const char* name, const char* ns=nullptr) const;
+    pair<bool,const char*> getString(const char* name, const char* ns=nullptr) const;
+    pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=nullptr) const;
+    pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
+    pair<bool,int> getInt(const char* name, const char* ns=nullptr) const;
     void getAll(map<string,const char*>& properties) const;
     const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const;
     const xercesc::DOMElement* getElement() const;
@@ -579,11 +579,11 @@ RequestMapper* SunRequestMapFactory(const xercesc::DOMElement* const & e)
     return new SunRequestMapper(e);
 }
 
-SunRequestMapper::SunRequestMapper(const xercesc::DOMElement* e) : m_mapper(NULL), m_stKey(NULL), m_propsKey(NULL)
+SunRequestMapper::SunRequestMapper(const xercesc::DOMElement* e) : m_mapper(nullptr), m_stKey(nullptr), m_propsKey(nullptr)
 {
     m_mapper = SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e);
-    m_stKey=ThreadKey::create(NULL);
-    m_propsKey=ThreadKey::create(NULL);
+    m_stKey=ThreadKey::create(nullptr);
+    m_propsKey=ThreadKey::create(nullptr);
 }
 
 RequestMapper::Settings SunRequestMapper::getSettings(const HTTPRequest& request) const
@@ -621,13 +621,13 @@ pair<bool,const char*> SunRequestMapper::getString(const char* name, const char*
                 return make_pair(true,param);
         }
     }
-    return s ? s->getString(name,ns) : pair<bool,const char*>(false,NULL);
+    return s ? s->getString(name,ns) : pair<bool,const char*>(false,nullptr);
 }
 
 pair<bool,const XMLCh*> SunRequestMapper::getXMLString(const char* name, const char* ns) const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,NULL);
+    return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,nullptr);
 }
 
 pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const char* ns) const
@@ -638,7 +638,7 @@ pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const
         // Override int properties.
         const char* param=pblock_findval(name,stn->m_pb);
         if (param)
-            return pair<bool,unsigned int>(true,strtol(param,NULL,10));
+            return pair<bool,unsigned int>(true,strtol(param,nullptr,10));
     }
     return s ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
 }
@@ -678,11 +678,11 @@ void SunRequestMapper::getAll(map<string,const char*>& properties) const
 const PropertySet* SunRequestMapper::getPropertySet(const char* name, const char* ns) const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getPropertySet(name,ns) : NULL;
+    return s ? s->getPropertySet(name,ns) : nullptr;
 }
 
 const xercesc::DOMElement* SunRequestMapper::getElement() const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getElement() : NULL;
+    return s ? s->getElement() : nullptr;
 }

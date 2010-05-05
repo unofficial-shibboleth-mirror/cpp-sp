@@ -73,8 +73,8 @@ namespace shibsp {
         AbstractHandler(
             const xercesc::DOMElement* e,
             xmltooling::logging::Category& log,
-            xercesc::DOMNodeFilter* filter=NULL,
-            const std::map<std::string,std::string>* remapper=NULL
+            xercesc::DOMNodeFilter* filter=nullptr,
+            const std::map<std::string,std::string>* remapper=nullptr
             );
 
         void log(SPRequest::SPLogLevel level, const std::string& msg) const;
@@ -91,7 +91,7 @@ namespace shibsp {
          */
         virtual void checkError(
             const xmltooling::XMLObject* response,
-            const opensaml::saml2md::RoleDescriptor* role=NULL
+            const opensaml::saml2md::RoleDescriptor* role=nullptr
             ) const;
 
         /**
@@ -103,7 +103,7 @@ namespace shibsp {
          * @param msg       optional message to pass back
          */
         void fillStatus(
-            opensaml::saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode=NULL, const char* msg=NULL
+            opensaml::saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode=nullptr, const char* msg=nullptr
             ) const;
 
         /**
@@ -204,7 +204,7 @@ namespace shibsp {
          * @param name      property name
          * @param request   reference to incoming request
          * @param type      bitmask of property sources to use
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
         std::pair<bool,bool> getBool(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
@@ -214,7 +214,7 @@ namespace shibsp {
          * @param name      property name
          * @param request   reference to incoming request
          * @param type      bitmask of property sources to use
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
         std::pair<bool,const char*> getString(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
@@ -224,7 +224,7 @@ namespace shibsp {
          * @param name      property name
          * @param request   reference to incoming request
          * @param type      bitmask of property sources to use
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
         std::pair<bool,unsigned int> getUnsignedInt(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
@@ -234,7 +234,7 @@ namespace shibsp {
          * @param name      property name
          * @param request   reference to incoming request
          * @param type      bitmask of property sources to use
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
         std::pair<bool,int> getInt(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,10 @@ namespace shibsp {
         bool m_ignoreCase;
     public:
         AttributeIssuerStringFunctor(const DOMElement* e) {
-            m_value = e ? e->getAttributeNS(NULL,value) : NULL;
+            m_value = e ? e->getAttributeNS(nullptr,value) : nullptr;
             if (!m_value || !*m_value)
                 throw ConfigurationException("AttributeIssuerString MatchFunctor requires non-empty value attribute.");
-            const XMLCh* flag = e ? e->getAttributeNS(NULL,ignoreCase) : NULL;
+            const XMLCh* flag = e ? e->getAttributeNS(nullptr,ignoreCase) : nullptr;
             m_ignoreCase = (flag && (*flag == chLatin_t || *flag == chDigit_1)); 
         }
 

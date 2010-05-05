@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,14 +92,14 @@ void shibsp::registerAttributeDecoders()
 }
 
 AttributeDecoder::AttributeDecoder(const DOMElement *e)
-    : m_caseSensitive(true), m_internal(false), m_hashAlg(e ? e->getAttributeNS(NULL, hashAlg) : NULL)
+    : m_caseSensitive(true), m_internal(false), m_hashAlg(e ? e->getAttributeNS(nullptr, hashAlg) : nullptr)
 {
     if (e) {
-        const XMLCh* flag = e->getAttributeNS(NULL, caseSensitive);
+        const XMLCh* flag = e->getAttributeNS(nullptr, caseSensitive);
         if (flag && (*flag == chLatin_f || *flag == chDigit_0))
             m_caseSensitive = false;
 
-        flag = e->getAttributeNS(NULL, internal);
+        flag = e->getAttributeNS(nullptr, internal);
         if (flag && (*flag == chLatin_t || *flag == chDigit_1))
             m_internal = true;
     }
@@ -128,7 +128,7 @@ Attribute* AttributeDecoder::_decode(Attribute* attr) const
                     newdest.pop_back();
             }
             delete attr;
-            return newdest.empty() ? NULL : simple.release();
+            return newdest.empty() ? nullptr : simple.release();
         }
 
     }
@@ -240,7 +240,7 @@ const char* Attribute::getString(size_t index) const
 
 const char* Attribute::getScope(size_t index) const
 {
-    return NULL;
+    return nullptr;
 }
 
 void Attribute::removeValue(size_t index)
@@ -251,7 +251,7 @@ void Attribute::removeValue(size_t index)
 
 DDF Attribute::marshall() const
 {
-    DDF ddf(NULL);
+    DDF ddf(nullptr);
     ddf.structure().addmember(m_id.front().c_str()).list();
     if (!m_caseSensitive)
         ddf.addmember("case_insensitive");
@@ -261,7 +261,7 @@ DDF Attribute::marshall() const
         DDF alias;
         DDF aliases = ddf.addmember("aliases").list();
         for (std::vector<std::string>::const_iterator a = m_id.begin() + 1; a != m_id.end(); ++a) {
-            alias = DDF(NULL).string(a->c_str());
+            alias = DDF(nullptr).string(a->c_str());
             aliases.add(alias);
         }
     }

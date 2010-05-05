@@ -1,6 +1,6 @@
 
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,11 +98,11 @@ SPConfig& SPConfig::getConfig()
     return g_config;
 }
 
-SPConfig::SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(NULL),
+SPConfig::SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(nullptr),
 #ifndef SHIBSP_LITE
-    m_artifactResolver(NULL),
+    m_artifactResolver(nullptr),
 #endif
-    m_features(0), m_configDoc(NULL)
+    m_features(0), m_configDoc(nullptr)
 {
 }
 
@@ -268,7 +268,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     if (isEnabled(OutOfProcess))
         m_artifactResolver = new ArtifactResolver();
 #endif
-    srand(static_cast<unsigned int>(std::time(NULL)));
+    srand(static_cast<unsigned int>(std::time(nullptr)));
 
     log.info("%s library initialization complete", PACKAGE_STRING);
     return true;
@@ -282,12 +282,12 @@ void SPConfig::term()
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
     log.info("%s library shutting down", PACKAGE_STRING);
 
-    setServiceProvider(NULL);
+    setServiceProvider(nullptr);
     if (m_configDoc)
         m_configDoc->release();
-    m_configDoc = NULL;
+    m_configDoc = nullptr;
 #ifndef SHIBSP_LITE
-    setArtifactResolver(NULL);
+    setArtifactResolver(nullptr);
 #endif
 
     ArtifactResolutionServiceManager.deregisterFactories();
@@ -364,7 +364,7 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
             dummydoc = XMLToolingConfig::getConfig().getParser().parse(snippet);
             XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
             static const XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
-            auto_ptr_char type(dummydoc->getDocumentElement()->getAttributeNS(NULL,_type));
+            auto_ptr_char type(dummydoc->getDocumentElement()->getAttributeNS(nullptr,_type));
             if (type.get() && *type.get())
                 setServiceProvider(ServiceProviderManager.newPlugin(type.get(), dummydoc->getDocumentElement()));
             else

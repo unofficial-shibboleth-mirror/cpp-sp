@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 /**
  * AttributeValueStringFunctor.cpp
  * 
- * A match function that matches the value of an attribute against the specified value.
+ * A match function that matches the value of an attribute against the
+ * specified value.
  */
 
 #include "internal.h"
@@ -49,12 +50,12 @@ namespace shibsp {
 
     public:
         AttributeValueStringFunctor(const DOMElement* e)
-            : m_value(e ? xmltooling::toUTF8(e->getAttributeNS(NULL,value)) : NULL), m_attributeID(e ? e->getAttributeNS(NULL,attributeID) : NULL) {
+            : m_value(e ? xmltooling::toUTF8(e->getAttributeNS(nullptr,value)) : nullptr), m_attributeID(e ? e->getAttributeNS(nullptr,attributeID) : nullptr) {
             if (!m_value || !*m_value) {
                 delete[] m_value;
                 throw ConfigurationException("AttributeValueString MatchFunctor requires non-empty value attribute.");
             }
-            if (e && e->hasAttributeNS(NULL,ignoreCase)) {
+            if (e && e->hasAttributeNS(nullptr,ignoreCase)) {
                 xmltooling::logging::Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
                     "ignoreCase property ignored by AttributeValueString MatchFunctor in favor of attribute's caseSensitive property"
                     );

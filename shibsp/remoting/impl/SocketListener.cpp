@@ -159,8 +159,8 @@ void SocketPool::put(SocketListener::ShibSocket s)
 }
 
 SocketListener::SocketListener(const DOMElement* e)
-    : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")), m_socketpool(NULL),
-        m_shutdown(NULL), m_child_lock(NULL), m_child_wait(NULL), m_stackSize(0), m_socket((ShibSocket)0)
+    : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")), m_socketpool(nullptr),
+        m_shutdown(nullptr), m_child_lock(nullptr), m_child_wait(nullptr), m_stackSize(0), m_socket((ShibSocket)0)
 {
     // Are we a client?
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
@@ -172,7 +172,7 @@ SocketListener::SocketListener(const DOMElement* e)
         m_child_wait = CondWait::create();
 
         static const XMLCh stackSize[] = UNICODE_LITERAL_9(s,t,a,c,k,S,i,z,e);
-        const XMLCh* attr = e ? e->getAttributeNS(NULL, stackSize) : NULL;
+        const XMLCh* attr = e ? e->getAttributeNS(nullptr, stackSize) : nullptr;
         if (attr && *attr)
             m_stackSize = XMLString::parseInt(attr) * 1024;
     }
@@ -367,7 +367,7 @@ DDF SocketListener::send(const DDF& in)
     if (out.isstring() && out.name() && !strcmp(out.name(),"exception")) {
         // Reconstitute exception object.
         DDFJanitor jout(out);
-        XMLToolingException* except=NULL;
+        XMLToolingException* except=nullptr;
         try {
             except=XMLToolingException::fromString(out.string());
             log->error("remoted message returned an error: %s", except->what());
@@ -419,11 +419,11 @@ void* server_thread_fn(void* arg)
 
     // Now we can clean up and exit the thread.
     delete child;
-    return NULL;
+    return nullptr;
 }
 
 ServerThread::ServerThread(SocketListener::ShibSocket& s, SocketListener* listener, unsigned long id)
-    : m_sock(s), m_child(NULL), m_listener(listener)
+    : m_sock(s), m_child(nullptr), m_listener(listener)
 {
 
     ostringstream buf;

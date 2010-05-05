@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,28 +76,28 @@ namespace shibsp {
         /**
          * Gets the ID of the requester of the attributes, if known.
          * 
-         * @return requester of the attributes, or NULL
+         * @return requester of the attributes, or nullptr
          */
         virtual const XMLCh* getAttributeRequester() const=0;
         
         /**
          * Gets the ID of the issuer of the attributes, if known.
          * 
-         * @return ID of the issuer of the attributes, or NULL
+         * @return ID of the issuer of the attributes, or nullptr
          */
         virtual const XMLCh* getAttributeIssuer() const=0;
 
         /**
          * Gets the SAML metadata for the attribute requesting role, if available.
          * 
-         * @return SAML metadata for the attribute requesting role, or NULL
+         * @return SAML metadata for the attribute requesting role, or nullptr
          */
         virtual const opensaml::saml2md::RoleDescriptor* getAttributeRequesterMetadata() const=0;
         
         /**
          * Gets the SAML metadata for the attribute issuing role, if available.
          * 
-         * @return SAML metadata for the attribute issuing role, or NULL
+         * @return SAML metadata for the attribute issuing role, or nullptr
          */
         virtual const opensaml::saml2md::RoleDescriptor* getAttributeIssuerMetadata() const=0;
 

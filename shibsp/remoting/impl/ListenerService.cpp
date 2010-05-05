@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ ListenerService::~ListenerService()
 
 Remoted* ListenerService::regListener(const char* address, Remoted* listener)
 {
-    Remoted* ret=NULL;
+    Remoted* ret=nullptr;
     map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
     if (i!=m_listenerMap.end())
         ret=i->second;
@@ -92,7 +92,7 @@ bool ListenerService::unregListener(const char* address, Remoted* current, Remot
 Remoted* ListenerService::lookup(const char *address) const
 {
     map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
-    return (i==m_listenerMap.end()) ? NULL : i->second;
+    return (i==m_listenerMap.end()) ? nullptr : i->second;
 }
 
 void ListenerService::receive(DDF &in, ostream& out)
@@ -100,7 +100,7 @@ void ListenerService::receive(DDF &in, ostream& out)
     if (!in.name())
         throw ListenerException("Incoming message with no destination address rejected.");
     else if (!strcmp("ping",in.name())) {
-        DDF outmsg=DDF(NULL).integer(in.integer() + 1);
+        DDF outmsg=DDF(nullptr).integer(in.integer() + 1);
         DDFJanitor jan(outmsg);
         out << outmsg;
     }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * @file shibsp/SPConfig.h
  *
- * Library configuration
+ * Library configuration.
  */
 
 #ifndef __shibsp_config_h__
@@ -124,7 +124,7 @@ namespace shibsp {
          * @param inst_prefix   installation prefix for software
          * @return true iff initialization was successful
          */
-        virtual bool init(const char* catalog_path=NULL, const char* inst_prefix=NULL);
+        virtual bool init(const char* catalog_path=nullptr, const char* inst_prefix=nullptr);
 
         /**
          * Shuts down library
@@ -146,7 +146,7 @@ namespace shibsp {
         /**
          * Returns the global ServiceProvider instance.
          *
-         * @return  global ServiceProvider or NULL
+         * @return  global ServiceProvider or nullptr
          */
         ServiceProvider* getServiceProvider() const;
 
@@ -158,7 +158,7 @@ namespace shibsp {
          * @param rethrow   true iff caught exceptions should be rethrown instead of just returning the status
          * @return true iff instantiation was successful
          */
-        virtual bool instantiate(const char* config=NULL, bool rethrow=false);
+        virtual bool instantiate(const char* config=nullptr, bool rethrow=false);
 
 #ifndef SHIBSP_LITE
         /**
@@ -174,7 +174,7 @@ namespace shibsp {
         /**
          * Returns the global ArtifactResolver instance.
          *
-         * @return  global ArtifactResolver or NULL
+         * @return  global ArtifactResolver or nullptr
          */
         const opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const;
 #endif

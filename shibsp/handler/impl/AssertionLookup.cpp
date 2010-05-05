@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * AssertionLookup.cpp
  *
- * Handler for looking assertions in SessionCache
+ * Handler for looking up assertions in the SessionCache.
  */
 
 #include "internal.h"
@@ -153,7 +153,7 @@ void AssertionLookup::receive(DDF& in, ostream& out)
 {
     // Find application.
     const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for assertion lookup", aid ? aid : "(missing)");
@@ -165,7 +165,7 @@ void AssertionLookup::receive(DDF& in, ostream& out)
     //m_log.debug("found %d client certificates", req->getClientCertificates().size());
 
     // Wrap a response shim.
-    DDF ret(NULL);
+    DDF ret(nullptr);
     DDFJanitor jout(ret);
     auto_ptr<HTTPResponse> resp(getResponse(ret));
 
@@ -194,7 +194,7 @@ pair<bool,long> AssertionLookup::processMessage(const Application& application, 
         throw FatalProfileException("Session cache does not support assertion lookup.");
     }
 
-    // The cache will either silently pass a session or NULL back, or throw an exception out.
+    // The cache will either silently pass a session or nullptr back, or throw an exception out.
     Session* session = cache->find(application, key);
     if (!session) {
         m_log.error("valid session (%s) not found for assertion lookup", key);

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,7 @@
  */
 
 /*
- * shar.cpp -- the shibd "main" code.  All the functionality is elsewhere
- *
- * Created By:	Derek Atkins <derek@ihtfp.com>
- *
- * $Id: shar.cpp 2164 2007-02-11 05:26:18 +0000 (Sun, 11 Feb 2007) cantor $
+ * shibd.cpp -- the shibd "main" code.  All the functionality is elsewhere
  */
 
 
@@ -56,13 +52,13 @@ using namespace xmltooling;
 using namespace std;
 
 bool shibd_shutdown = false;
-const char* shar_config = NULL;
-const char* shar_schemadir = NULL;
-const char* shar_prefix = NULL;
+const char* shar_config = nullptr;
+const char* shar_schemadir = nullptr;
+const char* shar_prefix = nullptr;
 bool shar_checkonly = false;
 bool shar_version = false;
 static bool unlink_socket = false;
-const char* pidfile = NULL;
+const char* pidfile = nullptr;
 
 #ifdef WIN32
 
@@ -191,7 +187,7 @@ static int setup_signals(void)
     sa.sa_handler = SIG_IGN;
     sa.sa_flags = SA_RESTART;
 
-    if (sigaction(SIGPIPE, &sa, NULL) < 0) {
+    if (sigaction(SIGPIPE, &sa, nullptr) < 0) {
         return -1;
     }
 
@@ -199,16 +195,16 @@ static int setup_signals(void)
     sa.sa_handler = term_handler;
     sa.sa_flags = SA_RESTART;
 
-    if (sigaction(SIGHUP, &sa, NULL) < 0) {
+    if (sigaction(SIGHUP, &sa, nullptr) < 0) {
         return -1;
     }
-    if (sigaction(SIGINT, &sa, NULL) < 0) {
+    if (sigaction(SIGINT, &sa, nullptr) < 0) {
         return -1;
     }
-    if (sigaction(SIGQUIT, &sa, NULL) < 0) {
+    if (sigaction(SIGQUIT, &sa, nullptr) < 0) {
         return -1;
     }
-    if (sigaction(SIGTERM, &sa, NULL) < 0) {
+    if (sigaction(SIGTERM, &sa, nullptr) < 0) {
         return -1;
     }
 
@@ -216,14 +212,14 @@ static int setup_signals(void)
         memset(&sa, 0, sizeof (sa));
         sa.sa_handler = run_handler;
 
-        if (sigaction(SIGUSR1, &sa, NULL) < 0) {
+        if (sigaction(SIGUSR1, &sa, nullptr) < 0) {
             return -1;
         }
 
         memset(&sa, 0, sizeof (sa));
         sa.sa_handler = child_handler;
 
-        if (sigaction(SIGCHLD, &sa, NULL) < 0) {
+        if (sigaction(SIGCHLD, &sa, nullptr) < 0) {
             return -1;
         }
     }

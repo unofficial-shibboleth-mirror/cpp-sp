@@ -93,7 +93,7 @@ namespace shibsp {
                 e = XMLHelper::getFirstChildElement(e);
                 while (e) {
                     if (e->hasChildNodes()) {
-                        const XMLCh* flag = e->getAttributeNS(NULL, force);
+                        const XMLCh* flag = e->getAttributeNS(nullptr, force);
                         if (!flag)
                             flag = &chNull;
                         if (XMLString::equals(e->getLocalName(), Subst)) {
@@ -101,8 +101,8 @@ namespace shibsp {
                             if (temp.get() && *temp.get())
                                 m_subst.push_back(pair<bool,string>((*flag==chDigit_1 || *flag==chLatin_t), temp.get()));
                         }
-                        else if (XMLString::equals(e->getLocalName(), Regex) && e->hasAttributeNS(NULL, match)) {
-                            auto_ptr_char m(e->getAttributeNS(NULL, match));
+                        else if (XMLString::equals(e->getLocalName(), Regex) && e->hasAttributeNS(nullptr, match)) {
+                            auto_ptr_char m(e->getAttributeNS(nullptr, match));
                             auto_ptr_char repl(e->getFirstChild()->getNodeValue());
                             if (m.get() && *m.get() && repl.get() && *repl.get())
                                 m_regex.push_back(make_pair((*flag==chDigit_1 || *flag==chLatin_t), pair<string,string>(m.get(), repl.get())));
@@ -189,7 +189,7 @@ void TransformSessionInitiator::receive(DDF& in, ostream& out)
 {
     // Find application.
     const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) to generate AuthnRequest", aid ? aid : "(missing)");
@@ -202,7 +202,7 @@ void TransformSessionInitiator::receive(DDF& in, ostream& out)
 
     string copy(entityID);
     doRequest(*app, copy);
-    DDF ret = DDF(NULL).string(copy.c_str());
+    DDF ret = DDF(nullptr).string(copy.c_str());
     DDFJanitor jout(ret);
     out << ret;
 }

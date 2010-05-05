@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * TCPListener.cpp
  *
- * TCP-based SocketListener implementation
+ * TCP-based SocketListener implementation.
  */
 
 #include "internal.h"
@@ -87,20 +87,20 @@ namespace shibsp {
 TCPListener::TCPListener(const DOMElement* e) : SocketListener(e), m_address("127.0.0.1"), m_port(12345)
 {
     // We're stateless, but we need to load the configuration.
-    const XMLCh* tag=e->getAttributeNS(NULL,address);
+    const XMLCh* tag=e->getAttributeNS(nullptr,address);
     if (tag && *tag) {
         auto_ptr_char a(tag);
         m_address=a.get();
     }
 
-    tag=e->getAttributeNS(NULL,port);
+    tag=e->getAttributeNS(nullptr,port);
     if (tag && *tag) {
         m_port=XMLString::parseInt(tag);
         if (m_port==0)
             m_port=12345;
     }
 
-    tag=e->getAttributeNS(NULL,acl);
+    tag=e->getAttributeNS(nullptr,acl);
     if (tag && *tag) {
         auto_ptr_char temp(tag);
         string sockacl=temp.get();

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ namespace shibsp {
     class DummyRequest : public HTTPRequest
     {
     public:
-        DummyRequest(const char* url) : m_parser(NULL), m_url(url), m_scheme(NULL), m_query(NULL), m_port(0) {
+        DummyRequest(const char* url) : m_parser(nullptr), m_url(url), m_scheme(nullptr), m_query(nullptr), m_port(0) {
 #ifdef HAVE_STRCASECMP
             if (url && !strncasecmp(url,"http://",7)) {
                 m_scheme="http";
@@ -204,7 +204,7 @@ namespace shibsp {
             return "";
         }
         const char* getRequestBody() const {
-            return NULL;
+            return nullptr;
         }
         const char* getQueryString() const {
             return m_query;
@@ -215,7 +215,7 @@ namespace shibsp {
                 m_parser=new CGIParser(*this);
 
             pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
-            return (bounds.first==bounds.second) ? NULL : bounds.first->second;
+            return (bounds.first==bounds.second) ? nullptr : bounds.first->second;
         }
         vector<const char*>::size_type getParameters(const char* name, vector<const char*>& values) const
         {
@@ -360,7 +360,7 @@ void StatusHandler::receive(DDF& in, ostream& out)
 {
     // Find application.
     const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for status request", aid ? aid : "(missing)");
@@ -368,7 +368,7 @@ void StatusHandler::receive(DDF& in, ostream& out)
     }
 
     // Wrap a response shim.
-    DDF ret(NULL);
+    DDF ret(nullptr);
     DDFJanitor jout(ret);
     auto_ptr<HTTPRequest> req(getRequest(in));
     auto_ptr<HTTPResponse> resp(getResponse(ret));
@@ -396,7 +396,7 @@ pair<bool,long> StatusHandler::processMessage(
         << "' OpenSAML-C='" << OPENSAML_FULLVERSIONDOT
         << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
 
-    const char* param = NULL;
+    const char* param = nullptr;
     if (param) {
     }
     else {
@@ -420,7 +420,7 @@ pair<bool,long> StatusHandler::processMessage(
             status = "<Partial/>";
         }
 
-        const PropertySet* relyingParty=NULL;
+        const PropertySet* relyingParty=nullptr;
         param=httpRequest.getParameter("entityID");
         if (param) {
             MetadataProvider* m = application.getMetadataProvider();

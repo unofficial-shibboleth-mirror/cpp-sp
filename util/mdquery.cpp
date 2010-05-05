@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * mdquery.cpp
  * 
- * SAML Metadata Query tool layered on SP configuration
+ * SAML Metadata Query tool layered on SP configuration.
  */
 
 #if defined (_MSC_VER) || defined(__BORLANDC__)
@@ -57,13 +57,13 @@ void usage()
 
 int main(int argc,char* argv[])
 {
-    char* entityID = NULL;
+    char* entityID = nullptr;
     char* appID = "default";
     bool strict = true;
-    char* prot = NULL;
-    const XMLCh* protocol = NULL;
-    char* rname = NULL;
-    char* rns = NULL;
+    char* prot = nullptr;
+    const XMLCh* protocol = nullptr;
+    char* rname = nullptr;
+    char* rns = nullptr;
 
     for (int i=1; i<argc; i++) {
         if (!strcmp(argv[i],"-e") && i+1<argc)
@@ -133,7 +133,7 @@ int main(int argc,char* argv[])
     }
 
     app->getMetadataProvider()->lock();
-    MetadataProviderCriteria mc(*app, entityID, NULL, NULL, strict);
+    MetadataProviderCriteria mc(*app, entityID, nullptr, nullptr, strict);
     if (rname) {
         const XMLCh* ns = rns ? XMLString::transcode(rns) : samlconstants::SAML20MD_NS;
         auto_ptr_XMLCh n(rname);

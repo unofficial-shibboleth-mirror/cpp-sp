@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -192,7 +192,7 @@ namespace shibsp {
          * Returns an assertion cached by the session.
          *
          * @param id    identifier of the assertion to retrieve
-         * @return pointer to assertion, or NULL
+         * @return pointer to assertion, or nullptr
          */
         virtual const opensaml::Assertion* getAssertion(const char* id) const=0;
 
@@ -248,15 +248,15 @@ namespace shibsp {
             const xmltooling::HTTPRequest& httpRequest,
             xmltooling::HTTPResponse& httpResponse,
             time_t expires,
-            const opensaml::saml2md::EntityDescriptor* issuer=NULL,
-            const XMLCh* protocol=NULL,
-            const opensaml::saml2::NameID* nameid=NULL,
-            const XMLCh* authn_instant=NULL,
-            const XMLCh* session_index=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL,
-            const std::vector<const opensaml::Assertion*>* tokens=NULL,
-            const std::vector<Attribute*>* attributes=NULL
+            const opensaml::saml2md::EntityDescriptor* issuer=nullptr,
+            const XMLCh* protocol=nullptr,
+            const opensaml::saml2::NameID* nameid=nullptr,
+            const XMLCh* authn_instant=nullptr,
+            const XMLCh* session_index=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const std::vector<const opensaml::Assertion*>* tokens=nullptr,
+            const std::vector<Attribute*>* attributes=nullptr
             )=0;
 
         /**
@@ -301,14 +301,14 @@ namespace shibsp {
          * @param application   reference to Application that owns the Session
          * @param request       request from client bound to session
          * @param client_addr   network address of client (if known)
-         * @param timeout       inactivity timeout to enforce (0 for none, NULL to bypass check/update of last access)
-         * @return  pointer to locked Session, or NULL
+         * @param timeout       inactivity timeout to enforce (0 for none, nullptr to bypass check/update of last access)
+         * @return  pointer to locked Session, or nullptr
          */
         virtual Session* find(
             const Application& application,
             const xmltooling::HTTPRequest& request,
-            const char* client_addr=NULL,
-            time_t* timeout=NULL
+            const char* client_addr=nullptr,
+            time_t* timeout=nullptr
             )=0;
 
         /**
@@ -323,14 +323,14 @@ namespace shibsp {
          * @param application   reference to Application that owns the Session
          * @param request       request from client bound to session
          * @param client_addr   network address of client (if known)
-         * @param timeout       inactivity timeout to enforce (0 for none, NULL to bypass check/update of last access)
-         * @return  pointer to locked Session, or NULL
+         * @param timeout       inactivity timeout to enforce (0 for none, nullptr to bypass check/update of last access)
+         * @return  pointer to locked Session, or nullptr
          */
         virtual Session* find(
             const Application& application,
             xmltooling::HTTPRequest& request,
-            const char* client_addr=NULL,
-            time_t* timeout=NULL
+            const char* client_addr=nullptr,
+            time_t* timeout=nullptr
             );
 
         /**
@@ -340,7 +340,7 @@ namespace shibsp {
          * @param request       request from client containing session, or a reference to it
          * @param response      optional response to client enabling removal of session or reference
          */
-        virtual void remove(const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=NULL)=0;
+        virtual void remove(const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=nullptr)=0;
     };
 
     /** SessionCache implementation backed by a StorageService. */

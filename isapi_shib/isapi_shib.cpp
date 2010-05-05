@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * isapi_shib.cpp
  *
- * Shibboleth ISAPI filter
+ * Shibboleth ISAPI filter.
  */
 
 #define SHIBSP_LITE
@@ -69,10 +69,10 @@ namespace {
     struct site_t {
         site_t(const DOMElement* e)
         {
-            auto_ptr_char n(e->getAttributeNS(NULL,name));
-            auto_ptr_char s(e->getAttributeNS(NULL,scheme));
-            auto_ptr_char p(e->getAttributeNS(NULL,port));
-            auto_ptr_char p2(e->getAttributeNS(NULL,sslport));
+            auto_ptr_char n(e->getAttributeNS(nullptr,name));
+            auto_ptr_char s(e->getAttributeNS(nullptr,scheme));
+            auto_ptr_char p(e->getAttributeNS(nullptr,port));
+            auto_ptr_char p2(e->getAttributeNS(nullptr,sslport));
             if (n.get()) m_name=n.get();
             if (s.get()) m_scheme=s.get();
             if (p.get()) m_port=p.get();
@@ -91,7 +91,7 @@ namespace {
     };
 
     HINSTANCE g_hinstDLL;
-    SPConfig* g_Config = NULL;
+    SPConfig* g_Config = nullptr;
     map<string,site_t> g_Sites;
     bool g_bNormalizeRequest = true;
     string g_unsetHeaderValue,g_spoofKey;
@@ -108,10 +108,10 @@ BOOL LogEvent(
     PSID  lpUserSid,
     LPCSTR  message)
 {
-    LPCSTR  messages[] = {message, NULL};
+    LPCSTR  messages[] = {message, nullptr};
 
     HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth ISAPI Filter");
-    BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, NULL);
+    BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, nullptr);
     return (DeregisterEventSource(hElog) && res);
 }
 
@@ -139,7 +139,7 @@ extern "C" BOOL WINAPI GetExtensionVersion(HSE_VERSION_INFO* pVer)
         return FALSE;
 
     if (!g_Config) {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
                 "Extension mode startup not possible, is the DLL loaded as a filter?");
         return FALSE;
     }
@@ -159,7 +159,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     if (!pVer)
         return FALSE;
     else if (g_Config) {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
                 "Reentrant filter initialization, ignoring...");
         return TRUE;
     }
@@ -174,21 +174,21 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         SPConfig::Handlers
         );
     if (!g_Config->init()) {
-        g_Config=NULL;
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+        g_Config=nullptr;
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
                 "Filter startup failed during library initialization, check native log for help.");
         return FALSE;
     }
 
     try {
-        if (!g_Config->instantiate(NULL, true))
+        if (!g_Config->instantiate(nullptr, true))
             throw runtime_error("unknown error");
     }
     catch (exception& ex) {
         g_Config->term();
-        g_Config=NULL;
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, ex.what());
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+        g_Config=nullptr;
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, ex.what());
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
                 "Filter startup failed to load configuration, check native log for details.");
         return FALSE;
     }
@@ -221,11 +221,11 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 }
                 else {
                     _set_invalid_parameter_handler(old);
-                    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL,
+                    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
                             "Filter failed to generate a random anti-spoofing key (if this is Windows 2000 set one manually).");
                     locker.assign();    // pops lock on SP config
                     g_Config->term();
-                    g_Config=NULL;
+                    g_Config=nullptr;
                     return FALSE;
                 }
             }
@@ -239,7 +239,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             g_bSafeHeaderNames = flag.first && flag.second;
             const DOMElement* child = XMLHelper::getFirstChildElement(props->getElement(),Site);
             while (child) {
-                auto_ptr_char id(child->getAttributeNS(NULL,id));
+                auto_ptr_char id(child->getAttributeNS(nullptr,id));
                 if (id.get())
                     g_Sites.insert(pair<string,site_t>(id.get(),site_t(child)));
                 child=XMLHelper::getNextSiblingElement(child,Site);
@@ -254,7 +254,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                    SF_NOTIFY_NONSECURE_PORT |
                    SF_NOTIFY_PREPROC_HEADERS |
                    SF_NOTIFY_LOG);
-    LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7701, NULL, "Filter initialized...");
+    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, 7701, nullptr, "Filter initialized...");
     return TRUE;
 }
 
@@ -262,8 +262,8 @@ extern "C" BOOL WINAPI TerminateFilter(DWORD)
 {
     if (g_Config)
         g_Config->term();
-    g_Config = NULL;
-    LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7701, NULL, "Filter shut down...");
+    g_Config = nullptr;
+    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, 7701, nullptr, "Filter shut down...");
     return TRUE;
 }
 
@@ -280,7 +280,7 @@ extern "C" BOOL WINAPI TerminateFilter(DWORD)
 class dynabuf
 {
 public:
-    dynabuf() { bufptr=NULL; buflen=0; }
+    dynabuf() { bufptr=nullptr; buflen=0; }
     dynabuf(size_t s) { bufptr=new char[buflen=s]; *bufptr=0; }
     ~dynabuf() { delete[] bufptr; }
     size_t length() const { return bufptr ? strlen(bufptr) : 0; }
@@ -311,8 +311,8 @@ void dynabuf::reserve(size_t s, bool keep)
 
 bool dynabuf::operator==(const char* s) const
 {
-    if (buflen==NULL || s==NULL)
-        return (buflen==NULL && s==NULL);
+    if (buflen==0 || s==nullptr)
+        return (buflen==0 && s==nullptr);
     else
         return strcmp(bufptr,s)==0;
 }
@@ -441,8 +441,8 @@ public:
   }
   const char* getQueryString() const {
       const char* uri = getRequestURI();
-      uri = (uri ? strchr(uri, '?') : NULL);
-      return uri ? (uri + 1) : NULL;
+      uri = (uri ? strchr(uri, '?') : nullptr);
+      return uri ? (uri + 1) : nullptr;
   }
   const char* getMethod() const {
     if (m_method.empty()) {
@@ -475,7 +475,7 @@ public:
   void log(SPLogLevel level, const string& msg) {
     AbstractSPRequest::log(level,msg);
     if (level >= SPCrit)
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg.c_str());
   }
   string makeSafeHeader(const char* rawname) const {
       string hdr;
@@ -526,8 +526,8 @@ public:
   void setRemoteUser(const char* user) {
     setHeader("remote-user", user);
     if (!user || !*user)
-        m_pfc->pFilterContext = NULL;
-    else if (m_pfc->pFilterContext = m_pfc->AllocMem(m_pfc, sizeof(char) * (strlen(user) + 1), NULL))
+        m_pfc->pFilterContext = nullptr;
+    else if (m_pfc->pFilterContext = m_pfc->AllocMem(m_pfc, sizeof(char) * (strlen(user) + 1), 0))
         strcpy(reinterpret_cast<char*>(m_pfc->pFilterContext), user);
   }
   string getRemoteUser() const {
@@ -596,7 +596,7 @@ public:
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 {
-    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
+    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg);
     static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)ctype,0);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
@@ -663,11 +663,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             return WriteClientError(pfc,"Shibboleth Filter detected unexpected IIS error.");
     }
     catch (exception& e) {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, e.what());
         return WriteClientError(pfc,"Shibboleth Filter caught an exception, check Event Log for details.");
     }
     catch(...) {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Shibboleth Filter threw an unknown exception.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "Shibboleth Filter threw an unknown exception.");
         if (g_catchAll)
             return WriteClientError(pfc,"Shibboleth Filter threw an unknown exception.");
         throw;
@@ -682,7 +682,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
 DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 {
-    LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg);
+    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg);
     static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
     lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
@@ -829,7 +829,7 @@ public:
   void log(SPLogLevel level, const string& msg) const {
       AbstractSPRequest::log(level,msg);
       if (level >= SPCrit)
-          LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, msg.c_str());
+          LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg.c_str());
   }
   string getHeader(const char* name) const {
     string hdr("HTTP_");
@@ -942,7 +942,7 @@ public:
         ccex.CertContext.pbCertEncoded = (BYTE*)CertificateBuf;
         DWORD dwSize = sizeof(ccex);
 
-        if (m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_GET_CERT_INFO_EX, (LPVOID)&ccex, (LPDWORD)dwSize, NULL)) {
+        if (m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_GET_CERT_INFO_EX, (LPVOID)&ccex, (LPDWORD)dwSize, nullptr)) {
             if (ccex.CertContext.cbCertEncoded) {
                 xsecsize_t outlen;
                 XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(CertificateBuf), ccex.CertContext.cbCertEncoded, &outlen);
@@ -997,11 +997,11 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB,"Server detected unexpected IIS error.");
     }
     catch (exception& e) {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, e.what());
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, e.what());
         return WriteClientError(lpECB,"Shibboleth Extension caught an exception, check Event Log for details.");
     }
     catch(...) {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "Shibboleth Extension threw an unknown exception.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "Shibboleth Extension threw an unknown exception.");
         if (g_catchAll)
             return WriteClientError(lpECB,"Shibboleth Extension threw an unknown exception.");
         throw;

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ AssertionConsumerService::AssertionConsumerService(
     const DOMElement* e, const char* appId, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
     ) : AbstractHandler(e, log, filter, remapper)
 #ifndef SHIBSP_LITE
-        ,m_decoder(NULL), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
+        ,m_decoder(nullptr), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
 #endif
 {
     if (!e)
@@ -111,7 +111,7 @@ void AssertionConsumerService::receive(DDF& in, ostream& out)
 {
     // Find application.
     const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for new session", aid ? aid : "(missing)");
@@ -122,7 +122,7 @@ void AssertionConsumerService::receive(DDF& in, ostream& out)
     auto_ptr<HTTPRequest> req(getRequest(in));
 
     // Wrap a response shim.
-    DDF ret(NULL);
+    DDF ret(nullptr);
     DDFJanitor jout(ret);
     auto_ptr<HTTPResponse> resp(getResponse(ret));
 
@@ -166,7 +166,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
         recoverRelayState(application, httpRequest, httpResponse, relayState);
         implementProtocol(application, httpRequest, httpResponse, *(policy.get()), settings, *msg.get());
 
-        auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : NULL);
+        auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : nullptr);
 
         // History cookie.
         if (issuer.get() && *issuer.get())
@@ -314,8 +314,8 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             if (mprefix.first) {
                 m_log.debug("extracting metadata-derived attributes...");
                 try {
-                    // We pass NULL for "issuer" because the IdP isn't the one asserting metadata-based attributes.
-                    extractor->extractAttributes(application, NULL, *issuer, resolvedAttributes);
+                    // We pass nullptr for "issuer" because the IdP isn't the one asserting metadata-based attributes.
+                    extractor->extractAttributes(application, nullptr, *issuer, resolvedAttributes);
                     for (vector<Attribute*>::iterator a = resolvedAttributes.begin(); a != resolvedAttributes.end(); ++a) {
                         vector<string>& ids = (*a)->getAliases();
                         for (vector<string>::iterator id = ids.begin(); id != ids.end(); ++id)
@@ -383,7 +383,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             auto_ptr<ResolutionContext> ctx(
                 resolver->createResolutionContext(
                     application,
-                    issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : NULL,
+                    issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : nullptr,
                     protocol,
                     nameid,
                     authncontext_class,
@@ -405,7 +405,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
 
     if (!resolvedAttributes.empty())
         return new DummyContext(resolvedAttributes);
-    return NULL;
+    return nullptr;
 }
 
 void AssertionConsumerService::extractMessageDetails(const Assertion& assertion, const XMLCh* protocol, opensaml::SecurityPolicy& policy) const
@@ -479,7 +479,7 @@ void AssertionConsumerService::maintainHistory(
             response.setCookie(CommonDomainCookie::CDCName, c.c_str());
         }
         else {
-            time_t now=time(NULL) + (days.second * 24 * 60 * 60);
+            time_t now=time(nullptr) + (days.second * 24 * 60 * 60);
 #ifdef HAVE_GMTIME_R
             struct tm res;
             struct tm* ptime=gmtime_r(&now,&res);

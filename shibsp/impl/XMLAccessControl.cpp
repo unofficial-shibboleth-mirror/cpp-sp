@@ -17,7 +17,7 @@
 /**
  * XMLAccessControl.cpp
  *
- * XML-based access control syntax
+ * XML-based access control syntax.
  */
 
 #include "internal.h"
@@ -105,7 +105,7 @@ namespace shibsp {
     {
     public:
         XMLAccessControl(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AccessControl.XML")), m_rootAuthz(NULL) {
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AccessControl.XML")), m_rootAuthz(nullptr) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 
@@ -146,16 +146,16 @@ namespace shibsp {
 
 Rule::Rule(const DOMElement* e)
 {
-    auto_ptr_char req(e->getAttributeNS(NULL,require));
+    auto_ptr_char req(e->getAttributeNS(nullptr,require));
     if (!req.get() || !*req.get())
         throw ConfigurationException("Access control rule missing require attribute");
     m_alias=req.get();
 
-    auto_arrayptr<char> vals(toUTF8(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : NULL));
+    auto_arrayptr<char> vals(toUTF8(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : nullptr));
     if (!vals.get())
         return;
 
-    const XMLCh* flag = e->getAttributeNS(NULL,_list);
+    const XMLCh* flag = e->getAttributeNS(nullptr,_list);
     if (flag && (*flag == chLatin_f || *flag == chDigit_0)) {
         if (*vals.get())
             m_vals.push_back(vals.get());
@@ -163,7 +163,7 @@ Rule::Rule(const DOMElement* e)
     }
 
 #ifdef HAVE_STRTOK_R
-    char* pos=NULL;
+    char* pos=nullptr;
     const char* token=strtok_r(const_cast<char*>(vals.get())," ",&pos);
 #else
     const char* token=strtok(const_cast<char*>(vals.get())," ");
@@ -171,9 +171,9 @@ Rule::Rule(const DOMElement* e)
     while (token) {
         m_vals.push_back(token);
 #ifdef HAVE_STRTOK_R
-        token=strtok_r(NULL," ",&pos);
+        token=strtok_r(nullptr," ",&pos);
 #else
-        token=strtok(NULL," ");
+        token=strtok(nullptr," ");
 #endif
     }
 }
@@ -252,14 +252,14 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     return shib_acl_false;
 }
 
-RuleRegex::RuleRegex(const DOMElement* e) : m_exp(toUTF8(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : NULL))
+RuleRegex::RuleRegex(const DOMElement* e) : m_exp(toUTF8(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : nullptr))
 {
-    auto_ptr_char req(e->getAttributeNS(NULL,require));
+    auto_ptr_char req(e->getAttributeNS(nullptr,require));
     if (!req.get() || !*req.get() || !m_exp.get() || !*m_exp.get())
         throw ConfigurationException("Access control rule missing require attribute or element content.");
     m_alias=req.get();
 
-    const XMLCh* flag = e->getAttributeNS(NULL,ignoreCase);
+    const XMLCh* flag = e->getAttributeNS(nullptr,ignoreCase);
     bool ignore = (flag && (*flag == chLatin_t || *flag == chDigit_1));
     try {
         m_re = new RegularExpression(e->getFirstChild()->getNodeValue(), (ignore ? ignoreOption : &chNull));
@@ -422,7 +422,7 @@ pair<bool,DOMElement*> XMLAccessControl::background_load()
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
 
     // If we own it, wrap it.
-    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
+    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
     // Check for AccessControl wrapper and drop a level.
     if (XMLString::equals(raw.second->getLocalName(),_AccessControl))
@@ -443,7 +443,7 @@ pair<bool,DOMElement*> XMLAccessControl::background_load()
     delete m_rootAuthz;
     m_rootAuthz = authz;
 
-    return make_pair(false,(DOMElement*)NULL);
+    return make_pair(false,(DOMElement*)nullptr);
 }
 
 AccessControl::aclresult_t XMLAccessControl::authorized(const SPRequest& request, const Session* session) const

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ namespace shibsp {
     {
     public:
         QueryContext(const Application& application, const Session& session)
-                : m_query(true), m_app(application), m_session(&session), m_metadata(NULL), m_entity(NULL), m_nameid(NULL) {
+                : m_query(true), m_app(application), m_session(&session), m_metadata(nullptr), m_entity(nullptr), m_nameid(nullptr) {
             m_protocol = XMLString::transcode(session.getProtocol());
             m_class = XMLString::transcode(session.getAuthnContextClassRef());
             m_decl = XMLString::transcode(session.getAuthnContextDeclRef());
@@ -74,11 +74,11 @@ namespace shibsp {
             const Application& application,
             const EntityDescriptor* issuer,
             const XMLCh* protocol,
-            const NameID* nameid=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL,
-            const vector<const opensaml::Assertion*>* tokens=NULL
-            ) : m_query(true), m_app(application), m_session(NULL), m_metadata(NULL), m_entity(issuer),
+            const NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const vector<const opensaml::Assertion*>* tokens=nullptr
+            ) : m_query(true), m_app(application), m_session(nullptr), m_metadata(nullptr), m_entity(issuer),
                 m_protocol(protocol), m_nameid(nameid), m_class(authncontext_class), m_decl(authncontext_decl) {
 
             if (tokens) {
@@ -126,7 +126,7 @@ namespace shibsp {
                     return m_entity = m_metadata->getEntityDescriptor(MetadataProviderCriteria(m_app, m_session->getEntityID())).first;
                 }
             }
-            return NULL;
+            return nullptr;
         }
         const XMLCh* getProtocol() const {
             return m_protocol;
@@ -180,11 +180,11 @@ namespace shibsp {
             const Application& application,
             const EntityDescriptor* issuer,
             const XMLCh* protocol,
-            const NameID* nameid=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL,
-            const vector<const opensaml::Assertion*>* tokens=NULL,
-            const vector<shibsp::Attribute*>* attributes=NULL
+            const NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const vector<const opensaml::Assertion*>* tokens=nullptr,
+            const vector<shibsp::Attribute*>* attributes=nullptr
             ) const {
             return new QueryContext(application,issuer,protocol,nameid,authncontext_class,authncontext_decl,tokens);
         }
@@ -225,12 +225,12 @@ QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(
     xmltooling::NDC ndc("QueryResolver");
 #endif
 
-    const XMLCh* pid = e ? e->getAttributeNS(NULL, policyId) : NULL;
+    const XMLCh* pid = e ? e->getAttributeNS(nullptr, policyId) : nullptr;
     if (pid && *pid) {
         auto_ptr_char temp(pid);
         m_policyId = temp.get();
     }
-    pid = e ? e->getAttributeNS(NULL, subjectMatch) : NULL;
+    pid = e ? e->getAttributeNS(nullptr, subjectMatch) : nullptr;
     if (pid && (*pid == chLatin_t || *pid == chDigit_1))
         m_subjectMatch = true;
 
@@ -285,13 +285,13 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId);
     pair<bool,bool> validate = settings->getBool("validate");
 
-    shibsp::SecurityPolicy policy(application, NULL, validate.first && validate.second, policyId);
+    shibsp::SecurityPolicy policy(application, nullptr, validate.first && validate.second, policyId);
     policy.getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(policy);
 
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
-    saml1p::Response* response=NULL;
+    saml1p::Response* response=nullptr;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
         if (!XMLString::equals((*ep)->getBinding(),binding.get()) || !(*ep)->getLocation())
@@ -327,7 +327,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
         m_log.error("unable to obtain a SAML response from attribute authority");
         return false;
     }
-    else if (!response->getStatus() || !response->getStatus()->getStatusCode() || response->getStatus()->getStatusCode()->getValue()==NULL ||
+    else if (!response->getStatus() || !response->getStatus()->getStatusCode() || response->getStatus()->getStatusCode()->getValue()==nullptr ||
             *(response->getStatus()->getStatusCode()->getValue()) != saml1p::StatusCode::SUCCESS) {
         delete response;
         m_log.error("attribute authority returned a SAML error");
@@ -383,7 +383,7 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
             for (vector<saml1::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
                 if (m_subjectMatch) {
                     // Check for subject match.
-                    const NameIdentifier* respName = (*s)->getSubject() ? (*s)->getSubject()->getNameIdentifier() : NULL;
+                    const NameIdentifier* respName = (*s)->getSubject() ? (*s)->getSubject()->getNameIdentifier() : nullptr;
                     if (!respName || !XMLString::equals(respName->getName(), ctx.getNameID()->getName()) ||
                         !XMLString::equals(respName->getFormat(), ctx.getNameID()->getFormat()) ||
                         !XMLString::equals(respName->getNameQualifier(), ctx.getNameID()->getNameQualifier())) {
@@ -441,13 +441,13 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
     pair<bool,const char*> encryption = relyingParty->getString("encryption");
 
-    shibsp::SecurityPolicy policy(application, NULL, validate.first && validate.second, policyId);
+    shibsp::SecurityPolicy policy(application, nullptr, validate.first && validate.second, policyId);
     policy.getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);
     shibsp::SOAPClient soaper(policy);
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
-    saml2p::StatusResponseType* srt=NULL;
+    saml2p::StatusResponseType* srt=nullptr;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !srt && ep!=endpoints.end(); ++ep) {
         if (!XMLString::equals((*ep)->getBinding(),binding.get())  || !(*ep)->getLocation())
@@ -508,7 +508,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
         return true;
     }
 
-    saml2::Assertion* newtoken = NULL;
+    saml2::Assertion* newtoken = nullptr;
     const vector<saml2::Assertion*>& assertions = const_cast<const saml2p::Response*>(response)->getAssertions();
     if (assertions.empty()) {
         // Check for encryption.
@@ -579,10 +579,10 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
         if (m_subjectMatch) {
             // Check for subject match.
             bool ownedName = false;
-            NameID* respName = newtoken->getSubject() ? newtoken->getSubject()->getNameID() : NULL;
+            NameID* respName = newtoken->getSubject() ? newtoken->getSubject()->getNameID() : nullptr;
             if (!respName) {
                 // Check for encryption.
-                EncryptedID* encname = newtoken->getSubject() ? newtoken->getSubject()->getEncryptedID() : NULL;
+                EncryptedID* encname = newtoken->getSubject() ? newtoken->getSubject()->getEncryptedID() : nullptr;
                 if (encname) {
                     CredentialResolver* cr=application.getCredentialResolver();
                     if (!cr)
@@ -601,7 +601,7 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
                 }
             }
 
-            auto_ptr<NameID> nameIDwrapper(ownedName ? respName : NULL);
+            auto_ptr<NameID> nameIDwrapper(ownedName ? respName : nullptr);
 
             if (!respName || !XMLString::equals(respName->getName(), ctx.getNameID()->getName()) ||
                 !XMLString::equals(respName->getFormat(), ctx.getNameID()->getFormat()) ||

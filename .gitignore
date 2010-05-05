@@ -42,3 +42,5 @@
 /Portfile
 /pkginfo
 /*.gz
+/*.sdf
+/*.opensdf

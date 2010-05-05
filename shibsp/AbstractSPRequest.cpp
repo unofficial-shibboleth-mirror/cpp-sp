@@ -51,8 +51,8 @@ void SPRequest::setAuthType(const char* authtype)
 }
 
 AbstractSPRequest::AbstractSPRequest(const char* category)
-    : m_sp(NULL), m_mapper(NULL), m_app(NULL), m_sessionTried(false), m_session(NULL),
-        m_log(&Category::getInstance(category)), m_parser(NULL)
+    : m_sp(nullptr), m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr),
+        m_log(&Category::getInstance(category)), m_parser(nullptr)
 {
     m_sp=SPConfig::getConfig().getServiceProvider();
     m_sp->lock();
@@ -126,9 +126,9 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
         }
     }
 
-    // The cache will either silently pass a session or NULL back, or throw an exception out.
+    // The cache will either silently pass a session or nullptr back, or throw an exception out.
     Session* session = getServiceProvider().getSessionCache()->find(
-        getApplication(), *this, ignoreAddress ? NULL : getRemoteAddr().c_str(), checkTimeout ? &timeout : NULL
+        getApplication(), *this, ignoreAddress ? nullptr : getRemoteAddr().c_str(), checkTimeout ? &timeout : nullptr
         );
     if (cache)
         m_session = session;
@@ -205,7 +205,7 @@ const char* AbstractSPRequest::getParameter(const char* name) const
         m_parser=new CGIParser(*this);
 
     pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
-    return (bounds.first==bounds.second) ? NULL : bounds.first->second;
+    return (bounds.first==bounds.second) ? nullptr : bounds.first->second;
 }
 
 vector<const char*>::size_type AbstractSPRequest::getParameters(const char* name, vector<const char*>& values) const
@@ -252,7 +252,7 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
         throw ConfigurationException("Target resource was not an absolute URL.");
 
     bool ssl_only=true;
-    const char* handler=NULL;
+    const char* handler=nullptr;
     const PropertySet* props=getApplication().getPropertySet("Sessions");
     if (props) {
         pair<bool,bool> p=props->getBool("handlerSSL");
@@ -283,7 +283,7 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     //
     // note: if ssl_only is true, make sure the protocol is https
 
-    const char* path = NULL;
+    const char* path = nullptr;
 
     // Decide whether to use the handler or the resource for the "protocol"
     const char* prot;

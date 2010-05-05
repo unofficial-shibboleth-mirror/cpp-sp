@@ -61,16 +61,16 @@ namespace shibsp {
         Lockable* lock() {return this;}
         void unlock() {}
 
-        const Credential* resolve(const CredentialCriteria* criteria=NULL) const {return NULL;}
+        const Credential* resolve(const CredentialCriteria* criteria=nullptr) const {return nullptr;}
         vector<const Credential*>::size_type resolve(
-            vector<const Credential*>& results, const CredentialCriteria* criteria=NULL
+            vector<const Credential*>& results, const CredentialCriteria* criteria=nullptr
             ) const {return 0;}
     };
 
     class SHIBSP_DLLLOCAL DynamicMetadataProvider : public saml2md::DynamicMetadataProvider
     {
     public:
-        DynamicMetadataProvider(const xercesc::DOMElement* e=NULL);
+        DynamicMetadataProvider(const xercesc::DOMElement* e=nullptr);
 
         virtual ~DynamicMetadataProvider() {
             delete m_trust;
@@ -102,32 +102,32 @@ namespace shibsp {
 };
 
 DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
-    : saml2md::DynamicMetadataProvider(e), m_verifyHost(true), m_ignoreTransport(false), m_encoded(true), m_trust(NULL)
+    : saml2md::DynamicMetadataProvider(e), m_verifyHost(true), m_ignoreTransport(false), m_encoded(true), m_trust(nullptr)
 {
-    const XMLCh* flag = e ? e->getAttributeNS(NULL, verifyHost) : NULL;
+    const XMLCh* flag = e ? e->getAttributeNS(nullptr, verifyHost) : nullptr;
     if (flag && (*flag == chLatin_f || *flag == chDigit_0))
         m_verifyHost = false;
-    flag = e ? e->getAttributeNS(NULL, ignoreTransport) : NULL;
+    flag = e ? e->getAttributeNS(nullptr, ignoreTransport) : nullptr;
     if (flag && (*flag == chLatin_t || *flag == chDigit_1)) {
         m_ignoreTransport = true;
         return;
     }
 
-    const DOMElement* child = e ? XMLHelper::getFirstChildElement(e, Subst) : NULL;
+    const DOMElement* child = e ? XMLHelper::getFirstChildElement(e, Subst) : nullptr;
     if (child && child->hasChildNodes()) {
         auto_ptr_char s(child->getFirstChild()->getNodeValue());
         if (s.get() && *s.get()) {
             m_subst = s.get();
-            flag = child->getAttributeNS(NULL, encoded);
+            flag = child->getAttributeNS(nullptr, encoded);
             if (flag && (*flag == chLatin_f || *flag == chDigit_0))
                 m_encoded = false;
         }
     }
 
     if (m_subst.empty()) {
-        child = e ? XMLHelper::getFirstChildElement(e, Regex) : NULL;
-        if (child && child->hasChildNodes() && child->hasAttributeNS(NULL, match)) {
-            auto_ptr_char m(child->getAttributeNS(NULL, match));
+        child = e ? XMLHelper::getFirstChildElement(e, Regex) : nullptr;
+        if (child && child->hasChildNodes() && child->hasAttributeNS(nullptr, match)) {
+            auto_ptr_char m(child->getAttributeNS(nullptr, match));
             auto_ptr_char repl(child->getFirstChild()->getNodeValue());
             if (m.get() && *m.get() && repl.get() && *repl.get()) {
                 m_match = m.get();
@@ -136,8 +136,8 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
         }
     }
 
-    child = e ? XMLHelper::getFirstChildElement(e, _TrustEngine) : NULL;
-    auto_ptr_char t2(child ? child->getAttributeNS(NULL,type) : NULL);
+    child = e ? XMLHelper::getFirstChildElement(e, _TrustEngine) : nullptr;
+    auto_ptr_char t2(child ? child->getAttributeNS(nullptr,type) : nullptr);
     if (t2.get()) {
         TrustEngine* trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t2.get(), child);
         if (!(m_trust = dynamic_cast<X509TrustEngine*>(trust))) {
@@ -218,7 +218,7 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
     if (!pch)
         throw IOException("location was not a URL.");
     string scheme(addr.m_endpoint, pch-addr.m_endpoint);
-    SOAPTransport* transport=NULL;
+    SOAPTransport* transport=nullptr;
     try {
         transport = XMLToolingConfig::getConfig().SOAPTransportManager.newPlugin(scheme.c_str(), addr);
     }
@@ -234,8 +234,8 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
     if (m_trust && !transport->setTrustEngine(m_trust, &dcr))
         throw IOException("Unable to install X509TrustEngine into metadata resolver.");
 
-    Locker credlocker(NULL, false);
-    CredentialResolver* credResolver = NULL;
+    Locker credlocker(nullptr, false);
+    CredentialResolver* credResolver = nullptr;
     pair<bool,const char*> authType=relyingParty->getString("authType");
     if (!authType.first || !strcmp(authType.second,"TLS")) {
         credResolver = mpc->application.getCredentialResolver();
@@ -303,11 +303,11 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
     }
 
     try {
-        // Use a NULL stream to trigger a body-less "GET" operation.
+        // Use a nullptr stream to trigger a body-less "GET" operation.
         transport->send();
         istream& msg = transport->receive();
 
-        DOMDocument* doc=NULL;
+        DOMDocument* doc=nullptr;
         StreamInputSource src(msg, "DynamicMetadataProvider");
         Wrapper4InputSource dsrc(&src,false);
         if (m_validate)

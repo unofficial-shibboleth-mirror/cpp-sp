@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ PropertySet::~PropertySet()
 {
 }
 
-DOMPropertySet::DOMPropertySet() : m_parent(NULL), m_root(NULL)
+DOMPropertySet::DOMPropertySet() : m_parent(nullptr), m_root(nullptr)
 {
 }
 
@@ -173,7 +173,7 @@ pair<bool,bool> DOMPropertySet::getBool(const char* name, const char* ns) const
 
 pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* ns) const
 {
-    pair<bool,const char*> ret(false,NULL);
+    pair<bool,const char*> ret(false,nullptr);
     map<string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
@@ -185,7 +185,7 @@ pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* n
         return pair<bool,const char*>(true,i->second.first);
     else if (m_parent)
         return m_parent->getString(name,ns);
-    return pair<bool,const char*>(false,NULL);
+    return pair<bool,const char*>(false,nullptr);
 }
 
 pair<bool,const XMLCh*> DOMPropertySet::getXMLString(const char* name, const char* ns) const
@@ -201,7 +201,7 @@ pair<bool,const XMLCh*> DOMPropertySet::getXMLString(const char* name, const cha
         return make_pair(true,i->second.second);
     else if (m_parent)
         return m_parent->getXMLString(name,ns);
-    return pair<bool,const XMLCh*>(false,NULL);
+    return pair<bool,const XMLCh*>(false,nullptr);
 }
 
 pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const char* ns) const
@@ -214,7 +214,7 @@ pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const c
         i=m_map.find(name);
 
     if (i!=m_map.end())
-        return pair<bool,unsigned int>(true,strtol(i->second.first,NULL,10));
+        return pair<bool,unsigned int>(true,strtol(i->second.first,nullptr,10));
     else if (m_parent)
         return m_parent->getUnsignedInt(name,ns);
     return pair<bool,unsigned int>(false,0);
@@ -253,5 +253,5 @@ const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* 
     else
         i=m_nested.find(name);
 
-    return (i!=m_nested.end()) ? i->second : (m_parent ? m_parent->getPropertySet(name,ns) : NULL);
+    return (i!=m_nested.end()) ? i->second : (m_parent ? m_parent->getPropertySet(name,ns) : nullptr);
 }

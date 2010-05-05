@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ namespace shibsp {
          * @param validate          true iff XML parsing should be done with validation
          * @param policyId          identifies policy rules to auto-attach, defaults to the application's set
          */
-        SecurityPolicy(const Application& application, const xmltooling::QName* role=NULL, bool validate=true, const char* policyId=NULL);
+        SecurityPolicy(const Application& application, const xmltooling::QName* role=nullptr, bool validate=true, const char* policyId=nullptr);
 
         virtual ~SecurityPolicy();
 

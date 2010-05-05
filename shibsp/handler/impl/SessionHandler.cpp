@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
     stringstream s;
     s << "<html><head><title>Session Summary</title></head><body><pre>" << endl;
 
-    Session* session = NULL;
+    Session* session = nullptr;
     try {
         session = request.getSession();
         if (!session) {
@@ -143,7 +143,7 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
     s << "<strong>Authentication Context Decl:</strong> " << (session->getAuthnContextDeclRef() ? session->getAuthnContextDeclRef() : "(none)") << endl;
     s << "<strong>Session Expiration (barring inactivity):</strong> ";
     if (session->getExpiration())
-        s << ((session->getExpiration() - time(NULL)) / 60) << " minute(s)" << endl;
+        s << ((session->getExpiration() - time(nullptr)) / 60) << " minute(s)" << endl;
     else
         s << "Infinite" << endl;
 

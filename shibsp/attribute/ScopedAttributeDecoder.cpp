@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,15 +41,15 @@ namespace shibsp {
     {
     public:
         ScopedAttributeDecoder(const DOMElement* e) : AttributeDecoder(e), m_delimiter('@') {
-            if (e && e->hasAttributeNS(NULL,scopeDelimiter)) {
-                auto_ptr_char d(e->getAttributeNS(NULL,scopeDelimiter));
+            if (e && e->hasAttributeNS(nullptr,scopeDelimiter)) {
+                auto_ptr_char d(e->getAttributeNS(nullptr,scopeDelimiter));
                 m_delimiter = *(d.get());
             }
         }
         ~ScopedAttributeDecoder() {}
 
         shibsp::Attribute* decode(
-            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -69,7 +69,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
     char* val;
     char* scope;
     const XMLCh* xmlscope;
-    xmltooling::QName scopeqname(NULL,Scope);
+    xmltooling::QName scopeqname(nullptr,Scope);
     auto_ptr<ScopedAttribute> scoped(new ScopedAttribute(ids, m_delimiter));
     vector< pair<string,string> >& dest = scoped->getValues();
     vector<XMLObject*>::const_iterator v,stop;
@@ -106,7 +106,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
             }
             else {
                 log.warn("XMLObject type not recognized by ScopedAttributeDecoder, no values returned");
-                return NULL;
+                return nullptr;
             }
         }
 
@@ -115,7 +115,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
                 val = toUTF8((*v)->getTextContent());
                 if (val && *val) {
                     const AttributeExtensibleXMLObject* aexo=dynamic_cast<const AttributeExtensibleXMLObject*>(*v);
-                    xmlscope = aexo ? aexo->getAttribute(scopeqname) : NULL;
+                    xmlscope = aexo ? aexo->getAttribute(scopeqname) : nullptr;
                     if (xmlscope && *xmlscope) {
                         scope = toUTF8(xmlscope);
                         dest.push_back(pair<string,string>(val,scope));
@@ -145,7 +145,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
             }
         }
 
-        return dest.empty() ? NULL : _decode(scoped.release());
+        return dest.empty() ? nullptr : _decode(scoped.release());
     }
 
     const NameID* saml2name = dynamic_cast<const NameID*>(xmlObject);
@@ -170,7 +170,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
         }
         else {
             log.warn("XMLObject type not recognized by ScopedAttributeDecoder, no values returned");
-            return NULL;
+            return nullptr;
         }
     }
 
@@ -191,5 +191,5 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
         log.warn("ignoring empty NameID");
     }
     delete[] val;
-    return dest.empty() ? NULL : _decode(scoped.release());
+    return dest.empty() ? nullptr : _decode(scoped.release());
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ saml1p::Response* ArtifactResolver::resolve(
 
     bool foundEndpoint = false;
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
-    saml1p::Response* response=NULL;
+    saml1p::Response* response=nullptr;
     const vector<ArtifactResolutionService*>& endpoints=idpDescriptor.getArtifactResolutionServices();
     for (vector<ArtifactResolutionService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
         try {
@@ -96,7 +96,7 @@ saml1p::Response* ArtifactResolver::resolve(
         throw MetadataException("No compatible endpoint found in issuer's metadata.");
     else if (!response)
         throw BindingException("Unable to resolve artifact(s) into a SAML response.");
-    const xmltooling::QName* code = (response->getStatus() && response->getStatus()->getStatusCode()) ? response->getStatus()->getStatusCode()->getValue() : NULL;
+    const xmltooling::QName* code = (response->getStatus() && response->getStatus()->getStatusCode()) ? response->getStatus()->getStatusCode()->getValue() : nullptr;
     if (!code || *code != saml1p::StatusCode::SUCCESS) {
         delete response;
         throw BindingException("Identity provider returned a SAML error in response to artifact(s).");
@@ -119,7 +119,7 @@ ArtifactResponse* ArtifactResolver::resolve(
 
     bool foundEndpoint = false;
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
-    ArtifactResponse* response=NULL;
+    ArtifactResponse* response=nullptr;
     const vector<ArtifactResolutionService*>& endpoints=ssoDescriptor.getArtifactResolutionServices();
     for (vector<ArtifactResolutionService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
         try {

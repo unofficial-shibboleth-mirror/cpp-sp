@@ -179,7 +179,7 @@ namespace shibsp {
     class XMLExtractor : public AttributeExtractor, public ReloadableXMLFile
     {
     public:
-        XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.XML")), m_impl(NULL) {
+        XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.XML")), m_impl(nullptr) {
             background_load();
         }
         ~XMLExtractor() {
@@ -227,13 +227,13 @@ namespace shibsp {
 
 XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     : m_log(log),
-        m_document(NULL),
-        m_policyId(e ? e->getAttributeNS(NULL, metadataPolicyId) : NULL),
-        m_metadata(NULL),
-        m_trust(NULL),
-        m_filter(NULL),
+        m_document(nullptr),
+        m_policyId(e ? e->getAttributeNS(nullptr, metadataPolicyId) : nullptr),
+        m_metadata(nullptr),
+        m_trust(nullptr),
+        m_filter(nullptr),
         m_entityAssertions(true),
-        m_attrLock(NULL)
+        m_attrLock(nullptr)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLExtractorImpl");
@@ -245,7 +245,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     DOMElement* child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _MetadataProvider);
     if (child) {
         try {
-            auto_ptr_char type(child->getAttributeNS(NULL, _type));
+            auto_ptr_char type(child->getAttributeNS(nullptr, _type));
             if (!type.get() || !*type.get())
                 throw ConfigurationException("MetadataProvider element missing type attribute.");
             m_log.info("building MetadataProvider of type %s...", type.get());
@@ -264,7 +264,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _TrustEngine);
         if (child) {
             try {
-                auto_ptr_char type(child->getAttributeNS(NULL, _type));
+                auto_ptr_char type(child->getAttributeNS(nullptr, _type));
                 if (!type.get() || !*type.get())
                     throw ConfigurationException("TrustEngine element missing type attribute.");
                 m_log.info("building TrustEngine of type %s...", type.get());
@@ -282,7 +282,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeFilter);
         if (child) {
             try {
-                auto_ptr_char type(child->getAttributeNS(NULL, _type));
+                auto_ptr_char type(child->getAttributeNS(nullptr, _type));
                 if (!type.get() || !*type.get())
                     throw ConfigurationException("AttributeFilter element missing type attribute.");
                 m_log.info("building AttributeFilter of type %s...", type.get());
@@ -299,14 +299,14 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
     while (child) {
         // Check for missing name or id.
-        const XMLCh* name = child->getAttributeNS(NULL, _name);
+        const XMLCh* name = child->getAttributeNS(nullptr, _name);
         if (!name || !*name) {
             m_log.warn("skipping Attribute with no name");
             child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
             continue;
         }
 
-        auto_ptr_char id(child->getAttributeNS(NULL, _id));
+        auto_ptr_char id(child->getAttributeNS(nullptr, _id));
         if (!id.get() || !*id.get()) {
             m_log.warn("skipping Attribute with no id");
             child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
@@ -318,7 +318,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             continue;
         }
 
-        AttributeDecoder* decoder=NULL;
+        AttributeDecoder* decoder=nullptr;
         try {
             DOMElement* dchild = XMLHelper::getFirstChildElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeDecoder);
             if (dchild) {
@@ -327,7 +327,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                     decoder = SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q.get(), dchild);
             }
             if (!decoder)
-                decoder = SPConfig::getConfig().AttributeDecoderManager.newPlugin(StringAttributeDecoderType, NULL);
+                decoder = SPConfig::getConfig().AttributeDecoderManager.newPlugin(StringAttributeDecoderType, nullptr);
         }
         catch (exception& ex) {
             m_log.error("skipping Attribute (%s), error building AttributeDecoder: %s", id.get(), ex.what());
@@ -339,7 +339,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         }
 
         // Empty NameFormat implies the usual Shib URI naming defaults.
-        const XMLCh* format = child->getAttributeNS(NULL, nameFormat);
+        const XMLCh* format = child->getAttributeNS(nullptr, nameFormat);
         if (!format || XMLString::equals(format, shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI) ||
                 XMLString::equals(format, saml2::Attribute::URI_REFERENCE))
             format = &chNull;  // ignore default Format/Namespace values
@@ -371,7 +371,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         decl.second.push_back(id.get());
         m_attributeIds.push_back(id.get());
 
-        name = child->getAttributeNS(NULL, _aliases);
+        name = child->getAttributeNS(nullptr, _aliases);
         if (name && *name) {
             auto_ptr_char aliases(name);
             char* pos;
@@ -391,7 +391,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                 else {
                     m_log.warn("skipping alias, REMOTE_USER is a reserved name");
                 }
-                start = pos ? pos+1 : NULL;
+                start = pos ? pos+1 : nullptr;
             }
         }
 
@@ -643,7 +643,7 @@ void XMLExtractorImpl::extractAttributes(
         const vector<saml2::Attribute*>& attrs = container->getAttributes();
         for (vector<saml2::Attribute*>::const_iterator attr = attrs.begin(); attr != attrs.end(); ++attr) {
             try {
-                extractAttributes(application, NULL, relyingParty, *(*attr), holding);
+                extractAttributes(application, nullptr, relyingParty, *(*attr), holding);
             }
             catch (...) {
                 if (useCache)
@@ -672,7 +672,7 @@ void XMLExtractorImpl::extractAttributes(
                 }
                 else {
                     // Check subject.
-                    const NameID* subject = (*assert)->getSubject() ? (*assert)->getSubject()->getNameID() : NULL;
+                    const NameID* subject = (*assert)->getSubject() ? (*assert)->getSubject()->getNameID() : nullptr;
                     if (!subject ||
                             !XMLString::equals(subject->getFormat(), NameID::ENTITY) ||
                             !XMLString::equals(subject->getName(), entityID)) {
@@ -696,7 +696,7 @@ void XMLExtractorImpl::extractAttributes(
                     if (m_trust)
                         policy.setTrustEngine(m_trust);
                     // Populate recipient as audience.
-                    const XMLCh* issuer = (*assert)->getIssuer() ? (*assert)->getIssuer()->getName() : NULL;
+                    const XMLCh* issuer = (*assert)->getIssuer() ? (*assert)->getIssuer()->getName() : nullptr;
                     policy.getAudiences().push_back(application.getRelyingParty(issuer)->getXMLString("entityID").second);
 
                     // Extract assertion information for policy.
@@ -747,8 +747,8 @@ void XMLExtractorImpl::extractAttributes(
 
                     // Override the asserting/relying party names based on this new issuer.
                     const EntityDescriptor* inlineEntity =
-                        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
-                    auto_ptr_char inlineAssertingParty(inlineEntity ? inlineEntity->getEntityID() : NULL);
+                        policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : nullptr;
+                    auto_ptr_char inlineAssertingParty(inlineEntity ? inlineEntity->getEntityID() : nullptr);
                     relyingParty = application.getRelyingParty(inlineEntity)->getString("entityID").second;
                     const vector<saml2::Attribute*>& attrs2 =
                         const_cast<const saml2::AttributeStatement*>(tokencopy->getAttributeStatements().front())->getAttributes();
@@ -830,14 +830,14 @@ void XMLExtractor::extractAttributes(
     if (!m_impl)
         return;
 
-    const EntityDescriptor* entity = issuer ? dynamic_cast<const EntityDescriptor*>(issuer->getParent()) : NULL;
+    const EntityDescriptor* entity = issuer ? dynamic_cast<const EntityDescriptor*>(issuer->getParent()) : nullptr;
     const char* relyingParty = application.getRelyingParty(entity)->getString("entityID").second;
 
     // Check for statements.
     if (XMLString::equals(xmlObject.getElementQName().getLocalPart(), saml1::AttributeStatement::LOCAL_NAME)) {
         const saml2::AttributeStatement* statement2 = dynamic_cast<const saml2::AttributeStatement*>(&xmlObject);
         if (statement2) {
-            auto_ptr_char assertingParty(entity ? entity->getEntityID() : NULL);
+            auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
             m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *statement2, attributes);
             // Handle EncryptedAttributes inline so we have access to the role descriptor.
             const vector<saml2::EncryptedAttribute*>& encattrs = statement2->getEncryptedAttributes();
@@ -848,7 +848,7 @@ void XMLExtractor::extractAttributes(
 
         const saml1::AttributeStatement* statement1 = dynamic_cast<const saml1::AttributeStatement*>(&xmlObject);
         if (statement1) {
-            auto_ptr_char assertingParty(entity ? entity->getEntityID() : NULL);
+            auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
             m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *statement1, attributes);
             return;
         }
@@ -860,7 +860,7 @@ void XMLExtractor::extractAttributes(
     if (XMLString::equals(xmlObject.getElementQName().getLocalPart(), saml1::Assertion::LOCAL_NAME)) {
         const saml2::Assertion* token2 = dynamic_cast<const saml2::Assertion*>(&xmlObject);
         if (token2) {
-            auto_ptr_char assertingParty(entity ? entity->getEntityID() : NULL);
+            auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
             const vector<saml2::AttributeStatement*>& statements = token2->getAttributeStatements();
             for (vector<saml2::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
                 m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *(*s), attributes);
@@ -874,7 +874,7 @@ void XMLExtractor::extractAttributes(
 
         const saml1::Assertion* token1 = dynamic_cast<const saml1::Assertion*>(&xmlObject);
         if (token1) {
-            auto_ptr_char assertingParty(entity ? entity->getEntityID() : NULL);
+            auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
             const vector<saml1::AttributeStatement*>& statements = token1->getAttributeStatements();
             for (vector<saml1::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s)
                 m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *(*s), attributes);
@@ -887,7 +887,7 @@ void XMLExtractor::extractAttributes(
     // Check for metadata.
     if (XMLString::equals(xmlObject.getElementQName().getNamespaceURI(), samlconstants::SAML20MD_NS)) {
         const RoleDescriptor* roleToExtract = dynamic_cast<const RoleDescriptor*>(&xmlObject);
-        const EntityDescriptor* entityToExtract = roleToExtract ? dynamic_cast<const EntityDescriptor*>(roleToExtract->getParent()) : NULL;
+        const EntityDescriptor* entityToExtract = roleToExtract ? dynamic_cast<const EntityDescriptor*>(roleToExtract->getParent()) : nullptr;
         if (!entityToExtract)
             throw AttributeExtractionException("Unable to extract attributes, unknown metadata object type.");
         const Extensions* ext = entityToExtract->getExtensions();
@@ -908,7 +908,7 @@ void XMLExtractor::extractAttributes(
                 m_impl->extractAttributes(
                     application,
                     dynamic_cast<const ObservableMetadataProvider*>(application.getMetadataProvider(false)),
-                    NULL,   // not an entity, so inline assertions won't be processed
+                    nullptr,   // not an entity, so inline assertions won't be processed
                     relyingParty,
                     *ext,
                     attributes
@@ -921,7 +921,7 @@ void XMLExtractor::extractAttributes(
 
     // Check for attributes.
     if (XMLString::equals(xmlObject.getElementQName().getLocalPart(), saml1::Attribute::LOCAL_NAME)) {
-        auto_ptr_char assertingParty(entity ? entity->getEntityID() : NULL);
+        auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
         const saml2::Attribute* attr2 = dynamic_cast<const saml2::Attribute*>(&xmlObject);
         if (attr2)
             return m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *attr2, attributes);
@@ -969,13 +969,13 @@ void XMLExtractor::extractAttributes(
     // Check for NameIDs.
     const NameID* name2 = dynamic_cast<const NameID*>(&xmlObject);
     if (name2) {
-        auto_ptr_char assertingParty(entity ? entity->getEntityID() : NULL);
+        auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
         return m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *name2, attributes);
     }
 
     const NameIdentifier* name1 = dynamic_cast<const NameIdentifier*>(&xmlObject);
     if (name1) {
-        auto_ptr_char assertingParty(entity ? entity->getEntityID() : NULL);
+        auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
         return m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *name1, attributes);
     }
 
@@ -988,7 +988,7 @@ pair<bool,DOMElement*> XMLExtractor::background_load()
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
 
     // If we own it, wrap it.
-    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
+    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
     XMLExtractorImpl* impl = new XMLExtractorImpl(raw.second, m_log);
 
@@ -1002,5 +1002,5 @@ pair<bool,DOMElement*> XMLExtractor::background_load()
     delete m_impl;
     m_impl = impl;
 
-    return make_pair(false,(DOMElement*)NULL);
+    return make_pair(false,(DOMElement*)nullptr);
 }

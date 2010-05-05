@@ -17,4 +17,4 @@ memcache_store_la_LDFLAGS = -module -avoid-version $(XMLSEC_LIBS)
 install-exec-hook:
 	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
 
-EXTRA_DIST = memcache-store.vcproj memcache-store.rc resource.h
+EXTRA_DIST = memcache-store.vcxproj memcache-store.rc resource.h

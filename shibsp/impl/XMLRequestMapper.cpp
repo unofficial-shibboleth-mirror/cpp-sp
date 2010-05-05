@@ -59,8 +59,8 @@ namespace shibsp {
     class Override : public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        Override() : m_acl(NULL) {}
-        Override(const DOMElement* e, Category& log, const Override* base=NULL);
+        Override() : m_acl(nullptr) {}
+        Override(const DOMElement* e, Category& log, const Override* base=nullptr);
         ~Override();
 
         // Provides filter to exclude special config elements.
@@ -74,7 +74,7 @@ namespace shibsp {
         }
 
         const Override* locate(const HTTPRequest& request) const;
-        AccessControl* getAC() const { return (m_acl ? m_acl : (getParent() ? dynamic_cast<const Override*>(getParent())->getAC() : NULL)); }
+        AccessControl* getAC() const { return (m_acl ? m_acl : (getParent() ? dynamic_cast<const Override*>(getParent())->getAC() : nullptr)); }
 
     protected:
         void loadACL(const DOMElement* e, Category& log);
@@ -116,7 +116,7 @@ namespace shibsp {
     class XMLRequestMapper : public RequestMapper, public ReloadableXMLFile
     {
     public:
-        XMLRequestMapper(const DOMElement* e) : ReloadableXMLFile(e,Category::getInstance(SHIBSP_LOGCAT".RequestMapper")), m_impl(NULL) {
+        XMLRequestMapper(const DOMElement* e) : ReloadableXMLFile(e,Category::getInstance(SHIBSP_LOGCAT".RequestMapper")), m_impl(nullptr) {
             background_load();
         }
 
@@ -190,7 +190,7 @@ void Override::loadACL(const DOMElement* e, Category& log)
             else {
                 acl=XMLHelper::getFirstChildElement(e,AccessControlProvider);
                 if (acl) {
-                    auto_ptr_char type(acl->getAttributeNS(NULL,_type));
+                    auto_ptr_char type(acl->getAttributeNS(nullptr,_type));
                     log.info("building AccessControl provider of type %s...",type.get());
                     m_acl=SPConfig::getConfig().AccessControlManager.newPlugin(type.get(),acl);
                 }
@@ -203,11 +203,11 @@ void Override::loadACL(const DOMElement* e, Category& log)
     }
 }
 
-Override::Override(const DOMElement* e, Category& log, const Override* base) : m_acl(NULL)
+Override::Override(const DOMElement* e, Category& log, const Override* base) : m_acl(nullptr)
 {
     try {
         // Load the property set.
-        load(e,NULL,this);
+        load(e,nullptr,this);
         setParent(base);
 
         // Load any AccessControl provider.
@@ -216,7 +216,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
         // Handle nested Paths.
         DOMElement* path = XMLHelper::getFirstChildElement(e,Path);
         for (int i=1; path; ++i, path=XMLHelper::getNextSiblingElement(path,Path)) {
-            const XMLCh* n=path->getAttributeNS(NULL,name);
+            const XMLCh* n=path->getAttributeNS(nullptr,name);
 
             // Skip any leading slashes.
             while (n && *n==chForwardSlash)
@@ -247,19 +247,19 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 if (*n) {
                     // Create a placeholder Path element for the first path segment and replant under it.
                     DOMElement* newpath=path->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS,Path);
-                    newpath->setAttributeNS(NULL,name,namebuf);
-                    path->setAttributeNS(NULL,name,n);
+                    newpath->setAttributeNS(nullptr,name,namebuf);
+                    path->setAttributeNS(nullptr,name,n);
                     path->getParentNode()->replaceChild(newpath,path);
                     newpath->appendChild(path);
 
                     // Repoint our locals at the new parent.
                     path=newpath;
-                    n=path->getAttributeNS(NULL,name);
+                    n=path->getAttributeNS(nullptr,name);
                 }
                 else {
                     // All we had was a pathname with trailing slash(es), so just reset it without them.
-                    path->setAttributeNS(NULL,name,namebuf);
-                    n=path->getAttributeNS(NULL,name);
+                    path->setAttributeNS(nullptr,name,namebuf);
+                    n=path->getAttributeNS(nullptr,name);
                 }
                 delete[] namebuf;
             }
@@ -284,7 +284,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
             // Handle nested PathRegexs.
             path = XMLHelper::getFirstChildElement(e,PathRegex);
             for (int i=1; path; ++i, path=XMLHelper::getNextSiblingElement(path,PathRegex)) {
-                const XMLCh* n=path->getAttributeNS(NULL,regex);
+                const XMLCh* n=path->getAttributeNS(nullptr,regex);
                 if (!n || !*n) {
                     log.warn("skipping PathRegex element (%d) with empty regex attribute",i);
                     continue;
@@ -292,7 +292,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
 
                 auto_ptr<Override> o(new Override(path,log,this));
 
-                const XMLCh* flag=path->getAttributeNS(NULL,ignoreCase);
+                const XMLCh* flag=path->getAttributeNS(nullptr,ignoreCase);
                 try {
                     auto_ptr<RegularExpression> re(
                         new RegularExpression(n, (flag && (*flag==chLatin_f || *flag==chDigit_0)) ? &chNull : ignoreOption)
@@ -313,17 +313,17 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
         // Handle nested Querys.
         path = XMLHelper::getFirstChildElement(e,Query);
         for (int i=1; path; ++i, path=XMLHelper::getNextSiblingElement(path,Query)) {
-            const XMLCh* n=path->getAttributeNS(NULL,name);
+            const XMLCh* n=path->getAttributeNS(nullptr,name);
             if (!n || !*n) {
                 log.warn("skipping Query element (%d) with empty name attribute",i);
                 continue;
             }
             auto_ptr_char ntemp(n);
-            const XMLCh* v=path->getAttributeNS(NULL,regex);
+            const XMLCh* v=path->getAttributeNS(nullptr,regex);
 
             auto_ptr<Override> o(new Override(path,log,this));
             try {
-                RegularExpression* re = NULL;
+                RegularExpression* re = nullptr;
                 if (v && *v)
                     re = new RegularExpression(v);
                 m_queries.push_back(make_pair(make_pair(string(ntemp.get()),re), o.release()));
@@ -389,7 +389,7 @@ const Override* Override::locate(const HTTPRequest& request) const
 
     // Tokenize the path by segment and try and map each segment.
 #ifdef HAVE_STRTOK_R
-    char* pos=NULL;
+    char* pos=nullptr;
     const char* token=strtok_r(dup,"/",&pos);
 #else
     const char* token=strtok(dup,"/");
@@ -409,9 +409,9 @@ const Override* Override::locate(const HTTPRequest& request) const
 
         // Get the next segment, if any.
 #ifdef HAVE_STRTOK_R
-        token=strtok_r(NULL,"/",&pos);
+        token=strtok_r(nullptr,"/",&pos);
 #else
-        token=strtok(NULL,"/");
+        token=strtok(nullptr,"/");
 #endif
     }
 
@@ -459,14 +459,14 @@ const Override* Override::locate(const HTTPRequest& request) const
     return o;
 }
 
-XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) : m_document(NULL)
+XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) : m_document(nullptr)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLRequestMapperImpl");
 #endif
 
     // Load the property set.
-    load(e,NULL,this);
+    load(e,nullptr,this);
 
     // Load any AccessControl provider.
     loadACL(e,log);
@@ -474,7 +474,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     // Loop over the HostRegex elements.
     const DOMElement* host = XMLHelper::getFirstChildElement(e,HostRegex);
     for (int i=1; host; ++i, host=XMLHelper::getNextSiblingElement(host,HostRegex)) {
-        const XMLCh* n=host->getAttributeNS(NULL,regex);
+        const XMLCh* n=host->getAttributeNS(nullptr,regex);
         if (!n || !*n) {
             log.warn("Skipping HostRegex element (%d) with empty regex attribute",i);
             continue;
@@ -482,7 +482,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
 
         auto_ptr<Override> o(new Override(host,log,this));
 
-        const XMLCh* flag=host->getAttributeNS(NULL,ignoreCase);
+        const XMLCh* flag=host->getAttributeNS(nullptr,ignoreCase);
         try {
             auto_ptr<RegularExpression> re(
                 new RegularExpression(n, (flag && (*flag==chLatin_f || *flag==chDigit_0)) ? &chNull : ignoreOption)
@@ -500,7 +500,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     // Loop over the Host elements.
     host = XMLHelper::getFirstChildElement(e,Host);
     for (int i=1; host; ++i, host=XMLHelper::getNextSiblingElement(host,Host)) {
-        const XMLCh* n=host->getAttributeNS(NULL,name);
+        const XMLCh* n=host->getAttributeNS(nullptr,name);
         if (!n || !*n) {
             log.warn("Skipping Host element (%d) with empty name attribute",i);
             continue;
@@ -613,7 +613,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
 
 const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const HTTPRequest& request) const
 {
-    const Override* o=NULL;
+    const Override* o=nullptr;
     map<string,Override*>::const_iterator i=m_map.find(vhost);
     if (i!=m_map.end())
         o=i->second;
@@ -638,7 +638,7 @@ pair<bool,DOMElement*> XMLRequestMapper::background_load()
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
 
     // If we own it, wrap it.
-    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : NULL);
+    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
     XMLRequestMapperImpl* impl = new XMLRequestMapperImpl(raw.second, m_log);
 
@@ -652,7 +652,7 @@ pair<bool,DOMElement*> XMLRequestMapper::background_load()
     delete m_impl;
     m_impl = impl;
 
-    return make_pair(false,(DOMElement*)NULL);
+    return make_pair(false,(DOMElement*)nullptr);
 }
 
 RequestMapper::Settings XMLRequestMapper::getSettings(const HTTPRequest& request) const

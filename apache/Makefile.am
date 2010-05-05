@@ -43,5 +43,5 @@ install-exec-hook:
 endif
 
 EXTRA_DIST = mod_apache.cpp mod_shib_13.cpp mod_shib_20.cpp mod_shib_22.cpp \
-	mod_shib13.vcproj mod_shib20.vcproj mod_shib22.vcproj \
+	mod_shib13.vcxproj mod_shib20.vcxproj mod_shib22.vcxproj \
 	resource.h mod_shib_13.rc mod_shib_20.rc mod_shib_22.rc

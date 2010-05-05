@@ -1,5 +1,5 @@
 /*
- *  Copyright 2009 Internet2
+ *  Copyright 2009-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,6 @@ DDF SimpleAttribute::marshall() const
     DDF ddf = Attribute::marshall();
     DDF vlist = ddf.first();
     for (vector<string>::const_iterator i=m_serialized.begin(); i!=m_serialized.end(); ++i)
-        vlist.add(DDF(NULL).string(i->c_str()));
+        vlist.add(DDF(nullptr).string(i->c_str()));
     return ddf;
 }

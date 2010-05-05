@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * UnixListener.cpp
  * 
- * Unix Domain-based SocketListener implementation
+ * Unix Domain-based SocketListener implementation.
  */
 
 #include "internal.h"
@@ -83,7 +83,7 @@ namespace shibsp {
 
 UnixListener::UnixListener(const DOMElement* e) : SocketListener(e), m_address("/var/run/shar-socket"), m_bound(false)
 {
-    const XMLCh* tag=e->getAttributeNS(NULL,address);
+    const XMLCh* tag=e->getAttributeNS(nullptr,address);
     if (tag && *tag) {
         auto_ptr_char a(tag);
         m_address=a.get();
@@ -152,7 +152,7 @@ bool UnixListener::close(ShibSocket& s) const
 
 bool UnixListener::accept(ShibSocket& listener, ShibSocket& s) const
 {
-    s=::accept(listener,NULL,NULL);
+    s=::accept(listener,nullptr,nullptr);
     if (s < 0)
         return log_error();
     return true;

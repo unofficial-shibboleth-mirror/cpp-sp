@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,12 +56,12 @@ namespace shibsp {
         )
     {
         // The properties we need can be set in the RequestMap, or the Errors element.
-        bool mderror = dynamic_cast<const opensaml::saml2md::MetadataException*>(tp.getRichException())!=NULL;
+        bool mderror = dynamic_cast<const opensaml::saml2md::MetadataException*>(tp.getRichException())!=nullptr;
         bool accesserror = (strcmp(page, "access")==0);
-        pair<bool,const char*> redirectErrors = pair<bool,const char*>(false,NULL);
-        pair<bool,const char*> pathname = pair<bool,const char*>(false,NULL);
+        pair<bool,const char*> redirectErrors = pair<bool,const char*>(false,nullptr);
+        pair<bool,const char*> pathname = pair<bool,const char*>(false,nullptr);
 
-        // Strictly for error handling, detect a NULL application and point at the default.
+        // Strictly for error handling, detect a nullptr application and point at the default.
         if (!app)
             app = request.getServiceProvider().getApplication("default");
 
@@ -175,7 +175,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 #endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
-    const Application* app=NULL;
+    const Application* app=nullptr;
     string targetURL = request.getRequestURL();
 
     try {
@@ -239,14 +239,14 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         // Fix for secadv 20050901
         clearHeaders(request);
 
-        Session* session = NULL;
+        Session* session = nullptr;
         try {
             session = request.getSession();
         }
         catch (exception& e) {
             log.warn("error during session lookup: %s", e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
-            if (dynamic_cast<opensaml::RetryableProfileException*>(&e)==NULL)
+            if (dynamic_cast<opensaml::RetryableProfileException*>(&e)==nullptr)
                 throw;
         }
 
@@ -256,7 +256,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 return make_pair(true,request.returnOK());
 
             // No session, but we require one. Initiate a new session using the indicated method.
-            const SessionInitiator* initiator=NULL;
+            const SessionInitiator* initiator=nullptr;
             if (requireSessionWith.first) {
                 initiator=app->getSessionInitiatorById(requireSessionWith.second);
                 if (!initiator) {
@@ -296,7 +296,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 #endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
-    const Application* app=NULL;
+    const Application* app=nullptr;
     string targetURL = request.getRequestURL();
 
     try {
@@ -321,7 +321,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 
         // Do we have an access control plugin?
         if (settings.second) {
-            const Session* session = NULL;
+            const Session* session = nullptr;
             try {
                 session = request.getSession(false);
             }
@@ -367,14 +367,14 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 #endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
-    const Application* app=NULL;
+    const Application* app=nullptr;
     string targetURL = request.getRequestURL();
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
 
-        const Session* session = NULL;
+        const Session* session = nullptr;
         try {
             session = request.getSession(false);
         }
@@ -416,7 +416,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         pair<bool,bool> exp=settings.first->getBool("exportAssertion");
         if (exp.first && exp.second) {
             const PropertySet* sessions=app->getPropertySet("Sessions");
-            pair<bool,const char*> exportLocation = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,NULL);
+            pair<bool,const char*> exportLocation = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,nullptr);
             if (!exportLocation.first)
                 log.warn("can't export assertions without an exportLocation Sessions property");
             else {
@@ -500,7 +500,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 #endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
-    const Application* app=NULL;
+    const Application* app=nullptr;
     string targetURL = request.getRequestURL();
 
     try {

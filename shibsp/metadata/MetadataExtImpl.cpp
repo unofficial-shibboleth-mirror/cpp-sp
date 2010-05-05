@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * MetadataExtImpl.cpp
  * 
- * Implementation classes for Shibboleth metadata extensions schema
+ * Implementation classes for Shibboleth metadata extensions schema.
  */
 
 #include "internal.h"
@@ -76,11 +76,11 @@ namespace shibsp {
 
     protected:
         void marshallAttributes(DOMElement* domElement) const {
-            MARSHALL_BOOLEAN_ATTRIB(Regexp,REGEXP,NULL);
+            MARSHALL_BOOLEAN_ATTRIB(Regexp,REGEXP,nullptr);
         }
 
         void processAttribute(const DOMAttr* attribute) {
-            PROC_BOOLEAN_ATTRIB(Regexp,REGEXP,NULL);
+            PROC_BOOLEAN_ATTRIB(Regexp,REGEXP,nullptr);
             AbstractXMLObjectUnmarshaller::processAttribute(attribute);
         }
     };
@@ -93,7 +93,7 @@ namespace shibsp {
             public AbstractXMLObjectUnmarshaller
     {
         void init() {
-            m_VerifyDepth=NULL;
+            m_VerifyDepth=nullptr;
         }
     public:
         virtual ~KeyAuthorityImpl() {
@@ -132,7 +132,7 @@ namespace shibsp {
 
     protected:
         void marshallAttributes(DOMElement* domElement) const {
-            MARSHALL_INTEGER_ATTRIB(VerifyDepth,VERIFYDEPTH,NULL);
+            MARSHALL_INTEGER_ATTRIB(VerifyDepth,VERIFYDEPTH,nullptr);
             marshallExtensionAttributes(domElement);
         }
 

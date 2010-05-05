@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ namespace shibsp {
          * @param checkTimeout  true iff the last-used timestamp should be updated and any timeout policy enforced
          * @param ignoreAddress true iff all address checking should be ignored, regardless of policy
          * @param cache         true iff the request should hold the Session lock itself and unlock during cleanup
-         * @return pointer to Session, or NULL
+         * @return pointer to Session, or nullptr
          */
         virtual Session* getSession(bool checkTimeout=true, bool ignoreAddress=false, bool cache=true)=0;
 
@@ -88,7 +88,7 @@ namespace shibsp {
          * @param resource  resource URL to compute handler for
          * @return  base location of handler
          */
-        virtual const char* getHandlerURL(const char* resource=NULL) const=0;
+        virtual const char* getHandlerURL(const char* resource=nullptr) const=0;
 
         /**
          * Returns a non-spoofable request header value, if possible.
@@ -119,14 +119,14 @@ namespace shibsp {
         /**
          * Establish REMOTE_USER identity in request.
          *
-         * @param user  REMOTE_USER value to set or NULL to clear
+         * @param user  REMOTE_USER value to set or nullptr to clear
          */
         virtual void setRemoteUser(const char* user)=0;
 
         /**
          * Establish AUTH_TYPE for request.
          *
-         * @param authtype  AUTH_TYPE value to set or NULL to clear
+         * @param authtype  AUTH_TYPE value to set or nullptr to clear
          */
         virtual void setAuthType(const char* authtype);
 

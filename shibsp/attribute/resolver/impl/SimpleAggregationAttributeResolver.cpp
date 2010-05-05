@@ -1,5 +1,5 @@
 /*
- *  Copyright 2009 Internet2
+ *  Copyright 2009-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,26 +65,26 @@ namespace shibsp {
         SimpleAggregationContext(const Application& application, const Session& session)
             : m_app(application),
               m_session(&session),
-              m_nameid(NULL),
-              m_entityid(NULL),
+              m_nameid(nullptr),
+              m_entityid(nullptr),
               m_class(XMLString::transcode(session.getAuthnContextClassRef())),
               m_decl(XMLString::transcode(session.getAuthnContextDeclRef())),
-              m_inputTokens(NULL),
-              m_inputAttributes(NULL) {
+              m_inputTokens(nullptr),
+              m_inputAttributes(nullptr) {
         }
 
         SimpleAggregationContext(
             const Application& application,
-            const NameID* nameid=NULL,
-            const XMLCh* entityID=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL,
-            const vector<const opensaml::Assertion*>* tokens=NULL,
-            const vector<shibsp::Attribute*>* attributes=NULL
+            const NameID* nameid=nullptr,
+            const XMLCh* entityID=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const vector<const opensaml::Assertion*>* tokens=nullptr,
+            const vector<shibsp::Attribute*>* attributes=nullptr
             ) : m_app(application),
-                m_session(NULL),
+                m_session(nullptr),
                 m_nameid(nameid),
-                m_entityid(entityID ? XMLString::transcode(entityID) : NULL),
+                m_entityid(entityID ? XMLString::transcode(entityID) : nullptr),
                 m_class(const_cast<XMLCh*>(authncontext_class)),
                 m_decl(const_cast<XMLCh*>(authncontext_decl)),
                 m_inputTokens(tokens),
@@ -162,14 +162,14 @@ namespace shibsp {
             const Application& application,
             const EntityDescriptor* issuer,
             const XMLCh* protocol,
-            const NameID* nameid=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL,
-            const vector<const opensaml::Assertion*>* tokens=NULL,
-            const vector<shibsp::Attribute*>* attributes=NULL
+            const NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const vector<const opensaml::Assertion*>* tokens=nullptr,
+            const vector<shibsp::Attribute*>* attributes=nullptr
             ) const {
             return new SimpleAggregationContext(
-                application, nameid, (issuer ? issuer->getEntityID() : NULL), authncontext_class, authncontext_decl, tokens, attributes
+                application, nameid, (issuer ? issuer->getEntityID() : nullptr), authncontext_class, authncontext_decl, tokens, attributes
                 );
         }
 
@@ -214,23 +214,23 @@ namespace shibsp {
 };
 
 SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.SimpleAggregation")), m_subjectMatch(false), m_metadata(NULL), m_trust(NULL)
+    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.SimpleAggregation")), m_subjectMatch(false), m_metadata(nullptr), m_trust(nullptr)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("SimpleAggregationResolver");
 #endif
 
-    const XMLCh* pid = e ? e->getAttributeNS(NULL, policyId) : NULL;
+    const XMLCh* pid = e ? e->getAttributeNS(nullptr, policyId) : nullptr;
     if (pid && *pid) {
         auto_ptr_char temp(pid);
         m_policyId = temp.get();
     }
 
-    pid = e ? e->getAttributeNS(NULL, subjectMatch) : NULL;
+    pid = e ? e->getAttributeNS(nullptr, subjectMatch) : nullptr;
     if (pid && (*pid == chLatin_t || *pid == chDigit_1))
         m_subjectMatch = true;
 
-    pid = e ? e->getAttributeNS(NULL, attributeId) : NULL;
+    pid = e ? e->getAttributeNS(nullptr, attributeId) : nullptr;
     if (pid && *pid) {
         char* dup = XMLString::transcode(pid);
         char* pos;
@@ -244,18 +244,18 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
             if (pos)
                 *pos=0;
             m_attributeIds.push_back(start);
-            start = pos ? pos+1 : NULL;
+            start = pos ? pos+1 : nullptr;
         }
         XMLString::release(&dup);
 
-        pid = e->getAttributeNS(NULL, format);
+        pid = e->getAttributeNS(nullptr, format);
         if (pid && *pid)
             m_format = pid;
     }
 
     DOMElement* child = XMLHelper::getFirstChildElement(e, _MetadataProvider);
     if (child) {
-        auto_ptr_char type(child->getAttributeNS(NULL, _type));
+        auto_ptr_char type(child->getAttributeNS(nullptr, _type));
         if (!type.get() || !*type.get())
             throw ConfigurationException("MetadataProvider element missing type attribute.");
         m_log.info("building MetadataProvider of type %s...", type.get());
@@ -267,7 +267,7 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
     child = XMLHelper::getFirstChildElement(e,  _TrustEngine);
     if (child) {
         try {
-            auto_ptr_char type(child->getAttributeNS(NULL, _type));
+            auto_ptr_char type(child->getAttributeNS(nullptr, _type));
             if (!type.get() || !*type.get())
                 throw ConfigurationException("TrustEngine element missing type attribute.");
             m_log.info("building TrustEngine of type %s...", type.get());
@@ -320,7 +320,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
     const Application& application = ctx.getApplication();
     MetadataProviderCriteria mc(application, entityID, &AttributeAuthorityDescriptor::ELEMENT_QNAME, samlconstants::SAML20P_NS);
     Locker mlocker(m_metadata);
-    const AttributeAuthorityDescriptor* AA=NULL;
+    const AttributeAuthorityDescriptor* AA=nullptr;
     pair<const EntityDescriptor*,const RoleDescriptor*> mdresult =
         (m_metadata ? m_metadata : application.getMetadataProvider())->getEntityDescriptor(mc);
     if (!mdresult.first) {
@@ -344,7 +344,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
     pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
     pair<bool,const char*> encryption = relyingParty->getString("encryption");
 
-    shibsp::SecurityPolicy policy(application, NULL, validate.first && validate.second, policyId);
+    shibsp::SecurityPolicy policy(application, nullptr, validate.first && validate.second, policyId);
     if (m_metadata)
         policy.setMetadataProvider(m_metadata);
     if (m_trust)
@@ -355,7 +355,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
     shibsp::SOAPClient soaper(policy);
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
-    saml2p::StatusResponseType* srt=NULL;
+    saml2p::StatusResponseType* srt=nullptr;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
     for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !srt && ep!=endpoints.end(); ++ep) {
         if (!XMLString::equals((*ep)->getBinding(),binding.get())  || !(*ep)->getLocation())
@@ -416,7 +416,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         return true;
     }
 
-    saml2::Assertion* newtoken = NULL;
+    saml2::Assertion* newtoken = nullptr;
     const vector<saml2::Assertion*>& assertions = const_cast<const saml2p::Response*>(response)->getAssertions();
     if (assertions.empty()) {
         // Check for encryption.
@@ -488,10 +488,10 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         if (m_subjectMatch) {
             // Check for subject match.
             bool ownedName = false;
-            NameID* respName = newtoken->getSubject() ? newtoken->getSubject()->getNameID() : NULL;
+            NameID* respName = newtoken->getSubject() ? newtoken->getSubject()->getNameID() : nullptr;
             if (!respName) {
                 // Check for encryption.
-                EncryptedID* encname = newtoken->getSubject() ? newtoken->getSubject()->getEncryptedID() : NULL;
+                EncryptedID* encname = newtoken->getSubject() ? newtoken->getSubject()->getEncryptedID() : nullptr;
                 if (encname) {
                     CredentialResolver* cr=application.getCredentialResolver();
                     if (!cr)
@@ -510,7 +510,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
                 }
             }
 
-            auto_ptr<NameID> nameIDwrapper(ownedName ? respName : NULL);
+            auto_ptr<NameID> nameIDwrapper(ownedName ? respName : nullptr);
 
             if (!respName || !XMLString::equals(respName->getName(), name->getName()) ||
                 !XMLString::equals(respName->getFormat(), name->getFormat()) ||
@@ -573,9 +573,9 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
     SimpleAggregationContext& qctx = dynamic_cast<SimpleAggregationContext&>(ctx);
 
     // First we manufacture the appropriate NameID to use.
-    NameID* n=NULL;
+    NameID* n=nullptr;
     for (vector<string>::const_iterator a = m_attributeIds.begin(); !n && a != m_attributeIds.end(); ++a) {
-        const Attribute* attr=NULL;
+        const Attribute* attr=nullptr;
         if (qctx.getSession()) {
             // Input attributes should be available via multimap.
             pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> range =

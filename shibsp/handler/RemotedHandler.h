@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ namespace shibsp {
          * @param certs     true iff client certificates should be available for the remote request
          * @return  the input dataflow object
          */
-        DDF wrap(const SPRequest& request, const std::vector<std::string>* headers=NULL, bool certs=false) const;
+        DDF wrap(const SPRequest& request, const std::vector<std::string>* headers=nullptr, bool certs=false) const;
         
         /**
          * Unwraps a response by examining an incoming data flow to determine

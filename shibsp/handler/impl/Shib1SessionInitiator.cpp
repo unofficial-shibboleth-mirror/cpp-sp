@@ -57,7 +57,7 @@ namespace shibsp {
     {
     public:
         Shib1SessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.Shib1"), NULL, &m_remapper), m_appId(appId) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.Shib1"), nullptr, &m_remapper), m_appId(appId) {
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -117,7 +117,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
 
     string target;
     pair<bool,const char*> prop;
-    const Handler* ACS=NULL;
+    const Handler* ACS=nullptr;
     const Application& app = request.getApplication();
 
     if (isHandler) {
@@ -158,10 +158,10 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
     }
 
     // Validate the ACS for use with this protocol.
-    pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,NULL);
+    pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,nullptr);
     if (ACSbinding.first) {
         pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
-        if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == NULL) {
+        if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == nullptr) {
             m_log.error("configured or requested ACS has non-SAML 1.x binding");
             throw ConfigurationException("Configured or requested ACS has non-SAML 1.x binding ($1).", params(1, ACSbinding.second));
         }
@@ -174,7 +174,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
 
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc = request.getHandlerURL(target.c_str());
-    prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+    prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,nullptr);
     if (prop.first)
         ACSloc += prop.second;
 
@@ -229,7 +229,7 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
 {
     // Find application.
     const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) to generate AuthnRequest", aid ? aid : "(missing)");
@@ -241,7 +241,7 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
     if (!entityID || !acsLocation)
         throw ConfigurationException("No entityID or acsLocation parameter supplied to remoted SessionInitiator.");
 
-    DDF ret(NULL);
+    DDF ret(nullptr);
     DDFJanitor jout(ret);
 
     // Wrap the outgoing object with a Response facade.
@@ -252,7 +252,7 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, NULL, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState);
+    doRequest(*app, nullptr, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState);
     if (!ret.isstruct())
         ret.structure();
     ret.addmember("RelayState").unsafe_string(relayState.c_str());
@@ -309,7 +309,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
         relayState = "default";
 
     char timebuf[16];
-    sprintf(timebuf,"%lu",time(NULL));
+    sprintf(timebuf,"%lu",time(nullptr));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     auto_ptr_char dest(ep->getLocation());
     string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "shire=" + urlenc->encode(acsLocation) +

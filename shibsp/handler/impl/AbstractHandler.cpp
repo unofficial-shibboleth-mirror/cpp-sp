@@ -204,7 +204,7 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
                     if (storage) {
                         string rsKey;
                         generateRandomHex(rsKey,5);
-                        if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(NULL) + 600))
+                        if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(nullptr) + 600))
                             throw IOException("Attempted to insert duplicate storage key.");
                         relayState = string(mech.second-3) + ':' + rsKey;
                     }
@@ -334,7 +334,7 @@ void Handler::recoverRelayState(
 AbstractHandler::AbstractHandler(
     const DOMElement* e, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
     ) : m_log(log), m_configNS(shibspconstants::SHIB2SPCONFIG_NS) {
-    load(e,NULL,filter,remapper);
+    load(e,nullptr,filter,remapper);
 }
 
 AbstractHandler::~AbstractHandler()
@@ -366,7 +366,7 @@ void AbstractHandler::checkError(const XMLObject* response, const saml2md::RoleD
         const saml2p::Status* status = r2->getStatus();
         if (status) {
             const saml2p::StatusCode* sc = status->getStatusCode();
-            const XMLCh* code = sc ? sc->getValue() : NULL;
+            const XMLCh* code = sc ? sc->getValue() : nullptr;
             if (code && !XMLString::equals(code,saml2p::StatusCode::SUCCESS)) {
                 FatalProfileException ex("SAML response contained an error.");
                 annotateException(&ex, role, status);   // throws it
@@ -379,7 +379,7 @@ void AbstractHandler::checkError(const XMLObject* response, const saml2md::RoleD
         const saml1p::Status* status = r1->getStatus();
         if (status) {
             const saml1p::StatusCode* sc = status->getStatusCode();
-            const xmltooling::QName* code = sc ? sc->getValue() : NULL;
+            const xmltooling::QName* code = sc ? sc->getValue() : nullptr;
             if (code && *code != saml1p::StatusCode::SUCCESS) {
                 FatalProfileException ex("SAML response contained an error.");
                 ex.addProperty("statusCode", code->toString().c_str());
@@ -431,7 +431,7 @@ long AbstractHandler::sendMessage(
     bool signIfPossible
     ) const
 {
-    const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : NULL;
+    const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : nullptr;
     const PropertySet* relyingParty = application.getRelyingParty(entity);
     pair<bool,const char*> flag = signIfPossible ? make_pair(true,(const char*)"true") : relyingParty->getString("signing");
     if (role && flag.first &&
@@ -441,7 +441,7 @@ long AbstractHandler::sendMessage(
         CredentialResolver* credResolver=application.getCredentialResolver();
         if (credResolver) {
             Locker credLocker(credResolver);
-            const Credential* cred = NULL;
+            const Credential* cred = nullptr;
             pair<bool,const char*> keyName = relyingParty->getString("keyName");
             pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signingAlg");
             if (role) {
@@ -532,7 +532,7 @@ void AbstractHandler::preservePostData(
                 rsKey = SAMLArtifact::toHex(rsKey);
                 ostringstream out;
                 out << postData;
-                if (!storage->createString("PostData", rsKey.c_str(), out.str().c_str(), time(NULL) + 600))
+                if (!storage->createString("PostData", rsKey.c_str(), out.str().c_str(), time(nullptr) + 600))
                     throw IOException("Attempted to insert duplicate storage key.");
                 postkey = string(mech.second-3) + ':' + rsKey;
             }
@@ -692,7 +692,7 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
             plimit.second = 1024 * 1024;
         if (plimit.second == 0 || request.getContentLength() <= plimit.second) {
             CGIParser cgi(request);
-            pair<CGIParser::walker,CGIParser::walker> params = cgi.getParameters(NULL);
+            pair<CGIParser::walker,CGIParser::walker> params = cgi.getParameters(nullptr);
             if (params.first == params.second)
                 return DDF("parameters").list();
             DDF child;
@@ -754,7 +754,7 @@ pair<bool,const char*> AbstractHandler::getString(const char* name, const SPRequ
         return getString(name);
     }
 
-    return pair<bool,const char*>(false,NULL);
+    return pair<bool,const char*>(false,nullptr);
 }
 
 pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const SPRequest& request, unsigned int type) const
@@ -762,7 +762,7 @@ pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const 
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
         if (param && *param)
-            return pair<bool,unsigned int>(true, strtol(param,NULL,10));
+            return pair<bool,unsigned int>(true, strtol(param,nullptr,10));
     }
     
     if (type & HANDLER_PROPERTY_MAP) {

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ void TemplateParameters::setPropertySet(const PropertySet* props)
     m_props = props;
 
     // Create a timestamp.
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
 #if defined(HAVE_CTIME_R_2)
     char timebuf[32];
     m_map["now"] = ctime_r(&now,timebuf);
@@ -77,7 +77,7 @@ const char* TemplateParameters::getParameter(const char* name) const
     if (pch || !m_props)
         return pch;
     pair<bool,const char*> p = m_props->getString(name);
-    return p.first ? p.second : NULL;
+    return p.first ? p.second : nullptr;
 }
 
 string TemplateParameters::toQueryString() const

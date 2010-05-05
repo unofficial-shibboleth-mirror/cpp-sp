@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * CGIParser.cpp
  * 
- * CGI GET/POST parameter parsing
+ * CGI GET/POST parameter parsing.
  */
 
 #include "internal.h"
@@ -34,7 +34,7 @@ using namespace std;
 
 CGIParser::CGIParser(const HTTPRequest& request)
 {
-    const char* pch=NULL;
+    const char* pch=nullptr;
     if (!strcmp(request.getMethod(),"POST"))
         pch=request.getRequestBody();
     else

@@ -235,5 +235,12 @@ paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 install-exec-hook:
 	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
 
-EXTRA_DIST = shibsp.vcproj shibsp-lite.vcproj paths.h.in resource.h shibsp.rc
+EXTRA_DIST = \
+	shibsp.vcxproj \
+	shibsp-lite.vcxproj \
+	shibsp.vcxproj.filters \
+	shibsp-lite.vcxproj.filters \
+	paths.h.in \
+	resource.h \
+	shibsp.rc
 BUILT_SOURCES = paths.h

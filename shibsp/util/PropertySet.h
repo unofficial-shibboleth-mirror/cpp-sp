@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ namespace shibsp {
         /**
          * Returns parent of this PropertySet, if any.
          *
-         * @return the parent object, or NULL
+         * @return the parent object, or nullptr
          */
         virtual const PropertySet* getParent() const=0;
 
@@ -60,46 +60,46 @@ namespace shibsp {
          * Returns a boolean-valued property.
          * 
          * @param name  property name
-         * @param ns    property namespace, or NULL
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @param ns    property namespace, or nullptr
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        virtual std::pair<bool,bool> getBool(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,bool> getBool(const char* name, const char* ns=nullptr) const=0;
 
         /**
          * Returns a string-valued property.
          * 
          * @param name  property name
-         * @param ns    property namespace, or NULL
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @param ns    property namespace, or nullptr
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        virtual std::pair<bool,const char*> getString(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,const char*> getString(const char* name, const char* ns=nullptr) const=0;
 
         /**
          * Returns a Unicode string-valued property.
          * 
          * @param name  property name
-         * @param ns    property namespace, or NULL
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @param ns    property namespace, or nullptr
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        virtual std::pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=nullptr) const=0;
 
         /**
          * Returns an unsigned integer-valued property.
          * 
          * @param name  property name
-         * @param ns    property namespace, or NULL
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @param ns    property namespace, or nullptr
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        virtual std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const=0;
 
         /**
          * Returns an integer-valued property.
          * 
          * @param name  property name
-         * @param ns    property namespace, or NULL
-         * @return a pair consisting of a NULL indicator and the property value iff the indicator is true
+         * @param ns    property namespace, or nullptr
+         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        virtual std::pair<bool,int> getInt(const char* name, const char* ns=NULL) const=0;
+        virtual std::pair<bool,int> getInt(const char* name, const char* ns=nullptr) const=0;
 
         /**
          * Returns a map of all known properties in string form.
@@ -112,15 +112,15 @@ namespace shibsp {
          * Returns a nested property set.
          * 
          * @param name  nested property set name
-         * @param ns    nested property set namespace, or NULL
-         * @return the nested property set, or NULL
+         * @param ns    nested property set namespace, or nullptr
+         * @return the nested property set, or nullptr
          */        
         virtual const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const=0;
         
         /**
          * Returns a DOM element representing the property container, if any.
          * 
-         * @return a DOM element, or NULL
+         * @return a DOM element, or nullptr
          */
         virtual const xercesc::DOMElement* getElement() const=0;
     };

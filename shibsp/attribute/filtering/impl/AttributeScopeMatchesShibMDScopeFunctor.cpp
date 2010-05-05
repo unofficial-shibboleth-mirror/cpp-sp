@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 /**
  * AttributeScopeMatchesShibMDScopeFunctor.cpp
  * 
- * A match function that ensures that an attributes value's scope matches a scope given in metadata for the entity or role.
+ * A match function that ensures that an attributes value's scope matches
+ * a scope given in metadata for the entity or role.
  */
 
 #include "internal.h"
@@ -59,7 +60,7 @@ namespace shibsp {
                 return false;
 
             const Scope* rule;
-            const XMLCh* widescope=NULL;
+            const XMLCh* widescope=nullptr;
             const Extensions* ext = issuer->getExtensions();
             if (ext) {
                 const vector<XMLObject*>& exts = ext->getUnknownXMLObjects();

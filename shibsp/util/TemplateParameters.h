@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ namespace shibsp {
          * @param e     an exception to supply additional parameters
          * @param props a PropertySet to supply additional parameters
          */
-        TemplateParameters(const std::exception* e=NULL, const PropertySet* props=NULL);
+        TemplateParameters(const std::exception* e=nullptr, const PropertySet* props=nullptr);
 
         virtual ~TemplateParameters();
         
@@ -57,7 +57,7 @@ namespace shibsp {
         /**
          * Returns the exception passed to the object, if it contains rich information.
          *
-         * @return  an exception, or NULL
+         * @return  an exception, or nullptr
          */
         const xmltooling::XMLToolingException* getRichException() const;
 

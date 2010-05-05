@@ -1,5 +1,5 @@
 /*
- *  Copyright 2009 Internet2
+ *  Copyright 2009-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ AccessControl::~AccessControl()
 
 ChainingAccessControl::ChainingAccessControl(const DOMElement* e)
 {
-    const XMLCh* op = e ? e->getAttributeNS(NULL, _operator) : NULL;
+    const XMLCh* op = e ? e->getAttributeNS(nullptr, _operator) : nullptr;
     if (XMLString::equals(op, AND))
         m_op=OP_AND;
     else if (XMLString::equals(op, OR))
@@ -102,9 +102,9 @@ ChainingAccessControl::ChainingAccessControl(const DOMElement* e)
         throw ConfigurationException("Missing or unrecognized operator in Chaining AccessControl configuration.");
 
     try {
-        e = e ? XMLHelper::getFirstChildElement(e, _AccessControl) : NULL;
+        e = e ? XMLHelper::getFirstChildElement(e, _AccessControl) : nullptr;
         while (e) {
-            auto_ptr_char type(e->getAttributeNS(NULL, _type));
+            auto_ptr_char type(e->getAttributeNS(nullptr, _type));
             if (type.get() && *type.get()) {
                 Category::getInstance(SHIBSP_LOGCAT".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", type.get());
                 m_ac.push_back(SPConfig::getConfig().AccessControlManager.newPlugin(type.get(), e));

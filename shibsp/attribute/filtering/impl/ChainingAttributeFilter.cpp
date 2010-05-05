@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,9 +72,9 @@ ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
     SPConfig& conf = SPConfig::getConfig();
 
     // Load up the chain of handlers.
-    e = e ? XMLHelper::getFirstChildElement(e, _AttributeFilter) : NULL;
+    e = e ? XMLHelper::getFirstChildElement(e, _AttributeFilter) : nullptr;
     while (e) {
-        auto_ptr_char type(e->getAttributeNS(NULL,_type));
+        auto_ptr_char type(e->getAttributeNS(nullptr,_type));
         if (type.get() && *(type.get())) {
             try {
                 m_filters.push_back(conf.AttributeFilterManager.newPlugin(type.get(),e));

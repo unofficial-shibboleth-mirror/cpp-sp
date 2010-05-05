@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * mod_apache.cpp
  *
- * Apache module implementation
+ * Apache module implementation.
  */
 
 #define SHIBSP_LITE
@@ -88,10 +88,10 @@ using xercesc::XMLException;
 extern "C" module MODULE_VAR_EXPORT mod_shib;
 
 namespace {
-    char* g_szSHIBConfig = NULL;
-    char* g_szSchemaDir = NULL;
-    char* g_szPrefix = NULL;
-    SPConfig* g_Config = NULL;
+    char* g_szSHIBConfig = nullptr;
+    char* g_szSchemaDir = nullptr;
+    char* g_szPrefix = nullptr;
+    SPConfig* g_Config = nullptr;
     string g_unsetHeaderValue,g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
@@ -120,7 +120,7 @@ struct shib_server_config
 extern "C" void* create_shib_server_config(SH_AP_POOL* p, server_rec* s)
 {
     shib_server_config* sc=(shib_server_config*)ap_pcalloc(p,sizeof(shib_server_config));
-    sc->szScheme = NULL;
+    sc->szScheme = nullptr;
     return sc;
 }
 
@@ -136,7 +136,7 @@ extern "C" void* merge_shib_server_config (SH_AP_POOL* p, void* base, void* sub)
     else if (parent->szScheme)
         sc->szScheme=ap_pstrdup(p,parent->szScheme);
     else
-        sc->szScheme=NULL;
+        sc->szScheme=nullptr;
 
     return sc;
 }
@@ -167,13 +167,13 @@ struct shib_dir_config
 extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
-    dc->tSettings = NULL;
-    dc->szAuthGrpFile = NULL;
+    dc->tSettings = nullptr;
+    dc->szAuthGrpFile = nullptr;
     dc->bRequireAll = -1;
     dc->bAuthoritative = -1;
-    dc->szApplicationId = NULL;
-    dc->szRequireWith = NULL;
-    dc->szRedirectToSSL = NULL;
+    dc->szApplicationId = nullptr;
+    dc->szRequireWith = nullptr;
+    dc->szRedirectToSSL = nullptr;
     dc->bOff = -1;
     dc->bBasicHijack = -1;
     dc->bRequireSession = -1;
@@ -191,7 +191,7 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     shib_dir_config* child=(shib_dir_config*)sub;
 
     // The child supersedes any matching table settings in the parent.
-    dc->tSettings = NULL;
+    dc->tSettings = nullptr;
     if (parent->tSettings)
         dc->tSettings = ap_copy_table(p, parent->tSettings);
     if (child->tSettings) {
@@ -206,28 +206,28 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     else if (parent->szAuthGrpFile)
         dc->szAuthGrpFile=ap_pstrdup(p,parent->szAuthGrpFile);
     else
-        dc->szAuthGrpFile=NULL;
+        dc->szAuthGrpFile=nullptr;
 
     if (child->szApplicationId)
         dc->szApplicationId=ap_pstrdup(p,child->szApplicationId);
     else if (parent->szApplicationId)
         dc->szApplicationId=ap_pstrdup(p,parent->szApplicationId);
     else
-        dc->szApplicationId=NULL;
+        dc->szApplicationId=nullptr;
 
     if (child->szRequireWith)
         dc->szRequireWith=ap_pstrdup(p,child->szRequireWith);
     else if (parent->szRequireWith)
         dc->szRequireWith=ap_pstrdup(p,parent->szRequireWith);
     else
-        dc->szRequireWith=NULL;
+        dc->szRequireWith=nullptr;
 
     if (child->szRedirectToSSL)
         dc->szRedirectToSSL=ap_pstrdup(p,child->szRedirectToSSL);
     else if (parent->szRedirectToSSL)
         dc->szRedirectToSSL=ap_pstrdup(p,parent->szRedirectToSSL);
     else
-        dc->szRedirectToSSL=NULL;
+        dc->szRedirectToSSL=nullptr;
 
     dc->bOff=((child->bOff==-1) ? parent->bOff : child->bOff);
     dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
@@ -263,7 +263,7 @@ static shib_request_config *init_request_config(request_rec *r)
 extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const char* arg)
 {
     *((char**)(parms->info))=ap_pstrdup(parms->pool,arg);
-    return NULL;
+    return nullptr;
 }
 
 extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
@@ -271,7 +271,7 @@ extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, cons
     char* base=(char*)ap_get_module_config(parms->server->module_config,&mod_shib);
     size_t offset=(size_t)parms->info;
     *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
-    return NULL;
+    return nullptr;
 }
 
 extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
@@ -291,7 +291,7 @@ extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, con
     if (!dc->tSettings)
         dc->tSettings = ap_make_table(parms->pool, 4);
     ap_table_set(dc->tSettings, arg1, arg2);
-    return NULL;
+    return nullptr;
 }
 
 /********************************************************************************/
@@ -492,13 +492,13 @@ public:
        if (m_rc && m_rc->env)
            hdr = ap_table_get(m_rc->env, name);
        else
-           hdr = NULL;
+           hdr = nullptr;
        return string(hdr ? hdr : "");
     }
     return getHeader(name);
   }
   void setRemoteUser(const char* user) {
-      SH_AP_USER(m_req) = user ? ap_pstrdup(m_req->pool, user) : NULL;
+      SH_AP_USER(m_req) = user ? ap_pstrdup(m_req->pool, user) : nullptr;
       if (m_dc->bUseHeaders == 1) {
           if (user) {
               ap_table_set(m_req->headers_in, "REMOTE_USER", user);
@@ -515,7 +515,7 @@ public:
   void setAuthType(const char* authtype) {
       if (authtype && m_dc->bBasicHijack == 1)
           authtype = "Basic";
-      SH_AP_AUTH_TYPE(m_req) = authtype ? ap_pstrdup(m_req->pool, authtype) : NULL;
+      SH_AP_AUTH_TYPE(m_req) = authtype ? ap_pstrdup(m_req->pool, authtype) : nullptr;
   }
   string getAuthType() const {
     return string(SH_AP_AUTH_TYPE(m_req) ? SH_AP_AUTH_TYPE(m_req) : "");
@@ -596,7 +596,7 @@ extern "C" int shib_check_user(request_rec* r)
 
     // Check user authentication and export information, then set the handler bypass
     pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta,true);
-    apr_pool_userdata_setn((const void*)42,g_UserDataKey,NULL,r->pool);
+    apr_pool_userdata_setn((const void*)42,g_UserDataKey,nullptr,r->pool);
     // If directed, install a spoof key to recognize when we've already cleared headers.
     if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bUseHeaders==1))
         ap_table_set(r->headers_in, "Shib-Spoof-Check", g_spoofKey.c_str());
@@ -728,16 +728,16 @@ public:
     ApacheRequestMapper(const xercesc::DOMElement* e);
     ~ApacheRequestMapper() { delete m_mapper; delete m_htaccess; delete m_staKey; delete m_propsKey; }
     Lockable* lock() { return m_mapper->lock(); }
-    void unlock() { m_staKey->setData(NULL); m_propsKey->setData(NULL); m_mapper->unlock(); }
+    void unlock() { m_staKey->setData(nullptr); m_propsKey->setData(nullptr); m_mapper->unlock(); }
     Settings getSettings(const HTTPRequest& request) const;
 
-    const PropertySet* getParent() const { return NULL; }
+    const PropertySet* getParent() const { return nullptr; }
     void setParent(const PropertySet*) {}
-    pair<bool,bool> getBool(const char* name, const char* ns=NULL) const;
-    pair<bool,const char*> getString(const char* name, const char* ns=NULL) const;
-    pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=NULL) const;
-    pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=NULL) const;
-    pair<bool,int> getInt(const char* name, const char* ns=NULL) const;
+    pair<bool,bool> getBool(const char* name, const char* ns=nullptr) const;
+    pair<bool,const char*> getString(const char* name, const char* ns=nullptr) const;
+    pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=nullptr) const;
+    pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
+    pair<bool,int> getInt(const char* name, const char* ns=nullptr) const;
     void getAll(map<string,const char*>& properties) const;
     const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const;
     const xercesc::DOMElement* getElement() const;
@@ -754,12 +754,12 @@ RequestMapper* ApacheRequestMapFactory(const xercesc::DOMElement* const & e)
     return new ApacheRequestMapper(e);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e) : m_mapper(NULL), m_staKey(NULL), m_propsKey(NULL), m_htaccess(NULL)
+ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e) : m_mapper(nullptr), m_staKey(nullptr), m_propsKey(nullptr), m_htaccess(nullptr)
 {
     m_mapper=SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e);
     m_htaccess=new htAccessControl();
-    m_staKey=ThreadKey::create(NULL);
-    m_propsKey=ThreadKey::create(NULL);
+    m_staKey=ThreadKey::create(nullptr);
+    m_propsKey=ThreadKey::create(nullptr);
 }
 
 RequestMapper::Settings ApacheRequestMapper::getSettings(const HTTPRequest& request) const
@@ -816,13 +816,13 @@ pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const ch
                 return make_pair(true, prop);
         }
     }
-    return s ? s->getString(name,ns) : pair<bool,const char*>(false,NULL);
+    return s ? s->getString(name,ns) : pair<bool,const char*>(false,nullptr);
 }
 
 pair<bool,const XMLCh*> ApacheRequestMapper::getXMLString(const char* name, const char* ns) const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,NULL);
+    return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,nullptr);
 }
 
 pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, const char* ns) const
@@ -832,7 +832,7 @@ pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, co
     if (sta && !ns) {
         // Override Apache-settable int properties.
         if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
-            return pair<bool,unsigned int>(true, strtol(sta->m_dc->szRedirectToSSL, NULL, 10));
+            return pair<bool,unsigned int>(true, strtol(sta->m_dc->szRedirectToSSL, nullptr, 10));
         else if (sta->m_dc->tSettings) {
             const char* prop = ap_table_get(sta->m_dc->tSettings, name);
             if (prop)
@@ -892,13 +892,13 @@ void ApacheRequestMapper::getAll(map<string,const char*>& properties) const
 const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getPropertySet(name,ns) : NULL;
+    return s ? s->getPropertySet(name,ns) : nullptr;
 }
 
 const xercesc::DOMElement* ApacheRequestMapper::getElement() const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getElement() : NULL;
+    return s ? s->getElement() : nullptr;
 }
 
 static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpfile)
@@ -914,7 +914,7 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
     if (ap_pcfg_openfile(&f,r->pool,grpfile) != APR_SUCCESS) {
 #endif
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG,SH_AP_R(r),"groups_for_user() could not open group file: %s\n",grpfile);
-        return NULL;
+        return nullptr;
     }
 
     SH_AP_POOL* sp;
@@ -924,7 +924,7 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
     if (apr_pool_create(&sp,r->pool) != APR_SUCCESS) {
         ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
             "groups_for_user() could not create a subpool");
-        return NULL;
+        return nullptr;
     }
 #endif
 
@@ -1064,7 +1064,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
             }
         }
         else if (!strcmp(w,"group")  && !remote_user.empty()) {
-            SH_AP_TABLE* grpstatus=NULL;
+            SH_AP_TABLE* grpstatus=nullptr;
             if (sta->m_dc->szAuthGrpFile) {
                 if (request.isPriorityEnabled(SPRequest::SPDebug))
                     request.log(SPRequest::SPDebug,string("htaccess plugin using groups file: ") + sta->m_dc->szAuthGrpFile);
@@ -1158,7 +1158,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                     
                     pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs2(attrs);
                     for (; !status && attrs2.first!=attrs2.second; ++attrs2.first) {
-                        if (checkAttribute(request, attrs2.first->second, w, regexp ? re.get() : NULL)) {
+                        if (checkAttribute(request, attrs2.first->second, w, regexp ? re.get() : nullptr)) {
                             status = true;
                         }
                     }
@@ -1235,7 +1235,7 @@ extern "C" int shib_fixups(request_rec* r)
 
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
 
-  if (rc==NULL || rc->env==NULL || ap_is_empty_table(rc->env))
+  if (rc==nullptr || rc->env==nullptr || ap_is_empty_table(rc->env))
         return DECLINED;
 
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars", ap_table_elts(rc->env)->nelts);
@@ -1254,7 +1254,7 @@ extern "C" void shib_child_exit(server_rec* s, SH_AP_POOL* p)
     if (g_Config) {
         ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
         g_Config->term();
-        g_Config = NULL;
+        g_Config = nullptr;
         ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
     }
 }
@@ -1267,9 +1267,9 @@ extern "C" apr_status_t shib_exit(void* data)
 {
     if (g_Config) {
         g_Config->term();
-        g_Config = NULL;
+        g_Config = nullptr;
     }
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,NULL,"shib_exit() done");
+    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,nullptr,"shib_exit() done");
     return OK;
 }
 #endif
@@ -1339,7 +1339,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     }
 
     // Set the cleanup handler
-    apr_pool_cleanup_register(p, NULL, &shib_exit, apr_pool_cleanup_null);
+    apr_pool_cleanup_register(p, nullptr, &shib_exit, apr_pool_cleanup_null);
 
     ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
 }
@@ -1348,12 +1348,12 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 #ifdef SHIB_DEFERRED_HEADERS
 static void set_output_filter(request_rec *r)
 {
-   ap_add_output_filter("SHIB_HEADERS_OUT", NULL, r, r->connection);
+   ap_add_output_filter("SHIB_HEADERS_OUT", nullptr, r, r->connection);
 }
 
 static void set_error_filter(request_rec *r)
 {
-   ap_add_output_filter("SHIB_HEADERS_ERR", NULL, r, r->connection);
+   ap_add_output_filter("SHIB_HEADERS_ERR", nullptr, r, r->connection);
 }
 
 static int _table_add(void *v, const char *key, const char *value)
@@ -1371,7 +1371,7 @@ static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_out_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
         // can't use overlap call because it will collapse Set-Cookie headers
         //apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
-        apr_table_do(_table_add,r->headers_out, rc->hdr_out,NULL);
+        apr_table_do(_table_add,r->headers_out, rc->hdr_out,nullptr);
     }
 
     /* remove ourselves from the filter chain */
@@ -1390,7 +1390,7 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
         // can't use overlap call because it will collapse Set-Cookie headers
         //apr_table_overlap(r->err_headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
-        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,NULL);
+        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,nullptr);
     }
 
     /* remove ourselves from the filter chain */
@@ -1419,7 +1419,7 @@ static command_rec shire_cmds[] = {
    (void *) XtOffsetOf (shib_server_config, szScheme),
    RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost"},
 
-  {"ShibRequestSetting", (config_fn_t)shib_table_set, NULL,
+  {"ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
    OR_AUTHCFG, TAKE2, "Set arbitrary Shibboleth request property for content"},
 
   {"ShibDisable", (config_fn_t)ap_set_flag_slot,
@@ -1459,32 +1459,32 @@ static command_rec shire_cmds[] = {
    (void *) XtOffsetOf (shib_dir_config, bUseHeaders),
    OR_AUTHCFG, FLAG, "Export attributes using custom HTTP headers"},
 
-  {NULL}
+  {nullptr}
 };
 
 extern "C"{
 handler_rec shib_handlers[] = {
   { "shib-handler", shib_handler },
-  { NULL }
+  { nullptr }
 };
 
 module MODULE_VAR_EXPORT mod_shib = {
     STANDARD_MODULE_STUFF,
-    NULL,                        /* initializer */
+    nullptr,                        /* initializer */
     create_shib_dir_config,	/* dir config creater */
     merge_shib_dir_config,	/* dir merger --- default is to override */
     create_shib_server_config, /* server config */
     merge_shib_server_config,   /* merge server config */
     shire_cmds,			/* command table */
     shib_handlers,		/* handlers */
-    NULL,			/* filename translation */
+    nullptr,			/* filename translation */
     shib_check_user,		/* check_user_id */
     shib_auth_checker,		/* check auth */
-    NULL,			/* check access */
-    NULL,			/* type_checker */
+    nullptr,			/* check access */
+    nullptr,			/* type_checker */
     shib_fixups,		/* fixups */
-    NULL,			/* logger */
-    NULL,			/* header parser */
+    nullptr,			/* logger */
+    nullptr,			/* header parser */
     shib_child_init,		/* child_init */
     shib_child_exit,		/* child_exit */
     shib_post_read		/* post read-request */
@@ -1495,17 +1495,17 @@ module MODULE_VAR_EXPORT mod_shib = {
 extern "C" void shib_register_hooks (apr_pool_t *p)
 {
 #ifdef SHIB_DEFERRED_HEADERS
-  ap_register_output_filter("SHIB_HEADERS_OUT", do_output_filter, NULL, AP_FTYPE_CONTENT_SET);
-  ap_hook_insert_filter(set_output_filter, NULL, NULL, APR_HOOK_LAST);
-  ap_register_output_filter("SHIB_HEADERS_ERR", do_error_filter, NULL, AP_FTYPE_CONTENT_SET);
-  ap_hook_insert_error_filter(set_error_filter, NULL, NULL, APR_HOOK_LAST);
-  ap_hook_post_read_request(shib_post_read, NULL, NULL, APR_HOOK_MIDDLE);
+  ap_register_output_filter("SHIB_HEADERS_OUT", do_output_filter, nullptr, AP_FTYPE_CONTENT_SET);
+  ap_hook_insert_filter(set_output_filter, nullptr, nullptr, APR_HOOK_LAST);
+  ap_register_output_filter("SHIB_HEADERS_ERR", do_error_filter, nullptr, AP_FTYPE_CONTENT_SET);
+  ap_hook_insert_error_filter(set_error_filter, nullptr, nullptr, APR_HOOK_LAST);
+  ap_hook_post_read_request(shib_post_read, nullptr, nullptr, APR_HOOK_MIDDLE);
 #endif
-  ap_hook_child_init(shib_child_init, NULL, NULL, APR_HOOK_MIDDLE);
-  ap_hook_check_user_id(shib_check_user, NULL, NULL, APR_HOOK_MIDDLE);
-  ap_hook_auth_checker(shib_auth_checker, NULL, NULL, APR_HOOK_FIRST);
-  ap_hook_handler(shib_handler, NULL, NULL, APR_HOOK_LAST);
-  ap_hook_fixups(shib_fixups, NULL, NULL, APR_HOOK_MIDDLE);
+  ap_hook_child_init(shib_child_init, nullptr, nullptr, APR_HOOK_MIDDLE);
+  ap_hook_check_user_id(shib_check_user, nullptr, nullptr, APR_HOOK_MIDDLE);
+  ap_hook_auth_checker(shib_auth_checker, nullptr, nullptr, APR_HOOK_FIRST);
+  ap_hook_handler(shib_handler, nullptr, nullptr, APR_HOOK_LAST);
+  ap_hook_fixups(shib_fixups, nullptr, nullptr, APR_HOOK_MIDDLE);
 }
 
 // SHIB Module commands
@@ -1523,7 +1523,7 @@ static command_rec shib_cmds[] = {
         (void *) offsetof (shib_server_config, szScheme),
         RSRC_CONF, "URL scheme to force into generated URLs for a vhost"),
 
-    AP_INIT_TAKE2("ShibRequestSetting", (config_fn_t)shib_table_set, NULL,
+    AP_INIT_TAKE2("ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
         OR_AUTHCFG, "Set arbitrary Shibboleth request property for content"),
 
     AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
@@ -1563,7 +1563,7 @@ static command_rec shib_cmds[] = {
         (void *) offsetof (shib_dir_config, bUseHeaders),
         OR_AUTHCFG, "Export attributes using custom HTTP headers"),
 
-    {NULL}
+    {nullptr}
 };
 
 module AP_MODULE_DECLARE_DATA mod_shib = {

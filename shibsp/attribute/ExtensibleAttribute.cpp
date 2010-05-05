@@ -1,5 +1,5 @@
 /*
- *  Copyright 2009 Internet2
+ *  Copyright 2009-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ const char* ExtensibleAttribute::getString(size_t index) const
 
 const char* ExtensibleAttribute::getScope(size_t index) const
 {
-    return NULL;
+    return nullptr;
 }
 
 void ExtensibleAttribute::removeValue(size_t index)

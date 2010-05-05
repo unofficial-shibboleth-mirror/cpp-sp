@@ -1,5 +1,5 @@
 /*
- *  Copyright 2009 Internet2
+ *  Copyright 2009-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,20 +96,20 @@ namespace shibsp {
     static const XMLCh signingId[] =    UNICODE_LITERAL_9(s,i,g,n,i,n,g,I,d);
 };
 
-KeyDescriptorExtractor::KeyDescriptorExtractor(const DOMElement* e) : m_hashAlg(e ? e->getAttributeNS(NULL, hashAlg) : NULL)
+KeyDescriptorExtractor::KeyDescriptorExtractor(const DOMElement* e) : m_hashAlg(e ? e->getAttributeNS(nullptr, hashAlg) : nullptr)
 {
     if (e) {
-        const XMLCh* a = e->getAttributeNS(NULL, hashId);
+        const XMLCh* a = e->getAttributeNS(nullptr, hashId);
         if (a && *a) {
             auto_ptr_char temp(a);
             m_hashId.push_back(temp.get());
         }
-        a = e->getAttributeNS(NULL, signingId);
+        a = e->getAttributeNS(nullptr, signingId);
         if (a && *a) {
             auto_ptr_char temp(a);
             m_signingId.push_back(temp.get());
         }
-        a = e->getAttributeNS(NULL, encryptionId);
+        a = e->getAttributeNS(nullptr, encryptionId);
         if (a && *a) {
             auto_ptr_char temp(a);
             m_encryptionId.push_back(temp.get());

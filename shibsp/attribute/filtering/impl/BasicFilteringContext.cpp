@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ BasicFilteringContext::BasicFilteringContext(
     const RoleDescriptor* role,
     const XMLCh* authncontext_class,
     const XMLCh* authncontext_decl
-    ) : m_app(app), m_role(role), m_issuer(NULL), m_class(authncontext_class), m_decl(authncontext_decl)
+    ) : m_app(app), m_role(role), m_issuer(nullptr), m_class(authncontext_class), m_decl(authncontext_decl)
 {
     if (role)
         m_issuer = dynamic_cast<EntityDescriptor*>(role->getParent())->getEntityID();
@@ -84,7 +84,7 @@ const XMLCh* BasicFilteringContext::getAttributeIssuer() const
 
 const RoleDescriptor* BasicFilteringContext::getAttributeRequesterMetadata() const
 {
-    return NULL;
+    return nullptr;
 }
 
 const RoleDescriptor* BasicFilteringContext::getAttributeIssuerMetadata() const

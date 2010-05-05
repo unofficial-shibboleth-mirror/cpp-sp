@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,9 +101,9 @@ ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char
     SPConfig& conf = SPConfig::getConfig();
 
     // Load up the chain of handlers.
-    e = e ? XMLHelper::getFirstChildElement(e, _LogoutInitiator) : NULL;
+    e = e ? XMLHelper::getFirstChildElement(e, _LogoutInitiator) : nullptr;
     while (e) {
-        auto_ptr_char type(e->getAttributeNS(NULL,_type));
+        auto_ptr_char type(e->getAttributeNS(nullptr,_type));
         if (type.get() && *(type.get())) {
             try {
                 m_handlers.push_back(conf.LogoutInitiatorManager.newPlugin(type.get(),make_pair(e, appId)));

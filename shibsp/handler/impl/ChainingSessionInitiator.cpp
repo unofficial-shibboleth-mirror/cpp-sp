@@ -97,9 +97,9 @@ ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const ch
     SPConfig& conf = SPConfig::getConfig();
 
     // Load up the chain of handlers.
-    e = e ? XMLHelper::getFirstChildElement(e, _SessionInitiator) : NULL;
+    e = e ? XMLHelper::getFirstChildElement(e, _SessionInitiator) : nullptr;
     while (e) {
-        auto_ptr_char type(e->getAttributeNS(NULL,_type));
+        auto_ptr_char type(e->getAttributeNS(nullptr,_type));
         if (type.get() && *(type.get())) {
             try {
                 m_handlers.push_back(conf.SessionInitiatorManager.newPlugin(type.get(),make_pair(e, appId)));

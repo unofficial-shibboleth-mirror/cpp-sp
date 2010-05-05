@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,13 +107,13 @@ namespace shibsp {
          * @param restore   service to "restore" registration for
          * @return  true iff the current service was still registered
          */
-        virtual bool unregListener(const char* address, Remoted* current, Remoted* restore=NULL);
+        virtual bool unregListener(const char* address, Remoted* current, Remoted* restore=nullptr);
 
         /**
          * Returns current service registered at an address, if any.
          *
          * @param address message address to access
-         * @return  registered service, or NULL
+         * @return  registered service, or nullptr
          */
         virtual Remoted* lookup(const char* address) const;
 

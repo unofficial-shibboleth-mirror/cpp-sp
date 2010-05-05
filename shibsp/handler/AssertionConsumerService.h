@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,8 +77,8 @@ namespace shibsp {
             const xercesc::DOMElement* e,
             const char* appId,
             xmltooling::logging::Category& log,
-            xercesc::DOMNodeFilter* filter=NULL,
-            const std::map<std::string,std::string>* remapper=NULL
+            xercesc::DOMNodeFilter* filter=nullptr,
+            const std::map<std::string,std::string>* remapper=nullptr
             );
 
         /**
@@ -162,13 +162,13 @@ namespace shibsp {
          */
         ResolutionContext* resolveAttributes(
             const Application& application,
-            const opensaml::saml2md::RoleDescriptor* issuer=NULL,
-            const XMLCh* protocol=NULL,
-            const opensaml::saml1::NameIdentifier* v1nameid=NULL,
-            const opensaml::saml2::NameID* nameid=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL,
-            const std::vector<const opensaml::Assertion*>* tokens=NULL
+            const opensaml::saml2md::RoleDescriptor* issuer=nullptr,
+            const XMLCh* protocol=nullptr,
+            const opensaml::saml1::NameIdentifier* v1nameid=nullptr,
+            const opensaml::saml2::NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const std::vector<const opensaml::Assertion*>* tokens=nullptr
             ) const;
 
     public:

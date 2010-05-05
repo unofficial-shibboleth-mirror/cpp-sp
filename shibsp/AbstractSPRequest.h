@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ namespace shibsp {
         std::string getRemoteAddr() const;
         const char* getParameter(const char* name) const;
         std::vector<const char*>::size_type getParameters(const char* name, std::vector<const char*>& values) const;
-        const char* getHandlerURL(const char* resource=NULL) const;
+        const char* getHandlerURL(const char* resource=nullptr) const;
         void log(SPLogLevel level, const std::string& msg) const;
         bool isPriorityEnabled(SPLogLevel level) const;
 

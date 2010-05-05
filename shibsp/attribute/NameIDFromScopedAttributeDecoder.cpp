@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,21 +46,21 @@ namespace shibsp {
         NameIDFromScopedAttributeDecoder(const DOMElement* e)
             : AttributeDecoder(e),
                 m_delimeter('@'),
-                m_format(e ? e->getAttributeNS(NULL,format) : NULL),
-                m_formatter(e ? e->getAttributeNS(NULL,formatter) : NULL),
+                m_format(e ? e->getAttributeNS(nullptr,format) : nullptr),
+                m_formatter(e ? e->getAttributeNS(nullptr,formatter) : nullptr),
                 m_defaultQualifiers(false) {
-            if (e && e->hasAttributeNS(NULL,scopeDelimeter)) {
-                auto_ptr_char d(e->getAttributeNS(NULL,scopeDelimeter));
+            if (e && e->hasAttributeNS(nullptr,scopeDelimeter)) {
+                auto_ptr_char d(e->getAttributeNS(nullptr,scopeDelimeter));
                 m_delimeter = *(d.get());
             }
-            const XMLCh* flag = e ? e->getAttributeNS(NULL, defaultQualifiers) : NULL;
+            const XMLCh* flag = e ? e->getAttributeNS(nullptr, defaultQualifiers) : nullptr;
             if (flag && (*flag == chLatin_t || *flag == chDigit_1))
                 m_defaultQualifiers = true;
         }
         ~NameIDFromScopedAttributeDecoder() {}
 
         shibsp::Attribute* decode(
-            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -84,7 +84,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
     char* val;
     char* scope;
     const XMLCh* xmlscope;
-    xmltooling::QName scopeqname(NULL,Scope);
+    xmltooling::QName scopeqname(nullptr,Scope);
     auto_ptr<NameIDAttribute> nameid(
         new NameIDAttribute(ids, (m_formatter.get() && *m_formatter.get()) ? m_formatter.get() : DEFAULT_NAMEID_FORMATTER)
         );
@@ -123,7 +123,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
             }
             else {
                 log.warn("XMLObject type not recognized by NameIDFromScopedAttributeDecoder, no values returned");
-                return NULL;
+                return nullptr;
             }
         }
 
@@ -134,7 +134,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
                     dest.push_back(NameIDAttribute::Value());
                     NameIDAttribute::Value& destval = dest.back();
                     const AttributeExtensibleXMLObject* aexo=dynamic_cast<const AttributeExtensibleXMLObject*>(*v);
-                    xmlscope = aexo ? aexo->getAttribute(scopeqname) : NULL;
+                    xmlscope = aexo ? aexo->getAttribute(scopeqname) : nullptr;
                     if (!xmlscope || !*xmlscope) {
                         // Terminate the value at the scope delimiter.
                         if (scope = strchr(val, m_delimeter))
@@ -158,9 +158,9 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
             }
         }
 
-        return dest.empty() ? NULL : _decode(nameid.release());
+        return dest.empty() ? nullptr : _decode(nameid.release());
     }
 
     log.warn("XMLObject type not recognized by NameIDFromScopedAttributeDecoder, no values returned");
-    return NULL;
+    return nullptr;
 }

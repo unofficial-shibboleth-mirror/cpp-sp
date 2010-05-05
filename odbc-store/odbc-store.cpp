@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,8 +68,8 @@ using namespace std;
 
 /* table definitions
 CREATE TABLE version (
-    major int NOT NULL,
-    minor int NOT NULL
+    major int NOT nullptr,
+    minor int NOT nullptr
     )
 
 CREATE TABLE strings (
@@ -103,7 +103,7 @@ namespace {
         ~ODBCConn() {
             SQLRETURN sr = SQL_SUCCESS;
             if (!autoCommit)
-                sr = SQLSetConnectAttr(handle, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, NULL);
+                sr = SQLSetConnectAttr(handle, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0);
             SQLDisconnect(handle);
             SQLFreeHandle(SQL_HANDLE_DBC,handle);
             if (!SQL_SUCCEEDED(sr))
@@ -123,10 +123,10 @@ namespace {
         bool createString(const char* context, const char* key, const char* value, time_t expiration) {
             return createRow(STRING_TABLE, context, key, value, expiration);
         }
-        int readString(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL, int version=0) {
+        int readString(const char* context, const char* key, string* pvalue=nullptr, time_t* pexpiration=nullptr, int version=0) {
             return readRow(STRING_TABLE, context, key, pvalue, pexpiration, version, false);
         }
-        int updateString(const char* context, const char* key, const char* value=NULL, time_t expiration=0, int version=0) {
+        int updateString(const char* context, const char* key, const char* value=nullptr, time_t expiration=0, int version=0) {
             return updateRow(STRING_TABLE, context, key, value, expiration, version);
         }
         bool deleteString(const char* context, const char* key) {
@@ -136,10 +136,10 @@ namespace {
         bool createText(const char* context, const char* key, const char* value, time_t expiration) {
             return createRow(TEXT_TABLE, context, key, value, expiration);
         }
-        int readText(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL, int version=0) {
+        int readText(const char* context, const char* key, string* pvalue=nullptr, time_t* pexpiration=nullptr, int version=0) {
             return readRow(TEXT_TABLE, context, key, pvalue, pexpiration, version, true);
         }
-        int updateText(const char* context, const char* key, const char* value=NULL, time_t expiration=0, int version=0) {
+        int updateText(const char* context, const char* key, const char* value=nullptr, time_t expiration=0, int version=0) {
             return updateRow(TEXT_TABLE, context, key, value, expiration, version);
         }
         bool deleteText(const char* context, const char* key) {
@@ -175,7 +175,7 @@ namespace {
         SQLHDBC getHDBC();
         SQLHSTMT getHSTMT(SQLHDBC);
         pair<int,int> getVersion(SQLHDBC);
-        pair<bool,bool> log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor=NULL);
+        pair<bool,bool> log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor=nullptr);
 
         static void* cleanup_fn(void*); 
         void cleanup();
@@ -258,19 +258,19 @@ namespace {
 };
 
 ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::getInstance("XMLTooling.StorageService")),
-   m_cleanupInterval(900), shutdown_wait(NULL), cleanup_thread(NULL), shutdown(false), m_henv(SQL_NULL_HANDLE), m_isolation(SQL_TXN_SERIALIZABLE)
+   m_cleanupInterval(900), shutdown_wait(nullptr), cleanup_thread(nullptr), shutdown(false), m_henv(SQL_NULL_HANDLE), m_isolation(SQL_TXN_SERIALIZABLE)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("ODBCStorageService");
 #endif
 
-    const XMLCh* tag=e ? e->getAttributeNS(NULL,cleanupInterval) : NULL;
+    const XMLCh* tag=e ? e->getAttributeNS(nullptr,cleanupInterval) : nullptr;
     if (tag && *tag)
         m_cleanupInterval = XMLString::parseInt(tag);
     if (!m_cleanupInterval)
         m_cleanupInterval = 900;
 
-    auto_ptr_char iso(e ? e->getAttributeNS(NULL,isolationLevel) : NULL);
+    auto_ptr_char iso(e ? e->getAttributeNS(nullptr,isolationLevel) : nullptr);
     if (iso.get() && *iso.get()) {
         if (!strcmp(iso.get(),"SERIALIZABLE"))
             m_isolation = SQL_TXN_SERIALIZABLE;
@@ -299,7 +299,7 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
     }
 
     // Grab connection string from the configuration.
-    e = e ? XMLHelper::getFirstChildElement(e,ConnectionString) : NULL;
+    e = e ? XMLHelper::getFirstChildElement(e,ConnectionString) : nullptr;
     if (!e || !e->hasChildNodes()) {
         SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
         throw XMLToolingException("ODBC StorageService requires ConnectionString element in configuration.");
@@ -337,7 +337,7 @@ ODBCStorageService::~ODBCStorageService()
 {
     shutdown = true;
     shutdown_wait->signal();
-    cleanup_thread->join(NULL);
+    cleanup_thread->join(nullptr);
     delete shutdown_wait;
     if (m_henv != SQL_NULL_HANDLE)
         SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
@@ -381,14 +381,14 @@ SQLHDBC ODBCStorageService::getHDBC()
         throw IOException("ODBC StorageService failed to allocate a connection handle.");
     }
 
-    sr=SQLDriverConnect(handle,NULL,(SQLCHAR*)m_connstring.c_str(),m_connstring.length(),NULL,0,NULL,SQL_DRIVER_NOPROMPT);
+    sr=SQLDriverConnect(handle,nullptr,(SQLCHAR*)m_connstring.c_str(),m_connstring.length(),nullptr,0,nullptr,SQL_DRIVER_NOPROMPT);
     if (!SQL_SUCCEEDED(sr)) {
         m_log.error("failed to connect to database");
         log_error(handle, SQL_HANDLE_DBC);
         throw IOException("ODBC StorageService failed to connect to database.");
     }
 
-    sr = SQLSetConnectAttr(handle, SQL_ATTR_TXN_ISOLATION, (SQLPOINTER)m_isolation, NULL);
+    sr = SQLSetConnectAttr(handle, SQL_ATTR_TXN_ISOLATION, (SQLPOINTER)m_isolation, 0);
     if (!SQL_SUCCEEDED(sr))
         throw IOException("ODBC StorageService failed to set transaction isolation level.");
 
@@ -421,8 +421,8 @@ pair<int,int> ODBCStorageService::getVersion(SQLHDBC conn)
 
     SQLINTEGER major;
     SQLINTEGER minor;
-    SQLBindCol(stmt,1,SQL_C_SLONG,&major,0,NULL);
-    SQLBindCol(stmt,2,SQL_C_SLONG,&minor,0,NULL);
+    SQLBindCol(stmt,1,SQL_C_SLONG,&major,0,nullptr);
+    SQLBindCol(stmt,2,SQL_C_SLONG,&minor,0,nullptr);
 
     if ((sr=SQLFetch(stmt)) != SQL_NO_DATA)
         return pair<int,int>(major,minor);
@@ -524,7 +524,7 @@ int ODBCStorageService::readRow(
 
     // Prepare and exectute select statement.
     char timebuf[32];
-    timestampFromTime(time(NULL), timebuf);
+    timestampFromTime(time(nullptr), timebuf);
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
     ostringstream q;
@@ -532,7 +532,7 @@ int ODBCStorageService::readRow(
     if (pexpiration)
         q << ",expires";
     if (pvalue)
-        q << ",CASE version WHEN " << version << " THEN NULL ELSE value END";
+        q << ",CASE version WHEN " << version << " THEN nullptr ELSE value END";
     q << " FROM " << table << " WHERE context='" << scontext << "' AND id='" << skey << "' AND expires > " << timebuf;
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);
@@ -549,9 +549,9 @@ int ODBCStorageService::readRow(
     SQLSMALLINT ver;
     SQL_TIMESTAMP_STRUCT expiration;
 
-    SQLBindCol(stmt,1,SQL_C_SSHORT,&ver,0,NULL);
+    SQLBindCol(stmt,1,SQL_C_SSHORT,&ver,0,nullptr);
     if (pexpiration)
-        SQLBindCol(stmt,2,SQL_C_TYPE_TIMESTAMP,&expiration,0,NULL);
+        SQLBindCol(stmt,2,SQL_C_TYPE_TIMESTAMP,&expiration,0,nullptr);
 
     if ((sr=SQLFetch(stmt)) == SQL_NO_DATA)
         return 0;
@@ -589,7 +589,7 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
 
     // Get statement handle. Disable auto-commit mode to wrap select + update.
     ODBCConn conn(getHDBC());
-    SQLRETURN sr = SQLSetConnectAttr(conn, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, NULL);
+    SQLRETURN sr = SQLSetConnectAttr(conn, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
     if (!SQL_SUCCEEDED(sr))
         throw IOException("ODBC StorageService failed to disable auto-commit mode.");
     conn.autoCommit = false;
@@ -597,7 +597,7 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
 
     // First, fetch the current version for later, which also ensures the record still exists.
     char timebuf[32];
-    timestampFromTime(time(NULL), timebuf);
+    timestampFromTime(time(nullptr), timebuf);
     char *scontext = makeSafeSQL(context);
     char *skey = makeSafeSQL(key);
     string q("SELECT version FROM ");
@@ -615,7 +615,7 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
     }
 
     SQLSMALLINT ver;
-    SQLBindCol(stmt,1,SQL_C_SSHORT,&ver,0,NULL);
+    SQLBindCol(stmt,1,SQL_C_SSHORT,&ver,0,nullptr);
     if ((sr=SQLFetch(stmt)) == SQL_NO_DATA) {
         freeSafeSQL(scontext, context);
         freeSafeSQL(skey, key);
@@ -739,7 +739,7 @@ void ODBCStorageService::cleanup()
         if (shutdown)
             break;
         try {
-            reap(NULL);
+            reap(nullptr);
         }
         catch (exception& ex) {
             m_log.error("cleanup thread swallowed exception: %s", ex.what());
@@ -750,7 +750,7 @@ void ODBCStorageService::cleanup()
 
     mutex->unlock();
     delete mutex;
-    Thread::exit(NULL);
+    Thread::exit(nullptr);
 }
 
 void* ODBCStorageService::cleanup_fn(void* cache_p)
@@ -764,7 +764,7 @@ void* ODBCStorageService::cleanup_fn(void* cache_p)
 
   // Now run the cleanup process.
   cache->cleanup();
-  return NULL;
+  return nullptr;
 }
 
 void ODBCStorageService::updateContext(const char *table, const char* context, time_t expiration)
@@ -781,7 +781,7 @@ void ODBCStorageService::updateContext(const char *table, const char* context, t
     timestampFromTime(expiration, timebuf);
 
     char nowbuf[32];
-    timestampFromTime(time(NULL), nowbuf);
+    timestampFromTime(time(nullptr), nowbuf);
 
     char *scontext = makeSafeSQL(context);
     string q("UPDATE ");
@@ -810,7 +810,7 @@ void ODBCStorageService::reap(const char *table, const char* context)
 
     // Prepare and execute delete statement.
     char nowbuf[32];
-    timestampFromTime(time(NULL), nowbuf);
+    timestampFromTime(time(nullptr), nowbuf);
     string q;
     if (context) {
         char *scontext = makeSafeSQL(context);

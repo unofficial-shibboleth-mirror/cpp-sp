@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 /**
  * @file shibsp/attribute/resolver/AttributeResolver.h
  *
- * A service that transforms or resolves additional attributes for a particular subject.
+ * A service that transforms or resolves additional attributes for a
+ * particular subject.
  */
 
 #ifndef __shibsp_resolver_h__
@@ -82,11 +83,11 @@ namespace shibsp {
             const Application& application,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const XMLCh* protocol,
-            const opensaml::saml2::NameID* nameid=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL,
-            const std::vector<const opensaml::Assertion*>* tokens=NULL,
-            const std::vector<Attribute*>* attributes=NULL
+            const opensaml::saml2::NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const std::vector<const opensaml::Assertion*>* tokens=nullptr,
+            const std::vector<Attribute*>* attributes=nullptr
             ) const=0;
 
         /**

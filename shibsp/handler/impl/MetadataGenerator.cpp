@@ -205,7 +205,7 @@ void MetadataGenerator::receive(DDF& in, ostream& out)
     // Find application.
     const char* aid=in["application_id"].string();
     const char* hurl=in["handler_url"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for metadata request", aid ? aid : "(missing)");
@@ -216,7 +216,7 @@ void MetadataGenerator::receive(DDF& in, ostream& out)
     }
 
     // Wrap a response shim.
-    DDF ret(NULL);
+    DDF ret(nullptr);
     DDFJanitor jout(ret);
     auto_ptr<HTTPResponse> resp(getResponse(ret));
 
@@ -234,7 +234,7 @@ pair<bool,long> MetadataGenerator::processMessage(
 #ifndef SHIBSP_LITE
     m_log.debug("processing metadata request");
 
-    const PropertySet* relyingParty=NULL;
+    const PropertySet* relyingParty=nullptr;
     if (entityID) {
         MetadataProvider* m=application.getMetadataProvider();
         Locker locker(m);
@@ -281,7 +281,7 @@ pair<bool,long> MetadataGenerator::processMessage(
     }
     cache = getUnsignedInt("validUntil");
     if (cache.first)
-        entity->setValidUntil(time(NULL) + cache.second);
+        entity->setValidUntil(time(nullptr) + cache.second);
     entity->setEntityID(relyingParty->getXMLString("entityID").second);
 
     SPSSODescriptor* role;

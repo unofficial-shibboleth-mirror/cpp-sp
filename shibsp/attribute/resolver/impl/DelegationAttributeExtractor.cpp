@@ -1,5 +1,5 @@
 /*
- *  Copyright 2009 Internet2
+ *  Copyright 2009-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,12 +89,12 @@ namespace shibsp {
 DelegationExtractor::DelegationExtractor(const DOMElement* e) : m_attributeId("delegate"), m_formatter("$Name")
 {
     if (e) {
-        const XMLCh* a = e->getAttributeNS(NULL, attributeId);
+        const XMLCh* a = e->getAttributeNS(nullptr, attributeId);
         if (a && *a) {
             auto_ptr_char temp(a);
             m_attributeId = temp.get();
         }
-        a = e->getAttributeNS(NULL, formatter);
+        a = e->getAttributeNS(nullptr, formatter);
         if (a && *a) {
             auto_ptr_char temp(a);
             m_formatter = temp.get();
@@ -125,7 +125,7 @@ void DelegationExtractor::extractAttributes(
                     continue;
                 }
 
-                saml2::NameID* n = NULL;
+                saml2::NameID* n = nullptr;
                 if ((*d)->getEncryptedID()) {
                     CredentialResolver* cr = application.getCredentialResolver();
                     if (!cr) {
@@ -134,7 +134,7 @@ void DelegationExtractor::extractAttributes(
 
                     try {
                         const XMLCh* recipient = application.getRelyingParty(
-                            issuer ? dynamic_cast<EntityDescriptor*>(issuer->getParent()) : NULL
+                            issuer ? dynamic_cast<EntityDescriptor*>(issuer->getParent()) : nullptr
                             )->getXMLString("entityID").second;
                         Locker credlocker(cr);
                         if (issuer) {
@@ -158,7 +158,7 @@ void DelegationExtractor::extractAttributes(
                 }
 
                 if (n) {
-                    DDF val = DDF(NULL).structure();
+                    DDF val = DDF(nullptr).structure();
                     if ((*d)->getConfirmationMethod()) {
                         auto_ptr_char temp((*d)->getConfirmationMethod());
                         val.addmember("ConfirmationMethod").string(temp.get());

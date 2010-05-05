@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * PKIXTrustEngine.cpp
  * 
- * Shibboleth-specific PKIX-validation TrustEngine
+ * Shibboleth-specific PKIX-validation TrustEngine.
  */
 
 #include "internal.h"
@@ -44,7 +44,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL PKIXTrustEngine : public AbstractPKIXTrustEngine, public ObservableMetadataProvider::Observer
     {
     public:
-        PKIXTrustEngine(const DOMElement* e=NULL) : AbstractPKIXTrustEngine(e), m_credLock(RWLock::create()) {
+        PKIXTrustEngine(const DOMElement* e=nullptr) : AbstractPKIXTrustEngine(e), m_credLock(RWLock::create()) {
         }
         virtual ~PKIXTrustEngine() {
             for (map<const ObservableMetadataProvider*,credmap_t>::iterator i=m_credentialMap.begin(); i!=m_credentialMap.end(); ++i) {
@@ -56,7 +56,7 @@ namespace shibsp {
         }
         
         AbstractPKIXTrustEngine::PKIXValidationInfoIterator* getPKIXValidationInfoIterator(
-            const CredentialResolver& pkixSource, CredentialCriteria* criteria=NULL
+            const CredentialResolver& pkixSource, CredentialCriteria* criteria=nullptr
             ) const;
 
         void onEvent(const ObservableMetadataProvider& metadata) const {
@@ -148,7 +148,7 @@ AbstractPKIXTrustEngine::PKIXValidationInfoIterator* PKIXTrustEngine::getPKIXVal
 
 MetadataPKIXIterator::MetadataPKIXIterator(
     const PKIXTrustEngine& engine, const MetadataProvider& pkixSource, MetadataCredentialCriteria& criteria
-    ) : m_caching(false), m_engine(engine), m_obj(criteria.getRole().getParent()), m_extBlock(NULL), m_current(NULL)
+    ) : m_caching(false), m_engine(engine), m_obj(criteria.getRole().getParent()), m_extBlock(nullptr), m_current(nullptr)
 {
     // If we can't hook the metadata for changes, then we can't do any caching and the rest of this is academic.
     const ObservableMetadataProvider* observable = dynamic_cast<const ObservableMetadataProvider*>(&pkixSource);
@@ -201,8 +201,8 @@ bool MetadataPKIXIterator::next()
         // If we get here, we hit the end of this Extensions block.
         // Climb a level, if possible.
         m_obj = m_obj->getParent();
-        m_current = NULL;
-        m_extBlock = NULL;
+        m_current = nullptr;
+        m_extBlock = nullptr;
     }
 
     // If we get here, we try and find an Extensions block.

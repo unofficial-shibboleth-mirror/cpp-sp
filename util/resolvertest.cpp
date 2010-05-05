@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,12 +111,12 @@ void usage()
 
 int main(int argc,char* argv[])
 {
-    char* a_param=NULL;
-    char* n_param=NULL;
-    char* f_param=NULL;
-    char* i_param=NULL;
-    char* prot = NULL;
-    const XMLCh* protocol = NULL;
+    char* a_param=nullptr;
+    char* n_param=nullptr;
+    char* f_param=nullptr;
+    char* i_param=nullptr;
+    char* prot = nullptr;
+    const XMLCh* protocol = nullptr;
 
     for (int i=1; i<argc; i++) {
         if (!strcmp(argv[i],"-n") && i+1<argc)
@@ -204,7 +204,7 @@ int main(int argc,char* argv[])
             auto_ptr<saml2::NameID> v2name(saml2::NameIDBuilder::buildNameID());
             v2name->setName(name.get());
             v2name->setFormat(format.get());
-            saml1::NameIdentifier* v1name = NULL;
+            saml1::NameIdentifier* v1name = nullptr;
             if (!XMLString::equals(protocol, samlconstants::SAML20P_NS)) {
                 v1name = saml1::NameIdentifierBuilder::buildNameIdentifier();
                 v1name->setName(name.get());
@@ -212,9 +212,9 @@ int main(int argc,char* argv[])
                 v1name->setNameQualifier(issuer.get());
             }
 
-            ResolverTest rt(NULL, a_param);
+            ResolverTest rt(nullptr, a_param);
             try {
-                ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name.get(), NULL, NULL, NULL);
+                ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name.get(), nullptr, nullptr, nullptr);
             }
             catch (...) {
                 delete v1name;
@@ -229,16 +229,16 @@ int main(int argc,char* argv[])
             docjan.release();
 
             // Get the issuer and protocol and NameIDs.
-            const XMLCh* issuer = NULL;
-            const saml1::NameIdentifier* v1name = NULL;
-            saml2::NameID* v2name = NULL;
+            const XMLCh* issuer = nullptr;
+            const saml1::NameIdentifier* v1name = nullptr;
+            saml2::NameID* v2name = nullptr;
             saml2::Assertion* a2 = dynamic_cast<saml2::Assertion*>(token.get());
             saml1::Assertion* a1 = dynamic_cast<saml1::Assertion*>(token.get());
             if (a2) {
                 const saml2::Issuer* iss = a2->getIssuer();
-                issuer = iss ? iss->getName() : NULL;
+                issuer = iss ? iss->getName() : nullptr;
                 protocol = samlconstants::SAML20P_NS;
-                v2name = a2->getSubject() ? a2->getSubject()->getNameID() : NULL;
+                v2name = a2->getSubject() ? a2->getSubject()->getNameID() : nullptr;
             }
             else if (a1) {
                 issuer = a1->getIssuer();
@@ -247,10 +247,10 @@ int main(int argc,char* argv[])
                 else
                     protocol = samlconstants::SAML11_PROTOCOL_ENUM;
                 v1name = a1->getAuthenticationStatements().size() ?
-                    a1->getAuthenticationStatements().front()->getSubject()->getNameIdentifier() : NULL;
+                    a1->getAuthenticationStatements().front()->getSubject()->getNameIdentifier() : nullptr;
                 if (!v1name)
                     v1name = a1->getAttributeStatements().size() ?
-                    a1->getAttributeStatements().front()->getSubject()->getNameIdentifier() : NULL;
+                    a1->getAttributeStatements().front()->getSubject()->getNameIdentifier() : nullptr;
                 if (v1name) {
                     // Normalize the SAML 1.x NameIdentifier...
                     v2name = saml2::NameIDBuilder::buildNameID();
@@ -263,7 +263,7 @@ int main(int argc,char* argv[])
                 throw FatalProfileException("Unknown assertion type.");
             }
 
-            auto_ptr<saml2::NameID> nameidwrapper(v1name ? v2name : NULL);
+            auto_ptr<saml2::NameID> nameidwrapper(v1name ? v2name : nullptr);
 
             if (!issuer)
                 throw FatalProfileException("Unable to determine issuer.");
@@ -278,8 +278,8 @@ int main(int argc,char* argv[])
             }
             
             vector<const Assertion*> tokens(1, dynamic_cast<Assertion*>(token.get()));
-            ResolverTest rt(NULL, a_param);
-            ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name, NULL, NULL, &tokens);
+            ResolverTest rt(nullptr, a_param);
+            ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name, nullptr, nullptr, &tokens);
         }
 
         auto_ptr<ResolutionContext> wrapper(ctx);

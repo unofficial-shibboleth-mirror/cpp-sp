@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,13 +78,13 @@ namespace shibsp {
          * @param xmlObject         XMLObject to decode
          * @param assertingParty    name of the party asserting the attribute
          * @param relyingParty      name of the party relying on the attribute
-         * @return a resolved Attribute, or NULL
+         * @return a resolved Attribute, or nullptr
          */
         virtual Attribute* decode(
             const std::vector<std::string>& ids,
             const xmltooling::XMLObject* xmlObject,
-            const char* assertingParty=NULL,
-            const char* relyingParty=NULL
+            const char* assertingParty=nullptr,
+            const char* relyingParty=nullptr
             ) const=0;
     };
 

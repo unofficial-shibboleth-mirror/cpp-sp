@@ -1,5 +1,5 @@
 /*
- *  Copyright 2009 Internet2
+ *  Copyright 2009-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ namespace shibsp {
         ~XMLAttributeDecoder() {}
 
         Attribute* decode(
-            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -62,7 +62,7 @@ Attribute* XMLAttributeDecoder::decode(
     ) const
 {
     if (!xmlObject)
-        return NULL;
+        return nullptr;
 
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.XML");
 
@@ -86,7 +86,7 @@ Attribute* XMLAttributeDecoder::decode(
         else {
             log.warn("skipping XMLObject without a backing DOM");
         }
-        return dest.empty() ? NULL : _decode(attr.release());
+        return dest.empty() ? nullptr : _decode(attr.release());
     }
 
     vector<XMLObject*>::const_iterator v,stop;
@@ -120,7 +120,7 @@ Attribute* XMLAttributeDecoder::decode(
         }
         else {
             log.warn("XMLObject type not recognized by XMLAttributeDecoder, no values returned");
-            return NULL;
+            return nullptr;
         }
     }
 
@@ -134,5 +134,5 @@ Attribute* XMLAttributeDecoder::decode(
             log.warn("skipping AttributeValue without a backing DOM");
     }
 
-    return dest.empty() ? NULL : _decode(attr.release());
+    return dest.empty() ? nullptr : _decode(attr.release());
 }

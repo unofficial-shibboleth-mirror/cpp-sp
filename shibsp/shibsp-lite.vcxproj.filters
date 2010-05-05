@@ -1,0 +1,330 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F2-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{729ea3af-cb77-4897-b55c-b18a4c66817f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\remoting">
+      <UniqueIdentifier>{7b456f03-9c40-438c-8b69-c1676ec904f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\remoting\impl">
+      <UniqueIdentifier>{623deb32-df2f-4bad-abcd-96d2275eaafd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\impl">
+      <UniqueIdentifier>{92af54d1-b5c1-4391-9b8a-d7ee57cae671}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\attribute">
+      <UniqueIdentifier>{354c1fc9-211b-48f9-99c1-27f5065a08fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\handler">
+      <UniqueIdentifier>{dcb5bf8b-b08d-4bb4-9025-52a624c06312}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\handler\impl">
+      <UniqueIdentifier>{02b1ace5-7717-4406-9643-901632993d12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lite">
+      <UniqueIdentifier>{b0e40290-ca47-49fb-8484-99d3fb5287f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFC}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{51edefcb-98b4-4be2-8a21-69e248ce62cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\remoting">
+      <UniqueIdentifier>{14c2631a-de71-4a3a-a761-b2a38519bd77}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\attribute">
+      <UniqueIdentifier>{4adb84e6-4b87-43b7-a7a9-bbb903ff8bb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\handler">
+      <UniqueIdentifier>{242efec0-e402-4083-8719-9e0eb247d24a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\lite">
+      <UniqueIdentifier>{810cab8c-6d86-43af-8ec7-e4cfa6a42ff9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD02}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AbstractSPRequest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServiceProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SPConfig.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util\CGIParser.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\DOMPropertySet.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\SPConstants.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\TemplateParameters.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="remoting\impl\ddf.cpp">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="remoting\impl\ListenerService.cpp">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="remoting\impl\SocketListener.cpp">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="remoting\impl\TCPListener.cpp">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\ChainingAccessControl.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\StorageServiceSessionCache.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\XMLAccessControl.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\XMLRequestMapper.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\XMLServiceProvider.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\Attribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\ExtensibleAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\NameIDAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\ScopedAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\SimpleAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\XMLAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\AbstractHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\AssertionConsumerService.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\AssertionLookup.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\ChainingLogoutInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\ChainingSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\CookieSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\FormSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\LocalLogoutInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\LogoutHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\MetadataGenerator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\RemotedHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML1Consumer.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2ArtifactResolution.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2Consumer.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2Logout.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2LogoutInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2NameIDMgmt.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2SessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAMLDSSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SessionHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\Shib1SessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\StatusHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\TransformSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\WAYFSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="lite\CommonDomainCookie.cpp">
+      <Filter>Source Files\lite</Filter>
+    </ClCompile>
+    <ClCompile Include="lite\SAMLConstants.cpp">
+      <Filter>Source Files\lite</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="remoting\impl\SocketListener.h">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="AbstractSPRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AccessControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationAwarePlugin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exceptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestMapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServiceProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionCacheEx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SPConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SPRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util\CGIParser.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\DOMPropertySet.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\PropertySet.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\SPConstants.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\TemplateParameters.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="remoting\ddf.h">
+      <Filter>Header Files\remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="remoting\ListenerService.h">
+      <Filter>Header Files\remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\Attribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\ExtensibleAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\NameIDAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\ScopedAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\SimpleAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\XMLAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\AbstractHandler.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\AssertionConsumerService.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\Handler.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\LogoutHandler.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\RemotedHandler.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\SessionInitiator.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="lite\CommonDomainCookie.h">
+      <Filter>Header Files\lite</Filter>
+    </ClInclude>
+    <ClInclude Include="lite\SAMLConstants.h">
+      <Filter>Header Files\lite</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="shibsp.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile.am" />
+    <None Include="paths.h.in" />
+  </ItemGroup>
+</Project>

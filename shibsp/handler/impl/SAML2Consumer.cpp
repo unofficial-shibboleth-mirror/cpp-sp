@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * SAML2Consumer.cpp
  *
- * SAML 2.0 assertion consumer service
+ * SAML 2.0 assertion consumer service.
  */
 
 #include "internal.h"
@@ -64,7 +64,7 @@ namespace shibsp {
         SAML2Consumer(const DOMElement* e, const char* appId)
             : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SSO.SAML2")) {
 #ifndef SHIBSP_LITE
-            m_ssoRule = NULL;
+            m_ssoRule = nullptr;
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
                 m_ssoRule = SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(BEARER_POLICY_RULE, e);
 #endif
@@ -149,8 +149,8 @@ void SAML2Consumer::implementProtocol(
         throw FatalProfileException("Incoming message contained no SAML assertions.");
 
     // Maintain list of "legit" tokens to feed to SP subsystems.
-    const Subject* ssoSubject=NULL;
-    const AuthnStatement* ssoStatement=NULL;
+    const Subject* ssoSubject=nullptr;
+    const AuthnStatement* ssoStatement=nullptr;
     vector<const opensaml::Assertion*> tokens;
 
     // Also track "bad" tokens that we'll cache but not use.
@@ -161,7 +161,7 @@ void SAML2Consumer::implementProtocol(
     vector<saml2::Assertion*> ownedtokens;
 
     // With this flag on, we ignore any unsigned assertions.
-    const EntityDescriptor* entity = NULL;
+    const EntityDescriptor* entity = nullptr;
     pair<bool,bool> flag = make_pair(false,false);
     if (alreadySecured && policy.getIssuerMetadata()) {
         entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
@@ -176,13 +176,13 @@ void SAML2Consumer::implementProtocol(
     string contextualError;
 
     // Ensure the Bearer rule is in the policy set.
-    if (find_if(policy.getRules(), _rulenamed(BEARER_POLICY_RULE)) == NULL)
+    if (find_if(policy.getRules(), _rulenamed(BEARER_POLICY_RULE)) == nullptr)
         policy.getRules().push_back(m_ssoRule);
 
     // Populate recipient as audience.
     policy.getAudiences().push_back(application.getRelyingParty(entity)->getXMLString("entityID").second);
 
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     for (vector<saml2::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
         try {
             // Skip unsigned assertion?
@@ -253,11 +253,11 @@ void SAML2Consumer::implementProtocol(
 
     for (vector<saml2::EncryptedAssertion*>::const_iterator ea = encassertions.begin(); cr && ea!=encassertions.end(); ++ea) {
         // Attempt to decrypt it.
-        saml2::Assertion* decrypted=NULL;
+        saml2::Assertion* decrypted=nullptr;
         try {
             Locker credlocker(cr);
             auto_ptr<MetadataCredentialCriteria> mcc(
-                policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
+                policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : nullptr
                 );
             auto_ptr<XMLObject> wrapper((*ea)->decrypt(*cr, application.getRelyingParty(entity)->getXMLString("entityID").second, mcc.get()));
             decrypted = dynamic_cast<saml2::Assertion*>(wrapper.get());
@@ -353,7 +353,7 @@ void SAML2Consumer::implementProtocol(
             else {
                 Locker credlocker(cr);
                 auto_ptr<MetadataCredentialCriteria> mcc(
-                    policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : NULL
+                    policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : nullptr
                     );
                 try {
                     auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr,application.getRelyingParty(entity)->getXMLString("entityID").second,mcc.get()));
@@ -399,10 +399,10 @@ void SAML2Consumer::implementProtocol(
                 application,
                 policy.getIssuerMetadata(),
                 samlconstants::SAML20P_NS,
-                NULL,
+                nullptr,
                 ssoName,
-                (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL,
-                (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL,
+                (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : nullptr,
+                (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : nullptr,
                 &tokens
                 )
             );
@@ -423,12 +423,12 @@ void SAML2Consumer::implementProtocol(
             entity,
             samlconstants::SAML20P_NS,
             ssoName,
-            ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : NULL,
+            ssoStatement->getAuthnInstant() ? ssoStatement->getAuthnInstant()->getRawData() : nullptr,
             ssoStatement->getSessionIndex(),
-            (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : NULL,
-            (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : NULL,
+            (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : nullptr,
+            (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : nullptr,
             &tokens,
-            ctx.get() ? &ctx->getResolvedAttributes() : NULL
+            ctx.get() ? &ctx->getResolvedAttributes() : nullptr
             );
 
         if (ownedName)

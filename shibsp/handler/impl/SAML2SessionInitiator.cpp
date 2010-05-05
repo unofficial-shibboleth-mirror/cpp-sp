@@ -122,17 +122,17 @@ namespace shibsp {
 };
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAML2"), NULL, &m_remapper), m_appId(appId),
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAML2"), nullptr, &m_remapper), m_appId(appId),
         m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS)
 {
     static const XMLCh ECP[] = UNICODE_LITERAL_3(E,C,P);
-    const XMLCh* flag = e ? e->getAttributeNS(NULL,ECP) : NULL;
+    const XMLCh* flag = e ? e->getAttributeNS(nullptr,ECP) : nullptr;
 #ifdef SHIBSP_LITE
     m_ecp = (flag && (*flag == chLatin_t || *flag == chDigit_1));
 #else
-    m_outgoing=NULL;
-    m_ecp = NULL;
-    m_requestTemplate=NULL;
+    m_outgoing=nullptr;
+    m_ecp = nullptr;
+    m_requestTemplate=nullptr;
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // Check for a template AuthnRequest to build from.
@@ -144,7 +144,7 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
         if (flag && (*flag == chLatin_t || *flag == chDigit_1)) {
             try {
                 m_ecp = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
-                    samlconstants::SAML20_BINDING_PAOS, pair<const DOMElement*,const XMLCh*>(e,NULL)
+                    samlconstants::SAML20_BINDING_PAOS, pair<const DOMElement*,const XMLCh*>(e,nullptr)
                     );
             }
             catch (exception& ex) {
@@ -175,7 +175,7 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
             try {
                 auto_ptr_char b(start);
                 MessageEncoder * encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
-                    b.get(),pair<const DOMElement*,const XMLCh*>(e,NULL)
+                    b.get(),pair<const DOMElement*,const XMLCh*>(e,nullptr)
                     );
                 if (encoder->isUserAgentPresent()) {
                     m_encoders[start] = encoder;
@@ -236,7 +236,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
     string target;
     pair<bool,const char*> prop;
-    const Handler* ACS=NULL;
+    const Handler* ACS=nullptr;
     pair<bool,const char*> acClass, acComp, nidFormat, spQual;
     bool isPassive=false,forceAuthn=false;
     const Application& app=request.getApplication();
@@ -252,7 +252,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
             else if (ECP && !XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_PAOS)) {
                 request.log(SPRequest::SPWarn, "acsIndex in request referenced a non-PAOS ACS, using default ACS location");
-                ACS = NULL;
+                ACS = nullptr;
             }
         }
 
@@ -325,10 +325,10 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
     // Validate the ACS for use with this protocol.
     if (!ECP) {
-        pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,NULL);
+        pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,nullptr);
         if (ACSbinding.first) {
             pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
-            if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == NULL) {
+            if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == nullptr) {
                 m_log.error("configured or requested ACS has non-SAML 2.0 binding");
                 throw ConfigurationException("Configured or requested ACS has non-SAML 2.0 binding ($1).", params(1, ACSbinding.second));
             }
@@ -361,7 +361,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             }
 
             // Determine index to use.
-            pair<bool,const XMLCh*> ix = pair<bool,const XMLCh*>(false,NULL);
+            pair<bool,const XMLCh*> ix = pair<bool,const XMLCh*>(false,nullptr);
             if (ACS) {
             	if (!strncmp(ACSloc.c_str(), "https", 5)) {
             		ix = ACS->getXMLString("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
@@ -377,19 +377,19 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 app, &request, request, entityID.c_str(),
                 ix.second,
                 ACS ? XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT) : false,
-                NULL, NULL,
+                nullptr, nullptr,
                 isPassive, forceAuthn,
-                acClass.first ? acClass.second : NULL,
-                acComp.first ? acComp.second : NULL,
-                nidFormat.first ? nidFormat.second : NULL,
-                spQual.first ? spQual.second : NULL,
+                acClass.first ? acClass.second : nullptr,
+                acComp.first ? acComp.second : nullptr,
+                nidFormat.first ? nidFormat.second : nullptr,
+                spQual.first ? spQual.second : nullptr,
                 target
                 );
         }
 
         // Since we're not passing by index, we need to fully compute the return URL and binding.
         // Compute the ACS URL. We add the ACS location to the base handlerURL.
-        prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+        prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,nullptr);
         if (prop.first)
             ACSloc += prop.second;
 
@@ -404,14 +404,14 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
         return doRequest(
             app, &request, request, entityID.c_str(),
-            NULL,
+            nullptr,
             ACS ? XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT) : false,
-            ACSloc.c_str(), ACS ? ACS->getXMLString("Binding").second : NULL,
+            ACSloc.c_str(), ACS ? ACS->getXMLString("Binding").second : nullptr,
             isPassive, forceAuthn,
-            acClass.first ? acClass.second : NULL,
-            acComp.first ? acComp.second : NULL,
-            nidFormat.first ? nidFormat.second : NULL,
-            spQual.first ? spQual.second : NULL,
+            acClass.first ? acClass.second : nullptr,
+            acComp.first ? acComp.second : nullptr,
+            nidFormat.first ? nidFormat.second : nullptr,
+            spQual.first ? spQual.second : nullptr,
             target
             );
     }
@@ -437,7 +437,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     if (acsByIndex.first && acsByIndex.second) {
         if (ACS) {
             // Determine index to use.
-            pair<bool,const char*> ix = pair<bool,const char*>(false,NULL);
+            pair<bool,const char*> ix = pair<bool,const char*>(false,nullptr);
         	if (!strncmp(ACSloc.c_str(), "https", 5)) {
         		ix = ACS->getString("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
         		if (!ix.first)
@@ -454,7 +454,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     else {
         // Since we're not passing by index, we need to fully compute the return URL and binding.
         // Compute the ACS URL. We add the ACS location to the base handlerURL.
-        prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,NULL);
+        prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,nullptr);
         if (prop.first)
             ACSloc += prop.second;
         in.addmember("acsLocation").string(ACSloc.c_str());
@@ -496,14 +496,14 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
 {
     // Find application.
     const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) to generate AuthnRequest", aid ? aid : "(missing)");
         throw ConfigurationException("Unable to locate application for new session, deleted?");
     }
 
-    DDF ret(NULL);
+    DDF ret(nullptr);
     DDFJanitor jout(ret);
 
     // Wrap the outgoing object with a Response facade.
@@ -519,7 +519,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
     doRequest(
-        *app, NULL, *http.get(), in["entity_id"].string(),
+        *app, nullptr, *http.get(), in["entity_id"].string(),
         index.get(),
         (in["artifact"].integer() != 0),
         in["acsLocation"].string(), bind.get(),
@@ -567,10 +567,10 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
 #ifndef SHIBSP_LITE
     bool ECP = XMLString::equals(acsBinding, m_paosBinding.get());
 
-    pair<const EntityDescriptor*,const RoleDescriptor*> entity = pair<const EntityDescriptor*,const RoleDescriptor*>(NULL,NULL);
-    const IDPSSODescriptor* role = NULL;
-    const EndpointType* ep = NULL;
-    const MessageEncoder* encoder = NULL;
+    pair<const EntityDescriptor*,const RoleDescriptor*> entity = pair<const EntityDescriptor*,const RoleDescriptor*>(nullptr,nullptr);
+    const IDPSSODescriptor* role = nullptr;
+    const EndpointType* ep = nullptr;
+    const MessageEncoder* encoder = nullptr;
 
     // We won't need this for ECP, but safety dictates we get the lock here.
     MetadataProvider* m=app.getMetadataProvider();
@@ -628,8 +628,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     auto_ptr<AuthnRequest> req(m_requestTemplate ? m_requestTemplate->cloneAuthnRequest() : AuthnRequestBuilder::buildAuthnRequest());
     if (m_requestTemplate) {
         // Freshen TS and ID.
-        req->setID(NULL);
-        req->setIssueInstant(time(NULL));
+        req->setID(nullptr);
+        req->setIssueInstant(time(nullptr));
     }
 
     if (ep)
@@ -679,7 +679,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
 
         if (reqContext->getAuthnContextClassRefs().empty() && reqContext->getAuthnContextDeclRefs().empty()) {
-        	req->setRequestedAuthnContext(NULL);
+        	req->setRequestedAuthnContext(nullptr);
         }
         else if (authnContextComparison) {
             auto_ptr_XMLCh widecomp(authnContextComparison);
@@ -697,7 +697,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
             lifetime.second = 28800;
         if (!req->getConditions())
             req->setConditions(ConditionsBuilder::buildConditions());
-        req->getConditions()->setNotOnOrAfter(time(NULL) + lifetime.second + 300);
+        req->getConditions()->setNotOnOrAfter(time(nullptr) + lifetime.second + 300);
         AudienceRestriction* audrest = AudienceRestrictionBuilder::buildAudienceRestriction();
         req->getConditions()->getConditions().push_back(audrest);
         Audience* aud = AudienceBuilder::buildAudience();
@@ -718,14 +718,14 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
             scoping->setIDPList(idplist);
         }
         VectorOf(IDPEntry) entries = idplist->getIDPEntrys();
-        if (find_if(entries, bind2nd(_sameIdP(), wideid.get())) == NULL) {
+        if (find_if(entries, bind2nd(_sameIdP(), wideid.get())) == nullptr) {
             IDPEntry* entry = IDPEntryBuilder::buildIDPEntry();
             entry->setProviderID(wideid.get());
             entries.push_back(entry);
         }
     }
 
-    auto_ptr_char dest(ep ? ep->getLocation() : NULL);
+    auto_ptr_char dest(ep ? ep->getLocation() : nullptr);
 
     if (httpRequest) {
         // If the request object is available, we're responsible for the POST data.

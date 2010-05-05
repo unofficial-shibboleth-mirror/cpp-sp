@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 /**
  * AuthenticationMethodStringFunctor.cpp
  * 
- * Match functor that compares the user's authentication method against a given string.
+ * Match functor that compares the user's authentication method against
+ * a given string.
  */
 
 #include "internal.h"
@@ -39,10 +40,10 @@ namespace shibsp {
         const XMLCh* m_value;
         bool m_ignoreCase;
     public:
-        AuthenticationMethodStringFunctor(const DOMElement* e) : m_value(e ? e->getAttributeNS(NULL,value) : NULL) {
+        AuthenticationMethodStringFunctor(const DOMElement* e) : m_value(e ? e->getAttributeNS(nullptr,value) : nullptr) {
             if (!m_value || !*m_value)
                 throw ConfigurationException("AuthenticationMethodString MatchFunctor requires non-empty value attribute.");
-            const XMLCh* flag = e ? e->getAttributeNS(NULL,ignoreCase) : NULL;
+            const XMLCh* flag = e ? e->getAttributeNS(nullptr,ignoreCase) : nullptr;
             m_ignoreCase = (flag && (*flag == chLatin_t || *flag == chDigit_1)); 
         }
 

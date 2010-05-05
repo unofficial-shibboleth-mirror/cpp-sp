@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * StringAttributeDecoder.cpp
  *
- * Decodes SAML into SimpleAttributes
+ * Decodes SAML into SimpleAttributes.
  */
 
 #include "internal.h"
@@ -41,7 +41,7 @@ namespace shibsp {
         ~StringAttributeDecoder() {}
 
         shibsp::Attribute* decode(
-            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=NULL, const char* relyingParty=NULL
+            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
     };
 
@@ -92,7 +92,7 @@ shibsp::Attribute* StringAttributeDecoder::decode(
             }
             else {
                 log.warn("XMLObject type not recognized by StringAttributeDecoder, no values returned");
-                return NULL;
+                return nullptr;
             }
         }
 
@@ -110,7 +110,7 @@ shibsp::Attribute* StringAttributeDecoder::decode(
             }
         }
 
-        return dest.empty() ? NULL : _decode(simple.release());
+        return dest.empty() ? nullptr : _decode(simple.release());
     }
 
     const NameID* saml2name = dynamic_cast<const NameID*>(xmlObject);
@@ -135,7 +135,7 @@ shibsp::Attribute* StringAttributeDecoder::decode(
         }
         else {
             log.warn("XMLObject type not recognized by StringAttributeDecoder, no values returned");
-            return NULL;
+            return nullptr;
         }
     }
 
@@ -144,5 +144,5 @@ shibsp::Attribute* StringAttributeDecoder::decode(
     else
         log.warn("ignoring empty NameID");
     delete[] val;
-    return dest.empty() ? NULL : _decode(simple.release());
+    return dest.empty() ? nullptr : _decode(simple.release());
 }

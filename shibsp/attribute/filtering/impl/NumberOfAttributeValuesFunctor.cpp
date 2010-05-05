@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,13 +50,13 @@ namespace shibsp {
 
     public:
         NumberOfAttributeValuesFunctor(const DOMElement* e)
-                : m_min(0), m_max(INT_MAX), m_attributeID(e ? e->getAttributeNS(NULL,attributeID) : NULL) {
+                : m_min(0), m_max(INT_MAX), m_attributeID(e ? e->getAttributeNS(nullptr,attributeID) : nullptr) {
             if (!m_attributeID.get() || !*m_attributeID.get())
                 throw ConfigurationException("No attributeID specified.");
-            const XMLCh* num = e->getAttributeNS(NULL, minimum);
+            const XMLCh* num = e->getAttributeNS(nullptr, minimum);
             if (num && *num)
                 m_min = XMLString::parseInt(num);
-            num = e->getAttributeNS(NULL, maximum);
+            num = e->getAttributeNS(nullptr, maximum);
             if (num && *num)
                 m_max = XMLString::parseInt(num);
         }

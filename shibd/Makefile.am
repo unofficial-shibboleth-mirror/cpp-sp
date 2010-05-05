@@ -11,4 +11,4 @@ shibd_LDADD = \
 
 shibd_LDFLAGS = $(XMLSEC_LIBS)
 
-EXTRA_DIST = shibd.vcproj shibd_win32.cpp resource.h shibd.rc
+EXTRA_DIST = shibd.vcxproj shibd_win32.cpp resource.h shibd.rc

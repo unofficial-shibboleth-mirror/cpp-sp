@@ -22,9 +22,9 @@ endif
 
 EXTRA_DIST = \
     shibauthorizer.cpp \
-    shibauthorizer.vcproj \
+    shibauthorizer.vcxproj \
     shibauthorizer.rc \
     shibresponder.cpp \
-    shibresponder.vcproj \
+    shibresponder.vcxproj \
     shibresponder.rc \
     resource.h

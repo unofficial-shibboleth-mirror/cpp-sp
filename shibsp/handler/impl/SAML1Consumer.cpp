@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * SAML1Consumer.cpp
  *
- * SAML 1.x assertion consumer service
+ * SAML 1.x assertion consumer service.
  */
 
 #include "internal.h"
@@ -66,7 +66,7 @@ namespace shibsp {
         SAML1Consumer(const DOMElement* e, const char* appId)
             : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SSO.SAML1")) {
 #ifndef SHIBSP_LITE
-            m_ssoRule = NULL;
+            m_ssoRule = nullptr;
             m_post = XMLString::equals(getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_POST);
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
                 m_ssoRule = SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(SAML1BROWSERSSO_POLICY_RULE, e);
@@ -165,7 +165,7 @@ void SAML1Consumer::implementProtocol(
     pair<bool,int> minor = response->getMinorVersion();
 
     // Maintain list of "legit" tokens to feed to SP subsystems.
-    const AuthenticationStatement* ssoStatement=NULL;
+    const AuthenticationStatement* ssoStatement=nullptr;
     vector<const opensaml::Assertion*> tokens;
 
     // Also track "bad" tokens that we'll cache but not use.
@@ -173,7 +173,7 @@ void SAML1Consumer::implementProtocol(
     vector<const opensaml::Assertion*> badtokens;
 
     // With this flag on, we ignore any unsigned assertions.
-    const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : NULL;
+    const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : nullptr;
     pair<bool,bool> flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
 
     // authnskew allows rejection of SSO if AuthnInstant is too old.
@@ -184,13 +184,13 @@ void SAML1Consumer::implementProtocol(
     string contextualError;
 
     // Ensure the BrowserSSO rule is in the policy set.
-    if (find_if(policy.getRules(), _rulenamed(SAML1BROWSERSSO_POLICY_RULE)) == NULL)
+    if (find_if(policy.getRules(), _rulenamed(SAML1BROWSERSSO_POLICY_RULE)) == nullptr)
         policy.getRules().push_back(m_ssoRule);
 
     // Populate recipient as audience.
     policy.getAudiences().push_back(application.getRelyingParty(entity)->getXMLString("entityID").second);
 
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     for (vector<saml1::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
         try {
             // Skip unsigned assertion?
@@ -266,7 +266,7 @@ void SAML1Consumer::implementProtocol(
     // To complete processing, we need to extract and resolve attributes and then create the session.
 
     // Normalize the SAML 1.x NameIdentifier...
-    auto_ptr<NameID> nameid(n ? NameIDBuilder::buildNameID() : NULL);
+    auto_ptr<NameID> nameid(n ? NameIDBuilder::buildNameID() : nullptr);
     if (n) {
         nameid->setName(n->getName());
         nameid->setFormat(n->getFormat());
@@ -283,7 +283,7 @@ void SAML1Consumer::implementProtocol(
             n,
             nameid.get(),
             ssoStatement->getAuthenticationMethod(),
-            NULL,
+            nullptr,
             &tokens
             )
         );
@@ -305,12 +305,12 @@ void SAML1Consumer::implementProtocol(
         (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
             samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
         nameid.get(),
-        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : NULL,
-        NULL,
+        ssoStatement->getAuthenticationInstant() ? ssoStatement->getAuthenticationInstant()->getRawData() : nullptr,
+        nullptr,
         ssoStatement->getAuthenticationMethod(),
-        NULL,
+        nullptr,
         &tokens,
-        ctx.get() ? &ctx->getResolvedAttributes() : NULL
+        ctx.get() ? &ctx->getResolvedAttributes() : nullptr
         );
 }
 

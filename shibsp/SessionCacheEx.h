@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ namespace shibsp {
          * @param application   reference to Application that owns the session(s)
          * @param issuer        source of session(s)
          * @param nameid        name identifier associated with the session(s) to terminate
-         * @param indexes       indexes of sessions, or NULL for all sessions associated with other parameters
+         * @param indexes       indexes of sessions, or nullptr for all sessions associated with other parameters
          * @param expires       logout expiration
          * @param sessions      on exit, contains the IDs of the matching sessions found
          */
@@ -74,10 +74,10 @@ namespace shibsp {
          * @param application   reference to Application that owns the Session
          * @param key           session key
          * @param client_addr   network address of client (if known)
-         * @param timeout       inactivity timeout to enforce (0 for none, NULL to bypass check/update of last access)
-         * @return  pointer to locked Session, or NULL
+         * @param timeout       inactivity timeout to enforce (0 for none, nullptr to bypass check/update of last access)
+         * @return  pointer to locked Session, or nullptr
          */
-        virtual Session* find(const Application& application, const char* key, const char* client_addr=NULL, time_t* timeout=NULL)=0;
+        virtual Session* find(const Application& application, const char* key, const char* client_addr=nullptr, time_t* timeout=nullptr)=0;
 
         /**
          * Deletes an existing session.

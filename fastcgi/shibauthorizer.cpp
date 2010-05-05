@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ class ShibTargetFCGIAuth : public AbstractSPRequest
 public:
     map<string,string> m_request_headers;
 
-    ShibTargetFCGIAuth(FCGX_Request* req, const char* scheme=NULL, const char* hostname=NULL, int port=0)
+    ShibTargetFCGIAuth(FCGX_Request* req, const char* scheme=nullptr, const char* hostname=nullptr, int port=0)
             : AbstractSPRequest(SHIBSP_LOGCAT".FastCGI"), m_req(req) {
         const char* server_name_str = hostname;
         if (!server_name_str || !*server_name_str)
@@ -289,7 +289,7 @@ int main(void)
     }
 
     try {
-        if (!g_Config->instantiate(NULL, true))
+        if (!g_Config->instantiate(nullptr, true))
             throw runtime_error("unknown error");
     }
     catch (exception& ex) {

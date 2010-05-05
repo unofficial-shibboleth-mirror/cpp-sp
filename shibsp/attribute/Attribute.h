@@ -154,7 +154,7 @@ namespace shibsp {
          * Gets the string equivalent of the value at the specified position (starting from zero).
          *
          * @param index position of value
-         * @return the specified value in its "string" form, or NULL if undefined
+         * @return the specified value in its "string" form, or nullptr if undefined
          */
         virtual const char* getString(size_t index) const;
 
@@ -162,7 +162,7 @@ namespace shibsp {
          * Gets the "scope" of the value at the specified position (starting from zero).
          *
          * @param index position of value
-         * @return the specified value's "scope", or NULL if attribute is unscoped
+         * @return the specified value's "scope", or nullptr if attribute is unscoped
          */
         virtual const char* getScope(size_t index) const;
 

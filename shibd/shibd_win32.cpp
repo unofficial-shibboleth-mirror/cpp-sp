@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,6 @@
 
 /*
  * shar_win32.cpp -- the SHAR "main" code on Win32
- *
- * Created By:	Scott Cantor (cantor.2@osu.edu)
- *
- * $Id: shar_win32.cpp 2150 2007-02-02 04:06:15 +0000 (Fri, 02 Feb 2007) cantor $
  */
 
 #include "config_win32.h"
@@ -45,8 +41,8 @@ SERVICE_STATUS_HANDLE   sshStatusHandle;
 DWORD                   dwErr = 0;
 BOOL                    bConsole = FALSE;
 char                    szErr[256];
-LPCSTR                  lpszInstall = NULL;
-LPCSTR                  lpszRemove = NULL;
+LPCSTR                  lpszInstall = nullptr;
+LPCSTR                  lpszRemove = nullptr;
 
 // internal function prototypes
 VOID WINAPI service_ctrl(DWORD dwCtrlCode);
@@ -135,7 +131,7 @@ int main(int argc, char *argv[])
         SetConsoleCtrlHandler(&BreakHandler,TRUE);
         if ((i=real_main(1))!=0)
         {
-            LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "shibd startup failed, check shibd.log for further details");
+            LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "shibd startup failed, check shibd.log for further details");
             return i;
         }
         return real_main(0);
@@ -169,11 +165,11 @@ int main(int argc, char *argv[])
     SERVICE_TABLE_ENTRY dispatchTable[] =
     {
         { "SHIBD", (LPSERVICE_MAIN_FUNCTION)service_main },
-        { NULL, NULL }
+        { nullptr, nullptr }
     };
 
     if (!StartServiceCtrlDispatcher(dispatchTable))
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "StartServiceCtrlDispatcher failed.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "StartServiceCtrlDispatcher failed.");
     return 0;
 }
 
@@ -188,11 +184,11 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 
     if (real_main(1)!=0)
     {
-        LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "shibd startup failed, check shibd.log for further details");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "shibd startup failed, check shibd.log for further details");
         return;
     }
 
-    LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7700, NULL, "shibd started successfully.");
+    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, 7700, nullptr, "shibd started successfully.");
 
     if (!ReportStatusToSCMgr(SERVICE_RUNNING, NO_ERROR, 0))
         return;
@@ -209,7 +205,7 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 VOID ServiceStop()
 {
     if (!bConsole)
-        LogEvent(NULL, EVENTLOG_INFORMATION_TYPE, 7701, NULL, "shibd stopping...");
+        LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, 7701, nullptr, "shibd stopping...");
     shibd_shutdown=true;
 }
 
@@ -336,7 +332,7 @@ BOOL ReportStatusToSCMgr(DWORD dwCurrentState,
         // Report the status of the service to the service control manager.
         //
         if (!(fResult = SetServiceStatus(sshStatusHandle, &ssStatus)))
-            LogEvent(NULL, EVENTLOG_ERROR_TYPE, 2100, NULL, "SetServiceStatus failed.");
+            LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "SetServiceStatus failed.");
     }
     return fResult;
 }
@@ -354,7 +350,7 @@ void CmdInstallService(LPCSTR name)
 
     char szPath[256];
 
-    if ( GetModuleFileName( NULL, szPath, 256 ) == 0 )
+    if ( GetModuleFileName( nullptr, szPath, 256 ) == 0 )
     {
         printf("Unable to install %s - %s\n", name, GetLastErrorText(szErr, 256));
         return;
@@ -371,8 +367,8 @@ void CmdInstallService(LPCSTR name)
         cmd = cmd + " -schemadir " + shar_schemadir;
 
     schSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
+                        nullptr,                   // machine (nullptr == local)
+                        nullptr,                   // database (nullptr == default)
                         SC_MANAGER_ALL_ACCESS   // access required
                         );
     
@@ -388,11 +384,11 @@ void CmdInstallService(LPCSTR name)
             SERVICE_AUTO_START,         // start type
             SERVICE_ERROR_NORMAL,       // error control type
             cmd.c_str(),                // service's command line
-            NULL,                       // no load ordering group
-            NULL,                       // no tag identifier
-            NULL,                       // dependencies
-            NULL,                       // LocalSystem account
-            NULL);                      // no password
+            nullptr,                       // no load ordering group
+            nullptr,                       // no tag identifier
+            nullptr,                       // dependencies
+            nullptr,                       // LocalSystem account
+            nullptr);                      // no password
 
         if ( schService )
         {
@@ -419,8 +415,8 @@ void CmdRemoveService(LPCSTR name)
     _snprintf(realName,sizeof(realName),"shibd_%s",name);
 
     schSCManager = OpenSCManager(
-                        NULL,                   // machine (NULL == local)
-                        NULL,                   // database (NULL == default)
+                        nullptr,                   // machine (nullptr == local)
+                        nullptr,                   // database (nullptr == default)
                         SC_MANAGER_ALL_ACCESS   // access required
                         );
     if ( schSCManager )
@@ -489,15 +485,15 @@ void CmdRemoveService(LPCSTR name)
 LPTSTR GetLastErrorText( LPSTR lpszBuf, DWORD dwSize )
 {
     DWORD dwRet;
-    LPSTR lpszTemp = NULL;
+    LPSTR lpszTemp = nullptr;
 
     dwRet = FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |FORMAT_MESSAGE_ARGUMENT_ARRAY,
-                           NULL,
+                           nullptr,
                            GetLastError(),
                            LANG_NEUTRAL,
                            (LPSTR)&lpszTemp,
                            0,
-                           NULL );
+                           nullptr );
 
     // supplied buffer is not long enough
     if ( !dwRet || ( (long)dwSize < (long)dwRet+14 ) )
@@ -521,9 +517,9 @@ BOOL LogEvent(
     PSID  lpUserSid,
     LPCSTR  message)
 {
-    LPCSTR  messages[] = {message, NULL};
+    LPCSTR  messages[] = {message, nullptr};
     
     HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth Daemon");
-    BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, NULL);
+    BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, nullptr);
     return (DeregisterEventSource(hElog) && res);
 }

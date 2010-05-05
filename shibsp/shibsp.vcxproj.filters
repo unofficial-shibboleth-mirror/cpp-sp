@@ -1,0 +1,531 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{f7a309f6-07d1-40c7-9f64-bf3fcd3b51ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\security">
+      <UniqueIdentifier>{89058d6e-5dc6-4464-89ae-4b9b0b7ca1fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\metadata">
+      <UniqueIdentifier>{48a6ad05-3636-4f2a-821a-908cd6a6f38c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\remoting">
+      <UniqueIdentifier>{201f4b10-df25-487b-b345-07e3e8dcb725}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\remoting\impl">
+      <UniqueIdentifier>{369a0f3d-8063-437a-9562-3845d3e4b49b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\impl">
+      <UniqueIdentifier>{41d82bec-c25d-4cab-a15f-754f338f7ca2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\attribute">
+      <UniqueIdentifier>{d71b535e-d381-4c91-b6c8-cdf3b17d6f90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\attribute\resolver">
+      <UniqueIdentifier>{60cebd87-179e-4fca-8837-13aa1900aaad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\attribute\resolver\impl">
+      <UniqueIdentifier>{b329e6c6-afb7-4979-b52f-71b91ead3ffc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\attribute\filtering">
+      <UniqueIdentifier>{c7ffdbc2-c0a8-4eb0-8a15-aba6f60955a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\attribute\filtering\impl">
+      <UniqueIdentifier>{23310ff9-ddd8-46cd-ad92-325166dac240}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\binding">
+      <UniqueIdentifier>{084ae0b6-d51e-4e60-a3f1-8341f2a5f324}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\binding\impl">
+      <UniqueIdentifier>{66bd1384-c499-4cb8-8079-4bf8a4adc8fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\handler">
+      <UniqueIdentifier>{cd97c469-f562-4710-a2e1-4fc30e476c18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\handler\impl">
+      <UniqueIdentifier>{9e449f86-94ac-4ec6-aa44-26effcc9c5b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{ec709790-2a20-4ab1-afbc-9c1a70cd1426}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\security">
+      <UniqueIdentifier>{6d782306-386a-4bdb-9d34-8f40afc5f5fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\remoting">
+      <UniqueIdentifier>{92a56f33-88c5-4663-b33a-47a9c66a5a02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\attribute">
+      <UniqueIdentifier>{cb5ac1c9-4ec1-40ad-8caf-9f307735452c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\attribute\resolver">
+      <UniqueIdentifier>{a403b7f1-6320-4000-92c1-04780c6db4e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\attribute\filtering">
+      <UniqueIdentifier>{e993fd93-ce33-4276-a3d3-663e8accf759}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\binding">
+      <UniqueIdentifier>{faf404c0-29a2-4a95-ba99-82bd4570e350}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\handler">
+      <UniqueIdentifier>{23e9fed1-5ecf-4558-9c5e-0ccf09f1f953}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\metadata">
+      <UniqueIdentifier>{a9cc5780-b115-430f-b156-ca4fa5276f63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AbstractSPRequest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServiceProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SPConfig.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util\CGIParser.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\DOMPropertySet.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\SPConstants.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\TemplateParameters.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="security\PKIXTrustEngine.cpp">
+      <Filter>Source Files\security</Filter>
+    </ClCompile>
+    <ClCompile Include="security\SecurityPolicy.cpp">
+      <Filter>Source Files\security</Filter>
+    </ClCompile>
+    <ClCompile Include="metadata\DynamicMetadataProvider.cpp">
+      <Filter>Source Files\metadata</Filter>
+    </ClCompile>
+    <ClCompile Include="metadata\MetadataExtImpl.cpp">
+      <Filter>Source Files\metadata</Filter>
+    </ClCompile>
+    <ClCompile Include="metadata\MetadataExtSchemaValidators.cpp">
+      <Filter>Source Files\metadata</Filter>
+    </ClCompile>
+    <ClCompile Include="metadata\MetadataProviderCriteria.cpp">
+      <Filter>Source Files\metadata</Filter>
+    </ClCompile>
+    <ClCompile Include="remoting\impl\ddf.cpp">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="remoting\impl\ListenerService.cpp">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="remoting\impl\SocketListener.cpp">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="remoting\impl\TCPListener.cpp">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\ChainingAccessControl.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\StorageServiceSessionCache.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\XMLAccessControl.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\XMLRequestMapper.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="impl\XMLServiceProvider.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\Attribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\DOMAttributeDecoder.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\ExtensibleAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\KeyInfoAttributeDecoder.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\NameIDAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\NameIDAttributeDecoder.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\NameIDFromScopedAttributeDecoder.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\ScopedAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\ScopedAttributeDecoder.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\SimpleAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\StringAttributeDecoder.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\XMLAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\XMLAttributeDecoder.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\ChainingAttributeExtractor.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\ChainingAttributeResolver.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\DelegationAttributeExtractor.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\KeyDescriptorAttributeExtractor.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\QueryAttributeResolver.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\SimpleAggregationAttributeResolver.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\XMLAttributeExtractor.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AndMatchFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AnyMatchFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeFilter.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeIssuerInEntityGroupFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeIssuerRegexFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeIssuerStringFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeRequesterInEntityGroupFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeRequesterRegexFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeRequesterStringFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeScopeMatchesShibMDScopeFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeScopeRegexFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeScopeStringFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeValueRegexFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeValueStringFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AuthenticationMethodRegexFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AuthenticationMethodStringFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\BasicFilteringContext.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\ChainingAttributeFilter.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\MatchFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\NotMatchFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\NumberOfAttributeValuesFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\OrMatchFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\XMLAttributeFilter.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="binding\impl\ArtifactResolver.cpp">
+      <Filter>Source Files\binding\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="binding\impl\SOAPClient.cpp">
+      <Filter>Source Files\binding\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\AbstractHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\AssertionConsumerService.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\AssertionLookup.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\ChainingLogoutInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\ChainingSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\CookieSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\FormSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\LocalLogoutInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\LogoutHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\MetadataGenerator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\RemotedHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML1Consumer.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2ArtifactResolution.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2Consumer.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2Logout.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2LogoutInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2NameIDMgmt.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAML2SessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SAMLDSSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SessionHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\SessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\Shib1SessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\StatusHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\TransformSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="handler\impl\WAYFSessionInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="remoting\impl\SocketListener.h">
+      <Filter>Source Files\remoting\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="AbstractSPRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AccessControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="exceptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestMapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServiceProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionCache.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SessionCacheEx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SPConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SPRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TransactionLog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util\CGIParser.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\DOMPropertySet.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\PropertySet.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\SPConstants.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\TemplateParameters.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="security\PKIXTrustEngine.h">
+      <Filter>Header Files\security</Filter>
+    </ClInclude>
+    <ClInclude Include="security\SecurityPolicy.h">
+      <Filter>Header Files\security</Filter>
+    </ClInclude>
+    <ClInclude Include="remoting\ddf.h">
+      <Filter>Header Files\remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="remoting\ListenerService.h">
+      <Filter>Header Files\remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\Attribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\AttributeDecoder.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\ExtensibleAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\NameIDAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\ScopedAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\SimpleAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\XMLAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\resolver\AttributeExtractor.h">
+      <Filter>Header Files\attribute\resolver</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\resolver\AttributeResolver.h">
+      <Filter>Header Files\attribute\resolver</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\resolver\ResolutionContext.h">
+      <Filter>Header Files\attribute\resolver</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\filtering\AttributeFilter.h">
+      <Filter>Header Files\attribute\filtering</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\filtering\BasicFilteringContext.h">
+      <Filter>Header Files\attribute\filtering</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\filtering\FilteringContext.h">
+      <Filter>Header Files\attribute\filtering</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\filtering\FilterPolicyContext.h">
+      <Filter>Header Files\attribute\filtering</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\filtering\MatchFunctor.h">
+      <Filter>Header Files\attribute\filtering</Filter>
+    </ClInclude>
+    <ClInclude Include="binding\ArtifactResolver.h">
+      <Filter>Header Files\binding</Filter>
+    </ClInclude>
+    <ClInclude Include="binding\SOAPClient.h">
+      <Filter>Header Files\binding</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\AbstractHandler.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\AssertionConsumerService.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\Handler.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\LogoutHandler.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\RemotedHandler.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\SessionInitiator.h">
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="metadata\MetadataExt.h">
+      <Filter>Header Files\metadata</Filter>
+    </ClInclude>
+    <ClInclude Include="metadata\MetadataProviderCriteria.h">
+      <Filter>Header Files\metadata</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="shibsp.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile.am" />
+    <None Include="paths.h.in" />
+  </ItemGroup>
+</Project>

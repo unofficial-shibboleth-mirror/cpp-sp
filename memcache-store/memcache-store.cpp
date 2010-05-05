@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * memcache-store.cpp
  *
- * Storage Service using memcache (pre memcache tags)
+ * Storage Service using memcache (pre memcache tags).
  */
 
 #if defined (_MSC_VER) || defined(__BORLANDC__)
@@ -127,17 +127,17 @@ namespace xmltooling {
     ~MemcacheStorageService();
     
     bool createString(const char* context, const char* key, const char* value, time_t expiration);
-    int readString(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL, int version=0);
-    int updateString(const char* context, const char* key, const char* value=NULL, time_t expiration=0, int version=0);
+    int readString(const char* context, const char* key, string* pvalue=nullptr, time_t* pexpiration=nullptr, int version=0);
+    int updateString(const char* context, const char* key, const char* value=nullptr, time_t expiration=0, int version=0);
     bool deleteString(const char* context, const char* key);
     
     bool createText(const char* context, const char* key, const char* value, time_t expiration) {
       return createString(context, key, value, expiration);
     }
-    int readText(const char* context, const char* key, string* pvalue=NULL, time_t* pexpiration=NULL, int version=0) {
+    int readText(const char* context, const char* key, string* pvalue=nullptr, time_t* pexpiration=nullptr, int version=0) {
       return readString(context, key, pvalue, pexpiration, version);
     }
-    int updateText(const char* context, const char* key, const char* value=NULL, time_t expiration=0, int version=0) {
+    int updateText(const char* context, const char* key, const char* value=nullptr, time_t expiration=0, int version=0) {
       return updateString(context, key, value, expiration, version);
     }
     bool deleteText(const char* context, const char* key) {
@@ -473,7 +473,7 @@ bool MemcacheBase::replaceMemcache(const char *key,
 
 MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getInstance("XMLTooling.MemcacheBase")), m_prefix("") {
 
-  auto_ptr_char p(e ? e->getAttributeNS(NULL,prefix) : NULL);
+  auto_ptr_char p(e ? e->getAttributeNS(nullptr,prefix) : nullptr);
   if (p.get() && *p.get()) {
     log.debug("INIT: GOT key prefix: %s", p.get());
     m_prefix = p.get();
@@ -482,8 +482,8 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   m_lock = Mutex::create();
   log.debug("Lock created");
 
-  memc = memcached_create(NULL);
-  if (memc == NULL) {
+  memc = memcached_create(nullptr);
+  if (memc == nullptr) {
     throw XMLToolingException("MemcacheBase::Memcache(): memcached_create() failed");
   }
 
@@ -494,7 +494,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   log.debug("CRC hash set");
 
   int32_t send_timeout = 999999;
-  const XMLCh* tag = e ? e->getAttributeNS(NULL, sendTimeout) : NULL;
+  const XMLCh* tag = e ? e->getAttributeNS(nullptr, sendTimeout) : nullptr;
   if (tag && *tag) {
     send_timeout = XMLString::parseInt(tag);
   }
@@ -502,7 +502,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_SND_TIMEOUT, send_timeout);
 
   int32_t recv_timeout = 999999;
-  tag = e ? e->getAttributeNS(NULL, sendTimeout) : NULL;
+  tag = e ? e->getAttributeNS(nullptr, sendTimeout) : nullptr;
   if (tag && *tag) {
     recv_timeout = XMLString::parseInt(tag);
   }
@@ -510,7 +510,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_RCV_TIMEOUT, recv_timeout);
 
   int32_t poll_timeout = 1000;
-  tag = e ? e->getAttributeNS(NULL, pollTimeout) : NULL;
+  tag = e ? e->getAttributeNS(nullptr, pollTimeout) : nullptr;
   if (tag && *tag) {
     poll_timeout = XMLString::parseInt(tag);
   }
@@ -518,7 +518,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_POLL_TIMEOUT, poll_timeout);
 
   int32_t fail_limit = 5;
-  tag = e ? e->getAttributeNS(NULL, failLimit) : NULL;
+  tag = e ? e->getAttributeNS(nullptr, failLimit) : nullptr;
   if (tag && *tag) {
     fail_limit = XMLString::parseInt(tag);
   }
@@ -526,7 +526,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_SERVER_FAILURE_LIMIT, fail_limit);
 
   int32_t retry_timeout = 30;
-  tag = e ? e->getAttributeNS(NULL, retryTimeout) : NULL;
+  tag = e ? e->getAttributeNS(nullptr, retryTimeout) : nullptr;
   if (tag && *tag) {
     retry_timeout = XMLString::parseInt(tag);
   }
@@ -534,7 +534,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_RETRY_TIMEOUT, retry_timeout);
 
   int32_t nonblock_set = 1;
-  tag = e ? e->getAttributeNS(NULL, nonBlocking) : NULL;
+  tag = e ? e->getAttributeNS(nullptr, nonBlocking) : nullptr;
   if (tag && *tag) {
     nonblock_set = XMLString::parseInt(tag);
   }
@@ -542,7 +542,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getIn
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_NO_BLOCK, nonblock_set);
 
   // Grab hosts from the configuration.
-  e = e ? XMLHelper::getFirstChildElement(e,Hosts) : NULL;
+  e = e ? XMLHelper::getFirstChildElement(e,Hosts) : nullptr;
   if (!e || !e->hasChildNodes()) {
     throw XMLToolingException("Memcache StorageService requires Hosts element in configuration.");
   }
@@ -568,7 +568,7 @@ MemcacheBase::~MemcacheBase() {
 MemcacheStorageService::MemcacheStorageService(const DOMElement* e)
   : MemcacheBase(e), m_log(Category::getInstance("XMLTooling.MemcacheStorageService")), m_buildMap(false) {
 
-    const XMLCh* tag=e ? e->getAttributeNS(NULL,buildMap) : NULL;
+    const XMLCh* tag=e ? e->getAttributeNS(nullptr,buildMap) : nullptr;
     if (tag && *tag && XMLString::parseInt(tag) != 0) {
         m_buildMap = true;
         m_log.debug("Cache built with buildMap ON");
@@ -690,12 +690,12 @@ int MemcacheStorageService::updateString(const char* context, const char* key, c
   log.debug("updateString ctx: %s - key: %s", context, key);
 
   time_t final_exp = expiration;
-  time_t *want_expiration = NULL;
+  time_t *want_expiration = nullptr;
   if (! final_exp) {
     want_expiration = &final_exp;
   }
 
-  int read_res = readString(context, key, NULL, want_expiration, version);
+  int read_res = readString(context, key, nullptr, want_expiration, version);
 
   if (!read_res) {
     // not found
@@ -758,7 +758,7 @@ void MemcacheStorageService::updateContext(const char* context, time_t expiratio
 
       // Update expiration times
       string value;      
-      int read_res = readString(context, iter->c_str(), &value, NULL, 0);
+      int read_res = readString(context, iter->c_str(), &value, nullptr, 0);
       
       if (!read_res) {
         // not found

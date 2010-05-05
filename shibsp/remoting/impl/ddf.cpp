@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ size_t ddf_strlen(const char* s)
 
 char* ddf_strdup(const char* s)
 {
-    return (s && *s) ? strdup(s) : NULL;
+    return (s && *s) ? strdup(s) : nullptr;
 }
 
 #define MAX_NAME_LEN 255
@@ -63,14 +63,14 @@ char* ddf_strdup(const char* s)
 char* ddf_token(const char** path, char* name)
 {
     *name=0;
-    if (*path==NULL || **path==0)
+    if (*path==nullptr || **path==0)
         return name;
 
     const char* temp=strchr(*path,'.');
-    if (temp==NULL) {
+    if (temp==nullptr) {
         strncpy(name,*path,MAX_NAME_LEN);
         name[MAX_NAME_LEN]=0;
-        *path=NULL;
+        *path=nullptr;
     }
     else if (temp>*path) {
         strncpy(name,*path,temp-*path);
@@ -85,7 +85,7 @@ char* ddf_token(const char** path, char* name)
 // body implementation
 
 struct shibsp::ddf_body_t {
-    ddf_body_t() : name(NULL), parent(NULL), next(NULL), prev(NULL), type(DDF_EMPTY) {}
+    ddf_body_t() : name(nullptr), parent(nullptr), next(nullptr), prev(nullptr), type(DDF_EMPTY) {}
 
     char* name;                     // name of node
     ddf_body_t* parent;             // parent node, if any
@@ -119,7 +119,7 @@ struct shibsp::ddf_body_t {
 
 // library implementation
 
-DDF::DDF() : m_handle(NULL)
+DDF::DDF() : m_handle(nullptr)
 {
 }
 
@@ -159,15 +159,15 @@ DDF::DDF(const char* n, void* val)
 
 DDF& DDF::destroy()
 {
-    remove().empty().name(NULL);
+    remove().empty().name(nullptr);
     delete m_handle;
-    m_handle=NULL;
+    m_handle=nullptr;
     return *this;
 }
 
 DDF DDF::copy() const
 {
-    if (m_handle==NULL)
+    if (m_handle==nullptr)
         return DDF();
 
     switch (m_handle->type) {
@@ -195,7 +195,7 @@ DDF DDF::copy() const
                 temp.m_handle=child;
                 DDF temp2=temp.copy();
                 copy.add(temp2);
-                if (copy.m_handle==NULL)
+                if (copy.m_handle==nullptr)
                     return copy;
                 if (m_handle->value.children.current==child)
                     copy.m_handle->value.children.current=copy.m_handle->value.children.last;
@@ -209,7 +209,7 @@ DDF DDF::copy() const
 
 const char* DDF::name() const
 {
-    return (m_handle) ? m_handle->name : NULL;
+    return (m_handle) ? m_handle->name : nullptr;
 }
 
 DDF& DDF::name(const char* name)
@@ -227,7 +227,7 @@ DDF& DDF::name(const char* name)
                 destroy();
         }
         else
-            m_handle->name=NULL;
+            m_handle->name=nullptr;
     }
     return *this;
 }
@@ -274,7 +274,7 @@ bool DDF::ispointer() const
 
 const char* DDF::string() const
 {
-    return isstring() ? m_handle->value.string : NULL;
+    return isstring() ? m_handle->value.string : nullptr;
 }
 
 long DDF::integer() const
@@ -317,7 +317,7 @@ double DDF::floating() const
 
 void* DDF::pointer() const
 {
-    return ispointer() ? m_handle->value.pointer : NULL;
+    return ispointer() ? m_handle->value.pointer : nullptr;
 }
 
 size_t DDF::strlen() const
@@ -327,8 +327,8 @@ size_t DDF::strlen() const
 
 bool DDF::operator==(const char* s) const
 {
-    if (string()==NULL || s==NULL)
-        return (string()==NULL && s==NULL);
+    if (string()==nullptr || s==nullptr)
+        return (string()==nullptr && s==nullptr);
     else
         return (::strcmp(string(),s)==0);
 }
@@ -435,9 +435,9 @@ DDF& DDF::structure()
 {
     if (empty().m_handle) {
         m_handle->type=ddf_body_t::DDF_STRUCT;
-        m_handle->value.children.first=NULL;
-        m_handle->value.children.last=NULL;
-        m_handle->value.children.current=NULL;
+        m_handle->value.children.first=nullptr;
+        m_handle->value.children.last=nullptr;
+        m_handle->value.children.current=nullptr;
         m_handle->value.children.count=0;
     }
     return *this;
@@ -447,9 +447,9 @@ DDF& DDF::list()
 {
     if (empty().m_handle) {
         m_handle->type=ddf_body_t::DDF_LIST;
-        m_handle->value.children.first=NULL;
-        m_handle->value.children.last=NULL;
-        m_handle->value.children.current=NULL;
+        m_handle->value.children.first=nullptr;
+        m_handle->value.children.last=nullptr;
+        m_handle->value.children.current=nullptr;
         m_handle->value.children.count=0;
     }
     return *this;
@@ -555,9 +555,9 @@ DDF& DDF::remove()
         m_handle->parent->value.children.current=m_handle->prev;
 
     m_handle->parent->value.children.count--;
-    m_handle->parent=NULL;
-    m_handle->next=NULL;
-    m_handle->prev=NULL;
+    m_handle->parent=nullptr;
+    m_handle->next=nullptr;
+    m_handle->prev=nullptr;
     return *this;
 }
 
@@ -565,7 +565,7 @@ DDF DDF::parent() const
 {
     DDF p;
 
-    p.m_handle=(m_handle ? m_handle->parent : NULL);
+    p.m_handle=(m_handle ? m_handle->parent : nullptr);
     return p;
 }
 
@@ -672,7 +672,7 @@ DDF DDF::getmember(const char* path) const
     if (*name == 0)
         return current;
     else if (*name == '[') {
-        unsigned long i = strtoul(name+1, NULL, 10);
+        unsigned long i = strtoul(name+1, nullptr, 10);
         if (islist() && i < m_handle->value.children.count)
             current=operator[](i);
         else if (i == 0)
@@ -728,7 +728,7 @@ void DDF::dump(FILE* f, int indent) const
                     putc('"',f);
                 }
                 else
-                    fprintf(f,"NULL");
+                    fprintf(f,"nullptr");
                 break;
 
             case ddf_body_t::DDF_INT:
@@ -791,7 +791,7 @@ void DDF::dump(FILE* f, int indent) const
                 if (m_handle->value.pointer)
                     fprintf(f,"%p",m_handle->value.pointer);
                 else
-                    fprintf(f,"NULL");
+                    fprintf(f,"nullptr");
                 break;
 
             default:
@@ -799,7 +799,7 @@ void DDF::dump(FILE* f, int indent) const
         }
     }
     else
-        fprintf(f,"NULL");
+        fprintf(f,"nullptr");
     fprintf(f,";\n");
 }
 
@@ -989,8 +989,8 @@ static const XMLCh _unsafe[] =  UNICODE_LITERAL_6(u,n,s,a,f,e);
 
 DDF deserialize(DOMElement* root, bool lowercase)
 {
-    DDF obj(NULL);
-    auto_ptr_char name_val(root->getAttributeNS(NULL, _name));
+    DDF obj(nullptr);
+    auto_ptr_char name_val(root->getAttributeNS(nullptr, _name));
     if (name_val.get() && *name_val.get()) {
         if (lowercase)
             for (char* pch=const_cast<char*>(name_val.get()); *pch=tolower(*pch); pch++);
@@ -1006,7 +1006,7 @@ DDF deserialize(DOMElement* root, bool lowercase)
     if (XMLString::equals(tag,_string)) {
         DOMNode* child=root->getFirstChild();
         if (child && child->getNodeType()==DOMNode::TEXT_NODE) {
-            const XMLCh* unsafe = root->getAttributeNS(NULL, _unsafe);
+            const XMLCh* unsafe = root->getAttributeNS(nullptr, _unsafe);
             if (unsafe && *unsafe==chDigit_1) {
                 // If it's unsafe, it's not UTF-8 data, so we have to convert to ASCII and decode it.
                 char* encoded = XMLString::transcode(child->getNodeValue());

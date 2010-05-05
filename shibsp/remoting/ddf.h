@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ namespace shibsp {
         DDF getmember(const char* path) const;
     
         // debugging
-        void dump(FILE* f=NULL, int indent=0) const;
+        void dump(FILE* f=nullptr, int indent=0) const;
     
         // serialization functions need private access
         friend SHIBSP_API std::ostream& operator<<(std::ostream& os, const DDF& obj);

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
 {
     string tname = string(type) + "Logout";
     const PropertySet* props = application.getPropertySet("Errors");
-    pair<bool,const char*> prop = props ? props->getString(tname.c_str()) : pair<bool,const char*>(false,NULL);
+    pair<bool,const char*> prop = props ? props->getString(tname.c_str()) : pair<bool,const char*>(false,nullptr);
     if (!prop.first) {
         tname += ".html";
         prop.second = tname.c_str();
@@ -96,14 +96,14 @@ pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
 
 void LogoutHandler::receive(DDF& in, ostream& out)
 {
-    DDF ret(NULL);
+    DDF ret(nullptr);
     DDFJanitor jout(ret);
     if (in["notify"].integer() != 1)
         throw ListenerException("Unsupported operation.");
 
     // Find application.
     const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : NULL;
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         Category::getInstance(SHIBSP_LOGCAT".Logout").error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
@@ -235,7 +235,7 @@ bool LogoutHandler::notifyBackChannel(
         env->setBody(body);
         ElementProxy* msg = new AnyElementImpl(shibspconstants::SHIB2SPNOTIFY_NS, LogoutNotification);
         body->getUnknownXMLObjects().push_back(msg);
-        msg->setAttribute(xmltooling::QName(NULL, _type), local ? _local : _global);
+        msg->setAttribute(xmltooling::QName(nullptr, _type), local ? _local : _global);
         for (vector<string>::const_iterator s = sessions.begin(); s!=sessions.end(); ++s) {
             auto_ptr_XMLCh temp(s->c_str());
             ElementProxy* child = new AnyElementImpl(shibspconstants::SHIB2SPNOTIFY_NS, SessionID);
@@ -273,7 +273,7 @@ bool LogoutHandler::notifyBackChannel(
         in.addmember("local").integer(1);
     DDF s = in.addmember("sessions").list();
     for (vector<string>::const_iterator i = sessions.begin(); i!=sessions.end(); ++i) {
-        DDF temp = DDF(NULL).string(i->c_str());
+        DDF temp = DDF(nullptr).string(i->c_str());
         s.add(temp);
     }
     out=application.getServiceProvider().getListenerService()->send(in);

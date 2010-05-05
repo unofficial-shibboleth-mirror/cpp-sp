@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ namespace shibsp {
         BasicFilteringContext(
             const Application& app,
             const std::vector<Attribute*>& attributes,
-            const opensaml::saml2md::RoleDescriptor* role=NULL,
-            const XMLCh* authncontext_class=NULL,
-            const XMLCh* authncontext_decl=NULL
+            const opensaml::saml2md::RoleDescriptor* role=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr
             );
 
         virtual ~BasicFilteringContext();

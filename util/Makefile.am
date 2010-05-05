@@ -16,4 +16,4 @@ mdquery_LDADD = \
 
 mdquery_LDFLAGS = $(XMLSEC_LIBS)
 
-EXTRA_DIST = mdquery.vcproj resolvertest.vcproj
+EXTRA_DIST = mdquery.vcxproj resolvertest.vcxproj

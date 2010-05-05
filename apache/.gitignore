@@ -11,8 +11,8 @@
 /*.mak
 /*.aps
 /*.user
-/mod_shib20-Debug
-/mod_shib22-Debug
-/mod_shib22-Release
-/mod_shib20-Release
+/mod_shib_20-Debug
+/mod_shib_22-Debug
+/mod_shib_22-Release
+/mod_shib_20-Release
 /x64
