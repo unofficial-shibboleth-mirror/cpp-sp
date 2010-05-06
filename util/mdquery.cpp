@@ -99,21 +99,23 @@ int main(int argc,char* argv[])
         return -10;
     }
 
+    SPConfig& conf=SPConfig::getConfig();
+    conf.setFeatures(SPConfig::Metadata | SPConfig::Trust | SPConfig::OutOfProcess | SPConfig::Credentials);
+    if (!conf.init())
+        return -1;
+
     if (rname) {
         if (!protocol) {
             if (prot)
                 protocol = XMLString::transcode(prot);
         }
         if (!protocol) {
+            conf.term();
             usage();
             return -10;
         }
     }
 
-    SPConfig& conf=SPConfig::getConfig();
-    conf.setFeatures(SPConfig::Metadata | SPConfig::Trust | SPConfig::OutOfProcess | SPConfig::Credentials);
-    if (!conf.init())
-        return -1;
     if (!conf.instantiate()) {
         conf.term();
         return -2;
