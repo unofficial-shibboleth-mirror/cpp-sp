@@ -632,9 +632,13 @@ XMLApplication::XMLApplication(
         bool hardACS=false, hardSessionInit=false, hardArt=false;
         const DOMElement* child = sessions ? XMLHelper::getFirstChildElement(sessions->getElement()) : nullptr;
         while (child) {
+            if (!child->hasAttributeNS(nullptr, Location)) {
+                auto_ptr_char hclass(child->getLocalName());
+                log.error("%s handler with no Location property cannot be processed", hclass.get());
+                child = XMLHelper::getNextSiblingElement(child);
+                continue;
+            }
             try {
-                // A handler is based on the Binding property in conjunction with the element name.
-                // If it's an ACS or SI, also handle index/id mappings and defaulting.
                 if (XMLString::equals(child->getLocalName(),_AssertionConsumerService)) {
                     auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
                     if (!bindprop.get() || !*(bindprop.get())) {
