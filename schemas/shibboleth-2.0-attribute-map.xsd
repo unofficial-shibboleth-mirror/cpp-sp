@@ -2,8 +2,11 @@
 <schema targetNamespace="urn:mace:shibboleth:2.0:attribute-map"
         xmlns="http://www.w3.org/2001/XMLSchema"
         xmlns:am="urn:mace:shibboleth:2.0:attribute-map"
+        xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
         elementFormDefault="qualified"
         version="2.3">
+
+    <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
 
     <annotation>
         <documentation>
@@ -45,6 +48,7 @@
                 <element name="TrustEngine" type="am:PluggableType" minOccurs="0"/>
                 <element name="AttributeFilter" type="am:PluggableType" minOccurs="0"/>
                 <element name="Attribute" type="am:AttributeType" maxOccurs="unbounded"/>
+                <element ref="ds:Signature" minOccurs="0"/>
             </sequence>
             <attribute name="metadataPolicyId" type="am:string"/>
         </complexType>

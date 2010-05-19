@@ -2,6 +2,7 @@
 <schema targetNamespace="urn:mace:shibboleth:2.0:native:sp:config"
 	xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:conf="urn:mace:shibboleth:2.0:native:sp:config"
+    xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
 	xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
 	xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
 	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
@@ -10,6 +11,7 @@
 	blockDefault="substitution"
 	version="2.4">
 
+  <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
   <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
   <import namespace="urn:oasis:names:tc:SAML:2.0:protocol" schemaLocation="saml-schema-protocol-2.0.xsd"/>
   <import namespace="urn:oasis:names:tc:SAML:2.0:metadata" schemaLocation="saml-schema-metadata-2.0.xsd"/>
@@ -260,6 +262,7 @@
           <element name="Host" type="conf:HostType"/>
           <element name="HostRegex" type="conf:HostRegexType"/>
         </choice>
+        <element ref="ds:Signature" minOccurs="0"/>
       </sequence>
       <attribute name="applicationId" type="conf:string" fixed="default"/>
       <attributeGroup ref="conf:ContentSettings"/>
@@ -675,6 +678,7 @@
         <element name="ApplicationDefaults" type="conf:ApplicationDefaultsType"/>
         <element name="SecurityPolicies" type="conf:SecurityPoliciesType"/>
         <element ref="conf:TransportOption" minOccurs="0" maxOccurs="unbounded"/>
+        <element ref="ds:Signature" minOccurs="0"/>
       </sequence>
       <attribute name="logger" type="anyURI"/>
       <attribute name="clockSkew" type="unsignedInt"/>
