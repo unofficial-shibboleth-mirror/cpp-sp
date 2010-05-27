@@ -604,31 +604,33 @@
     <anyAttribute namespace="##any" processContents="lax"/>
   </complexType>
 
-  <complexType name="SecurityPoliciesType">
-    <annotation>
-      <documentation>Container for specifying sets of policy rules to apply to incoming messages</documentation>
-    </annotation>
-    <sequence>
-      <element name="Policy" minOccurs="1" maxOccurs="unbounded">
-        <annotation>
-          <documentation>Specifies a set of SecurityPolicyRule plugins</documentation>
-        </annotation>
-        <complexType>
-          <choice>
-            <element name="Rule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
-            <element name="PolicyRule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
-          </choice>
-          <attribute name="id" type="conf:string" use="required"/>
-          <attribute name="validate" type="boolean"/>
-          <anyAttribute namespace="##any" processContents="lax"/>
-        </complexType>
-      </element>
-      <choice minOccurs="0">
-        <element name="AlgorithmWhitelist" type="conf:listOfURIs"/>
-        <element name="AlgorithmBlacklist" type="conf:listOfURIs"/>
-      </choice>
-    </sequence>
-  </complexType>
+  <element name="SecurityPolicies">
+    <complexType>
+      <annotation>
+        <documentation>Container for specifying sets of policy rules to apply to incoming messages</documentation>
+      </annotation>
+      <sequence>
+        <element name="Policy" minOccurs="1" maxOccurs="unbounded">
+          <annotation>
+            <documentation>Specifies a set of SecurityPolicyRule plugins</documentation>
+          </annotation>
+          <complexType>
+            <choice>
+              <element name="Rule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
+              <element name="PolicyRule" type="conf:PluggableType" minOccurs="1" maxOccurs="unbounded"/>
+            </choice>
+            <attribute name="id" type="conf:string" use="required"/>
+            <attribute name="validate" type="boolean"/>
+            <anyAttribute namespace="##any" processContents="lax"/>
+          </complexType>
+        </element>
+        <choice minOccurs="0">
+          <element name="AlgorithmWhitelist" type="conf:listOfURIs"/>
+          <element name="AlgorithmBlacklist" type="conf:listOfURIs"/>
+        </choice>
+      </sequence>
+    </complexType>
+  </element>
 
   <element name="TransportOption">
     <annotation>
@@ -676,7 +678,10 @@
         <element name="ArtifactMap" type="conf:ArtifactMapType" minOccurs="0"/>
         <element name="RequestMapper" type="conf:PluggableType" minOccurs="0"/>
         <element name="ApplicationDefaults" type="conf:ApplicationDefaultsType"/>
-        <element name="SecurityPolicies" type="conf:SecurityPoliciesType"/>
+        <choice>
+          <element name="SecurityPolicyProvider" type="conf:PluggableType"/>
+          <element ref="conf:SecurityPolicies"/> <!-- deprecated -->
+        </choice>
         <element ref="conf:TransportOption" minOccurs="0" maxOccurs="unbounded"/>
         <element ref="ds:Signature" minOccurs="0"/>
       </sequence>

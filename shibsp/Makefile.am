@@ -87,7 +87,8 @@ reminclude_HEADERS = \
 	
 secinclude_HEADERS = \
 	security/PKIXTrustEngine.h \
-	security/SecurityPolicy.h
+	security/SecurityPolicy.h \
+	security/SecurityPolicyProvider.h
 
 utilinclude_HEADERS = \
 	util/CGIParser.h \
@@ -197,6 +198,7 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \
+	impl/XMLSecurityPolicyProvider.cpp \
 	metadata/DynamicMetadataProvider.cpp \
 	metadata/MetadataExtImpl.cpp \
 	metadata/MetadataExtSchemaValidators.cpp \

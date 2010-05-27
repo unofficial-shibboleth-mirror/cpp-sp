@@ -58,11 +58,11 @@
 # include "attribute/resolver/AttributeExtractor.h"
 # include "attribute/resolver/AttributeResolver.h"
 # include "security/PKIXTrustEngine.h"
+# include "security/SecurityPolicyProvider.h"
 # include <saml/SAMLConfig.h>
 # include <saml/version.h>
 # include <saml/binding/ArtifactMap.h>
 # include <saml/binding/SAMLArtifact.h>
-# include <saml/binding/SecurityPolicyRule.h>
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml2/core/Assertions.h>
 # include <saml/saml2/binding/SAML2ArtifactType0004.h>
@@ -74,7 +74,6 @@
 # include <xmltooling/security/TrustEngine.h>
 # include <xmltooling/util/ReplayCache.h>
 # include <xmltooling/util/StorageService.h>
-# include <xercesc/util/XMLStringTokenizer.hpp>
 # include <xsec/utils/XSECPlatformUtils.hpp>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
@@ -254,7 +253,7 @@ namespace {
         RequestMapper* m_requestMapper;
         map<string,Application*> m_appmap;
 #ifndef SHIBSP_LITE
-        map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > > m_policyMap;
+        SecurityPolicyProvider* m_policy;
         vector< pair< string, pair<string,string> > > m_transportOptions;
 #endif
 
@@ -308,6 +307,21 @@ namespace {
             for_each(m_storage.begin(), m_storage.end(), cleanup_pair<string,StorageService>());
 #endif
         }
+
+#ifndef SHIBSP_LITE
+        // Lockable
+        Lockable* lock() {
+            ReloadableXMLFile::lock();
+            if (m_impl->m_policy)
+                m_impl->m_policy->lock();
+            return this;
+        }
+        void unlock() {
+            if (m_impl->m_policy)
+                m_impl->m_policy->unlock();
+            ReloadableXMLFile::unlock();
+        }
+#endif
 
         // PropertySet
         const PropertySet* getParent() const { return m_impl->getParent(); }
@@ -366,18 +380,18 @@ namespace {
         }
 
 #ifndef SHIBSP_LITE
+        SecurityPolicyProvider* getSecurityPolicyProvider(bool required=true) const {
+            if (required && !m_impl->m_policy)
+                throw ConfigurationException("No SecurityPolicyProvider available.");
+            return m_impl->m_policy;
+        }
+
         const PropertySet* getPolicySettings(const char* id) const {
-            map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
-            if (i!=m_impl->m_policyMap.end())
-                return i->second.first;
-            throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
+            return getSecurityPolicyProvider()->getPolicySettings(id);
         }
 
         const vector<const SecurityPolicyRule*>& getPolicyRules(const char* id) const {
-            map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
-            if (i!=m_impl->m_policyMap.end())
-                return i->second.second;
-            throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
+            return getSecurityPolicyProvider()->getPolicyRules(id);
         }
 
         bool setTransportOptions(SOAPTransport& transport) const {
@@ -411,8 +425,6 @@ namespace {
     #pragma warning( pop )
 #endif
 
-    static const XMLCh AlgorithmBlacklist[] =   UNICODE_LITERAL_18(A,l,g,o,r,i,t,h,m,B,l,a,c,k,l,i,s,t);
-    static const XMLCh AlgorithmWhitelist[] =   UNICODE_LITERAL_18(A,l,g,o,r,i,t,h,m,W,h,i,t,e,l,i,s,t);
     static const XMLCh ApplicationOverride[] =  UNICODE_LITERAL_19(A,p,p,l,i,c,a,t,i,o,n,O,v,e,r,r,i,d,e);
     static const XMLCh ApplicationDefaults[] =  UNICODE_LITERAL_19(A,p,p,l,i,c,a,t,i,o,n,D,e,f,a,u,l,t,s);
     static const XMLCh _ArtifactMap[] =         UNICODE_LITERAL_11(A,r,t,i,f,a,c,t,M,a,p);
@@ -441,14 +453,12 @@ namespace {
     static const XMLCh _option[] =              UNICODE_LITERAL_6(o,p,t,i,o,n);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
-    static const XMLCh Policy[] =               UNICODE_LITERAL_6(P,o,l,i,c,y);
-    static const XMLCh PolicyRule[] =           UNICODE_LITERAL_10(P,o,l,i,c,y,R,u,l,e);
     static const XMLCh _provider[] =            UNICODE_LITERAL_8(p,r,o,v,i,d,e,r);
     static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _ReplayCache[] =         UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
     static const XMLCh _RequestMapper[] =       UNICODE_LITERAL_13(R,e,q,u,e,s,t,M,a,p,p,e,r);
-    static const XMLCh Rule[] =                 UNICODE_LITERAL_4(R,u,l,e);
     static const XMLCh SecurityPolicies[] =     UNICODE_LITERAL_16(S,e,c,u,r,i,t,y,P,o,l,i,c,i,e,s);
+    static const XMLCh SecurityPolicyProvider[] = UNICODE_LITERAL_22(S,e,c,u,r,i,t,y,P,o,l,i,c,y,P,r,o,v,i,d,e,r);
     static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
     static const XMLCh _SessionInitiator[] =    UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
     static const XMLCh _SingleLogoutService[] = UNICODE_LITERAL_19(S,i,n,g,l,e,L,o,g,o,u,t,S,e,r,v,i,c,e);
@@ -459,21 +469,6 @@ namespace {
     static const XMLCh _TrustEngine[] =         UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
     static const XMLCh UnixListener[] =         UNICODE_LITERAL_12(U,n,i,x,L,i,s,t,e,n,e,r);
-
-#ifndef SHIBSP_LITE
-    class SHIBSP_DLLLOCAL PolicyNodeFilter : public DOMNodeFilter
-    {
-    public:
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-        short
-#else
-        FilterAction
-#endif
-        acceptNode(const DOMNode* node) const {
-            return FILTER_REJECT;
-        }
-    };
-#endif
 };
 
 namespace shibsp {
@@ -1225,6 +1220,7 @@ XMLConfigImpl::acceptNode(const DOMNode* node) const
         XMLString::equals(name,_RequestMapper) ||
         XMLString::equals(name,_ReplayCache) ||
         XMLString::equals(name,SecurityPolicies) ||
+        XMLString::equals(name,SecurityPolicyProvider) ||
         XMLString::equals(name,_SessionCache) ||
         XMLString::equals(name,Site) ||
         XMLString::equals(name,_StorageService) ||
@@ -1266,7 +1262,11 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
 }
 
 XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer, Category& log)
-    : m_requestMapper(nullptr), m_outer(outer), m_document(nullptr)
+    : m_requestMapper(nullptr),
+#ifndef SHIBSP_LITE
+        m_policy(nullptr),
+#endif
+        m_outer(outer), m_document(nullptr)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLConfigImpl");
@@ -1320,7 +1320,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         // First load any property sets.
         load(e,nullptr,this);
 
-        const DOMElement* child;
+        DOMElement* child;
         string plugtype;
 
         // Much of the processing can only occur on the first instantiation.
@@ -1456,44 +1456,11 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                     throw ConfigurationException("Can't build SessionCache, missing conf:SessionCache element?");
                 }
             }
-
-#ifndef SHIBSP_LITE
-            child = XMLHelper::getLastChildElement(e, SecurityPolicies);
-            if (child) {
-                const XMLCh* algs = nullptr;
-                const DOMElement* alglist = XMLHelper::getLastChildElement(child, AlgorithmBlacklist);
-                if (alglist && alglist->hasChildNodes()) {
-                    algs = alglist->getFirstChild()->getNodeValue();
-                }
-                else if ((alglist = XMLHelper::getLastChildElement(child, AlgorithmWhitelist)) && alglist->hasChildNodes()) {
-                    algs = alglist->getFirstChild()->getNodeValue();
-                }
-                if (algs) {
-#ifdef SHIBSP_XMLSEC_WHITELISTING
-                    const XMLCh* token;
-                    XMLStringTokenizer tokenizer(algs);
-                    while (tokenizer.hasMoreTokens()) {
-                        token = tokenizer.nextToken();
-                        if (token) {
-                            if (XMLString::equals(alglist->getLocalName(), AlgorithmBlacklist))
-                                XSECPlatformUtils::blacklistAlgorithm(token);
-                            else
-                                XSECPlatformUtils::whitelistAlgorithm(token);
-                        }
-                    }
-#else
-                    log.fatal("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
-                    throw ConfigurationException("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists.");
-#endif
-                }
-            }
-#endif
         } // end of first-time-only stuff
 
         // Back to the fully dynamic stuff...next up is the RequestMapper.
         if (conf.isEnabled(SPConfig::RequestMapping)) {
-            child=XMLHelper::getFirstChildElement(e,_RequestMapper);
-            if (child) {
+            if (child = XMLHelper::getFirstChildElement(e,_RequestMapper)) {
                 auto_ptr_char type(child->getAttributeNS(nullptr,_type));
                 log.info("building RequestMapper of type %s...",type.get());
                 m_requestMapper=conf.RequestMapperManager.newPlugin(type.get(),child);
@@ -1506,53 +1473,38 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
 #ifndef SHIBSP_LITE
         // Load security policies.
-        child = XMLHelper::getLastChildElement(e,SecurityPolicies);
-        if (child) {
-            PolicyNodeFilter filter;
-            child = XMLHelper::getFirstChildElement(child,Policy);
-            while (child) {
-                auto_ptr_char id(child->getAttributeNS(nullptr,_id));
-                pair< PropertySet*,vector<const SecurityPolicyRule*> >& rules = m_policyMap[id.get()];
-                rules.first = nullptr;
-                auto_ptr<DOMPropertySet> settings(new DOMPropertySet());
-                settings->load(child, nullptr, &filter);
-                rules.first = settings.release();
+        if (child = XMLHelper::getLastChildElement(e, SecurityPolicyProvider)) {
+            auto_ptr_char type(child->getAttributeNS(nullptr, _type));
+            log.info("building SecurityPolicyProvider of type %s...", type.get());
+            m_policy = conf.SecurityPolicyProviderManager.newPlugin(type.get(), child);
+        }
+        else if (child = XMLHelper::getLastChildElement(e, SecurityPolicies)) {
+            // For backward compatibility, wrap in a plugin element.
+            DOMElement* polwrapper = e->getOwnerDocument()->createElementNS(nullptr, SecurityPolicyProvider);
+            polwrapper->appendChild(child);
+            log.info("building SecurityPolicyProvider of type %s...", XML_SECURITYPOLICY_PROVIDER);
+            m_policy = conf.SecurityPolicyProviderManager.newPlugin(XML_SECURITYPOLICY_PROVIDER, polwrapper);
+        }
+        else {
+            log.fatal("can't build SecurityPolicyProvider, missing conf:SecurityPolicyProvider element?");
+            throw ConfigurationException("Can't build SecurityPolicyProvider, missing conf:SecurityPolicyProvider element?");
+        }
 
-                // Process PolicyRule elements.
-                const DOMElement* rule = XMLHelper::getFirstChildElement(child,PolicyRule);
-                while (rule) {
-                    auto_ptr_char type(rule->getAttributeNS(nullptr,_type));
-                    try {
-                        rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(type.get(),rule));
-                    }
-                    catch (exception& ex) {
-                        log.crit("error instantiating policy rule (%s) in policy (%s): %s", type.get(), id.get(), ex.what());
-                    }
-                    rule = XMLHelper::getNextSiblingElement(rule,PolicyRule);
-                }
-
-                if (rules.second.size() == 0) {
-                    // Process Rule elements.
-                    log.warn("detected legacy Policy configuration, please convert to new PolicyRule syntax");
-                    rule = XMLHelper::getFirstChildElement(child,Rule);
-                    while (rule) {
-                        auto_ptr_char type(rule->getAttributeNS(nullptr,_type));
-                        try {
-                            rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(type.get(),rule));
-                        }
-                        catch (exception& ex) {
-                            log.crit("error instantiating policy rule (%s) in policy (%s): %s", type.get(), id.get(), ex.what());
-                        }
-                        rule = XMLHelper::getNextSiblingElement(rule,Rule);
-                    }
-
-                    // Manually add a basic Conditions rule.
-                    log.info("installing a default Conditions rule in policy (%s) for compatibility with legacy configuration", id.get());
-                    rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(CONDITIONS_POLICY_RULE, nullptr));
-                }
-
-                child = XMLHelper::getNextSiblingElement(child,Policy);
+        if (first) {
+#ifdef SHIBSP_XMLSEC_WHITELISTING
+            vector<xstring>::const_iterator alg;
+            if (!m_policy->getAlgorithmBlacklist().empty()) {
+                for (alg = m_policy->getAlgorithmBlacklist().begin(); alg != m_policy->getAlgorithmBlacklist().end(); ++alg)
+                    XSECPlatformUtils::blacklistAlgorithm(alg->c_str());
             }
+            else if (!m_policy->getAlgorithmWhitelist().empty()) {
+                for (alg = m_policy->getAlgorithmWhitelist().begin(); alg != m_policy->getAlgorithmWhitelist().end(); ++alg)
+                    XSECPlatformUtils::whitelistAlgorithm(alg->c_str());
+            }
+#else
+            log.fatal("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
+            throw ConfigurationException("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists.");
+#endif
         }
 
         // Process TransportOption elements.
@@ -1609,11 +1561,8 @@ void XMLConfigImpl::cleanup()
     for_each(m_appmap.begin(),m_appmap.end(),cleanup_pair<string,Application>());
     m_appmap.clear();
 #ifndef SHIBSP_LITE
-    for (map< string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::iterator i=m_policyMap.begin(); i!=m_policyMap.end(); ++i) {
-        delete i->second.first;
-        for_each(i->second.second.begin(), i->second.second.end(), xmltooling::cleanup<SecurityPolicyRule>());
-    }
-    m_policyMap.clear();
+    delete m_policy;
+    m_policy = nullptr;
 #endif
     delete m_requestMapper;
     m_requestMapper = nullptr;

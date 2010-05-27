@@ -366,6 +366,9 @@
     <ClCompile Include="handler\impl\WAYFSessionInitiator.cpp">
       <Filter>Source Files\handler\impl</Filter>
     </ClCompile>
+    <ClCompile Include="impl\XMLSecurityPolicyProvider.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
@@ -517,6 +520,9 @@
     </ClInclude>
     <ClInclude Include="metadata\MetadataProviderCriteria.h">
       <Filter>Header Files\metadata</Filter>
+    </ClInclude>
+    <ClInclude Include="security\SecurityPolicyProvider.h">
+      <Filter>Header Files\security</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

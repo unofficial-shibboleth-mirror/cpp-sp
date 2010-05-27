@@ -55,6 +55,7 @@ namespace shibsp {
     class SHIBSP_API AttributeResolver;
     class SHIBSP_API FilterPolicyContext;
     class SHIBSP_API MatchFunctor;
+    class SHIBSP_API SecurityPolicyProvider;
 #endif
 
 #if defined (_MSC_VER)
@@ -212,6 +213,11 @@ namespace shibsp {
          * Manages factories for MatchFunctor plugins.
          */
         xmltooling::PluginManager< MatchFunctor,xmltooling::QName,std::pair<const FilterPolicyContext*,const xercesc::DOMElement*> > MatchFunctorManager;
+
+        /**
+         * Manages factories for SecurityPolicyProvider plugins.
+         */
+        xmltooling::PluginManager<SecurityPolicyProvider,std::string,const xercesc::DOMElement*> SecurityPolicyProviderManager;
 #endif
 
         /**

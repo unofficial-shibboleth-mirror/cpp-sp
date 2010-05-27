@@ -179,7 +179,7 @@ namespace {
             const HTTPRequest& httpRequest,
             HTTPResponse& httpResponse,
             SecurityPolicy& policy,
-            const PropertySet* settings,
+            const PropertySet*,
             const XMLObject& xmlObject
             ) const;
 #endif
@@ -595,7 +595,7 @@ void ADFSConsumer::implementProtocol(
     const HTTPRequest& httpRequest,
     HTTPResponse& httpResponse,
     SecurityPolicy& policy,
-    const PropertySet* settings,
+    const PropertySet*,
     const XMLObject& xmlObject
     ) const
 {

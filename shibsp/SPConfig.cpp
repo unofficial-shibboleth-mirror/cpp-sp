@@ -55,6 +55,7 @@
 # include "binding/ArtifactResolver.h"
 # include "metadata/MetadataExt.h"
 # include "security/PKIXTrustEngine.h"
+# include "security/SecurityPolicyProvider.h"
 # include <saml/SAMLConfig.h>
 #endif
 
@@ -251,6 +252,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         registerAttributeFilters();
         registerMatchFunctors();
     }
+    registerSecurityPolicyProviders();
 #endif
 
     if (isEnabled(Listener))
@@ -301,6 +303,7 @@ void SPConfig::term()
     Attribute::deregisterFactories();
 
 #ifndef SHIBSP_LITE
+    SecurityPolicyProviderManager.deregisterFactories();
     if (isEnabled(AttributeResolution)) {
         MatchFunctorManager.deregisterFactories();
         AttributeFilterManager.deregisterFactories();

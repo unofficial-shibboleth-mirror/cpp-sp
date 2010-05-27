@@ -181,6 +181,7 @@
   <ItemGroup>
     <ClCompile Include="AbstractSPRequest.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="impl\XMLSecurityPolicyProvider.cpp" />
     <ClCompile Include="ServiceProvider.cpp" />
     <ClCompile Include="SPConfig.cpp" />
     <ClCompile Include="util\CGIParser.cpp" />
@@ -283,6 +284,7 @@
     <ClInclude Include="internal.h" />
     <ClInclude Include="RequestMapper.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="security\SecurityPolicyProvider.h" />
     <ClInclude Include="ServiceProvider.h" />
     <ClInclude Include="SessionCache.h" />
     <ClInclude Include="SessionCacheEx.h" />

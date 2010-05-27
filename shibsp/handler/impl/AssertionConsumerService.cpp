@@ -38,6 +38,7 @@
 # include "attribute/resolver/ResolutionContext.h"
 # include "metadata/MetadataProviderCriteria.h"
 # include "security/SecurityPolicy.h"
+# include "security/SecurityPolicyProvider.h"
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml1/core/Assertions.h>
@@ -143,16 +144,12 @@ pair<bool,long> AssertionConsumerService::processMessage(
     if (!policyId.first)
         policyId = application.getString("policyId");   // unqualified in Application(s) element
 
-    // Access policy properties.
-    const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId.second);
-    pair<bool,bool> validate = settings->getBool("validate");
-
     // Lock metadata for use by policy.
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
     auto_ptr<opensaml::SecurityPolicy> policy(
-        createSecurityPolicy(application, &m_role, validate.first && validate.second, policyId.second)
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &m_role, policyId.second)
         );
 
     string relayState;
@@ -164,7 +161,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
         DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
         DDFJanitor postjan(postData);
         recoverRelayState(application, httpRequest, httpResponse, relayState);
-        implementProtocol(application, httpRequest, httpResponse, *(policy.get()), settings, *msg.get());
+        implementProtocol(application, httpRequest, httpResponse, *(policy.get()), NULL, *msg.get());
 
         auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : nullptr);
 
@@ -187,8 +184,8 @@ pair<bool,long> AssertionConsumerService::processMessage(
         // Check for isPassive error condition.
         const char* sc2 = ex.getProperty("statusCode2");
         if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
-            validate = getBool("ignoreNoPassive", m_configNS.get());  // namespace-qualified if inside handler element
-            if (validate.first && validate.second && !relayState.empty()) {
+            pair<bool,bool> ignore = getBool("ignoreNoPassive", m_configNS.get());  // namespace-qualified if inside handler element
+            if (ignore.first && ignore.second && !relayState.empty()) {
                 m_log.debug("ignoring SAML status of NoPassive and redirecting to resource...");
                 return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
             }

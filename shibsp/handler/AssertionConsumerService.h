@@ -94,6 +94,7 @@ namespace shibsp {
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
         
         /**
+         * @deprecated
          * Returns a SecurityPolicy instance to use for an incoming request.
          *
          * <p>Allows handlers to customize the type of policy object their policy rules might require.
@@ -121,7 +122,7 @@ namespace shibsp {
          * @param httpRequest   client request that included message
          * @param httpResponse  response to client
          * @param policy        the SecurityPolicy in effect, after having evaluated the message
-         * @param settings      policy configuration settings in effect
+         * @param reserved      ignore this parameter
          * @param xmlObject     a protocol-specific message object
          */
         virtual void implementProtocol(
@@ -129,7 +130,7 @@ namespace shibsp {
             const xmltooling::HTTPRequest& httpRequest,
             xmltooling::HTTPResponse& httpResponse,
             opensaml::SecurityPolicy& policy,
-            const PropertySet* settings,
+            const PropertySet* reserved,
             const xmltooling::XMLObject& xmlObject
             ) const=0;
 

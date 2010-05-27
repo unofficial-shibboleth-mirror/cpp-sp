@@ -48,6 +48,7 @@ namespace shibsp {
     class SHIBSP_API SPRequest;
     class SHIBSP_API TemplateParameters;
 #ifndef SHIBSP_LITE
+    class SHIBSP_API SecurityPolicyProvider;
     class SHIBSP_API TransactionLog;
 #endif
 
@@ -109,6 +110,15 @@ namespace shibsp {
         
 #ifndef SHIBSP_LITE
         /**
+         * Returns a SecurityPolicyProvider instance.
+         *
+         * @param required true iff an exception should be thrown if no SecurityPolicyProvider is available
+         * @return  a SecurityPolicyProvider
+         */
+        virtual SecurityPolicyProvider* getSecurityPolicyProvider(bool required=true) const;
+
+        /**
+         * @deprecated
 		 * Returns the security policy settings for an identified policy.
          *
 		 * @param id    identifies the policy to return
@@ -117,6 +127,7 @@ namespace shibsp {
         virtual const PropertySet* getPolicySettings(const char* id) const=0;
 
         /**
+         * @deprecated
 		 * Returns the security policy rules for an identified policy.
          *
 		 * @param id    identifies the policy to return

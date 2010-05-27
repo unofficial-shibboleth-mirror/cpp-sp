@@ -87,7 +87,7 @@ namespace shibsp {
             const HTTPRequest& httpRequest,
             HTTPResponse& httpResponse,
             SecurityPolicy& policy,
-            const PropertySet* settings,
+            const PropertySet*,
             const XMLObject& xmlObject
             ) const;
 
@@ -125,7 +125,7 @@ void SAML2Consumer::implementProtocol(
     const HTTPRequest& httpRequest,
     HTTPResponse& httpResponse,
     SecurityPolicy& policy,
-    const PropertySet* settings,
+    const PropertySet*,
     const XMLObject& xmlObject
     ) const
 {

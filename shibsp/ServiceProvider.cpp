@@ -168,6 +168,15 @@ ServiceProvider::~ServiceProvider()
 {
 }
 
+#ifndef SHIBSP_LITE
+SecurityPolicyProvider* ServiceProvider::getSecurityPolicyProvider(bool required) const
+{
+    if (required)
+        throw ConfigurationException("No SecurityPolicyProvider available.");
+    return NULL;
+}
+#endif
+
 pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handler) const
 {
 #ifdef _DEBUG
