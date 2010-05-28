@@ -36,7 +36,6 @@ namespace xmltooling {
 };
 
 namespace opensaml {
-    class SAML_API SecurityPolicy;
     class SAML_API SecurityPolicyRule;
 };
 
@@ -44,6 +43,7 @@ namespace shibsp {
 
     class SHIBSP_API Application;
     class SHIBSP_API PropertySet;
+    class SHIBSP_API SecurityPolicy;
 
     /**
      * Interface to a source of security policy settings and rules.
@@ -97,7 +97,7 @@ namespace shibsp {
          * @param policyId      identifies policy, defaults to the application's default
          * @return  a new policy instance, which the caller is responsible for freeing
          */
-        virtual opensaml::SecurityPolicy* createSecurityPolicy(
+        virtual SecurityPolicy* createSecurityPolicy(
             const Application& application, const xmltooling::QName* role, const char* policyId=nullptr
             ) const;
     };

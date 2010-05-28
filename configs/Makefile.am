@@ -35,6 +35,7 @@ CONFIGFILES = \
 	shibboleth2.xml \
 	attribute-map.xml \
 	attribute-policy.xml \
+	security-policy.xml \
 	example-metadata.xml \
 	console.logger \
 	syslog.logger \

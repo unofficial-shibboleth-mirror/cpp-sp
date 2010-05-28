@@ -32,6 +32,7 @@
 #ifndef SHIBSP_LITE
 # include "SessionCacheEx.h"
 # include "security/SecurityPolicy.h"
+# include "security/SecurityPolicyProvider.h"
 # include "metadata/MetadataProviderCriteria.h"
 # include "util/TemplateParameters.h"
 # include <fstream>
@@ -334,22 +335,20 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
     if (!policyId.first)
         policyId = application.getString("policyId");   // unqualified in Application(s) element
 
-    // Access policy properties.
-    const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId.second);
-    pair<bool,bool> validate = settings->getBool("validate");
-
     // Lock metadata for use by policy.
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
-    shibsp::SecurityPolicy policy(application, &m_role, validate.first && validate.second, policyId.second);
+    auto_ptr<SecurityPolicy> policy(
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &m_role, policyId.second)
+        );
 
     // Decode the message.
     string relayState;
-    auto_ptr<XMLObject> msg(m_decoder->decode(relayState, request, policy));
+    auto_ptr<XMLObject> msg(m_decoder->decode(relayState, request, *policy.get()));
     const LogoutRequest* logoutRequest = dynamic_cast<LogoutRequest*>(msg.get());
     if (logoutRequest) {
-        if (!policy.isAuthenticated())
+        if (!policy->isAuthenticated())
             throw SecurityPolicyException("Security of LogoutRequest not established.");
 
         // Message from IdP to logout one or more sessions.
@@ -361,7 +360,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                 logoutRequest->getID(),
                 StatusCode::REQUESTER, StatusCode::UNKNOWN_PRINCIPAL, "No active session found in request.",
                 relayState.c_str(),
-                policy.getIssuerMetadata(),
+                policy->getIssuerMetadata(),
                 application,
                 response,
                 true
@@ -380,13 +379,16 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                 else {
                     Locker credlocker(cr);
                     auto_ptr<MetadataCredentialCriteria> mcc(
-                        policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : nullptr
+                        policy->getIssuerMetadata() ? new MetadataCredentialCriteria(*policy->getIssuerMetadata()) : nullptr
                         );
                     try {
                         auto_ptr<XMLObject> decryptedID(
                             encname->decrypt(
                                 *cr,
-                                application.getRelyingParty(policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : nullptr)->getXMLString("entityID").second,
+                                application.getRelyingParty(
+                                    policy->getIssuerMetadata() ?
+                                        dynamic_cast<EntityDescriptor*>(policy->getIssuerMetadata()->getParent()) :
+                                            nullptr)->getXMLString("entityID").second,
                                 mcc.get()
                                 )
                             );
@@ -409,7 +411,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                 logoutRequest->getID(),
                 StatusCode::REQUESTER, StatusCode::UNKNOWN_PRINCIPAL, "NameID not found in request.",
                 relayState.c_str(),
-                policy.getIssuerMetadata(),
+                policy->getIssuerMetadata(),
                 application,
                 response,
                 m_decoder->isUserAgentPresent()
@@ -420,7 +422,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
 
         // Suck indexes out of the request for next steps.
         set<string> indexes;
-        EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : nullptr;
+        EntityDescriptor* entity = policy->getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy->getIssuerMetadata()->getParent()) : nullptr;
         const vector<SessionIndex*> sindexes = logoutRequest->getSessionIndexs();
         for (vector<SessionIndex*>::const_iterator i = sindexes.begin(); i != sindexes.end(); ++i) {
             auto_ptr_char sindex((*i)->getSessionIndex());
@@ -435,7 +437,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                     logoutRequest->getID(),
                     StatusCode::REQUESTER, StatusCode::REQUEST_DENIED, "Active session did not match logout request.",
                     relayState.c_str(),
-                    policy.getIssuerMetadata(),
+                    policy->getIssuerMetadata(),
                     application,
                     response,
                     true
@@ -470,7 +472,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                 logoutRequest->getID(),
                 StatusCode::RESPONDER, nullptr, ex.what(),
                 relayState.c_str(),
-                policy.getIssuerMetadata(),
+                policy->getIssuerMetadata(),
                 application,
                 response,
                 m_decoder->isUserAgentPresent()
@@ -513,7 +515,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
             (worked1 && worked2) ? nullptr : StatusCode::PARTIAL_LOGOUT,
             nullptr,
             relayState.c_str(),
-            policy.getIssuerMetadata(),
+            policy->getIssuerMetadata(),
             application,
             response,
             m_decoder->isUserAgentPresent()
@@ -523,13 +525,13 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
     // A LogoutResponse completes an SP-initiated logout sequence.
     const LogoutResponse* logoutResponse = dynamic_cast<LogoutResponse*>(msg.get());
     if (logoutResponse) {
-        if (!policy.isAuthenticated()) {
+        if (!policy->isAuthenticated()) {
             SecurityPolicyException ex("Security of LogoutResponse not established.");
-            if (policy.getIssuerMetadata())
-                annotateException(&ex, policy.getIssuerMetadata()); // throws it
+            if (policy->getIssuerMetadata())
+                annotateException(&ex, policy->getIssuerMetadata()); // throws it
             ex.raise();
         }
-        checkError(logoutResponse, policy.getIssuerMetadata()); // throws if Status doesn't look good...
+        checkError(logoutResponse, policy->getIssuerMetadata()); // throws if Status doesn't look good...
 
         // If relay state is set, recover the original return URL.
         if (!relayState.empty())
@@ -549,8 +551,8 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
     }
 
     FatalProfileException ex("Incoming message was not a samlp:LogoutRequest or samlp:LogoutResponse.");
-    if (policy.getIssuerMetadata())
-        annotateException(&ex, policy.getIssuerMetadata()); // throws it
+    if (policy->getIssuerMetadata())
+        annotateException(&ex, policy->getIssuerMetadata()); // throws it
     ex.raise();
     return make_pair(false,0L);  // never happen, satisfies compiler
 #else

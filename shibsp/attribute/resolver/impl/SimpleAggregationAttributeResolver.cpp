@@ -34,6 +34,7 @@
 #include "binding/SOAPClient.h"
 #include "metadata/MetadataProviderCriteria.h"
 #include "security/SecurityPolicy.h"
+#include "security/SecurityPolicyProvider.h"
 #include "util/SPConstants.h"
 
 #include <saml/exceptions.h>
@@ -333,26 +334,24 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
     }
 
     const PropertySet* relyingParty = application.getRelyingParty(mdresult.first);
+    pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
+    pair<bool,const char*> encryption = relyingParty->getString("encryption");
 
     // Locate policy key.
     const char* policyId = m_policyId.empty() ? application.getString("policyId").second : m_policyId.c_str();
 
-    // Access policy properties.
-    const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId);
-    pair<bool,bool> validate = settings->getBool("validate");
-
-    pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
-    pair<bool,const char*> encryption = relyingParty->getString("encryption");
-
-    shibsp::SecurityPolicy policy(application, nullptr, validate.first && validate.second, policyId);
+    // Set up policy and SOAP client.
+    auto_ptr<SecurityPolicy> policy(
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, nullptr, policyId)
+        );
     if (m_metadata)
-        policy.setMetadataProvider(m_metadata);
+        policy->setMetadataProvider(m_metadata);
     if (m_trust)
-        policy.setTrustEngine(m_trust);
-    policy.getAudiences().push_back(relyingParty->getXMLString("entityID").second);
+        policy->setTrustEngine(m_trust);
+    policy->getAudiences().push_back(relyingParty->getXMLString("entityID").second);
 
     MetadataCredentialCriteria mcc(*AA);
-    shibsp::SOAPClient soaper(policy);
+    shibsp::SOAPClient soaper(*policy.get());
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
     saml2p::StatusResponseType* srt=nullptr;
@@ -369,7 +368,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
                 auto_ptr<EncryptedID> encrypted(EncryptedIDBuilder::buildEncryptedID());
                 encrypted->encrypt(
                     *name,
-                    *(policy.getMetadataProvider()),
+                    *(policy->getMetadataProvider()),
                     mcc,
                     false,
                     relyingParty->getXMLString("encryptionAlg").second
@@ -475,14 +474,14 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
     try {
         // We're going to insist that the assertion issuer is the same as the peer.
         // Reset the policy's message bits and extract them from the assertion.
-        policy.reset(true);
-        policy.setMessageID(newtoken->getID());
-        policy.setIssueInstant(newtoken->getIssueInstantEpoch());
-        policy.setIssuer(newtoken->getIssuer());
-        policy.evaluate(*newtoken);
+        policy->reset(true);
+        policy->setMessageID(newtoken->getID());
+        policy->setIssueInstant(newtoken->getIssueInstantEpoch());
+        policy->setIssuer(newtoken->getIssuer());
+        policy->evaluate(*newtoken);
 
         // Now we can check the security status of the policy.
-        if (!policy.isAuthenticated())
+        if (!policy->isAuthenticated())
             throw SecurityPolicyException("Security of SAML 2.0 query result not established.");
 
         if (m_subjectMatch) {

@@ -31,6 +31,7 @@
 
 #ifndef SHIBSP_LITE
 # include "security/SecurityPolicy.h"
+# include "security/SecurityPolicyProvider.h"
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/binding/ArtifactMap.h>
@@ -284,32 +285,30 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
     if (!policyId.first)
         policyId = application.getString("policyId");   // unqualified in Application(s) element
         
-    // Access policy properties.
-    const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId.second);
-    pair<bool,bool> validate = settings->getBool("validate");
-
     // Lock metadata for use by policy.
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
-    shibsp::SecurityPolicy policy(application, &m_role, validate.first && validate.second);
+    auto_ptr<SecurityPolicy> policy(
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &m_role, policyId.second)
+        );
     
     // Decode the message and verify that it's a secured ArtifactResolve request.
     string relayState;
-    auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, policy));
+    auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, *policy.get()));
     if (!msg.get())
         throw BindingException("Failed to decode a SAML request.");
     const ArtifactResolve* req = dynamic_cast<const ArtifactResolve*>(msg.get());
     if (!req)
         throw FatalProfileException("Decoded message was not a samlp::ArtifactResolve request.");
 
-    const EntityDescriptor* entity = policy.getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : nullptr;
+    const EntityDescriptor* entity = policy->getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy->getIssuerMetadata()->getParent()) : nullptr;
 
     try {
         auto_ptr_char artifact(req->getArtifact() ? req->getArtifact()->getArtifact() : nullptr);
         if (!artifact.get() || !*artifact.get())
             return emptyResponse(application, *req, httpResponse, entity);
-        auto_ptr_char issuer(policy.getIssuer() ? policy.getIssuer()->getName() : nullptr);
+        auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : nullptr);
 
         m_log.info("resolving artifact (%s) for (%s)", artifact.get(), issuer.get() ? issuer.get() : "unknown");
 
@@ -317,7 +316,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         auto_ptr<SAMLArtifact> artobj(SAMLArtifact::parse(artifact.get()));
         auto_ptr<XMLObject> payload(artmap->retrieveContent(artobj.get(), issuer.get()));
 
-        if (!policy.isAuthenticated()) {
+        if (!policy->isAuthenticated()) {
             m_log.error("request for artifact was unauthenticated, purging the artifact mapping");
             return emptyResponse(application, *req, httpResponse, entity);
         }
@@ -332,7 +331,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         resp->setPayload(payload.release());
 
         long ret = sendMessage(
-            *m_encoder, resp.get(), relayState.c_str(), nullptr, policy.getIssuerMetadata(), application, httpResponse, "signResponses"
+            *m_encoder, resp.get(), relayState.c_str(), nullptr, policy->getIssuerMetadata(), application, httpResponse, "signResponses"
             );
         resp.release();  // freed by encoder
         return make_pair(true,ret);

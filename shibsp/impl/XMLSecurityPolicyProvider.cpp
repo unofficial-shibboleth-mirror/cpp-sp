@@ -164,7 +164,7 @@ SecurityPolicyProvider::~SecurityPolicyProvider()
 {
 }
 
-opensaml::SecurityPolicy* SecurityPolicyProvider::createSecurityPolicy(
+SecurityPolicy* SecurityPolicyProvider::createSecurityPolicy(
     const Application& application, const xmltooling::QName* role, const char* policyId
     ) const
 {

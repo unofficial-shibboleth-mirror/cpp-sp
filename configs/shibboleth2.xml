@@ -233,29 +233,7 @@
 
     </ApplicationDefaults>
     
-    <!-- Each policy defines a set of rules to use to secure messages. -->
-    <SecurityPolicies>
-        <!--
-        The predefined policy enforces replay/freshness, standard
-        condition processing, and permits signing and client TLS.
-        -->
-        <Policy id="default" validate="false">
-            <PolicyRule type="MessageFlow" checkReplay="true" expires="60"/>
-            <PolicyRule type="Conditions">
-                <PolicyRule type="Audience"/>
-                <!-- Enable Delegation rule to permit delegated access. -->
-                <!-- <PolicyRule type="Delegation"/> -->
-            </PolicyRule>
-            <PolicyRule type="ClientCertAuth" errorFatal="true"/>
-            <PolicyRule type="XMLSigning" errorFatal="true"/>
-            <PolicyRule type="SimpleSigning" errorFatal="true"/>
-        </Policy>
-        
-        <!-- Disables known weak algorithms. -->
-        <AlgorithmBlacklist>
-        http://www.w3.org/2001/04/xmldsig-more#md5
-        http://www.w3.org/2001/04/xmldsig-more#rsa-md5
-        </AlgorithmBlacklist>
-    </SecurityPolicies>
+    <!-- Policies that determine how to process and authenticate runtime messages. -->
+    <SecurityPolicyProvider type="XML" validate="true" path="security-policy.xml"/>
 
 </SPConfig>

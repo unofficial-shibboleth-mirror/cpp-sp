@@ -33,6 +33,7 @@
 #include "binding/SOAPClient.h"
 #include "metadata/MetadataProviderCriteria.h"
 #include "security/SecurityPolicy.h"
+#include "security/SecurityPolicyProvider.h"
 #include "util/SPConstants.h"
 
 #include <saml/exceptions.h>
@@ -281,14 +282,13 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     // Locate policy key.
     const char* policyId = m_policyId.empty() ? application.getString("policyId").second : m_policyId.c_str();
 
-    // Access policy properties.
-    const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId);
-    pair<bool,bool> validate = settings->getBool("validate");
-
-    shibsp::SecurityPolicy policy(application, nullptr, validate.first && validate.second, policyId);
-    policy.getAudiences().push_back(relyingParty->getXMLString("entityID").second);
+    // Set up policy and SOAP client.
+    auto_ptr<SecurityPolicy> policy(
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, nullptr, policyId)
+        );
+    policy->getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);
-    shibsp::SOAPClient soaper(policy);
+    shibsp::SOAPClient soaper(*policy.get());
 
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
     saml1p::Response* response=nullptr;
@@ -355,14 +355,14 @@ bool QueryResolver::SAML1Query(QueryContext& ctx) const
     try {
         // We're going to insist that the assertion issuer is the same as the peer.
         // Reset the policy's message bits and extract them from the assertion.
-        policy.reset(true);
-        policy.setMessageID(newtoken->getAssertionID());
-        policy.setIssueInstant(newtoken->getIssueInstantEpoch());
-        policy.setIssuer(newtoken->getIssuer());
-        policy.evaluate(*newtoken);
+        policy->reset(true);
+        policy->setMessageID(newtoken->getAssertionID());
+        policy->setIssueInstant(newtoken->getIssueInstantEpoch());
+        policy->setIssuer(newtoken->getIssuer());
+        policy->evaluate(*newtoken);
 
         // Now we can check the security status of the policy.
-        if (!policy.isAuthenticated())
+        if (!policy->isAuthenticated())
             throw SecurityPolicyException("Security of SAML 1.x query result not established.");
     }
     catch (exception& ex) {
@@ -430,21 +430,19 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
 
     const Application& application = ctx.getApplication();
     const PropertySet* relyingParty = application.getRelyingParty(ctx.getEntityDescriptor());
+    pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
+    pair<bool,const char*> encryption = relyingParty->getString("encryption");
 
     // Locate policy key.
     const char* policyId = m_policyId.empty() ? application.getString("policyId").second : m_policyId.c_str();
 
-    // Access policy properties.
-    const PropertySet* settings = application.getServiceProvider().getPolicySettings(policyId);
-    pair<bool,bool> validate = settings->getBool("validate");
-
-    pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
-    pair<bool,const char*> encryption = relyingParty->getString("encryption");
-
-    shibsp::SecurityPolicy policy(application, nullptr, validate.first && validate.second, policyId);
-    policy.getAudiences().push_back(relyingParty->getXMLString("entityID").second);
+    // Set up policy and SOAP client.
+    auto_ptr<SecurityPolicy> policy(
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, nullptr, policyId)
+        );
+    policy->getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);
-    shibsp::SOAPClient soaper(policy);
+    shibsp::SOAPClient soaper(*policy.get());
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
     saml2p::StatusResponseType* srt=nullptr;
@@ -566,14 +564,14 @@ bool QueryResolver::SAML2Query(QueryContext& ctx) const
     try {
         // We're going to insist that the assertion issuer is the same as the peer.
         // Reset the policy's message bits and extract them from the assertion.
-        policy.reset(true);
-        policy.setMessageID(newtoken->getID());
-        policy.setIssueInstant(newtoken->getIssueInstantEpoch());
-        policy.setIssuer(newtoken->getIssuer());
-        policy.evaluate(*newtoken);
+        policy->reset(true);
+        policy->setMessageID(newtoken->getID());
+        policy->setIssueInstant(newtoken->getIssueInstantEpoch());
+        policy->setIssuer(newtoken->getIssuer());
+        policy->evaluate(*newtoken);
 
         // Now we can check the security status of the policy.
-        if (!policy.isAuthenticated())
+        if (!policy->isAuthenticated())
             throw SecurityPolicyException("Security of SAML 2.0 query result not established.");
 
         if (m_subjectMatch) {
