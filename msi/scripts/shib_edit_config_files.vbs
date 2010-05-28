@@ -186,6 +186,10 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "attribute-policy.xml", ConfigDir, false
   End If
 
+  If (NOT FileSystemObj.FileExists(ConfigDir & "security-policy.xml")) then
+    FileSystemObj.CopyFile DistDir & "security-policy.xml", ConfigDir, false
+  End If
+
   ' Finally, fix up schema catalogs.
   
   XMLDir = InstallDir & "\share\xml\xmltooling\"

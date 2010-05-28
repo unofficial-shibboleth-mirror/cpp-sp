@@ -64,33 +64,10 @@
 
             <xsl:text>&#10;&#10;    </xsl:text>
             <xsl:comment>
-                <xsl:text> Each policy defines a set of rules to use to secure messages. </xsl:text>
+                <xsl:text> Policies that determine how to process and authenticate runtime messages. </xsl:text>
             </xsl:comment>
             <xsl:text>&#10;    </xsl:text>
-            <SecurityPolicies>
-                <xsl:text>&#10;        </xsl:text>
-                <xsl:comment>
-                    <xsl:text> The predefined policy enforces replay/freshness and permits signing and client TLS. </xsl:text>
-                </xsl:comment>
-                <xsl:text>&#10;        </xsl:text>
-                <Policy id="default" validate="false">
-                    <xsl:text>&#10;            </xsl:text>
-                    <PolicyRule type="MessageFlow" checkReplay="true" expires="60"/>
-                    <xsl:text>&#10;            </xsl:text>
-                    <PolicyRule type="Conditions">
-                    <xsl:text>&#10;                </xsl:text>
-                        <PolicyRule type="Audience"/>
-                    <xsl:text>&#10;            </xsl:text>
-                    </PolicyRule>
-                    <PolicyRule type="ClientCertAuth" errorFatal="true"/>
-                    <xsl:text>&#10;            </xsl:text>
-                    <PolicyRule type="XMLSigning" errorFatal="true"/>
-                    <xsl:text>&#10;            </xsl:text>
-                    <PolicyRule type="SimpleSigning" errorFatal="true"/>
-                    <xsl:text>&#10;        </xsl:text>
-                </Policy>
-                <xsl:text>&#10;    </xsl:text>
-            </SecurityPolicies>
+            <SecurityPolicyProvider type="XML" validate="true" path="security-policy.xml"/>
             <xsl:text>&#10;&#10;</xsl:text>
         </SPConfig>
     </xsl:template>
