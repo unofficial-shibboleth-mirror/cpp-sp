@@ -171,8 +171,6 @@ namespace shibsp {
             }
         }
 
-        void cleanup();
-
         Category& m_log;
         bool inproc;
         unsigned long m_cacheTimeout;
@@ -197,8 +195,9 @@ namespace shibsp {
         map<string,StoredSession*> m_hashtable;
 
         // management of buffered sessions
-        void dormant(const char* key);
-        static void* cleanup_fn(void*);
+       void dormant(const char* key);
+       static void* cleanup_fn(void*);
+
         bool shutdown;
         CondWait* shutdown_wait;
         Thread* cleanup_thread;
@@ -814,7 +813,7 @@ SSCache::SSCache(const DOMElement* e)
             throw ConfigurationException("SessionCache requires a ListenerService, but none available.");
         m_lock = RWLock::create();
         shutdown_wait = CondWait::create();
-        cleanup_thread = Thread::create(&cleanup_fn, (void*)this);
+        cleanup_thread = Thread::create(&cleanup_fn, this);
     }
 #ifndef SHIBSP_LITE
     else {
@@ -840,6 +839,8 @@ SSCache::~SSCache()
 
         for_each(m_hashtable.begin(),m_hashtable.end(),cleanup_pair<string,StoredSession>());
         delete m_lock;
+
+        delete cleanup_thread;
         delete shutdown_wait;
     }
 #ifndef SHIBSP_LITE
@@ -1577,17 +1578,24 @@ void SSCache::dormant(const char* key)
     delete entry;
 }
 
-void SSCache::cleanup()
+void* SSCache::cleanup_fn(void* p)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("cleanup");
 #endif
 
-    Mutex* mutex = Mutex::create();
+    SSCache* pcache = reinterpret_cast<SSCache*>(p);
+
+#ifndef WIN32
+    // First, let's block all signals
+    Thread::mask_all_signals();
+#endif
+
+    auto_ptr<Mutex> mutex(Mutex::create());
 
     // Load our configuration details...
     static const XMLCh cleanupInterval[] = UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
-    const XMLCh* tag=m_root ? m_root->getAttributeNS(nullptr,cleanupInterval) : nullptr;
+    const XMLCh* tag=pcache->m_root ? pcache->m_root->getAttributeNS(nullptr, cleanupInterval) : nullptr;
     int rerun_timer = 900;
     if (tag && *tag) {
         rerun_timer = XMLString::parseInt(tag);
@@ -1597,11 +1605,11 @@ void SSCache::cleanup()
 
     mutex->lock();
 
-    m_log.info("cleanup thread started...run every %d secs; timeout after %d secs", rerun_timer, m_inprocTimeout);
+    pcache->m_log.info("cleanup thread started...run every %d secs; timeout after %d secs", rerun_timer, pcache->m_inprocTimeout);
 
-    while (!shutdown) {
-        shutdown_wait->timedwait(mutex,rerun_timer);
-        if (shutdown)
+    while (!pcache->shutdown) {
+        pcache->shutdown_wait->timedwait(mutex.get(), rerun_timer);
+        if (pcache->shutdown)
             break;
 
         // Ok, let's run through the cleanup process and clean out
@@ -1613,12 +1621,12 @@ void SSCache::cleanup()
         // Pass 1: iterate over the map and find all entries that have not been
         // used in the allotted timeout.
         vector<string> stale_keys;
-        time_t stale = time(nullptr) - m_inprocTimeout;
+        time_t stale = time(nullptr) - pcache->m_inprocTimeout;
 
-        m_log.debug("cleanup thread running");
+        pcache->m_log.debug("cleanup thread running");
 
-        m_lock->rdlock();
-        for (map<string,StoredSession*>::const_iterator i=m_hashtable.begin(); i!=m_hashtable.end(); ++i) {
+        pcache->m_lock->rdlock();
+        for (map<string,StoredSession*>::const_iterator i=pcache->m_hashtable.begin(); i!=pcache->m_hashtable.end(); ++i) {
             // If the last access was BEFORE the stale timeout...
             i->second->lock();
             time_t last=i->second->getLastAccess();
@@ -1626,35 +1634,22 @@ void SSCache::cleanup()
             if (last < stale)
                 stale_keys.push_back(i->first);
         }
-        m_lock->unlock();
+        pcache->m_lock->unlock();
 
         if (!stale_keys.empty()) {
-            m_log.info("purging %d old sessions", stale_keys.size());
+            pcache->m_log.info("purging %d old sessions", stale_keys.size());
 
             // Pass 2: walk through the list of stale entries and remove them from the cache
             for (vector<string>::const_iterator j = stale_keys.begin(); j != stale_keys.end(); ++j)
-                dormant(j->c_str());
+                pcache->dormant(j->c_str());
         }
 
-        m_log.debug("cleanup thread completed");
+        pcache->m_log.debug("cleanup thread completed");
     }
 
-    m_log.info("cleanup thread exiting");
+    pcache->m_log.info("cleanup thread exiting");
 
     mutex->unlock();
-    delete mutex;
-    Thread::exit(nullptr);
-}
-
-void* SSCache::cleanup_fn(void* cache_p)
-{
-#ifndef WIN32
-    // First, let's block all signals
-    Thread::mask_all_signals();
-#endif
-
-    // Now run the cleanup process.
-    reinterpret_cast<SSCache*>(cache_p)->cleanup();
     return nullptr;
 }
 
