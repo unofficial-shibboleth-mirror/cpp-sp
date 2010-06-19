@@ -117,22 +117,34 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
 
         for (; v!=stop; ++v) {
             const NameIDType* n2 = dynamic_cast<const NameIDType*>(*v);
-            if (n2)
+            if (n2) {
+                log.debug("decoding AttributeValue element of saml2:NameIDType type");
                 extract(n2, dest, assertingParty, relyingParty);
+            }
             else {
                 const NameIdentifier* n1=dynamic_cast<const NameIdentifier*>(*v);
-                if (n1)
+                if (n1) {
+                    log.debug("decoding AttributeValue element of saml1:NameIdentifier type");
                     extract(n1, dest, assertingParty, relyingParty);
+                }
                 else if ((*v)->hasChildren()) {
                     const list<XMLObject*>& values = (*v)->getOrderedChildren();
                     for (list<XMLObject*>::const_iterator vv = values.begin(); vv!=values.end(); ++vv) {
-                        if (n2=dynamic_cast<const NameIDType*>(*vv))
+                        if (n2=dynamic_cast<const NameIDType*>(*vv)) {
+                            log.debug("decoding saml2:NameID child element of AttributeValue");
                             extract(n2, dest, assertingParty, relyingParty);
-                        else if (n1=dynamic_cast<const NameIdentifier*>(*vv))
+                        }
+                        else if (n1=dynamic_cast<const NameIdentifier*>(*vv)) {
+                            log.debug("decoding saml1:NameIdentifier child element of AttributeValue");
                             extract(n1, dest, assertingParty, relyingParty);
-                        else
-                            log.warn("skipping AttributeValue without a recognizable NameID/NameIdentifier");
+                        }
+                        else {
+                            log.warn("skipping AttributeValue child element not recognizable as NameID/NameIdentifier");
+                        }
                     }
+                }
+                else {
+                    log.warn("AttributeValue was not of a supported type and contains no child elements");
                 }
             }
         }
