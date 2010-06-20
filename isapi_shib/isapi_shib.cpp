@@ -870,8 +870,11 @@ public:
       while (datalen) {
         DWORD buflen=8192;
         BOOL ret = m_lpECB->ReadClient(m_lpECB->ConnID, buf, &buflen);
-        if (!ret)
-            throw IOException("Error reading request body from browser.");
+        if (!ret) {
+            char message[65];
+            _snprintf(message, 64, "Error reading request body from browser (%x).", GetLastError());
+            throw IOException(message);
+        }
         else if (!buflen)
             throw IOException("Socket closed while reading request body from browser.");
         m_body.append(buf, buflen);
