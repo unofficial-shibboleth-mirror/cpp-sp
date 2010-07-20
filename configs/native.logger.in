@@ -1,5 +1,5 @@
 # set overall behavior
-log4j.rootCategory=INFO, native_log
+log4j.rootCategory=INFO, native_log, warn_log
 
 # fairly verbose for DEBUG, so generally leave at INFO
 log4j.category.XMLTooling.XMLObject=INFO
@@ -30,6 +30,13 @@ log4j.appender.native_log=org.apache.log4j.RollingFileAppender
 log4j.appender.native_log.fileName=@-SHIRELOGDIR-@/native.log
 log4j.appender.native_log.maxFileSize=1000000
 log4j.appender.native_log.maxBackupIndex=10
-#log4j.appender.native_log.layout=org.apache.log4j.BasicLayout
 log4j.appender.native_log.layout=org.apache.log4j.PatternLayout
 log4j.appender.native_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+
+log4j.appender.warn_log=org.apache.log4j.RollingFileAppender
+log4j.appender.warn_log.fileName=@-SHIRELOGDIR-@/native_warn.log
+log4j.appender.warn_log.maxFileSize=1000000
+log4j.appender.warn_log.maxBackupIndex=10
+log4j.appender.warn_log.layout=org.apache.log4j.PatternLayout
+log4j.appender.warn_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+log4j.appender.warn_log.threshold=WARN
