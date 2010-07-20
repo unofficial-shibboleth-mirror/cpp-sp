@@ -25,8 +25,8 @@ log4j.category.XMLTooling.libcurl=INFO
 #log4j.category.XMLTooling.StorageService=DEBUG
 
 # logs XML being signed or verified if set to DEBUG
-#log4j.category.XMLTooling.Signature.Debugger=INFO, sig_log
-#log4j.additivity.XMLTooling.Signature.Debugger=false
+log4j.category.XMLTooling.Signature.Debugger=INFO, sig_log
+log4j.additivity.XMLTooling.Signature.Debugger=false
 
 # the tran log blocks the "default" appender(s) at runtime
 # Level should be left at INFO for this category
