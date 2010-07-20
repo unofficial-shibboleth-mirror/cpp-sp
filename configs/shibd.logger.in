@@ -24,6 +24,10 @@ log4j.category.XMLTooling.libcurl=INFO
 # persistent storage and caching
 #log4j.category.XMLTooling.StorageService=DEBUG
 
+# logs XML being signed or verified if set to DEBUG
+#log4j.category.XMLTooling.Signature.Debugger=INFO, sig_log
+#log4j.additivity.XMLTooling.Signature.Debugger=false
+
 # the tran log blocks the "default" appender(s) at runtime
 # Level should be left at INFO for this category
 log4j.category.Shibboleth-TRANSACTION=INFO, tran_log
@@ -52,3 +56,8 @@ log4j.appender.tran_log.maxFileSize=1000000
 log4j.appender.tran_log.maxBackupIndex=20
 log4j.appender.tran_log.layout=org.apache.log4j.PatternLayout
 log4j.appender.tran_log.layout.ConversionPattern=%d{%Y-%m-%d %H:%M:%S} %p %c %x: %m%n
+
+log4j.appender.sig_log=org.apache.log4j.FileAppender
+log4j.appender.sig_log.fileName=@-PKGLOGDIR-@/signature.log
+log4j.appender.sig_log.layout=org.apache.log4j.PatternLayout
+log4j.appender.sig_log.layout.ConversionPattern=%m
