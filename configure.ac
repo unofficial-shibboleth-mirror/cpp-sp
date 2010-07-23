@@ -265,10 +265,20 @@ save_LIBS="$LIBS"
 LIBS="$XMLSEC_LIBS $LIBS"
 
 AC_TRY_LINK(
-    [#include <xmltooling/io/HTTPResponse.h>],
-    [xmltooling::HTTPResponse::sanitizeURL("http://test")],
+	[
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/version.h>
+	],
+	[
+#if _XMLTOOLING_VERSION >= 10400
+xmltooling::XMLToolingConfig::getConfig();
+#else
+#error Need XMLTooling version 1.4 or higher
+#endif
+	],
     [AC_DEFINE(HAVE_XMLTOOLING,1,[Define if xmltooling library was found])],
-    [AC_MSG_ERROR([unable to link with XMLTooling, or version was too old])])
+    [AC_MSG_ERROR([unable to link with XMLTooling, or version was too old])]
+	)
 
 # restore master libs
 LIBS="$save_LIBS"
@@ -350,15 +360,20 @@ LIBS="$XMLSEC_LIBS $LIBS"
 AC_CHECK_HEADER([saml/saml2/metadata/Metadata.h],,
                 AC_MSG_ERROR([unable to find OpenSAML header files]))
 AC_TRY_LINK(
-	[#include <saml/SAMLConfig.h>
-#include <saml/version.h>],
-	[#if _OPENSAML_VERSION >= 20200
+	[
+#include <saml/SAMLConfig.h>
+#include <saml/version.h>
+	],
+	[
+#if _OPENSAML_VERSION >= 20400
 opensaml::SAMLConfig::getConfig();
 #else
-#error Need OpenSAML version 2.2 or higher
-#endif],
-        [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
-        [AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])])
+#error Need OpenSAML version 2.4 or higher
+#endif
+	],
+    [AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],
+    [AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])]
+	)
 
 # restore master libs
 LIBS="$save_LIBS"
