@@ -27,6 +27,10 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
+#include <xmltooling/util/XMLHelper.h>
+
+using xmltooling::XMLHelper;
+
 namespace shibsp {
 
     static const XMLCh value[] = UNICODE_LITERAL_5(v,a,l,u,e);
@@ -40,11 +44,10 @@ namespace shibsp {
         const XMLCh* m_value;
         bool m_ignoreCase;
     public:
-        AuthenticationMethodStringFunctor(const DOMElement* e) : m_value(e ? e->getAttributeNS(nullptr,value) : nullptr) {
+        AuthenticationMethodStringFunctor(const DOMElement* e)
+            : m_value(e ? e->getAttributeNS(nullptr,value) : nullptr), m_ignoreCase(XMLHelper::getAttrBool(e, false, ignoreCase)) {
             if (!m_value || !*m_value)
                 throw ConfigurationException("AuthenticationMethodString MatchFunctor requires non-empty value attribute.");
-            const XMLCh* flag = e ? e->getAttributeNS(nullptr,ignoreCase) : nullptr;
-            m_ignoreCase = (flag && (*flag == chLatin_t || *flag == chDigit_1)); 
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {

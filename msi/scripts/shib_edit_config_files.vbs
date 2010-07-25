@@ -117,14 +117,11 @@ if (Err = 0) then
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "apache22.config"
 
-  ConfigFile = DistDir & "shibboleth2.xml"
-  ReplaceInFile ConfigFile, "   <UnixListener address=""shibd.sock""/>", "<!-- <UnixListener address=""shibd.sock""/> -->"
-  ReplaceInFile ConfigFile, "<!-- <TCPListener address=""127.0.0.1"" port=""12345"" acl=""127.0.0.1""/> -->", "<TCPListener address=""127.0.0.1"" port=""" & ShibdPort & """ acl=""127.0.0.1""/>"
-  If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
-    FileSystemObj.CopyFile ConfigFile, ConfigDir & "shibboleth2.xml", false
-  End If
-
   'Now just copy the other non-edited files over as well (if possible)
+
+  If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
+    FileSystemObj.CopyFile DistDir & "shibboleth2.xml", ConfigDir, false
+  End If
 
   If (NOT FileSystemObj.FileExists(ConfigDir & "accessError.html")) then
     FileSystemObj.CopyFile DistDir & "accessError.html", ConfigDir, false

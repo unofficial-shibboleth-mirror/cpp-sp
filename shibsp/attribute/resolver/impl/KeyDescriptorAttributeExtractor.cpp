@@ -75,7 +75,7 @@ namespace shibsp {
         }
 
     private:
-        auto_ptr_char m_hashAlg;
+        string m_hashAlg;
         vector<string> m_hashId;
         vector<string> m_signingId;
         vector<string> m_encryptionId;
@@ -96,24 +96,18 @@ namespace shibsp {
     static const XMLCh signingId[] =    UNICODE_LITERAL_9(s,i,g,n,i,n,g,I,d);
 };
 
-KeyDescriptorExtractor::KeyDescriptorExtractor(const DOMElement* e) : m_hashAlg(e ? e->getAttributeNS(nullptr, hashAlg) : nullptr)
+KeyDescriptorExtractor::KeyDescriptorExtractor(const DOMElement* e) : m_hashAlg(XMLHelper::getAttrString(e, "SHA1", hashAlg))
 {
     if (e) {
-        const XMLCh* a = e->getAttributeNS(nullptr, hashId);
-        if (a && *a) {
-            auto_ptr_char temp(a);
-            m_hashId.push_back(temp.get());
-        }
-        a = e->getAttributeNS(nullptr, signingId);
-        if (a && *a) {
-            auto_ptr_char temp(a);
-            m_signingId.push_back(temp.get());
-        }
-        a = e->getAttributeNS(nullptr, encryptionId);
-        if (a && *a) {
-            auto_ptr_char temp(a);
-            m_encryptionId.push_back(temp.get());
-        }
+        string a(XMLHelper::getAttrString(e, nullptr, hashId));
+        if (!a.empty())
+            m_hashId.push_back(a);
+        a = XMLHelper::getAttrString(e, nullptr, signingId);
+        if (!a.empty())
+            m_signingId.push_back(a);
+        a = XMLHelper::getAttrString(e, nullptr, encryptionId);
+        if (!a.empty())
+            m_encryptionId.push_back(a);
     }
     if (m_hashId.empty() && m_signingId.empty() && m_encryptionId.empty())
         throw ConfigurationException("KeyDescriptor AttributeExtractor requires hashId, signingId, or encryptionId property.");
@@ -134,15 +128,12 @@ void KeyDescriptorExtractor::extractAttributes(
         mcc.setUsage(Credential::SIGNING_CREDENTIAL);
         if (application.getMetadataProvider()->resolve(creds, &mcc)) {
             if (!m_hashId.empty()) {
-                const char* alg = m_hashAlg.get();
-                if (!alg || !*alg)
-                    alg = "SHA1";
                 auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_hashId));
                 vector<string>& vals = attr->getValues();
                 for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
                     if (vals.empty() || !vals.back().empty())
                         vals.push_back(string());
-                    vals.back() = SecurityHelper::getDEREncoding(*(*c), alg);
+                    vals.back() = SecurityHelper::getDEREncoding(*(*c), m_hashAlg.c_str());
                 }
                 if (vals.back().empty())
                     vals.pop_back();

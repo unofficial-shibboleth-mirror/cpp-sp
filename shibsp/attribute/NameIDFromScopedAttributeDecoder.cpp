@@ -46,16 +46,13 @@ namespace shibsp {
         NameIDFromScopedAttributeDecoder(const DOMElement* e)
             : AttributeDecoder(e),
                 m_delimeter('@'),
-                m_format(e ? e->getAttributeNS(nullptr,format) : nullptr),
-                m_formatter(e ? e->getAttributeNS(nullptr,formatter) : nullptr),
-                m_defaultQualifiers(false) {
+                m_format(XMLHelper::getAttrString(e, nullptr, format)),
+                m_formatter(XMLHelper::getAttrString(e, nullptr, formatter)),
+                m_defaultQualifiers(XMLHelper::getAttrBool(e, false, defaultQualifiers)) {
             if (e && e->hasAttributeNS(nullptr,scopeDelimeter)) {
                 auto_ptr_char d(e->getAttributeNS(nullptr,scopeDelimeter));
                 m_delimeter = *(d.get());
             }
-            const XMLCh* flag = e ? e->getAttributeNS(nullptr, defaultQualifiers) : nullptr;
-            if (flag && (*flag == chLatin_t || *flag == chDigit_1))
-                m_defaultQualifiers = true;
         }
         ~NameIDFromScopedAttributeDecoder() {}
 
@@ -65,8 +62,7 @@ namespace shibsp {
 
     private:
         char m_delimeter;
-        auto_ptr_char m_format;
-        auto_ptr_char m_formatter;
+        string m_format,m_formatter;
         bool m_defaultQualifiers;
     };
 
@@ -86,7 +82,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
     const XMLCh* xmlscope;
     xmltooling::QName scopeqname(nullptr,Scope);
     auto_ptr<NameIDAttribute> nameid(
-        new NameIDAttribute(ids, (m_formatter.get() && *m_formatter.get()) ? m_formatter.get() : DEFAULT_NAMEID_FORMATTER)
+        new NameIDAttribute(ids, (!m_formatter.empty()) ? m_formatter.c_str() : DEFAULT_NAMEID_FORMATTER)
         );
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
     vector<XMLObject*>::const_iterator v,stop;
@@ -141,8 +137,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
                             *scope++ = 0;
                     }
                     destval.m_Name = val;
-                    if (m_format.get() && *m_format.get())
-                        destval.m_Format = m_format.get();
+                    destval.m_Format = m_format;
                     if (m_defaultQualifiers && assertingParty)
                         destval.m_NameQualifier = assertingParty;
                     if (m_defaultQualifiers && relyingParty)

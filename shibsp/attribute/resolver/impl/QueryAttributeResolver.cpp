@@ -220,20 +220,14 @@ namespace shibsp {
     static const XMLCh subjectMatch[] = UNICODE_LITERAL_12(s,u,b,j,e,c,t,M,a,t,c,h);
 };
 
-QueryResolver::QueryResolver(const DOMElement* e) : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Query")), m_subjectMatch(false)
+QueryResolver::QueryResolver(const DOMElement* e)
+    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Query")),
+        m_policyId(XMLHelper::getAttrString(e, nullptr, policyId)),
+        m_subjectMatch(XMLHelper::getAttrBool(e, false, subjectMatch))
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("QueryResolver");
 #endif
-
-    const XMLCh* pid = e ? e->getAttributeNS(nullptr, policyId) : nullptr;
-    if (pid && *pid) {
-        auto_ptr_char temp(pid);
-        m_policyId = temp.get();
-    }
-    pid = e ? e->getAttributeNS(nullptr, subjectMatch) : nullptr;
-    if (pid && (*pid == chLatin_t || *pid == chDigit_1))
-        m_subjectMatch = true;
 
     DOMElement* child = XMLHelper::getFirstChildElement(e);
     while (child) {

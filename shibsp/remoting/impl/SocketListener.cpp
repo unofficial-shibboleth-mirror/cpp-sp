@@ -23,13 +23,15 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
+#include "SPConfig.h"
 #include "remoting/impl/SocketListener.h"
 
 #include <errno.h>
 #include <stack>
 #include <sstream>
-#include <shibsp/SPConfig.h>
+
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/XMLHelper.h>
 
 #ifndef WIN32
 # include <netinet/in.h>
@@ -172,9 +174,7 @@ SocketListener::SocketListener(const DOMElement* e)
         m_child_wait = CondWait::create();
 
         static const XMLCh stackSize[] = UNICODE_LITERAL_9(s,t,a,c,k,S,i,z,e);
-        const XMLCh* attr = e ? e->getAttributeNS(nullptr, stackSize) : nullptr;
-        if (attr && *attr)
-            m_stackSize = XMLString::parseInt(attr) * 1024;
+        m_stackSize = XMLHelper::getAttrInt(e, 0, stackSize) * 1024;
     }
 }
 

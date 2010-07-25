@@ -27,6 +27,7 @@
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/unicode.h>
 #include <xmltooling/util/PathResolver.h>
+#include <xmltooling/util/XMLHelper.h>
 
 #ifdef HAVE_UNISTD_H
 # include <sys/socket.h>
@@ -48,8 +49,6 @@ using namespace std;
 
 
 namespace shibsp {
-    static const XMLCh address[] = UNICODE_LITERAL_7(a,d,d,r,e,s,s);
-
     class UnixListener : virtual public SocketListener
     {
     public:
@@ -79,16 +78,14 @@ namespace shibsp {
     {
         return new UnixListener(e);
     }
+
+    static const XMLCh address[] = UNICODE_LITERAL_7(a,d,d,r,e,s,s);
 };
 
-UnixListener::UnixListener(const DOMElement* e) : SocketListener(e), m_address("/var/run/shar-socket"), m_bound(false)
+UnixListener::UnixListener(const DOMElement* e)
+    : SocketListener(e), m_address(XMLHelper::getAttrString(e, "shibd.sock", address)), m_bound(false)
 {
-    const XMLCh* tag=e->getAttributeNS(nullptr,address);
-    if (tag && *tag) {
-        auto_ptr_char a(tag);
-        m_address=a.get();
-        XMLToolingConfig::getConfig().getPathResolver()->resolve(m_address, PathResolver::XMLTOOLING_RUN_FILE);
-    }
+    XMLToolingConfig::getConfig().getPathResolver()->resolve(m_address, PathResolver::XMLTOOLING_RUN_FILE);
 }
 
 #ifndef UNIX_PATH_MAX

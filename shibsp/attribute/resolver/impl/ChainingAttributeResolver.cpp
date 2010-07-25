@@ -171,12 +171,12 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
     SPConfig& conf = SPConfig::getConfig();
 
     // Load up the chain of handlers.
-    e = e ? XMLHelper::getFirstChildElement(e, _AttributeResolver) : nullptr;
+    e = XMLHelper::getFirstChildElement(e, _AttributeResolver);
     while (e) {
-        auto_ptr_char type(e->getAttributeNS(nullptr,_type));
-        if (type.get() && *(type.get())) {
+        string t(XMLHelper::getAttrString(e, nullptr, _type));
+        if (!t.empty()) {
             try {
-                m_resolvers.push_back(conf.AttributeResolverManager.newPlugin(type.get(),e));
+                m_resolvers.push_back(conf.AttributeResolverManager.newPlugin(t.c_str(), e));
             }
             catch (exception& ex) {
                 Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Chaining").error(

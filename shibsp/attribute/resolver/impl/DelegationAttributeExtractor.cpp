@@ -86,20 +86,10 @@ namespace shibsp {
     static const XMLCh formatter[] =    UNICODE_LITERAL_9(f,o,r,m,a,t,t,e,r);
 };
 
-DelegationExtractor::DelegationExtractor(const DOMElement* e) : m_attributeId("delegate"), m_formatter("$Name")
+DelegationExtractor::DelegationExtractor(const DOMElement* e)
+    : m_attributeId(XMLHelper::getAttrString(e, "delegate", attributeId)),
+        m_formatter(XMLHelper::getAttrString(e, "$Name", formatter))
 {
-    if (e) {
-        const XMLCh* a = e->getAttributeNS(nullptr, attributeId);
-        if (a && *a) {
-            auto_ptr_char temp(a);
-            m_attributeId = temp.get();
-        }
-        a = e->getAttributeNS(nullptr, formatter);
-        if (a && *a) {
-            auto_ptr_char temp(a);
-            m_formatter = temp.get();
-        }
-    }
 }
 
 void DelegationExtractor::extractAttributes(

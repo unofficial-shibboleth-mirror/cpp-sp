@@ -42,7 +42,7 @@ namespace shibsp {
     {
         RegularExpression* m_regex;
     public:
-        AuthenticationMethodRegexFunctor(const DOMElement* e) {
+        AuthenticationMethodRegexFunctor(const DOMElement* e) : m_regex(nullptr) {
             const XMLCh* r = e ? e->getAttributeNS(nullptr,regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AuthenticationMethodRegex MatchFunctor requires non-empty regex attribute.");

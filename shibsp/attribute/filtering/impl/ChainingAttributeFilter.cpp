@@ -72,12 +72,12 @@ ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
     SPConfig& conf = SPConfig::getConfig();
 
     // Load up the chain of handlers.
-    e = e ? XMLHelper::getFirstChildElement(e, _AttributeFilter) : nullptr;
+    e = XMLHelper::getFirstChildElement(e, _AttributeFilter);
     while (e) {
-        auto_ptr_char type(e->getAttributeNS(nullptr,_type));
-        if (type.get() && *(type.get())) {
+        string t(XMLHelper::getAttrString(e, nullptr, _type));
+        if (!t.empty()) {
             try {
-                m_filters.push_back(conf.AttributeFilterManager.newPlugin(type.get(),e));
+                m_filters.push_back(conf.AttributeFilterManager.newPlugin(t.c_str(), e));
             }
             catch (exception& ex) {
                 Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").error(

@@ -35,6 +35,7 @@
 
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/security/SecurityHelper.h>
+#include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -92,17 +93,10 @@ void shibsp::registerAttributeDecoders()
 }
 
 AttributeDecoder::AttributeDecoder(const DOMElement *e)
-    : m_caseSensitive(true), m_internal(false), m_hashAlg(e ? e->getAttributeNS(nullptr, hashAlg) : nullptr)
+    : m_caseSensitive(XMLHelper::getAttrBool(e, true, caseSensitive)),
+        m_internal(XMLHelper::getAttrBool(e, false, internal)),
+        m_hashAlg(XMLHelper::getAttrString(e, nullptr, hashAlg))
 {
-    if (e) {
-        const XMLCh* flag = e->getAttributeNS(nullptr, caseSensitive);
-        if (flag && (*flag == chLatin_f || *flag == chDigit_0))
-            m_caseSensitive = false;
-
-        flag = e->getAttributeNS(nullptr, internal);
-        if (flag && (*flag == chLatin_t || *flag == chDigit_1))
-            m_internal = true;
-    }
 }
 
 AttributeDecoder::~AttributeDecoder()
@@ -115,7 +109,7 @@ Attribute* AttributeDecoder::_decode(Attribute* attr) const
         attr->setCaseSensitive(m_caseSensitive);
         attr->setInternal(m_internal);
 
-        if (m_hashAlg.get() && *m_hashAlg.get()) {
+        if (!m_hashAlg.empty()) {
             // We turn the values into strings using the supplied hash algorithm and return a SimpleAttribute instead.
             auto_ptr<SimpleAttribute> simple(new SimpleAttribute(attr->getAliases()));
             simple->setCaseSensitive(false);
@@ -123,7 +117,7 @@ Attribute* AttributeDecoder::_decode(Attribute* attr) const
             vector<string>& newdest = simple->getValues();
             const vector<string>& serialized = attr->getSerializedValues();
             for (vector<string>::const_iterator ser = serialized.begin(); ser != serialized.end(); ++ser) {
-                newdest.push_back(SecurityHelper::doHash(m_hashAlg.get(), ser->data(), ser->length()));
+                newdest.push_back(SecurityHelper::doHash(m_hashAlg.c_str(), ser->data(), ser->length()));
                 if (newdest.back().empty())
                     newdest.pop_back();
             }

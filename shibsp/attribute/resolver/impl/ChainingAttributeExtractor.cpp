@@ -101,12 +101,12 @@ ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
     SPConfig& conf = SPConfig::getConfig();
 
     // Load up the chain of handlers.
-    e = e ? XMLHelper::getFirstChildElement(e, _AttributeExtractor) : nullptr;
+    e = XMLHelper::getFirstChildElement(e, _AttributeExtractor);
     while (e) {
-        auto_ptr_char type(e->getAttributeNS(nullptr,_type));
-        if (type.get() && *(type.get())) {
+        string t(XMLHelper::getAttrString(e, nullptr, _type));
+        if (!t.empty()) {
             try {
-                m_extractors.push_back(conf.AttributeExtractorManager.newPlugin(type.get(),e));
+                m_extractors.push_back(conf.AttributeExtractorManager.newPlugin(t.c_str(), e));
             }
             catch (exception& ex) {
                 Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.Chaining").error(

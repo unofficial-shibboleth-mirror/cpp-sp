@@ -28,10 +28,12 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
+#include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
 using namespace shibsp;
 using namespace std;
+using xmltooling::XMLHelper;
 
 namespace shibsp {
 
@@ -44,15 +46,14 @@ namespace shibsp {
      */
     class SHIBSP_DLLLOCAL AttributeScopeRegexFunctor : public MatchFunctor
     {
-        xmltooling::auto_ptr_char m_attributeID;
+        string m_attributeID;
         RegularExpression* m_regex;
 
         bool hasScope(const FilteringContext& filterContext) const;
         bool matches(const Attribute& attribute, size_t index) const;
 
     public:
-        AttributeScopeRegexFunctor(const DOMElement* e)
-                : m_attributeID(e ? e->getAttributeNS(nullptr,attributeID) : nullptr) {
+        AttributeScopeRegexFunctor(const DOMElement* e) : m_regex(nullptr), m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)) {
             const XMLCh* r = e ? e->getAttributeNS(nullptr,regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AttributeScopeRegex MatchFunctor requires non-empty regex attribute.");
@@ -66,13 +67,13 @@ namespace shibsp {
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
-            if (!m_attributeID.get() || !*m_attributeID.get())
+            if (m_attributeID.empty())
                 throw AttributeFilteringException("No attributeID specified.");
             return hasScope(filterContext);
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {
-            if (!m_attributeID.get() || !*m_attributeID.get() || XMLString::equals(m_attributeID.get(), attribute.getId()))
+            if (m_attributeID.empty() || m_attributeID == attribute.getId())
                 return matches(attribute, index);
             return hasScope(filterContext);
         }
@@ -89,7 +90,7 @@ bool AttributeScopeRegexFunctor::hasScope(const FilteringContext& filterContext)
 {
     size_t count;
     pair<multimap<string,Attribute*>::const_iterator,multimap<string,Attribute*>::const_iterator> attrs =
-        filterContext.getAttributes().equal_range(m_attributeID.get());
+        filterContext.getAttributes().equal_range(m_attributeID);
     for (; attrs.first != attrs.second; ++attrs.first) {
         count = attrs.first->second->valueCount();
         for (size_t index = 0; index < count; ++index) {

@@ -84,9 +84,9 @@ OrMatchFunctor::OrMatchFunctor(const pair<const FilterPolicyContext*,const DOMEl
             func = buildFunctor(e, p.first);
         }
         else if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, RuleReference)) {
-            auto_ptr_char ref(e->getAttributeNS(nullptr, _ref));
-            if (ref.get() && *ref.get()) {
-                multimap<string,MatchFunctor*>::const_iterator rule = p.first->getMatchFunctors().find(ref.get());
+            string ref = XMLHelper::getAttrString(e, nullptr, _ref);
+            if (!ref.empty()) {
+                multimap<string,MatchFunctor*>::const_iterator rule = p.first->getMatchFunctors().find(ref);
                 func = (rule!=p.first->getMatchFunctors().end()) ? rule->second : nullptr;
             }
         }
@@ -101,10 +101,9 @@ OrMatchFunctor::OrMatchFunctor(const pair<const FilterPolicyContext*,const DOMEl
 MatchFunctor* OrMatchFunctor::buildFunctor(const DOMElement* e, const FilterPolicyContext* functorMap)
 {
     // We'll track and map IDs just for consistency, but don't require them or worry about dups.
-    auto_ptr_char temp(e->getAttributeNS(nullptr,_id));
-    const char* id = (temp.get() && *temp.get()) ? temp.get() : "";
-    if (*id && functorMap->getMatchFunctors().count(id))
-        id = "";
+    string id = XMLHelper::getAttrString(e, nullptr, _id);
+    if (!id.empty() && functorMap->getMatchFunctors().count(id))
+        id.clear();
 
     auto_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
     if (!type.get())

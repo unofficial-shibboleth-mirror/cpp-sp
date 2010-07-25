@@ -102,12 +102,12 @@ ChainingAccessControl::ChainingAccessControl(const DOMElement* e)
         throw ConfigurationException("Missing or unrecognized operator in Chaining AccessControl configuration.");
 
     try {
-        e = e ? XMLHelper::getFirstChildElement(e, _AccessControl) : nullptr;
+        e = XMLHelper::getFirstChildElement(e, _AccessControl);
         while (e) {
-            auto_ptr_char type(e->getAttributeNS(nullptr, _type));
-            if (type.get() && *type.get()) {
-                Category::getInstance(SHIBSP_LOGCAT".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", type.get());
-                m_ac.push_back(SPConfig::getConfig().AccessControlManager.newPlugin(type.get(), e));
+            string t(XMLHelper::getAttrString(e, nullptr, _type));
+            if (!t.empty()) {
+                Category::getInstance(SHIBSP_LOGCAT".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", t.c_str());
+                m_ac.push_back(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e));
             }
             e = XMLHelper::getNextSiblingElement(e, _AccessControl);
         }

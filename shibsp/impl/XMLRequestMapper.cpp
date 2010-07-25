@@ -190,9 +190,14 @@ void Override::loadACL(const DOMElement* e, Category& log)
             else {
                 acl=XMLHelper::getFirstChildElement(e,AccessControlProvider);
                 if (acl) {
-                    auto_ptr_char type(acl->getAttributeNS(nullptr,_type));
-                    log.info("building AccessControl provider of type %s...",type.get());
-                    m_acl=SPConfig::getConfig().AccessControlManager.newPlugin(type.get(),acl);
+                    string t(XMLHelper::getAttrString(acl, nullptr, _type));
+                    if (!t.empty()) {
+                        log.info("building AccessControl provider of type %s...", t.c_str());
+                        m_acl = SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acl);
+                    }
+                    else {
+                        throw ConfigurationException("<AccessControlProvider> missing type attribute.");
+                    }
                 }
             }
         }

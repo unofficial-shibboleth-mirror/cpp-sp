@@ -207,8 +207,8 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
     SAMLConfig& samlConf = SAMLConfig::getConfig();
     e = XMLHelper::getFirstChildElement(e, Policy);
     while (e) {
-        auto_ptr_char id(e->getAttributeNS(nullptr, _id));
-        pair< PropertySet*,vector<const SecurityPolicyRule*> >& rules = m_policyMap[id.get()];
+        string id(XMLHelper::getAttrString(e, nullptr, _id));
+        pair< PropertySet*,vector<const SecurityPolicyRule*> >& rules = m_policyMap[id];
         rules.first = nullptr;
         auto_ptr<DOMPropertySet> settings(new DOMPropertySet());
         settings->load(e, nullptr, &filter);
@@ -217,12 +217,14 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
         // Process PolicyRule elements.
         const DOMElement* rule = XMLHelper::getFirstChildElement(e, PolicyRule);
         while (rule) {
-            auto_ptr_char type(rule->getAttributeNS(nullptr, _type));
-            try {
-                rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(type.get(), rule));
-            }
-            catch (exception& ex) {
-                log.crit("error instantiating policy rule (%s) in policy (%s): %s", type.get(), id.get(), ex.what());
+            string t(XMLHelper::getAttrString(rule, nullptr, _type));
+            if (!t.empty()) {
+                try {
+                    rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule));
+                }
+                catch (exception& ex) {
+                    log.crit("error instantiating policy rule (%s) in policy (%s): %s", t.c_str(), id.c_str(), ex.what());
+                }
             }
             rule = XMLHelper::getNextSiblingElement(rule, PolicyRule);
         }
@@ -232,18 +234,20 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
             log.warn("detected legacy Policy configuration, please convert to new PolicyRule syntax");
             rule = XMLHelper::getFirstChildElement(e, Rule);
             while (rule) {
-                auto_ptr_char type(rule->getAttributeNS(nullptr, _type));
-                try {
-                    rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(type.get(), rule));
-                }
-                catch (exception& ex) {
-                    log.crit("error instantiating policy rule (%s) in policy (%s): %s", type.get(), id.get(), ex.what());
+                string t(XMLHelper::getAttrString(rule, nullptr, _type));
+                if (!t.empty()) {
+                    try {
+                        rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule));
+                    }
+                    catch (exception& ex) {
+                        log.crit("error instantiating policy rule (%s) in policy (%s): %s", t.c_str(), id.c_str(), ex.what());
+                    }
                 }
                 rule = XMLHelper::getNextSiblingElement(rule, Rule);
             }
 
             // Manually add a basic Conditions rule.
-            log.info("installing a default Conditions rule in policy (%s) for compatibility with legacy configuration", id.get());
+            log.info("installing a default Conditions rule in policy (%s) for compatibility with legacy configuration", id.c_str());
             rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(CONDITIONS_POLICY_RULE, nullptr));
         }
 

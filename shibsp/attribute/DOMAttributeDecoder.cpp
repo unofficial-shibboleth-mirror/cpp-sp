@@ -46,7 +46,7 @@ namespace shibsp {
 
     private:
         DDF convert(DOMElement* e, bool nameit=true) const;
-        auto_ptr_char m_formatter;
+        string m_formatter;
         map<pair<xstring,xstring>,string> m_tagMap;
     };
 
@@ -58,15 +58,15 @@ namespace shibsp {
     static const XMLCh Mapping[] =  UNICODE_LITERAL_7(M,a,p,p,i,n,g);
     static const XMLCh _from[] =    UNICODE_LITERAL_4(f,r,o,m);
     static const XMLCh _to[] =      UNICODE_LITERAL_2(t,o);
-    static const XMLCh formatter[] =      UNICODE_LITERAL_9(f,o,r,m,a,t,t,e,r);
+    static const XMLCh formatter[] =UNICODE_LITERAL_9(f,o,r,m,a,t,t,e,r);
 };
 
 DOMAttributeDecoder::DOMAttributeDecoder(const DOMElement* e)
-    : AttributeDecoder(e), m_formatter(e ? e->getAttributeNS(nullptr,formatter) : nullptr)
+    : AttributeDecoder(e), m_formatter(XMLHelper::getAttrString(e, nullptr, formatter))
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.DOM");
 
-    e = e ? XMLHelper::getFirstChildElement(e, Mapping) : nullptr;
+    e = XMLHelper::getFirstChildElement(e, Mapping);
     while (e) {
         if (e->hasAttributeNS(nullptr, _from) && e->hasAttributeNS(nullptr, _to)) {
             auto_ptr<xmltooling::QName> f(XMLHelper::getNodeValueAsQName(e->getAttributeNodeNS(nullptr, _from)));
@@ -97,7 +97,7 @@ Attribute* DOMAttributeDecoder::decode(
         return nullptr;
     }
 
-    auto_ptr<ExtensibleAttribute> attr(new ExtensibleAttribute(ids, m_formatter.get()));
+    auto_ptr<ExtensibleAttribute> attr(new ExtensibleAttribute(ids, m_formatter.c_str()));
     DDF dest = attr->getValues();
     vector<XMLObject*>::const_iterator v,stop;
 

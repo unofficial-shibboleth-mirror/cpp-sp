@@ -28,8 +28,11 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
+#include <xmltooling/util/XMLHelper.h>
+
 using namespace shibsp;
 using namespace std;
+using xmltooling::XMLHelper;
 
 namespace shibsp {
 
@@ -44,21 +47,17 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL NumberOfAttributeValuesFunctor : public MatchFunctor
     {
         unsigned int m_min,m_max;
-        xmltooling::auto_ptr_char m_attributeID;
+        string m_attributeID;
 
         size_t count(const FilteringContext& filterContext) const;
 
     public:
         NumberOfAttributeValuesFunctor(const DOMElement* e)
-                : m_min(0), m_max(INT_MAX), m_attributeID(e ? e->getAttributeNS(nullptr,attributeID) : nullptr) {
-            if (!m_attributeID.get() || !*m_attributeID.get())
+            : m_min(XMLHelper::getAttrInt(e, 0, minimum)),
+                m_max(XMLHelper::getAttrInt(e, INT_MAX, maximum)),
+                m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)) {
+            if (m_attributeID.empty())
                 throw ConfigurationException("No attributeID specified.");
-            const XMLCh* num = e->getAttributeNS(nullptr, minimum);
-            if (num && *num)
-                m_min = XMLString::parseInt(num);
-            num = e->getAttributeNS(nullptr, maximum);
-            if (num && *num)
-                m_max = XMLString::parseInt(num);
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
@@ -83,7 +82,7 @@ size_t NumberOfAttributeValuesFunctor::count(const FilteringContext& filterConte
 {
     size_t count = 0;
     pair<multimap<string,Attribute*>::const_iterator,multimap<string,Attribute*>::const_iterator> attrs =
-        filterContext.getAttributes().equal_range(m_attributeID.get());
+        filterContext.getAttributes().equal_range(m_attributeID);
     for (; attrs.first != attrs.second; ++attrs.first)
         count += attrs.first->second->valueCount();
     return count;

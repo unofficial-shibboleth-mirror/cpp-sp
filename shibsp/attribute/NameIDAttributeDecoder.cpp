@@ -41,10 +41,9 @@ namespace shibsp {
     {
     public:
         NameIDAttributeDecoder(const DOMElement* e)
-                : AttributeDecoder(e), m_formatter(e ? e->getAttributeNS(nullptr, formatter) : nullptr), m_defaultQualifiers(false) {
-            const XMLCh* flag = e ? e->getAttributeNS(nullptr, defaultQualifiers) : nullptr;
-            if (flag && (*flag == chLatin_t || *flag == chDigit_1))
-                m_defaultQualifiers = true;
+            : AttributeDecoder(e),
+                m_formatter(XMLHelper::getAttrString(e, nullptr, formatter)),
+                m_defaultQualifiers(XMLHelper::getAttrBool(e, false, defaultQualifiers)) {
         }
         ~NameIDAttributeDecoder() {}
 
@@ -59,7 +58,7 @@ namespace shibsp {
         void extract(
             const NameIdentifier* n, vector<NameIDAttribute::Value>& dest, const char* assertingParty, const char* relyingParty
             ) const;
-        auto_ptr_char m_formatter;
+        string m_formatter;
         bool m_defaultQualifiers;
     };
 
@@ -74,7 +73,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
     ) const
 {
     auto_ptr<NameIDAttribute> nameid(
-        new NameIDAttribute(ids, (m_formatter.get() && *m_formatter.get()) ? m_formatter.get() : DEFAULT_NAMEID_FORMATTER)
+        new NameIDAttribute(ids, (!m_formatter.empty()) ? m_formatter.c_str() : DEFAULT_NAMEID_FORMATTER)
         );
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
     vector<XMLObject*>::const_iterator v,stop;

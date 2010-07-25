@@ -215,25 +215,18 @@ namespace shibsp {
 };
 
 SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.SimpleAggregation")), m_subjectMatch(false), m_metadata(nullptr), m_trust(nullptr)
+    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.SimpleAggregation")),
+        m_policyId(XMLHelper::getAttrString(e, nullptr, policyId)),
+        m_subjectMatch(XMLHelper::getAttrBool(e, false, subjectMatch)),
+        m_metadata(nullptr), m_trust(nullptr)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("SimpleAggregationResolver");
 #endif
 
-    const XMLCh* pid = e ? e->getAttributeNS(nullptr, policyId) : nullptr;
-    if (pid && *pid) {
-        auto_ptr_char temp(pid);
-        m_policyId = temp.get();
-    }
-
-    pid = e ? e->getAttributeNS(nullptr, subjectMatch) : nullptr;
-    if (pid && (*pid == chLatin_t || *pid == chDigit_1))
-        m_subjectMatch = true;
-
-    pid = e ? e->getAttributeNS(nullptr, attributeId) : nullptr;
-    if (pid && *pid) {
-        char* dup = XMLString::transcode(pid);
+    const XMLCh* aid = e ? e->getAttributeNS(nullptr, attributeId) : nullptr;
+    if (aid && *aid) {
+        char* dup = XMLString::transcode(aid);
         char* pos;
         char* start = dup;
         while (start && *start) {
@@ -249,18 +242,18 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
         }
         XMLString::release(&dup);
 
-        pid = e->getAttributeNS(nullptr, format);
-        if (pid && *pid)
-            m_format = pid;
+        aid = e->getAttributeNS(nullptr, format);
+        if (aid && *aid)
+            m_format = aid;
     }
 
     DOMElement* child = XMLHelper::getFirstChildElement(e, _MetadataProvider);
     if (child) {
-        auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-        if (!type.get() || !*type.get())
+        string t(XMLHelper::getAttrString(child, nullptr, _type));
+        if (t.empty())
             throw ConfigurationException("MetadataProvider element missing type attribute.");
-        m_log.info("building MetadataProvider of type %s...", type.get());
-        auto_ptr<MetadataProvider> mp(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(type.get(), child));
+        m_log.info("building MetadataProvider of type %s...", t.c_str());
+        auto_ptr<MetadataProvider> mp(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(t.c_str(), child));
         mp->init();
         m_metadata = mp.release();
     }
@@ -268,11 +261,11 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
     child = XMLHelper::getFirstChildElement(e,  _TrustEngine);
     if (child) {
         try {
-            auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-            if (!type.get() || !*type.get())
+            string t(XMLHelper::getAttrString(child, nullptr, _type));
+            if (t.empty())
                 throw ConfigurationException("TrustEngine element missing type attribute.");
-            m_log.info("building TrustEngine of type %s...", type.get());
-            m_trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(type.get(), child);
+            m_log.info("building TrustEngine of type %s...", t.c_str());
+            m_trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child);
         }
         catch (exception&) {
             delete m_metadata;
@@ -283,17 +276,17 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
     child = XMLHelper::getFirstChildElement(e);
     while (child) {
         if (child->hasChildNodes() && XMLString::equals(child->getLocalName(), Entity)) {
-            pid = child->getFirstChild()->getNodeValue();
-            if (pid && *pid) {
-                auto_ptr_char tpid(pid);
-                m_sources.push_back(pair<string,bool>(tpid.get(),true));
+            aid = child->getFirstChild()->getNodeValue();
+            if (aid && *aid) {
+                auto_ptr_char taid(aid);
+                m_sources.push_back(pair<string,bool>(taid.get(),true));
             }
         }
         else if (child->hasChildNodes() && XMLString::equals(child->getLocalName(), EntityReference)) {
-            pid = child->getFirstChild()->getNodeValue();
-            if (pid && *pid) {
-                auto_ptr_char tpid(pid);
-                m_sources.push_back(pair<string,bool>(tpid.get(),false));
+            aid = child->getFirstChild()->getNodeValue();
+            if (aid && *aid) {
+                auto_ptr_char taid(aid);
+                m_sources.push_back(pair<string,bool>(taid.get(),false));
             }
         }
         else if (XMLHelper::isNodeNamed(child, samlconstants::SAML20_NS, saml2::Attribute::LOCAL_NAME)) {

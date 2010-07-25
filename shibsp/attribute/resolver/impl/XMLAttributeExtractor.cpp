@@ -164,7 +164,7 @@ namespace shibsp {
         vector<string> m_attributeIds;
 
         // settings for embedded assertions in metadata
-        auto_ptr_char m_policyId;
+        string m_policyId;
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
         AttributeFilter* m_filter;
@@ -228,7 +228,7 @@ namespace shibsp {
 XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     : m_log(log),
         m_document(nullptr),
-        m_policyId(e ? e->getAttributeNS(nullptr, metadataPolicyId) : nullptr),
+        m_policyId(XMLHelper::getAttrString(e, nullptr, metadataPolicyId)),
         m_metadata(nullptr),
         m_trust(nullptr),
         m_filter(nullptr),
@@ -245,11 +245,11 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     DOMElement* child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _MetadataProvider);
     if (child) {
         try {
-            auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-            if (!type.get() || !*type.get())
+            string t(XMLHelper::getAttrString(child, nullptr, _type));
+            if (t.empty())
                 throw ConfigurationException("MetadataProvider element missing type attribute.");
-            m_log.info("building MetadataProvider of type %s...", type.get());
-            auto_ptr<MetadataProvider> mp(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(type.get(), child));
+            m_log.info("building MetadataProvider of type %s...", t.c_str());
+            auto_ptr<MetadataProvider> mp(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(t.c_str(), child));
             mp->init();
             m_metadata = mp.release();
         }
@@ -264,11 +264,11 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _TrustEngine);
         if (child) {
             try {
-                auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-                if (!type.get() || !*type.get())
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
+                if (t.empty())
                     throw ConfigurationException("TrustEngine element missing type attribute.");
-                m_log.info("building TrustEngine of type %s...", type.get());
-                m_trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(type.get(), child);
+                m_log.info("building TrustEngine of type %s...", t.c_str());
+                m_trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child);
             }
             catch (exception& ex) {
                 m_entityAssertions = false;
@@ -282,11 +282,11 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         child = XMLHelper::getFirstChildElement(e, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeFilter);
         if (child) {
             try {
-                auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-                if (!type.get() || !*type.get())
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
+                if (t.empty())
                     throw ConfigurationException("AttributeFilter element missing type attribute.");
-                m_log.info("building AttributeFilter of type %s...", type.get());
-                m_filter = SPConfig::getConfig().AttributeFilterManager.newPlugin(type.get(), child);
+                m_log.info("building AttributeFilter of type %s...", t.c_str());
+                m_filter = SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), child);
             }
             catch (exception& ex) {
                 m_entityAssertions = false;
@@ -689,7 +689,7 @@ void XMLExtractorImpl::extractAttributes(
 
                 try {
                     // Set up and evaluate a policy for an AA asserting attributes to us.
-                    shibsp::SecurityPolicy policy(application, &AttributeAuthorityDescriptor::ELEMENT_QNAME, false, m_policyId.get());
+                    shibsp::SecurityPolicy policy(application, &AttributeAuthorityDescriptor::ELEMENT_QNAME, false, m_policyId.c_str());
                     Locker locker(m_metadata);
                     if (m_metadata)
                         policy.setMetadataProvider(m_metadata);

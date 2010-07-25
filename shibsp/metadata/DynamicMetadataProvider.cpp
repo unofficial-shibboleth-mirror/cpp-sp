@@ -102,52 +102,44 @@ namespace shibsp {
 };
 
 DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
-    : saml2md::DynamicMetadataProvider(e), m_verifyHost(true), m_ignoreTransport(false), m_encoded(true), m_trust(nullptr)
+    : saml2md::DynamicMetadataProvider(e),
+        m_verifyHost(XMLHelper::getAttrBool(e, true, verifyHost)),
+        m_ignoreTransport(XMLHelper::getAttrBool(e, false, ignoreTransport)),
+        m_encoded(true), m_trust(nullptr)
 {
-    const XMLCh* flag = e ? e->getAttributeNS(nullptr, verifyHost) : nullptr;
-    if (flag && (*flag == chLatin_f || *flag == chDigit_0))
-        m_verifyHost = false;
-    flag = e ? e->getAttributeNS(nullptr, ignoreTransport) : nullptr;
-    if (flag && (*flag == chLatin_t || *flag == chDigit_1)) {
-        m_ignoreTransport = true;
-        return;
-    }
-
-    const DOMElement* child = e ? XMLHelper::getFirstChildElement(e, Subst) : nullptr;
+    const DOMElement* child = XMLHelper::getFirstChildElement(e, Subst);
     if (child && child->hasChildNodes()) {
         auto_ptr_char s(child->getFirstChild()->getNodeValue());
         if (s.get() && *s.get()) {
             m_subst = s.get();
-            flag = child->getAttributeNS(nullptr, encoded);
-            if (flag && (*flag == chLatin_f || *flag == chDigit_0))
-                m_encoded = false;
+            m_encoded = XMLHelper::getAttrBool(child, true, encoded);
         }
     }
 
     if (m_subst.empty()) {
-        child = e ? XMLHelper::getFirstChildElement(e, Regex) : nullptr;
+        child = XMLHelper::getFirstChildElement(e, Regex);
         if (child && child->hasChildNodes() && child->hasAttributeNS(nullptr, match)) {
-            auto_ptr_char m(child->getAttributeNS(nullptr, match));
+            m_match = XMLHelper::getAttrString(child, nullptr, match);
             auto_ptr_char repl(child->getFirstChild()->getNodeValue());
-            if (m.get() && *m.get() && repl.get() && *repl.get()) {
-                m_match = m.get();
+            if (repl.get() && *repl.get())
                 m_regex = repl.get();
+        }
+    }
+
+    if (!ignoreTransport) {
+        child = XMLHelper::getFirstChildElement(e, _TrustEngine);
+        string t = XMLHelper::getAttrString(child, nullptr, type);
+        if (!t.empty()) {
+            TrustEngine* trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child);
+            if (!(m_trust = dynamic_cast<X509TrustEngine*>(trust))) {
+                delete trust;
+                throw ConfigurationException("DynamicMetadataProvider requires an X509TrustEngine plugin.");
             }
         }
-    }
 
-    child = e ? XMLHelper::getFirstChildElement(e, _TrustEngine) : nullptr;
-    auto_ptr_char t2(child ? child->getAttributeNS(nullptr,type) : nullptr);
-    if (t2.get()) {
-        TrustEngine* trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t2.get(), child);
-        if (!(m_trust = dynamic_cast<X509TrustEngine*>(trust))) {
-            delete trust;
-            throw ConfigurationException("DynamicMetadataProvider requires an X509TrustEngine plugin.");
-        }
-        return;
+        if (!m_trust)
+            throw ConfigurationException("DynamicMetadataProvider requires an X509TrustEngine plugin unless ignoreTransport is true.");
     }
-
-    throw ConfigurationException("DynamicMetadataProvider requires an X509TrustEngine plugin unless ignoreTransport is true.");
 }
 
 saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::MetadataProvider::Criteria& criteria) const

@@ -42,7 +42,7 @@ namespace shibsp {
     {
         RegularExpression* m_regex;
     public:
-        AttributeIssuerRegexFunctor(const DOMElement* e) {
+        AttributeIssuerRegexFunctor(const DOMElement* e) : m_regex(nullptr) {
             const XMLCh* r = e ? e->getAttributeNS(nullptr,regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AttributeIssuerRegex MatchFunctor requires non-empty regex attribute.");

@@ -1321,7 +1321,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         load(e,nullptr,this);
 
         DOMElement* child;
-        string plugtype;
 
         // Much of the processing can only occur on the first instantiation.
         if (first) {
@@ -1358,30 +1357,30 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
             // Instantiate the ListenerService and SessionCache objects.
             if (conf.isEnabled(SPConfig::Listener)) {
-                child=XMLHelper::getFirstChildElement(e,UnixListener);
+#ifdef WIN32
+                string plugtype(TCP_LISTENER_SERVICE);
+#else
+                string plugtype(UNIX_LISTENER_SERVICE);
+#endif
+                child = XMLHelper::getFirstChildElement(e, UnixListener);
                 if (child)
-                    plugtype=UNIX_LISTENER_SERVICE;
+                    plugtype = UNIX_LISTENER_SERVICE;
                 else {
-                    child=XMLHelper::getFirstChildElement(e,TCPListener);
+                    child = XMLHelper::getFirstChildElement(e, TCPListener);
                     if (child)
-                        plugtype=TCP_LISTENER_SERVICE;
+                        plugtype = TCP_LISTENER_SERVICE;
                     else {
-                        child=XMLHelper::getFirstChildElement(e,Listener);
+                        child = XMLHelper::getFirstChildElement(e, Listener);
                         if (child) {
-                            auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                            if (type.get())
-                                plugtype=type.get();
+                            auto_ptr_char type(child->getAttributeNS(nullptr, _type));
+                            if (type.get() && *type.get())
+                                plugtype = type.get();
                         }
                     }
                 }
-                if (child) {
-                    log.info("building ListenerService of type %s...", plugtype.c_str());
-                    m_outer->m_listener = conf.ListenerServiceManager.newPlugin(plugtype.c_str(), child);
-                }
-                else {
-                    log.fatal("can't build ListenerService, missing conf:Listener element?");
-                    throw ConfigurationException("Can't build ListenerService, missing conf:Listener element?");
-                }
+
+                log.info("building ListenerService of type %s...", plugtype.c_str());
+                m_outer->m_listener = conf.ListenerServiceManager.newPlugin(plugtype.c_str(), child);
             }
 
 #ifndef SHIBSP_LITE

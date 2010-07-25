@@ -752,63 +752,47 @@ SSCache::SSCache(const DOMElement* e)
 #endif
       m_root(e), m_inprocTimeout(900), m_lock(nullptr), shutdown(false), shutdown_wait(nullptr), cleanup_thread(nullptr)
 {
+    SPConfig& conf = SPConfig::getConfig();
+    inproc = conf.isEnabled(SPConfig::InProcess);
+
     static const XMLCh cacheAssertions[] =  UNICODE_LITERAL_15(c,a,c,h,e,A,s,s,e,r,t,i,o,n,s);
     static const XMLCh cacheTimeout[] =     UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
     static const XMLCh inprocTimeout[] =    UNICODE_LITERAL_13(i,n,p,r,o,c,T,i,m,e,o,u,t);
     static const XMLCh _StorageService[] =  UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh _StorageServiceLite[] = UNICODE_LITERAL_18(S,t,o,r,a,g,e,S,e,r,v,i,c,e,L,i,t,e);
 
-    SPConfig& conf = SPConfig::getConfig();
-    inproc = conf.isEnabled(SPConfig::InProcess);
-
-    if (e) {
-        const XMLCh* tag=e->getAttributeNS(nullptr,cacheTimeout);
-        if (tag && *tag) {
-            m_cacheTimeout = XMLString::parseInt(tag);
-            if (!m_cacheTimeout)
-                m_cacheTimeout=28800;
-        }
-        if (inproc) {
-            const XMLCh* tag=e->getAttributeNS(nullptr,inprocTimeout);
-            if (tag && *tag) {
-                m_inprocTimeout = XMLString::parseInt(tag);
-                if (!m_inprocTimeout)
-                    m_inprocTimeout=900;
-            }
-        }
-    }
+    m_cacheTimeout = XMLHelper::getAttrInt(e, 28800, cacheTimeout);
+    if (inproc)
+        m_inprocTimeout = XMLHelper::getAttrInt(e, 900, inprocTimeout);
 
 #ifndef SHIBSP_LITE
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
-        const XMLCh* tag = e ? e->getAttributeNS(nullptr,_StorageService) : nullptr;
-        if (tag && *tag) {
-            auto_ptr_char ssid(tag);
-            m_storage = conf.getServiceProvider()->getStorageService(ssid.get());
+        string ssid = XMLHelper::getAttrString(e, nullptr, _StorageService);
+        if (!ssid.empty()) {
+            m_storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
             if (m_storage)
-                m_log.info("bound to StorageService (%s)", ssid.get());
+                m_log.info("bound to StorageService (%s)", ssid.c_str());
         }
         if (!m_storage)
             throw ConfigurationException("SessionCache unable to locate StorageService, check configuration.");
 
-        tag = e ? e->getAttributeNS(nullptr,_StorageServiceLite) : nullptr;
-        if (tag && *tag) {
-            auto_ptr_char ssid(tag);
-            m_storage_lite = conf.getServiceProvider()->getStorageService(ssid.get());
+        ssid = XMLHelper::getAttrString(e, nullptr, _StorageServiceLite);
+        if (!ssid.empty()) {
+            m_storage_lite = conf.getServiceProvider()->getStorageService(ssid.c_str());
             if (m_storage_lite)
-                m_log.info("bound to StorageServiceLite (%s)", ssid.get());
+                m_log.info("bound to StorageServiceLite (%s)", ssid.c_str());
         }
         if (!m_storage_lite) {
             m_log.info("No StorageServiceLite specified. Using standard StorageService.");
             m_storage_lite = m_storage;
         }
-        tag = e ? e->getAttributeNS(nullptr, cacheAssertions) : nullptr;
-        if (tag && (*tag == chLatin_f || *tag == chDigit_0))
-            m_cacheAssertions = false;
+
+        m_cacheAssertions = XMLHelper::getAttrBool(e, true, cacheAssertions);
     }
 #endif
 
     ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
-    if (inproc ) {
+    if (inproc) {
         if (!conf.isEnabled(SPConfig::OutOfProcess) && !listener)
             throw ConfigurationException("SessionCache requires a ListenerService, but none available.");
         m_lock = RWLock::create();

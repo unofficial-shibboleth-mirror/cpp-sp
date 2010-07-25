@@ -55,11 +55,8 @@ namespace shibsp {
         void extract(const KeyInfo* k, vector<string>& dest) const {
             auto_ptr<Credential> cred (getKeyInfoResolver()->resolve(k, Credential::RESOLVE_KEYS));
             if (cred.get()) {
-                const char* alg = m_keyInfoHashAlg.get();
-                if (!alg || !*alg)
-                    alg = "SHA1";
                 dest.push_back(string());
-                dest.back() = SecurityHelper::getDEREncoding(*cred.get(), m_hash ? alg : nullptr);
+                dest.back() = SecurityHelper::getDEREncoding(*cred.get(), m_hash ? m_keyInfoHashAlg.c_str() : nullptr);
                 if (dest.back().empty())
                     dest.pop_back();
             }
@@ -70,7 +67,7 @@ namespace shibsp {
         }
 
         bool m_hash;
-        auto_ptr_char m_keyInfoHashAlg;
+        string m_keyInfoHashAlg;
         KeyInfoResolver* m_keyInfoResolver;
     };
 
@@ -86,19 +83,16 @@ namespace shibsp {
 };
 
 KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e)
-        : AttributeDecoder(e),
-          m_hash(false),
-          m_keyInfoHashAlg(e ? e->getAttributeNS(nullptr, keyInfoHashAlg) : nullptr),
-          m_keyInfoResolver(nullptr) {
-    const XMLCh* flag = e ? e->getAttributeNS(nullptr, _hash) : nullptr;
-    m_hash = (flag && (*flag == chLatin_t || *flag == chDigit_1));
-    e = e ? XMLHelper::getFirstChildElement(e,_KeyInfoResolver) : nullptr;
+    : AttributeDecoder(e),
+        m_hash(XMLHelper::getAttrBool(e, false, _hash)),
+        m_keyInfoHashAlg(XMLHelper::getAttrString(e, "SHA1", keyInfoHashAlg)),
+        m_keyInfoResolver(nullptr) {
+    e = XMLHelper::getFirstChildElement(e,_KeyInfoResolver);
     if (e) {
-        auto_ptr_char t(e->getAttributeNS(nullptr, _type));
-        if (t.get() && *t.get())
-            m_keyInfoResolver = XMLToolingConfig::getConfig().KeyInfoResolverManager.newPlugin(t.get(), e);
-        else
+        string t(XMLHelper::getAttrString(e, nullptr, _type));
+        if (t.empty())
             throw UnknownExtensionException("<KeyInfoResolver> element found with no type attribute");
+        m_keyInfoResolver = XMLToolingConfig::getConfig().KeyInfoResolverManager.newPlugin(t.c_str(), e);
     }
 }
 

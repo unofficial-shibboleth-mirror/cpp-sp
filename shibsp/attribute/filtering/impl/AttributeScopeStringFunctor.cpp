@@ -28,8 +28,11 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
+#include <xmltooling/util/XMLHelper.h>
+
 using namespace shibsp;
 using namespace std;
+using xmltooling::XMLHelper;
 
 namespace shibsp {
 
@@ -42,7 +45,7 @@ namespace shibsp {
      */
     class SHIBSP_DLLLOCAL AttributeScopeStringFunctor : public MatchFunctor
     {
-        xmltooling::auto_ptr_char m_attributeID;
+        string m_attributeID;
         char* m_value;
         bool m_ignoreCase;
 
@@ -50,13 +53,13 @@ namespace shibsp {
 
     public:
         AttributeScopeStringFunctor(const DOMElement* e)
-            : m_value(e ? xmltooling::toUTF8(e->getAttributeNS(nullptr,value)) : nullptr), m_attributeID(e ? e->getAttributeNS(nullptr,attributeID) : nullptr) {
+            : m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)),
+                m_value(e ? xmltooling::toUTF8(e->getAttributeNS(nullptr,value)) : nullptr),
+                m_ignoreCase(XMLHelper::getAttrBool(e, false, ignoreCase)) {
             if (!m_value || !*m_value) {
                 delete[] m_value;
                 throw ConfigurationException("AttributeScopeString MatchFunctor requires non-empty value attribute.");
             }
-            const XMLCh* flag = e ? e->getAttributeNS(nullptr,ignoreCase) : nullptr;
-            m_ignoreCase = (flag && (*flag == chLatin_t || *flag == chDigit_1)); 
         }
 
         virtual ~AttributeScopeStringFunctor() {
@@ -64,13 +67,13 @@ namespace shibsp {
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
-            if (!m_attributeID.get() || !*m_attributeID.get())
+            if (m_attributeID.empty())
                 throw AttributeFilteringException("No attributeID specified.");
             return hasScope(filterContext);
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {
-            if (!m_attributeID.get() || !*m_attributeID.get() || XMLString::equals(m_attributeID.get(), attribute.getId())) {
+            if (m_attributeID.empty() || m_attributeID == attribute.getId()) {
                 if (m_ignoreCase) {
 #ifdef HAVE_STRCASECMP
                     return !strcasecmp(attribute.getScope(index), m_value);
@@ -96,7 +99,7 @@ bool AttributeScopeStringFunctor::hasScope(const FilteringContext& filterContext
 {
     size_t count;
     pair<multimap<string,Attribute*>::const_iterator,multimap<string,Attribute*>::const_iterator> attrs =
-        filterContext.getAttributes().equal_range(m_attributeID.get());
+        filterContext.getAttributes().equal_range(m_attributeID);
     for (; attrs.first != attrs.second; ++attrs.first) {
         count = attrs.first->second->valueCount();
         for (size_t index = 0; index < count; ++index) {
