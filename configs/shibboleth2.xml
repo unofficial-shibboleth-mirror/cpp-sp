@@ -15,8 +15,7 @@
             <!--
             The example requires a session for documents in /secure on the containing host with http and
             https on the default ports. Note that the name and port in the <Host> elements MUST match
-            Apache's ServerName and Port directives or the IIS Site name in the <ISAPI> element
-            below.
+            Apache's ServerName and Port directives.
             -->
             <Host name="sp.example.org">
                 <Path name="secure" authType="shibboleth" requireSession="true"/>
