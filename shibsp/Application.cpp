@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,8 @@ const ServiceProvider& Application::getServiceProvider() const
 
 const char* Application::getId() const
 {
-    return getString("id").second;
+    pair<bool,const char*> ret = getString("id");
+    return ret.first ? ret.second : "default";
 }
 
 pair<string,const char*> Application::getCookieNameProps(const char* prefix, time_t* lifetime) const

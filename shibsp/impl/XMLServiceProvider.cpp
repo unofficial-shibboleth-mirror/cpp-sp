@@ -377,7 +377,7 @@ namespace {
         }
 
         const Application* getApplication(const char* applicationId) const {
-            map<string,Application*>::const_iterator i=m_impl->m_appmap.find(applicationId);
+            map<string,Application*>::const_iterator i=m_impl->m_appmap.find(applicationId ? applicationId : "default");
             return (i!=m_impl->m_appmap.end()) ? i->second : nullptr;
         }
 
@@ -427,6 +427,7 @@ namespace {
     #pragma warning( pop )
 #endif
 
+    static const XMLCh applicationId[] =        UNICODE_LITERAL_13(a,p,p,l,i,c,a,t,i,o,n,I,d);
     static const XMLCh ApplicationOverride[] =  UNICODE_LITERAL_19(A,p,p,l,i,c,a,t,i,o,n,O,v,e,r,r,i,d,e);
     static const XMLCh ApplicationDefaults[] =  UNICODE_LITERAL_19(A,p,p,l,i,c,a,t,i,o,n,D,e,f,a,u,l,t,s);
     static const XMLCh _ArtifactMap[] =         UNICODE_LITERAL_11(A,r,t,i,f,a,c,t,M,a,p);
@@ -439,6 +440,7 @@ namespace {
     static const XMLCh Binding[] =              UNICODE_LITERAL_7(B,i,n,d,i,n,g);
     static const XMLCh Channel[]=               UNICODE_LITERAL_7(C,h,a,n,n,e,l);
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
+    static const XMLCh _default[] =             UNICODE_LITERAL_7(d,e,f,a,u,l,t);
     static const XMLCh _Extensions[] =          UNICODE_LITERAL_10(E,x,t,e,n,s,i,o,n,s);
     static const XMLCh _fatal[] =               UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh _Handler[] =             UNICODE_LITERAL_7(H,a,n,d,l,e,r);
@@ -459,6 +461,7 @@ namespace {
     static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _ReplayCache[] =         UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
     static const XMLCh _RequestMapper[] =       UNICODE_LITERAL_13(R,e,q,u,e,s,t,M,a,p,p,e,r);
+    static const XMLCh RequestMap[] =           UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
     static const XMLCh SecurityPolicies[] =     UNICODE_LITERAL_16(S,e,c,u,r,i,t,y,P,o,l,i,c,i,e,s);
     static const XMLCh SecurityPolicyProvider[] = UNICODE_LITERAL_22(S,e,c,u,r,i,t,y,P,o,l,i,c,y,P,r,o,v,i,d,e,r);
     static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
@@ -509,7 +512,7 @@ XMLApplication::XMLApplication(
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
 #endif
 
-        // This used to be an actual hash, but now it's just a hex-encode to avoid xmlsec.
+        // This used to be an actual hash, but now it's just a hex-encode to avoid xmlsec dependency.
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         string tohash=getId();
         tohash+=getString("entityID").second;
@@ -1503,8 +1506,12 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 }
             }
             if (!m_requestMapper) {
-                log.fatal("can't build RequestMapper, missing conf:RequestMapper element?");
-                throw ConfigurationException("Can't build RequestMapper, missing conf:RequestMapper element?");
+                log.info("no RequestMapper specified, using 'Native' plugin with empty/default map");
+                child = e->getOwnerDocument()->createElementNS(nullptr, _RequestMapper);
+                DOMElement* mapperDummy = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, RequestMap);
+                mapperDummy->setAttributeNS(nullptr, applicationId, _default);
+                child->appendChild(mapperDummy);
+                m_requestMapper = conf.RequestMapperManager.newPlugin(NATIVE_REQUEST_MAPPER, child);
             }
         }
 
@@ -1564,7 +1571,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         }
 #endif
 
-        // Load the default application. This actually has a fixed ID of "default". ;-)
+        // Load the default application.
         child = XMLHelper::getLastChildElement(e, ApplicationDefaults);
         if (!child) {
             log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");

@@ -58,7 +58,7 @@
 
     <!-- To customize behavior, map hostnames and path components to applicationId and other settings. -->
     <RequestMapper type="Native">
-        <RequestMap applicationId="default">
+        <RequestMap>
             <!--
             The example requires a session for documents in /secure on the containing host with http and
             https on the default ports. Note that the name and port in the <Host> elements MUST match
@@ -77,9 +77,9 @@
     <!--
     The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined.
     Resource requests are mapped by the RequestMapper to an applicationId that
-    points into to this section.
+    points into to this section (or to the defaults here).
     -->
-    <ApplicationDefaults id="default" policyId="default"
+    <ApplicationDefaults policyId="default"
         entityID="https://sp.example.org/shibboleth"
         REMOTE_USER="eppn persistent-id targeted-id"
         signing="false" encryption="false">

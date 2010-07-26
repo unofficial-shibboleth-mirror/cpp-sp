@@ -63,7 +63,7 @@ namespace shibsp {
 
         // Strictly for error handling, detect a nullptr application and point at the default.
         if (!app)
-            app = request.getServiceProvider().getApplication("default");
+            app = request.getServiceProvider().getApplication(nullptr);
 
         const PropertySet* props=app->getPropertySet("Errors");
 

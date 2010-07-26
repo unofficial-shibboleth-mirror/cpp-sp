@@ -65,11 +65,23 @@ namespace shibsp {
             const std::map<std::string,std::string>* remapper=nullptr
             );
 
+    protected:
+        /**
+         * Post-load injection of a property, for use by subclasses.
+         *
+         * @param name  property name
+         * @param val   property value
+         * @param ns    property namespace
+         * @return  true iff the property was successfully set
+         */
+        bool setProperty(const char* name, const char* val, const char* ns=nullptr);
+
     private:
         const PropertySet* m_parent;
         const xercesc::DOMElement* m_root;
         std::map<std::string,std::pair<char*,const XMLCh*> > m_map;
         std::map<std::string,DOMPropertySet*> m_nested;
+        std::vector<xmltooling::xstring> m_injected;
     };
 
 };

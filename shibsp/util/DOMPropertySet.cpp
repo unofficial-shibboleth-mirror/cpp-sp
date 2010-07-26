@@ -255,3 +255,21 @@ const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* 
 
     return (i!=m_nested.end()) ? i->second : (m_parent ? m_parent->getPropertySet(name,ns) : nullptr);
 }
+
+bool DOMPropertySet::setProperty(const char* name, const char* val, const char* ns)
+{
+    string propname = ns ? (string("{") + ns + "}" + name) : name;
+
+    // Erase existing property.
+    if (m_map.count(propname) > 0) {
+        XMLString::release(&m_map[propname].first);
+        m_map.erase(propname);
+    }
+
+    char* dup = XMLString::replicate(val);
+    auto_ptr_XMLCh widedup(val);
+    m_injected.push_back(widedup.get());
+    m_map[propname] = make_pair(dup, m_injected.back().c_str());
+
+    return true;
+}

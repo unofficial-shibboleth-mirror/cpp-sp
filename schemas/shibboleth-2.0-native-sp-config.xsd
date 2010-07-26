@@ -220,6 +220,7 @@
   </complexType>
 
   <attributeGroup name="ContentSettings">
+    <attribute name="applicationId" type="conf:string"/>
     <attribute name="authType" type="conf:string"/>
     <attribute name="requireSession" type="boolean"/>
     <attribute name="requireSessionWith" type="conf:string"/>
@@ -264,7 +265,6 @@
         </choice>
         <element ref="ds:Signature" minOccurs="0"/>
       </sequence>
-      <attribute name="applicationId" type="conf:string" fixed="default"/>
       <attributeGroup ref="conf:ContentSettings"/>
     </complexType>
   </element>
@@ -295,7 +295,6 @@
     </attribute>
     <attribute name="name" type="conf:string" use="required"/>
     <attribute name="port" type="unsignedInt"/>
-    <attribute name="applicationId" type="conf:string"/>
     <attributeGroup ref="conf:ContentSettings"/>
   </complexType>
 
@@ -314,7 +313,6 @@
     </sequence>
     <attribute name="regex" type="conf:string" use="required"/>
     <attribute name="ignoreCase" type="boolean"/>
-    <attribute name="applicationId" type="conf:string"/>
     <attributeGroup ref="conf:ContentSettings"/>
   </complexType>
 
@@ -332,7 +330,6 @@
       </choice>
     </sequence>
     <attribute name="name" type="conf:string" use="required"/>
-    <attribute name="applicationId" type="conf:string"/>
     <attributeGroup ref="conf:ContentSettings"/>
   </complexType>
 
@@ -347,7 +344,6 @@
     </sequence>
     <attribute name="regex" type="conf:string" use="required"/>
     <attribute name="ignoreCase" type="boolean"/>
-    <attribute name="applicationId" type="conf:string"/>
     <attributeGroup ref="conf:ContentSettings"/>
   </complexType>
 

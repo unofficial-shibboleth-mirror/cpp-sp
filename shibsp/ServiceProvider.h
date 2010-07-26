@@ -155,7 +155,7 @@ namespace shibsp {
         /**
          * Returns an Application instance matching the specified ID.
          * 
-         * @param applicationId the ID of the application
+         * @param applicationId the ID of the application, or nullptr for the default
          * @return  pointer to the application, or nullptr
          */
         virtual const Application* getApplication(const char* applicationId) const=0;

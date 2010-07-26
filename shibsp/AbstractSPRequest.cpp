@@ -97,7 +97,7 @@ const Application& AbstractSPRequest::getApplication() const
         // Now find the application from the URL settings
         m_app=m_sp->getApplication(getRequestSettings().first->getString("applicationId").second);
         if (!m_app)
-            throw ConfigurationException("Unable to map request to ApplicationOverride settings, check configuration.");
+            throw ConfigurationException("Unable to map non-default applicationId to an ApplicationOverride, check configuration.");
     }
     return *m_app;
 }
