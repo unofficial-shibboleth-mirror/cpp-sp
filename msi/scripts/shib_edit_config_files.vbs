@@ -175,6 +175,10 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "example-metadata.xml", ConfigDir, false
   End If
 
+  If (NOT FileSystemObj.FileExists(ConfigDir & "example-shibboleth2.xml")) then
+    FileSystemObj.CopyFile DistDir & "example-shibboleth2.xml", ConfigDir, false
+  End If
+
   If (NOT FileSystemObj.FileExists(ConfigDir & "attribute-map.xml")) then
     FileSystemObj.CopyFile DistDir & "attribute-map.xml", ConfigDir, false
   End If

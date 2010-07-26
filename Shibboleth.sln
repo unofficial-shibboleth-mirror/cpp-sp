@@ -41,6 +41,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		configs\console.logger = configs\console.logger
 		configs\discoveryTemplate.html = configs\discoveryTemplate.html
 		configs\example-metadata.xml = configs\example-metadata.xml
+		configs\example-shibboleth2.xml = configs\example-shibboleth2.xml
 		configs\globalLogout.html = configs\globalLogout.html
 		configs\keygen.bat = configs\keygen.bat
 		configs\keygen.sh = configs\keygen.sh

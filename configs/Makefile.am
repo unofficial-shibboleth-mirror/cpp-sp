@@ -37,6 +37,7 @@ CONFIGFILES = \
 	attribute-policy.xml \
 	security-policy.xml \
 	example-metadata.xml \
+	example-shibboleth2.xml \
 	console.logger \
 	syslog.logger \
 	accessError.html \
