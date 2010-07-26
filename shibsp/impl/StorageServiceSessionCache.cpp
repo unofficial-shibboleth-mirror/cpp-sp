@@ -767,23 +767,32 @@ SSCache::SSCache(const DOMElement* e)
 
 #ifndef SHIBSP_LITE
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
-        string ssid = XMLHelper::getAttrString(e, nullptr, _StorageService);
+        string ssid(XMLHelper::getAttrString(e, nullptr, _StorageService));
         if (!ssid.empty()) {
             m_storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
             if (m_storage)
                 m_log.info("bound to StorageService (%s)", ssid.c_str());
+            else
+                m_log.warn("specified StorageService (%s) not found", ssid.c_str());
         }
-        if (!m_storage)
-            throw ConfigurationException("SessionCache unable to locate StorageService, check configuration.");
+        if (!m_storage) {
+            m_storage = conf.getServiceProvider()->getStorageService(nullptr);
+            if (m_storage)
+                m_log.info("bound to arbitrary StorageService");
+            else
+                throw ConfigurationException("SessionCache unable to locate StorageService, check configuration.");
+        }
 
         ssid = XMLHelper::getAttrString(e, nullptr, _StorageServiceLite);
         if (!ssid.empty()) {
             m_storage_lite = conf.getServiceProvider()->getStorageService(ssid.c_str());
             if (m_storage_lite)
-                m_log.info("bound to StorageServiceLite (%s)", ssid.c_str());
+                m_log.info("bound to 'lite' StorageService (%s)", ssid.c_str());
+            else
+                m_log.warn("specified 'lite' StorageService (%s) not found", ssid.c_str());
         }
         if (!m_storage_lite) {
-            m_log.info("No StorageServiceLite specified. Using standard StorageService.");
+            m_log.info("StorageService for 'lite' use not set, using standard StorageService");
             m_storage_lite = m_storage;
         }
 

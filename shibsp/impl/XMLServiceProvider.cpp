@@ -352,6 +352,8 @@ namespace {
                 if (i!=m_storage.end())
                     return i->second;
             }
+            else if (!m_storage.empty())
+                return m_storage.begin()->second;
             return nullptr;
         }
 #endif
@@ -1400,78 +1402,107 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 #endif
 
             if (conf.isEnabled(SPConfig::Caching)) {
-                if (conf.isEnabled(SPConfig::OutOfProcess)) {
 #ifndef SHIBSP_LITE
+                if (conf.isEnabled(SPConfig::OutOfProcess)) {
                     // First build any StorageServices.
-                    child=XMLHelper::getFirstChildElement(e,_StorageService);
+                    child = XMLHelper::getFirstChildElement(e, _StorageService);
                     while (child) {
-                        auto_ptr_char id(child->getAttributeNS(nullptr,_id));
-                        auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                        try {
-                            log.info("building StorageService (%s) of type %s...", id.get(), type.get());
-                            m_outer->m_storage[id.get()] = xmlConf.StorageServiceManager.newPlugin(type.get(),child);
+                        string id(XMLHelper::getAttrString(child, nullptr, _id));
+                        string t(XMLHelper::getAttrString(child, nullptr, _type));
+                        if (!t.empty()) {
+                            try {
+                                log.info("building StorageService (%s) of type %s...", id.c_str(), t.c_str());
+                                m_outer->m_storage[id] = xmlConf.StorageServiceManager.newPlugin(t.c_str(), child);
+                            }
+                            catch (exception& ex) {
+                                log.crit("failed to instantiate StorageService (%s): %s", id.c_str(), ex.what());
+                            }
                         }
-                        catch (exception& ex) {
-                            log.crit("failed to instantiate StorageService (%s): %s", id.get(), ex.what());
-                        }
-                        child=XMLHelper::getNextSiblingElement(child,_StorageService);
+                        child = XMLHelper::getNextSiblingElement(child, _StorageService);
+                    }
+
+                    if (m_outer->m_storage.empty()) {
+                        log.info("no StorageService plugin(s) installed, using (mem) in-memory instance");
+                        m_outer->m_storage["id"] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr);
                     }
 
                     // Replay cache.
-                    StorageService* replaySS=nullptr;
-                    child=XMLHelper::getFirstChildElement(e,_ReplayCache);
+                    StorageService* replaySS = nullptr;
+                    child = XMLHelper::getFirstChildElement(e, _ReplayCache);
                     if (child) {
-                        auto_ptr_char ssid(child->getAttributeNS(nullptr,_StorageService));
-                        if (ssid.get() && *ssid.get()) {
-                            if (m_outer->m_storage.count(ssid.get()))
-                                replaySS = m_outer->m_storage[ssid.get()];
-                            if (replaySS)
-                                log.info("building ReplayCache on top of StorageService (%s)...", ssid.get());
-                            else
-                                log.warn("unable to locate StorageService (%s) for ReplayCache, using dedicated in-memory instance", ssid.get());
+                        string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
+                        if (!ssid.empty()) {
+                            if (m_outer->m_storage.count(ssid)) {
+                                log.info("building ReplayCache on top of StorageService (%s)...", ssid.c_str());
+                                replaySS = m_outer->m_storage[ssid];
+                            }
+                            else {
+                                log.error("unable to locate StorageService (%s), using arbitrary instance for ReplayCache", ssid.c_str());
+                                replaySS = m_outer->m_storage.begin()->second;
+                            }
                         }
-                        xmlConf.setReplayCache(new ReplayCache(replaySS));
+                        else {
+                            log.info("no StorageService specified for ReplayCache, using arbitrary instance");
+                            replaySS = m_outer->m_storage.begin()->second;
+                        }
                     }
                     else {
-                        log.warn("no ReplayCache built, missing conf:ReplayCache element?");
+                        log.info("no ReplayCache specified, using arbitrary StorageService instance");
+                        replaySS = m_outer->m_storage.begin()->second;
                     }
+                    xmlConf.setReplayCache(new ReplayCache(replaySS));
 
                     // ArtifactMap
-                    child=XMLHelper::getFirstChildElement(e,_ArtifactMap);
+                    child = XMLHelper::getFirstChildElement(e, _ArtifactMap);
                     if (child) {
-                        auto_ptr_char ssid(child->getAttributeNS(nullptr,_StorageService));
-                        if (ssid.get() && *ssid.get() && m_outer->m_storage.count(ssid.get())) {
-                            log.info("building ArtifactMap on top of StorageService (%s)...", ssid.get());
-                            samlConf.setArtifactMap(new ArtifactMap(child, m_outer->m_storage[ssid.get()]));
+                        string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
+                        if (!ssid.empty()) {
+                            if (m_outer->m_storage.count(ssid)) {
+                                log.info("building ArtifactMap on top of StorageService (%s)...", ssid.c_str());
+                                samlConf.setArtifactMap(new ArtifactMap(child, m_outer->m_storage[ssid]));
+                            }
+                            else {
+                                log.error("unable to locate StorageService (%s), using in-memory ArtifactMap", ssid.c_str());
+                                samlConf.setArtifactMap(new ArtifactMap(child));
+                            }
+                        }
+                        else {
+                            log.info("no StorageService specified, using in-memory ArtifactMap");
+                            samlConf.setArtifactMap(new ArtifactMap(child));
                         }
                     }
-                    if (samlConf.getArtifactMap()==nullptr) {
-                        log.info("building in-memory ArtifactMap...");
+                    else {
+                        log.info("no ArtifactMap specified, building in-memory ArtifactMap...");
                         samlConf.setArtifactMap(new ArtifactMap(child));
                     }
+                }   // end of out of process caching components
 #endif
-                }
-                child=XMLHelper::getFirstChildElement(e,_SessionCache);
+
+                child = XMLHelper::getFirstChildElement(e, _SessionCache);
                 if (child) {
-                    auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                    log.info("building SessionCache of type %s...",type.get());
-                    m_outer->m_sessionCache=conf.SessionCacheManager.newPlugin(type.get(), child);
+                    string t(XMLHelper::getAttrString(child, nullptr, _type));
+                    if (!t.empty()) {
+                        log.info("building SessionCache of type %s...", t.c_str());
+                        m_outer->m_sessionCache = conf.SessionCacheManager.newPlugin(t.c_str(), child);
+                    }
                 }
-                else {
-                    log.fatal("can't build SessionCache, missing conf:SessionCache element?");
-                    throw ConfigurationException("Can't build SessionCache, missing conf:SessionCache element?");
+                if (!m_outer->m_sessionCache) {
+                    log.info("no SessionCache specified, using StorageService-backed instance");
+                    m_outer->m_sessionCache = conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE, nullptr);
                 }
             }
         } // end of first-time-only stuff
 
         // Back to the fully dynamic stuff...next up is the RequestMapper.
         if (conf.isEnabled(SPConfig::RequestMapping)) {
-            if (child = XMLHelper::getFirstChildElement(e,_RequestMapper)) {
-                auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                log.info("building RequestMapper of type %s...",type.get());
-                m_requestMapper=conf.RequestMapperManager.newPlugin(type.get(),child);
+            if (child = XMLHelper::getFirstChildElement(e, _RequestMapper)) {
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
+                if (!t.empty()) {
+                    log.info("building RequestMapper of type %s...", t.c_str());
+                    m_requestMapper = conf.RequestMapperManager.newPlugin(t.c_str(), child);
+                }
             }
-            else {
+            if (!m_requestMapper) {
                 log.fatal("can't build RequestMapper, missing conf:RequestMapper element?");
                 throw ConfigurationException("Can't build RequestMapper, missing conf:RequestMapper element?");
             }
@@ -1480,9 +1511,14 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 #ifndef SHIBSP_LITE
         // Load security policies.
         if (child = XMLHelper::getLastChildElement(e, SecurityPolicyProvider)) {
-            auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-            log.info("building SecurityPolicyProvider of type %s...", type.get());
-            m_policy = conf.SecurityPolicyProviderManager.newPlugin(type.get(), child);
+            string t(XMLHelper::getAttrString(child, nullptr, _type));
+            if (!t.empty()) {
+                log.info("building SecurityPolicyProvider of type %s...", t.c_str());
+                m_policy = conf.SecurityPolicyProviderManager.newPlugin(t.c_str(), child);
+            }
+            else {
+                throw ConfigurationException("can't build SecurityPolicyProvider, no type specified");
+            }
         }
         else if (child = XMLHelper::getLastChildElement(e, SecurityPolicies)) {
             // For backward compatibility, wrap in a plugin element.
@@ -1514,41 +1550,41 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         }
 
         // Process TransportOption elements.
-        child = XMLHelper::getLastChildElement(e,TransportOption);
+        child = XMLHelper::getLastChildElement(e, TransportOption);
         while (child) {
             if (child->hasChildNodes()) {
-                auto_ptr_char provider(child->getAttributeNS(nullptr,_provider));
-                auto_ptr_char option(child->getAttributeNS(nullptr,_option));
+                string provider(XMLHelper::getAttrString(child, nullptr, _provider));
+                string option(XMLHelper::getAttrString(child, nullptr, _option));
                 auto_ptr_char value(child->getFirstChild()->getNodeValue());
-                if (provider.get() && *provider.get() && option.get() && *option.get() && value.get() && *value.get()) {
-                    m_transportOptions.push_back(make_pair(string(provider.get()), make_pair(string(option.get()), string(value.get()))));
+                if (!provider.empty() && !option.empty() && value.get() && *value.get()) {
+                    m_transportOptions.push_back(make_pair(provider, make_pair(option, string(value.get()))));
                 }
             }
-            child = XMLHelper::getPreviousSiblingElement(child,TransportOption);
+            child = XMLHelper::getPreviousSiblingElement(child, TransportOption);
         }
 #endif
 
         // Load the default application. This actually has a fixed ID of "default". ;-)
-        child=XMLHelper::getLastChildElement(e,ApplicationDefaults);
+        child = XMLHelper::getLastChildElement(e, ApplicationDefaults);
         if (!child) {
             log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");
             throw ConfigurationException("can't build default Application object, missing conf:ApplicationDefaults element?");
         }
-        XMLApplication* defapp=new XMLApplication(m_outer,child);
-        m_appmap[defapp->getId()]=defapp;
+        XMLApplication* defapp = new XMLApplication(m_outer, child);
+        m_appmap[defapp->getId()] = defapp;
 
         // Load any overrides.
-        child = XMLHelper::getFirstChildElement(child,ApplicationOverride);
+        child = XMLHelper::getFirstChildElement(child, ApplicationOverride);
         while (child) {
-            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer,child,defapp));
+            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer, child, defapp));
             if (m_appmap.count(iapp->getId()))
                 log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
             else {
                 const char* iappid=iapp->getId();
-                m_appmap[iappid]=iapp.release();
+                m_appmap[iappid] = iapp.release();
             }
 
-            child = XMLHelper::getNextSiblingElement(child,ApplicationOverride);
+            child = XMLHelper::getNextSiblingElement(child, ApplicationOverride);
         }
     }
     catch (exception&) {

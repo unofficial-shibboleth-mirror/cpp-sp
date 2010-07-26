@@ -63,6 +63,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		configs\sslError.html = configs\sslError.html
 		configs\syslog.logger = configs\syslog.logger
 		configs\upgrade.xsl = configs\upgrade.xsl
+		configs\win-shibboleth2.xml = configs\win-shibboleth2.xml
 		configs\xsltproc.js = configs\xsltproc.js
 	EndProjectSection
 EndProject

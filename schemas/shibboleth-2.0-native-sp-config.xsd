@@ -110,7 +110,7 @@
       <documentation>Ties ReplayCache to a custom StorageService</documentation>
     </annotation>
     <sequence/>
-    <attribute name="StorageService" type="IDREF" use="required"/>
+    <attribute name="StorageService" type="IDREF"/>
   </complexType>
 
   <complexType name="ArtifactMapType">
