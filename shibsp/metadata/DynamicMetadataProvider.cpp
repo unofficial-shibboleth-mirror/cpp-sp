@@ -158,7 +158,9 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
         name = temp.get();
     }
     else if (criteria.artifact) {
-        throw saml2md::MetadataException("Unable to resolve metadata dynamically from an artifact.");
+        if (m_subst.empty() && (m_regex.empty() || m_match.empty()))
+            throw saml2md::MetadataException("Unable to resolve metadata dynamically from an artifact.");
+        name = "{sha1}" + criteria.artifact->getSource();
     }
 
     // Possibly transform the input into a different URL to use.
@@ -197,7 +199,9 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
     if (!mpc)
         throw saml2md::MetadataException("Dynamic MetadataProvider requires Shibboleth-aware lookup criteria, check calling code.");
     const PropertySet* relyingParty;
-    if (criteria.entityID_unicode)
+    if (criteria.artifact)
+        relyingParty = mpc->application.getRelyingParty((XMLCh*)nullptr);
+    else if (criteria.entityID_unicode)
         relyingParty = mpc->application.getRelyingParty(criteria.entityID_unicode);
     else {
         auto_ptr_XMLCh temp2(name.c_str());
