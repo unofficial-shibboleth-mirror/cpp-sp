@@ -1234,29 +1234,28 @@ XMLConfigImpl::acceptNode(const DOMNode* node) const
 
 void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Category& log)
 {
-    const DOMElement* exts=XMLHelper::getFirstChildElement(e,_Extensions);
+    const DOMElement* exts = XMLHelper::getFirstChildElement(e, _Extensions);
     if (exts) {
-        exts=XMLHelper::getFirstChildElement(exts,Library);
+        exts = XMLHelper::getFirstChildElement(exts, Library);
         while (exts) {
-            auto_ptr_char path(exts->getAttributeNS(nullptr,_path));
+            string path(XMLHelper::getAttrString(exts, nullptr, _path));
             try {
-                if (path.get()) {
-                    if (!XMLToolingConfig::getConfig().load_library(path.get(),(void*)exts))
+                if (!path.empty()) {
+                    if (!XMLToolingConfig::getConfig().load_library(path.c_str(), (void*)exts))
                         throw ConfigurationException("XMLToolingConfig::load_library failed.");
-                    log.debug("loaded %s extension library (%s)", label, path.get());
+                    log.debug("loaded %s extension library (%s)", label, path.c_str());
                 }
             }
             catch (exception& e) {
-                const XMLCh* fatal=exts->getAttributeNS(nullptr,_fatal);
-                if (fatal && (*fatal==chLatin_t || *fatal==chDigit_1)) {
-                    log.fatal("unable to load mandatory %s extension library %s: %s", label, path.get(), e.what());
+                if (XMLHelper::getAttrBool(exts, false, _fatal)) {
+                    log.fatal("unable to load mandatory %s extension library %s: %s", label, path.c_str(), e.what());
                     throw;
                 }
                 else {
-                    log.crit("unable to load optional %s extension library %s: %s", label, path.get(), e.what());
+                    log.crit("unable to load optional %s extension library %s: %s", label, path.c_str(), e.what());
                 }
             }
-            exts=XMLHelper::getNextSiblingElement(exts,Library);
+            exts = XMLHelper::getNextSiblingElement(exts, Library);
         }
     }
 }
@@ -1278,23 +1277,31 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         SAMLConfig& samlConf=SAMLConfig::getConfig();
 #endif
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
-        const DOMElement* SHAR=XMLHelper::getFirstChildElement(e,OutOfProcess);
-        const DOMElement* SHIRE=XMLHelper::getFirstChildElement(e,InProcess);
+        const DOMElement* SHAR=XMLHelper::getFirstChildElement(e, OutOfProcess);
+        const DOMElement* SHIRE=XMLHelper::getFirstChildElement(e, InProcess);
 
-        // Initialize log4cpp manually in order to redirect log messages as soon as possible.
+        // Initialize logging manually in order to redirect log messages as soon as possible.
         if (conf.isEnabled(SPConfig::Logging)) {
-            const XMLCh* logconf=nullptr;
+            string logconf;
             if (conf.isEnabled(SPConfig::OutOfProcess))
-                logconf=SHAR->getAttributeNS(nullptr,logger);
+                logconf = XMLHelper::getAttrString(SHAR, nullptr, logger);
             else if (conf.isEnabled(SPConfig::InProcess))
-                logconf=SHIRE->getAttributeNS(nullptr,logger);
-            if (!logconf || !*logconf)
-                logconf=e->getAttributeNS(nullptr,logger);
-            if (logconf && *logconf) {
-                auto_ptr_char logpath(logconf);
-                log.debug("loading new logging configuration from (%s), check log destination for status of configuration",logpath.get());
-                if (!XMLToolingConfig::getConfig().log_config(logpath.get()))
-                    log.crit("failed to load new logging configuration from (%s)", logpath.get());
+                logconf = XMLHelper::getAttrString(SHIRE, nullptr, logger);
+            if (logconf.empty())
+                logconf = XMLHelper::getAttrString(e, nullptr, logger);
+            if (logconf.empty() && !getenv("SHIBSP_LOGGING")) {
+                // No properties found, so default them.
+                if (conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess))
+                    logconf = "shibd.logger";
+                else if (!conf.isEnabled(SPConfig::OutOfProcess) && conf.isEnabled(SPConfig::InProcess))
+                    logconf = "native.logger";
+                else
+                    logconf = "shibboleth.logger";
+            }
+            if (!logconf.empty()) {
+                log.debug("loading new logging configuration from (%s), check log destination for status of configuration", logconf.c_str());
+                if (!XMLToolingConfig::getConfig().log_config(logconf.c_str()))
+                    log.crit("failed to load new logging configuration from (%s)", logconf.c_str());
             }
 
 #ifndef SHIBSP_LITE

@@ -653,8 +653,8 @@
       </annotation>
       <sequence>
         <element name="Extensions" type="conf:ExtensionsType" minOccurs="0"/>
-        <element name="OutOfProcess" type="conf:OutOfProcessType"/>
-        <element name="InProcess" type="conf:InProcessType"/>
+        <element name="OutOfProcess" type="conf:OutOfProcessType" minOccurs="0"/>
+        <element name="InProcess" type="conf:InProcessType" minOccurs="0"/>
         <choice minOccurs="0">
           <element name="UnixListener">
             <complexType>

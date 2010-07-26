@@ -3,37 +3,8 @@
     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
     xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"    
     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
-    logger="syslog.logger" clockSkew="180">
+    clockSkew="180">
 
-    <!-- The OutOfProcess section contains properties affecting the shibd daemon. -->
-    <OutOfProcess logger="shibd.logger">
-        <!--
-        <Extensions>
-            <Library path="odbc-store.so" fatal="true"/>
-        </Extensions>
-        -->
-    </OutOfProcess>
-    
-    <!-- The InProcess section conrains settings affecting web server modules/filters. -->
-    <InProcess logger="native.logger">
-        <ISAPI normalizeRequest="true" safeHeaderNames="true">
-            <!--
-            Maps IIS Instance ID values to the host scheme/name/port. The name is
-            required so that the proper <Host> in the request map above is found without
-            having to cover every possible DNS/IP combination the user might enter.
-            -->
-            <Site id="1" name="sp.example.org"/>
-            <!--
-            When the port and scheme are omitted, the HTTP request's port and scheme are used.
-            If these are wrong because of virtualization, they can be explicitly set here to
-            ensure proper redirect generation.
-            -->
-            <!--
-            <Site id="42" name="virtual.example.org" scheme="https" port="443"/>
-            -->
-        </ISAPI>
-    </InProcess>
-    
     <!-- This set of components stores sessions and other persistent data in daemon memory. -->
     <StorageService type="Memory" id="mem" cleanupInterval="900"/>
     <SessionCache type="StorageService" StorageService="mem" cacheTimeout="3600" inprocTimeout="900" cleanupInterval="900"/>
