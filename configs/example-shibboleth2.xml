@@ -227,9 +227,18 @@
         <!-- Simple file-based resolver for using a single keypair. -->
         <CredentialResolver type="File" key="sp-key.pem" certificate="sp-cert.pem"/>
 
-        <!-- Example of a second application (using a second vhost) that has a different entityID. -->
-        <!-- <ApplicationOverride id="admin" entityID="https://admin.example.org/shibboleth"/> -->
-
+        <!--
+        The default settings can be overridden by creating ApplicationOverride elements (see
+        the https://spaces.internet2.edu/display/SHIB2/NativeSPApplicationOverride topic).
+        Resource requests are mapped by web server commands, or the RequestMapper, to an
+        applicationId setting.
+        
+        Example of a second application (for a second vhost) that has a different entityID.
+        Resources on the vhost would map to an applicationId of "admin":
+        -->
+        <!--
+        <ApplicationOverride id="admin" entityID="https://admin.example.org/shibboleth"/>
+        -->
     </ApplicationDefaults>
     
     <!-- Policies that determine how to process and authenticate runtime messages. -->
