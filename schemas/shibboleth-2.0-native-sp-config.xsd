@@ -372,7 +372,7 @@
       <element name="Notify" type="conf:NotifyType" minOccurs="0" maxOccurs="unbounded"/>
       <element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
       <element name="MetadataProvider" type="conf:PluggableType"/>
-      <element name="TrustEngine" type="conf:PluggableType"/>
+      <element name="TrustEngine" type="conf:PluggableType" minOccurs="0"/>
       <element name="AttributeExtractor" type="conf:PluggableType" minOccurs="0"/>
       <element name="AttributeResolver" type="conf:PluggableType" minOccurs="0"/>
       <element name="AttributeFilter" type="conf:PluggableType" minOccurs="0"/>

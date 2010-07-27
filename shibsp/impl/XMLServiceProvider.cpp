@@ -69,9 +69,9 @@
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataProvider.h>
 # include <saml/util/SAMLConstants.h>
+# include <xmltooling/security/ChainingTrustEngine.h>
 # include <xmltooling/security/CredentialResolver.h>
 # include <xmltooling/security/SecurityHelper.h>
-# include <xmltooling/security/TrustEngine.h>
 # include <xmltooling/util/ReplayCache.h>
 # include <xmltooling/util/StorageService.h>
 # include <xsec/utils/XSECPlatformUtils.hpp>
@@ -642,7 +642,7 @@ XMLApplication::XMLApplication(
                 if (XMLString::equals(child->getLocalName(),_AssertionConsumerService)) {
                     auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
                     if (!bindprop.get() || !*(bindprop.get())) {
-                        log.warn("md:AssertionConsumerService element has no Binding attribute, skipping it...");
+                        log.error("md:AssertionConsumerService element has no Binding attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
@@ -666,7 +666,7 @@ XMLApplication::XMLApplication(
                 else if (XMLString::equals(child->getLocalName(),_SessionInitiator)) {
                     auto_ptr_char type(child->getAttributeNS(nullptr,_type));
                     if (!type.get() || !*(type.get())) {
-                        log.warn("SessionInitiator element has no type attribute, skipping it...");
+                        log.error("SessionInitiator element has no type attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
@@ -690,7 +690,7 @@ XMLApplication::XMLApplication(
                 else if (XMLString::equals(child->getLocalName(),_LogoutInitiator)) {
                     auto_ptr_char type(child->getAttributeNS(nullptr,_type));
                     if (!type.get() || !*(type.get())) {
-                        log.warn("LogoutInitiator element has no type attribute, skipping it...");
+                        log.error("LogoutInitiator element has no type attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
@@ -699,7 +699,7 @@ XMLApplication::XMLApplication(
                 else if (XMLString::equals(child->getLocalName(),_ArtifactResolutionService)) {
                     auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
                     if (!bindprop.get() || !*(bindprop.get())) {
-                        log.warn("md:ArtifactResolutionService element has no Binding attribute, skipping it...");
+                        log.error("md:ArtifactResolutionService element has no Binding attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
@@ -720,7 +720,7 @@ XMLApplication::XMLApplication(
                 else if (XMLString::equals(child->getLocalName(),_SingleLogoutService)) {
                     auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
                     if (!bindprop.get() || !*(bindprop.get())) {
-                        log.warn("md:SingleLogoutService element has no Binding attribute, skipping it...");
+                        log.error("md:SingleLogoutService element has no Binding attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
@@ -729,20 +729,20 @@ XMLApplication::XMLApplication(
                 else if (XMLString::equals(child->getLocalName(),_ManageNameIDService)) {
                     auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
                     if (!bindprop.get() || !*(bindprop.get())) {
-                        log.warn("md:ManageNameIDService element has no Binding attribute, skipping it...");
+                        log.error("md:ManageNameIDService element has no Binding attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
                     handler=conf.ManageNameIDServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
                 }
                 else {
-                    auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                    if (!type.get() || !*(type.get())) {
-                        log.warn("Handler element has no type attribute, skipping it...");
+                    string t(XMLHelper::getAttrString(child, nullptr, _type));
+                    if (t.empty()) {
+                        log.error("Handler element has no type attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.HandlerManager.newPlugin(type.get(),make_pair(child, getId()));
+                    handler = conf.HandlerManager.newPlugin(t.c_str(), make_pair(child, getId()));
                 }
 
                 m_handlers.push_back(handler);
@@ -767,12 +767,12 @@ XMLApplication::XMLApplication(
         for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
             if (nlist->item(i)->getParentNode()->isSameNode(e)) {
                 const XMLCh* channel = static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(nullptr,Channel);
-                auto_ptr_char loc(static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(nullptr,Location));
-                if (loc.get() && *loc.get()) {
+                string loc(XMLHelper::getAttrString(static_cast<DOMElement*>(nlist->item(i)), nullptr, Location));
+                if (!loc.empty()) {
                     if (channel && *channel == chLatin_f)
-                        m_frontLogout.push_back(loc.get());
+                        m_frontLogout.push_back(loc);
                     else
-                        m_backLogout.push_back(loc.get());
+                        m_backLogout.push_back(loc);
                 }
             }
         }
@@ -787,14 +787,19 @@ XMLApplication::XMLApplication(
         }
 
         if (conf.isEnabled(SPConfig::Metadata)) {
-            child = XMLHelper::getFirstChildElement(e,_MetadataProvider);
+            child = XMLHelper::getFirstChildElement(e, _MetadataProvider);
             if (child) {
-                auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                log.info("building MetadataProvider of type %s...",type.get());
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
                 try {
-                    auto_ptr<MetadataProvider> mp(samlConf.MetadataProviderManager.newPlugin(type.get(),child));
-                    mp->init();
-                    m_metadata = mp.release();
+                    if (!t.empty()) {
+                        log.info("building MetadataProvider of type %s...", t.c_str());
+                        auto_ptr<MetadataProvider> mp(samlConf.MetadataProviderManager.newPlugin(t.c_str(), child));
+                        mp->init();
+                        m_metadata = mp.release();
+                    }
+                    else {
+                        throw ConfigurationException("MetadataProvider element had no type attribute.");
+                    }
                 }
                 catch (exception& ex) {
                     log.crit("error building/initializing MetadataProvider: %s", ex.what());
@@ -803,50 +808,82 @@ XMLApplication::XMLApplication(
         }
 
         if (conf.isEnabled(SPConfig::Trust)) {
-            child = XMLHelper::getFirstChildElement(e,_TrustEngine);
+            child = XMLHelper::getFirstChildElement(e, _TrustEngine);
             if (child) {
-                auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                log.info("building TrustEngine of type %s...",type.get());
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
                 try {
-                    m_trust = xmlConf.TrustEngineManager.newPlugin(type.get(),child);
+                    if (!t.empty()) {
+                        log.info("building TrustEngine of type %s...", t.c_str());
+                        m_trust = xmlConf.TrustEngineManager.newPlugin(t.c_str(), child);
+                    }
+                    else {
+                        throw ConfigurationException("TrustEngine element had no type attribute.");
+                    }
                 }
                 catch (exception& ex) {
                     log.crit("error building TrustEngine: %s", ex.what());
                 }
             }
+            else if (!m_base) {
+                log.info(
+                    "no TrustEngine specified, using default chain {%s, %s}",
+                    EXPLICIT_KEY_TRUSTENGINE, SHIBBOLETH_PKIX_TRUSTENGINE
+                    );
+                m_trust = xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE, nullptr);
+                ChainingTrustEngine* trustchain = dynamic_cast<ChainingTrustEngine*>(m_trust);
+                if (trustchain) {
+                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr));
+                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(SHIBBOLETH_PKIX_TRUSTENGINE, nullptr));
+                }
+            }
         }
 
         if (conf.isEnabled(SPConfig::AttributeResolution)) {
-            child = XMLHelper::getFirstChildElement(e,_AttributeExtractor);
+            child = XMLHelper::getFirstChildElement(e, _AttributeExtractor);
             if (child) {
-                auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                log.info("building AttributeExtractor of type %s...",type.get());
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
                 try {
-                    m_attrExtractor = conf.AttributeExtractorManager.newPlugin(type.get(),child);
+                    if (!t.empty()) {
+                        log.info("building AttributeExtractor of type %s...", t.c_str());
+                        m_attrExtractor = conf.AttributeExtractorManager.newPlugin(t.c_str(), child);
+                    }
+                    else {
+                        throw ConfigurationException("AttributeExtractor element had no type attribute.");
+                    }
                 }
                 catch (exception& ex) {
                     log.crit("error building AttributeExtractor: %s", ex.what());
                 }
             }
 
-            child = XMLHelper::getFirstChildElement(e,_AttributeFilter);
+            child = XMLHelper::getFirstChildElement(e, _AttributeFilter);
             if (child) {
-                auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                log.info("building AttributeFilter of type %s...",type.get());
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
                 try {
-                    m_attrFilter = conf.AttributeFilterManager.newPlugin(type.get(),child);
+                    if (!t.empty()) {
+                        log.info("building AttributeFilter of type %s...", t.c_str());
+                        m_attrFilter = conf.AttributeFilterManager.newPlugin(t.c_str(), child);
+                    }
+                    else {
+                        throw ConfigurationException("AttributeFilter element had no type attribute.");
+                    }
                 }
                 catch (exception& ex) {
                     log.crit("error building AttributeFilter: %s", ex.what());
                 }
             }
 
-            child = XMLHelper::getFirstChildElement(e,_AttributeResolver);
+            child = XMLHelper::getFirstChildElement(e, _AttributeResolver);
             if (child) {
-                auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                log.info("building AttributeResolver of type %s...",type.get());
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
                 try {
-                    m_attrResolver = conf.AttributeResolverManager.newPlugin(type.get(),child);
+                    if (!t.empty()) {
+                        log.info("building AttributeResolver of type %s...", t.c_str());
+                        m_attrResolver = conf.AttributeResolverManager.newPlugin(t.c_str(), child);
+                    }
+                    else {
+                        throw ConfigurationException("AttributeResolver element had no type attribute.");
+                    }
                 }
                 catch (exception& ex) {
                     log.crit("error building AttributeResolver: %s", ex.what());

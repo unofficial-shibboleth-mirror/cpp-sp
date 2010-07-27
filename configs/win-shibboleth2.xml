@@ -61,8 +61,7 @@
     -->
     <ApplicationDefaults policyId="default"
         entityID="https://sp.example.org/shibboleth"
-        REMOTE_USER="eppn persistent-id targeted-id"
-        signing="false" encryption="false">
+        REMOTE_USER="eppn persistent-id targeted-id">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
@@ -74,8 +73,7 @@
         impact on the security of the SP. Stealing cookies/sessions is much easier with this disabled.
         -->
         <Sessions lifetime="28800" timeout="3600" checkAddress="false"
-            handlerURL="/Shibboleth.sso" handlerSSL="false"
-            idpHistory="false" idpHistoryDays="7">
+            handlerURL="/Shibboleth.sso" handlerSSL="false">
             
             <!--
             SessionInitiators handle session requests and relay them to a Discovery page,
@@ -187,12 +185,6 @@
             <MetadataProvider type="XML" file="partner-metadata.xml"/>
             -->
         </MetadataProvider>
-
-        <!-- Chain the two built-in trust engines together. -->
-        <TrustEngine type="Chaining">
-            <TrustEngine type="ExplicitKey"/>
-            <TrustEngine type="PKIX"/>
-        </TrustEngine>
 
         <!-- Map to extract attributes from SAML assertions. -->
         <AttributeExtractor type="XML" validate="true" path="attribute-map.xml"/>
