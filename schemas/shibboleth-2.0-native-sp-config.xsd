@@ -99,7 +99,8 @@
           <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
         </sequence>
         <attribute name="StorageService" type="IDREF"/>
-        <attribute name="cacheTimeout" type="unsignedInt"/>
+        <attribute name="cacheAllowance" type="unsignedInt"/>
+        <attribute name="cacheTimeout" type="unsignedInt"/> <!-- deprecated -->
         <anyAttribute namespace="##any" processContents="lax"/>
       </restriction>
     </complexContent>

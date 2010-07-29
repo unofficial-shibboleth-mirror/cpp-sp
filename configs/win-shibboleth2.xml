@@ -5,7 +5,10 @@
     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
     clockSkew="180">
 
-    <!-- The InProcess section conrains settings affecting web server modules/filters. -->
+    <!--
+    The InProcess section contains settings affecting web server modules.
+    Required for IIS, but can be removed when using other web servers.
+    -->
     <InProcess logger="native.logger">
         <ISAPI normalizeRequest="true" safeHeaderNames="true">
             <!--
@@ -25,9 +28,10 @@
         </ISAPI>
     </InProcess>
 
-    <!-- By default, in-memory StorageService, ReplayCache, and ArtifactMap are used. -->
-    <SessionCache type="StorageService" cacheAssertions="false"
-                  cacheTimeout="3600" inprocTimeout="900" cleanupInterval="900"/>
+    <!--
+    By default, in-memory StorageService, ReplayCache, ArtifactMap, and SessionCache
+    are used. See example-shibboleth2.xml for samples of explicitly configuring them.
+    -->
 
     <!--
     To customize behavior for specific resources on IIS, and to link vhosts or

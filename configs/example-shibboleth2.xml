@@ -13,8 +13,11 @@
         </Extensions>
         -->
     </OutOfProcess>
-    
-    <!-- The InProcess section conrains settings affecting web server modules/filters. -->
+
+    <!--
+    The InProcess section contains settings affecting web server modules.
+    Required for IIS, but can be removed when using other web servers.
+    -->
     <InProcess logger="native.logger">
         <ISAPI normalizeRequest="true" safeHeaderNames="true">
             <!--
@@ -40,7 +43,8 @@
     
     <!-- This set of components stores sessions and other persistent data in daemon memory. -->
     <StorageService type="Memory" id="mem" cleanupInterval="900"/>
-    <SessionCache type="StorageService" StorageService="mem" cacheTimeout="3600" inprocTimeout="900" cleanupInterval="900"/>
+    <SessionCache type="StorageService" StorageService="mem" cacheAssertions="false"
+                  cacheAllowance="900" inprocTimeout="900" cleanupInterval="900"/>
     <ReplayCache StorageService="mem"/>
     <ArtifactMap artifactTTL="180"/>
 
@@ -51,12 +55,20 @@
         DRIVER=drivername;SERVER=dbserver;UID=shibboleth;PWD=password;DATABASE=shibboleth;APP=Shibboleth
         </ConnectionString>
     </StorageService>
-    <SessionCache type="StorageService" StorageService="db" cacheTimeout="3600" inprocTimeout="900" cleanupInterval="900"/>
+    <SessionCache type="StorageService" StorageService="db" cacheAssertions="false"
+                  cacheTimeout="3600" inprocTimeout="900" cleanupInterval="900"/>
     <ReplayCache StorageService="db"/>
     <ArtifactMap StorageService="db" artifactTTL="180"/>
     -->
 
-    <!-- To customize behavior, map hostnames and path components to applicationId and other settings. -->
+    <!--
+    To customize behavior for specific resources on Apache, and to link vhosts or
+    resources to ApplicationOverride settings below, use web server options/commands.
+    See https://spaces.internet2.edu/display/SHIB2/NativeSPConfigurationElements for help.
+    
+    For examples with the RequestMap XML syntax instead, see the example-shibboleth2.xml
+    file, and the https://spaces.internet2.edu/display/SHIB2/NativeSPRequestMapHowTo topic.
+    -->
     <RequestMapper type="Native">
         <RequestMap>
             <!--
