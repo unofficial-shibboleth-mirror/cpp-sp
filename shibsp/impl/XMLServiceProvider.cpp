@@ -639,101 +639,102 @@ XMLApplication::XMLApplication(
                 continue;
             }
             try {
-                if (XMLString::equals(child->getLocalName(),_AssertionConsumerService)) {
-                    auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
-                    if (!bindprop.get() || !*(bindprop.get())) {
-                        log.error("md:AssertionConsumerService element has no Binding attribute, skipping it...");
+                if (XMLString::equals(child->getLocalName(), _AssertionConsumerService)) {
+                    string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
+                    if (bindprop.empty()) {
+                        log.error("AssertionConsumerService element has no Binding attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.AssertionConsumerServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
+                    handler = conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
                     // Map by binding (may be > 1 per binding, e.g. SAML 1.0 vs 1.1)
                     m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
-                    m_acsIndexMap[handler->getUnsignedInt("index").second]=handler;
+                    m_acsIndexMap[handler->getUnsignedInt("index").second] = handler;
 
                     if (!hardACS) {
-                        pair<bool,bool> defprop=handler->getBool("isDefault");
+                        pair<bool,bool> defprop = handler->getBool("isDefault");
                         if (defprop.first) {
                             if (defprop.second) {
-                                hardACS=true;
-                                m_acsDefault=handler;
+                                hardACS = true;
+                                m_acsDefault = handler;
                             }
                         }
                         else if (!m_acsDefault)
-                            m_acsDefault=handler;
+                            m_acsDefault = handler;
                     }
                 }
-                else if (XMLString::equals(child->getLocalName(),_SessionInitiator)) {
-                    auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                    if (!type.get() || !*(type.get())) {
+                else if (XMLString::equals(child->getLocalName(), _SessionInitiator)) {
+                    string t(XMLHelper::getAttrString(child, nullptr, _type));
+                    if (t.empty()) {
                         log.error("SessionInitiator element has no type attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    SessionInitiator* sihandler=conf.SessionInitiatorManager.newPlugin(type.get(),make_pair(child, getId()));
-                    handler=sihandler;
-                    pair<bool,const char*> si_id=handler->getString("id");
+                    SessionInitiator* sihandler = conf.SessionInitiatorManager.newPlugin(t.c_str(), make_pair(child, getId()));
+                    handler = sihandler;
+                    pair<bool,const char*> si_id = handler->getString("id");
                     if (si_id.first && si_id.second)
-                        m_sessionInitMap[si_id.second]=sihandler;
+                        m_sessionInitMap[si_id.second] = sihandler;
                     if (!hardSessionInit) {
-                        pair<bool,bool> defprop=handler->getBool("isDefault");
+                        pair<bool,bool> defprop = handler->getBool("isDefault");
                         if (defprop.first) {
                             if (defprop.second) {
-                                hardSessionInit=true;
-                                m_sessionInitDefault=sihandler;
+                                hardSessionInit = true;
+                                m_sessionInitDefault = sihandler;
                             }
                         }
-                        else if (!m_sessionInitDefault)
-                            m_sessionInitDefault=sihandler;
+                        else if (!m_sessionInitDefault) {
+                            m_sessionInitDefault = sihandler;
+                        }
                     }
                 }
-                else if (XMLString::equals(child->getLocalName(),_LogoutInitiator)) {
-                    auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                    if (!type.get() || !*(type.get())) {
+                else if (XMLString::equals(child->getLocalName(), _LogoutInitiator)) {
+                    string t(XMLHelper::getAttrString(child, nullptr, _type));
+                    if (t.empty()) {
                         log.error("LogoutInitiator element has no type attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.LogoutInitiatorManager.newPlugin(type.get(),make_pair(child, getId()));
+                    handler = conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(child, getId()));
                 }
-                else if (XMLString::equals(child->getLocalName(),_ArtifactResolutionService)) {
-                    auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
-                    if (!bindprop.get() || !*(bindprop.get())) {
-                        log.error("md:ArtifactResolutionService element has no Binding attribute, skipping it...");
+                else if (XMLString::equals(child->getLocalName(), _ArtifactResolutionService)) {
+                    string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
+                    if (bindprop.empty()) {
+                        log.error("ArtifactResolutionService element has no Binding attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.ArtifactResolutionServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
+                    handler = conf.ArtifactResolutionServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
 
                     if (!hardArt) {
-                        pair<bool,bool> defprop=handler->getBool("isDefault");
+                        pair<bool,bool> defprop = handler->getBool("isDefault");
                         if (defprop.first) {
                             if (defprop.second) {
-                                hardArt=true;
-                                m_artifactResolutionDefault=handler;
+                                hardArt = true;
+                                m_artifactResolutionDefault = handler;
                             }
                         }
                         else if (!m_artifactResolutionDefault)
-                            m_artifactResolutionDefault=handler;
+                            m_artifactResolutionDefault = handler;
                     }
                 }
-                else if (XMLString::equals(child->getLocalName(),_SingleLogoutService)) {
-                    auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
-                    if (!bindprop.get() || !*(bindprop.get())) {
-                        log.error("md:SingleLogoutService element has no Binding attribute, skipping it...");
+                else if (XMLString::equals(child->getLocalName(), _SingleLogoutService)) {
+                    string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
+                    if (bindprop.empty()) {
+                        log.error("SingleLogoutService element has no Binding attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.SingleLogoutServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
+                    handler = conf.SingleLogoutServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
                 }
-                else if (XMLString::equals(child->getLocalName(),_ManageNameIDService)) {
-                    auto_ptr_char bindprop(child->getAttributeNS(nullptr,Binding));
-                    if (!bindprop.get() || !*(bindprop.get())) {
-                        log.error("md:ManageNameIDService element has no Binding attribute, skipping it...");
+                else if (XMLString::equals(child->getLocalName(), _ManageNameIDService)) {
+                    string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
+                    if (bindprop.empty()) {
+                        log.error("ManageNameIDService element has no Binding attribute, skipping it...");
                         child = XMLHelper::getNextSiblingElement(child);
                         continue;
                     }
-                    handler=conf.ManageNameIDServiceManager.newPlugin(bindprop.get(),make_pair(child, getId()));
+                    handler = conf.ManageNameIDServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
                 }
                 else {
                     string t(XMLHelper::getAttrString(child, nullptr, _type));
@@ -748,12 +749,11 @@ XMLApplication::XMLApplication(
                 m_handlers.push_back(handler);
 
                 // Insert into location map.
-                location=handler->getString("Location");
+                location = handler->getString("Location");
                 if (location.first && *location.second == '/')
-                    m_handlerMap[location.second]=handler;
+                    m_handlerMap[location.second] = handler;
                 else if (location.first)
-                    m_handlerMap[string("/") + location.second]=handler;
-
+                    m_handlerMap[string("/") + location.second] = handler;
             }
             catch (exception& ex) {
                 log.error("caught exception processing handler element: %s", ex.what());
@@ -763,10 +763,10 @@ XMLApplication::XMLApplication(
         }
 
         // Notification.
-        DOMNodeList* nlist=e->getElementsByTagNameNS(shibspconstants::SHIB2SPCONFIG_NS,Notify);
-        for (XMLSize_t i=0; nlist && i<nlist->getLength(); i++) {
+        DOMNodeList* nlist = e->getElementsByTagNameNS(shibspconstants::SHIB2SPCONFIG_NS, Notify);
+        for (XMLSize_t i = 0; nlist && i < nlist->getLength(); ++i) {
             if (nlist->item(i)->getParentNode()->isSameNode(e)) {
-                const XMLCh* channel = static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(nullptr,Channel);
+                const XMLCh* channel = static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(nullptr, Channel);
                 string loc(XMLHelper::getAttrString(static_cast<DOMElement*>(nlist->item(i)), nullptr, Location));
                 if (!loc.empty()) {
                     if (channel && *channel == chLatin_f)
@@ -778,10 +778,10 @@ XMLApplication::XMLApplication(
         }
 
 #ifndef SHIBSP_LITE
-        nlist=e->getElementsByTagNameNS(samlconstants::SAML20_NS,Audience::LOCAL_NAME);
+        nlist = e->getElementsByTagNameNS(samlconstants::SAML20_NS, Audience::LOCAL_NAME);
         if (nlist && nlist->getLength()) {
             log.warn("use of <saml:Audience> elements outside of a Security Policy Rule is deprecated");
-            for (XMLSize_t i=0; i<nlist->getLength(); i++)
+            for (XMLSize_t i = 0; i < nlist->getLength(); ++i)
                 if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                     m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
         }
