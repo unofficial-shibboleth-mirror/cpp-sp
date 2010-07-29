@@ -201,8 +201,13 @@
             logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
         
-        <!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
-        <!-- <RelyingParty Name="SpecialFederation" keyName="SpecialKey"/> -->
+        <!--
+        Uncomment and modify to tweak settings for specific IdPs or groups. Settings here
+        generally match those allowed by the <ApplicationDefaults> element.
+        -->
+        <!--
+        <RelyingParty Name="SpecialFederation" keyName="SpecialKey"/>
+        -->
 
         <!-- Chains together all your metadata sources. -->
         <MetadataProvider type="Chaining">

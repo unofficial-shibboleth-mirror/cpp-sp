@@ -127,9 +127,6 @@
             logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
         
-        <!-- Uncomment and modify to tweak settings for specific IdPs or groups. -->
-        <!-- <RelyingParty Name="SpecialFederation" keyName="SpecialKey"/> -->
-
         <!-- Chains together all your metadata sources. -->
         <MetadataProvider type="Chaining">
             <!-- Example of remotely supplied batch of signed metadata. -->
