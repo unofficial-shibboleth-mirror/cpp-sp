@@ -59,18 +59,18 @@ namespace shibsp {
         /**
 		 * Returns the security policy settings for an identified policy.
          *
-		 * @param id    identifies the policy to return
+		 * @param id    identifies the policy to return, or nullptr for default
          * @return a PropertySet
 		 */
-        virtual const PropertySet* getPolicySettings(const char* id) const=0;
+        virtual const PropertySet* getPolicySettings(const char* id=nullptr) const=0;
 
         /**
 		 * Returns the security policy rules for an identified policy.
          *
-		 * @param id    identifies the policy to return
+		 * @param id    identifies the policy to return, or nullptr for default
          * @return an array of policy rules
 		 */
-        virtual const std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id) const=0;
+        virtual const std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id=nullptr) const=0;
 
         /**
          * Returns a set of XML Signature/Encryption algorithm identifiers to block.

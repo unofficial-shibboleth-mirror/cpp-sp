@@ -74,6 +74,7 @@ namespace shibsp {
         DOMDocument* m_document;
         vector<xstring> m_whitelist,m_blacklist;
         map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > > m_policyMap;
+        map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator m_defaultPolicy;
 
         friend class SHIBSP_DLLLOCAL XMLSecurityPolicyProvider;
     };
@@ -91,14 +92,18 @@ namespace shibsp {
             delete m_impl;
         }
 
-        const PropertySet* getPolicySettings(const char* id) const {
+        const PropertySet* getPolicySettings(const char* id=nullptr) const {
+            if (!id || !*id)
+                return m_impl->m_defaultPolicy->second.first;
             map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
             if (i != m_impl->m_policyMap.end())
                 return i->second.first;
             throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
         }
 
-        const vector<const SecurityPolicyRule*>& getPolicyRules(const char* id) const {
+        const vector<const SecurityPolicyRule*>& getPolicyRules(const char* id=nullptr) const {
+            if (!id || !*id)
+                return m_impl->m_defaultPolicy->second.second;
             map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
             if (i != m_impl->m_policyMap.end())
                 return i->second.second;
@@ -172,7 +177,8 @@ SecurityPolicy* SecurityPolicyProvider::createSecurityPolicy(
     return new SecurityPolicy(application, role, (validate.first && validate.second), policyId);
 }
 
-XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e, Category& log) : m_document(nullptr)
+XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e, Category& log)
+    : m_document(nullptr), m_defaultPolicy(m_policyMap.end())
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLSecurityPolicyProviderImpl");
@@ -214,6 +220,10 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
         settings->load(e, nullptr, &filter);
         rules.first = settings.release();
 
+        // Set default policy if not set, or id is "default".
+        if (m_defaultPolicy == m_policyMap.end() || id == "default")
+            m_defaultPolicy = m_policyMap.find(id);
+
         // Process PolicyRule elements.
         const DOMElement* rule = XMLHelper::getFirstChildElement(e, PolicyRule);
         while (rule) {
@@ -253,6 +263,9 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
 
         e = XMLHelper::getNextSiblingElement(e, Policy);
     }
+
+    if (m_defaultPolicy == m_policyMap.end())
+        throw ConfigurationException("XML SecurityPolicyProvider requires at least one Policy.");
 }
 
 pair<bool,DOMElement*> XMLSecurityPolicyProvider::load(bool backup)

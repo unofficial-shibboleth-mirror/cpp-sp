@@ -20,9 +20,8 @@
     -->
 
     <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
-    <ApplicationDefaults policyId="default"
-        entityID="https://sp.example.org/shibboleth"
-        REMOTE_USER="eppn persistent-id targeted-id">
+    <ApplicationDefaults entityID="https://sp.example.org/shibboleth"
+                         REMOTE_USER="eppn persistent-id targeted-id">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
@@ -34,7 +33,7 @@
         impact on the security of the SP. Stealing cookies/sessions is much easier with this disabled.
         -->
         <Sessions lifetime="28800" timeout="3600" checkAddress="false"
-            handlerURL="/Shibboleth.sso" handlerSSL="false">
+                  handlerURL="/Shibboleth.sso" handlerSSL="false">
             
             <!--
             SessionInitiators handle session requests and relay them to a Discovery page,
@@ -44,7 +43,8 @@
 
             <!-- Default directs to a specific IdP (favoring SAML 2 over Shib 1). -->
             <SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="Login"
-                    relayState="cookie" entityID="https://idp.example.org/shibboleth">
+                              relayState="cookie" entityID="https://idp.example.org/shibboleth">
+              
                 <SessionInitiator type="SAML2" acsIndex="1" template="bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" acsIndex="5"/>
                 <!--

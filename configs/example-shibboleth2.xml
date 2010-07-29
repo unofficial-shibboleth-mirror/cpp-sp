@@ -91,10 +91,9 @@
     Resource requests are mapped by the RequestMapper to an applicationId that
     points into to this section (or to the defaults here).
     -->
-    <ApplicationDefaults policyId="default"
-        entityID="https://sp.example.org/shibboleth"
-        REMOTE_USER="eppn persistent-id targeted-id"
-        signing="false" encryption="false">
+    <ApplicationDefaults entityID="https://sp.example.org/shibboleth"
+                         REMOTE_USER="eppn persistent-id targeted-id"
+                         signing="false" encryption="false">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
@@ -118,7 +117,8 @@
 
             <!-- Default directs to a specific IdP (favoring SAML 2 over Shib 1). -->
             <SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="Login"
-                    relayState="cookie" entityID="https://idp.example.org/shibboleth">
+                              relayState="cookie" entityID="https://idp.example.org/shibboleth">
+              
                 <SessionInitiator type="SAML2" acsIndex="1" template="bindingTemplate.html"/>
                 <SessionInitiator type="Shib1" acsIndex="5"/>
                 <!--

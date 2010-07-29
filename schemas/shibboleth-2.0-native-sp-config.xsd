@@ -382,7 +382,7 @@
     </sequence>
     <attribute name="id" type="conf:string" fixed="default"/>
     <attribute name="entityID" type="anyURI" use="required"/>
-    <attribute name="policyId" type="conf:string" use="required"/>
+    <attribute name="policyId" type="conf:string"/>
     <attributeGroup ref="conf:ApplicationGroup"/>
     <attributeGroup ref="conf:RelyingPartyGroup"/>
     <anyAttribute namespace="##other" processContents="lax"/>
