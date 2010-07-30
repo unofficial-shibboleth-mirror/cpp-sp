@@ -45,7 +45,7 @@
             <SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="Login"
                               relayState="cookie" entityID="https://idp.example.org/shibboleth">
               
-                <SessionInitiator type="SAML2" acsIndex="1" template="bindingTemplate.html"/>
+                <SessionInitiator type="SAML2" acsIndex="1"/>
                 <SessionInitiator type="Shib1" acsIndex="5"/>
                 <!--
                 To allow for >1 IdP, remove entityID property from Chaining element and add
@@ -77,28 +77,28 @@
 
             <!-- LogoutInitiators enable SP-initiated local or global/single logout of sessions. -->
             <LogoutInitiator type="Chaining" Location="/Logout" relayState="cookie">
-                <LogoutInitiator type="SAML2" template="bindingTemplate.html"/>
+                <LogoutInitiator type="SAML2"/>
                 <LogoutInitiator type="Local"/>
             </LogoutInitiator>
 
             <!-- md:SingleLogoutService locations handle single logout (SLO) protocol messages. -->
             <md:SingleLogoutService Location="/SLO/SOAP"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
-            <md:SingleLogoutService Location="/SLO/Redirect" conf:template="bindingTemplate.html"
+            <md:SingleLogoutService Location="/SLO/Redirect"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
-            <md:SingleLogoutService Location="/SLO/POST" conf:template="bindingTemplate.html"
+            <md:SingleLogoutService Location="/SLO/POST"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
-            <md:SingleLogoutService Location="/SLO/Artifact" conf:template="bindingTemplate.html"
+            <md:SingleLogoutService Location="/SLO/Artifact"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
 
             <!-- md:ManageNameIDService locations handle NameID management (NIM) protocol messages. -->
             <md:ManageNameIDService Location="/NIM/SOAP"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
-            <md:ManageNameIDService Location="/NIM/Redirect" conf:template="bindingTemplate.html"
+            <md:ManageNameIDService Location="/NIM/Redirect"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
-            <md:ManageNameIDService Location="/NIM/POST" conf:template="bindingTemplate.html"
+            <md:ManageNameIDService Location="/NIM/POST"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
-            <md:ManageNameIDService Location="/NIM/Artifact" conf:template="bindingTemplate.html"
+            <md:ManageNameIDService Location="/NIM/Artifact"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"/>
 
             <!--
