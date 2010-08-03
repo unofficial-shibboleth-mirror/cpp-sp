@@ -1,18 +1,45 @@
 #! /bin/sh
 
-while getopts a:c:e:h:n:o:s:t: c
+SAML1=0
+SAML2=0
+ARTIFACT=0
+DS=0
+LOGOUT=0
+NAMEIDMGMT=0
+
+SAML10PROT="urn:oasis:names:tc:SAML:1.0:protocol"
+SAML11PROT="urn:oasis:names:tc:SAML:1.1:protocol"
+SAML20PROT="urn:oasis:names:tc:SAML:2.0:protocol"
+
+SAML20SOAP="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"
+SAML20REDIRECT="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+SAML20POST="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+SAML20POSTSS="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign"
+SAML20ART="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact"
+SAML20PAOS="urn:oasis:names:tc:SAML:2.0:bindings:PAOS"
+
+SAML1POST="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
+SAML1ART="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
+
+while getopts a:c:e:h:n:o:s:t:12ADLN c
      do
          case $c in
-           c)         CERTS[${#CERTS[*]}]=$OPTARG;;
-           e)         ENTITYID=$OPTARG;;
-           h)         HOSTS[${#HOSTS[*]}]=$OPTARG;;
-           n)         NAKEDHOSTS[${#NAKEDHOSTS[*]}]=$OPTARG;;
-           o)         ORGNAME=$OPTARG;;
-           a)         ADMIN[${#ADMIN[*]}]=$OPTARG;;
-           s)         SUP[${#SUP[*]}]=$OPTARG;;
-           t)         TECH[${#TECH[*]}]=$OPTARG;;
-           \?)        echo metagen -c cert1 [-c cert2 ...] -h host1 [-h host2 ...] [-e entityID]
-                      exit 1;;
+           c)   CERTS[${#CERTS[*]}]=$OPTARG;;
+           e)   ENTITYID=$OPTARG;;
+           h)   HOSTS[${#HOSTS[*]}]=$OPTARG;;
+           n)   NAKEDHOSTS[${#NAKEDHOSTS[*]}]=$OPTARG;;
+           o)   ORGNAME=$OPTARG;;
+           a)   ADMIN[${#ADMIN[*]}]=$OPTARG;;
+           s)   SUP[${#SUP[*]}]=$OPTARG;;
+           t)   TECH[${#TECH[*]}]=$OPTARG;;
+           1)   SAML1=1;;
+           2)   SAML2=1;;
+           A)   ARTIFACT=1;;
+           D)   DS=1;;
+           L)   LOGOUT=1;;
+           N)   NAMEIDMGMT=1;;
+           \?)  echo metagen [-12ADLN] -c cert1 [-c cert2 ...] -h host1 [-h host2 ...] [-e entityID]
+                exit 1;;
          esac
      done
 
@@ -37,9 +64,71 @@ if [ -z $ENTITYID ] ; then
     ENTITYID=https://${HOSTS[0]}/shibboleth
 fi
 
+# Establish protocols and bindings.
+
+if [ $SAML1 -eq 0 -a $SAML2 -eq 0 ] ; then
+    SAML1=1
+    SAML2=1
+fi
+
+if [ $LOGOUT -eq 1 -o $NAMEIDMGMT -eq 1 ] ; then
+    SAML2=1
+    SLO[${#SLO[*]}]=$SAML20SOAP
+    SLO[${#SLO[*]}]=$SAML20REDIRECT
+    SLO[${#SLO[*]}]=$SAML20POST
+    SLOLOC[${#SLOLOC[*]}]="SOAP"
+    SLOLOC[${#SLOLOC[*]}]="Redirect"
+    SLOLOC[${#SLOLOC[*]}]="POST"
+    if [ $ARTIFACT -eq 1 ] ; then
+        SLO[${#SLO[*]}]=$SAML20ART
+        SLOLOC[${#SLOLOC[*]}]="Artifact"
+    fi
+fi
+
+if [ $SAML1 -eq 1 -a $SAML2 -eq 1 ] ; then
+    PROTENUM="$SAML20PROT $SAML11PROT $SAML10PROT"
+elif [ $SAML1 -eq 1 ] ; then
+    PROTENUM="$SAML11PROT $SAML10PROT"
+else
+    PROTENUM="$SAML20PROT"
+fi
+
+if [ $SAML2 -eq 1 ] ; then
+    ACS[${#ACS[*]}]=$SAML20POST
+    ACSLOC[${#ACSLOC[*]}]="SAML2/POST"
+    ACS[${#ACS[*]}]=$SAML20POSTSS
+    ACSLOC[${#ACSLOC[*]}]="SAML2/POST-SimpleSign"
+    if [ $ARTIFACT -eq 1 ] ; then
+        ACS[${#ACS[*]}]=$SAML20ART
+        ACSLOC[${#ACSLOC[*]}]="SAML2/Artifact"
+    fi
+    ACS[${#ACS[*]}]=$SAML20PAOS
+    ACSLOC[${#ACSLOC[*]}]="SAML2/ECP"
+fi
+
+if [ $SAML1 -eq 1 ] ; then
+    ACS[${#ACS[*]}]=$SAML1POST
+    ACSLOC[${#ACSLOC[*]}]="SAML/POST"
+    if [ $ARTIFACT -eq 1 ] ; then
+        ACS[${#ACS[*]}]=$SAML1ART
+        ACSLOC[${#ACSLOC[*]}]="SAML/Artifact"
+    fi
+fi
+
+if [ $SAML2 -eq 1 ] ; then
+    ACS[${#ACS[*]}]=$SAML20PAOS
+    ACSLOC[${#ACSLOC[*]}]="SAML2/ECP"
+fi
+
 cat <<EOF
 <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="${ENTITYID}">
-  <md:SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol urn:oasis:names:tc:SAML:1.1:protocol urn:oasis:names:tc:SAML:1.0:protocol">
+  <md:SPSSODescriptor protocolSupportEnumeration="${PROTENUM}">
+EOF
+
+# Discovery BEGIN
+if [ $DS -eq 1 ] ; then
+
+cat << EOF
     <md:Extensions>
 EOF
 
@@ -64,6 +153,9 @@ cat << EOF
     </md:Extensions>
 EOF
 
+fi
+# Discovery END
+
 for c in ${CERTS[@]}
 do
 cat << EOF
@@ -81,79 +173,91 @@ cat << EOF
 EOF
 done
 
-cat << EOF
-    <!--
-EOF
+# Logout BEGIN
+if [ $LOGOUT -eq 1 ] ; then
 
 for h in ${HOSTS[@]}
 do
-  cat <<EOF
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://$h/Shibboleth.sso/SLO/SOAP"/>
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://$h/Shibboleth.sso/SLO/Redirect"/>
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://$h/Shibboleth.sso/SLO/POST"/>
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="https://$h/Shibboleth.sso/SLO/Artifact"/>
+  count=0
+  while [ $count -lt ${#SLO[*]} ]
+  do
+    cat <<EOF
+    <md:SingleLogoutService Binding="${SLO[$count]}" Location="https://$h/Shibboleth.sso/SLO/${SLOLOC[$count]}"/>
 EOF
+    let "count++"
+  done
 done
 
 for h in ${NAKEDHOSTS[@]}
 do
-  cat <<EOF
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="http://$h/Shibboleth.sso/SLO/SOAP"/>
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://$h/Shibboleth.sso/SLO/Redirect"/>
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://$h/Shibboleth.sso/SLO/POST"/>
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="http://$h/Shibboleth.sso/SLO/Artifact"/>
+  count=0
+  while [ $count -lt ${#SLO[*]} ]
+  do
+    cat <<EOF
+    <md:SingleLogoutService Binding="${SLO[$count]}" Location="http://$h/Shibboleth.sso/SLO/${SLOLOC[$count]}"/>
 EOF
+    let "count++"
+  done
 done
+
+fi
+# Logout END
+
+# NameID Mgmt BEGIN
+if [ $NAMEIDMGMT -eq 1 ] ; then
 
 for h in ${HOSTS[@]}
 do
-  cat <<EOF
-    <md:ManageNameIDService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://$h/Shibboleth.sso/NIM/SOAP"/>
-    <md:ManageNameIDService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://$h/Shibboleth.sso/NIM/Redirect"/>
-    <md:ManageNameIDService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://$h/Shibboleth.sso/NIM/POST"/>
-    <md:ManageNameIDService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="https://$h/Shibboleth.sso/NIM/Artifact"/>
+  count=0
+  while [ $count -lt ${#SLO[*]} ]
+  do
+    cat <<EOF
+    <md:ManageNameIDService Binding="${SLO[$count]}" Location="https://$h/Shibboleth.sso/NIM/${SLOLOC[$count]}"/>
 EOF
+    let "count++"
+  done
 done
 
 for h in ${NAKEDHOSTS[@]}
 do
-  cat <<EOF
-    <md:ManageNameIDService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="http://$h/Shibboleth.sso/NIM/SOAP"/>
-    <md:ManageNameIDService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://$h/Shibboleth.sso/NIM/Redirect"/>
-    <md:ManageNameIDService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://$h/Shibboleth.sso/NIM/POST"/>
-    <md:ManageNameIDService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="http://$h/Shibboleth.sso/NIM/Artifact"/>
+  count=0
+  while [ $count -lt ${#SLO[*]} ]
+  do
+    cat <<EOF
+    <md:ManageNameIDService Binding="${SLO[$count]}" Location="http://$h/Shibboleth.sso/NIM/${SLOLOC[$count]}"/>
 EOF
+    let "count++"
+  done
 done
 
-cat <<EOF
-    -->
-EOF
+fi
+# NameID Mgmt END
 
-count=0
+index=0
 for h in ${HOSTS[@]}
 do
-  cat <<EOF
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://$h/Shibboleth.sso/SAML2/POST" index="$((count+1))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" Location="https://$h/Shibboleth.sso/SAML2/POST-SimpleSign" index="$((count+2))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="https://$h/Shibboleth.sso/SAML2/Artifact" index="$((count+3))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS" Location="https://$h/Shibboleth.sso/SAML2/ECP" index="$((count+4))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post" Location="https://$h/Shibboleth.sso/SAML/POST" index="$((count+5))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01" Location="https://$h/Shibboleth.sso/SAML/Artifact" index="$((count+6))"/>
+  count=0
+  while [ $count -lt ${#ACS[*]} ]
+  do
+    cat <<EOF
+    <md:AssertionConsumerService Binding="${ACS[$count]}" Location="https://$h/Shibboleth.sso/${ACSLOC[$count]}" index="$((index+1))"/>
 EOF
-  let "count+=6"
+    let "count++"
+    let "index++"
+  done
 done
 
 for h in ${NAKEDHOSTS[@]}
 do
-  cat <<EOF
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://$h/Shibboleth.sso/SAML2/POST" index="$((count+1))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" Location="http://$h/Shibboleth.sso/SAML2/POST-SimpleSign" index="$((count+2))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="http://$h/Shibboleth.sso/SAML2/Artifact" index="$((count+3))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS" Location="http://$h/Shibboleth.sso/SAML2/ECP" index="$((count+4))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:1.0:profiles:browser-post" Location="http://$h/Shibboleth.sso/SAML/POST" index="$((count+5))"/>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01" Location="http://$h/Shibboleth.sso/SAML/Artifact" index="$((count+6))"/>
+  count=0
+  while [ $count -lt ${#ACS[*]} ]
+  do
+    cat <<EOF
+    <md:AssertionConsumerService Binding="${ACS[$count]}" Location="http://$h/Shibboleth.sso/${ACSLOC[$count]}" index="$((index+1))"/>
 EOF
-  let "count+=6"
+    let "count++"
+    let "index++"
+  done
 done
 
 cat <<EOF 
