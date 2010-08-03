@@ -21,11 +21,12 @@ SAML20PAOS="urn:oasis:names:tc:SAML:2.0:bindings:PAOS"
 SAML1POST="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
 SAML1ART="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
 
-while getopts a:c:e:h:n:o:s:t:u:12ADLN c
+while getopts a:c:e:f:h:n:o:s:t:u:12ADLN c
      do
          case $c in
            c)   CERTS[${#CERTS[*]}]=$OPTARG;;
            e)   ENTITYID=$OPTARG;;
+           f)   FORMATS=[${#FORMATS[*]}]=$OPTARG;;
            h)   HOSTS[${#HOSTS[*]}]=$OPTARG;;
            n)   NAKEDHOSTS[${#NAKEDHOSTS[*]}]=$OPTARG;;
            o)   ORGNAME=$OPTARG;;
@@ -45,7 +46,7 @@ while getopts a:c:e:h:n:o:s:t:u:12ADLN c
      done
 
 if [ ${#HOSTS[*]} -eq 0 -a ${#NAKEDHOSTS[*]} -eq 0 ] ; then
-    echo metagen -c cert1 [-c cert2 ...] -h host1 [-h host2 ...] [-e entityID]
+    echo metagen [-12ADLN] -c cert1 [-c cert2 ...] -h host1 [-h host2 ...] [-e entityID]
     exit 1
 fi
 
@@ -171,6 +172,13 @@ cat << EOF
         </ds:X509Data>
       </ds:KeyInfo>
     </md:KeyDescriptor>
+EOF
+done
+
+for f in ${FORMATS[@]}
+do
+cat << EOF
+    <md:NameIDFormat>$f</md:NameIDFormat>
 EOF
 done
 
