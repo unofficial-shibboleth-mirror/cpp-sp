@@ -121,7 +121,7 @@ if [ $SAML2 -eq 1 ] ; then
 fi
 
 cat <<EOF
-<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="${ENTITYID}">
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" entityID="${ENTITYID}">
   <md:SPSSODescriptor protocolSupportEnumeration="${PROTENUM}">
 EOF
 
@@ -160,7 +160,7 @@ for c in ${CERTS[@]}
 do
 cat << EOF
     <md:KeyDescriptor>
-      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+      <ds:KeyInfo>
         <ds:X509Data>
           <ds:X509Certificate>
 EOF
