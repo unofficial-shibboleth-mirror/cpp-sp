@@ -21,7 +21,7 @@ SAML20PAOS="urn:oasis:names:tc:SAML:2.0:bindings:PAOS"
 SAML1POST="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
 SAML1ART="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
 
-while getopts a:c:e:h:n:o:s:t:12ADLN c
+while getopts a:c:e:h:n:o:s:t:u:12ADLN c
      do
          case $c in
            c)   CERTS[${#CERTS[*]}]=$OPTARG;;
@@ -32,6 +32,7 @@ while getopts a:c:e:h:n:o:s:t:12ADLN c
            a)   ADMIN[${#ADMIN[*]}]=$OPTARG;;
            s)   SUP[${#SUP[*]}]=$OPTARG;;
            t)   TECH[${#TECH[*]}]=$OPTARG;;
+           u)   URL=$OPTARG;;
            1)   SAML1=1;;
            2)   SAML2=1;;
            A)   ARTIFACT=1;;
@@ -265,11 +266,14 @@ cat <<EOF
 EOF
 
 if [ -n "$ORGNAME" ] ; then
+  if [ -z "$URL" ] ; then
+    URL=$ENTITYID
+  fi
   cat <<EOF
   <md:Organization>
     <md:OrganizationName xml:lang="en">$ORGNAME</md:OrganizationName>
     <md:OrganizationDisplayName xml:lang="en">$ORGNAME</md:OrganizationDisplayName>
-    <md:OrganizationURL xml:lang="en">$ENTITYID</md:OrganizationURL>
+    <md:OrganizationURL xml:lang="en">$URL</md:OrganizationURL>
   </md:Organization>
 EOF
 fi
