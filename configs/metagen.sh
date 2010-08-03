@@ -26,7 +26,7 @@ while getopts a:c:e:f:h:n:o:s:t:u:12ADLN c
          case $c in
            c)   CERTS[${#CERTS[*]}]=$OPTARG;;
            e)   ENTITYID=$OPTARG;;
-           f)   FORMATS=[${#FORMATS[*]}]=$OPTARG;;
+           f)   FORMATS[${#FORMATS[*]}]=$OPTARG;;
            h)   HOSTS[${#HOSTS[*]}]=$OPTARG;;
            n)   NAKEDHOSTS[${#NAKEDHOSTS[*]}]=$OPTARG;;
            o)   ORGNAME=$OPTARG;;
