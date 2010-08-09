@@ -533,6 +533,7 @@ void XMLExtractorImpl::extractAttributes(
         format = saml2::Attribute::UNSPECIFIED;
     else if (XMLString::equals(format, saml2::Attribute::URI_REFERENCE))
         format = &chNull;
+
 #ifdef HAVE_GOOD_STL
     if ((rule=m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
 #else
@@ -541,10 +542,27 @@ void XMLExtractorImpl::extractAttributes(
     if ((rule=m_attrMap.find(pair<string,string>(temp1.get(),temp2.get()))) != m_attrMap.end()) {
 #endif
         Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty);
-        if (a)
+        if (a) {
             attributes.push_back(a);
+            return;
+        }
     }
-    else if (m_log.isInfoEnabled()) {
+    else if (XMLString::equals(format, saml2::Attribute::UNSPECIFIED)) {
+        // As a fallback, if the format is "unspecified", null out the value and re-map.
+#ifdef HAVE_GOOD_STL
+        if ((rule=m_attrMap.find(pair<xstring,xstring>(name,xstring()))) != m_attrMap.end()) {
+#else
+        if ((rule=m_attrMap.find(pair<string,string>(temp1.get(),string()))) != m_attrMap.end()) {
+#endif
+            Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty);
+            if (a) {
+                attributes.push_back(a);
+                return;
+            }
+        }
+    }
+
+    if (m_log.isInfoEnabled()) {
 #ifdef HAVE_GOOD_STL
         auto_ptr_char temp1(name);
         auto_ptr_char temp2(format);
