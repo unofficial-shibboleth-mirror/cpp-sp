@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,6 +96,13 @@ namespace shibsp {
 
     public:
         virtual ~Handler();
+
+        /**
+         * Returns an identifier for the protocol family associated with the handler, if any.
+         *
+         * @return  a protocol identifier, or nullptr
+         */
+        virtual const XMLCh* getProtocolFamily() const;
 
         /**
          * Executes handler functionality as an incoming request.

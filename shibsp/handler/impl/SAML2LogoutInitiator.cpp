@@ -80,6 +80,9 @@ namespace shibsp {
             return "LogoutInitiator";
         }
 #endif
+        const XMLCh* getProtocolFamily() const {
+            return samlconstants::SAML20P_NS;
+        }
 
     private:
         pair<bool,long> doRequest(
@@ -142,13 +145,13 @@ SAML2LogoutInitiator::SAML2LogoutInitiator(const DOMElement* e, const char* appI
                 auto_ptr_char b(start);
                 MessageEncoder * encoder =
                     SAMLConfig::getConfig().MessageEncoderManager.newPlugin(b.get(),pair<const DOMElement*,const XMLCh*>(e,nullptr));
-                if (encoder->isUserAgentPresent()) {
+                if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                     m_encoders[start] = encoder;
                     m_log.debug("supporting outgoing binding (%s)", b.get());
                 }
                 else {
                     delete encoder;
-                    m_log.warn("skipping outgoing binding (%s), not a front-channel mechanism", b.get());
+                    m_log.warn("skipping outgoing binding (%s), not a SAML 2.0 front-channel mechanism", b.get());
                 }
             }
             catch (exception& ex) {

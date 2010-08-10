@@ -97,6 +97,10 @@ namespace shibsp {
 
         bool m_post;
         SecurityPolicyRule* m_ssoRule;
+#else
+        const XMLCh* getProtocolFamily() const {
+            return samlconstants::SAML11_PROTOCOL_ENUM;
+        }
 #endif
     };
 

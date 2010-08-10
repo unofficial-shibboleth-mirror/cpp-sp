@@ -174,7 +174,7 @@ namespace shibsp {
 
     public:
         const char* getType() const;
-
+        const XMLCh* getProtocolFamily() const;
 #endif
     private:
         std::pair<bool,long> processMessage(

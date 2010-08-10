@@ -77,6 +77,10 @@ namespace shibsp {
         pair<bool,long> unwrap(SPRequest& request, DDF& out) const;
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
+        const XMLCh* getProtocolFamily() const {
+            return samlconstants::SAML20P_NS;
+        }
+
     private:
         pair<bool,long> doRequest(
             const Application& application,
@@ -177,13 +181,13 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
                 MessageEncoder * encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
                     b.get(),pair<const DOMElement*,const XMLCh*>(e,nullptr)
                     );
-                if (encoder->isUserAgentPresent()) {
+                if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                     m_encoders[start] = encoder;
                     m_log.debug("supporting outgoing binding (%s)", b.get());
                 }
                 else {
                     delete encoder;
-                    m_log.warn("skipping outgoing binding (%s), not a front-channel mechanism", b.get());
+                    m_log.warn("skipping outgoing binding (%s), not a SAML 2.0 front-channel mechanism", b.get());
                 }
             }
             catch (exception& ex) {
@@ -324,21 +328,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     }
 
     // Validate the ACS for use with this protocol.
-    if (!ECP) {
-        pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,nullptr);
-        if (ACSbinding.first) {
-            pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
-            if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == nullptr) {
-                m_log.error("configured or requested ACS has non-SAML 2.0 binding");
-                throw ConfigurationException("Configured or requested ACS has non-SAML 2.0 binding ($1).", params(1, ACSbinding.second));
-            }
-            else if (strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_POST) &&
-                     strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT) &&
-                     strcmp(ACSbinding.second, samlconstants::SAML20_BINDING_HTTP_POST_SIMPLESIGN)) {
-                m_log.error("configured or requested ACS has non-SAML 2.0 binding");
-                throw ConfigurationException("Configured or requested ACS has non-SAML 2.0 binding ($1).", params(1, ACSbinding.second));
-            }
-        }
+    if (!ECP && ACS && !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily())) {
+        m_log.error("configured or requested ACS has non-SAML 2.0 binding");
+        throw ConfigurationException("Configured or requested ACS has non-SAML 2.0 binding ($1).", params(1, ACS->getString("Binding").second));
     }
 
     // To invoke the request builder, the key requirement is to figure out how

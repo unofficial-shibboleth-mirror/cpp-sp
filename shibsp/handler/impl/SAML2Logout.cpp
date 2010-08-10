@@ -47,6 +47,8 @@ using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
+#else
+# include "lite/SAMLConstants.h"
 #endif
 
 using namespace shibsp;
@@ -96,6 +98,9 @@ namespace shibsp {
             return "SingleLogoutService";
         }
 #endif
+        const XMLCh* getProtocolFamily() const {
+            return samlconstants::SAML20P_NS;
+        }
 
     private:
         pair<bool,long> doRequest(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
@@ -178,13 +183,13 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
                     MessageEncoder * encoder = conf.MessageEncoderManager.newPlugin(
                         b.get(), pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
                         );
-                    if (encoder->isUserAgentPresent()) {
+                    if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                         m_encoders[start] = encoder;
                         m_log.debug("supporting outgoing binding (%s)", b.get());
                     }
                     else {
                         delete encoder;
-                        m_log.warn("skipping outgoing binding (%s), not a front-channel mechanism", b.get());
+                        m_log.warn("skipping outgoing binding (%s), not a SAML 2.0 front-channel mechanism", b.get());
                     }
                 }
                 catch (exception& ex) {

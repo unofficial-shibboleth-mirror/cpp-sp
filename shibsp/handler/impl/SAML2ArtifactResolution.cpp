@@ -45,7 +45,8 @@ using namespace opensaml::saml2md;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2;
 using namespace opensaml;
-using namespace samlconstants;
+#else
+# include "lite/SAMLConstants.h"
 #endif
 
 #include <xmltooling/soap/SOAP.h>
@@ -106,6 +107,9 @@ namespace shibsp {
             role.getArtifactResolutionServices().push_back(ep);
         }
 #endif
+        const XMLCh* getProtocolFamily() const {
+            return samlconstants::SAML20P_NS;
+        }
 
     private:
         pair<bool,long> processMessage(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;

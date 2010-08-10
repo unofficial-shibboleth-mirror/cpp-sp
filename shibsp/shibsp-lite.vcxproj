@@ -241,7 +241,6 @@
     <ClInclude Include="AbstractSPRequest.h" />
     <ClInclude Include="AccessControl.h" />
     <ClInclude Include="Application.h" />
-    <ClInclude Include="ApplicationAwarePlugin.h" />
     <ClInclude Include="base.h" />
     <ClInclude Include="exceptions.h" />
     <ClInclude Include="internal.h" />

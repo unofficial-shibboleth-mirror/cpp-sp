@@ -135,18 +135,9 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     }
 
     // Validate the ACS for use with this protocol.
-    pair<bool,const char*> ACSbinding = ACS ? ACS->getString("Binding") : pair<bool,const char*>(false,nullptr);
-    if (ACSbinding.first) {
-        pair<bool,const char*> compatibleBindings = getString("compatibleBindings");
-        if (compatibleBindings.first && strstr(compatibleBindings.second, ACSbinding.second) == nullptr) {
-            m_log.error("configured or requested ACS has non-SAML 1.x binding");
-            throw ConfigurationException("Configured or requested ACS has non-SAML 1.x binding ($1).", params(1, ACSbinding.second));
-        }
-        else if (strcmp(ACSbinding.second, samlconstants::SAML1_PROFILE_BROWSER_POST) &&
-                 strcmp(ACSbinding.second, samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT)) {
-            m_log.error("configured or requested ACS has non-SAML 1.x binding");
-            throw ConfigurationException("Configured or requested ACS has non-SAML 1.x binding ($1).", params(1, ACSbinding.second));
-        }
+    if (ACS && !XMLString::equals(samlconstants::SAML11_PROTOCOL_ENUM, ACS->getProtocolFamily())) {
+        m_log.error("configured or requested ACS has non-SAML 1.x binding");
+        throw ConfigurationException("Configured or requested ACS has non-SAML 1.x binding ($1).", params(1, ACS->getString("Binding").second));
     }
 
     if (!discoveryURL.first)

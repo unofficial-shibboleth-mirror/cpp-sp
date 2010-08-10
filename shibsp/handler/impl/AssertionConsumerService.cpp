@@ -224,6 +224,11 @@ void AssertionConsumerService::checkAddress(const Application& application, cons
 
 #ifndef SHIBSP_LITE
 
+const XMLCh* AssertionConsumerService::getProtocolFamily() const
+{
+    return m_decoder ? m_decoder->getProtocolFamily() : nullptr;
+}
+
 const char* AssertionConsumerService::getType() const
 {
     return "AssertionConsumerService";

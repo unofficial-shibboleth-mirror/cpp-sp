@@ -45,6 +45,8 @@ using namespace opensaml;
 # ifndef min
 #  define min(a,b)            (((a) < (b)) ? (a) : (b))
 # endif
+#else
+# include "lite/SAMLConstants.h"
 #endif
 
 using namespace shibsp;
@@ -92,6 +94,10 @@ namespace shibsp {
             ) const;
 
         SecurityPolicyRule* m_ssoRule;
+#else
+        const XMLCh* getProtocolFamily() const {
+            return samlconstants::SAML20P_NS;
+        }
 #endif
     };
 

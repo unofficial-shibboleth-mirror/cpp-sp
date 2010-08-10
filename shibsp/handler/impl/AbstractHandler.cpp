@@ -158,6 +158,11 @@ Handler::~Handler()
 {
 }
 
+const XMLCh* Handler::getProtocolFamily() const
+{
+    return nullptr;
+}
+
 void Handler::log(SPRequest::SPLogLevel level, const string& msg) const
 {
     Category::getInstance(SHIBSP_LOGCAT".Handler").log(
