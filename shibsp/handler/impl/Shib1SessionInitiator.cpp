@@ -151,12 +151,20 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
 
     // Since we're not passing by index, we need to fully compute the return URL.
     if (!ACS) {
+        // Try fixed index property, or incoming binding set, or default, in order.
         pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
         if (index.first) {
             ACS = app.getAssertionConsumerServiceByIndex(index.second);
             if (!ACS)
                 request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
         }
+        /*
+        for (vector<string>::const_iterator b = m_incomingBindings.begin(); !ACS && b != m_incomingBindings.end(); ++b) {
+            ACS = app.getAssertionConsumerServiceByBinding(b->c_str());
+            if (ACS && !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily()))
+                ACS = nullptr;
+        }
+        */
         if (!ACS)
             ACS = app.getDefaultAssertionConsumerService();
     }

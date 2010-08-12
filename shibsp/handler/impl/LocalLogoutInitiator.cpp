@@ -26,7 +26,7 @@
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
-#include "handler/LogoutHandler.h"
+#include "handler/LogoutInitiator.h"
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -39,7 +39,7 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL LocalLogoutInitiator : public AbstractHandler, public LogoutHandler
+    class SHIBSP_DLLLOCAL LocalLogoutInitiator : public AbstractHandler, public LogoutInitiator
     {
     public:
         LocalLogoutInitiator(const DOMElement* e, const char* appId);
@@ -47,12 +47,6 @@ namespace shibsp {
         
         void setParent(const PropertySet* parent);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-
-#ifndef SHIBSP_LITE
-        const char* getType() const {
-            return "LogoutInitiator";
-        }
-#endif
 
     private:
         string m_appId;

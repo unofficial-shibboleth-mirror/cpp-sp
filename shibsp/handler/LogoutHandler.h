@@ -142,16 +142,6 @@ namespace shibsp {
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
-
-    /** LogoutInitiator that iterates through a set of protocol-specific versions. */
-    #define CHAINING_LOGOUT_INITIATOR "Chaining"
-
-    /** LogoutInitiator that supports SAML 2.0 LogoutRequests. */
-    #define SAML2_LOGOUT_INITIATOR "SAML2"
-
-    /** LogoutInitiator that supports local-only logout. */
-    #define LOCAL_LOGOUT_INITIATOR "Local"
-
 };
 
 #endif /* __shibsp_logout_h__ */

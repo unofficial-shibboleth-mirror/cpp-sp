@@ -168,6 +168,7 @@ namespace {
         const SessionInitiator* getSessionInitiatorById(const char* id) const;
         const Handler* getDefaultAssertionConsumerService() const;
         const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
+        const Handler* getAssertionConsumerServiceByBinding(const char* binding) const;
         const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
         const Handler* getHandler(const char* path) const;
         void getHandlers(vector<const Handler*>& handlers) const;
@@ -224,7 +225,7 @@ namespace {
         const Handler* m_acsDefault;
 
         // maps binding strings to supporting consumer service(s)
-        typedef map<xstring,vector<const Handler*> > ACSBindingMap;
+        typedef map< string,vector<const Handler*> > ACSBindingMap;
         ACSBindingMap m_acsBindingMap;
 
         // pointer to default session initiator
@@ -647,8 +648,8 @@ XMLApplication::XMLApplication(
                         continue;
                     }
                     handler = conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
-                    // Map by binding (may be > 1 per binding, e.g. SAML 1.0 vs 1.1)
-                    m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
+                    // Map by binding (may be > 1 per binding)
+                    m_acsBindingMap[bindprop].push_back(handler);
                     m_acsIndexMap[handler->getUnsignedInt("index").second] = handler;
 
                     if (!hardACS) {
@@ -967,8 +968,9 @@ XMLApplication::XMLApplication(
                 string addr=string(getId()) + "::getHeaders::Application";
                 listener->regListener(addr.c_str(),this);
             }
-            else
+            else {
                 log.info("no ListenerService available, Application remoting disabled");
+            }
         }
     }
     catch (exception&) {
@@ -1212,14 +1214,22 @@ const Handler* XMLApplication::getDefaultAssertionConsumerService() const
 const Handler* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short index) const
 {
     map<unsigned int,const Handler*>::const_iterator i=m_acsIndexMap.find(index);
-    if (i!=m_acsIndexMap.end()) return i->second;
+    if (i != m_acsIndexMap.end()) return i->second;
     return m_base ? m_base->getAssertionConsumerServiceByIndex(index) : nullptr;
+}
+
+const Handler* XMLApplication::getAssertionConsumerServiceByBinding(const char* binding) const
+{
+    ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
+    if (i != m_acsBindingMap.end()) return i->second.front();
+    return m_base ? m_base->getAssertionConsumerServiceByBinding(binding) : nullptr;
 }
 
 const vector<const Handler*>& XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
 {
-    ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
-    if (i!=m_acsBindingMap.end())
+    auto_ptr_char b(binding);
+    ACSBindingMap::const_iterator i=m_acsBindingMap.find(b.get());
+    if (i != m_acsBindingMap.end())
         return i->second;
     return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : g_noHandlers;
 }

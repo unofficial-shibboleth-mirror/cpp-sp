@@ -42,7 +42,7 @@ using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 #else
 # include "lite/SAMLConstants.h"
-#include <xercesc/util/XMLUniDefs.hpp>
+# include <xercesc/util/XMLUniDefs.hpp>
 #endif
 
 using namespace shibsp;
@@ -310,18 +310,25 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
     if (!ACS) {
         if (ECP) {
-            const vector<const Handler*>& handlers = app.getAssertionConsumerServicesByBinding(m_paosBinding.get());
-            if (handlers.empty())
+            ACS = app.getAssertionConsumerServiceByBinding(samlconstants::SAML20_BINDING_PAOS);
+            if (!ACS)
                 throw ConfigurationException("Unable to locate PAOS response endpoint.");
-            ACS = handlers.front();
         }
         else {
+            // Try fixed index property, or incoming binding set, or default, in order.
             pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
             if (index.first) {
                 ACS = app.getAssertionConsumerServiceByIndex(index.second);
                 if (!ACS)
                     request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
             }
+            /*
+            for (vector<string>::const_iterator b = m_incomingBindings.begin(); !ACS && b != m_incomingBindings.end(); ++b) {
+                ACS = app.getAssertionConsumerServiceByBinding(b->c_str());
+                if (ACS && !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily()))
+                    ACS = nullptr;
+            }
+            */
             if (!ACS)
                 ACS = app.getDefaultAssertionConsumerService();
         }

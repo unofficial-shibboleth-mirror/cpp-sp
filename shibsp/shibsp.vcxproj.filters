@@ -369,6 +369,9 @@
     <ClCompile Include="impl\XMLSecurityPolicyProvider.cpp">
       <Filter>Source Files\impl</Filter>
     </ClCompile>
+    <ClCompile Include="handler\impl\LogoutInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
@@ -523,6 +526,9 @@
     </ClInclude>
     <ClInclude Include="security\SecurityPolicyProvider.h">
       <Filter>Header Files\security</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\LogoutInitiator.h">
+      <Filter>Header Files\handler</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

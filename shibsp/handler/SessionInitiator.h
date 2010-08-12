@@ -20,11 +20,12 @@
  * Pluggable runtime functionality that handles initiating sessions.
  */
 
-#ifndef __shibsp_initiator_h__
-#define __shibsp_initiator_h__
+#ifndef __shibsp_sesinitiator_h__
+#define __shibsp_sesinitiator_h__
 
 #include <shibsp/handler/Handler.h>
 
+#include <map>
 #include <set>
 #include <string>
 
@@ -66,7 +67,7 @@ namespace shibsp {
         /**
          * Indicates the set of optional settings supported by the handler.
          *
-         * @return  an array of the optional settings supported
+         * @return  a set of the optional settings supported
          */
         virtual const std::set<std::string>& getSupportedOptions() const;
 
@@ -118,4 +119,4 @@ namespace shibsp {
     #define COOKIE_SESSION_INITIATOR "Cookie"
 };
 
-#endif /* __shibsp_initiator_h__ */
+#endif /* __shibsp_sesinitiator_h__ */

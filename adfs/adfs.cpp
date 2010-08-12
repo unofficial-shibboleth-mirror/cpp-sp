@@ -42,7 +42,7 @@
 #include <shibsp/SPConfig.h>
 #include <shibsp/SPRequest.h>
 #include <shibsp/handler/AssertionConsumerService.h>
-#include <shibsp/handler/LogoutHandler.h>
+#include <shibsp/handler/LogoutInitiator.h>
 #include <shibsp/handler/SessionInitiator.h>
 #include <xmltooling/logging.h>
 #include <xmltooling/util/DateTime.h>
@@ -118,7 +118,7 @@ namespace {
     {
     public:
         ADFSSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.ADFS"), nullptr, &m_remapper), m_appId(appId), m_binding(WSFED_NS) {
+            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.ADFS"), nullptr, &m_remapper), m_appId(appId), m_binding(WSFED_NS) {
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -192,7 +192,7 @@ namespace {
 #endif
     };
 
-    class SHIBSP_DLLLOCAL ADFSLogoutInitiator : public AbstractHandler, public LogoutHandler
+    class SHIBSP_DLLLOCAL ADFSLogoutInitiator : public AbstractHandler, public LogoutInitiator
     {
     public:
         ADFSLogoutInitiator(const DOMElement* e, const char* appId)
@@ -221,11 +221,6 @@ namespace {
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
-#ifndef SHIBSP_LITE
-        const char* getType() const {
-            return "LogoutInitiator";
-        }
-#endif
         const XMLCh* getProtocolFamily() const {
             return m_binding.get();
         }
@@ -381,12 +376,11 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
                 request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
         }
         if (!ACS) {
-            const vector<const Handler*>& endpoints = app.getAssertionConsumerServicesByBinding(m_binding.get());
-            if (endpoints.empty()) {
+            ACS = app.getAssertionConsumerServiceByBinding(WSFED_NS);
+            if (!ACS) {
                 m_log.error("unable to locate a compatible ACS");
                 throw ConfigurationException("Unable to locate an ADFS-compatible ACS in the configuration.");
             }
-            ACS = endpoints.front();
         }
     }
 

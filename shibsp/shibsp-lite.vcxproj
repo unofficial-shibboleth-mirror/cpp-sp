@@ -187,6 +187,7 @@
   <ItemGroup>
     <ClCompile Include="AbstractSPRequest.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="handler\impl\LogoutInitiator.cpp" />
     <ClCompile Include="ServiceProvider.cpp" />
     <ClCompile Include="SPConfig.cpp" />
     <ClCompile Include="util\CGIParser.cpp" />
@@ -237,6 +238,7 @@
     <ClCompile Include="lite\SAMLConstants.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="handler\LogoutInitiator.h" />
     <ClInclude Include="remoting\impl\SocketListener.h" />
     <ClInclude Include="AbstractSPRequest.h" />
     <ClInclude Include="AccessControl.h" />

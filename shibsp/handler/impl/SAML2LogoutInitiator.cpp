@@ -26,7 +26,7 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "handler/AbstractHandler.h"
-#include "handler/LogoutHandler.h"
+#include "handler/LogoutInitiator.h"
 
 #ifndef SHIBSP_LITE
 # include "binding/SOAPClient.h"
@@ -58,7 +58,7 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL SAML2LogoutInitiator : public AbstractHandler, public LogoutHandler
+    class SHIBSP_DLLLOCAL SAML2LogoutInitiator : public AbstractHandler, public LogoutInitiator
     {
     public:
         SAML2LogoutInitiator(const DOMElement* e, const char* appId);
@@ -75,11 +75,6 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
-#ifndef SHIBSP_LITE
-        const char* getType() const {
-            return "LogoutInitiator";
-        }
-#endif
         const XMLCh* getProtocolFamily() const {
             return samlconstants::SAML20P_NS;
         }

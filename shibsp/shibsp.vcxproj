@@ -181,6 +181,7 @@
   <ItemGroup>
     <ClCompile Include="AbstractSPRequest.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="handler\impl\LogoutInitiator.cpp" />
     <ClCompile Include="impl\XMLSecurityPolicyProvider.cpp" />
     <ClCompile Include="ServiceProvider.cpp" />
     <ClCompile Include="SPConfig.cpp" />
@@ -275,6 +276,7 @@
     <ClCompile Include="handler\impl\WAYFSessionInitiator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="handler\LogoutInitiator.h" />
     <ClInclude Include="remoting\impl\SocketListener.h" />
     <ClInclude Include="AbstractSPRequest.h" />
     <ClInclude Include="AccessControl.h" />

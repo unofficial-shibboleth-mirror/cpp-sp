@@ -43,6 +43,7 @@
 #include "SPConfig.h"
 #include "TransactionLog.h"
 #include "attribute/Attribute.h"
+#include "handler/LogoutInitiator.h"
 #include "handler/SessionInitiator.h"
 #include "remoting/ListenerService.h"
 
@@ -241,6 +242,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 
     registerAttributeFactories();
     registerHandlers();
+    registerLogoutInitiators();
     registerSessionInitiators();
     registerServiceProviders();
 

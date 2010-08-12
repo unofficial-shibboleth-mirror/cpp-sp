@@ -204,6 +204,9 @@
     <ClCompile Include="lite\SAMLConstants.cpp">
       <Filter>Source Files\lite</Filter>
     </ClCompile>
+    <ClCompile Include="handler\impl\LogoutInitiator.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
@@ -313,6 +316,9 @@
     </ClInclude>
     <ClInclude Include="lite\SAMLConstants.h">
       <Filter>Header Files\lite</Filter>
+    </ClInclude>
+    <ClInclude Include="handler\LogoutInitiator.h">
+      <Filter>Header Files\handler</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

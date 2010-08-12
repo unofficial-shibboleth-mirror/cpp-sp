@@ -282,6 +282,16 @@ namespace shibsp {
         virtual const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const=0;
 
         /**
+         * Returns an AssertionConsumerService Handler that supports
+         * a particular protocol binding.
+         *
+         * @param binding   a protocol binding identifier
+         * @return a matching AssertionConsumerService, or nullptr
+         */
+        virtual const Handler* getAssertionConsumerServiceByBinding(const char* binding) const;
+
+        /**
+         * @deprecated
          * Returns one or more AssertionConsumerService Handlers that support
          * a particular protocol binding.
          *

@@ -133,3 +133,10 @@ void Application::clearAttributeHeaders(SPRequest& request) const
     for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
         request.clearHeader(i->first.c_str(), i->second.c_str());
 }
+
+const Handler* Application::getAssertionConsumerServiceByBinding(const char* binding) const
+{
+    auto_ptr_XMLCh b(binding);
+    const vector<const Handler*>& handlers = getAssertionConsumerServicesByBinding(b.get());
+    return handlers.empty() ? nullptr : handlers.front();
+}

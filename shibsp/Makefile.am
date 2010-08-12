@@ -70,6 +70,7 @@ handinclude_HEADERS = \
 	handler/AssertionConsumerService.h \
 	handler/Handler.h \
 	handler/LogoutHandler.h \
+	handler/LogoutInitiator.h \
 	handler/RemotedHandler.h \
 	handler/SessionInitiator.h
 
@@ -121,6 +122,7 @@ common_sources = \
 	handler/impl/FormSessionInitiator.cpp \
 	handler/impl/LocalLogoutInitiator.cpp \
 	handler/impl/LogoutHandler.cpp \
+	handler/impl/LogoutInitiator.cpp \
 	handler/impl/MetadataGenerator.cpp \
 	handler/impl/RemotedHandler.cpp \
 	handler/impl/StatusHandler.cpp \
