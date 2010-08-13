@@ -372,6 +372,9 @@
     <ClCompile Include="handler\impl\LogoutInitiator.cpp">
       <Filter>Source Files\handler\impl</Filter>
     </ClCompile>
+    <ClCompile Include="binding\impl\XMLProtocolProvider.cpp">
+      <Filter>Source Files\binding\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
@@ -529,6 +532,9 @@
     </ClInclude>
     <ClInclude Include="handler\LogoutInitiator.h">
       <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="binding\ProtocolProvider.h">
+      <Filter>Header Files\binding</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

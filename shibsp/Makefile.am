@@ -63,6 +63,7 @@ attrresinclude_HEADERS = \
 
 bindinclude_HEADERS = \
 	binding/ArtifactResolver.h \
+	binding/ProtocolProvider.h \
 	binding/SOAPClient.h
 
 handinclude_HEADERS = \
@@ -113,6 +114,7 @@ common_sources = \
 	attribute/SimpleAttribute.cpp \
 	attribute/ScopedAttribute.cpp \
 	attribute/XMLAttribute.cpp \
+	binding/impl/XMLProtocolProvider.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/AssertionLookup.cpp \

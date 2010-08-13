@@ -140,6 +140,21 @@ namespace shibsp {
     /** Registers Handler implementations. */
     void SHIBSP_API registerHandlers();
 
+    /** Handler for SAML 1.x SSO. */
+    #define SAML1_ASSERTION_CONSUMER_SERVICE "SAML1"
+
+    /** Handler for SAML 2.0 SSO. */
+    #define SAML20_ASSERTION_CONSUMER_SERVICE "SAML2"
+
+    /** Handler for SAML 2.0 SLO. */
+    #define SAML20_LOGOUT_HANDLER "SAML2"
+
+    /** Handler for SAML 2.0 NIM. */
+    #define SAML20_NAMEID_MGMT_SERVICE "SAML2"
+
+    /** Handler for SAML 2.0 Artifact Resolution. */
+    #define SAML20_ARTIFACT_RESOLUTION_SERVICE "SAML2"
+
     /** Handler for metadata generation. */
     #define METADATA_GENERATOR_HANDLER "MetadataGenerator"
 

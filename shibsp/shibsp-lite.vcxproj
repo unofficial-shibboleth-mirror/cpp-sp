@@ -187,6 +187,7 @@
   <ItemGroup>
     <ClCompile Include="AbstractSPRequest.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="binding\impl\XMLProtocolProvider.cpp" />
     <ClCompile Include="handler\impl\LogoutInitiator.cpp" />
     <ClCompile Include="ServiceProvider.cpp" />
     <ClCompile Include="SPConfig.cpp" />
@@ -238,6 +239,7 @@
     <ClCompile Include="lite\SAMLConstants.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="binding\ProtocolProvider.h" />
     <ClInclude Include="handler\LogoutInitiator.h" />
     <ClInclude Include="remoting\impl\SocketListener.h" />
     <ClInclude Include="AbstractSPRequest.h" />

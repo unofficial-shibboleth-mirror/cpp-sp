@@ -118,13 +118,16 @@ void SHIBSP_API shibsp::registerHandlers()
 {
     SPConfig& conf=SPConfig::getConfig();
 
+    conf.AssertionConsumerServiceManager.registerFactory(SAML1_ASSERTION_CONSUMER_SERVICE, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_ARTIFACT, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_POST, SAML1ConsumerFactory);
+    conf.AssertionConsumerServiceManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_PAOS, SAML2ConsumerFactory);
 
+    conf.ArtifactResolutionServiceManager.registerFactory(SAML20_ARTIFACT_RESOLUTION_SERVICE, SAML2ArtifactResolutionFactory);
     conf.ArtifactResolutionServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2ArtifactResolutionFactory);
 
     conf.HandlerManager.registerFactory(SAML20_BINDING_URI, AssertionLookupFactory);
@@ -132,12 +135,14 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
     conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
 
+    conf.SingleLogoutServiceManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
     conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2LogoutFactory);
     conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_REDIRECT, SAML2LogoutFactory);
     conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2LogoutFactory);
     conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2LogoutFactory);
     conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2LogoutFactory);
 
+    conf.ManageNameIDServiceManager.registerFactory(SAML20_NAMEID_MGMT_SERVICE, SAML2NameIDMgmtFactory);
     conf.ManageNameIDServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2NameIDMgmtFactory);
     conf.ManageNameIDServiceManager.registerFactory(SAML20_BINDING_HTTP_REDIRECT, SAML2NameIDMgmtFactory);
     conf.ManageNameIDServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2NameIDMgmtFactory);

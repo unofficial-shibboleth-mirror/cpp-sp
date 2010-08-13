@@ -44,6 +44,7 @@ namespace shibsp {
     class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
     class SHIBSP_API RequestMapper;
+    class SHIBSP_API ProtocolProvider;
     class SHIBSP_API ServiceProvider;
     class SHIBSP_API SessionCache;
     class SHIBSP_API SessionInitiator;
@@ -249,6 +250,11 @@ namespace shibsp {
          * Manages factories for Handler plugins that implement ManageNameIDService functionality.
          */
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > ManageNameIDServiceManager;
+
+        /**
+         * Manages factories for ProtocolProvider plugins.
+         */
+        xmltooling::PluginManager<ProtocolProvider,std::string,const xercesc::DOMElement*> ProtocolProviderManager;
 
         /**
          * Manages factories for RequestMapper plugins.

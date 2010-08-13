@@ -168,7 +168,7 @@ namespace {
         const SessionInitiator* getSessionInitiatorById(const char* id) const;
         const Handler* getDefaultAssertionConsumerService() const;
         const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
-        const Handler* getAssertionConsumerServiceByBinding(const char* binding) const;
+        const Handler* getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding=nullptr) const;
         const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
         const Handler* getHandler(const char* path) const;
         void getHandlers(vector<const Handler*>& handlers) const;
@@ -225,8 +225,12 @@ namespace {
         const Handler* m_acsDefault;
 
         // maps binding strings to supporting consumer service(s)
-        typedef map< string,vector<const Handler*> > ACSBindingMap;
+        typedef map< xstring,vector<const Handler*> > ACSBindingMap;
         ACSBindingMap m_acsBindingMap;
+
+        // maps protocol strings to supporting consumer service(s)
+        typedef map< xstring,vector<const Handler*> > ACSProtocolMap;
+        ACSProtocolMap m_acsProtocolMap;
 
         // pointer to default session initiator
         const SessionInitiator* m_sessionInitDefault;
@@ -458,13 +462,14 @@ namespace {
     static const XMLCh _option[] =              UNICODE_LITERAL_6(o,p,t,i,o,n);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
+    static const XMLCh _ProtocolProvider[] =    UNICODE_LITERAL_16(P,r,o,t,o,c,o,l,P,r,o,v,i,d,e,r);
     static const XMLCh _provider[] =            UNICODE_LITERAL_8(p,r,o,v,i,d,e,r);
     static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
     static const XMLCh _ReplayCache[] =         UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
     static const XMLCh _RequestMapper[] =       UNICODE_LITERAL_13(R,e,q,u,e,s,t,M,a,p,p,e,r);
     static const XMLCh RequestMap[] =           UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
     static const XMLCh SecurityPolicies[] =     UNICODE_LITERAL_16(S,e,c,u,r,i,t,y,P,o,l,i,c,i,e,s);
-    static const XMLCh SecurityPolicyProvider[] = UNICODE_LITERAL_22(S,e,c,u,r,i,t,y,P,o,l,i,c,y,P,r,o,v,i,d,e,r);
+    static const XMLCh _SecurityPolicyProvider[] = UNICODE_LITERAL_22(S,e,c,u,r,i,t,y,P,o,l,i,c,y,P,r,o,v,i,d,e,r);
     static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
     static const XMLCh _SessionInitiator[] =    UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
     static const XMLCh _SingleLogoutService[] = UNICODE_LITERAL_19(S,i,n,g,l,e,L,o,g,o,u,t,S,e,r,v,i,c,e);
@@ -648,8 +653,11 @@ XMLApplication::XMLApplication(
                         continue;
                     }
                     handler = conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
-                    // Map by binding (may be > 1 per binding)
-                    m_acsBindingMap[bindprop].push_back(handler);
+                    // Map by binding and protocol (may be > 1 per protocol and binding)
+                    m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
+                    const XMLCh* protfamily = handler->getProtocolFamily();
+                    if (protfamily)
+                        m_acsProtocolMap[protfamily].push_back(handler);
                     m_acsIndexMap[handler->getUnsignedInt("index").second] = handler;
 
                     if (!hardACS) {
@@ -1218,17 +1226,23 @@ const Handler* XMLApplication::getAssertionConsumerServiceByIndex(unsigned short
     return m_base ? m_base->getAssertionConsumerServiceByIndex(index) : nullptr;
 }
 
-const Handler* XMLApplication::getAssertionConsumerServiceByBinding(const char* binding) const
+const Handler* XMLApplication::getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding) const
 {
-    ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
-    if (i != m_acsBindingMap.end()) return i->second.front();
-    return m_base ? m_base->getAssertionConsumerServiceByBinding(binding) : nullptr;
+    ACSProtocolMap::const_iterator i=m_acsProtocolMap.find(protocol);
+    if (i != m_acsProtocolMap.end() && !i->second.empty()) {
+        if (!binding || !*binding)
+            return i->second.front();
+        for (ACSProtocolMap::value_type::second_type::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
+            if (!strcmp(binding, (*j)->getString("Binding").second))
+                return *j;
+        }
+    }
+    return m_base ? m_base->getAssertionConsumerServiceByProtocol(protocol) : nullptr;
 }
 
 const vector<const Handler*>& XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
 {
-    auto_ptr_char b(binding);
-    ACSBindingMap::const_iterator i=m_acsBindingMap.find(b.get());
+    ACSBindingMap::const_iterator i=m_acsBindingMap.find(binding);
     if (i != m_acsBindingMap.end())
         return i->second;
     return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : g_noHandlers;
@@ -1269,10 +1283,11 @@ XMLConfigImpl::acceptNode(const DOMNode* node) const
         XMLString::equals(name,_ArtifactMap) ||
         XMLString::equals(name,_Extensions) ||
         XMLString::equals(name,Listener) ||
+        XMLString::equals(name,_ProtocolProvider) ||
         XMLString::equals(name,_RequestMapper) ||
         XMLString::equals(name,_ReplayCache) ||
         XMLString::equals(name,SecurityPolicies) ||
-        XMLString::equals(name,SecurityPolicyProvider) ||
+        XMLString::equals(name,_SecurityPolicyProvider) ||
         XMLString::equals(name,_SessionCache) ||
         XMLString::equals(name,Site) ||
         XMLString::equals(name,_StorageService) ||
@@ -1564,7 +1579,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
 #ifndef SHIBSP_LITE
         // Load security policies.
-        if (child = XMLHelper::getLastChildElement(e, SecurityPolicyProvider)) {
+        if (child = XMLHelper::getLastChildElement(e, _SecurityPolicyProvider)) {
             string t(XMLHelper::getAttrString(child, nullptr, _type));
             if (!t.empty()) {
                 log.info("building SecurityPolicyProvider of type %s...", t.c_str());
@@ -1576,7 +1591,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         }
         else if (child = XMLHelper::getLastChildElement(e, SecurityPolicies)) {
             // For backward compatibility, wrap in a plugin element.
-            DOMElement* polwrapper = e->getOwnerDocument()->createElementNS(nullptr, SecurityPolicyProvider);
+            DOMElement* polwrapper = e->getOwnerDocument()->createElementNS(nullptr, _SecurityPolicyProvider);
             polwrapper->appendChild(child);
             log.info("building SecurityPolicyProvider of type %s...", XML_SECURITYPOLICY_PROVIDER);
             m_policy = conf.SecurityPolicyProviderManager.newPlugin(XML_SECURITYPOLICY_PROVIDER, polwrapper);

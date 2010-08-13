@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * SPConstants.cpp
  * 
- * SP XML namespace constants 
+ * Shibboleth SP XML constants.
  */
 
 #include "internal.h"
@@ -46,6 +46,13 @@ const XMLCh shibspconstants::SHIB2SPCONFIG_NS[] = // urn:mace:shibboleth:2.0:nat
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
   chDigit_2, chPeriod, chDigit_0, chColon, chLatin_n, chLatin_a, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chColon,
   chLatin_s, chLatin_p, chColon, chLatin_c, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chNull
+};
+
+const XMLCh shibspconstants::SHIB2SPPROTOCOLS_NS[] = // urn:mace:shibboleth:2.0:native:sp:protocols
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_2, chPeriod, chDigit_0, chColon, chLatin_n, chLatin_a, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chColon,
+  chLatin_s, chLatin_p, chColon, chLatin_p, chLatin_r, chLatin_o, chLatin_t, chLatin_o, chLatin_c, chLatin_o, chLatin_l, chLatin_s, chNull
 };
 
 const XMLCh shibspconstants::SHIB2ATTRIBUTEMAP_NS[] = // urn:mace:shibboleth:2.0:attribute-map

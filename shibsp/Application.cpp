@@ -134,7 +134,7 @@ void Application::clearAttributeHeaders(SPRequest& request) const
         request.clearHeader(i->first.c_str(), i->second.c_str());
 }
 
-const Handler* Application::getAssertionConsumerServiceByBinding(const char* binding) const
+const Handler* Application::getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding) const
 {
     auto_ptr_XMLCh b(binding);
     const vector<const Handler*>& handlers = getAssertionConsumerServicesByBinding(b.get());

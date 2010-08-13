@@ -43,6 +43,7 @@
 #include "SPConfig.h"
 #include "TransactionLog.h"
 #include "attribute/Attribute.h"
+#include "binding/ProtocolProvider.h"
 #include "handler/LogoutInitiator.h"
 #include "handler/SessionInitiator.h"
 #include "remoting/ListenerService.h"
@@ -241,9 +242,14 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 #endif
 
     registerAttributeFactories();
-    registerHandlers();
-    registerLogoutInitiators();
-    registerSessionInitiators();
+
+    if (isEnabled(Handlers)) {
+        registerHandlers();
+        registerLogoutInitiators();
+        registerSessionInitiators();
+        registerProtocolProviders();
+    }
+
     registerServiceProviders();
 
 #ifndef SHIBSP_LITE
@@ -294,13 +300,17 @@ void SPConfig::term()
     setArtifactResolver(nullptr);
 #endif
 
-    ArtifactResolutionServiceManager.deregisterFactories();
-    AssertionConsumerServiceManager.deregisterFactories();
-    LogoutInitiatorManager.deregisterFactories();
-    ManageNameIDServiceManager.deregisterFactories();
-    SessionInitiatorManager.deregisterFactories();
-    SingleLogoutServiceManager.deregisterFactories();
-    HandlerManager.deregisterFactories();
+    if (isEnabled(Handlers)) {
+        ArtifactResolutionServiceManager.deregisterFactories();
+        AssertionConsumerServiceManager.deregisterFactories();
+        LogoutInitiatorManager.deregisterFactories();
+        ManageNameIDServiceManager.deregisterFactories();
+        SessionInitiatorManager.deregisterFactories();
+        SingleLogoutServiceManager.deregisterFactories();
+        HandlerManager.deregisterFactories();
+        ProtocolProviderManager.deregisterFactories();
+    }
+
     ServiceProviderManager.deregisterFactories();
     Attribute::deregisterFactories();
 

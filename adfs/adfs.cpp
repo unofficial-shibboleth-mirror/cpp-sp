@@ -370,24 +370,16 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
 
     if (!ACS) {
         pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
-        if (index.first) {
+        if (index.first)
             ACS = app.getAssertionConsumerServiceByIndex(index.second);
-            if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
-        }
-        if (!ACS) {
-            ACS = app.getAssertionConsumerServiceByBinding(WSFED_NS);
-            if (!ACS) {
-                m_log.error("unable to locate a compatible ACS");
-                throw ConfigurationException("Unable to locate an ADFS-compatible ACS in the configuration.");
-            }
-        }
     }
 
     // Validate the ACS for use with this protocol.
-    if (!XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily())) {
-        m_log.error("configured or requested ACS has non-ADFS binding");
-        throw ConfigurationException("Configured or requested ACS has non-ADFS binding ($1).", params(1, ACS->getString("Binding").second));
+    if (!ACS || !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily())) {
+        request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-ADFS ACS, using default ADFS ACS");
+        ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily());
+        if (!ACS)
+            throw ConfigurationException("Unable to locate an ADFS-compatible ACS in the configuration.");
     }
 
     // Since we're not passing by index, we need to fully compute the return URL.

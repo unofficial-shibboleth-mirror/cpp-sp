@@ -52,6 +52,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD02}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Header Files\binding">
+      <UniqueIdentifier>{39717744-95cd-4251-8334-b2cb8a73a42c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\binding">
+      <UniqueIdentifier>{b63c8dfb-c8d2-4717-a815-e554c72d43b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\binding\impl">
+      <UniqueIdentifier>{c1c74fdd-021f-4003-a8eb-c68091b6eec6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AbstractSPRequest.cpp">
@@ -207,6 +216,9 @@
     <ClCompile Include="handler\impl\LogoutInitiator.cpp">
       <Filter>Source Files\handler\impl</Filter>
     </ClCompile>
+    <ClCompile Include="binding\impl\XMLProtocolProvider.cpp">
+      <Filter>Source Files\binding\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
@@ -319,6 +331,9 @@
     </ClInclude>
     <ClInclude Include="handler\LogoutInitiator.h">
       <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="binding\ProtocolProvider.h">
+      <Filter>Header Files\binding</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

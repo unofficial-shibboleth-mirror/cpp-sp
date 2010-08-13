@@ -8,11 +8,12 @@ schemafiles = \
     shibboleth.xsd \
     shibboleth-metadata-1.0.xsd \
     shibboleth-2.0-native-sp-config.xsd \
+    shibboleth-2.0-native-sp-protocols.xsd \
+    shibboleth-2.0-sp-notify.xsd \
     shibboleth-2.0-afp.xsd \
     shibboleth-2.0-afp-mf-basic.xsd \
     shibboleth-2.0-afp-mf-saml.xsd \
     shibboleth-2.0-attribute-map.xsd \
-    shibboleth-2.0-sp-notify.xsd \
     WS-Trust.xsd
 
 pkgxml_DATA = \

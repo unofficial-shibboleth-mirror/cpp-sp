@@ -1,0 +1,42 @@
+﻿<Protocols xmlns="urn:mace:shibboleth:2.0:native:sp:protocols">
+  
+  <Protocol id="SAML2">
+    <Service id="SSO" in="SAML2" out="SAML2">
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" path="/SAML2/Redirect" response="false"/>
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" path="/SAML2/POST" />
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" path="/SAML2/POST-SimpleSign" />
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" path="/SAML2/Artifact" artifact="true"/>
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:PAOS" path="/SAML2/ECP" request="false"/>
+    </Service>
+    <Service id="Logout" in="SAML2" out="SAML2">
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" path="/SLO/SOAP" />
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" path="/SLO/Redirect" />
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" path="/SLO/POST" />
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" path="/SLO/Artifact" artifact="true"/>
+    </Service>
+    <Service id="NameIDMgmt" in="SAML2">
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" path="/NIM/SOAP" />
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" path="/NIM/Redirect" />
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" path="/NIM/POST" />
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" path="/NIM/Artifact" artifact="true"/>
+    </Service>
+    <Service id="ArtifactResolution" in="SAML2">
+      <Binding id="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" path="/Artifact/SOAP" />
+    </Service>
+  </Protocol>
+
+  <Protocol id="SAML1">
+    <Service id="SSO" in="SAML1" out="Shib1">
+      <Binding id="urn:oasis:names:tc:SAML:1.0:profiles:browser-post" path="/SAML/POST" />
+      <Binding id="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01" path="/SAML/Artifact" artifact="true"/>
+    </Service>
+  </Protocol>
+
+  <Protocol id="ADFS">
+    <Service id="SSO" in="ADFS" out="ADFS">
+      <Binding id="http://schemas.xmlsoap.org/ws/2003/07/secext" path="/ADFS" />
+    </Service>
+    <Service id="Logout" out="ADFS"/>
+  </Protocol>
+
+</Protocols>

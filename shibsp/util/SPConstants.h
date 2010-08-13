@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * @file shibsp/util/SPConstants.h
  * 
- * Shibboleth SP XML constants. 
+ * Shibboleth SP XML constants.
  */
 
 #ifndef __shibsp_constants_h__
@@ -39,6 +39,9 @@ namespace shibspconstants {
 
     /** Shibboleth 2.0 SP configuration namespace ("urn:mace:shibboleth:2.0:native:sp:config") */
     extern SHIBSP_API const XMLCh SHIB2SPCONFIG_NS[];
+
+    /** Shibboleth 2.0 SP protocol provider namespace ("urn:mace:shibboleth:2.0:native:sp:protocols") */
+    extern SHIBSP_API const XMLCh SHIB2SPPROTOCOLS_NS[];
 
     /** Shibboleth 2.0 attribute mapping namespace ("urn:mace:shibboleth:2.0:attribute-map") */
     extern SHIBSP_API const XMLCh SHIB2ATTRIBUTEMAP_NS[];

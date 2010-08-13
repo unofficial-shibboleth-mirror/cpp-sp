@@ -149,35 +149,25 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
             target = request.getRequestURL();
     }
 
-    // Since we're not passing by index, we need to fully compute the return URL.
     if (!ACS) {
-        // Try fixed index property, or incoming binding set, or default, in order.
+        // Try fixed index property.
         pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
-        if (index.first) {
+        if (index.first)
             ACS = app.getAssertionConsumerServiceByIndex(index.second);
-            if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid acsIndex property, using default ACS location");
-        }
-        /*
-        for (vector<string>::const_iterator b = m_incomingBindings.begin(); !ACS && b != m_incomingBindings.end(); ++b) {
-            ACS = app.getAssertionConsumerServiceByBinding(b->c_str());
-            if (ACS && !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily()))
-                ACS = nullptr;
-        }
-        */
+    }
+
+    // If we picked by index, validate the ACS for use with this protocol.
+    if (!ACS || !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily())) {
+        request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-SAML 1.x ACS, using default SAML 1.x ACS");
+        ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily());
         if (!ACS)
-            ACS = app.getDefaultAssertionConsumerService();
+            throw ConfigurationException("Unable to locate a SAML 1.x ACS endpoint to use for response.");
     }
 
-    // Validate the ACS for use with this protocol.
-    if (ACS && !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily())) {
-        m_log.error("configured or requested ACS has non-SAML 1.x binding");
-        throw ConfigurationException("Configured or requested ACS has non-SAML 1.x binding ($1).", params(1, ACS->getString("Binding").second));
-    }
-
+    // Since we're not passing by index, we need to fully compute the return URL.
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
     string ACSloc = request.getHandlerURL(target.c_str());
-    prop = ACS ? ACS->getString("Location") : pair<bool,const char*>(false,nullptr);
+    prop = ACS->getString("Location");
     if (prop.first)
         ACSloc += prop.second;
 
@@ -191,7 +181,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
     }
 
     // Is the in-bound binding artifact?
-    bool artifactInbound = ACS ? XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT) : false;
+    bool artifactInbound = XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT);
 
     m_log.debug("attempting to initiate session using Shibboleth with provider (%s)", entityID.c_str());
 
