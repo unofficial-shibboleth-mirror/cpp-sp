@@ -131,7 +131,8 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
 
     // If we picked by index, validate the ACS for use with this protocol.
     if (!ACS || !XMLString::equals(samlconstants::SAML11_PROTOCOL_ENUM, ACS->getProtocolFamily())) {
-        request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-SAML 1.x ACS, using default SAML 1.x ACS");
+        if (ACS)
+            request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-SAML 1.x ACS, using default SAML 1.x ACS");
         ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily());
         if (!ACS)
             throw ConfigurationException("Unable to locate a SAML 1.x ACS endpoint to use for response.");

@@ -376,7 +376,8 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
 
     // Validate the ACS for use with this protocol.
     if (!ACS || !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily())) {
-        request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-ADFS ACS, using default ADFS ACS");
+        if (ACS)
+            request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-ADFS ACS, using default ADFS ACS");
         ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily());
         if (!ACS)
             throw ConfigurationException("Unable to locate an ADFS-compatible ACS in the configuration.");

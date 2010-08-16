@@ -324,7 +324,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
     // If we picked by index, validate the ACS for use with this protocol.
     if (!ECP && (!ACS || !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily()))) {
-        request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-SAML 2.0 ACS, using default SAML 2.0 ACS");
+        if (ACS)
+            request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-SAML 2.0 ACS, using default SAML 2.0 ACS");
         ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily());
         if (!ACS)
             throw ConfigurationException("Unable to locate a SAML 2.0 ACS endpoint to use for response.");
