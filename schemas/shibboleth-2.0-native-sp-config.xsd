@@ -439,33 +439,53 @@
     <attribute name="requireTransportAuth" type="boolean"/>
     <attribute name="requireSignedAssertions" type="boolean"/>
   </attributeGroup>
-
+    
   <complexType name="SessionsType">
     <annotation>
       <documentation>Container for specifying protocol handlers and session policy</documentation>
     </annotation>
-    <choice minOccurs="0" maxOccurs="unbounded">
-      <element ref="conf:SessionInitiator"/>
-      <element ref="conf:LogoutInitiator"/>
-      <element ref="md:AssertionConsumerService"/>
-      <element ref="md:ArtifactResolutionService"/>
-      <element ref="md:SingleLogoutService"/>
-      <element ref="md:ManageNameIDService"/>
-      <element name="Handler">
+    <sequence>
+      <element name="SSO" minOccurs="0">
         <complexType>
-          <complexContent>
-            <restriction base="conf:PluggableType">
-              <sequence>
-                <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-              </sequence>
-              <attribute name="Location" type="anyURI" use="required"/>
-              <attribute name="acl" type="conf:listOfStrings"/>
-              <anyAttribute namespace="##any" processContents="lax"/>
-            </restriction>
-          </complexContent>
+          <annotation>
+            <documentation>Implicitly configures SessionInitiator and AssertionConsumerService handlers</documentation>
+          </annotation>
+          <simpleContent>
+            <extension base="conf:listOfStrings">
+              <attribute name="discoveryProtocol" type="conf:string"/>
+              <attribute name="discoveryURL" type="anyURI"/>
+              <attributeGroup ref="conf:SessionInitiatorGroup"/>
+            </extension>
+          </simpleContent>
         </complexType>
       </element>
-    </choice>
+      <element name="Logout" minOccurs="0">
+        <complexType>
+          <annotation>
+            <documentation>Implicitly configures LogoutInitiator and SingleLogoutService handlers</documentation>
+          </annotation>
+          <simpleContent>
+            <extension base="conf:listOfStrings">
+              <attributeGroup ref="conf:LogoutInitiatorGroup"/>
+            </extension>
+          </simpleContent>
+        </complexType>
+      </element>
+      <element name="NameIDMgmt" type="conf:listOfStrings" minOccurs="0">
+        <annotation>
+          <documentation>Implicitly configures ManageNameIDService handlers</documentation>
+        </annotation>
+      </element>
+      <choice minOccurs="0" maxOccurs="unbounded">
+        <element ref="conf:SessionInitiator"/>
+        <element ref="conf:LogoutInitiator"/>
+        <element ref="md:AssertionConsumerService"/>
+        <element ref="md:ArtifactResolutionService"/>
+        <element ref="md:SingleLogoutService"/>
+        <element ref="md:ManageNameIDService"/>
+        <element ref="conf:Handler"/>
+      </choice>
+    </sequence>
     <attribute name="handlerURL" type="anyURI" use="required"/>
     <attribute name="handlerSSL" type="boolean"/>
     <attribute name="exportLocation" type="conf:string"/>
@@ -484,14 +504,38 @@
     <attribute name="postLimit" type="positiveInteger"/>
     <attribute name="postTemplate" type="conf:string"/>
     <attribute name="postExpire" type="boolean"/>
+    <attribute name="relayState" type="conf:string"/>
     <anyAttribute namespace="##other" processContents="lax"/>
   </complexType>
 
   <attribute name="policyId" type="conf:string">
     <annotation>
-      <documentation>Used to reference Policy elements from profile endpoints.</documentation>
+      <documentation>Used to override Policy from profile endpoints</documentation>
     </annotation>
   </attribute>
+
+  <attributeGroup name="SessionInitiatorGroup">
+    <annotation>
+      <documentation>Options common to explicit and implicit SessionInitiators</documentation>
+    </annotation>
+    <attribute name="relayState" type="conf:string"/>
+    <attribute name="entityIDParam" type="conf:string"/>
+    <attribute name="entityID" type="anyURI"/>
+    <attribute name="outgoingBindings" type="conf:listOfURIs"/>
+    <attribute name="template" type="anyURI"/>
+    <attribute name="postArtifact" type="boolean"/>
+    <attribute name="acsByIndex" type="boolean"/>
+    <attribute name="isPassive" type="boolean"/>
+    <attribute name="returnOnError" type="boolean"/>
+    <attribute name="forceAuthn" type="boolean"/>
+    <attribute name="authnContextClassRef" type="anyURI"/>
+    <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
+    <attribute name="NameIDFormat" type="anyURI"/>
+    <attribute name="SPNameQualifier" type="conf:string"/>
+    <attribute name="requestDelegation" type="boolean"/>
+    <attribute name="target" type="anyURI"/>
+    <anyAttribute namespace="##any" processContents="lax"/>
+  </attributeGroup>
 
   <element name="SessionInitiator">
     <annotation>
@@ -506,30 +550,25 @@
           <attribute name="Location" type="anyURI"/>
           <attribute name="id" type="conf:string"/>
           <attribute name="isDefault" type="boolean"/>
-          <attribute name="relayState" type="conf:string"/>
-          <attribute name="entityIDParam" type="conf:string"/>
-          <attribute name="entityID" type="anyURI"/>
           <attribute name="URL" type="anyURI"/>
-          <attribute name="outgoingBindings" type="conf:listOfURIs"/>
-          <attribute name="template" type="anyURI"/>
-          <attribute name="postArtifact" type="boolean"/>
-          <attribute name="acsByIndex" type="boolean"/>
           <attribute name="acsIndex" type="unsignedShort"/>
           <attribute name="defaultACSIndex" type="unsignedShort"/>  <!-- deprecated -->
-          <attribute name="isPassive" type="boolean"/>
-          <attribute name="returnOnError" type="boolean"/>
-          <attribute name="forceAuthn" type="boolean"/>
-          <attribute name="authnContextClassRef" type="anyURI"/>
-          <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
-          <attribute name="NameIDFormat" type="anyURI"/>
-          <attribute name="SPNameQualifier" type="conf:string"/>
-          <attribute name="requestDelegation" type="boolean"/>
-          <attribute name="target" type="anyURI"/>
-          <anyAttribute namespace="##any" processContents="lax"/>
+          <attributeGroup ref="conf:SessionInitiatorGroup"/>
         </restriction>
       </complexContent>
     </complexType>
   </element>
+
+  <attributeGroup name="LogoutInitiatorGroup">
+    <annotation>
+      <documentation>Options common to explicit and implicit LogoutInitiators</documentation>
+    </annotation>
+    <attribute name="relayState" type="conf:string"/>
+    <attribute name="outgoingBindings" type="conf:listOfURIs"/>
+    <attribute name="template" type="anyURI"/>
+    <attribute name="postArtifact" type="boolean"/>
+    <anyAttribute namespace="##any" processContents="lax"/>
+  </attributeGroup>
 
   <element name="LogoutInitiator">
     <annotation>
@@ -542,10 +581,24 @@
             <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
           </sequence>
           <attribute name="Location" type="anyURI"/>
-          <attribute name="relayState" type="conf:string"/>
-          <attribute name="outgoingBindings" type="conf:listOfURIs"/>
-          <attribute name="template" type="anyURI"/>
-          <attribute name="postArtifact" type="boolean"/>
+          <attributeGroup ref="conf:LogoutInitiatorGroup"/>
+        </restriction>
+      </complexContent>
+    </complexType>
+  </element>
+
+  <element name="Handler">
+    <annotation>
+      <documentation>Used to specify custom handlers</documentation>
+    </annotation>
+    <complexType>
+      <complexContent>
+        <restriction base="conf:PluggableType">
+          <sequence>
+            <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+          </sequence>
+          <attribute name="Location" type="anyURI" use="required"/>
+          <attribute name="acl" type="conf:listOfStrings"/>
           <anyAttribute namespace="##any" processContents="lax"/>
         </restriction>
       </complexContent>
@@ -679,6 +732,7 @@
           <element name="SecurityPolicyProvider" type="conf:PluggableType"/>
           <element ref="conf:SecurityPolicies"/> <!-- deprecated -->
         </choice>
+        <element name="ProtocolProvider" type="conf:PluggableType" minOccurs="0"/>
         <element ref="conf:TransportOption" minOccurs="0" maxOccurs="unbounded"/>
         <element ref="ds:Signature" minOccurs="0"/>
       </sequence>

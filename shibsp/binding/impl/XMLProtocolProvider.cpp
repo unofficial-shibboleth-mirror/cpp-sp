@@ -41,11 +41,12 @@ using namespace std;
 
 namespace shibsp {
 
-    static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
-    static const XMLCh Binding[] =              UNICODE_LITERAL_7(B,i,n,d,i,n,g);
-    static const XMLCh Protocol[] =             UNICODE_LITERAL_8(P,r,o,t,o,c,o,l);
-    static const XMLCh Protocols[] =            UNICODE_LITERAL_9(P,r,o,t,o,c,o,l,s);
-    static const XMLCh Service[] =              UNICODE_LITERAL_7(S,e,r,v,i,c,e);
+    static const XMLCh _id[] =          UNICODE_LITERAL_2(i,d);
+    static const XMLCh Binding[] =      UNICODE_LITERAL_7(B,i,n,d,i,n,g);
+    static const XMLCh Initiator[] =    UNICODE_LITERAL_9(I,n,i,t,i,a,t,o,r);
+    static const XMLCh Protocol[] =     UNICODE_LITERAL_8(P,r,o,t,o,c,o,l);
+    static const XMLCh Protocols[] =    UNICODE_LITERAL_9(P,r,o,t,o,c,o,l,s);
+    static const XMLCh Service[] =      UNICODE_LITERAL_7(S,e,r,v,i,c,e);
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -80,7 +81,7 @@ namespace shibsp {
 
     private:
         DOMDocument* m_document;
-        // Map of protocol/service pair to a service propset plus an array of Binding propsets.
+        // Map of protocol/service pair to an Initiator propset plus an array of Binding propsets.
         typedef map< pair<string,string>, pair< PropertySet*,vector<const PropertySet*> > > protmap_t;
         protmap_t m_map;
 
@@ -100,16 +101,14 @@ namespace shibsp {
             delete m_impl;
         }
 
-        const PropertySet* getService(const char* protocol, const char* service) const {
+        const PropertySet* getInitiator(const char* protocol, const char* service) const {
             XMLProtocolProviderImpl::protmap_t::const_iterator i = m_impl->m_map.find(pair<string,string>(protocol,service));
             return (i != m_impl->m_map.end()) ? i->second.first : nullptr;
         }
 
         const vector<const PropertySet*>& getBindings(const char* protocol, const char* service) const {
             XMLProtocolProviderImpl::protmap_t::const_iterator i = m_impl->m_map.find(pair<string,string>(protocol,service));
-            if (i != m_impl->m_map.end())
-                return i->second.second;
-            throw ConfigurationException("ProtocolProvider can't return bindings for undefined protocol and service.");
+            return (i != m_impl->m_map.end()) ? i->second.second : m_noBindings;
         }
 
     protected:
@@ -117,6 +116,7 @@ namespace shibsp {
         pair<bool,DOMElement*> background_load();
 
     private:
+        static vector<const PropertySet*> m_noBindings;
         XMLProtocolProviderImpl* m_impl;
     };
 
@@ -143,6 +143,8 @@ ProtocolProvider::~ProtocolProvider()
 {
 }
 
+vector<const PropertySet*> XMLProtocolProvider::m_noBindings;
+
 XMLProtocolProviderImpl::XMLProtocolProviderImpl(const DOMElement* e, Category& log) : m_document(nullptr)
 {
 #ifdef _DEBUG
@@ -160,22 +162,26 @@ XMLProtocolProviderImpl::XMLProtocolProviderImpl(const DOMElement* e, Category& 
             const DOMElement* svc = XMLHelper::getFirstChildElement(e, SHIB2SPPROTOCOLS_NS, Service);
             while (svc) {
                 string svcid = XMLHelper::getAttrString(svc, nullptr, _id);
-                if (!svcid.empty()) {
+                if (!svcid.empty() && m_map.count(make_pair(id,svcid)) == 0) {
                     pair< PropertySet*,vector<const PropertySet*> >& entry = m_map[make_pair(id,svcid)];
-                    if (!entry.first) {
-                        // Wrap the Service in a propset.
-                        DOMPropertySet* svcprop = new DOMPropertySet();
-                        entry.first = svcprop;
-                        svcprop->load(svc, &log, this);
+                    // Wrap the Initiator in a propset, if any.
+                    const DOMElement* child = XMLHelper::getFirstChildElement(svc, SHIB2SPPROTOCOLS_NS, Initiator);
+                    if (child) {
+                        DOMPropertySet* initprop = new DOMPropertySet();
+                        entry.first = initprop;
+                        initprop->load(child, nullptr, this);
+                    }
+                    else {
+                        entry.first = nullptr;
+                    }
 
-                        // Walk the Bindings.
-                        const DOMElement* bind = XMLHelper::getFirstChildElement(svc, SHIB2SPPROTOCOLS_NS, Binding);
-                        while (bind) {
-                            DOMPropertySet* bindprop = new DOMPropertySet();
-                            entry.second.push_back(bindprop);
-                            bindprop->load(bind, &log, this);
-                            bind = XMLHelper::getNextSiblingElement(bind, SHIB2SPPROTOCOLS_NS, Binding);
-                        }
+                    // Walk the Bindings.
+                    child = XMLHelper::getFirstChildElement(svc, SHIB2SPPROTOCOLS_NS, Binding);
+                    while (child) {
+                        DOMPropertySet* bindprop = new DOMPropertySet();
+                        entry.second.push_back(bindprop);
+                        bindprop->load(child, nullptr, this);
+                        child = XMLHelper::getNextSiblingElement(child, SHIB2SPPROTOCOLS_NS, Binding);
                     }
                 }
                 svc = XMLHelper::getNextSiblingElement(svc, SHIB2SPPROTOCOLS_NS, Service);

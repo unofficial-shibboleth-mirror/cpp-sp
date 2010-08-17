@@ -32,19 +32,19 @@
               <element name="Service" maxOccurs="unbounded">
                 <complexType>
                   <sequence>
+                    <element name="Initiator" minOccurs="0">
+                      <complexType>
+                        <attribute name="id" type="prot:string" use="required" />
+                      </complexType>
+                    </element>
                     <element name="Binding" minOccurs="0" maxOccurs="unbounded">
                       <complexType>
                         <attribute name="id" type="prot:string" use="required" />
                         <attribute name="path" type="prot:string" use="required" />
-                        <attribute name="request" type="boolean" use="optional" />
-                        <attribute name="response" type="boolean" use="optional" />
-                        <attribute name="artifact" type="boolean" use="optional" />
                       </complexType>
                     </element>
                   </sequence>
                   <attribute name="id" type="prot:string" use="required" />
-                  <attribute name="in" type="prot:string" />
-                  <attribute name="out" type="prot:string "/>
                 </complexType>
               </element>
             </sequence>

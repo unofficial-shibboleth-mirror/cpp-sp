@@ -44,13 +44,13 @@ namespace shibsp {
         virtual ~ProtocolProvider();
     
         /**
-         * Returns information about a service supported by a protocol, as a PropertySet.
+         * Returns configuration details for initiating a protocol service, as a PropertySet.
          *
          * @param protocol  the name of a protocol
          * @param service   the name of a service
-         * @return  a PropertySet associated with a service
+         * @return  a PropertySet associated with initiation/request of a service
          */
-        virtual const PropertySet* getService(const char* protocol, const char* service) const=0;
+        virtual const PropertySet* getInitiator(const char* protocol, const char* service) const=0;
 
         /**
          * Returns an ordered array of protocol bindings available for a specified service.

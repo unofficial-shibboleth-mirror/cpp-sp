@@ -30,6 +30,8 @@
 #include "SessionCache.h"
 #include "SPConfig.h"
 #include "SPRequest.h"
+#include "binding/ProtocolProvider.h"
+#include "handler/LogoutInitiator.h"
 #include "handler/SessionInitiator.h"
 #include "remoting/ListenerService.h"
 #include "util/DOMPropertySet.h"
@@ -44,6 +46,7 @@
 #endif
 #include <algorithm>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xercesc/util/XMLStringTokenizer.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/version.h>
 #include <xmltooling/util/NDC.h>
@@ -104,7 +107,7 @@ namespace {
     class SHIBSP_DLLLOCAL XMLApplication : public Application, public Remoted, public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        XMLApplication(const ServiceProvider*, const DOMElement* e, const XMLApplication* base=nullptr);
+        XMLApplication(const ServiceProvider*, const ProtocolProvider*, const DOMElement*, const XMLApplication* base=nullptr);
         ~XMLApplication() { cleanup(); }
 
         const char* getHash() const {return m_hash.c_str();}
@@ -194,11 +197,18 @@ namespace {
         acceptNode(const DOMNode* node) const;
 
     private:
+        void doAttributeInfo();
+        void doHandlers(const ProtocolProvider*, const DOMElement*, Category&);
+        void doSSO(const ProtocolProvider&, set<string>&, DOMElement*, Category&);
+        void doLogout(const ProtocolProvider&, set<string>&, DOMElement*, Category&);
+        void doNameIDMgmt(const ProtocolProvider&, set<string>&, DOMElement*, Category&);
+        void doArtifactResolution(const ProtocolProvider&, const char*, DOMElement*, Category&);
         void cleanup();
         const XMLApplication* m_base;
         string m_hash;
         std::pair<std::string,std::string> m_attributePrefix;
 #ifndef SHIBSP_LITE
+        void doAttributePlugins(const DOMElement* e, Category& log);
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
         AttributeExtractor* m_attrExtractor;
@@ -276,6 +286,8 @@ namespace {
 
     private:
         void doExtensions(const DOMElement* e, const char* label, Category& log);
+        void doListener(const DOMElement* e, Category& log);
+        void doCaching(const DOMElement* e, Category& log);
         void cleanup();
 
         const XMLConfig* m_outer;
@@ -450,14 +462,17 @@ namespace {
     static const XMLCh _fatal[] =               UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh _Handler[] =             UNICODE_LITERAL_7(H,a,n,d,l,e,r);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
+    static const XMLCh _index[] =               UNICODE_LITERAL_5(i,n,d,e,x);
     static const XMLCh InProcess[] =            UNICODE_LITERAL_9(I,n,P,r,o,c,e,s,s);
     static const XMLCh Library[] =              UNICODE_LITERAL_7(L,i,b,r,a,r,y);
     static const XMLCh Listener[] =             UNICODE_LITERAL_8(L,i,s,t,e,n,e,r);
     static const XMLCh Location[] =             UNICODE_LITERAL_8(L,o,c,a,t,i,o,n);
     static const XMLCh logger[] =               UNICODE_LITERAL_6(l,o,g,g,e,r);
+    static const XMLCh Logout[] =               UNICODE_LITERAL_6(L,o,g,o,u,t);
     static const XMLCh _LogoutInitiator[] =     UNICODE_LITERAL_15(L,o,g,o,u,t,I,n,i,t,i,a,t,o,r);
     static const XMLCh _ManageNameIDService[] = UNICODE_LITERAL_19(M,a,n,a,g,e,N,a,m,e,I,D,S,e,r,v,i,c,e);
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
+    static const XMLCh NameIDMgmt[] =           UNICODE_LITERAL_10(N,a,m,e,I,D,M,g,m,t);
     static const XMLCh Notify[] =               UNICODE_LITERAL_6(N,o,t,i,f,y);
     static const XMLCh _option[] =              UNICODE_LITERAL_6(o,p,t,i,o,n);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
@@ -474,6 +489,7 @@ namespace {
     static const XMLCh _SessionInitiator[] =    UNICODE_LITERAL_16(S,e,s,s,i,o,n,I,n,i,t,i,a,t,o,r);
     static const XMLCh _SingleLogoutService[] = UNICODE_LITERAL_19(S,i,n,g,l,e,L,o,g,o,u,t,S,e,r,v,i,c,e);
     static const XMLCh Site[] =                 UNICODE_LITERAL_4(S,i,t,e);
+    static const XMLCh SSO[] =                  UNICODE_LITERAL_3(S,S,O);
     static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
     static const XMLCh TransportOption[] =      UNICODE_LITERAL_15(T,r,a,n,s,p,o,r,t,O,p,t,i,o,n);
@@ -491,6 +507,7 @@ namespace shibsp {
 
 XMLApplication::XMLApplication(
     const ServiceProvider* sp,
+    const ProtocolProvider* pp,
     const DOMElement* e,
     const XMLApplication* base
     ) : Application(sp), m_base(base),
@@ -527,249 +544,10 @@ XMLApplication::XMLApplication(
             m_hash += (DIGITS[0x0F & *ch]);
         }
 
-        // Populate prefix pair.
-        m_attributePrefix.second = "HTTP_";
-        pair<bool,const char*> prefix = getString("attributePrefix");
-        if (prefix.first) {
-            m_attributePrefix.first = prefix.second;
-            const char* pch = prefix.second;
-            while (*pch) {
-                m_attributePrefix.second += (isalnum(*pch) ? toupper(*pch) : '_');
-                pch++;
-            }
-        }
+        doAttributeInfo();
 
-        // Load attribute ID lists for REMOTE_USER and header clearing.
-        if (conf.isEnabled(SPConfig::InProcess)) {
-            pair<bool,const char*> attributes = getString("REMOTE_USER");
-            if (attributes.first) {
-                char* dup = strdup(attributes.second);
-                char* pos;
-                char* start = dup;
-                while (start && *start) {
-                    while (*start && isspace(*start))
-                        start++;
-                    if (!*start)
-                        break;
-                    pos = strchr(start,' ');
-                    if (pos)
-                        *pos=0;
-                    m_remoteUsers.push_back(start);
-                    start = pos ? pos+1 : nullptr;
-                }
-                free(dup);
-            }
-
-            attributes = getString("unsetHeaders");
-            if (attributes.first) {
-                string transformedprefix(m_attributePrefix.second);
-                const char* pch;
-                prefix = getString("metadataAttributePrefix");
-                if (prefix.first) {
-                    pch = prefix.second;
-                    while (*pch) {
-                        transformedprefix += (isalnum(*pch) ? toupper(*pch) : '_');
-                        pch++;
-                    }
-                }
-                char* dup = strdup(attributes.second);
-                char* pos;
-                char* start = dup;
-                while (start && *start) {
-                    while (*start && isspace(*start))
-                        start++;
-                    if (!*start)
-                        break;
-                    pos = strchr(start,' ');
-                    if (pos)
-                        *pos=0;
-
-                    string transformed;
-                    pch = start;
-                    while (*pch) {
-                        transformed += (isalnum(*pch) ? toupper(*pch) : '_');
-                        pch++;
-                    }
-
-                    m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + start, m_attributePrefix.second + transformed));
-                    if (prefix.first)
-                        m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + prefix.second + start, transformedprefix + transformed));
-                    start = pos ? pos+1 : nullptr;
-                }
-                free(dup);
-                m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + "Shib-Application-ID", m_attributePrefix.second + "SHIB_APPLICATION_ID"));
-            }
-        }
-
-        Handler* handler=nullptr;
-        const PropertySet* sessions = getPropertySet("Sessions");
-
-        // Process assertion export handler.
-        pair<bool,const char*> location = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,nullptr);
-        if (location.first) {
-            try {
-                DOMElement* exportElement = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS,_Handler);
-                exportElement->setAttributeNS(nullptr,Location,sessions->getXMLString("exportLocation").second);
-                pair<bool,const XMLCh*> exportACL = sessions->getXMLString("exportACL");
-                if (exportACL.first) {
-                    static const XMLCh _acl[] = UNICODE_LITERAL_9(e,x,p,o,r,t,A,C,L);
-                    exportElement->setAttributeNS(nullptr,_acl,exportACL.second);
-                }
-                handler = conf.HandlerManager.newPlugin(
-                    samlconstants::SAML20_BINDING_URI, pair<const DOMElement*,const char*>(exportElement, getId())
-                    );
-                m_handlers.push_back(handler);
-
-                // Insert into location map. If it contains the handlerURL, we skip past that part.
-                const char* pch = strstr(location.second, sessions->getString("handlerURL").second);
-                if (pch)
-                    location.second = pch + strlen(sessions->getString("handlerURL").second);
-                if (*location.second == '/')
-                    m_handlerMap[location.second]=handler;
-                else
-                    m_handlerMap[string("/") + location.second]=handler;
-            }
-            catch (exception& ex) {
-                log.error("caught exception installing assertion lookup handler: %s", ex.what());
-            }
-        }
-
-        // Process other handlers.
-        bool hardACS=false, hardSessionInit=false, hardArt=false;
-        const DOMElement* child = sessions ? XMLHelper::getFirstChildElement(sessions->getElement()) : nullptr;
-        while (child) {
-            if (!child->hasAttributeNS(nullptr, Location)) {
-                auto_ptr_char hclass(child->getLocalName());
-                log.error("%s handler with no Location property cannot be processed", hclass.get());
-                child = XMLHelper::getNextSiblingElement(child);
-                continue;
-            }
-            try {
-                if (XMLString::equals(child->getLocalName(), _AssertionConsumerService)) {
-                    string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                    if (bindprop.empty()) {
-                        log.error("AssertionConsumerService element has no Binding attribute, skipping it...");
-                        child = XMLHelper::getNextSiblingElement(child);
-                        continue;
-                    }
-                    handler = conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
-                    // Map by binding and protocol (may be > 1 per protocol and binding)
-                    m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
-                    const XMLCh* protfamily = handler->getProtocolFamily();
-                    if (protfamily)
-                        m_acsProtocolMap[protfamily].push_back(handler);
-                    m_acsIndexMap[handler->getUnsignedInt("index").second] = handler;
-
-                    if (!hardACS) {
-                        pair<bool,bool> defprop = handler->getBool("isDefault");
-                        if (defprop.first) {
-                            if (defprop.second) {
-                                hardACS = true;
-                                m_acsDefault = handler;
-                            }
-                        }
-                        else if (!m_acsDefault)
-                            m_acsDefault = handler;
-                    }
-                }
-                else if (XMLString::equals(child->getLocalName(), _SessionInitiator)) {
-                    string t(XMLHelper::getAttrString(child, nullptr, _type));
-                    if (t.empty()) {
-                        log.error("SessionInitiator element has no type attribute, skipping it...");
-                        child = XMLHelper::getNextSiblingElement(child);
-                        continue;
-                    }
-                    SessionInitiator* sihandler = conf.SessionInitiatorManager.newPlugin(t.c_str(), make_pair(child, getId()));
-                    handler = sihandler;
-                    pair<bool,const char*> si_id = handler->getString("id");
-                    if (si_id.first && si_id.second)
-                        m_sessionInitMap[si_id.second] = sihandler;
-                    if (!hardSessionInit) {
-                        pair<bool,bool> defprop = handler->getBool("isDefault");
-                        if (defprop.first) {
-                            if (defprop.second) {
-                                hardSessionInit = true;
-                                m_sessionInitDefault = sihandler;
-                            }
-                        }
-                        else if (!m_sessionInitDefault) {
-                            m_sessionInitDefault = sihandler;
-                        }
-                    }
-                }
-                else if (XMLString::equals(child->getLocalName(), _LogoutInitiator)) {
-                    string t(XMLHelper::getAttrString(child, nullptr, _type));
-                    if (t.empty()) {
-                        log.error("LogoutInitiator element has no type attribute, skipping it...");
-                        child = XMLHelper::getNextSiblingElement(child);
-                        continue;
-                    }
-                    handler = conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(child, getId()));
-                }
-                else if (XMLString::equals(child->getLocalName(), _ArtifactResolutionService)) {
-                    string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                    if (bindprop.empty()) {
-                        log.error("ArtifactResolutionService element has no Binding attribute, skipping it...");
-                        child = XMLHelper::getNextSiblingElement(child);
-                        continue;
-                    }
-                    handler = conf.ArtifactResolutionServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
-
-                    if (!hardArt) {
-                        pair<bool,bool> defprop = handler->getBool("isDefault");
-                        if (defprop.first) {
-                            if (defprop.second) {
-                                hardArt = true;
-                                m_artifactResolutionDefault = handler;
-                            }
-                        }
-                        else if (!m_artifactResolutionDefault)
-                            m_artifactResolutionDefault = handler;
-                    }
-                }
-                else if (XMLString::equals(child->getLocalName(), _SingleLogoutService)) {
-                    string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                    if (bindprop.empty()) {
-                        log.error("SingleLogoutService element has no Binding attribute, skipping it...");
-                        child = XMLHelper::getNextSiblingElement(child);
-                        continue;
-                    }
-                    handler = conf.SingleLogoutServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
-                }
-                else if (XMLString::equals(child->getLocalName(), _ManageNameIDService)) {
-                    string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                    if (bindprop.empty()) {
-                        log.error("ManageNameIDService element has no Binding attribute, skipping it...");
-                        child = XMLHelper::getNextSiblingElement(child);
-                        continue;
-                    }
-                    handler = conf.ManageNameIDServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
-                }
-                else {
-                    string t(XMLHelper::getAttrString(child, nullptr, _type));
-                    if (t.empty()) {
-                        log.error("Handler element has no type attribute, skipping it...");
-                        child = XMLHelper::getNextSiblingElement(child);
-                        continue;
-                    }
-                    handler = conf.HandlerManager.newPlugin(t.c_str(), make_pair(child, getId()));
-                }
-
-                m_handlers.push_back(handler);
-
-                // Insert into location map.
-                location = handler->getString("Location");
-                if (location.first && *location.second == '/')
-                    m_handlerMap[location.second] = handler;
-                else if (location.first)
-                    m_handlerMap[string("/") + location.second] = handler;
-            }
-            catch (exception& ex) {
-                log.error("caught exception processing handler element: %s", ex.what());
-            }
-
-            child = XMLHelper::getNextSiblingElement(child);
-        }
+        if (conf.isEnabled(SPConfig::Handlers))
+            doHandlers(pp, e, log);
 
         // Notification.
         DOMNodeList* nlist = e->getElementsByTagNameNS(shibspconstants::SHIB2SPCONFIG_NS, Notify);
@@ -794,6 +572,8 @@ XMLApplication::XMLApplication(
                 if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                     m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
         }
+
+        const DOMElement* child;
 
         if (conf.isEnabled(SPConfig::Metadata)) {
             child = XMLHelper::getFirstChildElement(e, _MetadataProvider);
@@ -847,102 +627,8 @@ XMLApplication::XMLApplication(
             }
         }
 
-        if (conf.isEnabled(SPConfig::AttributeResolution)) {
-            child = XMLHelper::getFirstChildElement(e, _AttributeExtractor);
-            if (child) {
-                string t(XMLHelper::getAttrString(child, nullptr, _type));
-                try {
-                    if (!t.empty()) {
-                        log.info("building AttributeExtractor of type %s...", t.c_str());
-                        m_attrExtractor = conf.AttributeExtractorManager.newPlugin(t.c_str(), child);
-                    }
-                    else {
-                        throw ConfigurationException("AttributeExtractor element had no type attribute.");
-                    }
-                }
-                catch (exception& ex) {
-                    log.crit("error building AttributeExtractor: %s", ex.what());
-                }
-            }
-
-            child = XMLHelper::getFirstChildElement(e, _AttributeFilter);
-            if (child) {
-                string t(XMLHelper::getAttrString(child, nullptr, _type));
-                try {
-                    if (!t.empty()) {
-                        log.info("building AttributeFilter of type %s...", t.c_str());
-                        m_attrFilter = conf.AttributeFilterManager.newPlugin(t.c_str(), child);
-                    }
-                    else {
-                        throw ConfigurationException("AttributeFilter element had no type attribute.");
-                    }
-                }
-                catch (exception& ex) {
-                    log.crit("error building AttributeFilter: %s", ex.what());
-                }
-            }
-
-            child = XMLHelper::getFirstChildElement(e, _AttributeResolver);
-            if (child) {
-                string t(XMLHelper::getAttrString(child, nullptr, _type));
-                try {
-                    if (!t.empty()) {
-                        log.info("building AttributeResolver of type %s...", t.c_str());
-                        m_attrResolver = conf.AttributeResolverManager.newPlugin(t.c_str(), child);
-                    }
-                    else {
-                        throw ConfigurationException("AttributeResolver element had no type attribute.");
-                    }
-                }
-                catch (exception& ex) {
-                    log.crit("error building AttributeResolver: %s", ex.what());
-                }
-            }
-
-            if (m_unsetHeaders.empty()) {
-                vector<string> unsetHeaders;
-                if (m_attrExtractor) {
-                    Locker extlock(m_attrExtractor);
-                    m_attrExtractor->getAttributeIds(unsetHeaders);
-                }
-                else if (m_base && m_base->m_attrExtractor) {
-                    Locker extlock(m_base->m_attrExtractor);
-                    m_base->m_attrExtractor->getAttributeIds(unsetHeaders);
-                }
-                if (m_attrResolver) {
-                    Locker reslock(m_attrResolver);
-                    m_attrResolver->getAttributeIds(unsetHeaders);
-                }
-                else if (m_base && m_base->m_attrResolver) {
-                    Locker extlock(m_base->m_attrResolver);
-                    m_base->m_attrResolver->getAttributeIds(unsetHeaders);
-                }
-                if (!unsetHeaders.empty()) {
-                    string transformedprefix(m_attributePrefix.second);
-                    const char* pch;
-                    pair<bool,const char*> prefix = getString("metadataAttributePrefix");
-                    if (prefix.first) {
-                        pch = prefix.second;
-                        while (*pch) {
-                            transformedprefix += (isalnum(*pch) ? toupper(*pch) : '_');
-                            pch++;
-                        }
-                    }
-                    for (vector<string>::const_iterator hdr = unsetHeaders.begin(); hdr!=unsetHeaders.end(); ++hdr) {
-                        string transformed;
-                        pch = hdr->c_str();
-                        while (*pch) {
-                            transformed += (isalnum(*pch) ? toupper(*pch) : '_');
-                            pch++;
-                        }
-                        m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + *hdr, m_attributePrefix.second + transformed));
-                        if (prefix.first)
-                            m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + prefix.second + *hdr, transformedprefix + transformed));
-                    }
-                }
-                m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + "Shib-Application-ID", m_attributePrefix.second + "SHIB_APPLICATION_ID"));
-            }
-        }
+        if (conf.isEnabled(SPConfig::AttributeResolution))
+            doAttributePlugins(e, log);
 
         if (conf.isEnabled(SPConfig::Credentials)) {
             child = XMLHelper::getFirstChildElement(e,_CredentialResolver);
@@ -993,6 +679,684 @@ XMLApplication::XMLApplication(
 #endif
 }
 
+void XMLApplication::doAttributeInfo()
+{
+    // Populate prefix pair.
+    m_attributePrefix.second = "HTTP_";
+    pair<bool,const char*> prefix = getString("attributePrefix");
+    if (prefix.first) {
+        m_attributePrefix.first = prefix.second;
+        const char* pch = prefix.second;
+        while (*pch) {
+            m_attributePrefix.second += (isalnum(*pch) ? toupper(*pch) : '_');
+            pch++;
+        }
+    }
+
+    // Load attribute ID lists for REMOTE_USER and header clearing.
+    if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+        pair<bool,const char*> attributes = getString("REMOTE_USER");
+        if (attributes.first) {
+            char* dup = strdup(attributes.second);
+            char* pos;
+            char* start = dup;
+            while (start && *start) {
+                while (*start && isspace(*start))
+                    start++;
+                if (!*start)
+                    break;
+                pos = strchr(start,' ');
+                if (pos)
+                    *pos=0;
+                m_remoteUsers.push_back(start);
+                start = pos ? pos+1 : nullptr;
+            }
+            free(dup);
+        }
+
+        attributes = getString("unsetHeaders");
+        if (attributes.first) {
+            string transformedprefix(m_attributePrefix.second);
+            const char* pch;
+            prefix = getString("metadataAttributePrefix");
+            if (prefix.first) {
+                pch = prefix.second;
+                while (*pch) {
+                    transformedprefix += (isalnum(*pch) ? toupper(*pch) : '_');
+                    pch++;
+                }
+            }
+            char* dup = strdup(attributes.second);
+            char* pos;
+            char* start = dup;
+            while (start && *start) {
+                while (*start && isspace(*start))
+                    start++;
+                if (!*start)
+                    break;
+                pos = strchr(start,' ');
+                if (pos)
+                    *pos=0;
+
+                string transformed;
+                pch = start;
+                while (*pch) {
+                    transformed += (isalnum(*pch) ? toupper(*pch) : '_');
+                    pch++;
+                }
+
+                m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + start, m_attributePrefix.second + transformed));
+                if (prefix.first)
+                    m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + prefix.second + start, transformedprefix + transformed));
+                start = pos ? pos+1 : nullptr;
+            }
+            free(dup);
+            m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + "Shib-Application-ID", m_attributePrefix.second + "SHIB_APPLICATION_ID"));
+        }
+    }
+}
+
+void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e, Category& log)
+{
+    SPConfig& conf = SPConfig::getConfig();
+
+    Handler* handler = nullptr;
+    const PropertySet* sessions = getPropertySet("Sessions");
+
+    // Process assertion export handler.
+    pair<bool,const char*> location = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,nullptr);
+    if (location.first) {
+        try {
+            DOMElement* exportElement = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, _Handler);
+            exportElement->setAttributeNS(nullptr,Location,sessions->getXMLString("exportLocation").second);
+            pair<bool,const XMLCh*> exportACL = sessions->getXMLString("exportACL");
+            if (exportACL.first) {
+                static const XMLCh _acl[] = UNICODE_LITERAL_9(e,x,p,o,r,t,A,C,L);
+                exportElement->setAttributeNS(nullptr,_acl,exportACL.second);
+            }
+            handler = conf.HandlerManager.newPlugin(
+                samlconstants::SAML20_BINDING_URI, pair<const DOMElement*,const char*>(exportElement, getId())
+                );
+            m_handlers.push_back(handler);
+
+            // Insert into location map. If it contains the handlerURL, we skip past that part.
+            const char* pch = strstr(location.second, sessions->getString("handlerURL").second);
+            if (pch)
+                location.second = pch + strlen(sessions->getString("handlerURL").second);
+            if (*location.second == '/')
+                m_handlerMap[location.second]=handler;
+            else
+                m_handlerMap[string("/") + location.second]=handler;
+        }
+        catch (exception& ex) {
+            log.error("caught exception installing assertion lookup handler: %s", ex.what());
+        }
+    }
+
+    // Look for "shorthand" elements first.
+    set<string> protocols;
+    DOMElement* child = sessions ? XMLHelper::getFirstChildElement(sessions->getElement()) : nullptr;
+    while (child) {
+        if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2SPCONFIG_NS, SSO)) {
+            if (pp)
+                doSSO(*pp, protocols, child, log);
+            else
+                log.error("no ProtocolProvider, SSO auto-configure unsupported");
+        }
+        else if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2SPCONFIG_NS, Logout)) {
+            if (pp)
+                doLogout(*pp, protocols, child, log);
+            else
+                log.error("no ProtocolProvider, Logout auto-configure unsupported");
+        }
+        else if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2SPCONFIG_NS, NameIDMgmt)) {
+            if (pp)
+                doNameIDMgmt(*pp, protocols, child, log);
+            else
+                log.error("no ProtocolProvider, NameIDMgmt auto-configure unsupported");
+        }
+        else {
+            break;  // drop into next while loop
+        }
+        child = XMLHelper::getNextSiblingElement(child);
+    }
+
+    // Process other handlers.
+    bool hardACS=false, hardSessionInit=false, hardArt=false;
+    while (child) {
+        if (!child->hasAttributeNS(nullptr, Location)) {
+            auto_ptr_char hclass(child->getLocalName());
+            log.error("%s handler with no Location property cannot be processed", hclass.get());
+            child = XMLHelper::getNextSiblingElement(child);
+            continue;
+        }
+        try {
+            if (XMLString::equals(child->getLocalName(), _AssertionConsumerService)) {
+                string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
+                if (bindprop.empty()) {
+                    log.error("AssertionConsumerService element has no Binding attribute, skipping it...");
+                    child = XMLHelper::getNextSiblingElement(child);
+                    continue;
+                }
+                handler = conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
+                // Map by binding and protocol (may be > 1 per protocol and binding)
+                m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
+                const XMLCh* protfamily = handler->getProtocolFamily();
+                if (protfamily)
+                    m_acsProtocolMap[protfamily].push_back(handler);
+                m_acsIndexMap[handler->getUnsignedInt("index").second] = handler;
+
+                if (!hardACS) {
+                    pair<bool,bool> defprop = handler->getBool("isDefault");
+                    if (defprop.first) {
+                        if (defprop.second) {
+                            hardACS = true;
+                            m_acsDefault = handler;
+                        }
+                    }
+                    else if (!m_acsDefault)
+                        m_acsDefault = handler;
+                }
+            }
+            else if (XMLString::equals(child->getLocalName(), _SessionInitiator)) {
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
+                if (t.empty()) {
+                    log.error("SessionInitiator element has no type attribute, skipping it...");
+                    child = XMLHelper::getNextSiblingElement(child);
+                    continue;
+                }
+                SessionInitiator* sihandler = conf.SessionInitiatorManager.newPlugin(t.c_str(), make_pair(child, getId()));
+                handler = sihandler;
+                pair<bool,const char*> si_id = handler->getString("id");
+                if (si_id.first && si_id.second)
+                    m_sessionInitMap[si_id.second] = sihandler;
+                if (!hardSessionInit) {
+                    pair<bool,bool> defprop = handler->getBool("isDefault");
+                    if (defprop.first) {
+                        if (defprop.second) {
+                            hardSessionInit = true;
+                            m_sessionInitDefault = sihandler;
+                        }
+                    }
+                    else if (!m_sessionInitDefault) {
+                        m_sessionInitDefault = sihandler;
+                    }
+                }
+            }
+            else if (XMLString::equals(child->getLocalName(), _LogoutInitiator)) {
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
+                if (t.empty()) {
+                    log.error("LogoutInitiator element has no type attribute, skipping it...");
+                    child = XMLHelper::getNextSiblingElement(child);
+                    continue;
+                }
+                handler = conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(child, getId()));
+            }
+            else if (XMLString::equals(child->getLocalName(), _ArtifactResolutionService)) {
+                string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
+                if (bindprop.empty()) {
+                    log.error("ArtifactResolutionService element has no Binding attribute, skipping it...");
+                    child = XMLHelper::getNextSiblingElement(child);
+                    continue;
+                }
+                handler = conf.ArtifactResolutionServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
+
+                if (!hardArt) {
+                    pair<bool,bool> defprop = handler->getBool("isDefault");
+                    if (defprop.first) {
+                        if (defprop.second) {
+                            hardArt = true;
+                            m_artifactResolutionDefault = handler;
+                        }
+                    }
+                    else if (!m_artifactResolutionDefault)
+                        m_artifactResolutionDefault = handler;
+                }
+            }
+            else if (XMLString::equals(child->getLocalName(), _SingleLogoutService)) {
+                string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
+                if (bindprop.empty()) {
+                    log.error("SingleLogoutService element has no Binding attribute, skipping it...");
+                    child = XMLHelper::getNextSiblingElement(child);
+                    continue;
+                }
+                handler = conf.SingleLogoutServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
+            }
+            else if (XMLString::equals(child->getLocalName(), _ManageNameIDService)) {
+                string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
+                if (bindprop.empty()) {
+                    log.error("ManageNameIDService element has no Binding attribute, skipping it...");
+                    child = XMLHelper::getNextSiblingElement(child);
+                    continue;
+                }
+                handler = conf.ManageNameIDServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
+            }
+            else {
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
+                if (t.empty()) {
+                    log.error("Handler element has no type attribute, skipping it...");
+                    child = XMLHelper::getNextSiblingElement(child);
+                    continue;
+                }
+                handler = conf.HandlerManager.newPlugin(t.c_str(), make_pair(child, getId()));
+            }
+
+            m_handlers.push_back(handler);
+
+            // Insert into location map.
+            location = handler->getString("Location");
+            if (location.first && *location.second == '/')
+                m_handlerMap[location.second] = handler;
+            else if (location.first)
+                m_handlerMap[string("/") + location.second] = handler;
+        }
+        catch (exception& ex) {
+            log.error("caught exception processing handler element: %s", ex.what());
+        }
+
+        child = XMLHelper::getNextSiblingElement(child);
+    }
+}
+
+void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, DOMElement* e, Category& log)
+{
+    if (!e->hasChildNodes())
+        return;
+
+    SPConfig& conf = SPConfig::getConfig();
+
+    // Tokenize the protocol list inside the element.
+    const XMLCh* protlist = e->getFirstChild()->getNodeValue();
+    XMLStringTokenizer prottokens(protlist);
+    while (prottokens.hasMoreTokens()) {
+        auto_ptr_char prot(prottokens.nextToken());
+
+        // Look for initiator.
+        const PropertySet* initiator = pp.getInitiator(prot.get(), "SSO");
+        if (initiator) {
+            log.info("auto-configuring SSO initiation for protocol (%s)", prot.get());
+            pair<bool,const XMLCh*> inittype = initiator->getXMLString("id");
+            if (inittype.first) {
+                // Append a session initiator element of the designated type to the root element.
+                DOMElement* sidom = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, _SessionInitiator);
+                sidom->setAttributeNS(nullptr, _type, inittype.second);
+                e->appendChild(sidom);
+                log.info("adding SessionInitiator of type (%s) to chain (/Login)", initiator->getString("id").second);
+
+                doArtifactResolution(pp, prot.get(), e, log);
+                protocols.insert(prot.get());
+            }
+            else {
+                log.error("missing id property on Initiator element, check config for protocol (%s)", prot.get());
+            }
+        }
+
+        // Look for incoming bindings.
+        const vector<const PropertySet*>& bindings = pp.getBindings(prot.get(), "SSO");
+        if (!bindings.empty()) {
+            log.info("auto-configuring SSO endpoints for protocol (%s)", prot.get());
+            int index = 0;
+            pair<bool,const XMLCh*> idprop,pathprop;
+            for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b, ++index) {
+                idprop = (*b)->getXMLString("id");
+                pathprop = (*b)->getXMLString("path");
+                if (idprop.first && pathprop.first) {
+                    DOMElement* acsdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _AssertionConsumerService);
+                    acsdom->setAttributeNS(nullptr, Binding, idprop.second);
+                    acsdom->setAttributeNS(nullptr, Location, pathprop.second);
+                    xstring indexbuf(chDigit_1 + (index % 10), 1);
+                    if (index / 10)
+                        indexbuf = (XMLCh)(chDigit_1 + (index / 10)) + indexbuf;
+                    acsdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
+
+                    log.info("adding AssertionConsumerService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
+                    Handler* handler = conf.AssertionConsumerServiceManager.newPlugin((*b)->getString("id").second, make_pair(acsdom, getId()));
+                    m_handlers.push_back(handler);
+
+                    // Setup maps and defaults.
+                    m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
+                    const XMLCh* protfamily = handler->getProtocolFamily();
+                    if (protfamily)
+                        m_acsProtocolMap[protfamily].push_back(handler);
+                    m_acsIndexMap[handler->getUnsignedInt("index").second] = handler;
+                    if (!m_acsDefault)
+                        m_acsDefault = handler;
+
+                    // Insert into location map.
+                    pair<bool,const char*> location = handler->getString("Location");
+                    if (location.first && *location.second == '/')
+                        m_handlerMap[location.second] = handler;
+                    else if (location.first)
+                        m_handlerMap[string("/") + location.second] = handler;
+                }
+                else {
+                    log.error("missing id or path property on Binding element, check config for protocol (%s)", prot.get());
+                }
+            }
+        }
+
+        if (!initiator && bindings.empty()) {
+            log.error("no SSO Initiator or Binding config for protocol (%s)", prot.get());
+        }
+    }
+
+    // Handle discovery.
+    static const XMLCh discoveryProtocol[] = UNICODE_LITERAL_17(d,i,s,c,o,v,e,r,y,P,r,o,t,o,c,o,l);
+    static const XMLCh discoveryURL[] = UNICODE_LITERAL_12(d,i,s,c,o,v,e,r,y,U,R,L);
+    static const XMLCh _URL[] = UNICODE_LITERAL_3(U,R,L);
+    const XMLCh* discop = e->getAttributeNS(nullptr, discoveryProtocol);
+    if (discop && *discop) {
+        const XMLCh* discou = e->getAttributeNS(nullptr, discoveryURL);
+        if (discou && *discou) {
+            // Append a session initiator element of the designated type to the root element.
+            DOMElement* sidom = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, _SessionInitiator);
+            sidom->setAttributeNS(nullptr, _type, discop);
+            sidom->setAttributeNS(nullptr, _URL, discou);
+            e->appendChild(sidom);
+            if (log.isInfoEnabled()) {
+                auto_ptr_char dp(discop);
+                log.info("adding SessionInitiator of type (%s) to chain (/Login)", dp.get());
+            }
+        }
+        else {
+            log.error("SSO discoveryProtocol specified without discoveryURL");
+        }
+    }
+
+    // Attach default Location to SSO element.
+    static const XMLCh _loc[] = { chForwardSlash, chLatin_L, chLatin_o, chLatin_g, chLatin_i, chLatin_n, chNull };
+    e->setAttributeNS(nullptr, Location, _loc);
+
+    // Instantiate Chaining initiator around the SSO element.
+    SessionInitiator* chain = conf.SessionInitiatorManager.newPlugin(CHAINING_SESSION_INITIATOR, make_pair(e, getId()));
+    m_handlers.push_back(chain);
+    m_sessionInitDefault = chain;
+    m_handlerMap["/Login"] = chain;
+}
+
+void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols, DOMElement* e, Category& log)
+{
+    if (!e->hasChildNodes())
+        return;
+
+    SPConfig& conf = SPConfig::getConfig();
+
+    // Tokenize the protocol list inside the element.
+    const XMLCh* protlist = e->getFirstChild()->getNodeValue();
+    XMLStringTokenizer prottokens(protlist);
+    while (prottokens.hasMoreTokens()) {
+        auto_ptr_char prot(prottokens.nextToken());
+
+        // Look for initiator.
+        const PropertySet* initiator = pp.getInitiator(prot.get(), "Logout");
+        if (initiator) {
+            log.info("auto-configuring Logout initiation for protocol (%s)", prot.get());
+            pair<bool,const XMLCh*> inittype = initiator->getXMLString("id");
+            if (inittype.first) {
+                // Append a logout initiator element of the designated type to the root element.
+                DOMElement* lidom = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, _LogoutInitiator);
+                lidom->setAttributeNS(nullptr, _type, inittype.second);
+                e->appendChild(lidom);
+                log.info("adding LogoutInitiator of type (%s) to chain (/Logout)", initiator->getString("id").second);
+
+                if (protocols.count(prot.get()) == 0) {
+                    doArtifactResolution(pp, prot.get(), e, log);
+                    protocols.insert(prot.get());
+                }
+            }
+            else {
+                log.error("missing id property on Initiator element, check config for protocol (%s)", prot.get());
+            }
+        }
+
+        // Look for incoming bindings.
+        const vector<const PropertySet*>& bindings = pp.getBindings(prot.get(), "Logout");
+        if (!bindings.empty()) {
+            log.info("auto-configuring Logout endpoints for protocol (%s)", prot.get());
+            pair<bool,const XMLCh*> idprop,pathprop;
+            for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b) {
+                idprop = (*b)->getXMLString("id");
+                pathprop = (*b)->getXMLString("path");
+                if (idprop.first && pathprop.first) {
+                    DOMElement* slodom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _SingleLogoutService);
+                    slodom->setAttributeNS(nullptr, Binding, idprop.second);
+                    slodom->setAttributeNS(nullptr, Location, pathprop.second);
+
+                    log.info("adding SingleLogoutService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
+                    Handler* handler = conf.SingleLogoutServiceManager.newPlugin((*b)->getString("id").second, make_pair(slodom, getId()));
+                    m_handlers.push_back(handler);
+
+                    // Insert into location map.
+                    pair<bool,const char*> location = handler->getString("Location");
+                    if (location.first && *location.second == '/')
+                        m_handlerMap[location.second] = handler;
+                    else if (location.first)
+                        m_handlerMap[string("/") + location.second] = handler;
+                }
+                else {
+                    log.error("missing id or path property on Binding element, check config for protocol (%s)", prot.get());
+                }
+            }
+
+            if (protocols.count(prot.get()) == 0) {
+                doArtifactResolution(pp, prot.get(), e, log);
+                protocols.insert(prot.get());
+            }
+        }
+
+        if (!initiator && bindings.empty()) {
+            log.error("no Logout Initiator or Binding config for protocol (%s)", prot.get());
+        }
+    }
+
+    // Attach default Location to Logout element.
+    static const XMLCh _loc[] = { chForwardSlash, chLatin_L, chLatin_o, chLatin_g, chLatin_o, chLatin_u, chLatin_t, chNull };
+    e->setAttributeNS(nullptr, Location, _loc);
+
+    // Instantiate Chaining initiator around the SSO element.
+    Handler* chain = conf.LogoutInitiatorManager.newPlugin(CHAINING_LOGOUT_INITIATOR, make_pair(e, getId()));
+    m_handlers.push_back(chain);
+    m_handlerMap["/Logout"] = chain;
+}
+
+void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& protocols, DOMElement* e, Category& log)
+{
+    if (!e->hasChildNodes())
+        return;
+
+    SPConfig& conf = SPConfig::getConfig();
+
+    // Tokenize the protocol list inside the element.
+    const XMLCh* protlist = e->getFirstChild()->getNodeValue();
+    XMLStringTokenizer prottokens(protlist);
+    while (prottokens.hasMoreTokens()) {
+        auto_ptr_char prot(prottokens.nextToken());
+
+        // Look for incoming bindings.
+        const vector<const PropertySet*>& bindings = pp.getBindings(prot.get(), "NameIDMgmt");
+        if (!bindings.empty()) {
+            log.info("auto-configuring NameIDMgmt endpoints for protocol (%s)", prot.get());
+            pair<bool,const XMLCh*> idprop,pathprop;
+            for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b) {
+                idprop = (*b)->getXMLString("id");
+                pathprop = (*b)->getXMLString("path");
+                if (idprop.first && pathprop.first) {
+                    DOMElement* nimdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _ManageNameIDService);
+                    nimdom->setAttributeNS(nullptr, Binding, idprop.second);
+                    nimdom->setAttributeNS(nullptr, Location, pathprop.second);
+
+                    log.info("adding ManageNameIDService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
+                    Handler* handler = conf.ManageNameIDServiceManager.newPlugin((*b)->getString("id").second, make_pair(nimdom, getId()));
+                    m_handlers.push_back(handler);
+
+                    // Insert into location map.
+                    pair<bool,const char*> location = handler->getString("Location");
+                    if (location.first && *location.second == '/')
+                        m_handlerMap[location.second] = handler;
+                    else if (location.first)
+                        m_handlerMap[string("/") + location.second] = handler;
+                }
+                else {
+                    log.error("missing id or path property on Binding element, check config for protocol (%s)", prot.get());
+                }
+            }
+
+            if (protocols.count(prot.get()) == 0) {
+                doArtifactResolution(pp, prot.get(), e, log);
+                protocols.insert(prot.get());
+            }
+        }
+        else {
+            log.error("no NameIDMgmt Binding config for protocol (%s)", prot.get());
+        }
+    }
+}
+
+void XMLApplication::doArtifactResolution(const ProtocolProvider& pp, const char* protocol, DOMElement* e, Category& log)
+{
+    SPConfig& conf = SPConfig::getConfig();
+
+    // Look for incoming bindings.
+    const vector<const PropertySet*>& bindings = pp.getBindings(protocol, "ArtifactResolution");
+    if (!bindings.empty()) {
+        log.info("auto-configuring ArtifactResolution endpoints for protocol (%s)", protocol);
+        int index = 0;
+        pair<bool,const XMLCh*> idprop,pathprop;
+        for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b) {
+            idprop = (*b)->getXMLString("id");
+            pathprop = (*b)->getXMLString("path");
+            if (idprop.first && pathprop.first) {
+                DOMElement* artdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _ArtifactResolutionService);
+                artdom->setAttributeNS(nullptr, Binding, idprop.second);
+                artdom->setAttributeNS(nullptr, Location, pathprop.second);
+                xstring indexbuf(chDigit_1 + (index % 10), 1);
+                if (index / 10)
+                    indexbuf = (XMLCh)(chDigit_1 + (index / 10)) + indexbuf;
+                artdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
+
+                log.info("adding ArtifactResolutionService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
+                Handler* handler = conf.ArtifactResolutionServiceManager.newPlugin((*b)->getString("id").second, make_pair(artdom, getId()));
+                m_handlers.push_back(handler);
+
+                if (!m_artifactResolutionDefault)
+                    m_artifactResolutionDefault = handler;
+
+                // Insert into location map.
+                pair<bool,const char*> location = handler->getString("Location");
+                if (location.first && *location.second == '/')
+                    m_handlerMap[location.second] = handler;
+                else if (location.first)
+                    m_handlerMap[string("/") + location.second] = handler;
+            }
+            else {
+                log.error("missing id or path property on Binding element, check config for protocol (%s)", protocol);
+            }
+        }
+    }
+}
+
+#ifndef SHIBSP_LITE
+void XMLApplication::doAttributePlugins(const DOMElement* e, Category& log)
+{
+    SPConfig& conf = SPConfig::getConfig();
+
+    DOMElement* child = XMLHelper::getFirstChildElement(e, _AttributeExtractor);
+    if (child) {
+        string t(XMLHelper::getAttrString(child, nullptr, _type));
+        try {
+            if (!t.empty()) {
+                log.info("building AttributeExtractor of type %s...", t.c_str());
+                m_attrExtractor = conf.AttributeExtractorManager.newPlugin(t.c_str(), child);
+            }
+            else {
+                throw ConfigurationException("AttributeExtractor element had no type attribute.");
+            }
+        }
+        catch (exception& ex) {
+            log.crit("error building AttributeExtractor: %s", ex.what());
+        }
+    }
+
+    child = XMLHelper::getFirstChildElement(e, _AttributeFilter);
+    if (child) {
+        string t(XMLHelper::getAttrString(child, nullptr, _type));
+        try {
+            if (!t.empty()) {
+                log.info("building AttributeFilter of type %s...", t.c_str());
+                m_attrFilter = conf.AttributeFilterManager.newPlugin(t.c_str(), child);
+            }
+            else {
+                throw ConfigurationException("AttributeFilter element had no type attribute.");
+            }
+        }
+        catch (exception& ex) {
+            log.crit("error building AttributeFilter: %s", ex.what());
+        }
+    }
+
+    child = XMLHelper::getFirstChildElement(e, _AttributeResolver);
+    if (child) {
+        string t(XMLHelper::getAttrString(child, nullptr, _type));
+        try {
+            if (!t.empty()) {
+                log.info("building AttributeResolver of type %s...", t.c_str());
+                m_attrResolver = conf.AttributeResolverManager.newPlugin(t.c_str(), child);
+            }
+            else {
+                throw ConfigurationException("AttributeResolver element had no type attribute.");
+            }
+        }
+        catch (exception& ex) {
+            log.crit("error building AttributeResolver: %s", ex.what());
+        }
+    }
+
+    if (m_unsetHeaders.empty()) {
+        vector<string> unsetHeaders;
+        if (m_attrExtractor) {
+            Locker extlock(m_attrExtractor);
+            m_attrExtractor->getAttributeIds(unsetHeaders);
+        }
+        else if (m_base && m_base->m_attrExtractor) {
+            Locker extlock(m_base->m_attrExtractor);
+            m_base->m_attrExtractor->getAttributeIds(unsetHeaders);
+        }
+        if (m_attrResolver) {
+            Locker reslock(m_attrResolver);
+            m_attrResolver->getAttributeIds(unsetHeaders);
+        }
+        else if (m_base && m_base->m_attrResolver) {
+            Locker extlock(m_base->m_attrResolver);
+            m_base->m_attrResolver->getAttributeIds(unsetHeaders);
+        }
+        if (!unsetHeaders.empty()) {
+            string transformedprefix(m_attributePrefix.second);
+            const char* pch;
+            pair<bool,const char*> prefix = getString("metadataAttributePrefix");
+            if (prefix.first) {
+                pch = prefix.second;
+                while (*pch) {
+                    transformedprefix += (isalnum(*pch) ? toupper(*pch) : '_');
+                    pch++;
+                }
+            }
+            for (vector<string>::const_iterator hdr = unsetHeaders.begin(); hdr!=unsetHeaders.end(); ++hdr) {
+                string transformed;
+                pch = hdr->c_str();
+                while (*pch) {
+                    transformed += (isalnum(*pch) ? toupper(*pch) : '_');
+                    pch++;
+                }
+                m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + *hdr, m_attributePrefix.second + transformed));
+                if (prefix.first)
+                    m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + prefix.second + *hdr, transformedprefix + transformed));
+            }
+        }
+        m_unsetHeaders.push_back(pair<string,string>(m_attributePrefix.first + "Shib-Application-ID", m_attributePrefix.second + "SHIB_APPLICATION_ID"));
+    }
+}
+#endif
+
 void XMLApplication::cleanup()
 {
     ListenerService* listener=getServiceProvider().getListenerService(false);
@@ -1034,10 +1398,13 @@ XMLApplication::acceptNode(const DOMNode* node) const
         XMLString::equals(name,_Handler) ||
         XMLString::equals(name,_AssertionConsumerService) ||
         XMLString::equals(name,_ArtifactResolutionService) ||
+        XMLString::equals(name,Logout) ||
         XMLString::equals(name,_LogoutInitiator) ||
         XMLString::equals(name,_ManageNameIDService) ||
+        XMLString::equals(name,NameIDMgmt) ||
         XMLString::equals(name,_SessionInitiator) ||
         XMLString::equals(name,_SingleLogoutService) ||
+        XMLString::equals(name,SSO) ||
         XMLString::equals(name,RelyingParty) ||
         XMLString::equals(name,_MetadataProvider) ||
         XMLString::equals(name,_TrustEngine) ||
@@ -1327,6 +1694,133 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
     }
 }
 
+void XMLConfigImpl::doListener(const DOMElement* e, Category& log)
+{
+#ifdef WIN32
+    string plugtype(TCP_LISTENER_SERVICE);
+#else
+    string plugtype(UNIX_LISTENER_SERVICE);
+#endif
+    DOMElement* child = XMLHelper::getFirstChildElement(e, UnixListener);
+    if (child)
+        plugtype = UNIX_LISTENER_SERVICE;
+    else {
+        child = XMLHelper::getFirstChildElement(e, TCPListener);
+        if (child)
+            plugtype = TCP_LISTENER_SERVICE;
+        else {
+            child = XMLHelper::getFirstChildElement(e, Listener);
+            if (child) {
+                auto_ptr_char type(child->getAttributeNS(nullptr, _type));
+                if (type.get() && *type.get())
+                    plugtype = type.get();
+            }
+        }
+    }
+
+    log.info("building ListenerService of type %s...", plugtype.c_str());
+    m_outer->m_listener = SPConfig::getConfig().ListenerServiceManager.newPlugin(plugtype.c_str(), child);
+}
+
+void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
+{
+    SPConfig& conf = SPConfig::getConfig();
+#ifndef SHIBSP_LITE
+    SAMLConfig& samlConf = SAMLConfig::getConfig();
+#endif
+    XMLToolingConfig& xmlConf = XMLToolingConfig::getConfig();
+
+    DOMElement* child;
+#ifndef SHIBSP_LITE
+    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        // First build any StorageServices.
+        child = XMLHelper::getFirstChildElement(e, _StorageService);
+        while (child) {
+            string id(XMLHelper::getAttrString(child, nullptr, _id));
+            string t(XMLHelper::getAttrString(child, nullptr, _type));
+            if (!t.empty()) {
+                try {
+                    log.info("building StorageService (%s) of type %s...", id.c_str(), t.c_str());
+                    m_outer->m_storage[id] = xmlConf.StorageServiceManager.newPlugin(t.c_str(), child);
+                }
+                catch (exception& ex) {
+                    log.crit("failed to instantiate StorageService (%s): %s", id.c_str(), ex.what());
+                }
+            }
+            child = XMLHelper::getNextSiblingElement(child, _StorageService);
+        }
+
+        if (m_outer->m_storage.empty()) {
+            log.info("no StorageService plugin(s) installed, using (mem) in-memory instance");
+            m_outer->m_storage["id"] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr);
+        }
+
+        // Replay cache.
+        StorageService* replaySS = nullptr;
+        child = XMLHelper::getFirstChildElement(e, _ReplayCache);
+        if (child) {
+            string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
+            if (!ssid.empty()) {
+                if (m_outer->m_storage.count(ssid)) {
+                    log.info("building ReplayCache on top of StorageService (%s)...", ssid.c_str());
+                    replaySS = m_outer->m_storage[ssid];
+                }
+                else {
+                    log.error("unable to locate StorageService (%s), using arbitrary instance for ReplayCache", ssid.c_str());
+                    replaySS = m_outer->m_storage.begin()->second;
+                }
+            }
+            else {
+                log.info("no StorageService specified for ReplayCache, using arbitrary instance");
+                replaySS = m_outer->m_storage.begin()->second;
+            }
+        }
+        else {
+            log.info("no ReplayCache specified, using arbitrary StorageService instance");
+            replaySS = m_outer->m_storage.begin()->second;
+        }
+        xmlConf.setReplayCache(new ReplayCache(replaySS));
+
+        // ArtifactMap
+        child = XMLHelper::getFirstChildElement(e, _ArtifactMap);
+        if (child) {
+            string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
+            if (!ssid.empty()) {
+                if (m_outer->m_storage.count(ssid)) {
+                    log.info("building ArtifactMap on top of StorageService (%s)...", ssid.c_str());
+                    samlConf.setArtifactMap(new ArtifactMap(child, m_outer->m_storage[ssid]));
+                }
+                else {
+                    log.error("unable to locate StorageService (%s), using in-memory ArtifactMap", ssid.c_str());
+                    samlConf.setArtifactMap(new ArtifactMap(child));
+                }
+            }
+            else {
+                log.info("no StorageService specified, using in-memory ArtifactMap");
+                samlConf.setArtifactMap(new ArtifactMap(child));
+            }
+        }
+        else {
+            log.info("no ArtifactMap specified, building in-memory ArtifactMap...");
+            samlConf.setArtifactMap(new ArtifactMap(child));
+        }
+    }   // end of out of process caching components
+#endif
+
+    child = XMLHelper::getFirstChildElement(e, _SessionCache);
+    if (child) {
+        string t(XMLHelper::getAttrString(child, nullptr, _type));
+        if (!t.empty()) {
+            log.info("building SessionCache of type %s...", t.c_str());
+            m_outer->m_sessionCache = conf.SessionCacheManager.newPlugin(t.c_str(), child);
+        }
+    }
+    if (!m_outer->m_sessionCache) {
+        log.info("no SessionCache specified, using StorageService-backed instance");
+        m_outer->m_sessionCache = conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE, nullptr);
+    }
+}
+
 XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer, Category& log)
     : m_requestMapper(nullptr),
 #ifndef SHIBSP_LITE
@@ -1430,32 +1924,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 doExtensions(SHIRE, "in process", log);
 
             // Instantiate the ListenerService and SessionCache objects.
-            if (conf.isEnabled(SPConfig::Listener)) {
-#ifdef WIN32
-                string plugtype(TCP_LISTENER_SERVICE);
-#else
-                string plugtype(UNIX_LISTENER_SERVICE);
-#endif
-                child = XMLHelper::getFirstChildElement(e, UnixListener);
-                if (child)
-                    plugtype = UNIX_LISTENER_SERVICE;
-                else {
-                    child = XMLHelper::getFirstChildElement(e, TCPListener);
-                    if (child)
-                        plugtype = TCP_LISTENER_SERVICE;
-                    else {
-                        child = XMLHelper::getFirstChildElement(e, Listener);
-                        if (child) {
-                            auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-                            if (type.get() && *type.get())
-                                plugtype = type.get();
-                        }
-                    }
-                }
-
-                log.info("building ListenerService of type %s...", plugtype.c_str());
-                m_outer->m_listener = conf.ListenerServiceManager.newPlugin(plugtype.c_str(), child);
-            }
+            if (conf.isEnabled(SPConfig::Listener))
+                doListener(e, log);
 
 #ifndef SHIBSP_LITE
             if (m_outer->m_listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
@@ -1465,97 +1935,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
                 m_outer->m_listener->regListener("get::PostData", const_cast<XMLConfig*>(m_outer));
             }
 #endif
-
-            if (conf.isEnabled(SPConfig::Caching)) {
-#ifndef SHIBSP_LITE
-                if (conf.isEnabled(SPConfig::OutOfProcess)) {
-                    // First build any StorageServices.
-                    child = XMLHelper::getFirstChildElement(e, _StorageService);
-                    while (child) {
-                        string id(XMLHelper::getAttrString(child, nullptr, _id));
-                        string t(XMLHelper::getAttrString(child, nullptr, _type));
-                        if (!t.empty()) {
-                            try {
-                                log.info("building StorageService (%s) of type %s...", id.c_str(), t.c_str());
-                                m_outer->m_storage[id] = xmlConf.StorageServiceManager.newPlugin(t.c_str(), child);
-                            }
-                            catch (exception& ex) {
-                                log.crit("failed to instantiate StorageService (%s): %s", id.c_str(), ex.what());
-                            }
-                        }
-                        child = XMLHelper::getNextSiblingElement(child, _StorageService);
-                    }
-
-                    if (m_outer->m_storage.empty()) {
-                        log.info("no StorageService plugin(s) installed, using (mem) in-memory instance");
-                        m_outer->m_storage["id"] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr);
-                    }
-
-                    // Replay cache.
-                    StorageService* replaySS = nullptr;
-                    child = XMLHelper::getFirstChildElement(e, _ReplayCache);
-                    if (child) {
-                        string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
-                        if (!ssid.empty()) {
-                            if (m_outer->m_storage.count(ssid)) {
-                                log.info("building ReplayCache on top of StorageService (%s)...", ssid.c_str());
-                                replaySS = m_outer->m_storage[ssid];
-                            }
-                            else {
-                                log.error("unable to locate StorageService (%s), using arbitrary instance for ReplayCache", ssid.c_str());
-                                replaySS = m_outer->m_storage.begin()->second;
-                            }
-                        }
-                        else {
-                            log.info("no StorageService specified for ReplayCache, using arbitrary instance");
-                            replaySS = m_outer->m_storage.begin()->second;
-                        }
-                    }
-                    else {
-                        log.info("no ReplayCache specified, using arbitrary StorageService instance");
-                        replaySS = m_outer->m_storage.begin()->second;
-                    }
-                    xmlConf.setReplayCache(new ReplayCache(replaySS));
-
-                    // ArtifactMap
-                    child = XMLHelper::getFirstChildElement(e, _ArtifactMap);
-                    if (child) {
-                        string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
-                        if (!ssid.empty()) {
-                            if (m_outer->m_storage.count(ssid)) {
-                                log.info("building ArtifactMap on top of StorageService (%s)...", ssid.c_str());
-                                samlConf.setArtifactMap(new ArtifactMap(child, m_outer->m_storage[ssid]));
-                            }
-                            else {
-                                log.error("unable to locate StorageService (%s), using in-memory ArtifactMap", ssid.c_str());
-                                samlConf.setArtifactMap(new ArtifactMap(child));
-                            }
-                        }
-                        else {
-                            log.info("no StorageService specified, using in-memory ArtifactMap");
-                            samlConf.setArtifactMap(new ArtifactMap(child));
-                        }
-                    }
-                    else {
-                        log.info("no ArtifactMap specified, building in-memory ArtifactMap...");
-                        samlConf.setArtifactMap(new ArtifactMap(child));
-                    }
-                }   // end of out of process caching components
-#endif
-
-                child = XMLHelper::getFirstChildElement(e, _SessionCache);
-                if (child) {
-                    string t(XMLHelper::getAttrString(child, nullptr, _type));
-                    if (!t.empty()) {
-                        log.info("building SessionCache of type %s...", t.c_str());
-                        m_outer->m_sessionCache = conf.SessionCacheManager.newPlugin(t.c_str(), child);
-                    }
-                }
-                if (!m_outer->m_sessionCache) {
-                    log.info("no SessionCache specified, using StorageService-backed instance");
-                    m_outer->m_sessionCache = conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE, nullptr);
-                }
-            }
+            if (conf.isEnabled(SPConfig::Caching))
+                doCaching(e, log);
         } // end of first-time-only stuff
 
         // Back to the fully dynamic stuff...next up is the RequestMapper.
@@ -1633,19 +2014,32 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         }
 #endif
 
+        ProtocolProvider* pp = nullptr;
+        if (conf.isEnabled(SPConfig::Handlers)) {
+            if (child = XMLHelper::getLastChildElement(e, _ProtocolProvider)) {
+                string t(XMLHelper::getAttrString(child, nullptr, _type));
+                if (!t.empty()) {
+                    log.info("building ProtocolProvider of type %s...", t.c_str());
+                    pp = conf.ProtocolProviderManager.newPlugin(t.c_str(), child);
+                }
+            }
+        }
+        auto_ptr<ProtocolProvider> ppwrapper(pp);
+        Locker pplocker(pp);
+
         // Load the default application.
         child = XMLHelper::getLastChildElement(e, ApplicationDefaults);
         if (!child) {
             log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");
             throw ConfigurationException("can't build default Application object, missing conf:ApplicationDefaults element?");
         }
-        XMLApplication* defapp = new XMLApplication(m_outer, child);
+        XMLApplication* defapp = new XMLApplication(m_outer, pp, child);
         m_appmap[defapp->getId()] = defapp;
 
         // Load any overrides.
         child = XMLHelper::getFirstChildElement(child, ApplicationOverride);
         while (child) {
-            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer, child, defapp));
+            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer, pp, child, defapp));
             if (m_appmap.count(iapp->getId()))
                 log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
             else {

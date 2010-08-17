@@ -105,10 +105,16 @@
         impact on the security of the SP. Stealing cookies/sessions is much easier with this disabled.
         -->
         <Sessions lifetime="28800" timeout="3600" checkAddress="false"
-            handlerURL="/Shibboleth.sso" handlerSSL="false"
+            handlerURL="/Shibboleth.sso" handlerSSL="false" relayState="ss:mem"
             exportLocation="http://localhost/Shibboleth.sso/GetAssertion" exportACL="127.0.0.1"
             idpHistory="false" idpHistoryDays="7">
-            
+
+            <!--
+            The "stripped down" files use the shorthand syntax for configuring handlers.
+            This uses the old "every handler specified directly" syntax. You can replace
+            or supplement the new syntax following these examples.
+            -->
+          
             <!--
             SessionInitiators handle session requests and relay them to a Discovery page,
             or to an IdP if possible. Automatic session setup will use the default or first
@@ -117,16 +123,16 @@
 
             <!-- Default directs to a specific IdP (favoring SAML 2 over Shib 1). -->
             <SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="Login"
-                              relayState="cookie" entityID="https://idp.example.org/shibboleth">
+                              entityID="https://idp.example.org/shibboleth">
               
-                <SessionInitiator type="SAML2" acsIndex="1" template="bindingTemplate.html"/>
-                <SessionInitiator type="Shib1" acsIndex="5"/>
+                <SessionInitiator type="SAML2" template="bindingTemplate.html"/>
+                <SessionInitiator type="Shib1"/>
                 <!--
                 To allow for >1 IdP, remove entityID property from Chaining element and add
                 *either* of the SAMLDS or WAYF handlers below:
                 
                 <SessionInitiator type="SAMLDS" URL="https://ds.example.org/DS/WAYF"/>
-                <SessionInitiator type="WAYF" acsIndex="5" URL="https://wayf.example.org/WAYF"/>
+                <SessionInitiator type="WAYF" URL="https://wayf.example.org/WAYF"/>
                 -->
             </SessionInitiator>
             
@@ -150,7 +156,7 @@
                 Binding="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"/>
 
             <!-- LogoutInitiators enable SP-initiated local or global/single logout of sessions. -->
-            <LogoutInitiator type="Chaining" Location="/Logout" relayState="cookie">
+            <LogoutInitiator type="Chaining" Location="/Logout">
                 <LogoutInitiator type="SAML2" template="bindingTemplate.html"/>
                 <LogoutInitiator type="Local"/>
             </LogoutInitiator>
@@ -260,5 +266,8 @@
     
     <!-- Policies that determine how to process and authenticate runtime messages. -->
     <SecurityPolicyProvider type="XML" validate="true" path="security-policy.xml"/>
+
+    <!-- Low-level configuration about protocols and bindings available for use. -->
+    <ProtocolProvider type="XML" validate="true" reloadChanges="false" path="protocols.xml"/>
 
 </SPConfig>
