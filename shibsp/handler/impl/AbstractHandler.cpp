@@ -176,11 +176,18 @@ void Handler::log(SPRequest::SPLogLevel level, const string& msg) const
 
 void Handler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
 {
+    // The empty string implies no state to deal with.
     if (relayState.empty())
         return;
 
-    // No setting means just pass it by value.
-    pair<bool,const char*> mech=getString("relayState");
+    // No setting means just pass state by value.
+    pair<bool,const char*> mech = getString("relayState");
+    if (!mech.first) {
+        // Check for setting on Sessions element.
+        const PropertySet* sessionprop = application.getPropertySet("Sessions");
+        if (sessionprop)
+            mech = sessionprop->getString("relayState");
+    }
     if (!mech.first || !mech.second || !*mech.second)
         return;
 
@@ -508,7 +515,7 @@ void AbstractHandler::preservePostData(
 
     // No specs mean no save.
     const PropertySet* props=application.getPropertySet("Sessions");
-    pair<bool,const char*> mech = props->getString("postData");
+    pair<bool,const char*> mech = props ? props->getString("postData") : pair<bool,const char*>(false,nullptr);
     if (!mech.first) {
         m_log.info("postData property not supplied, form data will not be preserved across SSO");
         return;
@@ -637,9 +644,9 @@ long AbstractHandler::sendPostResponse(
     HTTPResponse::sanitizeURL(url);
 
     const PropertySet* props=application.getPropertySet("Sessions");
-    pair<bool,const char*> postTemplate = props->getString("postTemplate");
+    pair<bool,const char*> postTemplate = props ? props->getString("postTemplate") : pair<bool,const char*>(true,nullptr);
     if (!postTemplate.first)
-        throw ConfigurationException("Missing postTemplate property, unable to recreate form post.");
+        postTemplate.second = "postTemplate.html";
 
     string fname(postTemplate.second);
     ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
@@ -659,7 +666,7 @@ long AbstractHandler::sendPostResponse(
     stringstream str;
     XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, respParam);
 
-    pair<bool,bool> postExpire = props->getBool("postExpire");
+    pair<bool,bool> postExpire = props ? props->getBool("postExpire") : make_pair(false,false);
 
     httpResponse.setContentType("text/html");
     if (!postExpire.first || postExpire.second) {
@@ -692,7 +699,7 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
     string contentType = request.getContentType();
     if (contentType.compare("application/x-www-form-urlencoded") == 0) {
         const PropertySet* props=application.getPropertySet("Sessions");
-        pair<bool,unsigned int> plimit = props->getUnsignedInt("postLimit");
+        pair<bool,unsigned int> plimit = props ? props->getUnsignedInt("postLimit") : pair<bool,unsigned int>(false,0);
         if (!plimit.first)
             plimit.second = 1024 * 1024;
         if (plimit.second == 0 || request.getContentLength() <= plimit.second) {
