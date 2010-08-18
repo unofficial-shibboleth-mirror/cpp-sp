@@ -83,8 +83,10 @@ namespace shibsp {
 };
 
 UnixListener::UnixListener(const DOMElement* e)
-    : SocketListener(e), m_address(XMLHelper::getAttrString(e, "shibd.sock", address)), m_bound(false)
+    : SocketListener(e), m_address(XMLHelper::getAttrString(e, getenv("SHIBSP_LISTENER_ADDRESS"), address)), m_bound(false)
 {
+    if (m_address.empty())
+        m_address = "shibd.sock";
     XMLToolingConfig::getConfig().getPathResolver()->resolve(m_address, PathResolver::XMLTOOLING_RUN_FILE);
 }
 
