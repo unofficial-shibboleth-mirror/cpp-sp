@@ -98,9 +98,9 @@
         <!--
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
         You MUST supply an effectively unique handlerURL value for each of your applications.
-        The value can be a relative path, a URL with no hostname (https:///path) or a full URL.
-        The system can compute a relative value based on the virtual host. Using handlerSSL="true"
-        will force the protocol to be https. You should also add a cookieProps setting of "; path=/; secure"
+        The value defaults to /Shibboleth.sso, and should be a relative path, with the SP computing
+        a relative value based on the virtual host. Using handlerSSL="true", the default, will force
+        the protocol to be https. You should also add a cookieProps setting of "; path=/; secure"
         in that case. Note that while we default checkAddress to "false", this has a negative
         impact on the security of the SP. Stealing cookies/sessions is much easier with this disabled.
         -->

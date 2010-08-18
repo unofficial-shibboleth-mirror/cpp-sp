@@ -263,12 +263,15 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
             handler=p2.second;
     }
 
-    // Should never happen...
-    if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
+    if (!handler) {
+        handler = "/Shibboleth.sso";
+    }
+    else if (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)) {
         throw ConfigurationException(
             "Invalid handlerURL property ($1) in <Sessions> element for Application ($2)",
             params(2, handler ? handler : "null", m_app->getId())
             );
+    }
 
     // The "handlerURL" property can be in one of three formats:
     //

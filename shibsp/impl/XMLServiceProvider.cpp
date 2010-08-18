@@ -780,9 +780,12 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
             m_handlers.push_back(handler);
 
             // Insert into location map. If it contains the handlerURL, we skip past that part.
-            const char* pch = strstr(location.second, sessions->getString("handlerURL").second);
+            const char* hurl = sessions->getString("handlerURL").second;
+            if (!hurl)
+                hurl = "/Shibboleth.sso";
+            const char* pch = strstr(location.second, hurl);
             if (pch)
-                location.second = pch + strlen(sessions->getString("handlerURL").second);
+                location.second = pch + strlen(hurl);
             if (*location.second == '/')
                 m_handlerMap[location.second]=handler;
             else

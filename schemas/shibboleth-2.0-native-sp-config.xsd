@@ -486,7 +486,7 @@
         <element ref="conf:Handler"/>
       </choice>
     </sequence>
-    <attribute name="handlerURL" type="anyURI" use="required"/>
+    <attribute name="handlerURL" type="anyURI"/>
     <attribute name="handlerSSL" type="boolean"/>
     <attribute name="exportLocation" type="conf:string"/>
     <attribute name="exportACL" type="conf:listOfStrings"/>
