@@ -645,13 +645,29 @@ XMLApplication::XMLApplication(
         }
 
         // Finally, load relying parties.
-        child = XMLHelper::getFirstChildElement(e,RelyingParty);
+        child = XMLHelper::getFirstChildElement(e, RelyingParty);
         while (child) {
-            auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
-            rp->load(child,nullptr,this);
-            rp->setParent(this);
-            m_partyMap[child->getAttributeNS(nullptr,saml2::Attribute::NAME_ATTRIB_NAME)]=rp.release();
-            child = XMLHelper::getNextSiblingElement(child,RelyingParty);
+            if (child->hasAttributeNS(nullptr, saml2::Attribute::NAME_ATTRIB_NAME)) {
+                auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
+                rp->load(child, nullptr, this);
+                rp->setParent(this);
+                m_partyMap[child->getAttributeNS(nullptr, saml2::Attribute::NAME_ATTRIB_NAME)] = rp.release();
+            }
+            child = XMLHelper::getNextSiblingElement(child, RelyingParty);
+        }
+        if (base && m_partyMap.empty() && !base->m_partyMap.empty()) {
+            // For inheritance of RPs to work, we have to pull them in to the override by cloning the DOM.
+            child = XMLHelper::getFirstChildElement(base->getElement(), RelyingParty);
+            while (child) {
+                if (child->hasAttributeNS(nullptr, saml2::Attribute::NAME_ATTRIB_NAME)) {
+                    DOMElement* rpclone = static_cast<DOMElement*>(child->cloneNode(true));
+                    auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
+                    rp->load(rpclone, nullptr, this);
+                    rp->setParent(this);
+                    m_partyMap[rpclone->getAttributeNS(nullptr, saml2::Attribute::NAME_ATTRIB_NAME)] = rp.release();
+                }
+                child = XMLHelper::getNextSiblingElement(child, RelyingParty);
+            }
         }
 #endif
 
