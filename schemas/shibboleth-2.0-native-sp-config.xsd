@@ -369,16 +369,18 @@
     <sequence>
       <element name="Sessions" type="conf:SessionsType"/>
       <element name="Errors" type="conf:ErrorsType" minOccurs="0"/>
-      <element name="RelyingParty" type="conf:RelyingPartyType" minOccurs="0" maxOccurs="unbounded"/>
-      <element name="Notify" type="conf:NotifyType" minOccurs="0" maxOccurs="unbounded"/>
-      <element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
-      <element name="MetadataProvider" type="conf:PluggableType"/>
-      <element name="TrustEngine" type="conf:PluggableType" minOccurs="0"/>
-      <element name="AttributeExtractor" type="conf:PluggableType" minOccurs="0"/>
-      <element name="AttributeResolver" type="conf:PluggableType" minOccurs="0"/>
-      <element name="AttributeFilter" type="conf:PluggableType" minOccurs="0"/>
-      <element name="CredentialResolver" type="conf:PluggableType" minOccurs="0"/>
-      <element name="ApplicationOverride" type="conf:ApplicationOverrideType" minOccurs="0" maxOccurs="unbounded"/>
+      <choice minOccurs="0" maxOccurs="unbounded">
+        <element name="RelyingParty" type="conf:RelyingPartyType"/>
+        <element name="Notify" type="conf:NotifyType"/>
+        <element ref="saml:Audience"/>
+        <element name="MetadataProvider" type="conf:PluggableType"/>
+        <element name="TrustEngine" type="conf:PluggableType"/>
+        <element name="AttributeExtractor" type="conf:PluggableType"/>
+        <element name="AttributeResolver" type="conf:PluggableType"/>
+        <element name="AttributeFilter" type="conf:PluggableType"/>
+        <element name="CredentialResolver" type="conf:PluggableType"/>
+        <element name="ApplicationOverride" type="conf:ApplicationOverrideType"/>
+      </choice>
     </sequence>
     <attribute name="id" type="conf:string" fixed="default"/>
     <attribute name="entityID" type="anyURI" use="required"/>
@@ -395,15 +397,17 @@
     <sequence>
       <element name="Sessions" type="conf:SessionsType" minOccurs="0"/>
       <element name="Errors" type="conf:ErrorsType" minOccurs="0"/>
-      <element name="RelyingParty" type="conf:RelyingPartyType" minOccurs="0" maxOccurs="unbounded"/>
-      <element name="Notify" type="conf:NotifyType" minOccurs="0" maxOccurs="unbounded"/>
-      <element ref="saml:Audience" minOccurs="0" maxOccurs="unbounded"/>
-      <element name="MetadataProvider" type="conf:PluggableType" minOccurs="0"/>
-      <element name="TrustEngine" type="conf:PluggableType" minOccurs="0"/>
-      <element name="AttributeExtractor" type="conf:PluggableType" minOccurs="0"/>
-      <element name="AttributeResolver" type="conf:PluggableType" minOccurs="0"/>
-      <element name="AttributeFilter" type="conf:PluggableType" minOccurs="0"/>
-      <element name="CredentialResolver" type="conf:PluggableType" minOccurs="0"/>
+      <choice minOccurs="0" maxOccurs="unbounded">
+        <element name="RelyingParty" type="conf:RelyingPartyType"/>
+        <element name="Notify" type="conf:NotifyType"/>
+        <element ref="saml:Audience"/>
+        <element name="MetadataProvider" type="conf:PluggableType"/>
+        <element name="TrustEngine" type="conf:PluggableType"/>
+        <element name="AttributeExtractor" type="conf:PluggableType"/>
+        <element name="AttributeResolver" type="conf:PluggableType"/>
+        <element name="AttributeFilter" type="conf:PluggableType"/>
+        <element name="CredentialResolver" type="conf:PluggableType"/>
+      </choice>
     </sequence>
     <attribute name="id" type="conf:string" use="required"/>
     <attribute name="entityID" type="anyURI"/>

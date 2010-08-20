@@ -77,10 +77,13 @@ ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
+                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").info(
+                    "building AttributeFilter of type (%s)...", t.c_str()
+                    );
                 m_filters.push_back(conf.AttributeFilterManager.newPlugin(t.c_str(), e));
             }
             catch (exception& ex) {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").error(
+                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").error(
                     "caught exception processing embedded AttributeFilter element: %s", ex.what()
                     );
             }

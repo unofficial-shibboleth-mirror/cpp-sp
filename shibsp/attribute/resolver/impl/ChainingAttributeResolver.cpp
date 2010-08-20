@@ -176,6 +176,9 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
+                Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Chaining").info(
+                    "building AttributeResolver of type (%s)...", t.c_str()
+                    );
                 m_resolvers.push_back(conf.AttributeResolverManager.newPlugin(t.c_str(), e));
             }
             catch (exception& ex) {

@@ -106,6 +106,9 @@ ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
+                Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.Chaining").info(
+                    "building AttributeExtractor of type (%s)...", t.c_str()
+                    );
                 m_extractors.push_back(conf.AttributeExtractorManager.newPlugin(t.c_str(), e));
             }
             catch (exception& ex) {

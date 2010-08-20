@@ -197,6 +197,14 @@ namespace {
         acceptNode(const DOMNode* node) const;
 
     private:
+        template <class T> T* doChainedPlugins(
+            PluginManager<T,string,const DOMElement*>& pluginMgr,
+            const char* pluginType,
+            const char* chainingType,
+            const XMLCh* localName,
+            const DOMElement* e,
+            Category& log
+            );
         void doAttributeInfo();
         void doHandlers(const ProtocolProvider*, const DOMElement*, Category&);
         void doSSO(const ProtocolProvider&, set<string>&, DOMElement*, Category&);
@@ -531,7 +539,6 @@ XMLApplication::XMLApplication(
 
         SPConfig& conf=SPConfig::getConfig();
 #ifndef SHIBSP_LITE
-        SAMLConfig& samlConf=SAMLConfig::getConfig();
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
 #endif
 
@@ -573,49 +580,31 @@ XMLApplication::XMLApplication(
                     m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
         }
 
-        const DOMElement* child;
-
         if (conf.isEnabled(SPConfig::Metadata)) {
-            child = XMLHelper::getFirstChildElement(e, _MetadataProvider);
-            if (child) {
-                string t(XMLHelper::getAttrString(child, nullptr, _type));
-                try {
-                    if (!t.empty()) {
-                        log.info("building MetadataProvider of type %s...", t.c_str());
-                        auto_ptr<MetadataProvider> mp(samlConf.MetadataProviderManager.newPlugin(t.c_str(), child));
-                        mp->init();
-                        m_metadata = mp.release();
-                    }
-                    else {
-                        throw ConfigurationException("MetadataProvider element had no type attribute.");
-                    }
+            auto_ptr<MetadataProvider> mp(
+                doChainedPlugins(
+                    SAMLConfig::getConfig().MetadataProviderManager, "MetadataProvider", CHAINING_METADATA_PROVIDER, _MetadataProvider, e, log
+                    )
+                );
+            try {
+                if (mp.get()) {
+                    mp->init();
+                    m_metadata = mp.release();
                 }
-                catch (exception& ex) {
-                    log.crit("error building/initializing MetadataProvider: %s", ex.what());
+                else if (!m_base) {
+                    log.crit("no MetadataProvider available, configuration is probably unusable");
                 }
+            }
+            catch (exception& ex) {
+                log.crit("error initializing MetadataProvider: %s", ex.what());
             }
         }
 
         if (conf.isEnabled(SPConfig::Trust)) {
-            child = XMLHelper::getFirstChildElement(e, _TrustEngine);
-            if (child) {
-                string t(XMLHelper::getAttrString(child, nullptr, _type));
-                try {
-                    if (!t.empty()) {
-                        log.info("building TrustEngine of type %s...", t.c_str());
-                        m_trust = xmlConf.TrustEngineManager.newPlugin(t.c_str(), child);
-                    }
-                    else {
-                        throw ConfigurationException("TrustEngine element had no type attribute.");
-                    }
-                }
-                catch (exception& ex) {
-                    log.crit("error building TrustEngine: %s", ex.what());
-                }
-            }
-            else if (!m_base) {
+            m_trust = doChainedPlugins(xmlConf.TrustEngineManager, "TrustEngine", CHAINING_TRUSTENGINE, _TrustEngine, e, log);
+            if (!m_trust && !m_base) {
                 log.info(
-                    "no TrustEngine specified, using default chain {%s, %s}",
+                    "no TrustEngine specified or installed, using default chain {%s, %s}",
                     EXPLICIT_KEY_TRUSTENGINE, SHIBBOLETH_PKIX_TRUSTENGINE
                     );
                 m_trust = xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE, nullptr);
@@ -631,21 +620,13 @@ XMLApplication::XMLApplication(
             doAttributePlugins(e, log);
 
         if (conf.isEnabled(SPConfig::Credentials)) {
-            child = XMLHelper::getFirstChildElement(e,_CredentialResolver);
-            if (child) {
-                auto_ptr_char type(child->getAttributeNS(nullptr,_type));
-                log.info("building CredentialResolver of type %s...",type.get());
-                try {
-                    m_credResolver = xmlConf.CredentialResolverManager.newPlugin(type.get(),child);
-                }
-                catch (exception& ex) {
-                    log.crit("error building CredentialResolver: %s", ex.what());
-                }
-            }
+            m_credResolver = doChainedPlugins(
+                xmlConf.CredentialResolverManager, "CredentialResolver", CHAINING_CREDENTIAL_RESOLVER, _CredentialResolver, e, log
+                );
         }
 
         // Finally, load relying parties.
-        child = XMLHelper::getFirstChildElement(e, RelyingParty);
+        const DOMElement* child = XMLHelper::getFirstChildElement(e, RelyingParty);
         while (child) {
             if (child->hasAttributeNS(nullptr, saml2::Attribute::NAME_ATTRIB_NAME)) {
                 auto_ptr<DOMPropertySet> rp(new DOMPropertySet());
@@ -693,6 +674,51 @@ XMLApplication::XMLApplication(
         throw;
     }
 #endif
+}
+
+template <class T> T* XMLApplication::doChainedPlugins(
+    PluginManager<T,string,const DOMElement*>& pluginMgr,
+    const char* pluginType,
+    const char* chainingType,
+    const XMLCh* localName,
+    const DOMElement* e,
+    Category& log
+    )
+{
+    string t;
+    DOMElement* child = XMLHelper::getFirstChildElement(e, localName);
+    if (child) {
+        // Check for multiple.
+        if (XMLHelper::getNextSiblingElement(child, localName)) {
+            log.info("multiple %s plugins, wrapping in a chain", pluginType);
+            DOMElement* chain = child->getOwnerDocument()->createElementNS(nullptr, localName);
+            while (child) {
+                chain->appendChild(child);
+                child = XMLHelper::getFirstChildElement(e, localName);
+            }
+            t = chainingType;
+            child = chain;
+        }
+        else {
+            // Only a single one.
+            t = XMLHelper::getAttrString(child, nullptr, _type);
+        }
+
+        try {
+            if (!t.empty()) {
+                log.info("building %s of type %s...", pluginType, t.c_str());
+                return pluginMgr.newPlugin(t.c_str(), child);
+            }
+            else {
+                throw ConfigurationException("$1 element had no type attribute.", params(1, pluginType));
+            }
+        }
+        catch (exception& ex) {
+            log.crit("error building %s: %s", pluginType, ex.what());
+        }
+    }
+
+    return nullptr;
 }
 
 void XMLApplication::doAttributeInfo()
@@ -1279,56 +1305,14 @@ void XMLApplication::doAttributePlugins(const DOMElement* e, Category& log)
 {
     SPConfig& conf = SPConfig::getConfig();
 
-    DOMElement* child = XMLHelper::getFirstChildElement(e, _AttributeExtractor);
-    if (child) {
-        string t(XMLHelper::getAttrString(child, nullptr, _type));
-        try {
-            if (!t.empty()) {
-                log.info("building AttributeExtractor of type %s...", t.c_str());
-                m_attrExtractor = conf.AttributeExtractorManager.newPlugin(t.c_str(), child);
-            }
-            else {
-                throw ConfigurationException("AttributeExtractor element had no type attribute.");
-            }
-        }
-        catch (exception& ex) {
-            log.crit("error building AttributeExtractor: %s", ex.what());
-        }
-    }
+    m_attrExtractor =
+        doChainedPlugins(conf.AttributeExtractorManager, "AttributeExtractor", CHAINING_ATTRIBUTE_EXTRACTOR, _AttributeExtractor, e, log);
 
-    child = XMLHelper::getFirstChildElement(e, _AttributeFilter);
-    if (child) {
-        string t(XMLHelper::getAttrString(child, nullptr, _type));
-        try {
-            if (!t.empty()) {
-                log.info("building AttributeFilter of type %s...", t.c_str());
-                m_attrFilter = conf.AttributeFilterManager.newPlugin(t.c_str(), child);
-            }
-            else {
-                throw ConfigurationException("AttributeFilter element had no type attribute.");
-            }
-        }
-        catch (exception& ex) {
-            log.crit("error building AttributeFilter: %s", ex.what());
-        }
-    }
+    m_attrFilter =
+        doChainedPlugins(conf.AttributeFilterManager, "AttributeFilter", CHAINING_ATTRIBUTE_FILTER, _AttributeFilter, e, log);
 
-    child = XMLHelper::getFirstChildElement(e, _AttributeResolver);
-    if (child) {
-        string t(XMLHelper::getAttrString(child, nullptr, _type));
-        try {
-            if (!t.empty()) {
-                log.info("building AttributeResolver of type %s...", t.c_str());
-                m_attrResolver = conf.AttributeResolverManager.newPlugin(t.c_str(), child);
-            }
-            else {
-                throw ConfigurationException("AttributeResolver element had no type attribute.");
-            }
-        }
-        catch (exception& ex) {
-            log.crit("error building AttributeResolver: %s", ex.what());
-        }
-    }
+    m_attrResolver =
+        doChainedPlugins(conf.AttributeResolverManager, "AttributeResolver", CHAINING_ATTRIBUTE_RESOLVER, _AttributeResolver, e, log);
 
     if (m_unsetHeaders.empty()) {
         vector<string> unsetHeaders;

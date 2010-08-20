@@ -215,28 +215,23 @@
         <RelyingParty Name="SpecialFederation" keyName="SpecialKey"/>
         -->
 
-        <!-- Chains together all your metadata sources. -->
-        <MetadataProvider type="Chaining">
-            <!-- Example of remotely supplied batch of signed metadata. -->
-            <!--
-            <MetadataProvider type="XML" uri="http://federation.org/federation-metadata.xml"
-                 backingFilePath="federation-metadata.xml" reloadInterval="7200">
-               <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
-               <MetadataFilter type="Signature" certificate="fedsigner.pem"/>
-            </MetadataProvider>
-            -->
-
-            <!-- Example of locally maintained metadata. -->
-            <!--
-            <MetadataProvider type="XML" file="partner-metadata.xml"/>
-            -->
+        <!-- Example of remotely supplied batch of signed metadata. -->
+        <!--
+        <MetadataProvider type="XML" uri="http://federation.org/federation-metadata.xml"
+              backingFilePath="federation-metadata.xml" reloadInterval="7200">
+            <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
+            <MetadataFilter type="Signature" certificate="fedsigner.pem"/>
         </MetadataProvider>
+        -->
 
-        <!-- Chain the two built-in trust engines together. -->
-        <TrustEngine type="Chaining">
-            <TrustEngine type="ExplicitKey"/>
-            <TrustEngine type="PKIX"/>
-        </TrustEngine>
+        <!-- Example of locally maintained metadata. -->
+        <!--
+        <MetadataProvider type="XML" file="partner-metadata.xml"/>
+        -->
+
+        <!-- TrustEngines run in order to evaluate peer keys and certificates. -->
+        <TrustEngine type="ExplicitKey"/>
+        <TrustEngine type="PKIX"/>
 
         <!-- Map to extract attributes from SAML assertions. -->
         <AttributeExtractor type="XML" validate="true" path="attribute-map.xml"/>
