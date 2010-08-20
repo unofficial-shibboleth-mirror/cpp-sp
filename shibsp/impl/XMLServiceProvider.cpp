@@ -1771,7 +1771,7 @@ void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
 
         if (m_outer->m_storage.empty()) {
             log.info("no StorageService plugin(s) installed, using (mem) in-memory instance");
-            m_outer->m_storage["id"] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr);
+            m_outer->m_storage["mem"] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr);
         }
 
         // Replay cache.
