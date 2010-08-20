@@ -144,6 +144,7 @@ namespace shibsp {
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
         const Application& app = request.getApplication();
         app.clearHeader(request, "Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
+        app.clearHeader(request, "Shib-Session-Index", "HTTP_SHIB_SESSION_INDEX");
         app.clearHeader(request, "Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
         app.clearHeader(request, "Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
         app.clearHeader(request, "Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
@@ -420,6 +421,9 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         hval = session->getAuthnContextDeclRef();
         if (hval)
             app->setHeader(request, "Shib-AuthnContext-Decl", hval);
+        hval = session->getSessionIndex();
+        if (hval)
+            app->setHeader(request, "Shib-Session-Index", hval);
 
         // Maybe export the assertion keys.
         pair<bool,bool> exp=settings.first->getBool("exportAssertion");
