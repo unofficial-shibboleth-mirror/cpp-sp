@@ -1,25 +1,31 @@
 #! /bin/sh
 
-while getopts h:e:y:bf c
+while getopts h:u:g:o:e:y:bf c
      do
          case $c in
+           u)         USER=$OPTARG;;
+           g)         GROUP=$OPTARG;;
+           o)         OUT=$OPTARG;;
            b)         BATCH=1;;
            f)         FORCE=1;;
            h)         FQDN=$OPTARG;;
            e)         ENTITYID=$OPTARG;;
            y)         YEARS=$OPTARG;;
-           \?)        echo keygen [-h hostname for cert] [-y years to issue cert] [-e entityID to embed in cert]
+           \?)        echo "keygen [-o output directory (default .)] [-u username to own keypair] [-g owning groupname] [-h hostname for cert] [-y years to issue cert] [-e entityID to embed in cert]"
                       exit 1;;
          esac
      done
-
-if [ -n "$FORCE" ] ; then
-    rm sp-key.pem sp-cert.pem
+if [ -z "$OUT" ] ; then
+    OUT=.
 fi
 
-if  [ -s sp-key.pem -o -s sp-cert.pem ] ; then
+if [ -n "$FORCE" ] ; then
+    rm $OUT/sp-key.pem $OUT/sp-cert.pem
+fi
+
+if  [ -s $OUT/sp-key.pem -o -s $OUT/sp-cert.pem ] ; then
     if [ -z "$BATCH" ] ; then  
-        echo The files sp-key.pem and/or sp-cert.pem already exist!
+        echo The files $OUT/sp-key.pem and/or $OUT/sp-cert.pem already exist!
         echo Use -f option to force recreation of keypair.
         exit 2
     fi
@@ -42,7 +48,8 @@ else
     ALTNAME=DNS:$FQDN,URI:$ENTITYID
 fi
 
-cat >sp-cert.cnf <<EOF
+SSLCNF=$OUT/sp-cert.cnf
+cat >$SSLCNF <<EOF
 # OpenSSL configuration file for creating sp-cert.pem
 [req]
 prompt=no
@@ -60,11 +67,19 @@ subjectAltName=$ALTNAME
 subjectKeyIdentifier=hash
 EOF
 
-touch sp-key.pem
-chmod 600 sp-key.pem
+touch $OUT/sp-key.pem
+chmod 600 $OUT/sp-key.pem
 if [ -z "$BATCH" ] ; then
-    openssl req -config sp-cert.cnf -new -x509 -days $DAYS -keyout sp-key.pem -out sp-cert.pem
+    openssl req -config $SSLCNF -new -x509 -days $DAYS -keyout $OUT/sp-key.pem -out $OUT/sp-cert.pem
 else
-    openssl req -config sp-cert.cnf -new -x509 -days $DAYS -keyout sp-key.pem -out sp-cert.pem 2> /dev/null
+    openssl req -config $SSLCNF -new -x509 -days $DAYS -keyout $OUT/sp-key.pem -out $OUT/sp-cert.pem 2> /dev/null
 fi
-rm sp-cert.cnf
+rm $SSLCNF
+
+if  [ -s $OUT/sp-key.pem -a -n "$USER" ] ; then
+    chown $USER $OUT/sp-key.pem $OUT/sp-cert.pem
+fi
+
+if  [ -s $OUT/sp-key.pem -a -n "$GROUP" ] ; then
+    chgrp $GROUP $OUT/sp-key.pem $OUT/sp-cert.pem
+fi
