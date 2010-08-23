@@ -859,6 +859,12 @@ pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) con
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
 }
 
+static int _rm_get_all_table_walk(void *v, const char *key, const char *value)
+{
+    reinterpret_cast<map<string,const char*>*>(v)->insert(pair<string,const char*>(key, value));
+    return 1;
+}
+
 void ApacheRequestMapper::getAll(map<string,const char*>& properties) const
 {
     const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
@@ -887,6 +893,9 @@ void ApacheRequestMapper::getAll(map<string,const char*>& properties) const
         properties["requireSession"] = (sta->m_dc->bRequireSession==1) ? "true" : "false";
     if (sta->m_dc->bExportAssertion != 0)
         properties["exportAssertion"] = (sta->m_dc->bExportAssertion==1) ? "true" : "false";
+
+    if (sta->m_dc->tSettings)
+        ap_table_do(_rm_get_all_table_walk, &properties, sta->m_dc->tSettings, nullptr);
 }
 
 const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const

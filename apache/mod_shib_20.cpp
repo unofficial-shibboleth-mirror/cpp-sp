@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@
 #define ap_table_setn apr_table_setn
 #define ap_table_unset apr_table_unset
 #define ap_table_set apr_table_set
+#define ap_table_do apr_table_do
 #define ap_clear_pool apr_pool_clear
 #define ap_destroy_pool apr_pool_destroy
 #define ap_make_table apr_table_make
