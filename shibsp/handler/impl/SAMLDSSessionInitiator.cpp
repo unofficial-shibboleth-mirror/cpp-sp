@@ -51,21 +51,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SAMLDSSessionInitiator : public SessionInitiator, public AbstractHandler
     {
     public:
-        SAMLDSSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(nullptr), m_returnParam(nullptr)
-#ifndef SHIBSP_LITE
-                    ,m_discoNS("urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol")
-#endif
-        {
-            pair<bool,const char*> url = getString("URL");
-            if (!url.first)
-                throw ConfigurationException("SAMLDS SessionInitiator requires a URL property.");
-            m_url = url.second;
-            url = getString("entityIDParam");
-            if (url.first)
-                m_returnParam = url.second;
-            m_supportedOptions.insert("isPassive");
-        }
+        SAMLDSSessionInitiator(const DOMElement* e, const char* appId);
         virtual ~SAMLDSSessionInitiator() {}
 
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
@@ -126,6 +112,7 @@ namespace shibsp {
     private:
         const char* m_url;
         const char* m_returnParam;
+        vector<string> m_preservedOptions;
 #ifndef SHIBSP_LITE
         auto_ptr_XMLCh m_discoNS;
 #endif
@@ -141,6 +128,45 @@ namespace shibsp {
     }
 
 };
+
+SAMLDSSessionInitiator::SAMLDSSessionInitiator(const DOMElement* e, const char* appId)
+        : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(nullptr), m_returnParam(nullptr)
+#ifndef SHIBSP_LITE
+            ,m_discoNS("urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol")
+#endif
+{
+    pair<bool,const char*> url = getString("URL");
+    if (!url.first)
+        throw ConfigurationException("SAMLDS SessionInitiator requires a URL property.");
+    m_url = url.second;
+    url = getString("entityIDParam");
+    if (url.first)
+        m_returnParam = url.second;
+
+    pair<bool,const char*> options = getString("preservedOptions");
+    if (options.first) {
+        int j = 0;
+        string opt = options.second;
+        for (unsigned int i = 0;  i < opt.length();  i++) {
+            if (opt.at(i) == ' ') {
+                m_preservedOptions.push_back(opt.substr(j, i-j));
+                j = i+1;
+            }
+        }
+        m_preservedOptions.push_back(opt.substr(j, opt.length()-j));
+    }
+    else {
+        m_preservedOptions.push_back("isPassive");
+        m_preservedOptions.push_back("forceAuthn");
+        m_preservedOptions.push_back("authnContextClassRef");
+        m_preservedOptions.push_back("authnContextComparison");
+        m_preservedOptions.push_back("NameIDFormat");
+        m_preservedOptions.push_back("SPNameQualifier");
+        m_preservedOptions.push_back("acsIndex");
+    }
+
+    m_supportedOptions.insert("isPassive");
+}
 
 pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
@@ -251,9 +277,16 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         if (!target.empty())
             returnURL = returnURL + "&target=" + urlenc->encode(target.c_str());
     }
-    else if (!target.empty()) {
-        // For a virtual handler, we just append target to the return link.
-        returnURL = returnURL + "&target=" + urlenc->encode(target.c_str());;
+    else {
+        // For a virtual handler, we append target to the return link.
+         if (!target.empty())
+            returnURL = returnURL + "&target=" + urlenc->encode(target.c_str());
+         // Preserve designated request settings on the URL.
+         for (vector<string>::const_iterator opt = m_preservedOptions.begin(); opt != m_preservedOptions.end(); ++ opt) {
+             prop = request.getRequestSettings().first->getString(opt->c_str());
+             if (prop.first)
+                 returnURL = returnURL + '&' + (*opt) + '=' + urlenc->encode(prop.second);
+         }
     }
 
     string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "entityID=" + urlenc->encode(app.getString("entityID").second) +

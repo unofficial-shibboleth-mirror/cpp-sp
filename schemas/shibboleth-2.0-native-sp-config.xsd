@@ -526,6 +526,7 @@
     <attribute name="entityIDParam" type="conf:string"/>
     <attribute name="entityID" type="anyURI"/>
     <attribute name="outgoingBindings" type="conf:listOfURIs"/>
+    <attribute name="preservedOptions" type="conf:listOfStrings"/>
     <attribute name="template" type="anyURI"/>
     <attribute name="postArtifact" type="boolean"/>
     <attribute name="acsByIndex" type="boolean"/>
