@@ -103,8 +103,8 @@
         </Sessions>
 
         <!--
-        Allows overriding of error template filenames. You can also add attributes with values
-        that can be plugged into the templates.
+        Allows overriding of error template information/filenames. You can
+        also add attributes with values that can be plugged into the templates.
         -->
         <Errors supportContact="root@localhost"
             logoLocation="/shibboleth-sp/logo.jpg"
