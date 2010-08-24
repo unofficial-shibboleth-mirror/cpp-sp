@@ -187,7 +187,6 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
     if (http) {
         flag = m_relyingParty->getBool("chunkedEncoding");
         http->useChunkedEncoding(flag.first && flag.second);
-        http->setRequestHeader("User-Agent", PACKAGE_NAME);
         http->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION);
     }
 }

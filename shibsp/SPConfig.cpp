@@ -35,8 +35,9 @@
 # error "No supported logging library."
 #endif
 
-#include "AccessControl.h"
 #include "exceptions.h"
+#include "version.h"
+#include "AccessControl.h"
 #include "RequestMapper.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
@@ -58,11 +59,13 @@
 # include "metadata/MetadataExt.h"
 # include "security/PKIXTrustEngine.h"
 # include "security/SecurityPolicyProvider.h"
+# include <saml/version.h>
 # include <saml/SAMLConfig.h>
 #endif
 
 #include <ctime>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/version.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ParserPool.h>
@@ -184,11 +187,19 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     XMLToolingConfig::getConfig().catalog_path = catalog_path;
 
 #ifndef SHIBSP_LITE
+    XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION +
+        " OpenSAML/" + OPENSAML_FULLVERSIONDOT +
+        " XMLTooling/" + XMLTOOLING_FULLVERSIONDOT +
+        " XML-Security-C/" + XSEC_FULLVERSIONDOT +
+        " Xerces-C/" + XERCES_FULLVERSIONDOT;
     if (!SAMLConfig::getConfig().init()) {
         log.fatal("failed to initialize OpenSAML library");
         return false;
     }
 #else
+    XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION +
+        " XMLTooling/" + XMLTOOLING_FULLVERSIONDOT +
+        " Xerces-C/" + XERCES_FULLVERSIONDOT;
     if (!XMLToolingConfig::getConfig().init()) {
         log.fatal("failed to initialize XMLTooling library");
         return false;
