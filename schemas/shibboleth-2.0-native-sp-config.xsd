@@ -266,6 +266,7 @@
         </choice>
         <element ref="ds:Signature" minOccurs="0"/>
       </sequence>
+      <attribute name="unicodeAware" type="boolean"/>
       <attributeGroup ref="conf:ContentSettings"/>
     </complexType>
   </element>

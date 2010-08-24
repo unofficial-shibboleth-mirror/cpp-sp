@@ -60,8 +60,8 @@ namespace shibsp {
     class Override : public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        Override() : m_acl(nullptr) {}
-        Override(const DOMElement* e, Category& log, const Override* base=nullptr);
+        Override(bool unicodeAware=false) : m_unicodeAware(unicodeAware), m_acl(nullptr) {}
+        Override(bool unicodeAware, const DOMElement* e, Category& log, const Override* base=nullptr);
         ~Override();
 
         // Provides filter to exclude special config elements.
@@ -80,6 +80,7 @@ namespace shibsp {
     protected:
         void loadACL(const DOMElement* e, Category& log);
 
+        bool m_unicodeAware;
         map<string,Override*> m_map;
         vector< pair<RegularExpression*,Override*> > m_regexps;
         vector< pair< pair<string,RegularExpression*>,Override*> > m_queries;
@@ -209,7 +210,8 @@ void Override::loadACL(const DOMElement* e, Category& log)
     }
 }
 
-Override::Override(const DOMElement* e, Category& log, const Override* base) : m_acl(nullptr)
+Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const Override* base)
+    : m_unicodeAware(unicodeAware), m_acl(nullptr)
 {
     try {
         // Load the property set.
@@ -270,18 +272,23 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                 delete[] namebuf;
             }
 
-            Override* o=new Override(path,log,this);
-            pair<bool,const char*> name=o->getString("name");
-            char* dup=strdup(name.second);
-            for (char* pch=dup; *pch; pch++)
-                *pch=tolower(*pch);
+            char* dup = nullptr;
+            Override* o = new Override(m_unicodeAware, path, log, this);
+            if (m_unicodeAware) {
+                dup = toUTF8(o->getXMLString("name").second, true /* use malloc */);
+            }
+            else {
+                dup = strdup(o->getString("name").second);
+                for (char* pch = dup; *pch; ++pch)
+                    *pch = tolower(*pch);
+            }
             if (m_map.count(dup)) {
                 log.warn("skipping duplicate Path element (%s)",dup);
                 free(dup);
                 delete o;
                 continue;
             }
-            m_map[dup]=o;
+            m_map[dup] = o;
             log.debug("added Path mapping (%s)", dup);
             free(dup);
         }
@@ -296,7 +303,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
                     continue;
                 }
 
-                auto_ptr<Override> o(new Override(path,log,this));
+                auto_ptr<Override> o(new Override(m_unicodeAware, path, log, this));
 
                 const XMLCh* flag=path->getAttributeNS(nullptr,ignoreCase);
                 try {
@@ -327,7 +334,7 @@ Override::Override(const DOMElement* e, Category& log, const Override* base) : m
             auto_ptr_char ntemp(n);
             const XMLCh* v=path->getAttributeNS(nullptr,regex);
 
-            auto_ptr<Override> o(new Override(path,log,this));
+            auto_ptr<Override> o(new Override(m_unicodeAware, path, log, this));
             try {
                 RegularExpression* re = nullptr;
                 if (v && *v)
@@ -382,13 +389,15 @@ const Override* Override::locate(const HTTPRequest& request) const
     if (*path == '/')
         path++;
 
-    // Now we copy the path, chop the query string, and lower case it.
+    // Now we copy the path, chop the query string, and possibly lower case it.
     char* dup=strdup(path);
     char* sep=strchr(dup,'?');
     if (sep)
         *sep=0;
-    for (char* pch=dup; *pch; pch++)
-        *pch=tolower(*pch);
+    if (!m_unicodeAware) {
+        for (char* pch=dup; *pch; pch++)
+            *pch=tolower(*pch);
+    }
 
     // Default is for the current object to provide settings.
     const Override* o=this;
@@ -470,9 +479,9 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLRequestMapperImpl");
 #endif
-    static const XMLCh _default[] =    UNICODE_LITERAL_7(d,e,f,a,u,l,t);
-    static const XMLCh _id[] =         UNICODE_LITERAL_2(i,d);
-    static const XMLCh _RequestMap[] = UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
+    static const XMLCh _default[] =     UNICODE_LITERAL_7(d,e,f,a,u,l,t);
+    static const XMLCh _id[] =          UNICODE_LITERAL_2(i,d);
+    static const XMLCh _RequestMap[] =  UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
 
     if (!XMLHelper::isNodeNamed(e, SHIB2SPCONFIG_NS, _RequestMap))
         throw ConfigurationException("XML RequestMapper requires conf:RequestMap at root of configuration.");
@@ -487,6 +496,9 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     // Load any AccessControl provider.
     loadACL(e,log);
 
+    pair<bool,bool> unicodeAware = getBool("unicodeAware");
+    m_unicodeAware = (unicodeAware.first && unicodeAware.second);
+
     // Loop over the HostRegex elements.
     const DOMElement* host = XMLHelper::getFirstChildElement(e,HostRegex);
     for (int i=1; host; ++i, host=XMLHelper::getNextSiblingElement(host,HostRegex)) {
@@ -496,7 +508,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
             continue;
         }
 
-        auto_ptr<Override> o(new Override(host,log,this));
+        auto_ptr<Override> o(new Override(m_unicodeAware, host, log, this));
 
         const XMLCh* flag=host->getAttributeNS(nullptr,ignoreCase);
         try {
@@ -522,7 +534,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
             continue;
         }
 
-        Override* o=new Override(host,log,this);
+        Override* o=new Override(m_unicodeAware, host, log, this);
         pair<bool,const char*> name=o->getString("name");
         pair<bool,const char*> scheme=o->getString("scheme");
         pair<bool,const char*> port=o->getString("port");
