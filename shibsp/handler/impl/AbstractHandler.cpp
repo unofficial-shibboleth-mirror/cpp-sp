@@ -461,9 +461,19 @@ long AbstractHandler::sendMessage(
                 mcc.setUsage(Credential::SIGNING_CREDENTIAL);
                 if (keyName.first)
                     mcc.getKeyNames().insert(keyName.second);
-                if (sigalg.first)
+                if (sigalg.first) {
+                    // Using an explicit algorithm, so resolve a credential directly.
                     mcc.setXMLAlgorithm(sigalg.second);
-                cred = credResolver->resolve(&mcc);
+                    cred = credResolver->resolve(&mcc);
+                }
+                else {
+                    // Prefer credential based on peer's requirements.
+                    pair<const SigningMethod*,const Credential*> p = role->getSigningMethod(*credResolver, mcc);
+                    if (p.first)
+                        sigalg = make_pair(true, p.first->getAlgorithm());
+                    if (p.second)
+                        cred = p.second;
+                }
             }
             else {
                 CredentialCriteria cc;
@@ -476,6 +486,12 @@ long AbstractHandler::sendMessage(
             }
             if (cred) {
                 // Signed request.
+                pair<bool,const XMLCh*> digalg = relyingParty->getXMLString("digestAlg");
+                if (!digalg.first && role) {
+                    const DigestMethod* dm = role->getDigestMethod();
+                    if (dm)
+                        digalg = make_pair(true, dm->getAlgorithm());
+                }
                 return encoder.encode(
                     httpResponse,
                     msg,
@@ -485,7 +501,7 @@ long AbstractHandler::sendMessage(
                     &application,
                     cred,
                     sigalg.second,
-                    relyingParty->getXMLString("digestAlg").second
+                    (digalg.first ? digalg.second : nullptr)
                     );
             }
             else {

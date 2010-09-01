@@ -62,19 +62,31 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
         m_credResolver=m_app.getCredentialResolver();
         if (m_credResolver) {
             m_credResolver->lock();
+            const Credential* cred = nullptr;
+
             // Fill in criteria to use.
             to.setUsage(Credential::SIGNING_CREDENTIAL);
             pair<bool,const char*> keyName = m_relyingParty->getString("keyName");
             if (keyName.first)
                 to.getKeyNames().insert(keyName.second);
+
+            // Check for an explicit algorithm, in which case resolve a credential directly.
             pair<bool,const XMLCh*> sigalg = m_relyingParty->getXMLString("signingAlg");
-            if (sigalg.first)
+            if (sigalg.first) {
                 to.setXMLAlgorithm(sigalg.second);
-            const Credential* cred = m_credResolver->resolve(&to);
+                cred = m_credResolver->resolve(&to);
+            }
+            else {
+                // Prefer credential based on peer's requirements.
+                pair<const SigningMethod*,const Credential*> p = to.getRole().getSigningMethod(*m_credResolver, to);
+                if (p.first)
+                    sigalg = make_pair(true, p.first->getAlgorithm());
+                if (p.second)
+                    cred = p.second;
+            }
+
             // Reset criteria back.
-            to.setKeyAlgorithm(nullptr);
-            to.setKeySize(0);
-            to.getKeyNames().clear();
+            to.reset();
 
             if (cred) {
                 // Check for message.
@@ -88,6 +100,11 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
                         if (sigalg.first)
                             sig->setSignatureAlgorithm(sigalg.second);
                         sigalg = m_relyingParty->getXMLString("digestAlg");
+                        if (!sigalg.first) {
+                            const DigestMethod* dm = to.getRole().getDigestMethod();
+                            if (dm)
+                                sigalg = make_pair(true, dm->getAlgorithm());
+                        }
                         if (sigalg.first)
                             dynamic_cast<opensaml::ContentReference*>(sig->getContentReference())->setDigestAlgorithm(sigalg.second);
 
@@ -98,11 +115,11 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
                 }
             }
             else {
-                Category::getInstance(SHIBSP_LOGCAT".SOAPClient").error("no signing credential supplied, leaving unsigned.");
+                Category::getInstance(SHIBSP_LOGCAT".SOAPClient").warn("no signing credential resolved, leaving message unsigned");
             }
         }
         else {
-            Category::getInstance(SHIBSP_LOGCAT".SOAPClient").error("no CredentialResolver available, leaving unsigned.");
+            Category::getInstance(SHIBSP_LOGCAT".SOAPClient").warn("no CredentialResolver available, leaving unsigned");
         }
     }
     
