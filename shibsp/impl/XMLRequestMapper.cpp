@@ -483,7 +483,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     static const XMLCh _id[] =          UNICODE_LITERAL_2(i,d);
     static const XMLCh _RequestMap[] =  UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
 
-    if (!XMLHelper::isNodeNamed(e, SHIB2SPCONFIG_NS, _RequestMap))
+    if (e && !XMLHelper::isNodeNamed(e, SHIB2SPCONFIG_NS, _RequestMap))
         throw ConfigurationException("XML RequestMapper requires conf:RequestMap at root of configuration.");
 
     // Load the property set.
