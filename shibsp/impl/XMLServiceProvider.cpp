@@ -107,7 +107,7 @@ namespace {
     class SHIBSP_DLLLOCAL XMLApplication : public Application, public Remoted, public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        XMLApplication(const ServiceProvider*, const ProtocolProvider*, const DOMElement*, const XMLApplication* base=nullptr);
+        XMLApplication(const ServiceProvider*, const ProtocolProvider*, DOMElement*, const XMLApplication* base=nullptr);
         ~XMLApplication() { cleanup(); }
 
         const char* getHash() const {return m_hash.c_str();}
@@ -202,7 +202,7 @@ namespace {
             const char* pluginType,
             const char* chainingType,
             const XMLCh* localName,
-            const DOMElement* e,
+            DOMElement* e,
             Category& log
             );
         void doAttributeInfo();
@@ -216,7 +216,7 @@ namespace {
         string m_hash;
         std::pair<std::string,std::string> m_attributePrefix;
 #ifndef SHIBSP_LITE
-        void doAttributePlugins(const DOMElement* e, Category& log);
+        void doAttributePlugins(DOMElement* e, Category& log);
         MetadataProvider* m_metadata;
         TrustEngine* m_trust;
         AttributeExtractor* m_attrExtractor;
@@ -516,7 +516,7 @@ namespace shibsp {
 XMLApplication::XMLApplication(
     const ServiceProvider* sp,
     const ProtocolProvider* pp,
-    const DOMElement* e,
+    DOMElement* e,
     const XMLApplication* base
     ) : Application(sp), m_base(base),
 #ifndef SHIBSP_LITE
@@ -681,7 +681,7 @@ template <class T> T* XMLApplication::doChainedPlugins(
     const char* pluginType,
     const char* chainingType,
     const XMLCh* localName,
-    const DOMElement* e,
+    DOMElement* e,
     Category& log
     )
 {
@@ -698,6 +698,7 @@ template <class T> T* XMLApplication::doChainedPlugins(
             }
             t = chainingType;
             child = chain;
+            e->appendChild(chain);
         }
         else {
             // Only a single one.
@@ -1301,7 +1302,7 @@ void XMLApplication::doArtifactResolution(const ProtocolProvider& pp, const char
 }
 
 #ifndef SHIBSP_LITE
-void XMLApplication::doAttributePlugins(const DOMElement* e, Category& log)
+void XMLApplication::doAttributePlugins(DOMElement* e, Category& log)
 {
     SPConfig& conf = SPConfig::getConfig();
 
