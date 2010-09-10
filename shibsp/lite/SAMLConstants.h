@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * @file shibsp/lite/SAMLConstants.h
  *
- * SAML XML namespace constants
+ * SAML XML namespace constants.
  */
 
 #ifndef __shibsp_xmlconstants_h__
@@ -130,11 +130,23 @@ namespace samlconstants {
     /** SAML Attribute Extension QName prefix ("ext") */
     extern SHIBSP_API const XMLCh SAML20_ATTRIBUTE_EXT_PREFIX[];
 
+    /** SAML Metadata Extension for Algorithm Support XML Namespace ("urn:oasis:names:tc:SAML:metadata:algsupport") */
+    extern SHIBSP_API const XMLCh SAML20MD_ALGSUPPORT_NS[];
+
+    /** SAML Metadata Extension for Algorithm Support QName prefix ("alg") */
+    extern SHIBSP_API const XMLCh SAML20MD_ALGSUPPORT_PREFIX[];
+
     /** SAML Metadata Extension for Entity Attributes XML Namespace ("urn:oasis:names:tc:SAML:metadata:attribute") */
     extern SHIBSP_API const XMLCh SAML20MD_ENTITY_ATTRIBUTE_NS[];
 
     /** SAML Metadata Extension for Entity Attributes QName prefix ("mdattr") */
     extern SHIBSP_API const XMLCh SAML20MD_ENTITY_ATTRIBUTE_PREFIX[];
+
+    /** SAML Metadata Extension for Discovery and Login UI XML Namespace ("urn:oasis:names:tc:SAML:metadata:ui") */
+    extern SHIBSP_API const XMLCh SAML20MD_UI_NS[];
+
+    /** SAML Metadata Extension for Discovery and Login UI QName prefix ("mdui") */
+    extern SHIBSP_API const XMLCh SAML20MD_UI_PREFIX[];
 
     /** SAML Condition for Delegation Restriction XML Namespace ("urn:oasis:names:tc:SAML:2.0:conditions:delegation") */
     extern SHIBSP_API const XMLCh SAML20_DELEGATION_CONDITION_NS[];

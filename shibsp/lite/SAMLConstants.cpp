@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 /**
  * SAMLConstants.cpp
  *
- * SAML XML namespace constants
+ * SAML XML namespace constants.
  */
 
 
@@ -194,6 +194,16 @@ const XMLCh samlconstants::SAML20_ATTRIBUTE_EXT_NS[] = // urn:oasis:names:tc:SAM
 
 const XMLCh samlconstants::SAML20_ATTRIBUTE_EXT_PREFIX[] = UNICODE_LITERAL_3(e,x,t);
 
+const XMLCh samlconstants::SAML20MD_ALGSUPPORT_NS[] = // urn:oasis:names:tc:SAML:metadata:algsupport
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
+  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
+  chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chColon,
+  chLatin_a, chLatin_l, chLatin_g, chLatin_s, chLatin_u, chLatin_p, chLatin_p, chLatin_o, chLatin_r, chLatin_t, chNull
+};
+
+const XMLCh samlconstants::SAML20MD_ALGSUPPORT_PREFIX[] = UNICODE_LITERAL_3(a,l,g);
+
 const XMLCh samlconstants::SAML20MD_ENTITY_ATTRIBUTE_NS[] = // urn:oasis:names:tc:SAML:metadata:attribute
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
   chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
@@ -203,6 +213,16 @@ const XMLCh samlconstants::SAML20MD_ENTITY_ATTRIBUTE_NS[] = // urn:oasis:names:t
 };
 
 const XMLCh samlconstants::SAML20MD_ENTITY_ATTRIBUTE_PREFIX[] = UNICODE_LITERAL_6(m,d,a,t,t,r);
+
+const XMLCh samlconstants::SAML20MD_UI_NS[] = // urn:oasis:names:tc:SAML:metadata:ui
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
+  chLatin_n, chLatin_a, chLatin_m, chLatin_e, chLatin_s, chColon, chLatin_t, chLatin_c, chColon,
+  chLatin_S, chLatin_A, chLatin_M, chLatin_L, chColon,
+  chLatin_m, chLatin_e, chLatin_t, chLatin_a, chLatin_d, chLatin_a, chLatin_t, chLatin_a, chColon,
+  chLatin_u, chLatin_i, chNull
+};
+
+const XMLCh samlconstants::SAML20MD_UI_PREFIX[] = UNICODE_LITERAL_4(m,d,u,i);
 
 const XMLCh samlconstants::SAML20_DELEGATION_CONDITION_NS[] = // urn:oasis:names:tc:SAML:2.0:conditions:delegation
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_o, chLatin_a, chLatin_s, chLatin_i, chLatin_s, chColon,
