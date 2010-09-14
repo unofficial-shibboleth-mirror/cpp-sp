@@ -1732,11 +1732,11 @@ void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
 #ifndef SHIBSP_LITE
     SAMLConfig& samlConf = SAMLConfig::getConfig();
 #endif
-    XMLToolingConfig& xmlConf = XMLToolingConfig::getConfig();
 
     DOMElement* child;
 #ifndef SHIBSP_LITE
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        XMLToolingConfig& xmlConf = XMLToolingConfig::getConfig();
         // First build any StorageServices.
         child = XMLHelper::getFirstChildElement(e, _StorageService);
         while (child) {
@@ -1838,9 +1838,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
     try {
         SPConfig& conf=SPConfig::getConfig();
-#ifndef SHIBSP_LITE
-        SAMLConfig& samlConf=SAMLConfig::getConfig();
-#endif
         XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
         const DOMElement* SHAR=XMLHelper::getFirstChildElement(e, OutOfProcess);
         const DOMElement* SHIRE=XMLHelper::getFirstChildElement(e, InProcess);
