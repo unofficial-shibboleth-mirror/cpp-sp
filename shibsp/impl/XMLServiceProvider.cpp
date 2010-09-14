@@ -1987,20 +1987,22 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         }
 
         if (first) {
-#ifdef SHIBSP_XMLSEC_WHITELISTING
-            vector<xstring>::const_iterator alg;
             if (!m_policy->getAlgorithmBlacklist().empty()) {
-                for (alg = m_policy->getAlgorithmBlacklist().begin(); alg != m_policy->getAlgorithmBlacklist().end(); ++alg)
+#ifdef SHIBSP_XMLSEC_WHITELISTING
+                for (vector<xstring>::const_iterator alg = m_policy->getAlgorithmBlacklist().begin(); alg != m_policy->getAlgorithmBlacklist().end(); ++alg)
                     XSECPlatformUtils::blacklistAlgorithm(alg->c_str());
+#else
+                log.crit("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
+#endif
             }
             else if (!m_policy->getAlgorithmWhitelist().empty()) {
-                for (alg = m_policy->getAlgorithmWhitelist().begin(); alg != m_policy->getAlgorithmWhitelist().end(); ++alg)
+#ifdef SHIBSP_XMLSEC_WHITELISTING
+                for (vector<xstring>::const_iterator alg = m_policy->getAlgorithmWhitelist().begin(); alg != m_policy->getAlgorithmWhitelist().end(); ++alg)
                     XSECPlatformUtils::whitelistAlgorithm(alg->c_str());
-            }
 #else
-            log.fatal("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
-            throw ConfigurationException("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists.");
+                log.crit("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
 #endif
+            }
         }
 
         // Process TransportOption elements.
