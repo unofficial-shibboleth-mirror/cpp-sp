@@ -28,7 +28,9 @@
 
 #include <xercesc/framework/Wrapper4InputSource.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xercesc/util/regx/RegularExpression.hpp>
 #include <xsec/framework/XSECDefs.hpp>
+
 #include <saml/version.h>
 #include <saml/binding/SAMLArtifact.h>
 #include <saml/saml2/metadata/Metadata.h>
@@ -126,7 +128,7 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
         }
     }
 
-    if (!ignoreTransport) {
+    if (!m_ignoreTransport) {
         child = XMLHelper::getFirstChildElement(e, _TrustEngine);
         string t = XMLHelper::getAttrString(child, nullptr, type);
         if (!t.empty()) {
