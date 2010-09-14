@@ -217,7 +217,7 @@ libshibsp_lite_la_LDFLAGS = $(LITE_LIBS) -version-info 5:0:0
 libshibsp_lite_la_CPPFLAGS = -DSHIBSP_LITE
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
-pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@-@PACKAGE_VERSION@
+pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@
 logdir = ${localstatedir}/log
 rundir = $(localstatedir)/run
 xmldir = $(datadir)/xml
