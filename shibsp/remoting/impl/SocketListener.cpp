@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <stack>
 #include <sstream>
+#include <xercesc/util/XMLUniDefs.hpp>
 
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
