@@ -171,13 +171,12 @@ namespace shibsp {
          *
          * @param application   the associated Application
          * @param response      outgoing HTTP response
-         * @param request       incoming HTTP request
          * @param url           action url for the form
          * @param postData      list of parameters to load into the form, as DDF string members
          */
         virtual long sendPostResponse(
             const Application& application,
-            xmltooling::HTTPResponse& httpResponse,
+            xmltooling::HTTPResponse& response,
             const char* url,
             DDF& postData
             ) const;

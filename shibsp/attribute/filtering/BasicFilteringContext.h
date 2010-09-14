@@ -29,6 +29,9 @@ namespace shibsp {
 
     class SHIBSP_API Attribute;
 
+    /**
+     * A trivial FilteringContext implementation.
+     */
     class SHIBSP_API BasicFilteringContext : public FilteringContext
     {
     public:

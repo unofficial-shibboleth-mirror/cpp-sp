@@ -112,7 +112,7 @@ namespace shibsp {
         /**
          * Sets whether the attribute should be exported for CGI use.
          *
-         * @param export  true iff the attribute should <strong>NOT</strong> be exported
+         * @param internal  true iff the attribute should <strong>NOT</strong> be exported
          */
         void setInternal(bool internal);
 
