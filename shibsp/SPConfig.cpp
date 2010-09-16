@@ -191,7 +191,12 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         " OpenSAML/" + OPENSAML_FULLVERSIONDOT +
         " XMLTooling/" + XMLTOOLING_FULLVERSIONDOT +
         " XML-Security-C/" + XSEC_FULLVERSIONDOT +
-        " Xerces-C/" + XERCES_FULLVERSIONDOT;
+        " Xerces-C/" + XERCES_FULLVERSIONDOT +
+#if defined(LOG4SHIB_VERSION)
+        " log4shib/" + LOG4SHIB_VERSION;
+#elif defined(LOG4CPP_VERSION)
+        " log4cpp/" + LOG4CPP_VERSION;
+#endif
     if (!SAMLConfig::getConfig().init()) {
         log.fatal("failed to initialize OpenSAML library");
         return false;
