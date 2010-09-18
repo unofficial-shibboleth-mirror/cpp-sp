@@ -108,13 +108,21 @@ namespace shibsp {
          */
         void setFeatures(unsigned long enabled);
 
+
+        /**
+         * Gets the bitmask of subsystems being activated.
+         *
+         * @return bitmask of component constants
+         */
+        unsigned long getFeatures() const;
+
         /**
          * Test whether a subsystem is enabled.
          *
          * @param feature   subsystem/component to test
          * @return true iff feature is enabled
          */
-        bool isEnabled(components_t feature);
+        bool isEnabled(components_t feature) const;
 
         /**
          * Initializes library

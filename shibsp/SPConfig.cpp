@@ -121,7 +121,11 @@ void SPConfig::setFeatures(unsigned long enabled)
     m_features = enabled;
 }
 
-bool SPConfig::isEnabled(components_t feature)
+unsigned long SPConfig::getFeatures() const {
+    return m_features;
+}
+
+bool SPConfig::isEnabled(components_t feature) const
 {
     return (m_features & feature)>0;
 }
