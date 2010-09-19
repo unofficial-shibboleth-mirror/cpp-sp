@@ -105,10 +105,15 @@ void ListenerService::receive(DDF &in, ostream& out)
         out << outmsg;
     }
 
-    Locker locker(SPConfig::getConfig().getServiceProvider());
-    Remoted* dest=lookup(in.name());
-    if (!dest)
-        throw ListenerException("No destination registered for incoming message addressed to ($1).",params(1,in.name()));
+    // Two stage lookup, on the listener itself, and the SP interface.
+    ServiceProvider* sp = SPConfig::getConfig().getServiceProvider();
+    Locker locker(sp);
+    Remoted* dest = lookup(in.name());
+    if (!dest) {
+        dest = sp->lookupListener(in.name());
+        if (!dest)
+            throw ListenerException("No destination registered for incoming message addressed to ($1).", params(1,in.name()));
+    }
 
     dest->receive(in, out);
 }

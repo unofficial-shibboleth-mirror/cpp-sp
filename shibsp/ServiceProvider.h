@@ -43,6 +43,7 @@ namespace shibsp {
     class SHIBSP_API Application;
     class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
+    class SHIBSP_API Remoted;
     class SHIBSP_API RequestMapper;
     class SHIBSP_API SessionCache;
     class SHIBSP_API SPRequest;
@@ -205,6 +206,36 @@ namespace shibsp {
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
         virtual std::pair<bool,long> doHandler(SPRequest& request) const;
+
+        /**
+         * Register for a message. Returns existing remote service, allowing message hooking.
+         *
+         * @param address   message address to register
+         * @param svc       pointer to remote service
+         * @return  previous service registered for message, if any
+         */
+        virtual Remoted* regListener(const char* address, Remoted* svc);
+
+        /**
+         * Unregisters service from an address, possibly restoring an original.
+         *
+         * @param address   message address to modify
+         * @param current   pointer to unregistering service
+         * @param restore   service to "restore" registration for
+         * @return  true iff the current service was still registered
+         */
+        virtual bool unregListener(const char* address, Remoted* current, Remoted* restore=nullptr);
+
+        /**
+         * Returns current service registered at an address, if any.
+         *
+         * @param address message address to access
+         * @return  registered service, or nullptr
+         */
+        virtual Remoted* lookupListener(const char* address) const;
+
+    private:
+        std::map<std::string,Remoted*> m_listenerMap;
     };
 
     /**

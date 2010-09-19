@@ -174,9 +174,40 @@ SecurityPolicyProvider* ServiceProvider::getSecurityPolicyProvider(bool required
 {
     if (required)
         throw ConfigurationException("No SecurityPolicyProvider available.");
-    return NULL;
+    return nullptr;
 }
 #endif
+
+Remoted* ServiceProvider::regListener(const char* address, Remoted* listener)
+{
+    Remoted* ret=nullptr;
+    map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
+    if (i!=m_listenerMap.end())
+        ret=i->second;
+    m_listenerMap[address]=listener;
+    Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").info("registered remoted message endpoint (%s)",address);
+    return ret;
+}
+
+bool ServiceProvider::unregListener(const char* address, Remoted* current, Remoted* restore)
+{
+    map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
+    if (i!=m_listenerMap.end() && i->second==current) {
+        if (restore)
+            m_listenerMap[address]=restore;
+        else
+            m_listenerMap.erase(address);
+        Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").info("unregistered remoted message endpoint (%s)",address);
+        return true;
+    }
+    return false;
+}
+
+Remoted* ServiceProvider::lookupListener(const char *address) const
+{
+    map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
+    return (i==m_listenerMap.end()) ? nullptr : i->second;
+}
 
 pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handler) const
 {
