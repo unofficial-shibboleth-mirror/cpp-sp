@@ -208,7 +208,12 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 #else
     XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION +
         " XMLTooling/" + XMLTOOLING_FULLVERSIONDOT +
-        " Xerces-C/" + XERCES_FULLVERSIONDOT;
+        " Xerces-C/" + XERCES_FULLVERSIONDOT +
+#if defined(LOG4SHIB_VERSION)
+        " log4shib/" + LOG4SHIB_VERSION;
+#elif defined(LOG4CPP_VERSION)
+        " log4cpp/" + LOG4CPP_VERSION;
+#endif
     if (!XMLToolingConfig::getConfig().init()) {
         log.fatal("failed to initialize XMLTooling library");
         return false;

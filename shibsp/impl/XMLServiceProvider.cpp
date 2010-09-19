@@ -1876,12 +1876,26 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
         log.info("Shibboleth SP Version %s", PACKAGE_VERSION);
 #ifndef SHIBSP_LITE
         log.info(
-            "Library versions: Xerces-C %s, XML-Security-C %s, XMLTooling-C %s, OpenSAML-C %s, Shibboleth %s",
+            "Library versions: %s %s, Xerces-C %s, XML-Security-C %s, XMLTooling-C %s, OpenSAML-C %s, Shibboleth %s",
+# if defined(LOG4SHIB_VERSION)
+        "log4shib", LOG4SHIB_VERSION,
+# elif defined(LOG4CPP_VERSION)
+        "log4cpp", LOG4CPP_VERSION,
+# else
+        "", "",
+# endif
             XERCES_FULLVERSIONDOT, XSEC_FULLVERSIONDOT, XMLTOOLING_FULLVERSIONDOT, OPENSAML_FULLVERSIONDOT, SHIBSP_FULLVERSIONDOT
             );
 #else
         log.info(
-            "Library versions: Xerces-C %s, XMLTooling-C %s, Shibboleth %s",
+            "Library versions: %s %s, Xerces-C %s, XMLTooling-C %s, Shibboleth %s",
+# if defined(LOG4SHIB_VERSION)
+        "log4shib", LOG4SHIB_VERSION,
+# elif defined(LOG4CPP_VERSION)
+        "log4cpp", LOG4CPP_VERSION,
+# else
+        "", "",
+# endif
             XERCES_FULLVERSIONDOT, XMLTOOLING_FULLVERSIONDOT, SHIBSP_FULLVERSIONDOT
             );
 #endif
