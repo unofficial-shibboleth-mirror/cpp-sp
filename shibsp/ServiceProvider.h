@@ -53,6 +53,11 @@ namespace shibsp {
     class SHIBSP_API TransactionLog;
 #endif
 
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
+
     /**
      * Interface to a Shibboleth ServiceProvider instance.
      * 
@@ -237,6 +242,10 @@ namespace shibsp {
     private:
         std::map<std::string,Remoted*> m_listenerMap;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
 
     /**
      * Registers ServiceProvider classes into the runtime.
