@@ -263,7 +263,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
         for (vector<string>::const_iterator h = headers->begin(); h!=headers->end(); ++h) {
             hdr = request.getHeader(h->c_str());
             if (!hdr.empty())
-                hin.addmember(h->c_str()).string(hdr.c_str());
+                hin.addmember(h->c_str()).unsafe_string(hdr.c_str());
         }
     }
 
