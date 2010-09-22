@@ -548,6 +548,7 @@ public:
     hdr += "\r\n";
     const char* codestr="200 OK";
     switch (status) {
+        case XMLTOOLING_HTTP_STATUS_NOTMODIFIED:    codestr="304 Not Modified"; break;
         case XMLTOOLING_HTTP_STATUS_UNAUTHORIZED:   codestr="401 Authorization Required"; break;
         case XMLTOOLING_HTTP_STATUS_FORBIDDEN:      codestr="403 Forbidden"; break;
         case XMLTOOLING_HTTP_STATUS_NOTFOUND:       codestr="404 Not Found"; break;
