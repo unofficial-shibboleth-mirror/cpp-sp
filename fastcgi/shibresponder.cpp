@@ -172,6 +172,7 @@ public:
             case XMLTOOLING_HTTP_STATUS_UNAUTHORIZED:   codestr="Status: 401 Authorization Required"; break;
             case XMLTOOLING_HTTP_STATUS_FORBIDDEN:      codestr="Status: 403 Forbidden"; break;
             case XMLTOOLING_HTTP_STATUS_NOTFOUND:       codestr="Status: 404 Not Found"; break;
+            case XMLTOOLING_HTTP_STATUS_NOTMODIFIED:    codestr="Status: 304 Not Modified"; break;
         }
         cout << codestr << "\r\n" << hdr << "\r\n";
         char buf[1024];
