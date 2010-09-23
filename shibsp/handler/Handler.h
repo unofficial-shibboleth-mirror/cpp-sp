@@ -156,6 +156,9 @@ namespace shibsp {
     #define SAML20_ARTIFACT_RESOLUTION_SERVICE "SAML2"
 
     /** Handler for metadata generation. */
+    #define DISCOVERY_FEED_HANDLER "DiscoveryFeed"
+
+    /** Handler for metadata generation. */
     #define METADATA_GENERATOR_HANDLER "MetadataGenerator"
 
     /** Handler for status information. */

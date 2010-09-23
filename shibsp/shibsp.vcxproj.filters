@@ -375,6 +375,9 @@
     <ClCompile Include="binding\impl\XMLProtocolProvider.cpp">
       <Filter>Source Files\binding\impl</Filter>
     </ClCompile>
+    <ClCompile Include="handler\impl\DiscoveryFeed.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
