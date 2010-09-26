@@ -92,7 +92,7 @@ AC_ARG_WITH(openssl,
         SSLFLAGS="-I${with_openssl}/include"
     fi])
 
-if test "x$SSLFLAGS" = "x" ; then
+if test "x$with_openssl" = "x" ; then
     AC_PATH_PROG(PKG_CONFIG, pkg-config)
     if test "x$PKG_CONFIG" != x && test "x$PKG_CONFIG" != "xno" ; then
         if pkg-config openssl ; then
