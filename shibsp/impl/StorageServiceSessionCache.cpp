@@ -958,10 +958,11 @@ void SSCache::insert(
 
     if (nameid) {
         // Check for a pending logout.
-        if (strlen(name.get()) > 255)
-            const_cast<char*>(name.get())[255] = 0;
+        char namebuf[256];
+        strncpy(namebuf, name.get(), 255);
+        namebuf[255] = 0;
         string pending;
-        int ver = m_storage_lite->readText("Logout", name.get(), &pending);
+        int ver = m_storage_lite->readText("Logout", namebuf, &pending);
         if (ver > 0) {
             DDF pendobj;
             DDFJanitor jpend(pendobj);
