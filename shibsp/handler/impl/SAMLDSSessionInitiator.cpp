@@ -69,17 +69,13 @@ namespace shibsp {
             if (role.getExtensions()) {
                 const vector<XMLObject*>& exts = const_cast<const Extensions*>(role.getExtensions())->getUnknownXMLObjects();
                 for (vector<XMLObject*>::const_reverse_iterator i = exts.rbegin(); i != exts.rend(); ++i) {
-                    if (XMLString::equals((*i)->getElementQName().getLocalPart(), LOCAL_NAME) &&
-                        XMLString::equals((*i)->getElementQName().getNamespaceURI(), m_discoNS.get())) {
-                        const AttributeExtensibleXMLObject* sub = dynamic_cast<const AttributeExtensibleXMLObject*>(*i);
-                        if (sub) {
-                            const XMLCh* val = sub->getAttribute(xmltooling::QName(nullptr,IndexedEndpointType::INDEX_ATTRIB_NAME));
-                            if (val) {
-                                int maxindex = XMLString::parseInt(val);
-                                if (ix.second <= maxindex)
-                                    ix.second = maxindex + 1;
-                                break;
-                            }
+                    const DiscoveryResponse* sub = dynamic_cast<DiscoveryResponse*>(*i);
+                    if (sub) {
+                        pair<bool,int> val = sub->getIndex();
+                        if (val.first) {
+                            if (ix.second <= val.second)
+                                ix.second = val.second + 1;
+                            break;
                         }
                     }
                 }
@@ -92,14 +88,10 @@ namespace shibsp {
             hurl += loc;
             auto_ptr_XMLCh widen(hurl.c_str());
 
-            ostringstream os;
-            os << ix.second;
-            auto_ptr_XMLCh widen2(os.str().c_str());
-
-            ElementProxy* ep = new AnyElementImpl(m_discoNS.get(), LOCAL_NAME);
-            ep->setAttribute(xmltooling::QName(nullptr,EndpointType::LOCATION_ATTRIB_NAME), widen.get());
-            ep->setAttribute(xmltooling::QName(nullptr,EndpointType::BINDING_ATTRIB_NAME), m_discoNS.get());
-            ep->setAttribute(xmltooling::QName(nullptr,IndexedEndpointType::INDEX_ATTRIB_NAME), widen2.get());
+            DiscoveryResponse* ep = DiscoveryResponseBuilder::buildDiscoveryResponse();
+            ep->setLocation(widen.get());
+            ep->setBinding(samlconstants::IDP_DISCOVERY_PROTOCOL_NS);
+            ep->setIndex(ix.second);
             Extensions* ext = role.getExtensions();
             if (!ext) {
                 ext = ExtensionsBuilder::buildExtensions();
@@ -113,9 +105,6 @@ namespace shibsp {
         const char* m_url;
         const char* m_returnParam;
         vector<string> m_preservedOptions;
-#ifndef SHIBSP_LITE
-        auto_ptr_XMLCh m_discoNS;
-#endif
     };
 
 #if defined (_MSC_VER)
@@ -131,9 +120,6 @@ namespace shibsp {
 
 SAMLDSSessionInitiator::SAMLDSSessionInitiator(const DOMElement* e, const char* appId)
         : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(nullptr), m_returnParam(nullptr)
-#ifndef SHIBSP_LITE
-            ,m_discoNS("urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol")
-#endif
 {
     pair<bool,const char*> url = getString("URL");
     if (!url.first)
