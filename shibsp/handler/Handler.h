@@ -125,8 +125,7 @@ namespace shibsp {
          * @param role          metadata role to decorate
          * @param handlerURL    base location of handler's endpoint
          */
-        virtual void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
-        }
+        virtual void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
 
         /**
          * Returns the "type" of the Handler plugin.

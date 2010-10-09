@@ -27,7 +27,6 @@
 #include "handler/SessionInitiator.h"
 
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/impl/AnyElement.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
@@ -58,8 +57,6 @@ namespace shibsp {
 
 #ifndef SHIBSP_LITE
         void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
-            static const XMLCh LOCAL_NAME[] = UNICODE_LITERAL_17(D,i,s,c,o,v,e,r,y,R,e,s,p,o,n,s,e);
-
             // Initial guess at index to use.
             pair<bool,unsigned int> ix = getUnsignedInt("index");
             if (!ix.first)

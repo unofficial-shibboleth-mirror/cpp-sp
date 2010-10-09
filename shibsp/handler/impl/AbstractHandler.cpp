@@ -160,6 +160,14 @@ Handler::~Handler()
 {
 }
 
+#ifndef SHIBSP_LITE
+
+void Handler::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const
+{
+}
+
+#endif
+
 const XMLCh* Handler::getProtocolFamily() const
 {
     return nullptr;

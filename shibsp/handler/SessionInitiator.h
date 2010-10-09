@@ -88,6 +88,7 @@ namespace shibsp {
 
 #ifndef SHIBSP_LITE
         const char* getType() const;
+        void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
 #endif
     };
     

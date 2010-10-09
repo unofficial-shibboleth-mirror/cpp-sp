@@ -29,6 +29,11 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
+#ifndef SHIBSP_LITE
+# include <saml/saml2/metadata/Metadata.h>
+using namespace opensaml::saml2md;
+#endif
+
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory ChainingSessionInitiatorFactory;
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory Shib1SessionInitiatorFactory;
@@ -69,6 +74,28 @@ SessionInitiator::~SessionInitiator()
 const char* SessionInitiator::getType() const
 {
     return "SessionInitiator";
+}
+
+void SessionInitiator::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const
+{
+    if (getParent())
+        return;
+    const char* loc = getString("Location").second;
+    string hurl(handlerURL);
+    if (*loc != '/')
+        hurl += '/';
+    hurl += loc;
+    auto_ptr_XMLCh widen(hurl.c_str());
+
+    RequestInitiator* ep = RequestInitiatorBuilder::buildRequestInitiator();
+    ep->setLocation(widen.get());
+    ep->setBinding(samlconstants::SP_REQUEST_INIT_NS);
+    Extensions* ext = role.getExtensions();
+    if (!ext) {
+        ext = ExtensionsBuilder::buildExtensions();
+        role.setExtensions(ext);
+    }
+    ext->getUnknownXMLObjects().push_back(ep);
 }
 #endif
 
