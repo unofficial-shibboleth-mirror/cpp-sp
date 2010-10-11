@@ -81,6 +81,16 @@
                 <documentation>The SAML 1 Namespace or SAML 2 NameFormat of the attribute.</documentation>
             </annotation>
         </attribute>
+        <attribute name="isRequested" type="boolean">
+          <annotation>
+            <documentation>Marks an attribute as requested by the service.</documentation>
+          </annotation>
+        </attribute>
+        <attribute name="isRequired" type="boolean">
+          <annotation>
+            <documentation>Marks an attribute as required by the service.</documentation>
+          </annotation>
+        </attribute>
     </complexType>
     
     <complexType name="AttributeDecoderType" abstract="true">

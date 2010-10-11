@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ namespace xmltooling {
 namespace opensaml {
     namespace saml2md {
         class SAML_API RoleDescriptor;
+        class SAML_API SPSSODescriptor;
     };
 };
 
@@ -78,6 +79,16 @@ namespace shibsp {
          * @param attributes    array to populate
          */
         virtual void getAttributeIds(std::vector<std::string>& attributes) const=0;
+
+        /**
+         * Generates and/or modifies metadata reflecting the extractor,
+         * typically attribute-related requirements.
+         *
+         * <p>The default implementation does nothing.
+         *
+         * @param role          metadata role to decorate
+         */
+        virtual void generateMetadata(opensaml::saml2md::SPSSODescriptor& role) const;
     };
 
     /**

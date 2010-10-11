@@ -64,6 +64,13 @@ namespace shibsp {
             }
         }
 
+        void generateMetadata(SPSSODescriptor& role) const {
+            for (vector<AttributeExtractor*>::const_iterator i=m_extractors.begin(); i!=m_extractors.end(); ++i) {
+                Locker locker(*i);
+                (*i)->generateMetadata(role);
+            }
+        }
+
     private:
         vector<AttributeExtractor*> m_extractors;
     };
@@ -93,6 +100,10 @@ AttributeExtractor::AttributeExtractor()
 }
 
 AttributeExtractor::~AttributeExtractor()
+{
+}
+
+void AttributeExtractor::generateMetadata(SPSSODescriptor& role) const
 {
 }
 
