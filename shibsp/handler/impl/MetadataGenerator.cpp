@@ -338,23 +338,31 @@ pair<bool,long> MetadataGenerator::processMessage(
         prop = relyingParty->getString("keyName");
         if (prop.first)
             cc.getKeyNames().insert(prop.second);
+        vector<const Credential*> signingcreds,enccreds;
         cc.setUsage(Credential::SIGNING_CREDENTIAL);
-        vector<const Credential*> creds;
-        credResolver->resolve(creds,&cc);
-        for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+        credResolver->resolve(signingcreds, &cc);
+        cc.setUsage(Credential::ENCRYPTION_CREDENTIAL);
+        credResolver->resolve(enccreds, &cc);
+
+        for (vector<const Credential*>::const_iterator c = signingcreds.begin(); c != signingcreds.end(); ++c) {
             KeyInfo* kinfo = (*c)->getKeyInfo();
             if (kinfo) {
                 KeyDescriptor* kd = KeyDescriptorBuilder::buildKeyDescriptor();
-                kd->setUse(KeyDescriptor::KEYTYPE_SIGNING);
                 kd->setKeyInfo(kinfo);
+                const XMLCh* use = KeyDescriptor::KEYTYPE_SIGNING;
+                for (vector<const Credential*>::iterator match = enccreds.begin(); match != enccreds.end(); ++match) {
+                    if (*match == *c) {
+                        use = nullptr;
+                        enccreds.erase(match);
+                        break;
+                    }
+                }
+                kd->setUse(use);
                 role->getKeyDescriptors().push_back(kd);
             }
         }
 
-        cc.setUsage(Credential::ENCRYPTION_CREDENTIAL);
-        creds.clear();
-        credResolver->resolve(creds,&cc);
-        for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+        for (vector<const Credential*>::const_iterator c = enccreds.begin(); c != enccreds.end(); ++c) {
             KeyInfo* kinfo = (*c)->getKeyInfo();
             if (kinfo) {
                 KeyDescriptor* kd = KeyDescriptorBuilder::buildKeyDescriptor();
