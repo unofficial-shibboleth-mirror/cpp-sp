@@ -163,6 +163,7 @@ void SHIBSP_API shibsp::registerServiceProviders()
 
 ServiceProvider::ServiceProvider()
 {
+    m_authTypes.insert("shibboleth");
 }
 
 ServiceProvider::~ServiceProvider()
@@ -266,16 +267,18 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         pair<bool,bool> requireSession = settings.first->getBool("requireSession");
         pair<bool,const char*> requireSessionWith = settings.first->getString("requireSessionWith");
 
-        // If no session is required AND the AuthType (an Apache-derived concept) isn't shibboleth,
+        string lcAuthType;
+        if (authType.first) {
+            while (*authType.second)
+                lcAuthType += tolower(*authType.second++);
+        }
+
+        // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
         // ShibBasicHijack is on, but that's up to it.
         if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first &&
-#ifdef HAVE_STRCASECMP
-                (!authType.first || strcasecmp(authType.second,"shibboleth")))
-#else
-                (!authType.first || _stricmp(authType.second,"shibboleth")))
-#endif
-            return make_pair(true,request.returnDecline());
+                (!authType.first || m_authTypes.find(lcAuthType) == m_authTypes.end()))
+            return make_pair(true, request.returnDecline());
 
         // Fix for secadv 20050901
         clearHeaders(request);
@@ -315,7 +318,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
             return initiator->run(request,false);
         }
 
-        request.setAuthType("shibboleth");
+        request.setAuthType(lcAuthType.c_str());
 
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
@@ -349,16 +352,18 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         pair<bool,bool> requireSession = settings.first->getBool("requireSession");
         pair<bool,const char*> requireSessionWith = settings.first->getString("requireSessionWith");
 
-        // If no session is required AND the AuthType (an Apache-derived concept) isn't shibboleth,
+        string lcAuthType;
+        if (authType.first) {
+            while (*authType.second)
+                lcAuthType += tolower(*authType.second++);
+        }
+
+        // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
         // ShibBasicHijack is on, but that's up to it.
         if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first &&
-#ifdef HAVE_STRCASECMP
-                (!authType.first || strcasecmp(authType.second,"shibboleth")))
-#else
-                (!authType.first || _stricmp(authType.second,"shibboleth")))
-#endif
-            return make_pair(true,request.returnDecline());
+                (!authType.first || m_authTypes.find(lcAuthType) == m_authTypes.end()))
+            return make_pair(true, request.returnDecline());
 
         // Do we have an access control plugin?
         if (settings.second) {

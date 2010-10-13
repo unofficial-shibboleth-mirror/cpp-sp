@@ -270,7 +270,7 @@ namespace {
     class SHIBSP_DLLLOCAL XMLConfigImpl : public DOMPropertySet, public DOMNodeFilter
     {
     public:
-        XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer, Category& log);
+        XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, Category& log);
         ~XMLConfigImpl();
 
         RequestMapper* m_requestMapper;
@@ -293,12 +293,11 @@ namespace {
         }
 
     private:
-        void doExtensions(const DOMElement* e, const char* label, Category& log);
-        void doListener(const DOMElement* e, Category& log);
-        void doCaching(const DOMElement* e, Category& log);
+        void doExtensions(const DOMElement*, const char*, Category&);
+        void doListener(const DOMElement*, XMLConfig*, Category&);
+        void doCaching(const DOMElement*, XMLConfig*, Category&);
         void cleanup();
 
-        const XMLConfig* m_outer;
         DOMDocument* m_document;
     };
 
@@ -440,11 +439,11 @@ namespace {
     private:
         friend class XMLConfigImpl;
         XMLConfigImpl* m_impl;
-        mutable ListenerService* m_listener;
-        mutable SessionCache* m_sessionCache;
+        ListenerService* m_listener;
+        SessionCache* m_sessionCache;
 #ifndef SHIBSP_LITE
-        mutable TransactionLog* m_tranLog;
-        mutable map<string,StorageService*> m_storage;
+        TransactionLog* m_tranLog;
+        map<string,StorageService*> m_storage;
 #endif
     };
 
@@ -1698,7 +1697,7 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
     }
 }
 
-void XMLConfigImpl::doListener(const DOMElement* e, Category& log)
+void XMLConfigImpl::doListener(const DOMElement* e, XMLConfig* conf, Category& log)
 {
 #ifdef WIN32
     string plugtype(TCP_LISTENER_SERVICE);
@@ -1723,19 +1722,19 @@ void XMLConfigImpl::doListener(const DOMElement* e, Category& log)
     }
 
     log.info("building ListenerService of type %s...", plugtype.c_str());
-    m_outer->m_listener = SPConfig::getConfig().ListenerServiceManager.newPlugin(plugtype.c_str(), child);
+    conf->m_listener = SPConfig::getConfig().ListenerServiceManager.newPlugin(plugtype.c_str(), child);
 }
 
-void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
+void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& log)
 {
-    SPConfig& conf = SPConfig::getConfig();
+    SPConfig& spConf = SPConfig::getConfig();
 #ifndef SHIBSP_LITE
     SAMLConfig& samlConf = SAMLConfig::getConfig();
 #endif
 
     DOMElement* child;
 #ifndef SHIBSP_LITE
-    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+    if (spConf.isEnabled(SPConfig::OutOfProcess)) {
         XMLToolingConfig& xmlConf = XMLToolingConfig::getConfig();
         // First build any StorageServices.
         child = XMLHelper::getFirstChildElement(e, _StorageService);
@@ -1745,7 +1744,7 @@ void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
             if (!t.empty()) {
                 try {
                     log.info("building StorageService (%s) of type %s...", id.c_str(), t.c_str());
-                    m_outer->m_storage[id] = xmlConf.StorageServiceManager.newPlugin(t.c_str(), child);
+                    conf->m_storage[id] = xmlConf.StorageServiceManager.newPlugin(t.c_str(), child);
                 }
                 catch (exception& ex) {
                     log.crit("failed to instantiate StorageService (%s): %s", id.c_str(), ex.what());
@@ -1754,9 +1753,9 @@ void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
             child = XMLHelper::getNextSiblingElement(child, _StorageService);
         }
 
-        if (m_outer->m_storage.empty()) {
+        if (conf->m_storage.empty()) {
             log.info("no StorageService plugin(s) installed, using (mem) in-memory instance");
-            m_outer->m_storage["mem"] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr);
+            conf->m_storage["mem"] = xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr);
         }
 
         // Replay cache.
@@ -1765,23 +1764,23 @@ void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
         if (child) {
             string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
             if (!ssid.empty()) {
-                if (m_outer->m_storage.count(ssid)) {
+                if (conf->m_storage.count(ssid)) {
                     log.info("building ReplayCache on top of StorageService (%s)...", ssid.c_str());
-                    replaySS = m_outer->m_storage[ssid];
+                    replaySS = conf->m_storage[ssid];
                 }
                 else {
                     log.error("unable to locate StorageService (%s), using arbitrary instance for ReplayCache", ssid.c_str());
-                    replaySS = m_outer->m_storage.begin()->second;
+                    replaySS = conf->m_storage.begin()->second;
                 }
             }
             else {
                 log.info("no StorageService specified for ReplayCache, using arbitrary instance");
-                replaySS = m_outer->m_storage.begin()->second;
+                replaySS = conf->m_storage.begin()->second;
             }
         }
         else {
             log.info("no ReplayCache specified, using arbitrary StorageService instance");
-            replaySS = m_outer->m_storage.begin()->second;
+            replaySS = conf->m_storage.begin()->second;
         }
         xmlConf.setReplayCache(new ReplayCache(replaySS));
 
@@ -1790,9 +1789,9 @@ void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
         if (child) {
             string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
             if (!ssid.empty()) {
-                if (m_outer->m_storage.count(ssid)) {
+                if (conf->m_storage.count(ssid)) {
                     log.info("building ArtifactMap on top of StorageService (%s)...", ssid.c_str());
-                    samlConf.setArtifactMap(new ArtifactMap(child, m_outer->m_storage[ssid]));
+                    samlConf.setArtifactMap(new ArtifactMap(child, conf->m_storage[ssid]));
                 }
                 else {
                     log.error("unable to locate StorageService (%s), using in-memory ArtifactMap", ssid.c_str());
@@ -1816,21 +1815,21 @@ void XMLConfigImpl::doCaching(const DOMElement* e, Category& log)
         string t(XMLHelper::getAttrString(child, nullptr, _type));
         if (!t.empty()) {
             log.info("building SessionCache of type %s...", t.c_str());
-            m_outer->m_sessionCache = conf.SessionCacheManager.newPlugin(t.c_str(), child);
+            conf->m_sessionCache = spConf.SessionCacheManager.newPlugin(t.c_str(), child);
         }
     }
-    if (!m_outer->m_sessionCache) {
+    if (!conf->m_sessionCache) {
         log.info("no SessionCache specified, using StorageService-backed instance");
-        m_outer->m_sessionCache = conf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE, nullptr);
+        conf->m_sessionCache = spConf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE, nullptr);
     }
 }
 
-XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* outer, Category& log)
+XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, Category& log)
     : m_requestMapper(nullptr),
 #ifndef SHIBSP_LITE
         m_policy(nullptr),
 #endif
-        m_outer(outer), m_document(nullptr)
+        m_document(nullptr)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLConfigImpl");
@@ -1868,7 +1867,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
 #ifndef SHIBSP_LITE
             if (first)
-                m_outer->m_tranLog = new TransactionLog();
+                outer->m_tranLog = new TransactionLog();
 #endif
         }
 
@@ -1940,18 +1939,18 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
 
             // Instantiate the ListenerService and SessionCache objects.
             if (conf.isEnabled(SPConfig::Listener))
-                doListener(e, log);
+                doListener(e, outer, log);
 
 #ifndef SHIBSP_LITE
-            if (m_outer->m_listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
-                m_outer->m_listener->regListener("set::RelayState", const_cast<XMLConfig*>(m_outer));
-                m_outer->m_listener->regListener("get::RelayState", const_cast<XMLConfig*>(m_outer));
-                m_outer->m_listener->regListener("set::PostData", const_cast<XMLConfig*>(m_outer));
-                m_outer->m_listener->regListener("get::PostData", const_cast<XMLConfig*>(m_outer));
+            if (outer->m_listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
+                outer->m_listener->regListener("set::RelayState", outer);
+                outer->m_listener->regListener("get::RelayState", outer);
+                outer->m_listener->regListener("set::PostData", outer);
+                outer->m_listener->regListener("get::PostData", outer);
             }
 #endif
             if (conf.isEnabled(SPConfig::Caching))
-                doCaching(e, log);
+                doCaching(e, outer, log);
         } // end of first-time-only stuff
 
         // Back to the fully dynamic stuff...next up is the RequestMapper.
@@ -2050,13 +2049,13 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");
             throw ConfigurationException("can't build default Application object, missing conf:ApplicationDefaults element?");
         }
-        XMLApplication* defapp = new XMLApplication(m_outer, pp, child);
+        XMLApplication* defapp = new XMLApplication(outer, pp, child);
         m_appmap[defapp->getId()] = defapp;
 
         // Load any overrides.
         child = XMLHelper::getFirstChildElement(child, ApplicationOverride);
         while (child) {
-            auto_ptr<XMLApplication> iapp(new XMLApplication(m_outer, pp, child, defapp));
+            auto_ptr<XMLApplication> iapp(new XMLApplication(outer, pp, child, defapp));
             if (m_appmap.count(iapp->getId()))
                 log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
             else {
@@ -2065,6 +2064,25 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, const XMLConfig* o
             }
 
             child = XMLHelper::getNextSiblingElement(child, ApplicationOverride);
+        }
+
+        // Check for extra AuthTypes to recognize.
+        if (conf.isEnabled(SPConfig::InProcess)) {
+            const PropertySet* inprocs = getPropertySet("InProcess");
+            if (inprocs) {
+                pair<bool,const char*> extraAuthTypes = inprocs->getString("extraAuthTypes");
+                if (extraAuthTypes.first) {
+                    string types=extraAuthTypes.second;
+                    unsigned int j_types=0;
+                    for (unsigned int i_types=0;  i_types < types.length();  i_types++) {
+                        if (types.at(i_types) == ' ') {
+                            outer->m_authTypes.insert(types.substr(j_types, i_types - j_types));
+                            j_types = i_types + 1;
+                        }
+                    }
+                    outer->m_authTypes.insert(types.substr(j_types, types.length() - j_types));
+                }
+            }
         }
     }
     catch (exception&) {

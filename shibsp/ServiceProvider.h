@@ -25,6 +25,7 @@
 
 #include <shibsp/util/PropertySet.h>
 
+#include <set>
 #include <xmltooling/Lockable.h>
 
 namespace xmltooling {
@@ -238,6 +239,10 @@ namespace shibsp {
          * @return  registered service, or nullptr
          */
         virtual Remoted* lookupListener(const char* address) const;
+
+    protected:
+        /** The AuthTypes to "recognize" (defaults to "shibboleth"). */
+        std::set<std::string> m_authTypes;
 
     private:
         std::map<std::string,Remoted*> m_listenerMap;
