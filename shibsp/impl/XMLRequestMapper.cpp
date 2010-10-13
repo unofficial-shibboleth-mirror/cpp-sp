@@ -479,8 +479,6 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLRequestMapperImpl");
 #endif
-    static const XMLCh _default[] =     UNICODE_LITERAL_7(d,e,f,a,u,l,t);
-    static const XMLCh _id[] =          UNICODE_LITERAL_2(i,d);
     static const XMLCh _RequestMap[] =  UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
 
     if (e && !XMLHelper::isNodeNamed(e, SHIB2SPCONFIG_NS, _RequestMap))
