@@ -1,4 +1,4 @@
-AC_PREREQ([2.67])
+AC_PREREQ([2.50])
 AC_INIT([shibboleth],[2.4],[https://bugs.internet2.edu/],[shibboleth])
 AC_CONFIG_SRCDIR(shibsp)
 AC_CONFIG_AUX_DIR(build-aux)
@@ -118,25 +118,21 @@ AC_CXX_REQUIRE_STL
 # Thank you Solaris, really.
 AC_MSG_CHECKING(for ctime_r)
 if test -z "$ac_cv_ctime_args"; then
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <time.h>]], [[
-        time_t clock;
-        char buf[26];
-        ctime_r(&clock, buf);
-    ]])],[ac_cv_ctime_args=2],[])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([[#include <time.h>]], [[time_t clock; char buf[26]; ctime_r(&clock, buf);]])],
+        [ac_cv_ctime_args=2],[])
 
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <time.h>]], [[
-        time_t clock;
-        char buf[26];
-        ctime_r(&clock, buf, 26);
-    ]])],[ac_cv_ctime_args=3],[])
+    AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([[#include <time.h>]], [[time_t clock; char buf[26]; ctime_r(&clock, buf, 26);]])],
+        [ac_cv_ctime_args=3],[])
 fi
 if test -z "$ac_cv_ctime_args"; then
     AC_MSG_RESULT(no)
 else
     if test "$ac_cv_ctime_args" = 2; then
-        AC_DEFINE(HAVE_CTIME_R_2,1,[Define if ctime_r is present with 2 parameters.])
+        AC_DEFINE([HAVE_CTIME_R_2],[1],[Define if ctime_r is present with 2 parameters.])
     elif test "$ac_cv_ctime_args" = 3; then
-        AC_DEFINE(HAVE_CTIME_R_3,1,[Define if ctime_r is present with 3 parameters.])
+        AC_DEFINE([HAVE_CTIME_R_3],[1],[Define if ctime_r is present with 3 parameters.])
     fi
     AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
 fi 
@@ -222,7 +218,9 @@ AC_COMPILE_IFELSE(
     [AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([whether Xerces DOMNodeFilter API returns a short])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <xercesc/dom/DOM.hpp>]], [[using namespace XERCES_CPP_NAMESPACE;
+AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[#include <xercesc/dom/DOM.hpp>]],
+        [[using namespace XERCES_CPP_NAMESPACE;
       class Blocker : public DOMNodeFilter {
       public:
         short acceptNode(const DOMNode* node) const {
@@ -230,8 +228,9 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <xercesc/dom/DOM.hpp>]], [[using n
         }
       };
       static Blocker g_Blocker;
-    ]])],[AC_MSG_RESULT([yes])
-    AC_DEFINE([SHIBSP_XERCESC_SHORT_ACCEPTNODE],[1],[Define to 1 if Xerces DOMNodeFilter API returns a short.])],[AC_MSG_RESULT([no])])
+    ]])],
+    [AC_MSG_RESULT([yes])AC_DEFINE([SHIBSP_XERCESC_SHORT_ACCEPTNODE],[1],[Define to 1 if Xerces DOMNodeFilter API returns a short.])],
+    [AC_MSG_RESULT([no])])
 
 #XML-Tooling settings
 AC_ARG_WITH(xmltooling,
@@ -336,16 +335,15 @@ save_LIBS="$LIBS"
 LIBS="$XMLSEC_LIBS $LIBS"
 
 AC_CHECK_HEADER([saml/saml2/metadata/Metadata.h],,AC_MSG_ERROR([unable to find OpenSAML header files]))
-AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-#include <saml/SAMLConfig.h>
-#include <saml/version.h>
-	]], [[
-#if _OPENSAML_VERSION >= 20400
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[#include <saml/SAMLConfig.h>
+#include <saml/version.h>]],
+[[#if _OPENSAML_VERSION >= 20400
 opensaml::SAMLConfig::getConfig();
 #else
 #error Need OpenSAML version 2.4 or higher
-#endif
-	]])],[AC_DEFINE(HAVE_SAML,1,[Define if saml library was found])],[AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])
+#endif]])],
+    ,[AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])
 	])
 
 # restore master libs
@@ -926,11 +924,13 @@ if test "$build_odbc" = "yes" ; then
       save_LIBS="$LIBS"
       LIBS="$LIBS $ODBC_LIBS"
       AC_MSG_CHECKING(if we can link againt ODBC)
-      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <sql.h>
-         #include <sqlext.h>
-         #include <stdio.h>]], [[SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0)]])],[have_odbc_libs=yes],[have_odbc_libs=no])
+      AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM([[#include <sql.h>
+ #include <sqlext.h>
+ #include <stdio.h>]],
+            [[SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0)]])],
+        [have_odbc_libs=yes],[have_odbc_libs=no])
       LIBS="$save_LIBS"
-
       if test "$have_odbc_libs" = no ; then
          if test "$odbc_enabled" = "yes" ; then
             AC_MSG_ERROR([unable to link with ODBC Library])
