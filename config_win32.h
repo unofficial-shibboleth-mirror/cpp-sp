@@ -22,9 +22,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
-/* Define to 1 if you have the `crypto' library (-lcrypto). */
-#define HAVE_LIBCRYPTO 1
-
 /* Define to 1 if you have the `dmallocxx' library (-ldmallocxx). */
 /* #undef HAVE_LIBDMALLOCXX */
 
@@ -33,12 +30,6 @@
 
 /* Define if log4cpp library is used. */
 /* #undef SHIBSP_LOG4CPP */
-
-/* Define to 1 if you have the `ssl' library (-lssl). */
-#define HAVE_LIBSSL 1
-
-/* Define if Xerces-C library was found */
-#define HAVE_LIBXERCESC 1
 
 #include <xercesc/util/XercesVersion.hpp>
 
@@ -115,7 +106,7 @@
 #define PACKAGE "shibboleth"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "shibboleth-users@internet2.edu"
+#define PACKAGE_BUGREPORT "https://bugs.internet2.edu/"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "shibboleth"
