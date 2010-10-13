@@ -95,7 +95,7 @@ namespace {
     string g_unsetHeaderValue,g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
-    static const char* g_UserDataKey = "_shib_check_user_";
+    static const char* g_UserDataKey = "urn:mace:shibboleth:Apache:shib_check_user";
 }
 
 /* Apache 2.2.x headers must be accumulated and set in the output filter.
@@ -1439,7 +1439,7 @@ static command_rec shire_cmds[] = {
    OR_AUTHCFG, TAKE1, "Set Shibboleth applicationId property for content"},
   {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bBasicHijack),
-   OR_AUTHCFG, FLAG, "Respond to AuthType Basic and convert to shibboleth"},
+   OR_AUTHCFG, FLAG, "(DEPRECATED) Respond to AuthType Basic and convert to shibboleth"},
   {"ShibRequireSession", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bRequireSession),
    OR_AUTHCFG, FLAG, "Initiates a new session if one does not exist"},
@@ -1501,6 +1501,8 @@ module MODULE_VAR_EXPORT mod_shib = {
 
 #elif defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22)
 
+//static const char * const authnPre[] = { "mod_gss.c", nullptr };
+
 extern "C" void shib_register_hooks (apr_pool_t *p)
 {
 #ifdef SHIB_DEFERRED_HEADERS
@@ -1511,7 +1513,14 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
   ap_hook_post_read_request(shib_post_read, nullptr, nullptr, APR_HOOK_MIDDLE);
 #endif
   ap_hook_child_init(shib_child_init, nullptr, nullptr, APR_HOOK_MIDDLE);
-  ap_hook_check_user_id(shib_check_user, nullptr, nullptr, APR_HOOK_MIDDLE);
+  const char* prereq = getenv("SHIBSP_APACHE_PREREQ");
+  if (prereq && *prereq) {
+    const char* const authnPre[] = { prereq, nullptr };
+    ap_hook_check_user_id(shib_check_user, authnPre, nullptr, APR_HOOK_MIDDLE);
+  }
+  else {
+    ap_hook_check_user_id(shib_check_user, nullptr, nullptr, APR_HOOK_MIDDLE);
+  }
   ap_hook_auth_checker(shib_auth_checker, nullptr, nullptr, APR_HOOK_FIRST);
   ap_hook_handler(shib_handler, nullptr, nullptr, APR_HOOK_LAST);
   ap_hook_fixups(shib_fixups, nullptr, nullptr, APR_HOOK_MIDDLE);
@@ -1543,7 +1552,7 @@ static command_rec shib_cmds[] = {
         OR_AUTHCFG, "Set Shibboleth applicationId property for content"),
     AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bBasicHijack),
-        OR_AUTHCFG, "Respond to AuthType Basic and convert to shibboleth"),
+        OR_AUTHCFG, "(DEPRECATED) Respond to AuthType Basic and convert to shibboleth"),
     AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireSession),
         OR_AUTHCFG, "Initiates a new session if one does not exist"),
