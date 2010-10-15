@@ -338,6 +338,9 @@
     <ClInclude Include="binding\ProtocolProvider.h">
       <Filter>Header Files\binding</Filter>
     </ClInclude>
+    <ClInclude Include="GSSRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="shibsp.rc">

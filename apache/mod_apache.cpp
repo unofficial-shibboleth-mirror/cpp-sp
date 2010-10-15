@@ -31,14 +31,16 @@
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 
+#include <shibsp/exceptions.h>
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/AccessControl.h>
-#include <shibsp/exceptions.h>
+#include <shibsp/GSSRequest.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/SessionCache.h>
 #include <shibsp/attribute/Attribute.h>
+
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 #include <xmltooling/XMLToolingConfig.h>
@@ -95,6 +97,9 @@ namespace {
     string g_unsetHeaderValue,g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
+#ifndef SHIB_APACHE_13
+    char* g_szGSSContextKey = "mod_auth_gssapi:gss_ctx";
+#endif
     static const char* g_UserDataKey = "urn:mace:shibboleth:Apache:shib_check_user";
 }
 
@@ -294,10 +299,11 @@ extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, con
     return nullptr;
 }
 
-/********************************************************************************/
-// Apache ShibTarget subclass(es) here.
 
 class ShibTargetApache : public AbstractSPRequest
+#if defined(HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
+    , public GSSRequest
+#endif
 {
   bool m_handler;
   mutable string m_body;
@@ -574,6 +580,13 @@ public:
   }
   long returnDecline(void) { return DECLINED; }
   long returnOK(void) { return OK; }
+#if defined(HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
+  gss_ctx_id_t getGSSContext() const {
+    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+    apr_pool_userdata_get((void**)&ctx, g_szGSSContextKey, m_req->pool);
+    return ctx;
+  }
+#endif
 };
 
 /********************************************************************************/
@@ -1536,6 +1549,8 @@ static command_rec shib_cmds[] = {
         RSRC_CONF, "Path to shibboleth2.xml config file"),
     AP_INIT_TAKE1("ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
         RSRC_CONF, "Paths of XML schema catalogs"),
+    AP_INIT_TAKE1("ShibGSSKey", (config_fn_t)ap_set_global_string_slot, &g_szGSSContextKey,
+        RSRC_CONF, "Name of user data key containing GSS context established by GSS module"),
 
     AP_INIT_TAKE1("ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
         (void *) offsetof (shib_server_config, szScheme),

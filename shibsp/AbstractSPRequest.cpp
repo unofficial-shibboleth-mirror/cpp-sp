@@ -50,6 +50,16 @@ void SPRequest::setAuthType(const char* authtype)
 {
 }
 
+#ifdef HAVE_GSSAPI
+GSSRequest::GSSRequest()
+{
+}
+
+GSSRequest::~GSSRequest()
+{
+}
+#endif
+
 AbstractSPRequest::AbstractSPRequest(const char* category)
     : m_sp(nullptr), m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr),
         m_log(&Category::getInstance(category)), m_parser(nullptr)

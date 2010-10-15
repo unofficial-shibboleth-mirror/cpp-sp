@@ -241,6 +241,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="binding\ProtocolProvider.h" />
+    <ClInclude Include="GSSRequest.h" />
     <ClInclude Include="handler\LogoutInitiator.h" />
     <ClInclude Include="remoting\impl\SocketListener.h" />
     <ClInclude Include="AbstractSPRequest.h" />
