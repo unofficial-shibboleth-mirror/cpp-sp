@@ -952,6 +952,142 @@ if test "$have_odbc_libs" = yes ; then
    AC_SUBST(ODBC_LIBS)
 fi
 
+# GSS-API checking
+
+GSSAPI_ROOT="/usr"
+AC_ARG_WITH(gssapi-includes,
+  AS_HELP_STRING([--with-gssapi-includes=DIR],[Specify location of GSSAPI header]),
+  [ GSSAPI_INCS="-I$withval"
+    want_gss="yes" ]
+)
+
+AC_ARG_WITH(gssapi-libs,
+  AS_HELP_STRING([--with-gssapi-libs=DIR],[Specify location of GSSAPI libs]),
+  [ GSSAPI_LIB_DIR="-L$withval"
+    want_gss="yes" ]
+)
+
+AC_ARG_WITH(gssapi,
+  AS_HELP_STRING([--with-gssapi=DIR],[Where to look for GSSAPI]),
+  [ GSSAPI_ROOT="$withval"
+  if test x"$GSSAPI_ROOT" != xno; then
+    want_gss="yes"
+    if test x"$GSSAPI_ROOT" = xyes; then
+      dnl if yes, then use default root
+      GSSAPI_ROOT="/usr"
+    fi
+  fi
+])
+
+save_CPPFLAGS="$CPPFLAGS"
+AC_MSG_CHECKING([if GSSAPI support is requested])
+if test x"$want_gss" = xyes; then
+  AC_MSG_RESULT(yes)
+
+  if test -z "$GSSAPI_INCS"; then
+     if test -f "$GSSAPI_ROOT/bin/krb5-config"; then
+        GSSAPI_INCS=`$GSSAPI_ROOT/bin/krb5-config --cflags gssapi`
+     elif test "$GSSAPI_ROOT" != "yes"; then
+        GSSAPI_INCS="-I$GSSAPI_ROOT/include"
+     fi
+  fi
+
+  CPPFLAGS="$CPPFLAGS $GSSAPI_INCS"
+
+  AC_CHECK_HEADER(gss.h,
+    [
+      dnl found in the given dirs
+      AC_DEFINE([HAVE_GSSGNU],[1],[if you have the GNU gssapi libraries])
+      gnu_gss=yes
+    ],
+    [
+      dnl not found, check Heimdal or MIT
+      AC_CHECK_HEADERS([gssapi/gssapi.h], [], [not_mit=1])
+      AC_CHECK_HEADERS(
+        [gssapi/gssapi_generic.h gssapi/gssapi_krb5.h],
+        [],
+        [not_mit=1],
+        [
+AC_INCLUDES_DEFAULT
+#ifdef HAVE_GSSAPI_GSSAPI_H
+#include <gssapi/gssapi.h>
+#endif
+        ])
+      if test "x$not_mit" = "x1"; then
+        dnl MIT not found, check for Heimdal
+        AC_CHECK_HEADER([gssapi.h],
+            [
+              dnl found
+              AC_DEFINE([HAVE_GSSHEIMDAL],[1],[if you have the Heimdal gssapi libraries])
+            ],
+            [
+              dnl no header found, disabling GSS
+              want_gss=no
+              AC_MSG_WARN([disabling GSSAPI since no header files was found])
+            ]
+          )
+      else
+        dnl MIT found
+        AC_DEFINE([HAVE_GSSMIT],[1],[if you have the MIT gssapi libraries])
+        dnl check if we have a really old MIT kerberos (<= 1.2)
+        AC_MSG_CHECKING([if gssapi headers declare GSS_C_NT_HOSTBASED_SERVICE])
+        AC_COMPILE_IFELSE([
+          AC_LANG_PROGRAM([[
+#include <gssapi/gssapi.h>
+#include <gssapi/gssapi_generic.h>
+#include <gssapi/gssapi_krb5.h>
+          ]],[[
+            gss_import_name(
+                            (OM_uint32 *)0,
+                            (gss_buffer_t)0,
+                            GSS_C_NT_HOSTBASED_SERVICE,
+                            (gss_name_t *)0);
+          ]])
+        ],[
+          AC_MSG_RESULT([yes])
+        ],[
+          AC_MSG_RESULT([no])
+          AC_DEFINE([HAVE_OLD_GSSMIT],[1],[if you have an old MIT gssapi library, lacking GSS_C_NT_HOSTBASED_SERVICE])
+        ])
+      fi
+    ]
+  )
+else
+  AC_MSG_RESULT(no)
+fi
+if test x"$want_gss" = xyes; then
+  AC_DEFINE([HAVE_GSSAPI],[1],[if you have the gssapi libraries])
+
+  if test -n "$gnu_gss"; then
+    LDFLAGS="$LDFLAGS $GSSAPI_LIB_DIR"
+    LIBS="$LIBS -lgss"
+  elif test -z "$GSSAPI_LIB_DIR"; then
+     case $host in
+     *-*-darwin*)
+        LIBS="$LIBS -lgssapi_krb5 -lresolv"
+        ;;
+     *)
+        if test -f "$GSSAPI_ROOT/bin/krb5-config"; then
+           dnl krb5-config doesn't have --libs-only-L or similar, put everything
+           dnl into LIBS
+           gss_libs=`$GSSAPI_ROOT/bin/krb5-config --libs gssapi`
+           LIBS="$LIBS $gss_libs"
+        elif test "$GSSAPI_ROOT" != "yes"; then
+           LDFLAGS="$LDFLAGS -L$GSSAPI_ROOT/lib$libsuff"
+           LIBS="$LIBS -lgssapi"
+        else
+           LIBS="$LIBS -lgssapi"
+        fi
+        ;;
+     esac
+  else
+     LDFLAGS="$LDFLAGS $GSSAPI_LIB_DIR"
+     LIBS="$LIBS -lgssapi"
+  fi
+else
+  CPPFLAGS="$save_CPPFLAGS"
+fi
+
 
 AC_SUBST(WANT_SUBDIRS)
 
