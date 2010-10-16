@@ -24,6 +24,7 @@
 #include "exceptions.h"
 #include "AbstractSPRequest.h"
 #include "Application.h"
+#include "GSSRequest.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "util/CGIParser.h"

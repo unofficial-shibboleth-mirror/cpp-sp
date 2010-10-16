@@ -50,9 +50,9 @@ using namespace std;
 namespace shibsp {
     class SHIBSP_DLLLOCAL RemotedRequest : 
 #ifdef HAVE_GSSAPI
-        public virtual GSSRequest,
+        public GSSRequest,
 #endif
-        public virtual HTTPRequest
+        public HTTPRequest
     {
         DDF& m_input;
         mutable CGIParser* m_parser;
@@ -63,7 +63,7 @@ namespace shibsp {
     public:
         RemotedRequest(DDF& input) : m_input(input), m_parser(nullptr)
 #ifdef HAVE_GSSAPI
-            , m_ctx(GSS_C_NO_CONTEXT)
+            , m_gss(GSS_C_NO_CONTEXT)
 #endif
         {
         }
@@ -72,9 +72,9 @@ namespace shibsp {
             for_each(m_certs.begin(), m_certs.end(), xmltooling::cleanup<XSECCryptoX509>());
             delete m_parser;
 #ifdef HAVE_GSSAPI
-            if (m_ctx != GSS_C_NO_CONTEXT) {
+            if (m_gss != GSS_C_NO_CONTEXT) {
                 OM_uint32 minor;
-                gss_delete_sec_context(&minor, &m_ctx, GSS_C_NO_BUFFER);
+                gss_delete_sec_context(&minor, &m_gss, GSS_C_NO_BUFFER);
             }
 #endif
         }
@@ -82,6 +82,9 @@ namespace shibsp {
         // GenericRequest
         const char* getScheme() const {
             return m_input["scheme"].string();
+        }
+        bool isSecure() const {
+            return HTTPRequest::isSecure();
         }
         const char* getHostname() const {
             return m_input["hostname"].string();
@@ -206,19 +209,19 @@ const std::vector<XSECCryptoX509*>& RemotedRequest::getClientCertificates() cons
 #ifdef HAVE_GSSAPI
 gss_ctx_id_t RemotedRequest::getGSSContext() const
 {
-    if (m_ctx == GSS_C_NO_CONTEXT) {
-        const char* encoded = m_input["gss_context"];
+    if (m_gss == GSS_C_NO_CONTEXT) {
+        const char* encoded = m_input["gss_context"].string();
         if (encoded) {
             xsecsize_t x;
             XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(encoded), &x);
             if (decoded) {
                 gss_buffer_desc importbuf;
                 importbuf.length = x;
-                importbuf.data = decoded;
+                importbuf.value = decoded;
                 OM_uint32 minor;
-                OM_uint32 major = gss_import_sec_context(&minor, &importbuf, &m_ctx);
+                OM_uint32 major = gss_import_sec_context(&minor, &importbuf, &m_gss);
                 if (major != GSS_S_COMPLETE)
-                    m_ctx = GSS_C_NO_CONTEXT;
+                    m_gss = GSS_C_NO_CONTEXT;
 #ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
                 XMLString::release(&decoded);
 #else
@@ -227,7 +230,7 @@ gss_ctx_id_t RemotedRequest::getGSSContext() const
             }
         }
     }
-    return m_ctx;
+    return m_gss;
 }
 #endif
 
