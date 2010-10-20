@@ -379,7 +379,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
         // If no rules apply, remove the attribute entirely.
         if (rulesToRun.empty()) {
             m_log.warn(
-                "no rule found, removing attribute (%s) from (%s)",
+                "no rule found, will remove attribute (%s) from (%s)",
                 attr->getId(), issuer.get() ? issuer.get() : "unknown source"
                 );
             deletedAttributes[a] = true;
@@ -426,6 +426,10 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
         Attribute* attr = attributes[a];
 
         if (deletedAttributes[a]) {
+            m_log.warn(
+                "removing filtered attribute (%s) from (%s)",
+                attr->getId(), issuer.get() ? issuer.get() : "unknown source"
+                );
             delete attr;
             deletedAttributes.erase(deletedAttributes.begin() + a);
             attributes.erase(attributes.begin() + a);
@@ -449,6 +453,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
                 attr->getId(), issuer.get() ? issuer.get() : "unknown source"
                 );
             delete attr;
+            deletedAttributes.erase(deletedAttributes.begin() + a);
             attributes.erase(attributes.begin() + a);
             continue;
         }
