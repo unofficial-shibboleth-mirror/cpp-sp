@@ -72,6 +72,7 @@ AC_STRUCT_TM
 # Checks for library functions.
 AC_FUNC_STRFTIME
 AC_FUNC_STRERROR_R
+AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_FUNCS([strchr strdup strstr timegm gmtime_r strtok_r strcasecmp])
 
 # checks for pthreads

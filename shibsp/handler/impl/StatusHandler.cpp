@@ -29,6 +29,12 @@
 #include "handler/RemotedHandler.h"
 #include "util/CGIParser.h"
 
+#include <xmltooling/version.h>
+
+#ifdef HAVE_SYS_UTSNAME_H
+# include <sys/utsname.h>
+#endif
+
 using namespace shibsp;
 #ifndef SHIBSP_LITE
 # include "SessionCache.h"
@@ -77,6 +83,7 @@ namespace shibsp {
 
     private:
         pair<bool,long> processMessage(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
+        ostream& systemInfo(ostream& os) const;
 
         set<string> m_acl;
     };
@@ -297,12 +304,13 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         stringstream msg;
         msg << "<StatusHandler>";
             msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
+                << "' XML-Tooling-C='" << XMLTOOLING_FULLVERSIONDOT
 #ifndef SHIBSP_LITE
                 << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
                 << "' OpenSAML-C='" << OPENSAML_FULLVERSIONDOT
 #endif
                 << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
-            msg << "<RequestSettings";
+            systemInfo(msg) << "<RequestSettings";
             for (map<string,const char*>::const_iterator p = props.begin(); p != props.end(); ++p)
                 msg << ' ' << p->first << "='" << p->second << "'";
             msg << '>' << target << "</RequestSettings>";
@@ -330,12 +338,13 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         stringstream msg;
         msg << "<StatusHandler>";
             msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
+                << "' XML-Tooling-C='" << XMLTOOLING_FULLVERSIONDOT
 #ifndef SHIBSP_LITE
                 << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
                 << "' OpenSAML-C='" << OPENSAML_FULLVERSIONDOT
 #endif
                 << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
-            msg << "<Status><Exception type='" << ex.getClassName() << "'>" << ex.what() << "</Exception></Status>";
+            systemInfo(msg) << "<Status><Exception type='" << ex.getClassName() << "'>" << ex.what() << "</Exception></Status>";
         msg << "</StatusHandler>";
         return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
     }
@@ -345,12 +354,13 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         stringstream msg;
         msg << "<StatusHandler>";
             msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
+                << "' XML-Tooling-C='" << XMLTOOLING_FULLVERSIONDOT
 #ifndef SHIBSP_LITE
                 << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
                 << "' OpenSAML-C='" << OPENSAML_FULLVERSIONDOT
 #endif
                 << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
-            msg << "<Status><Exception type='std::exception'>" << ex.what() << "</Exception></Status>";
+            systemInfo(msg) << "<Status><Exception type='std::exception'>" << ex.what() << "</Exception></Status>";
         msg << "</StatusHandler>";
         return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
     }
@@ -392,9 +402,12 @@ pair<bool,long> StatusHandler::processMessage(
     const char* status = "<OK/>";
 
     s << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
+        << "' XML-Tooling-C='" << XMLTOOLING_FULLVERSIONDOT
         << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
         << "' OpenSAML-C='" << OPENSAML_FULLVERSIONDOT
         << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
+
+    systemInfo(s);
 
     const char* param = nullptr;
     if (param) {
@@ -487,4 +500,77 @@ pair<bool,long> StatusHandler::processMessage(
 #else
     return make_pair(false,0L);
 #endif
+}
+
+typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
+
+ostream& StatusHandler::systemInfo(ostream& os) const
+{
+#if defined(HAVE_SYS_UTSNAME_H)
+    struct utsname sysinfo;
+    if (uname(&sysinfo) == 0) {
+        os << "<NonWindows";
+        if (*sysinfo.sysname)
+            os << " sysname='" << sysinfo.sysname << "'";
+        if (*sysinfo.nodename)
+            os << " nodename='" << sysinfo.nodename << "'";
+        if (*sysinfo.release)
+            os << " release='" << sysinfo.release << "'";
+        if (*sysinfo.version)
+            os << " version='" << sysinfo.version << "'";
+        if (*sysinfo.machine)
+            os << " machine='" << sysinfo.machine << "'";
+        os << "/>";
+    }
+#elif defined(WIN32)
+    OSVERSIONINFOEX osvi;
+    memset(&osvi, 0, sizeof(OSVERSIONINFOEX));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    if(GetVersionEx((OSVERSIONINFO*)&osvi)) {
+        os << "<Windows"
+           << " version='" << osvi.dwMajorVersion << "." << osvi.dwMinorVersion << "'"
+           << " build='" << osvi.dwBuildNumber << "'";
+        if (osvi.wServicePackMajor > 0)
+            os << " servicepack='" << osvi.wServicePackMajor << "." << osvi.wServicePackMinor << "'";
+        switch (osvi.wProductType) {
+            case VER_NT_WORKSTATION:
+                os << " producttype='Workstation'";
+                break;
+            case VER_NT_SERVER:
+            case VER_NT_DOMAIN_CONTROLLER:
+                os << " producttype='Server'";
+                break;
+        }
+
+        SYSTEM_INFO si;
+        memset(&si, 0, sizeof(SYSTEM_INFO));
+        PGNSI pGNSI = (PGNSI)GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "GetNativeSystemInfo");
+        if(pGNSI)
+            pGNSI(&si);
+        else
+            GetSystemInfo(&si);
+        switch (si.dwProcessorType) {
+            case PROCESSOR_ARCHITECTURE_INTEL:
+                os << " arch='i386'";
+                break;
+            case PROCESSOR_ARCHITECTURE_AMD64:
+                os << " arch='x86_64'";
+                break;
+            case PROCESSOR_ARCHITECTURE_IA64:
+                os << " arch='IA64'";
+                break;
+        }
+        os << " cpucount='" << si.dwNumberOfProcessors << "'";
+
+        MEMORYSTATUSEX ms;
+        memset(&ms, 0, sizeof(MEMORYSTATUSEX));
+        ms.dwLength = sizeof(MEMORYSTATUSEX);
+        if (GlobalMemoryStatusEx(&ms)) {
+            os << " memory='" << (ms.ullTotalPhys / (1024 * 1024)) << "M'";
+        }
+
+        os << "/>";
+    }
+#endif
+    return os;
 }
