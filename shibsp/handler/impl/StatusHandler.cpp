@@ -30,6 +30,7 @@
 #include "util/CGIParser.h"
 
 #include <xmltooling/version.h>
+#include <xmltooling/util/DateTime.h>
 
 #ifdef HAVE_SYS_UTSNAME_H
 # include <sys/utsname.h>
@@ -300,9 +301,12 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         map<string,const char*> props;
         settings.first->getAll(props);
 
+        DateTime now(time(nullptr));
+        now.parseDateTime();
+        auto_ptr_char timestamp(now.getFormattedString());
         request.setContentType("text/xml");
         stringstream msg;
-        msg << "<StatusHandler>";
+        msg << "<StatusHandler time='" << timestamp.get() << "'>";
             msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
                 << "' XML-Tooling-C='" << XMLTOOLING_FULLVERSIONDOT
 #ifndef SHIBSP_LITE
@@ -334,9 +338,12 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
     catch (XMLToolingException& ex) {
         m_log.error("error while processing request: %s", ex.what());
+        DateTime now(time(nullptr));
+        now.parseDateTime();
+        auto_ptr_char timestamp(now.getFormattedString());
         request.setContentType("text/xml");
         stringstream msg;
-        msg << "<StatusHandler>";
+        msg << "<StatusHandler time='" << timestamp.get() << "'>";
             msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
                 << "' XML-Tooling-C='" << XMLTOOLING_FULLVERSIONDOT
 #ifndef SHIBSP_LITE
@@ -350,9 +357,12 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
     catch (exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
+        DateTime now(time(nullptr));
+        now.parseDateTime();
+        auto_ptr_char timestamp(now.getFormattedString());
         request.setContentType("text/xml");
         stringstream msg;
-        msg << "<StatusHandler>";
+        msg << "<StatusHandler time='" << timestamp.get() << "'>";
             msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
                 << "' XML-Tooling-C='" << XMLTOOLING_FULLVERSIONDOT
 #ifndef SHIBSP_LITE
@@ -397,8 +407,12 @@ pair<bool,long> StatusHandler::processMessage(
 #ifndef SHIBSP_LITE
     m_log.debug("processing status request");
 
+    DateTime now(time(nullptr));
+    now.parseDateTime();
+    auto_ptr_char timestamp(now.getFormattedString());
+
     stringstream s;
-    s << "<StatusHandler>";
+    s << "<StatusHandler time='" << timestamp.get() << "'>";
     const char* status = "<OK/>";
 
     s << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
