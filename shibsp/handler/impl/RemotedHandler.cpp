@@ -285,6 +285,8 @@ void RemotedHandler::setAddress(const char* address)
     }
 }
 
+set<string> RemotedHandler::m_remotedHeaders;
+
 RemotedHandler::RemotedHandler()
 {
 }
@@ -295,6 +297,11 @@ RemotedHandler::~RemotedHandler()
     ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
     if (listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess))
         listener->unregListener(m_address.c_str(),this);
+}
+
+void RemotedHandler::addRemotedHeader(const char* header)
+{
+    m_remotedHeaders.insert(header);
 }
 
 DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers, bool certs) const
@@ -314,13 +321,20 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
     in.addmember("url").unsafe_string(request.getRequestURL());
     in.addmember("query").string(request.getQueryString());
 
-    if (headers) {
+    if (headers || !m_remotedHeaders.empty()) {
         string hdr;
         DDF hin = in.addmember("headers").structure();
-        for (vector<string>::const_iterator h = headers->begin(); h!=headers->end(); ++h) {
-            hdr = request.getHeader(h->c_str());
+        if (headers) {
+            for (vector<string>::const_iterator h = headers->begin(); h!=headers->end(); ++h) {
+                hdr = request.getHeader(h->c_str());
+                if (!hdr.empty())
+                    hin.addmember(h->c_str()).unsafe_string(hdr.c_str());
+            }
+        }
+        for (set<string>::const_iterator hh = m_remotedHeaders.begin(); hh != m_remotedHeaders.end(); ++hh) {
+            hdr = request.getHeader(hh->c_str());
             if (!hdr.empty())
-                hin.addmember(h->c_str()).unsafe_string(hdr.c_str());
+                hin.addmember(hh->c_str()).unsafe_string(hdr.c_str());
         }
     }
 

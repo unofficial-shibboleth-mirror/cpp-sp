@@ -35,6 +35,7 @@
 #include "SessionCacheEx.h"
 #include "TransactionLog.h"
 #include "attribute/Attribute.h"
+#include "handler/RemotedHandler.h"
 #include "remoting/ListenerService.h"
 #include "util/SPConstants.h"
 
@@ -756,6 +757,8 @@ SSCache::SSCache(const DOMElement* e)
     if (inproc)
         m_inprocTimeout = XMLHelper::getAttrInt(e, 900, inprocTimeout);
     m_inboundHeader = XMLHelper::getAttrString(e, nullptr, inboundHeader);
+    if (!m_inboundHeader.empty())
+        RemotedHandler::addRemotedHeader(m_inboundHeader.c_str());
     m_outboundHeader = XMLHelper::getAttrString(e, nullptr, outboundHeader);
 
 #ifndef SHIBSP_LITE

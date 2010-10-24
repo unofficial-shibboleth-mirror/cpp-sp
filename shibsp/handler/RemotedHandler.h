@@ -26,6 +26,8 @@
 #include <shibsp/handler/Handler.h>
 #include <shibsp/remoting/ListenerService.h>
 
+#include <set>
+
 namespace xmltooling {
     class XMLTOOL_API HTTPRequest;
     class XMLTOOL_API HTTPResponse;
@@ -38,8 +40,17 @@ namespace shibsp {
      */
     class SHIBSP_API RemotedHandler : public virtual Handler, public Remoted 
     {
+        static std::set<std::string> m_remotedHeaders;
+
     public:
         virtual ~RemotedHandler();
+
+        /**
+         * Ensures that a request header will be remoted.
+         *
+         * @param header    name of request header to remote
+         */
+        static void addRemotedHeader(const char* header);
 
     protected:
         RemotedHandler();
@@ -56,7 +67,7 @@ namespace shibsp {
          * to remote the request information.
          *
          * @param request   an SPRequest to remote
-         * @param headers   array of request headers to copy to remote request
+         * @param headers   array of additional request headers to copy to remote request
          * @param certs     true iff client certificates should be available for the remote request
          * @return  the input dataflow object
          */
