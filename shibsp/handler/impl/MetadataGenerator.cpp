@@ -89,6 +89,7 @@ namespace shibsp {
             delete m_org;
             delete m_entityAttrs;
             for_each(m_contacts.begin(), m_contacts.end(), xmltooling::cleanup<ContactPerson>());
+            for_each(m_formats.begin(), m_formats.end(), xmltooling::cleanup<NameIDFormat>());
             for_each(m_reqAttrs.begin(), m_reqAttrs.end(), xmltooling::cleanup<RequestedAttribute>());
             for_each(m_attrConsumers.begin(), m_attrConsumers.end(), xmltooling::cleanup<AttributeConsumingService>());
 #endif
@@ -114,6 +115,7 @@ namespace shibsp {
         Organization* m_org;
         EntityAttributes* m_entityAttrs;
         vector<ContactPerson*> m_contacts;
+        vector<NameIDFormat*> m_formats;
         vector<RequestedAttribute*> m_reqAttrs;
         vector<AttributeConsumingService*> m_attrConsumers;
 #endif
@@ -184,48 +186,55 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
                 m_contacts.push_back(cp);
             }
             else {
-                RequestedAttribute* req = dynamic_cast<RequestedAttribute*>(child.get());
-                if (req) {
+                NameIDFormat* nif = dynamic_cast<NameIDFormat*>(child.get());
+                if (nif) {
                     child.release();
-                    m_reqAttrs.push_back(req);
+                    m_formats.push_back(nif);
                 }
                 else {
-                    AttributeConsumingService* acs = dynamic_cast<AttributeConsumingService*>(child.get());
-                    if (acs) {
+                    RequestedAttribute* req = dynamic_cast<RequestedAttribute*>(child.get());
+                    if (req) {
                         child.release();
-                        m_attrConsumers.push_back(acs);
+                        m_reqAttrs.push_back(req);
                     }
                     else {
-                        UIInfo* info = dynamic_cast<UIInfo*>(child.get());
-                        if (info) {
-                            if (!m_uiinfo) {
-                                child.release();
-                                m_uiinfo = info;
-                            }
-                            else {
-                                m_log.warn("skipping duplicate UIInfo element");
-                            }
+                        AttributeConsumingService* acs = dynamic_cast<AttributeConsumingService*>(child.get());
+                        if (acs) {
+                            child.release();
+                            m_attrConsumers.push_back(acs);
                         }
                         else {
-                            Organization* org = dynamic_cast<Organization*>(child.get());
-                            if (org) {
-                                if (!m_org) {
+                            UIInfo* info = dynamic_cast<UIInfo*>(child.get());
+                            if (info) {
+                                if (!m_uiinfo) {
                                     child.release();
-                                    m_org = org;
+                                    m_uiinfo = info;
                                 }
                                 else {
-                                    m_log.warn("skipping duplicate Organization element");
+                                    m_log.warn("skipping duplicate UIInfo element");
                                 }
                             }
                             else {
-                                EntityAttributes* ea = dynamic_cast<EntityAttributes*>(child.get());
-                                if (ea) {
-                                    if (!m_entityAttrs) {
+                                Organization* org = dynamic_cast<Organization*>(child.get());
+                                if (org) {
+                                    if (!m_org) {
                                         child.release();
-                                        m_entityAttrs = ea;
+                                        m_org = org;
                                     }
                                     else {
-                                        m_log.warn("skipping duplicate EntityAttributes element");
+                                        m_log.warn("skipping duplicate Organization element");
+                                    }
+                                }
+                                else {
+                                    EntityAttributes* ea = dynamic_cast<EntityAttributes*>(child.get());
+                                    if (ea) {
+                                        if (!m_entityAttrs) {
+                                            child.release();
+                                            m_entityAttrs = ea;
+                                        }
+                                        else {
+                                            m_log.warn("skipping duplicate EntityAttributes element");
+                                        }
                                     }
                                 }
                             }
@@ -363,7 +372,7 @@ pair<bool,long> MetadataGenerator::processMessage(
         entity->setOrganization(m_org->cloneOrganization());
 
     for (vector<ContactPerson*>::const_iterator cp = m_contacts.begin(); cp != m_contacts.end(); ++cp)
-        entity->getContactPersons().push_back((*cp)->cloneContactPerson());    
+        entity->getContactPersons().push_back((*cp)->cloneContactPerson());
 
     if (m_entityAttrs) {
         if (!entity->getExtensions())
@@ -379,6 +388,9 @@ pair<bool,long> MetadataGenerator::processMessage(
     else {
         role = entity->getSPSSODescriptors().front();
     }
+
+    for (vector<NameIDFormat*>::const_iterator nif = m_formats.begin(); nif != m_formats.end(); ++nif)
+        role->getNameIDFormats().push_back((*nif)->cloneNameIDFormat());
 
     if (m_uiinfo) {
         if (!role->getExtensions())
