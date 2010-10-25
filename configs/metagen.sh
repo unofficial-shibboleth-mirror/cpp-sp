@@ -1,5 +1,7 @@
 #! /bin/sh
 
+DECLS=1
+
 SAML1=0
 SAML2=0
 ARTIFACT=0
@@ -21,7 +23,7 @@ SAML20PAOS="urn:oasis:names:tc:SAML:2.0:bindings:PAOS"
 SAML1POST="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
 SAML1ART="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
 
-while getopts a:c:e:f:h:n:o:s:t:u:12ADLN c
+while getopts a:c:e:f:h:n:o:s:t:u:12ADLNO c
      do
          case $c in
            c)   CERTS[${#CERTS[*]}]=$OPTARG;;
@@ -40,7 +42,8 @@ while getopts a:c:e:f:h:n:o:s:t:u:12ADLN c
            D)   DS=1;;
            L)   LOGOUT=1;;
            N)   NAMEIDMGMT=1;;
-           \?)  echo metagen [-12ADLN] -c cert1 [-c cert2 ...] -h host1 [-h host2 ...] [-e entityID]
+           O)   DECLS=0;;
+           \?)  echo metagen [-12ADLNO] -c cert1 [-c cert2 ...] -h host1 [-h host2 ...] [-e entityID]
                 exit 1;;
          esac
      done
@@ -63,7 +66,11 @@ do
 done
 
 if [ -z $ENTITYID ] ; then
-    ENTITYID=https://${HOSTS[0]}/shibboleth
+    if [ ${#HOSTS[*]} -eq 0 ] ; then
+        ENTITYID=https://${NAKEDHOSTS[0]}/shibboleth
+    else
+        ENTITYID=https://${HOSTS[0]}/shibboleth
+    fi
 fi
 
 # Establish protocols and bindings.
@@ -88,9 +95,9 @@ if [ $LOGOUT -eq 1 -o $NAMEIDMGMT -eq 1 ] ; then
 fi
 
 if [ $SAML1 -eq 1 -a $SAML2 -eq 1 ] ; then
-    PROTENUM="$SAML20PROT $SAML11PROT $SAML10PROT"
+    PROTENUM="$SAML20PROT $SAML11PROT"
 elif [ $SAML1 -eq 1 ] ; then
-    PROTENUM="$SAML11PROT $SAML10PROT"
+    PROTENUM="$SAML11PROT"
 else
     PROTENUM="$SAML20PROT"
 fi
@@ -122,8 +129,17 @@ if [ $SAML2 -eq 1 ] ; then
     ACSLOC[${#ACSLOC[*]}]="SAML2/ECP"
 fi
 
+if [ $DECLS -eq 1 ] ; then
+    DECLS="xmlns:md=\"urn:oasis:names:tc:SAML:2.0:metadata\" xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\" "
+    if [ $DS -eq 1 ] ; then
+        DECLS="${DECLS}xmlns:disco=\"urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol\" "
+    fi
+else
+    DECLS=""
+fi
+
 cat <<EOF
-<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" entityID="${ENTITYID}">
+<md:EntityDescriptor ${DECLS}entityID="${ENTITYID}">
   <md:SPSSODescriptor protocolSupportEnumeration="${PROTENUM}">
 EOF
 
@@ -138,7 +154,7 @@ count=1
 for h in ${HOSTS[@]}
 do
   cat << EOF
-      <DiscoveryResponse xmlns="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Location="https://$h/Shibboleth.sso/DS" index="$count"/>
+      <disco:DiscoveryResponse Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Location="https://$h/Shibboleth.sso/DS" index="$count"/>
 EOF
   let "count++"
 done
@@ -146,7 +162,7 @@ done
 for h in ${NAKEDHOSTS[@]}
 do
   cat << EOF
-      <DiscoveryResponse xmlns="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Location="http://$h/Shibboleth.sso/DS" index="$count"/>
+      <disco:DiscoveryResponse xmlns="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Location="http://$h/Shibboleth.sso/DS" index="$count"/>
 EOF
   let "count++"
 done
@@ -286,9 +302,10 @@ if [ -n "$ORGNAME" ] ; then
 EOF
 fi
 
-for c in ${ADMIN[@]}
+count=${#ADMIN[*]}
+for (( i=0; i<count; i++ ))
 do
-  c=(${c//\// })
+  IFS="/"; declare -a c=(${ADMIN[$i]})
   cat <<EOF
   <md:ContactPerson contactType="administrative">
     <md:GivenName>${c[0]}</md:GivenName>
@@ -298,9 +315,10 @@ do
 EOF
 done
 
-for c in ${SUP[@]}
+count=${#SUP[*]}
+for (( i=0; i<count; i++ ))
 do
-  c=(${c//\// })
+  IFS="/"; declare -a c=(${SUP[$i]})
   cat <<EOF
   <md:ContactPerson contactType="support">
     <md:GivenName>${c[0]}</md:GivenName>
@@ -310,9 +328,10 @@ do
 EOF
 done
 
-for c in ${TECH[@]}
+count=${#TECH[*]}
+for (( i=0; i<count; i++ ))
 do
-  c=(${c//\// })
+  IFS="/"; declare -a c=(${TECH[$i]})
   cat <<EOF
   <md:ContactPerson contactType="technical">
     <md:GivenName>${c[0]}</md:GivenName>
@@ -324,4 +343,5 @@ done
 
 cat <<EOF 
 </md:EntityDescriptor>
+
 EOF
