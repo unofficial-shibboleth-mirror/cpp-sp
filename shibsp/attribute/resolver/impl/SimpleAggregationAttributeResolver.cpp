@@ -26,6 +26,7 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "attribute/NameIDAttribute.h"
+#include "attribute/SimpleAttribute.h"
 #include "attribute/filtering/AttributeFilter.h"
 #include "attribute/filtering/BasicFilteringContext.h"
 #include "attribute/resolver/AttributeExtractor.h"
@@ -47,6 +48,7 @@
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/TrustEngine.h>
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
@@ -185,7 +187,7 @@ namespace shibsp {
         }
 
     private:
-        bool doQuery(SimpleAggregationContext& ctx, const char* entityID, const NameID* name) const;
+        void doQuery(SimpleAggregationContext& ctx, const char* entityID, const NameID* name) const;
 
         Category& m_log;
         string m_policyId;
@@ -196,6 +198,7 @@ namespace shibsp {
         TrustEngine* m_trust;
         vector<saml2::Attribute*> m_designators;
         vector< pair<string,bool> > m_sources;
+        vector<string> m_exceptionId;
     };
 
     AttributeResolver* SHIBSP_DLLLOCAL SimpleAggregationResolverFactory(const DOMElement* const & e)
@@ -206,6 +209,7 @@ namespace shibsp {
     static const XMLCh attributeId[] =          UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,d);
     static const XMLCh Entity[] =               UNICODE_LITERAL_6(E,n,t,i,t,y);
     static const XMLCh EntityReference[] =      UNICODE_LITERAL_15(E,n,t,i,t,y,R,e,f,e,r,e,n,c,e);
+    static const XMLCh exceptionId[] =          UNICODE_LITERAL_11(e,x,c,e,p,t,i,o,n,I,d);
     static const XMLCh format[] =               UNICODE_LITERAL_6(f,o,r,m,a,t);
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
     static const XMLCh policyId[] =             UNICODE_LITERAL_8(p,o,l,i,c,y,I,d);
@@ -246,6 +250,10 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
         if (aid && *aid)
             m_format = aid;
     }
+
+    string exid(XMLHelper::getAttrString(e, nullptr, exceptionId));
+    if (!exid.empty())
+        m_exceptionId.push_back(exid);
 
     DOMElement* child = XMLHelper::getFirstChildElement(e, _MetadataProvider);
     if (child) {
@@ -306,7 +314,7 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
     }
 }
 
-bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const char* entityID, const NameID* name) const
+void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const char* entityID, const NameID* name) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("doQuery");
@@ -319,11 +327,11 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         (m_metadata ? m_metadata : application.getMetadataProvider())->getEntityDescriptor(mc);
     if (!mdresult.first) {
         m_log.warn("unable to locate metadata for provider (%s)", entityID);
-        return false;
+        return;
     }
     else if (!(AA=dynamic_cast<const AttributeAuthorityDescriptor*>(mdresult.second))) {
         m_log.warn("no SAML 2 AttributeAuthority role found in metadata for (%s)", entityID);
-        return false;
+        return;
     }
 
     const PropertySet* relyingParty = application.getRelyingParty(mdresult.first);
@@ -392,7 +400,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
 
     if (!srt) {
         m_log.error("unable to obtain a SAML response from attribute authority (%s)", entityID);
-        return false;
+        throw BindingException("Unable to obtain a SAML response from attribute authority.");
     }
 
     auto_ptr<saml2p::StatusResponseType> wrapper(srt);
@@ -400,12 +408,12 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
     saml2p::Response* response = dynamic_cast<saml2p::Response*>(srt);
     if (!response) {
         m_log.error("message was not a samlp:Response");
-        return true;
+        throw FatalProfileException("Attribute authority returned an unrecognized message.");
     }
     else if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
             !XMLString::equals(response->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
         m_log.error("attribute authority (%s) returned a SAML error", entityID);
-        return true;
+        throw FatalProfileException("Attribute authority returned a SAML error.");
     }
 
     saml2::Assertion* newtoken = nullptr;
@@ -416,7 +424,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
             const_cast<const saml2p::Response*>(response)->getEncryptedAssertions();
         if (encassertions.empty()) {
             m_log.warn("response from attribute authority was empty");
-            return true;
+            return;
         }
         else if (encassertions.size() > 1) {
             m_log.warn("simple resolver only supports one assertion in the query response");
@@ -425,7 +433,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         CredentialResolver* cr=application.getCredentialResolver();
         if (!cr) {
             m_log.warn("found encrypted assertion, but no CredentialResolver was available");
-            return true;
+            throw FatalProfileException("Assertion was encrypted, but no decryption credentials are available.");
         }
 
         // Attempt to decrypt it.
@@ -437,18 +445,13 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
                 tokenwrapper.release();
                 if (m_log.isDebugEnabled())
                     m_log.debugStream() << "decrypted Assertion: " << *newtoken << logging::eol;
+                // Free the Response now, so we know this is a stand-alone token later.
+                delete wrapper.release();
             }
         }
         catch (exception& ex) {
             m_log.error(ex.what());
-        }
-        if (newtoken) {
-            // Free the Response now, so we know this is a stand-alone token later.
-            delete wrapper.release();
-        }
-        else {
-            // Nothing decrypted, should already be logged.
-            return true;
+            throw;
         }
     }
     else {
@@ -461,7 +464,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         m_log.error("assertion unsigned, rejecting it based on signedAssertions policy");
         if (!wrapper.get())
             delete newtoken;
-        return true;
+        throw SecurityPolicyException("Rejected unsigned assertion based on local policy.");
     }
 
     try {
@@ -515,7 +518,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
                     m_log.warn("ignoring Assertion without NameID in Subject");
                 if (!wrapper.get())
                     delete newtoken;
-                return true;
+                return;
             }
         }
     }
@@ -523,7 +526,7 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         m_log.error("assertion failed policy validation: %s", ex.what());
         if (!wrapper.get())
             delete newtoken;
-        return true;
+        throw;
     }
 
     if (wrapper.get()) {
@@ -551,9 +554,8 @@ bool SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         m_log.error("caught exception extracting/filtering attributes from query result: %s", ex.what());
         for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), xmltooling::cleanup<shibsp::Attribute>());
         ctx.getResolvedAttributes().clear();
+        throw;
     }
-
-    return true;
 }
 
 void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
@@ -646,13 +648,26 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
     if (qctx.getEntityID())
         history.insert(qctx.getEntityID());
 
+    // Prepare to track exceptions.
+    SimpleAttribute* exceptAttr = nullptr;
+    if (!m_exceptionId.empty()) {
+        exceptAttr = new SimpleAttribute(m_exceptionId);
+    }
+    auto_ptr<Attribute> exceptWrapper(exceptAttr);
+
     // We have a master loop over all the possible sources of material.
     for (vector< pair<string,bool> >::const_iterator source = m_sources.begin(); source != m_sources.end(); ++source) {
         if (source->second) {
             // A literal entityID to query.
             if (history.count(source->first) == 0) {
                 m_log.debug("issuing SAML query to (%s)", source->first.c_str());
-                doQuery(qctx, source->first.c_str(), n ? n : qctx.getNameID());
+                try {
+                    doQuery(qctx, source->first.c_str(), n ? n : qctx.getNameID());
+                }
+                catch (exception& ex) {
+                    if (exceptAttr)
+                        exceptAttr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
+                }
                 history.insert(source->first);
             }
             else {
@@ -670,7 +685,13 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
                     for (vector<string>::const_iterator link = links.begin(); link != links.end(); ++link) {
                         if (history.count(*link) == 0) {
                             m_log.debug("issuing SAML query to (%s)", link->c_str());
-                            doQuery(qctx, link->c_str(), n ? n : qctx.getNameID());
+                            try {
+                                doQuery(qctx, link->c_str(), n ? n : qctx.getNameID());
+                            }
+                            catch (exception& ex) {
+                                if (exceptAttr)
+                                    exceptAttr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
+                            }
                             history.insert(*link);
                         }
                         else {
@@ -688,7 +709,13 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
                         for (vector<string>::const_iterator link = links.begin(); link != links.end(); ++link) {
                             if (history.count(*link) == 0) {
                                 m_log.debug("issuing SAML query to (%s)", link->c_str());
-                                doQuery(qctx, link->c_str(), n ? n : qctx.getNameID());
+                                try {
+                                    doQuery(qctx, link->c_str(), n ? n : qctx.getNameID());
+                                }
+                                catch (exception& ex) {
+                                    if (exceptAttr)
+                                        exceptAttr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
+                                }
                                 history.insert(*link);
                             }
                             else {
@@ -699,5 +726,9 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
                 }
             }
         }
+    }
+
+    if (exceptAttr) {
+        qctx.getResolvedAttributes().push_back(exceptWrapper.release());
     }
 }
