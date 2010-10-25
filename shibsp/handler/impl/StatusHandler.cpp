@@ -516,7 +516,9 @@ pair<bool,long> StatusHandler::processMessage(
 #endif
 }
 
+#ifdef WIN32
 typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
+#endif
 
 ostream& StatusHandler::systemInfo(ostream& os) const
 {
