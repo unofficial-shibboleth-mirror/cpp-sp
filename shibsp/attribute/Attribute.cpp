@@ -56,6 +56,7 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory KeyInfoAttributeDecoderFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory DOMAttributeDecoderFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory XMLAttributeDecoderFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory Base64AttributeDecoderFactory;
 
     static const XMLCh _StringAttributeDecoder[] = UNICODE_LITERAL_22(S,t,r,i,n,g,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
     static const XMLCh _ScopedAttributeDecoder[] = UNICODE_LITERAL_22(S,c,o,p,e,d,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
@@ -64,6 +65,11 @@ namespace shibsp {
     static const XMLCh _KeyInfoAttributeDecoder[] =UNICODE_LITERAL_23(K,e,y,I,n,f,o,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
     static const XMLCh _DOMAttributeDecoder[] =    UNICODE_LITERAL_19(D,O,M,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
     static const XMLCh _XMLAttributeDecoder[] =    UNICODE_LITERAL_19(X,M,L,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
+    static const XMLCh _Base64AttributeDecoder[] = {
+        chLatin_B, chLatin_a, chLatin_s, chLatin_e, chDigit_6, chDigit_4,
+        chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
+        chLatin_D, chLatin_e, chLatin_c, chLatin_o, chLatin_d, chLatin_e, chLatin_r, chNull
+    };
 
     static const XMLCh caseSensitive[] =           UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
     static const XMLCh hashAlg[] =                 UNICODE_LITERAL_7(h,a,s,h,A,l,g);
@@ -79,6 +85,7 @@ xmltooling::QName shibsp::NameIDFromScopedAttributeDecoderType(shibspconstants::
 xmltooling::QName shibsp::KeyInfoAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _KeyInfoAttributeDecoder);
 xmltooling::QName shibsp::DOMAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _DOMAttributeDecoder);
 xmltooling::QName shibsp::XMLAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _XMLAttributeDecoder);
+xmltooling::QName shibsp::Base64AttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _Base64AttributeDecoder);
 
 void shibsp::registerAttributeDecoders()
 {
@@ -90,6 +97,7 @@ void shibsp::registerAttributeDecoders()
     conf.AttributeDecoderManager.registerFactory(KeyInfoAttributeDecoderType, KeyInfoAttributeDecoderFactory);
     conf.AttributeDecoderManager.registerFactory(DOMAttributeDecoderType, DOMAttributeDecoderFactory);
     conf.AttributeDecoderManager.registerFactory(XMLAttributeDecoderType, XMLAttributeDecoderFactory);
+    conf.AttributeDecoderManager.registerFactory(Base64AttributeDecoderType, Base64AttributeDecoderFactory);
 }
 
 AttributeDecoder::AttributeDecoder(const DOMElement *e)

@@ -165,6 +165,7 @@ libshibsp_lite_la_SOURCES = \
 
 libshibsp_la_SOURCES = \
 	${common_sources} \
+	attribute/Base64AttributeDecoder.cpp \
 	attribute/DOMAttributeDecoder.cpp \
 	attribute/KeyInfoAttributeDecoder.cpp \
 	attribute/NameIDAttributeDecoder.cpp \

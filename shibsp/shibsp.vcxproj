@@ -181,6 +181,7 @@
   <ItemGroup>
     <ClCompile Include="AbstractSPRequest.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="attribute\Base64AttributeDecoder.cpp" />
     <ClCompile Include="binding\impl\XMLProtocolProvider.cpp" />
     <ClCompile Include="handler\impl\DiscoveryFeed.cpp" />
     <ClCompile Include="handler\impl\LogoutInitiator.cpp" />

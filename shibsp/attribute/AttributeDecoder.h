@@ -110,6 +110,9 @@ namespace shibsp {
     /** Decodes arbitrary XML into an XMLAttribute. */
     extern SHIBSP_API xmltooling::QName XMLAttributeDecoderType;
 
+    /** Decodes base64-encoded data into a SimpleAttribute. */
+    extern SHIBSP_API xmltooling::QName Base64AttributeDecoderType;
+
     /** Registers built-in AttributeDecoders into the runtime. */
     void registerAttributeDecoders();
 };
