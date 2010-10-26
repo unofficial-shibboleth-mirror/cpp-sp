@@ -281,4 +281,15 @@
         </complexContent>
     </complexType>
 
+    <complexType name="Base64AttributeDecoder">
+        <annotation>
+            <documentation>
+                Decoder for attributes with base64-encoded string values.
+            </documentation>
+        </annotation>
+        <complexContent>
+            <extension base="am:AttributeDecoderType" />
+        </complexContent>
+    </complexType>
+
 </schema>
