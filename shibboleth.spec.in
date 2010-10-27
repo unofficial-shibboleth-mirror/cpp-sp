@@ -2,14 +2,14 @@ Name:		@PACKAGE_NAME@
 Version:	@PACKAGE_VERSION@
 Release:	1
 Summary:    Open source system for attribute-based Web SSO
-Group:		System Environment/Libraries
+Group:		Productivity/Networking/Security
 Vendor:     Internet2
 License:	Apache 2.0
 URL:		http://shibboleth.internet2.edu/
 Source:     %{name}-sp-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 PreReq:     openssl, xmltooling-schemas, opensaml-schemas
-%if 0%{?suse_version} > 1030
+%if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:         %{insserv_prereq}
 BuildRequires:  libXerces-c-devel >= 2.8.0
 %else
@@ -48,9 +48,9 @@ and Apache module(s).
 
 %package devel
 Summary:	Shibboleth development Headers
-Group:		Development/Libraries
+Group:		Development/Libraries/C and C++
 Requires:	%{name} = %{version}-%{release}
-%if 0%{?suse_version} > 1030
+%if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 Requires:	libXerces-c-devel >= 2.8.0
 %else
 Requires: 	libxerces-c-devel >= 2.8.0
