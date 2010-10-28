@@ -1041,17 +1041,18 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
             status = true;
         }
         else if (!strcmp(w,"user") && !remote_user.empty()) {
-            bool regexp=false,negate=false;
+            bool regexp = false;
             while (*t) {
-                w=ap_getword_conf(sta->m_req->pool,&t);
-                if (*w=='~') {
-                    regexp=true;
+                w = ap_getword_conf(sta->m_req->pool,&t);
+                if (*w == '~') {
+                    regexp = true;
                     continue;
                 }
-                else if (*w=='!') {
-                    negate=true;
-                    if (*(w+1)=='~')
-                        regexp=true;
+                else if (*w == '!') {
+                    // A negated rule presumes success unless a match is found.
+                    status = true;
+                    if (*(w+1) == '~')
+                        regexp = true;
                     continue;
                 }
 
@@ -1071,86 +1072,92 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                             string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
                     }
                 }
-                else if (remote_user==w) {
+                else if (remote_user == w) {
                     match = true;
                 }
 
                 if (match) {
-                    // If we matched, then we're done with this rule either way and status is set to reflect the outcome.
-                    status = !negate;
+                    // If we matched, then we're done with this rule either way and we flip status to reflect the outcome.
+                    status = !status;
                     if (request.isPriorityEnabled(SPRequest::SPDebug))
                         request.log(SPRequest::SPDebug,
-                            string("htaccess: require user ") + (negate ? "rejecting (" : "accepting (") + remote_user + ")");
+                            string("htaccess: require user ") + (!status ? "rejecting (" : "accepting (") + remote_user + ")");
                     break;
                 }
             }
         }
         else if (!strcmp(w,"group")  && !remote_user.empty()) {
-            SH_AP_TABLE* grpstatus=nullptr;
+            SH_AP_TABLE* grpstatus = nullptr;
             if (sta->m_dc->szAuthGrpFile) {
                 if (request.isPriorityEnabled(SPRequest::SPDebug))
                     request.log(SPRequest::SPDebug,string("htaccess plugin using groups file: ") + sta->m_dc->szAuthGrpFile);
-                grpstatus=groups_for_user(sta->m_req,remote_user.c_str(),sta->m_dc->szAuthGrpFile);
+                grpstatus = groups_for_user(sta->m_req,remote_user.c_str(),sta->m_dc->szAuthGrpFile);
             }
 
-            bool negate=false;
             while (*t) {
-                w=ap_getword_conf(sta->m_req->pool,&t);
-                if (*w=='!') {
-                    negate=true;
+                w = ap_getword_conf(sta->m_req->pool,&t);
+                if (*w == '!') {
+                    // A negated rule presumes success unless a match is found.
+                    status = true;
                     continue;
                 }
 
                 if (grpstatus && ap_table_get(grpstatus,w)) {
-                    // If we matched, then we're done with this rule either way and status is set to reflect the outcome.
-                    status = !negate;
-                    request.log(SPRequest::SPDebug, string("htaccess: require group ") + (negate ? "rejecting (" : "accepting (") + w + ")");
+                    // If we matched, then we're done with this rule either way and we flip status to reflect the outcome.
+                    status = !status;
+                    request.log(SPRequest::SPDebug, string("htaccess: require group ") + (!status ? "rejecting (" : "accepting (") + w + ")");
                     break;
                 }
             }
         }
         else if (!strcmp(w,"authnContextClassRef") || !strcmp(w,"authnContextDeclRef")) {
             const char* ref = !strcmp(w,"authnContextClassRef") ? session->getAuthnContextClassRef() : session->getAuthnContextDeclRef();
-            bool regexp=false,negate=false;
-            while (ref && *t) {
-                w=ap_getword_conf(sta->m_req->pool,&t);
-                if (*w=='~') {
-                    regexp=true;
-                    continue;
-                }
-                else if (*w=='!') {
-                    negate=true;
-                    if (*(w+1)=='~')
+            if (ref && *ref) {
+                bool regexp = false;
+                while (ref && *t) {
+                    w = ap_getword_conf(sta->m_req->pool,&t);
+                    if (*w == '~') {
                         regexp=true;
-                    continue;
-                }
-
-                // Figure out if there's a match.
-                bool match = false;
-                if (regexp) {
-                    try {
-                        // To do regex matching, we have to convert from UTF-8.
-                        RegularExpression re(w);
-                        match = re.matches(ref);
+                        continue;
                     }
-                    catch (XMLException& ex) {
-                        auto_ptr_char tmp(ex.getMessage());
-                        request.log(SPRequest::SPError,
-                            string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+                    else if (*w == '!') {
+                        // A negated rule presumes success unless a match is found.
+                        status = true;
+                        if (*(w+1)=='~')
+                            regexp = true;
+                        continue;
+                    }
+
+                    // Figure out if there's a match.
+                    bool match = false;
+                    if (regexp) {
+                        try {
+                            // To do regex matching, we have to convert from UTF-8.
+                            RegularExpression re(w);
+                            match = re.matches(ref);
+                        }
+                        catch (XMLException& ex) {
+                            auto_ptr_char tmp(ex.getMessage());
+                            request.log(SPRequest::SPError,
+                                string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+                        }
+                    }
+                    else if (!strcmp(w,ref)) {
+                        match = true;
+                    }
+
+                    if (match) {
+                        // If we matched, then we're done with this rule either way and we flip status to reflect the outcome.
+                        status = !status;
+                        if (request.isPriorityEnabled(SPRequest::SPDebug))
+                            request.log(SPRequest::SPDebug,
+                                string("htaccess: require authnContext ") + (!status ? "rejecting (" : "accepting (") + ref + ")");
+                        break;
                     }
                 }
-                else if (!strcmp(w,ref)) {
-                    match = true;
-                }
-
-                if (match) {
-                    // If we matched, then we're done with this rule either way and status is set to reflect the outcome.
-                    status = !negate;
-                    if (request.isPriorityEnabled(SPRequest::SPDebug))
-                        request.log(SPRequest::SPDebug,
-                            string("htaccess: require authnContext ") + (negate ? "rejecting (" : "accepting (") + ref + ")");
-                    break;
-                }
+            }
+            else if (request.isPriorityEnabled(SPRequest::SPDebug)) {
+                request.log(SPRequest::SPDebug, "htaccess: require authnContext rejecting session with no context associated");
             }
         }
         else if (!session) {
