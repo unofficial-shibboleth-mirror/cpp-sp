@@ -26,8 +26,6 @@
     <Attribute name="urn:mace:dir:attribute-def:eduPersonEntitlement" id="entitlement"/>
     <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.1.1.7" id="entitlement"/>
 
-    <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.1.1.11" id="assurance"/>
-    
     <!-- A persistent id attribute that supports personalized anonymous access. -->
     
     <!-- First, the deprecated version, decoded as a scoped string: -->
@@ -70,6 +68,13 @@
     <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.1.1.8" id="primary-orgunit-dn"/>
     <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.1.1.4" id="orgunit-dn"/>
     <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.1.1.3" id="org-dn"/>
+
+    <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.1.1.11" id="assurance"/>
+    
+    <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.5.1.1" id="member"/>
+    
+    <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.6.1.1" id="eduCourseOffering"/>
+    <Attribute name="urn:oid:1.3.6.1.4.1.5923.1.6.1.2" id="eduCourseMember"/>
     -->
 
     <!--Examples of LDAP-based attributes, uncomment to use these... -->
