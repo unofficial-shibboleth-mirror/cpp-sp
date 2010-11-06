@@ -304,7 +304,8 @@ void DiscoveryFeed::feedToFile(const Application& application, string& cacheTag)
             ofstream ofile(fname.c_str());
             if (!ofile)
                 throw ConfigurationException("Unable to create feed in ($1).", params(1,fname.c_str()));
-            m->outputFeed(ofile);
+            bool first = true;
+            m->outputFeed(ofile, first);
             ofile.close();
             m_feedQueue.push(make_pair(feedTag, now));
         }
@@ -338,7 +339,8 @@ void DiscoveryFeed::feedToStream(const Application& application, string& cacheTa
         }
 
         cacheTag = feedTag;
-        m->outputFeed(os);
+        bool first = true;
+        m->outputFeed(os, first);
     }
     else {
         throw MetadataException("MetadataProvider does not support discovery feed.");
