@@ -101,7 +101,6 @@
       <AdditionalIncludeDirectories>.;..;..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0400;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
@@ -135,7 +134,6 @@
       <AdditionalIncludeDirectories>.;..;..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_WINDOWS;WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0400;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
