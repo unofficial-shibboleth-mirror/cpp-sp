@@ -171,14 +171,6 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "shibboleth.logger", ConfigDir, false
   End If
 
-  If (NOT FileSystemObj.FileExists(ConfigDir & "example-metadata.xml")) then
-    FileSystemObj.CopyFile DistDir & "example-metadata.xml", ConfigDir, false
-  End If
-
-  If (NOT FileSystemObj.FileExists(ConfigDir & "example-shibboleth2.xml")) then
-    FileSystemObj.CopyFile DistDir & "example-shibboleth2.xml", ConfigDir, false
-  End If
-
   If (NOT FileSystemObj.FileExists(ConfigDir & "attribute-map.xml")) then
     FileSystemObj.CopyFile DistDir & "attribute-map.xml", ConfigDir, false
   End If
@@ -191,7 +183,11 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "security-policy.xml", ConfigDir, false
   End If
 
-  ' Finally, fix up schema catalogs.
+  If (NOT FileSystemObj.FileExists(ConfigDir & "protocols.xml")) then
+    FileSystemObj.CopyFile DistDir & "protocols.xml", ConfigDir, false
+  End If
+  
+  'Finally, fix up schema catalogs.
   
   XMLDir = InstallDir & "\share\xml\xmltooling\"
   ConfigFile = XMLDir & "catalog.xml"
