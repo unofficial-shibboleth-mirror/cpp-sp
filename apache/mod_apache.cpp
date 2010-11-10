@@ -401,6 +401,7 @@ public:
         (level == SPWarn ? APLOG_WARNING :
         (level == SPError ? APLOG_ERR : APLOG_CRIT))))|APLOG_NOERRNO,
         SH_AP_R(m_req),
+        "%s",
         msg.c_str()
         );
   }
@@ -553,7 +554,7 @@ public:
     return string(SH_AP_AUTH_TYPE(m_req) ? SH_AP_AUTH_TYPE(m_req) : "");
   }
   void setContentType(const char* type) {
-      m_req->content_type = ap_psprintf(m_req->pool, type);
+      m_req->content_type = ap_psprintf(m_req->pool, "%s", type);
   }
   void setResponseHeader(const char* name, const char* value) {
    HTTPResponse::setResponseHeader(name, value);
@@ -1312,7 +1313,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
 // Initial look at a request - create the per-request structure
 static int shib_post_read(request_rec *r)
 {
-    shib_request_config* rc = init_request_config(r);
+    init_request_config(r);
     //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
     return DECLINED;
 }
@@ -1408,7 +1409,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
             throw runtime_error("unknown error");
     }
     catch (exception& ex) {
-        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),ex.what());
+        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"%s",ex.what());
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
         exit(1);
     }
