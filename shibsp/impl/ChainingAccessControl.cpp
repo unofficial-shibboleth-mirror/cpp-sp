@@ -126,8 +126,10 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
         case OP_AND:
         {
             for (vector<AccessControl*>::const_iterator i=m_ac.begin(); i!=m_ac.end(); ++i) {
-                if ((*i)->authorized(request, session) != shib_acl_true)
+                if ((*i)->authorized(request, session) != shib_acl_true) {
+                    request.log(SPRequest::SPDebug, "embedded AccessControl plugin unsuccessful, denying access");
                     return shib_acl_false;
+                }
             }
             return shib_acl_true;
         }
@@ -138,6 +140,7 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
                 if ((*i)->authorized(request,session) == shib_acl_true)
                     return shib_acl_true;
             }
+            request.log(SPRequest::SPDebug, "all embedded AccessControl plugins unsuccessful, denying access");
             return shib_acl_false;
         }
     }
