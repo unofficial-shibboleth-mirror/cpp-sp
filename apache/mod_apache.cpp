@@ -161,8 +161,7 @@ struct shib_dir_config
     char* szApplicationId;  // Shib applicationId value
     char* szRequireWith;    // require a session using a specific initiator?
     char* szRedirectToSSL;  // redirect non-SSL requests to SSL port
-	char* szAccessControlType;	// type of "external" AccessControl plugin
-	char* szAccessControlPath;  // path to AccessControl content
+	char* szAccessControl;	// path to "external" AccessControl plugin file
     int bOff;               // flat-out disable all Shib processing
     int bBasicHijack;       // activate for AuthType Basic?
     int bRequireSession;    // require a session?
@@ -182,8 +181,7 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
     dc->szApplicationId = nullptr;
     dc->szRequireWith = nullptr;
     dc->szRedirectToSSL = nullptr;
-	dc->szAccessControlType = nullptr;
-	dc->szAccessControlPath = nullptr;
+	dc->szAccessControl = nullptr;
     dc->bOff = -1;
     dc->bBasicHijack = -1;
     dc->bRequireSession = -1;
@@ -239,19 +237,12 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     else
         dc->szRedirectToSSL=nullptr;
 
-	if (child->szAccessControlType)
-        dc->szAccessControlType=ap_pstrdup(p,child->szAccessControlType);
-    else if (parent->szAccessControlType)
-        dc->szAccessControlType=ap_pstrdup(p,parent->szAccessControlType);
+	if (child->szAccessControl)
+        dc->szAccessControl=ap_pstrdup(p,child->szAccessControl);
+    else if (parent->szAccessControl)
+        dc->szAccessControl=ap_pstrdup(p,parent->szAccessControl);
     else
-        dc->szAccessControlType=nullptr;
-
-	if (child->szAccessControlPath)
-        dc->szAccessControlPath=ap_pstrdup(p,child->szAccessControlPath);
-    else if (parent->szAccessControlPath)
-        dc->szAccessControlPath=ap_pstrdup(p,parent->szAccessControlPath);
-    else
-        dc->szAccessControlPath=nullptr;
+        dc->szAccessControl=nullptr;
 
     dc->bOff=((child->bOff==-1) ? parent->bOff : child->bOff);
     dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
@@ -316,13 +307,6 @@ extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, con
         dc->tSettings = ap_make_table(parms->pool, 4);
     ap_table_set(dc->tSettings, arg1, arg2);
     return nullptr;
-}
-
-extern "C" const char* shib_acl_set(cmd_parms* parms, shib_dir_config* dc, const char* arg1, const char* arg2)
-{
-	dc->szAccessControlType = ap_pstrdup(parms->pool, arg1);
-	dc->szAccessControlPath = ap_pstrdup(parms->pool, arg2);
-	return nullptr;
 }
 
 
@@ -1039,20 +1023,17 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
         return shib_acl_indeterminate;  // should never happen
 
 	// Check for an "embedded" AccessControl plugin.
-	if (sta->m_dc->szAccessControlType && sta->m_dc->szAccessControlPath) {
-		xercesc::DOMDocument* acldoc = XMLToolingConfig::getConfig().getParser().newDocument();
-		XercesJanitor<xercesc::DOMDocument> docjanitor(acldoc);
-		static XMLCh ACL[] = UNICODE_LITERAL_3(A,C,L);
-		static XMLCh _path[] = UNICODE_LITERAL_4(p,a,t,h);
-		static XMLCh _reloadChanges[] = UNICODE_LITERAL_13(r,e,l,o,a,d,C,h,a,n,g,e,s);
-		static XMLCh _false[] = { xercesc::chDigit_0, xercesc::chNull };
-		xercesc::DOMElement* acldom = acldoc->createElementNS(nullptr, ACL);
-		auto_ptr_XMLCh aclpath(sta->m_dc->szAccessControlPath);
-		acldom->setAttributeNS(nullptr, _path, aclpath.get());
-		acldom->setAttributeNS(nullptr, _reloadChanges, _false);
+	if (sta->m_dc->szAccessControl) {
 		aclresult_t result = shib_acl_false;
 		try {
-			auto_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(sta->m_dc->szAccessControlType, acldom));
+            ifstream aclfile(sta->m_dc->szAccessControl);
+            xercesc::DOMDocument* acldoc = XMLToolingConfig::getConfig().getParser().parse(aclfile);
+		    XercesJanitor<xercesc::DOMDocument> docjanitor(acldoc);
+		    static XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
+            string t(XMLHelper::getAttrString(acldoc ? acldoc->getDocumentElement() : nullptr, nullptr, _type));
+            if (t.empty())
+                throw ConfigurationException("Missing type attribute in AccessControl plugin configuration.");
+            auto_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement()));
 			Locker acllock(aclplugin.get());
 			result = aclplugin->authorized(request, session);
 		}
@@ -1516,8 +1497,9 @@ static command_rec shire_cmds[] = {
   {"ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
    OR_AUTHCFG, TAKE2, "Set arbitrary Shibboleth request property for content"},
 
-  {"ShibAccessControl", (config_fn_t)shib_acl_set, nullptr,
-   OR_AUTHCFG, TAKE2, "Set arbitrary Shibboleth access control plugin for content"},
+  {"ShibAccessControl", (config_fn_t)ap_set_string_slot,
+   (void *) XtOffsetOf (shib_dir_config, szAccessControl),
+   OR_AUTHCFG, TAKE1, "Set arbitrary Shibboleth access control plugin for content"},
 
   {"ShibDisable", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bOff),
@@ -1634,7 +1616,8 @@ static command_rec shib_cmds[] = {
     AP_INIT_TAKE2("ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
         OR_AUTHCFG, "Set arbitrary Shibboleth request property for content"),
 
-    AP_INIT_TAKE2("ShibAccessControl", (config_fn_t)shib_acl_set, nullptr,
+    AP_INIT_TAKE1("ShibAccessControl", (config_fn_t)ap_set_string_slot,
+        (void *) offsetof (shib_dir_config, szAccessControl),
         OR_AUTHCFG, "Set arbitrary Shibboleth access control plugin for content"),
 
     AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
