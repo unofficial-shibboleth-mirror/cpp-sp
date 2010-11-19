@@ -1,14 +1,16 @@
 Release Notes
 
 Shibboleth Native SP
-2.3.1
+2.4
 
 NOTE: The shibboleth2.xml configuration format in this release
-is fully compatible with the 2.1 and 2.2 releases, but there are some small
-changes required to eliminate various warnings about deprecated options.
+is fully compatible with the 2.x releases, but there are significant
+new options available to simplify the majority of configurations.
+A stripped down default configuration and a "full" example file are
+included.
 
 List of issues addressed by this release:
-https://bugs.internet2.edu/jira/browse/SSPCPP/fixforversion/10271
+https://bugs.internet2.edu/jira/secure/ReleaseNote.jspa?projectId=10011&version=10273
 
 Fully Supported
 
@@ -34,10 +36,11 @@ Fully Supported
     - experimental support for SAML 2.0 assertions
 
 - Shibboleth WAYF and SAML DS protocols for IdP Discovery
+    - Generates JSON feed of IdPs using UIInfo metadata extensions
 
 - Metadata Providers
 	- Bulk resolution via local file, or URL with local file backup
-	- Dynamic resolution and caching based on entityID 
+	- Dynamic resolution and caching based on entityID or MDX 
 	- Filtering based on whitelist, blacklist, or signature verification
 	- Support for enhanced PKI processing in transport and signature verification
 
@@ -59,7 +62,7 @@ Fully Supported
 	- XML signing
 	- Simple "blob" signing
 	- TLS X.509 certificate authentication
-	- SAML condition handling
+	- SAML condition handling, including delegation support
 
 - Client transport authentication to SOAP endpoints via libcurl
 	- TLS X.509 client certificates
@@ -71,11 +74,17 @@ Fully Supported
 	- All incoming SAML 2 encrypted element types (Assertion, NameID, Attribute)
 	- Optional outgoing encryption of NameID in requests and responses
 
+- General Security
+    - Black/whitelisting of XML security algorithms (with xml-security 1.6+)
+    - RSA and ECDSA signatures (EC requires xml-security 1.6+ and support from openssl)
+    - Metadata-based algorithm selection 
+
 - Attributes
 	- Decoding and exporting SAML 1 and 2 attributes
 		- Strings
 		- Value/scope pairs (legacy and value@scope syntaxes supported)
 		- NameIDs
+		- Base64 to string
         - XML to base64-encoded XML
 		- DOM to internal data structure
 		- KeyInfo-based data, including metadata-derived KeyDescriptors
@@ -113,7 +122,8 @@ Fully Supported
 
 - Apache module enhancements
     - "OR" coexistence with other authorization modules
-    - htaccess-based override of any valid RequestMap property 
+    - htaccess-based override of any valid RequestMap property
+    - htaccess support for external access control plugins
 
 - Command line tools
     - samlsign for manual XML signing and verification
