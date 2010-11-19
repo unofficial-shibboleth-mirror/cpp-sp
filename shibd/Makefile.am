@@ -6,9 +6,7 @@ sbin_PROGRAMS = shibd
 
 shibd_SOURCES = shibd.cpp
 
-shibd_LDADD = \
+shibd_LIBADD = $(XMLSEC_LIBS) \
   $(top_builddir)/shibsp/libshibsp.la
-
-shibd_LDFLAGS = $(XMLSEC_LIBS)
 
 EXTRA_DIST = shibd.vcxproj shibd_win32.cpp resource.h shibd.rc

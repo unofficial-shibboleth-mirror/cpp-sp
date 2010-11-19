@@ -4,16 +4,12 @@ bin_PROGRAMS = mdquery resolvertest
 
 resolvertest_SOURCES = resolvertest.cpp
 
-resolvertest_LDADD = \
+resolvertest_LIBADD = $(XMLSEC_LIBS) \
 	$(top_builddir)/shibsp/libshibsp.la
-
-resolvertest_LDFLAGS = $(XMLSEC_LIBS)
 
 mdquery_SOURCES = mdquery.cpp
 
-mdquery_LDADD = \
+mdquery_LIBADD = $(XMLSEC_LIBS) \
 	$(top_builddir)/shibsp/libshibsp.la
-
-mdquery_LDFLAGS = $(XMLSEC_LIBS)
 
 EXTRA_DIST = mdquery.vcxproj resolvertest.vcxproj

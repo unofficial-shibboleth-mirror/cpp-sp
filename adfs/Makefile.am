@@ -3,20 +3,20 @@ AUTOMAKE_OPTIONS = foreign
 plugindir = $(libdir)/@PACKAGE@
 plugin_LTLIBRARIES = adfs.la adfs-lite.la
 
-adfs_la_LIBADD = \
+adfs_la_LIBADD = $(XMLSEC_LIBS) \
 	$(top_builddir)/shibsp/libshibsp.la
 
 adfs_la_SOURCES = \
 	adfs.cpp
 
-adfs_lite_la_LIBADD = \
+adfs_lite_la_LIBADD = $(LITE_LIBS) \
 	$(top_builddir)/shibsp/libshibsp-lite.la
 
 adfs_lite_la_SOURCES = \
 	adfs.cpp
 
-adfs_la_LDFLAGS = -module -avoid-version $(XMLSEC_LIBS)
-adfs_lite_la_LDFLAGS = -module -avoid-version $(LITE_LIBS)
+adfs_la_LDFLAGS = -module -avoid-version
+adfs_lite_la_LDFLAGS = -module -avoid-version
 adfs_lite_la_CPPFLAGS = -DSHIBSP_LITE
 
 install-exec-hook:

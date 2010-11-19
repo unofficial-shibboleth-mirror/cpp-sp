@@ -5,8 +5,8 @@ nsapi_shibdir = $(libdir)/@PACKAGE@
 nsapi_shib_LTLIBRARIES = nsapi_shib.la
 nsapi_shib_la_SOURCES = nsapi_shib.cpp
 nsapi_shib_la_CXXFLAGS = $(NSAPI_INCLUDE)
-nsapi_shib_la_LDFLAGS = $(LITE_LIBS) -module -avoid-version
-nsapi_shib_la_LIBADD = \
+nsapi_shib_la_LDFLAGS = -module -avoid-version
+nsapi_shib_la_LIBADD = $(LITE_LIBS) \
   $(top_builddir)/shibsp/libshibsp-lite.la
 
 install-exec-hook:
