@@ -883,7 +883,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler = conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
+                handler = conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()));
                 // Map by binding and protocol (may be > 1 per protocol and binding)
                 m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler);
                 const XMLCh* protfamily = handler->getProtocolFamily();
@@ -910,7 +910,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                SessionInitiator* sihandler = conf.SessionInitiatorManager.newPlugin(t.c_str(), make_pair(child, getId()));
+                SessionInitiator* sihandler = conf.SessionInitiatorManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId()));
                 handler = sihandler;
                 pair<bool,const char*> si_id = handler->getString("id");
                 if (si_id.first && si_id.second)
@@ -935,7 +935,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler = conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(child, getId()));
+                handler = conf.LogoutInitiatorManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId()));
             }
             else if (XMLString::equals(child->getLocalName(), _ArtifactResolutionService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
@@ -944,7 +944,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler = conf.ArtifactResolutionServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
+                handler = conf.ArtifactResolutionServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()));
 
                 if (!hardArt) {
                     pair<bool,bool> defprop = handler->getBool("isDefault");
@@ -965,7 +965,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler = conf.SingleLogoutServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
+                handler = conf.SingleLogoutServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()));
             }
             else if (XMLString::equals(child->getLocalName(), _ManageNameIDService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
@@ -974,7 +974,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler = conf.ManageNameIDServiceManager.newPlugin(bindprop.c_str(), make_pair(child, getId()));
+                handler = conf.ManageNameIDServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()));
             }
             else {
                 string t(XMLHelper::getAttrString(child, nullptr, _type));
@@ -983,7 +983,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler = conf.HandlerManager.newPlugin(t.c_str(), make_pair(child, getId()));
+                handler = conf.HandlerManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId()));
             }
 
             m_handlers.push_back(handler);
@@ -1055,7 +1055,9 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                     acsdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
 
                     log.info("adding AssertionConsumerService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
-                    Handler* handler = conf.AssertionConsumerServiceManager.newPlugin((*b)->getString("id").second, make_pair(acsdom, getId()));
+                    Handler* handler = conf.AssertionConsumerServiceManager.newPlugin(
+                        (*b)->getString("id").second, pair<const DOMElement*,const char*>(acsdom, getId())
+                        );
                     m_handlers.push_back(handler);
 
                     // Setup maps and defaults.
@@ -1113,7 +1115,9 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
     e->setAttributeNS(nullptr, Location, _loc);
 
     // Instantiate Chaining initiator around the SSO element.
-    SessionInitiator* chain = conf.SessionInitiatorManager.newPlugin(CHAINING_SESSION_INITIATOR, make_pair(e, getId()));
+    SessionInitiator* chain = conf.SessionInitiatorManager.newPlugin(
+        CHAINING_SESSION_INITIATOR, pair<const DOMElement*,const char*>(e, getId())
+        );
     m_handlers.push_back(chain);
     m_sessionInitDefault = chain;
     m_handlerMap["/Login"] = chain;
@@ -1168,7 +1172,9 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
                     slodom->setAttributeNS(nullptr, Location, pathprop.second);
 
                     log.info("adding SingleLogoutService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
-                    Handler* handler = conf.SingleLogoutServiceManager.newPlugin((*b)->getString("id").second, make_pair(slodom, getId()));
+                    Handler* handler = conf.SingleLogoutServiceManager.newPlugin(
+                        (*b)->getString("id").second, pair<const DOMElement*,const char*>(slodom, getId())
+                        );
                     m_handlers.push_back(handler);
 
                     // Insert into location map.
@@ -1199,7 +1205,9 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
     e->setAttributeNS(nullptr, Location, _loc);
 
     // Instantiate Chaining initiator around the SSO element.
-    Handler* chain = conf.LogoutInitiatorManager.newPlugin(CHAINING_LOGOUT_INITIATOR, make_pair(e, getId()));
+    Handler* chain = conf.LogoutInitiatorManager.newPlugin(
+        CHAINING_LOGOUT_INITIATOR, pair<const DOMElement*,const char*>(e, getId())
+        );
     m_handlers.push_back(chain);
     m_handlerMap["/Logout"] = chain;
 }
@@ -1231,7 +1239,9 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
                     nimdom->setAttributeNS(nullptr, Location, pathprop.second);
 
                     log.info("adding ManageNameIDService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
-                    Handler* handler = conf.ManageNameIDServiceManager.newPlugin((*b)->getString("id").second, make_pair(nimdom, getId()));
+                    Handler* handler = conf.ManageNameIDServiceManager.newPlugin(
+                        (*b)->getString("id").second, pair<const DOMElement*,const char*>(nimdom, getId())
+                        );
                     m_handlers.push_back(handler);
 
                     // Insert into location map.
@@ -1280,7 +1290,9 @@ void XMLApplication::doArtifactResolution(const ProtocolProvider& pp, const char
                 artdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
 
                 log.info("adding ArtifactResolutionService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
-                Handler* handler = conf.ArtifactResolutionServiceManager.newPlugin((*b)->getString("id").second, make_pair(artdom, getId()));
+                Handler* handler = conf.ArtifactResolutionServiceManager.newPlugin(
+                    (*b)->getString("id").second, pair<const DOMElement*,const char*>(artdom, getId())
+                    );
                 m_handlers.push_back(handler);
 
                 if (!m_artifactResolutionDefault)
