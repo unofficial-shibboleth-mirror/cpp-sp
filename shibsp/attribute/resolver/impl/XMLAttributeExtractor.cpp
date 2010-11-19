@@ -372,7 +372,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         bool requested = XMLHelper::getAttrBool(child, false, isRequested);
         bool required = XMLHelper::getAttrBool(child, false, RequestedAttribute::ISREQUIRED_ATTRIB_NAME);
         if (required || requested)
-            m_requestedAttrs.push_back(make_pair(make_pair(name,format), required));
+            m_requestedAttrs.push_back(make_pair(pair<xstring,xstring>(name,format), required));
 
         name = child->getAttributeNS(nullptr, _aliases);
         if (name && *name) {
