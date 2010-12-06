@@ -381,6 +381,9 @@
     <ClCompile Include="attribute\Base64AttributeDecoder.cpp">
       <Filter>Source Files\attribute</Filter>
     </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\NameIDQualifierStringFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">

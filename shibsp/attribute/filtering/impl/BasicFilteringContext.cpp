@@ -74,7 +74,12 @@ const XMLCh* BasicFilteringContext::getAuthnContextDeclRef() const
 
 const XMLCh* BasicFilteringContext::getAttributeRequester() const
 {
-    return m_app.getXMLString("entityID").second;
+    if (getAttributeIssuerMetadata()) {
+        return getApplication().getRelyingParty(
+            dynamic_cast<const EntityDescriptor*>(getAttributeIssuerMetadata()->getParent())
+            )->getXMLString("entityID").second;
+    }
+    return getApplication().getRelyingParty(getAttributeIssuer())->getXMLString("entityID").second;
 }
 
 const XMLCh* BasicFilteringContext::getAttributeIssuer() const

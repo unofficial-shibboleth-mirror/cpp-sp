@@ -28,13 +28,13 @@
 
     <!-- A persistent id attribute that supports personalized anonymous access. -->
     
-    <!-- First, the deprecated version, decoded as a scoped string: -->
+    <!-- First, the deprecated/incorrect version, decoded as a scoped string: -->
     <Attribute name="urn:mace:dir:attribute-def:eduPersonTargetedID" id="targeted-id">
         <AttributeDecoder xsi:type="ScopedAttributeDecoder"/>
         <!-- <AttributeDecoder xsi:type="NameIDFromScopedAttributeDecoder" formatter="$NameQualifier!$SPNameQualifier!$Name" defaultQualifiers="true"/> -->
     </Attribute>
     
-    <!-- Second, an alternate decoder that will turn the deprecated form into the newer form. -->
+    <!-- Second, an alternate decoder that will decode the incorrect form into the newer form. -->
     <!--
     <Attribute name="urn:mace:dir:attribute-def:eduPersonTargetedID" id="persistent-id">
         <AttributeDecoder xsi:type="NameIDFromScopedAttributeDecoder" formatter="$NameQualifier!$SPNameQualifier!$Name" defaultQualifiers="true"/>

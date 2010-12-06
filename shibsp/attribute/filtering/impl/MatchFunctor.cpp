@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ namespace shibsp {
     DECL_FACTORY(AttributeIssuerInEntityGroup);
     DECL_FACTORY(AttributeRequesterInEntityGroup);
     DECL_FACTORY(AttributeScopeMatchesShibMDScope);
+    DECL_FACTORY(NameIDQualifierString);
 
 
     static const XMLCh ANY[] =                          UNICODE_LITERAL_3(A,N,Y);
@@ -82,6 +83,7 @@ namespace shibsp {
     static const XMLCh AttributeIssuerInEntityGroup[] = UNICODE_LITERAL_28(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,I,n,E,n,t,i,t,y,G,r,o,u,p);
     static const XMLCh AttributeRequesterInEntityGroup[] = UNICODE_LITERAL_31(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,I,n,E,n,t,i,t,y,G,r,o,u,p);
     static const XMLCh AttributeScopeMatchesShibMDScope[] = UNICODE_LITERAL_32(A,t,t,r,i,b,u,t,e,S,c,o,p,e,M,a,t,c,h,e,s,S,h,i,b,M,D,S,c,o,p,e);
+    static const XMLCh NameIDQualifierString[] =        UNICODE_LITERAL_21(N,a,m,e,I,D,Q,u,a,l,i,f,i,e,r,S,t,r,i,n,g);
 };
 
 DECL_BASIC_QNAME(AnyMatchFunctor, ANY);
@@ -102,6 +104,7 @@ DECL_BASIC_QNAME(NumberOfAttributeValues, NumberOfAttributeValues);
 DECL_SAML_QNAME(AttributeIssuerInEntityGroup, AttributeIssuerInEntityGroup);
 DECL_SAML_QNAME(AttributeRequesterInEntityGroup, AttributeRequesterInEntityGroup);
 DECL_SAML_QNAME(AttributeScopeMatchesShibMDScope, AttributeScopeMatchesShibMDScope);
+DECL_SAML_QNAME(NameIDQualifierString, NameIDQualifierString);
 
 void SHIBSP_API shibsp::registerMatchFunctors()
 {
@@ -125,6 +128,7 @@ void SHIBSP_API shibsp::registerMatchFunctors()
     REGISTER_FACTORY(AttributeIssuerInEntityGroup);
     REGISTER_FACTORY(AttributeRequesterInEntityGroup);
     REGISTER_FACTORY(AttributeScopeMatchesShibMDScope);
+    REGISTER_FACTORY(NameIDQualifierString);
 }
 
 MatchFunctor::MatchFunctor()

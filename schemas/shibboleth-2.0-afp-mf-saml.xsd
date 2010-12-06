@@ -57,4 +57,39 @@
             <extension base="afp:MatchFunctorType" />
         </complexContent>
     </complexType>
+
+  <complexType name="NameIDQualifierString">
+    <annotation>
+      <documentation>
+        A match function that ensures that a NameID-valued attribute's qualifier(s), if set, match particular values.
+      </documentation>
+    </annotation>
+    <complexContent>
+      <extension base="afp:MatchFunctorType">
+        <attribute name="attributeID" type="string">
+          <annotation>
+            <documentation>
+              The ID of the attribute whose qualifiers should be matched. If no attribute ID is specified the
+              ID of the containing attribute rule is assumed.
+            </documentation>
+          </annotation>
+        </attribute>
+        <attribute name="NameQualifier" type="string">
+          <annotation>
+            <documentation>
+              A value to require in the NameQualifier field, or if omitted, require that it match the issuing IdP's entityID.
+            </documentation>
+          </annotation>
+        </attribute>
+        <attribute name="SPNameQualifier" type="string">
+          <annotation>
+            <documentation>
+              A value to require in the SPNameQualifier field, or if omitted, require that it match the SP's entityID.
+            </documentation>
+          </annotation>
+        </attribute>
+      </extension>
+    </complexContent>
+  </complexType>
+
 </schema>

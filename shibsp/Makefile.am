@@ -192,6 +192,7 @@ libshibsp_la_SOURCES = \
 	attribute/filtering/impl/AttributeScopeRegexFunctor.cpp \
 	attribute/filtering/impl/AttributeValueRegexFunctor.cpp \
 	attribute/filtering/impl/AuthenticationMethodRegexFunctor.cpp \
+	attribute/filtering/impl/NameIDQualifierStringFunctor.cpp \
 	attribute/filtering/impl/NumberOfAttributeValuesFunctor.cpp \
 	attribute/filtering/impl/AttributeIssuerInEntityGroupFunctor.cpp \
 	attribute/filtering/impl/AttributeRequesterInEntityGroupFunctor.cpp \
