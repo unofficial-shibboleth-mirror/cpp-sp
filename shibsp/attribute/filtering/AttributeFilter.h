@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2010 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,9 @@ namespace shibsp {
 
     /** AttributeFilter based on an XML mapping schema. */
     #define XML_ATTRIBUTE_FILTER "XML"
+
+    /** AttributeFilter based on rejecting/blocking all attributes. */
+    #define DUMMY_ATTRIBUTE_FILTER "Dummy"
 
     /** AttributeFilter based on chaining together other filters. */
     #define CHAINING_ATTRIBUTE_FILTER "Chaining"

@@ -183,6 +183,7 @@
     <ClCompile Include="AbstractSPRequest.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="attribute\Base64AttributeDecoder.cpp" />
+    <ClCompile Include="attribute\filtering\impl\DummyAttributeFilter.cpp" />
     <ClCompile Include="attribute\filtering\impl\NameIDQualifierStringFunctor.cpp" />
     <ClCompile Include="binding\impl\XMLProtocolProvider.cpp" />
     <ClCompile Include="handler\impl\DiscoveryFeed.cpp" />

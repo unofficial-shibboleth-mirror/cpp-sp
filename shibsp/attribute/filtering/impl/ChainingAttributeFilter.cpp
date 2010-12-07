@@ -21,6 +21,7 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "attribute/filtering/AttributeFilter.h"
 #include "attribute/filtering/FilteringContext.h"
 
@@ -69,25 +70,22 @@ namespace shibsp {
 
 ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
 {
-    SPConfig& conf = SPConfig::getConfig();
-
     // Load up the chain of handlers.
-    e = XMLHelper::getFirstChildElement(e, _AttributeFilter);
-    while (e) {
-        string t(XMLHelper::getAttrString(e, nullptr, _type));
-        if (!t.empty()) {
-            try {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").info(
-                    "building AttributeFilter of type (%s)...", t.c_str()
-                    );
-                m_filters.push_back(conf.AttributeFilterManager.newPlugin(t.c_str(), e));
+    try {
+        e = XMLHelper::getFirstChildElement(e, _AttributeFilter);
+        while (e) {
+            string t(XMLHelper::getAttrString(e, nullptr, _type));
+            if (!t.empty()) {
+                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").info("building AttributeFilter of type (%s)...", t.c_str());
+                m_filters.push_back(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), e));
             }
-            catch (exception& ex) {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").error(
-                    "caught exception processing embedded AttributeFilter element: %s", ex.what()
-                    );
-            }
+            e = XMLHelper::getNextSiblingElement(e, _AttributeFilter);
         }
-        e = XMLHelper::getNextSiblingElement(e, _AttributeFilter);
     }
+    catch (exception&) {
+        for_each(m_filters.begin(), m_filters.end(), xmltooling::cleanup<AttributeFilter>());
+        throw;
+    }
+    if (m_filters.empty())
+        throw ConfigurationException("Chaining AttributeFilter plugin requires at least one child plugin.");
 }

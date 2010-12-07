@@ -203,7 +203,8 @@ namespace {
             const char* chainingType,
             const XMLCh* localName,
             DOMElement* e,
-            Category& log
+            Category& log,
+            const char* dummyType=nullptr
             );
         void doAttributeInfo();
         void doHandlers(const ProtocolProvider*, const DOMElement*, Category&);
@@ -681,7 +682,8 @@ template <class T> T* XMLApplication::doChainedPlugins(
     const char* chainingType,
     const XMLCh* localName,
     DOMElement* e,
-    Category& log
+    Category& log,
+    const char* dummyType
     )
 {
     string t;
@@ -715,6 +717,11 @@ template <class T> T* XMLApplication::doChainedPlugins(
         }
         catch (exception& ex) {
             log.crit("error building %s: %s", pluginType, ex.what());
+            if (dummyType) {
+                // Install a dummy version as a safety valve.
+                log.crit("installing safe %s in place of failed version", pluginType);
+                return pluginMgr.newPlugin(dummyType, nullptr);
+            }
         }
     }
 
@@ -1321,7 +1328,7 @@ void XMLApplication::doAttributePlugins(DOMElement* e, Category& log)
         doChainedPlugins(conf.AttributeExtractorManager, "AttributeExtractor", CHAINING_ATTRIBUTE_EXTRACTOR, _AttributeExtractor, e, log);
 
     m_attrFilter =
-        doChainedPlugins(conf.AttributeFilterManager, "AttributeFilter", CHAINING_ATTRIBUTE_FILTER, _AttributeFilter, e, log);
+        doChainedPlugins(conf.AttributeFilterManager, "AttributeFilter", CHAINING_ATTRIBUTE_FILTER, _AttributeFilter, e, log, DUMMY_ATTRIBUTE_FILTER);
 
     m_attrResolver =
         doChainedPlugins(conf.AttributeResolverManager, "AttributeResolver", CHAINING_ATTRIBUTE_RESOLVER, _AttributeResolver, e, log);

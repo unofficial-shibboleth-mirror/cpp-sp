@@ -175,6 +175,7 @@ libshibsp_la_SOURCES = \
 	attribute/XMLAttributeDecoder.cpp \
 	attribute/filtering/impl/AttributeFilter.cpp \
 	attribute/filtering/impl/ChainingAttributeFilter.cpp \
+	attribute/filtering/impl/DummyAttributeFilter.cpp \
 	attribute/filtering/impl/XMLAttributeFilter.cpp \
 	attribute/filtering/impl/BasicFilteringContext.cpp \
 	attribute/filtering/impl/MatchFunctor.cpp \

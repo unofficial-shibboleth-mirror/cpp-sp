@@ -384,6 +384,9 @@
     <ClCompile Include="attribute\filtering\impl\NameIDQualifierStringFunctor.cpp">
       <Filter>Source Files\attribute\filtering\impl</Filter>
     </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\DummyAttributeFilter.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
