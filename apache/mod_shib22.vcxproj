@@ -121,6 +121,7 @@
       <AdditionalLibraryDirectories>..\..\cpp-xmltooling\$(Configuration);\Apache2.2.14\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
@@ -155,6 +156,7 @@
       <AdditionalLibraryDirectories>..\..\cpp-xmltooling\$(Platform)\$(Configuration);C:\httpd-2.2-x64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
