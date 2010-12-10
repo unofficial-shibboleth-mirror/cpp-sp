@@ -245,6 +245,7 @@
     <attribute name="target" type="anyURI"/>
     <attribute name="acsIndex" type="unsignedShort"/>
     <attribute name="REMOTE_ADDR" type="conf:string"/>
+    <attribute name="encoding" type="conf:string"/>
     <anyAttribute namespace="##other" processContents="lax"/>
   </attributeGroup>
 

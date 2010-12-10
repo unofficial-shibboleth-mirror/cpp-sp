@@ -439,6 +439,12 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         		return make_pair(false,0L);	// just bail silently
         }
 
+		pair<bool,const char*> enc = settings.first->getString("encoding");
+		if (enc.first && strcmp(enc.second, "URL"))
+			throw ConfigurationException("Unsupported value for 'encoding' content setting ($1).", params(1,enc.second));
+
+        const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
+
         app->setHeader(request, "Shib-Application-ID", app->getId());
         app->setHeader(request, "Shib-Session-ID", session->getID());
 
@@ -469,7 +475,6 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             if (!exportLocation.first)
                 log.warn("can't export assertions without an exportLocation Sessions property");
             else {
-                const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
                 string exportName = "Shib-Assertion-00";
                 string baseURL;
                 if (!strncmp(exportLocation.second, "http", 4))
@@ -500,18 +505,24 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
                 if (!header.empty())
                     header += ";";
-                string::size_type pos = v->find_first_of(';',string::size_type(0));
-                if (pos!=string::npos) {
-                    string value(*v);
-                    for (; pos != string::npos; pos = value.find_first_of(';',pos)) {
-                        value.insert(pos, "\\");
-                        pos += 2;
-                    }
-                    header += value;
-                }
-                else {
-                    header += (*v);
-                }
+				if (enc.first) {
+					// If URL-encoding, any semicolons will get escaped anyway.
+					header += encoder->encode(v->c_str());
+				}
+				else {
+					string::size_type pos = v->find_first_of(';',string::size_type(0));
+					if (pos!=string::npos) {
+						string value(*v);
+						for (; pos != string::npos; pos = value.find_first_of(';',pos)) {
+							value.insert(pos, "\\");
+							pos += 2;
+						}
+						header += value;
+					}
+					else {
+						header += (*v);
+					}
+				}
             }
             app->setHeader(request, a->first.c_str(), header.c_str());
         }
@@ -525,7 +536,10 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             for (; matches.first != matches.second; ++matches.first) {
                 const vector<string>& vals = matches.first->second->getSerializedValues();
                 if (!vals.empty()) {
-                    request.setRemoteUser(vals.front().c_str());
+					if (enc.first)
+						request.setRemoteUser(encoder->encode(vals.front().c_str()).c_str());
+					else
+						request.setRemoteUser(vals.front().c_str());
                     remoteUserSet = true;
                     break;
                 }
