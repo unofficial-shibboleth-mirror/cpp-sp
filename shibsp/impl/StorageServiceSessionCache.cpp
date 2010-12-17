@@ -143,7 +143,7 @@ namespace shibsp {
             // This can either be static, or dynamic based on the per-app session timeout.
             if (m_cacheTimeout)
                 return m_cacheTimeout;
-            pair<bool,unsigned int> timeout;
+            pair<bool,unsigned int> timeout = pair<bool,unsigned int>(false, 3600);
             const PropertySet* props = app.getPropertySet("Sessions");
             if (props) {
                 timeout = props->getUnsignedInt("timeout");
