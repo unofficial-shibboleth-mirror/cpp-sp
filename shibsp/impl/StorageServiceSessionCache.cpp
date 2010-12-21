@@ -407,6 +407,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         in.structure();
         in.addmember("key").string(getID());
         in.addmember("version").integer(m_obj["version"].integer());
+        in.addmember("application_id").string(app.getId());
         if (*timeout) {
             // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.
 #ifndef HAVE_GMTIME_R
