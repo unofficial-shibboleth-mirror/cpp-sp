@@ -225,7 +225,7 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
                     StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
                     if (storage) {
                         string rsKey;
-                        generateRandomHex(rsKey,5);
+                        generateRandomHex(rsKey,32);
                         if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(nullptr) + 600))
                             throw IOException("Attempted to insert duplicate storage key.");
                         relayState = string(mech.second-3) + ':' + rsKey;
