@@ -566,7 +566,7 @@ void AbstractHandler::preservePostData(
             if (storage) {
                 // Use a random key
                 string rsKey;
-                SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+                SAMLConfig::getConfig().generateRandomBytes(rsKey,32);
                 rsKey = SAMLArtifact::toHex(rsKey);
                 ostringstream out;
                 out << postData;
