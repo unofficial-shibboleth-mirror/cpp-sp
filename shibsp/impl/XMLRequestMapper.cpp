@@ -446,30 +446,34 @@ const Override* Override::locate(const HTTPRequest& request) const
     }
 
     // Finally, check for query string matches. This is another "unrolled" recursive descent in a loop.
-    bool descended;
-    do {
-        descended = false;
-        for (vector< pair< pair<string,RegularExpression*>,Override*> >::const_iterator q = o->m_queries.begin(); !descended && q != o->m_queries.end(); ++q) {
-            vector<const char*> vals;
-            if (request.getParameters(q->first.first.c_str(), vals)) {
-                if (q->first.second) {
-                    // We have to match one of the values.
-                    for (vector<const char*>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
-                        if (q->first.second->matches(*v)) {
-                            o = q->second;
-                            descended = true;
-                            break;
+    // For now, only check if the method is GET, to avoid consuming POST data. Will need to revise the
+    // CGIParser API to fix this.
+    if (strcmp(request.getMethod(), "POST")) {
+        bool descended;
+        do {
+            descended = false;
+            for (vector< pair< pair<string,RegularExpression*>,Override*> >::const_iterator q = o->m_queries.begin(); !descended && q != o->m_queries.end(); ++q) {
+                vector<const char*> vals;
+                if (request.getParameters(q->first.first.c_str(), vals)) {
+                    if (q->first.second) {
+                        // We have to match one of the values.
+                        for (vector<const char*>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
+                            if (q->first.second->matches(*v)) {
+                                o = q->second;
+                                descended = true;
+                                break;
+                            }
                         }
                     }
-                }
-                else {
-                    // The simple presence of the parameter is sufficient to match.
-                    o = q->second;
-                    descended = true;
+                    else {
+                        // The simple presence of the parameter is sufficient to match.
+                        o = q->second;
+                        descended = true;
+                    }
                 }
             }
-        }
-    } while (descended);
+        } while (descended);
+    }
 
     return o;
 }
