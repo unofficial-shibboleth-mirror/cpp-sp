@@ -87,3 +87,5 @@ Thanks to:
 
 	Ian Young for donating XSLT scripts for converting metadata across
 	  Shibboleth versions
+    
+    Kaspar Brand for assisting in the development of CRL-related functionality
