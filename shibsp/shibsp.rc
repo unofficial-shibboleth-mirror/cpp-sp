@@ -28,8 +28,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,4,0,0
- PRODUCTVERSION 2,4,0,0
+ FILEVERSION 1,4,1,0
+ PRODUCTVERSION 2,4,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -65,7 +65,7 @@ BEGIN
             VALUE "InternalName", "shibsp1_4\0"
 #endif
 #endif
-            VALUE "LegalCopyright", "Copyright © 2009 Internet2\0"
+            VALUE "LegalCopyright", "Copyright © 2011 Internet2\0"
             VALUE "LegalTrademarks", "\0"
 #ifdef SHIBSP_LITE
 #ifdef _DEBUG
@@ -81,8 +81,8 @@ BEGIN
 #endif
 #endif
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 2.4\0"
-            VALUE "ProductVersion", "2, 4, 0, 0\0"
+            VALUE "ProductName", "Shibboleth 2.4.1\0"
+            VALUE "ProductVersion", "2, 4, 1, 0\0"
             VALUE "SpecialBuild", "\0"
         END
     END
