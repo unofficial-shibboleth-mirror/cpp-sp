@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1057,7 +1057,8 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
             request.log(SPRequest::SPDebug, "htaccess: embedded AccessControl plugin was unsuccessful but not authoritative, leaving it up to Apache");
             return shib_acl_indeterminate;
         }
-	}
+    }
+
 
     require_line* reqs=(require_line*)reqs_arr->elts;
 
@@ -1080,7 +1081,16 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
         if (!strcasecmp(w,"shibboleth")) {
             // This is a dummy rule needed because Apache conflates authn and authz.
             // Without some require rule, AuthType is ignored and no check_user hooks run.
-            status = true;  // treat it as an "accepted" rule
+
+            // We evaluate to false if ShibAccessControl is used and ShibRequireAll is off.
+            // This allows actual rules to dictate the result, since ShibAccessControl returned
+            // non-true, and if nothing else is used, access will be denied.
+            if (!sta->m_dc->szAccessControl || sta->m_dc->bRequireAll == 1) {
+                // We evaluate to true, because ShibRequireAll is enabled (so a true is just a no-op)
+                // or because there was no other AccessControl rule in place, so this may be the only
+                // rule in effect.
+                status = true;
+            }
         }
         else if (!strcmp(w,"valid-user") && session) {
             request.log(SPRequest::SPDebug, "htaccess: accepting valid-user based on active session");
