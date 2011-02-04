@@ -233,6 +233,44 @@ AC_COMPILE_IFELSE(
     [AC_MSG_RESULT([yes])AC_DEFINE([SHIBSP_XERCESC_SHORT_ACCEPTNODE],[1],[Define to 1 if Xerces DOMNodeFilter API returns a short.])],
     [AC_MSG_RESULT([no])])
 
+# XML-Security settings
+AC_ARG_WITH(xmlsec,
+    AS_HELP_STRING([--with-xmlsec=PATH],[where xmlsec is installed]),,
+    [with_xmlsec=/usr])
+
+if test x_$with_xmlsec != x_/usr; then
+    LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
+    CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
+fi        
+XMLSEC_LIBS="-lxml-security-c $XMLSEC_LIBS"
+
+# save and append master libs
+save_LIBS="$LIBS"
+LIBS="$XMLSEC_LIBS $LIBS"
+
+AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find XML-Security-C header files]))
+AC_MSG_CHECKING([XML-Security-C version])
+AC_PREPROC_IFELSE(
+    [AC_LANG_PROGRAM([#include <xsec/utils/XSECPlatformUtils.hpp>],
+    [#if XSEC_VERSION_MAJOR > 1 || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM > 3)
+int i = 0;
+#else
+#error need version 1.4.0 or later
+#endif])],
+    [AC_MSG_RESULT(OK)],
+    [AC_MSG_FAILURE([XML-Security-C version 1.4.0 or greater is required.])])
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[#include <xsec/utils/XSECPlatformUtils.hpp>]],
+        [[XSECPlatformUtils::Initialise()]])],,
+    [AC_MSG_ERROR([unable to link with XML-Security])])
+
+AC_MSG_CHECKING([whether XML-Security-C supports white/blacklisting of algorithms])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <xsec/framework/XSECAlgorithmMapper.hpp>]], [[XSECAlgorithmMapper* mapper; mapper->whitelistAlgorithm(NULL);]])],[AC_MSG_RESULT([yes])
+      AC_DEFINE([SHIBSP_XMLSEC_WHITELISTING],[1],[Define to 1 if XML-Security-C supports white/blacklisting algorithms.])],[AC_MSG_RESULT([no])])
+
+# restore master libs
+LIBS="$save_LIBS"
+
 #XML-Tooling settings
 AC_ARG_WITH(xmltooling,
     AS_HELP_STRING([--with-xmltooling=PATH],[where xmltooling is installed]),
@@ -242,7 +280,7 @@ AC_ARG_WITH(xmltooling,
         DX_INCLUDE="${with_xmltooling}/include"
     fi])
 LITE_LIBS="-lxmltooling-lite"
-XMLSEC_LIBS="-lxmltooling"
+XMLSEC_LIBS="-lxmltooling $XMLSEC_LIBS"
 AC_CHECK_HEADER([xmltooling/base.h],,AC_MSG_ERROR([unable to find xmltooling header files]))
                 
 
@@ -280,46 +318,6 @@ if test "x$XMLTOOLINGXMLDIR" = "x" ; then
 fi
 XMLTOOLINGXMLDIR="$XMLTOOLINGXMLDIR/share/xml/xmltooling"
 AC_SUBST(XMLTOOLINGXMLDIR)
-
-# XML-Security settings
-AC_ARG_WITH(xmlsec,
-    AS_HELP_STRING([--with-xmlsec=PATH],[where xmlsec is installed]),,
-    [with_xmlsec=/usr])
-
-if test x_$with_xmlsec != x_/usr; then
-    LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
-    CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
-fi        
-XMLSEC_LIBS="-lxml-security-c $XMLSEC_LIBS"
-
-# save and append master libs
-save_LIBS="$LIBS"
-LIBS="$XMLSEC_LIBS $LIBS"
-
-AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find XML-Security-C header files]))
-AC_MSG_CHECKING([XML-Security-C version])
-AC_PREPROC_IFELSE(
-    [AC_LANG_PROGRAM([#include <xsec/utils/XSECPlatformUtils.hpp>],
-    [#if XSEC_VERSION_MAJOR > 1 || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM > 3)
-int i = 0;
-#else
-#error need version 1.4.0 or later
-#endif])],
-    [AC_MSG_RESULT(OK)],
-    [AC_MSG_FAILURE([XML-Security-C version 1.4.0 or greater is required.])])
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([[#include <xsec/utils/XSECPlatformUtils.hpp>]],
-        [[XSECPlatformUtils::Initialise()]])],,
-    [AC_MSG_ERROR([unable to link with XML-Security])])
-
-
-AC_MSG_CHECKING([whether XML-Security-C supports white/blacklisting of algorithms])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <xsec/framework/XSECAlgorithmMapper.hpp>]], [[XSECAlgorithmMapper* mapper; mapper->whitelistAlgorithm(NULL);]])],[AC_MSG_RESULT([yes])
-      AC_DEFINE([SHIBSP_XMLSEC_WHITELISTING],[1],[Define to 1 if XML-Security-C supports white/blacklisting algorithms.])],[AC_MSG_RESULT([no])])
-
-
-# restore master libs
-LIBS="$save_LIBS"
 
 # OpenSAML settings
 AC_ARG_WITH(saml,
