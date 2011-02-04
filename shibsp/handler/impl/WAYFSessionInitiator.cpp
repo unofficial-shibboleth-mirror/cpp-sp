@@ -63,6 +63,10 @@ namespace shibsp {
         
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
+        const XMLCh* getProtocolFamily() const {
+            return samlconstants::SAML11_PROTOCOL_ENUM;
+        }
+
     private:
         const char* m_url;
     };
