@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1018,8 +1018,7 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
     SPConfig& conf = SPConfig::getConfig();
 
     // Tokenize the protocol list inside the element.
-    const XMLCh* protlist = e->getFirstChild()->getNodeValue();
-    XMLStringTokenizer prottokens(protlist);
+    XMLStringTokenizer prottokens(e->getTextContent());
     while (prottokens.hasMoreTokens()) {
         auto_ptr_char prot(prottokens.nextToken());
 
@@ -1138,8 +1137,7 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
     SPConfig& conf = SPConfig::getConfig();
 
     // Tokenize the protocol list inside the element.
-    const XMLCh* protlist = e->getFirstChild()->getNodeValue();
-    XMLStringTokenizer prottokens(protlist);
+    XMLStringTokenizer prottokens(e->getTextContent());
     while (prottokens.hasMoreTokens()) {
         auto_ptr_char prot(prottokens.nextToken());
 
@@ -1227,8 +1225,7 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
     SPConfig& conf = SPConfig::getConfig();
 
     // Tokenize the protocol list inside the element.
-    const XMLCh* protlist = e->getFirstChild()->getNodeValue();
-    XMLStringTokenizer prottokens(protlist);
+    XMLStringTokenizer prottokens(e->getTextContent());
     while (prottokens.hasMoreTokens()) {
         auto_ptr_char prot(prottokens.nextToken());
 
