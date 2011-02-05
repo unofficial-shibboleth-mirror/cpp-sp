@@ -1,5 +1,5 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth],[2.4.1],[https://bugs.internet2.edu/],[shibboleth])
+AC_INIT([shibboleth],[2.4.2],[https://bugs.internet2.edu/],[shibboleth])
 AC_CONFIG_SRCDIR(shibsp)
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_MACRO_DIR(m4)
@@ -200,13 +200,13 @@ AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,AC_MSG_ERROR([unable to find xerces heade
 AC_MSG_CHECKING([Xerces version])
 AC_PREPROC_IFELSE(
     [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
-[#if  _XERCES_VERSION != 20600
+[#if  _XERCES_VERSION >= 20700
 int i = 0;
 #else
-#error cannot use version 2.6.0
+#error version 2.7.0 or above required
 #endif])],
     [AC_MSG_RESULT(OK)],
-    [AC_MSG_FAILURE([Xerces-C v2.6.0 has bugs that inhibit use with signed XML, please use a newer version])])
+    [AC_MSG_FAILURE([Xerces-C v2.7.0 or higher is required, v3.x preferred])])
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <xercesc/util/PlatformUtils.hpp>]],[[xercesc::XMLPlatformUtils::Initialize()]])],
     ,[AC_MSG_ERROR([unable to link with Xerces])])
