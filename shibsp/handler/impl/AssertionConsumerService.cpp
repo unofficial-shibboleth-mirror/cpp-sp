@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,6 +153,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
         );
 
     string relayState;
+    bool relayStateOK = true;
     try {
         // Decode the message and process it in a protocol-specific way.
         auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, *(policy.get())));
@@ -161,6 +162,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
         DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
         DDFJanitor postjan(postData);
         recoverRelayState(application, httpRequest, httpResponse, relayState);
+        limitRelayState(m_log, application, httpRequest, relayState.c_str());
         implementProtocol(application, httpRequest, httpResponse, *(policy.get()), NULL, *msg.get());
 
         auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : nullptr);
@@ -181,13 +183,15 @@ pair<bool,long> AssertionConsumerService::processMessage(
         }
     }
     catch (XMLToolingException& ex) {
-        // Check for isPassive error condition.
-        const char* sc2 = ex.getProperty("statusCode2");
-        if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
-            pair<bool,bool> ignore = getBool("ignoreNoPassive", m_configNS.get());  // namespace-qualified if inside handler element
-            if (ignore.first && ignore.second && !relayState.empty()) {
-                m_log.debug("ignoring SAML status of NoPassive and redirecting to resource...");
-                return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+        if (relayStateOK) {
+            // Check for isPassive error condition.
+            const char* sc2 = ex.getProperty("statusCode2");
+            if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
+                pair<bool,bool> ignore = getBool("ignoreNoPassive", m_configNS.get());  // namespace-qualified if inside handler element
+                if (ignore.first && ignore.second && !relayState.empty()) {
+                    m_log.debug("ignoring SAML status of NoPassive and redirecting to resource...");
+                    return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+                }
             }
         }
         if (!relayState.empty())

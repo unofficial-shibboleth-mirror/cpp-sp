@@ -9,7 +9,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="2.4">
+	version="2.4.2">
 
   <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
   <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
@@ -43,6 +43,15 @@
       <enumeration value="false"/>
       <enumeration value="front"/>
       <enumeration value="back"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="relayStateLimitType">
+    <restriction base="string">
+      <enumeration value="none"/>
+      <enumeration value="exact"/>
+      <enumeration value="host"/>
+      <enumeration value="whitelist"/>
     </restriction>
   </simpleType>
 
@@ -512,6 +521,8 @@
     <attribute name="postTemplate" type="conf:string"/>
     <attribute name="postExpire" type="boolean"/>
     <attribute name="relayState" type="conf:string"/>
+    <attribute name="relayStateLimit" type="conf:relayStateLimitType"/>
+    <attribute name="relayStateWhitelist" type="conf:listOfURIs"/>
     <anyAttribute namespace="##other" processContents="lax"/>
   </complexType>
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,6 +139,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
         // Since we're passing the ACS by value, we need to compute the return URL,
         // so we'll need the target resource for real.
         recoverRelayState(app, request, request, target, false);
+        limitRelayState(m_log, app, request, target.c_str());
     }
     else {
         // Check for a hardwired target value in the map or handler.

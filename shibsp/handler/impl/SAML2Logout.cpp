@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -548,8 +548,10 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         if (sc && XMLString::equals(sc->getValue(), StatusCode::PARTIAL_LOGOUT))
             return sendLogoutPage(application, request, response, "partial");
 
-        if (!relayState.empty())
+        if (!relayState.empty()) {
+            limitRelayState(m_log, application, request, relayState.c_str());
             return make_pair(true, response.sendRedirect(relayState.c_str()));
+        }
 
         // Return template for completion of logout.
         return sendLogoutPage(application, request, response, "global");

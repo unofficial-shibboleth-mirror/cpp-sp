@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,65 @@ namespace shibsp {
         }
     }
 
+    void SHIBSP_DLLLOCAL limitRelayState(
+        Category& log, const Application& application, const HTTPRequest& httpRequest, const char* relayState
+        ) {
+        const PropertySet* sessionProps = application.getPropertySet("Sessions");
+        if (sessionProps) {
+            pair<bool,const char*> relayStateLimit = sessionProps->getString("relayStateLimit");
+            if (relayStateLimit.first) {
+                vector<string> whitelist;
+                if (!strcmp(relayStateLimit.second, "exact")) {
+                    // Scheme and hostname have to match.
+                    if (!strcmp(httpRequest.getScheme(), "https") && httpRequest.getPort() == 443) {
+                        whitelist.push_back(string("https://") + httpRequest.getHostname() + '/');
+                    }
+                    else if (!strcmp(httpRequest.getScheme(), "http") && httpRequest.getPort() == 80) {
+                        whitelist.push_back(string("http://") + httpRequest.getHostname() + '/');
+                    }
+                    ostringstream portstr;
+                    portstr << httpRequest.getPort();
+                    whitelist.push_back(string(httpRequest.getScheme()) + "://" + httpRequest.getHostname() + ':' + portstr.str() + '/');
+                }
+                else if (!strcmp(relayStateLimit.second, "host")) {
+                    // Allow any scheme or port.
+                    whitelist.push_back(string("https://") + httpRequest.getHostname() + '/');
+                    whitelist.push_back(string("http://") + httpRequest.getHostname() + '/');
+                    whitelist.push_back(string("https://") + httpRequest.getHostname() + ':');
+                    whitelist.push_back(string("http://") + httpRequest.getHostname() + ':');
+                }
+                else if (!strcmp(relayStateLimit.second, "whitelist")) {
+                    // Literal set of comparisons to use.
+                    pair<bool,const char*> whitelistval = sessionProps->getString("relayStateWhitelist");
+                    if (whitelistval.first) {
+#ifdef HAVE_STRTOK_R
+                        char* pos=nullptr;
+                        const char* token = strtok_r(const_cast<char*>(whitelistval.second), " ", &pos);
+#else
+                        const char* token = strtok(const_cast<char*>(whitelistval.second), " ");
+#endif
+                        while (token) {
+                            whitelist.push_back(token);
+#ifdef HAVE_STRTOK_R
+                            token = strtok_r(nullptr, " ", &pos);
+#else
+                            token = strtok(nullptr, " ");
+#endif
+                        }
+                    }
+                }
 
+                for (vector<string>::const_iterator w = whitelist.begin(); w != whitelist.end(); ++w) {
+                    if (XMLString::startsWithI(relayState, w->c_str())) {
+                        return;
+                    }
+                }
+
+                log.warn("relayStateLimit policy (%s), blocked redirect to (%s)", relayStateLimit.second, relayState);
+                throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
+            }
+        }
+    }
 };
 
 void SHIBSP_API shibsp::registerHandlers()

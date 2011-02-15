@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2007 Internet2
+ *  Copyright 2001-2011 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,19 @@
 
 #include <memory>
 #include <xmltooling/logging.h>
+#include <xmltooling/io/HTTPRequest.h>
+#include <shibsp/Application.h>
 
 using namespace xmltooling::logging;
 using namespace xercesc;
+
+namespace shibsp {
+    void SHIBSP_DLLLOCAL limitRelayState(
+        xmltooling::logging::Category& log,
+        const Application& application,
+        const xmltooling::HTTPRequest& httpRequest,
+        const char* relayState
+        );
+};
 
 #endif /* __shibsp_internal_h__ */

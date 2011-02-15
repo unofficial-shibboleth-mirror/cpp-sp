@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -266,6 +266,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
         // Always need to recover target URL to compute handler below.
         recoverRelayState(app, request, request, target, false);
+        limitRelayState(m_log, app, request, target.c_str());
 
         pair<bool,bool> flag = getBool("isPassive", request);
         isPassive = (flag.first && flag.second);
