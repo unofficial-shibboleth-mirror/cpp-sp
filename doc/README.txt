@@ -1,5 +1,3 @@
-Version 2.4.1
-
 Welcome to Internet2's Shibboleth
 
 Shibboleth is a federated web authentication and attribute exchange system
