@@ -118,7 +118,7 @@ namespace shibsp {
         const PropertySet* sessionProps = application.getPropertySet("Sessions");
         if (sessionProps) {
             pair<bool,const char*> relayStateLimit = sessionProps->getString("relayStateLimit");
-            if (relayStateLimit.first) {
+            if (relayStateLimit.first && strcmp(relayStateLimit.second, "none")) {
                 vector<string> whitelist;
                 if (!strcmp(relayStateLimit.second, "exact")) {
                     // Scheme and hostname have to match.
@@ -158,6 +158,10 @@ namespace shibsp {
 #endif
                         }
                     }
+                }
+                else {
+                    log.warn("unrecognized relayStateLimit policy (%s), blocked redirect to (%s)", relayStateLimit.second, relayState);
+                    throw opensaml::SecurityPolicyException("Unrecognized relayStateLimit setting.");
                 }
 
                 for (vector<string>::const_iterator w = whitelist.begin(); w != whitelist.end(); ++w) {
