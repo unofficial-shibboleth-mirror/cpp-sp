@@ -45,3 +45,5 @@
 /*.sdf
 /*.opensdf
 /ipch
+/build-aux
+/build
