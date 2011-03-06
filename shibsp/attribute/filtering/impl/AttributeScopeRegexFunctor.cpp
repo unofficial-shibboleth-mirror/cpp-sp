@@ -53,7 +53,7 @@ namespace shibsp {
         bool matches(const Attribute& attribute, size_t index) const;
 
     public:
-        AttributeScopeRegexFunctor(const DOMElement* e) : m_regex(nullptr), m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)) {
+        AttributeScopeRegexFunctor(const DOMElement* e) : m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)), m_regex(nullptr) {
             const XMLCh* r = e ? e->getAttributeNS(nullptr,regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AttributeScopeRegex MatchFunctor requires non-empty regex attribute.");
