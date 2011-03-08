@@ -4,7 +4,7 @@
         xmlns:am="urn:mace:shibboleth:2.0:attribute-map"
         xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
         elementFormDefault="qualified"
-        version="2.3">
+        version="2.5">
 
     <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
 
@@ -40,14 +40,17 @@
     
     <element name="Attributes">
         <annotation>
-            <documentation>The set of SAML 1/2 attribute mappings.</documentation>
+            <documentation>The set of SAML or GSS-API attribute mappings.</documentation>
         </annotation>
         <complexType>
             <sequence>
                 <element name="MetadataProvider" type="am:PluggableType" minOccurs="0"/>
                 <element name="TrustEngine" type="am:PluggableType" minOccurs="0"/>
                 <element name="AttributeFilter" type="am:PluggableType" minOccurs="0"/>
-                <element name="Attribute" type="am:AttributeType" maxOccurs="unbounded"/>
+                <choice maxOccurs="unbounded">
+                    <element name="Attribute" type="am:AttributeType"/>
+                    <element name="GSSAPIAttribute" type="am:GSSAPIAttributeType"/>
+                </choice>
                 <element ref="ds:Signature" minOccurs="0"/>
             </sequence>
             <attribute name="metadataPolicyId" type="am:string"/>
@@ -56,7 +59,7 @@
 
     <complexType name="AttributeType">
         <annotation>
-            <documentation>Rule for mapping a SAML 1/2 attribute to an internal attribute.</documentation>
+            <documentation>Rule for mapping a SAML attribute to an internal attribute.</documentation>
         </annotation>
         <sequence>
             <element name="AttributeDecoder" type="am:AttributeDecoderType" minOccurs="0"/>
@@ -90,6 +93,39 @@
           <annotation>
             <documentation>Marks an attribute as required by the service.</documentation>
           </annotation>
+        </attribute>
+    </complexType>
+
+    <complexType name="GSSAPIAttributeType">
+        <annotation>
+            <documentation>Rule for mapping a GSS-API naming attribute to an internal attribute.</documentation>
+        </annotation>
+        <attribute name="id" type="am:string" use="required">
+            <annotation>
+                <documentation>The internal attribute ID to which this SAML attribute maps.</documentation>
+            </annotation>
+        </attribute>
+        <attribute name="aliases" type="am:listOfStrings">
+            <annotation>
+                <documentation>Optional aliases for the internal attribute to which this SAML attribute maps.</documentation>
+            </annotation>
+        </attribute>
+        <attribute name="name" type="am:string" use="required">
+            <annotation>
+                <documentation>The SAML 1 AttributeName or SAML 2 Name of the attribute.</documentation>
+            </annotation>
+        </attribute>
+        <attribute name="authenticated" type="boolean">
+            <annotation>
+                <documentation>If true, only an authenticated GSS-API naming attribute will be mapped.</documentation>
+            </annotation>
+        </attribute>
+        <attribute name="scopeDelimiter" type="am:string">
+            <annotation>
+                <documentation>
+                    The character(s) used to delimit the scoped information from the scope.
+                </documentation>
+            </annotation>
         </attribute>
     </complexType>
     

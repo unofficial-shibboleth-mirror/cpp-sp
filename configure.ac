@@ -1,5 +1,5 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth],[2.4.2],[https://bugs.internet2.edu/],[shibboleth])
+AC_INIT([shibboleth],[2.5],[https://bugs.internet2.edu/],[shibboleth])
 AC_CONFIG_SRCDIR(shibsp)
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_MACRO_DIR(m4)
@@ -372,10 +372,10 @@ AC_SUBST(LITE_LIBS)
 AC_SUBST(XMLSEC_LIBS)
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc schemas configs shibsp shibd util"
+WANT_SUBDIRS="doc schemas configs shibsp plugins shibd util"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
-	configs/Makefile shibsp/Makefile shibd/Makefile \
-	util/Makefile selinux/Makefile])
+	configs/Makefile shibsp/Makefile plugins/Makefile \
+	shibd/Makefile util/Makefile selinux/Makefile])
 
 ## ADFS?
 AC_CONFIG_FILES([adfs/Makefile])
@@ -1083,6 +1083,14 @@ if test x"$want_gss" = xyes; then
      LDFLAGS="$LDFLAGS $GSSAPI_LIB_DIR"
      LIBS="$LIBS -lgssapi"
   fi
+
+  AC_MSG_CHECKING([whether GSS-API naming extensions are available])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[#include <gssapi/gssapi_ext.h>]],
+    [[gss_get_name_attribute(NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);]])],
+    [AC_MSG_RESULT([yes])AC_DEFINE([HAVE_GSSAPI_NAMINGEXTS],[1],[Define to 1 if GSS-API naming extensions are available.])],
+    [AC_MSG_RESULT([no])])
+
 else
   CPPFLAGS="$save_CPPFLAGS"
 fi
