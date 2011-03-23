@@ -29,6 +29,7 @@ libshibspinclude_HEADERS = \
 	AccessControl.h \
 	Application.h \
 	base.h \
+	config_pub.h \
 	exceptions.h \
 	paths.h \
 	GSSRequest.h \
@@ -253,6 +254,8 @@ EXTRA_DIST = \
 	shibsp-lite.vcxproj \
 	shibsp.vcxproj.filters \
 	shibsp-lite.vcxproj.filters \
+	config_pub.h.in \
+    config_pub_win32.h\
 	paths.h.in \
 	resource.h \
 	shibsp.rc

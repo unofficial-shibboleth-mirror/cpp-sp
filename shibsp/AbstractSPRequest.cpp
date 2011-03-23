@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ void SPRequest::setAuthType(const char* authtype)
 {
 }
 
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
 GSSRequest::GSSRequest()
 {
 }

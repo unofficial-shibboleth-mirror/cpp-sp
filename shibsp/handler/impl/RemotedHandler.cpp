@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2010 Internet2
+ *  Copyright 2001-2011 Internet2
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ using namespace std;
 #ifndef SHIBSP_LITE
 namespace shibsp {
     class SHIBSP_DLLLOCAL RemotedRequest : 
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
         public GSSRequest,
 #endif
         public HTTPRequest
@@ -57,12 +57,12 @@ namespace shibsp {
         DDF& m_input;
         mutable CGIParser* m_parser;
         mutable vector<XSECCryptoX509*> m_certs;
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
         mutable gss_ctx_id_t m_gss;
 #endif
     public:
         RemotedRequest(DDF& input) : m_input(input), m_parser(nullptr)
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
             , m_gss(GSS_C_NO_CONTEXT)
 #endif
         {
@@ -71,7 +71,7 @@ namespace shibsp {
         virtual ~RemotedRequest() {
             for_each(m_certs.begin(), m_certs.end(), xmltooling::cleanup<XSECCryptoX509>());
             delete m_parser;
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
             if (m_gss != GSS_C_NO_CONTEXT) {
                 OM_uint32 minor;
                 gss_delete_sec_context(&minor, &m_gss, GSS_C_NO_BUFFER);
@@ -117,7 +117,7 @@ namespace shibsp {
 
         const std::vector<XSECCryptoX509*>& getClientCertificates() const;
         
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
         // GSSRequest
         gss_ctx_id_t getGSSContext() const;
 #endif
@@ -206,7 +206,7 @@ const std::vector<XSECCryptoX509*>& RemotedRequest::getClientCertificates() cons
     return m_certs;
 }
 
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
 gss_ctx_id_t RemotedRequest::getGSSContext() const
 {
     if (m_gss == GSS_C_NO_CONTEXT) {
@@ -360,7 +360,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
 #endif
     }
 
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
     const GSSRequest* gss = dynamic_cast<const GSSRequest*>(&request);
     if (gss) {
         gss_ctx_id_t ctx = gss->getGSSContext();

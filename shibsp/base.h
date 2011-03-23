@@ -1,5 +1,5 @@
 /*
- *  Copyright 2001-2009 Internet2
+ *  Copyright 2001-2011 Internet2
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,12 @@
 # include <xmltooling/base.h>
 #else
 # include <saml/base.h>
+#endif
+
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+  #include <shibsp/config_pub_win32.h>
+#else
+  #include <shibsp/config_pub.h>
 #endif
 
 // Windows and GCC4 Symbol Visibility Macros

@@ -38,6 +38,12 @@
         <anyAttribute namespace="##any" processContents="lax"/>
     </complexType>
     
+    <element name="GSSAPI" type="base64Binary">
+        <annotation>
+            <documentation>A wrapper element for GSS-API contexts.</documentation>
+        </annotation>
+    </element>
+    
     <element name="Attributes">
         <annotation>
             <documentation>The set of SAML or GSS-API attribute mappings.</documentation>

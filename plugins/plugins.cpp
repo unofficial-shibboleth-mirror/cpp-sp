@@ -22,6 +22,8 @@
 
 #include "internal.h"
 #include <shibsp/SPConfig.h>
+#include <shibsp/util/SPConstants.h>
+#include <xmltooling/impl/AnyElement.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -43,6 +45,8 @@ extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
 {
 #ifdef HAVE_GSSAPI_NAMINGEXTS
     SPConfig::getConfig().AttributeExtractorManager.registerFactory("GSSAPI", GSSAPIExtractorFactory);
+    static const XMLCh _GSSAPI[] = UNICODE_LITERAL_6(G,S,S,A,P,I);
+    XMLObjectBuilder::registerBuilder(xmltooling::QName(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _GSSAPI), new AnyElementBuilder());
 #endif
     return 0;   // signal success
 }

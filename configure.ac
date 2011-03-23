@@ -31,7 +31,7 @@ else
     GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
 fi
 
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([config.h shibsp/config_pub.h])
 AC_CONFIG_FILES([shibboleth.spec pkginfo Portfile])
 
 AC_PROG_CC([gcc gcc3 cc])
@@ -996,7 +996,7 @@ if test x"$want_gss" = xyes; then
   AC_CHECK_HEADER(gss.h,
     [
       dnl found in the given dirs
-      AC_DEFINE([HAVE_GSSGNU],[1],[if you have the GNU gssapi libraries])
+      AC_DEFINE([SHIBSP_HAVE_GSSGNU],[1],[if you have the GNU gssapi libraries])
       gnu_gss=yes
     ],
     [
@@ -1017,7 +1017,7 @@ AC_INCLUDES_DEFAULT
         AC_CHECK_HEADER([gssapi.h],
             [
               dnl found
-              AC_DEFINE([HAVE_GSSHEIMDAL],[1],[if you have the Heimdal gssapi libraries])
+              AC_DEFINE([SHIBSP_HAVE_GSSHEIMDAL],[1],[if you have the Heimdal gssapi libraries])
             ],
             [
               dnl no header found, disabling GSS
@@ -1027,7 +1027,7 @@ AC_INCLUDES_DEFAULT
           )
       else
         dnl MIT found
-        AC_DEFINE([HAVE_GSSMIT],[1],[if you have the MIT gssapi libraries])
+        AC_DEFINE([SHIBSP_HAVE_GSSMIT],[1],[if you have the MIT gssapi libraries])
         dnl check if we have a really old MIT kerberos (<= 1.2)
         AC_MSG_CHECKING([if gssapi headers declare GSS_C_NT_HOSTBASED_SERVICE])
         AC_COMPILE_IFELSE([
@@ -1055,7 +1055,7 @@ else
   AC_MSG_RESULT(no)
 fi
 if test x"$want_gss" = xyes; then
-  AC_DEFINE([HAVE_GSSAPI],[1],[if you have the gssapi libraries])
+  AC_DEFINE([SHIBSP_HAVE_GSSAPI],[1],[if you have the gssapi libraries])
 
   if test -n "$gnu_gss"; then
     LDFLAGS="$LDFLAGS $GSSAPI_LIB_DIR"
