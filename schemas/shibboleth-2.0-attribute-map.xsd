@@ -118,7 +118,7 @@
         </attribute>
         <attribute name="name" type="am:string" use="required">
             <annotation>
-                <documentation>The SAML 1 AttributeName or SAML 2 Name of the attribute.</documentation>
+                <documentation>The name of the naming attribute.</documentation>
             </annotation>
         </attribute>
         <attribute name="authenticated" type="boolean">
