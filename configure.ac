@@ -1060,28 +1060,25 @@ if test x"$want_gss" = xyes; then
   if test -n "$gnu_gss"; then
     LDFLAGS="$LDFLAGS $GSSAPI_LIB_DIR"
     LIBS="$LIBS -lgss"
-  elif test -z "$GSSAPI_LIB_DIR"; then
-     case $host in
-     *-*-darwin*)
-        LIBS="$LIBS -lgssapi_krb5 -lresolv"
-        ;;
-     *)
-        if test -f "$GSSAPI_ROOT/bin/krb5-config"; then
-           dnl krb5-config doesn't have --libs-only-L or similar, put everything
-           dnl into LIBS
-           gss_libs=`$GSSAPI_ROOT/bin/krb5-config --libs gssapi`
-           LIBS="$LIBS $gss_libs"
-        elif test "$GSSAPI_ROOT" != "yes"; then
-           LDFLAGS="$LDFLAGS -L$GSSAPI_ROOT/lib$libsuff"
-           LIBS="$LIBS -lgssapi"
-        else
-           LIBS="$LIBS -lgssapi"
-        fi
-        ;;
-     esac
   else
-     LDFLAGS="$LDFLAGS $GSSAPI_LIB_DIR"
-     LIBS="$LIBS -lgssapi"
+    if test -z "$GSSAPI_LIB_DIR"; then
+      GSSAPI_LIB_DIR="$GSSAPI_ROOT/lib$libsuff"
+    fi
+    if test "$GSSAPI_ROOT" != "yes"; then
+       LDFLAGS="$LDFLAGS -L$GSSAPI_ROOT/lib$libsuff"
+    fi
+    if test -f "$GSSAPI_ROOT/bin/krb5-config"; then
+      dnl krb5-config doesn't have --libs-only-L or similar, put everything
+      dnl into LIBS
+      gss_libs=`$GSSAPI_ROOT/bin/krb5-config --libs gssapi`
+    else
+      if test "x$not_mit" = "x1"; then
+        gss_libs="-lgssapi"
+      else
+        gss_libs="-lgssapi_krb5"
+      fi
+    fi
+    LIBS="$LIBS $gss_libs"
   fi
 
   AC_MSG_CHECKING([whether GSS-API naming extensions are available])

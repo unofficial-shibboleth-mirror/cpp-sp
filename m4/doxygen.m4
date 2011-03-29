@@ -1,39 +1,260 @@
-# This file is part of Autoconf.                       -*- Autoconf -*-
+# ===========================================================================
+#      http://www.gnu.org/software/autoconf-archive/ax_prog_doxygen.html
+# ===========================================================================
+#
+# SYNOPSIS
+#
+#   DX_INIT_DOXYGEN(PROJECT-NAME, DOXYFILE-PATH, [OUTPUT-DIR])
+#   DX_DOXYGEN_FEATURE(ON|OFF)
+#   DX_DOT_FEATURE(ON|OFF)
+#   DX_HTML_FEATURE(ON|OFF)
+#   DX_CHM_FEATURE(ON|OFF)
+#   DX_CHI_FEATURE(ON|OFF)
+#   DX_MAN_FEATURE(ON|OFF)
+#   DX_RTF_FEATURE(ON|OFF)
+#   DX_XML_FEATURE(ON|OFF)
+#   DX_PDF_FEATURE(ON|OFF)
+#   DX_PS_FEATURE(ON|OFF)
+#
+# DESCRIPTION
+#
+#   The DX_*_FEATURE macros control the default setting for the given
+#   Doxygen feature. Supported features are 'DOXYGEN' itself, 'DOT' for
+#   generating graphics, 'HTML' for plain HTML, 'CHM' for compressed HTML
+#   help (for MS users), 'CHI' for generating a seperate .chi file by the
+#   .chm file, and 'MAN', 'RTF', 'XML', 'PDF' and 'PS' for the appropriate
+#   output formats. The environment variable DOXYGEN_PAPER_SIZE may be
+#   specified to override the default 'a4wide' paper size.
+#
+#   By default, HTML, PDF and PS documentation is generated as this seems to
+#   be the most popular and portable combination. MAN pages created by
+#   Doxygen are usually problematic, though by picking an appropriate subset
+#   and doing some massaging they might be better than nothing. CHM and RTF
+#   are specific for MS (note that you can't generate both HTML and CHM at
+#   the same time). The XML is rather useless unless you apply specialized
+#   post-processing to it.
+#
+#   The macros mainly control the default state of the feature. The use can
+#   override the default by specifying --enable or --disable. The macros
+#   ensure that contradictory flags are not given (e.g.,
+#   --enable-doxygen-html and --enable-doxygen-chm,
+#   --enable-doxygen-anything with --disable-doxygen, etc.) Finally, each
+#   feature will be automatically disabled (with a warning) if the required
+#   programs are missing.
+#
+#   Once all the feature defaults have been specified, call DX_INIT_DOXYGEN
+#   with the following parameters: a one-word name for the project for use
+#   as a filename base etc., an optional configuration file name (the
+#   default is 'Doxyfile', the same as Doxygen's default), and an optional
+#   output directory name (the default is 'doxygen-doc').
+#
+#   Automake Support
+#
+#   The following is a template aminclude.am file for use with Automake.
+#   Make targets and variables values are controlled by the various
+#   DX_COND_* conditionals set by autoconf.
+#
+#   The provided targets are:
+#
+#     doxygen-doc: Generate all doxygen documentation.
+#
+#     doxygen-run: Run doxygen, which will generate some of the
+#                  documentation (HTML, CHM, CHI, MAN, RTF, XML)
+#                  but will not do the post processing required
+#                  for the rest of it (PS, PDF, and some MAN).
+#
+#     doxygen-man: Rename some doxygen generated man pages.
+#
+#     doxygen-ps:  Generate doxygen PostScript documentation.
+#
+#     doxygen-pdf: Generate doxygen PDF documentation.
+#
+#   Note that by default these are not integrated into the automake targets.
+#   If doxygen is used to generate man pages, you can achieve this
+#   integration by setting man3_MANS to the list of man pages generated and
+#   then adding the dependency:
+#
+#     $(man3_MANS): doxygen-doc
+#
+#   This will cause make to run doxygen and generate all the documentation.
+#
+#   The following variable is intended for use in Makefile.am:
+#
+#     DX_CLEANFILES = everything to clean.
+#
+#   Then add this variable to MOSTLYCLEANFILES.
+#
+#     ----- begin aminclude.am -------------------------------------
+#
+#     ## --------------------------------- ##
+#     ## Format-independent Doxygen rules. ##
+#     ## --------------------------------- ##
+#
+#     if DX_COND_doc
+#
+#     ## ------------------------------- ##
+#     ## Rules specific for HTML output. ##
+#     ## ------------------------------- ##
+#
+#     if DX_COND_html
+#
+#     DX_CLEAN_HTML = @DX_DOCDIR@/html
+#
+#     endif DX_COND_html
+#
+#     ## ------------------------------ ##
+#     ## Rules specific for CHM output. ##
+#     ## ------------------------------ ##
+#
+#     if DX_COND_chm
+#
+#     DX_CLEAN_CHM = @DX_DOCDIR@/chm
+#
+#     if DX_COND_chi
+#
+#     DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
+#
+#     endif DX_COND_chi
+#
+#     endif DX_COND_chm
+#
+#     ## ------------------------------ ##
+#     ## Rules specific for MAN output. ##
+#     ## ------------------------------ ##
+#
+#     if DX_COND_man
+#
+#     DX_CLEAN_MAN = @DX_DOCDIR@/man
+#
+#     endif DX_COND_man
+#
+#     ## ------------------------------ ##
+#     ## Rules specific for RTF output. ##
+#     ## ------------------------------ ##
+#
+#     if DX_COND_rtf
+#
+#     DX_CLEAN_RTF = @DX_DOCDIR@/rtf
+#
+#     endif DX_COND_rtf
+#
+#     ## ------------------------------ ##
+#     ## Rules specific for XML output. ##
+#     ## ------------------------------ ##
+#
+#     if DX_COND_xml
+#
+#     DX_CLEAN_XML = @DX_DOCDIR@/xml
+#
+#     endif DX_COND_xml
+#
+#     ## ----------------------------- ##
+#     ## Rules specific for PS output. ##
+#     ## ----------------------------- ##
+#
+#     if DX_COND_ps
+#
+#     DX_CLEAN_PS = @DX_DOCDIR@/@PACKAGE@.ps
+#
+#     DX_PS_GOAL = doxygen-ps
+#
+#     doxygen-ps: @DX_DOCDIR@/@PACKAGE@.ps
+#
+#     @DX_DOCDIR@/@PACKAGE@.ps: @DX_DOCDIR@/@PACKAGE@.tag
+#         cd @DX_DOCDIR@/latex; \
+#         rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
+#         $(DX_LATEX) refman.tex; \
+#         $(MAKEINDEX_PATH) refman.idx; \
+#         $(DX_LATEX) refman.tex; \
+#         countdown=5; \
+#         while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
+#                           refman.log > /dev/null 2>&1 \
+#            && test $$countdown -gt 0; do \
+#             $(DX_LATEX) refman.tex; \
+#             countdown=`expr $$countdown - 1`; \
+#         done; \
+#         $(DX_DVIPS) -o ../@PACKAGE@.ps refman.dvi
+#
+#     endif DX_COND_ps
+#
+#     ## ------------------------------ ##
+#     ## Rules specific for PDF output. ##
+#     ## ------------------------------ ##
+#
+#     if DX_COND_pdf
+#
+#     DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE@.pdf
+#
+#     DX_PDF_GOAL = doxygen-pdf
+#
+#     doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
+#
+#     @DX_DOCDIR@/@PACKAGE@.pdf: @DX_DOCDIR@/@PACKAGE@.tag
+#         cd @DX_DOCDIR@/latex; \
+#         rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
+#         $(DX_PDFLATEX) refman.tex; \
+#         $(DX_MAKEINDEX) refman.idx; \
+#         $(DX_PDFLATEX) refman.tex; \
+#         countdown=5; \
+#         while $(DX_EGREP) 'Rerun (LaTeX|to get cross-references right)' \
+#                           refman.log > /dev/null 2>&1 \
+#            && test $$countdown -gt 0; do \
+#             $(DX_PDFLATEX) refman.tex; \
+#             countdown=`expr $$countdown - 1`; \
+#         done; \
+#         mv refman.pdf ../@PACKAGE@.pdf
+#
+#     endif DX_COND_pdf
+#
+#     ## ------------------------------------------------- ##
+#     ## Rules specific for LaTeX (shared for PS and PDF). ##
+#     ## ------------------------------------------------- ##
+#
+#     if DX_COND_latex
+#
+#     DX_CLEAN_LATEX = @DX_DOCDIR@/latex
+#
+#     endif DX_COND_latex
+#
+#     .PHONY: doxygen-run doxygen-doc $(DX_PS_GOAL) $(DX_PDF_GOAL)
+#
+#     .INTERMEDIATE: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
+#
+#     doxygen-run: @DX_DOCDIR@/@PACKAGE@.tag
+#
+#     doxygen-doc: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
+#
+#     @DX_DOCDIR@/@PACKAGE@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
+#         rm -rf @DX_DOCDIR@
+#         $(DX_ENV) $(DX_DOXYGEN) $(srcdir)/$(DX_CONFIG)
+#
+#     DX_CLEANFILES = \
+#         @DX_DOCDIR@/@PACKAGE@.tag \
+#         -r \
+#         $(DX_CLEAN_HTML) \
+#         $(DX_CLEAN_CHM) \
+#         $(DX_CLEAN_CHI) \
+#         $(DX_CLEAN_MAN) \
+#         $(DX_CLEAN_RTF) \
+#         $(DX_CLEAN_XML) \
+#         $(DX_CLEAN_PS) \
+#         $(DX_CLEAN_PDF) \
+#         $(DX_CLEAN_LATEX)
+#
+#     endif DX_COND_doc
+#
+#     ----- end aminclude.am ---------------------------------------
+#
+# LICENSE
+#
+#   Copyright (c) 2009 Oren Ben-Kiki <oren@ben-kiki.org>
+#
+#   Copying and distribution of this file, with or without modification, are
+#   permitted in any medium without royalty provided the copyright notice
+#   and this notice are preserved. This file is offered as-is, without any
+#   warranty.
 
-# Copyright (C) 2004 Oren Ben-Kiki
-# This file is distributed under the same terms as the Autoconf macro files.
-
-# Generate automatic documentation using Doxygen. Works in concert with the
-# aminclude.m4 file and a compatible doxygen configuration file. Defines the
-# following public macros:
-#
-# DX_???_FEATURE(ON|OFF) - control the default setting fo a Doxygen feature.
-# Supported features are 'DOXYGEN' itself, 'DOT' for generating graphics,
-# 'HTML' for plain HTML, 'CHM' for compressed HTML help (for MS users), 'CHI'
-# for generating a seperate .chi file by the .chm file, and 'MAN', 'RTF',
-# 'XML', 'PDF' and 'PS' for the appropriate output formats. The environment
-# variable DOXYGEN_PAPER_SIZE may be specified to override the default 'a4wide'
-# paper size.
-#
-# By default, HTML, PDF and PS documentation is generated as this seems to be
-# the most popular and portable combination. MAN pages created by Doxygen are
-# usually problematic, though by picking an appropriate subset and doing some
-# massaging they might be better than nothing. CHM and RTF are specific for MS
-# (note that you can't generate both HTML and CHM at the same time). The XML is
-# rather useless unless you apply specialized post-processing to it.
-#
-# The macro mainly controls the default state of the feature. The use can
-# override the default by specifying --enable or --disable. The macros ensure
-# that contradictory flags are not given (e.g., --enable-doxygen-html and
-# --enable-doxygen-chm, --enable-doxygen-anything with --disable-doxygen, etc.)
-# Finally, each feature will be automatically disabled (with a warning) if the
-# required programs are missing.
-#
-# Once all the feature defaults have been specified, call DX_INIT_DOXYGEN with
-# the following parameters: a one-word name for the project for use as a
-# filename base etc., an optional configuration file name (the default is
-# 'Doxyfile', the same as Doxygen's default), and an optional output directory
-# name (the default is 'doxygen-doc').
+#serial 11
 
 ## ----------##
 ## Defaults. ##
@@ -41,7 +262,7 @@
 
 DX_ENV=""
 AC_DEFUN([DX_FEATURE_doc],  ON)
-AC_DEFUN([DX_FEATURE_dot],  ON)
+AC_DEFUN([DX_FEATURE_dot],  OFF)
 AC_DEFUN([DX_FEATURE_man],  OFF)
 AC_DEFUN([DX_FEATURE_html], ON)
 AC_DEFUN([DX_FEATURE_chm],  OFF)
@@ -81,7 +302,7 @@ AC_DEFUN([DX_REQUIRE_PROG], [
 AC_PATH_TOOL([$1], [$2])
 if test "$DX_FLAG_[]DX_CURRENT_FEATURE$$1" = 1; then
     AC_MSG_WARN([$2 not found - will not DX_CURRENT_DESCRIPTION])
-    AC_SUBST([DX_FLAG_]DX_CURRENT_FEATURE, 0)
+    AC_SUBST(DX_FLAG_[]DX_CURRENT_FEATURE, 0)
 fi
 ])
 
@@ -104,7 +325,7 @@ test "$DX_FLAG_$1" = "$2" \
 # ----------------------------------------------------------
 # Turn off the DX_CURRENT_FEATURE if the required feature is off.
 AC_DEFUN([DX_CLEAR_DEPEND], [
-test "$DX_FLAG_$1" = "$2" || AC_SUBST([DX_FLAG_]DX_CURRENT_FEATURE, 0)
+test "$DX_FLAG_$1" = "$2" || AC_SUBST(DX_FLAG_[]DX_CURRENT_FEATURE, 0)
 ])
 
 # DX_FEATURE_ARG(FEATURE, DESCRIPTION,
@@ -164,6 +385,7 @@ fi
 # DX_XXX_FEATURE(DEFAULT_STATE)
 # -----------------------------
 AC_DEFUN([DX_DOXYGEN_FEATURE], [AC_DEFUN([DX_FEATURE_doc],  [$1])])
+AC_DEFUN([DX_DOT_FEATURE],     [AC_DEFUN([DX_FEATURE_dot], [$1])])
 AC_DEFUN([DX_MAN_FEATURE],     [AC_DEFUN([DX_FEATURE_man],  [$1])])
 AC_DEFUN([DX_HTML_FEATURE],    [AC_DEFUN([DX_FEATURE_html], [$1])])
 AC_DEFUN([DX_CHM_FEATURE],     [AC_DEFUN([DX_FEATURE_chm],  [$1])])
