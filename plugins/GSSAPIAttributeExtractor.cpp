@@ -294,8 +294,8 @@ void GSSAPIExtractor::extractAttributes(
     if (!m_impl)
         return;
 
-    static const XMLCh _GSSAPI[] = UNICODE_LITERAL_6(G,S,S,A,P,I);
-    if (!XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPI)) {
+    static const XMLCh _GSSAPIContext[] = UNICODE_LITERAL_13(G,S,S,A,P,I,C,o,n,t,e,x,t);
+    if (!XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIContext)) {
         m_log.debug("unable to extract attributes, unknown XML object type: %s", xmlObject.getElementQName().toString().c_str());
         return;
     }
@@ -338,7 +338,6 @@ void GSSAPIExtractor::extractAttributes(
     gss_name_t srcname;
     major = gss_inquire_context(&minor, gss, &srcname, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     if (major == GSS_S_COMPLETE) {
-
         gss_buffer_set_t attrnames = GSS_C_NO_BUFFER_SET;
         major = gss_inquire_name(&minor, srcname, nullptr, nullptr, &attrnames);
         if (major == GSS_S_COMPLETE) {
