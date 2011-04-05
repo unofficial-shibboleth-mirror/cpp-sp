@@ -928,7 +928,7 @@ void ApacheRequestMapper::getAll(map<string,const char*>& properties) const
         properties["exportAssertion"] = (sta->m_dc->bExportAssertion==1) ? "true" : "false";
 
     if (sta->m_dc->tSettings)
-        ap_table_do(_rm_get_all_table_walk, &properties, sta->m_dc->tSettings, nullptr);
+        ap_table_do(_rm_get_all_table_walk, &properties, sta->m_dc->tSettings, NULL);
 }
 
 const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
@@ -1465,7 +1465,7 @@ static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_out_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
         // can't use overlap call because it will collapse Set-Cookie headers
         //apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
-        apr_table_do(_table_add,r->headers_out, rc->hdr_out,nullptr);
+        apr_table_do(_table_add,r->headers_out, rc->hdr_out,NULL);
     }
 
     /* remove ourselves from the filter chain */
@@ -1484,7 +1484,7 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
         // can't use overlap call because it will collapse Set-Cookie headers
         //apr_table_overlap(r->err_headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
-        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,nullptr);
+        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,NULL);
     }
 
     /* remove ourselves from the filter chain */
