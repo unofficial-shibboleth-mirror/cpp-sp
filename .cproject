@@ -37,13 +37,13 @@
 									<listOptionValue builtIn="false" value="WIN32"/>
 								</option>
 								<option id="org.eclipse.linuxtools.cdt.autotools.option.configure.includes.1925509387" name="includes" superClass="org.eclipse.linuxtools.cdt.autotools.option.configure.includes" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-xmltooling/xmltooling}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-opensaml2/saml}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\include&quot;"/>
 									<listOptionValue builtIn="false" value="C:/Users/scantor/Shibboleth/xerces-c-3.1.1-x86-windows-vc-10.0/include"/>
 									<listOptionValue builtIn="false" value="C:/Users/scantor/Shibboleth/xml-security-c-1.6.0/include"/>
 									<listOptionValue builtIn="false" value="C:/Users/scantor/Shibboleth/log4shib-1.0.5/include"/>
 									<listOptionValue builtIn="false" value="/opt/local/include"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-opensaml2}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-xmltooling}&quot;"/>
 								</option>
 								<option id="org.eclipse.linuxtools.cdt.autotools.option.configure.prefix.1894632247" name="Arch-independent install directory (--prefix)" superClass="org.eclipse.linuxtools.cdt.autotools.option.configure.prefix" value="/Users/scantor/Documents/workspace/2.0/install" valueType="string"/>
 								<option id="org.eclipse.linuxtools.cdt.autotools.option.configure.user.2071388265" name="User-specified configuration options" superClass="org.eclipse.linuxtools.cdt.autotools.option.configure.user" value="--enable-debug --with-log4shib=/opt/local --with-openssl=/opt/local --with-xmltooling=/Users/scantor/Documents/workspace/2.0/install --with-gssapi=/Users/scantor/Documents/workspace/2.0/install" valueType="string"/>

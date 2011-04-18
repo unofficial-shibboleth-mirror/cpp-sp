@@ -17,7 +17,7 @@
 /**
  * GSSAPIAttributeExtractor.cpp
  *
- * AttributeExtractor for a base64-encoded GSS-API context.
+ * AttributeExtractor for a base64-encoded GSS-API context or name.
  */
 
 #include "internal.h"
@@ -71,9 +71,8 @@ namespace shibsp {
             m_document = doc;
         }
 
-        void extractAttributes(
-            gss_name_t initiatorName, gss_buffer_t namingAttribute, vector<Attribute*>& attributes
-            ) const;
+        void extractAttributes(gss_name_t initiatorName, vector<Attribute*>& attributes) const;
+        void extractAttributes(gss_name_t initiatorName, gss_buffer_t namingAttribute, vector<Attribute*>& attributes) const;
 
         void getAttributeIds(vector<string>& attributes) const {
             attributes.insert(attributes.end(), m_attributeIds.begin(), m_attributeIds.end());
@@ -221,6 +220,22 @@ GSSAPIExtractorImpl::GSSAPIExtractorImpl(const DOMElement* e, Category& log)
     }
 }
 
+void GSSAPIExtractorImpl::extractAttributes(gss_name_t initiatorName, vector<Attribute*>& attributes) const
+{
+    OM_uint32 minor;
+    gss_buffer_set_t attrnames = GSS_C_NO_BUFFER_SET;
+    OM_uint32 major = gss_inquire_name(&minor, initiatorName, nullptr, nullptr, &attrnames);
+    if (major == GSS_S_COMPLETE) {
+        for (size_t i = 0; i < attrnames->count; ++i) {
+            extractAttributes(initiatorName, &attrnames->elements[i], attributes);
+        }
+        gss_release_buffer_set(&minor, &attrnames);
+    }
+    else {
+        m_log.warn("unable to extract attributes, GSS name attribute inquiry failed (%u:%u)", major, minor);
+    }
+}
+
 void GSSAPIExtractorImpl::extractAttributes(
     gss_name_t initiatorName, gss_buffer_t namingAttribute, vector<Attribute*>& attributes
     ) const
@@ -295,7 +310,13 @@ void GSSAPIExtractor::extractAttributes(
         return;
 
     static const XMLCh _GSSAPIContext[] = UNICODE_LITERAL_13(G,S,S,A,P,I,C,o,n,t,e,x,t);
-    if (!XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIContext)) {
+    static const XMLCh _GSSAPIName[] = UNICODE_LITERAL_10(G,S,S,A,P,I,N,a,m,e);
+
+    if (!XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIContext)
+#ifndef SHIBSP_HAVE_GSSAPI_COMPOSITE_NAME
+           && !XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIName)
+#endif
+        ) {
         m_log.debug("unable to extract attributes, unknown XML object type: %s", xmlObject.getElementQName().toString().c_str());
         return;
     }
@@ -306,21 +327,40 @@ void GSSAPIExtractor::extractAttributes(
         return;
     }
 
-    gss_ctx_id_t gss = GSS_C_NO_CONTEXT;
-
     xsecsize_t x;
     OM_uint32 major,minor;
     auto_ptr_char encoded(encodedWide);
+
+    gss_name_t srcname;
+    gss_ctx_id_t gss = GSS_C_NO_CONTEXT;
+
     XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(encoded.get()), &x);
     if (decoded) {
         gss_buffer_desc importbuf;
         importbuf.length = x;
         importbuf.value = decoded;
-        major = gss_import_sec_context(&minor, &importbuf, &gss);
-        if (major != GSS_S_COMPLETE) {
-            m_log.warn("unable to extract attributes, GSS context import failed (%u:%u)", major, minor);
-            gss = GSS_C_NO_CONTEXT;
+#ifdef SHIBSP_HAVE_GSSAPI_COMPOSITE_NAME
+        if (XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIName)) {
+            major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME_COMPOSITE, &srcname);
+            if (major == GSS_S_COMPLETE) {
+                m_impl->extractAttributes(srcname, attributes);
+                gss_release_name(&minor, &srcname);
+            }
+            else {
+                m_log.warn("unable to extract attributes, GSS name import failed (%u:%u)", major, minor);
+            }
+            // We fall through here down to the GSS context check, which will exit us.
         }
+        else {
+#endif
+            major = gss_import_sec_context(&minor, &importbuf, &gss);
+            if (major != GSS_S_COMPLETE) {
+                m_log.warn("unable to extract attributes, GSS context import failed (%u:%u)", major, minor);
+                gss = GSS_C_NO_CONTEXT;
+            }
+#ifdef SHIBSP_HAVE_GSSAPI_COMPOSITE_NAME
+        }
+#endif
 #ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
         XMLString::release(&decoded);
 #else
@@ -328,27 +368,17 @@ void GSSAPIExtractor::extractAttributes(
 #endif
     }
     else {
-        m_log.warn("unable to extract attributes, base64 decode of GSSAPI context failed");
+        m_log.warn("unable to extract attributes, base64 decode of GSSAPI context or name failed");
     }
 
     if (gss == GSS_C_NO_CONTEXT) {
         return;
     }
+
     // Extract the initiator name from the context.
-    gss_name_t srcname;
     major = gss_inquire_context(&minor, gss, &srcname, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     if (major == GSS_S_COMPLETE) {
-        gss_buffer_set_t attrnames = GSS_C_NO_BUFFER_SET;
-        major = gss_inquire_name(&minor, srcname, nullptr, nullptr, &attrnames);
-        if (major == GSS_S_COMPLETE) {
-            for (size_t i = 0; i < attrnames->count; ++i) {
-                m_impl->extractAttributes(srcname, &attrnames->elements[i], attributes);
-            }
-            gss_release_buffer_set(&minor, &attrnames);
-        }
-        else {
-            m_log.warn("unable to extract attributes, GSS name attribute inquiry failed (%u:%u)", major, minor);
-        }
+        m_impl->extractAttributes(srcname, attributes);
         gss_release_name(&minor, &srcname);
     }
     else {
