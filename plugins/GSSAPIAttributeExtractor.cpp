@@ -313,9 +313,7 @@ void GSSAPIExtractor::extractAttributes(
     static const XMLCh _GSSAPIName[] = UNICODE_LITERAL_10(G,S,S,A,P,I,N,a,m,e);
 
     if (!XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIContext)
-#ifndef SHIBSP_HAVE_GSSAPI_COMPOSITE_NAME
            && !XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIName)
-#endif
         ) {
         m_log.debug("unable to extract attributes, unknown XML object type: %s", xmlObject.getElementQName().toString().c_str());
         return;
@@ -339,9 +337,12 @@ void GSSAPIExtractor::extractAttributes(
         gss_buffer_desc importbuf;
         importbuf.length = x;
         importbuf.value = decoded;
-#ifdef SHIBSP_HAVE_GSSAPI_COMPOSITE_NAME
         if (XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIName)) {
+#ifdef HAVE_GSSAPI_COMPOSITE_NAME
             major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME_COMPOSITE, &srcname);
+#else
+            major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME, &srcname);
+#endif
             if (major == GSS_S_COMPLETE) {
                 m_impl->extractAttributes(srcname, attributes);
                 gss_release_name(&minor, &srcname);
@@ -352,15 +353,12 @@ void GSSAPIExtractor::extractAttributes(
             // We fall through here down to the GSS context check, which will exit us.
         }
         else {
-#endif
             major = gss_import_sec_context(&minor, &importbuf, &gss);
             if (major != GSS_S_COMPLETE) {
                 m_log.warn("unable to extract attributes, GSS context import failed (%u:%u)", major, minor);
                 gss = GSS_C_NO_CONTEXT;
             }
-#ifdef SHIBSP_HAVE_GSSAPI_COMPOSITE_NAME
         }
-#endif
 #ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
         XMLString::release(&decoded);
 #else

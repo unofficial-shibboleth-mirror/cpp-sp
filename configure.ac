@@ -1097,7 +1097,7 @@ if test x"$want_gss" = xyes; then
     gss_buffer_desc importbuf;
     gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME_COMPOSITE, &srcname);
     ]])],
-    [AC_MSG_RESULT([yes])AC_DEFINE([SHIBSP_HAVE_GSSAPI_COMPOSITE_NAME],[1],[Define to 1 if GSS-API composite name import is available.])],
+    [AC_MSG_RESULT([yes])AC_DEFINE([HAVE_GSSAPI_COMPOSITE_NAME],[1],[Define to 1 if GSS-API composite name import is available.])],
     [AC_MSG_RESULT([no])])
     
 else
