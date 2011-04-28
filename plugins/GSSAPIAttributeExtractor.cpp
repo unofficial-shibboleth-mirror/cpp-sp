@@ -43,7 +43,14 @@
 #include <xercesc/util/Base64.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 
-#include <gssapi/gssapi_ext.h>
+#ifdef SHIBSP_HAVE_GSSGNU
+# include <gss.h>
+#elif defined SHIBSP_HAVE_GSSMIT
+# include <gssapi/gssapi_ext.h>
+#else
+# include <gssapi.h>
+#endif
+
 
 using namespace shibsp;
 using namespace opensaml::saml2md;

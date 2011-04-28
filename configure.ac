@@ -1083,14 +1083,28 @@ if test x"$want_gss" = xyes; then
 
   AC_MSG_CHECKING([whether GSS-API naming extensions are available])
   AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM([[#include <gssapi/gssapi_ext.h>]],
+    [AC_LANG_PROGRAM([[
+#ifdef SHIBSP_HAVE_GSSGNU
+# include <gss.h>
+#elif defined SHIBSP_HAVE_GSSMIT
+# include <gssapi/gssapi_ext.h>
+#else
+# include <gssapi.h>
+#endif]],
     [[gss_get_name_attribute(NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);]])],
     [AC_MSG_RESULT([yes])AC_DEFINE([HAVE_GSSAPI_NAMINGEXTS],[1],[Define to 1 if GSS-API naming extensions are available.])],
     [AC_MSG_RESULT([no])])
 
   AC_MSG_CHECKING([whether GSS-API composite name import is available])
   AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM([[#include <gssapi/gssapi_ext.h>]],
+    [AC_LANG_PROGRAM([[
+#ifdef SHIBSP_HAVE_GSSGNU
+# include <gss.h>
+#elif defined SHIBSP_HAVE_GSSMIT
+# include <gssapi/gssapi_ext.h>
+#else
+# include <gssapi.h>
+#endif]],
     [[
     OM_uint32 minor;
     gss_name_t srcname;
