@@ -1087,6 +1087,7 @@ if test x"$want_gss" = xyes; then
 #ifdef SHIBSP_HAVE_GSSGNU
 # include <gss.h>
 #elif defined SHIBSP_HAVE_GSSMIT
+# include <gssapi/gssapi.h>
 # include <gssapi/gssapi_ext.h>
 #else
 # include <gssapi.h>
@@ -1101,6 +1102,7 @@ if test x"$want_gss" = xyes; then
 #ifdef SHIBSP_HAVE_GSSGNU
 # include <gss.h>
 #elif defined SHIBSP_HAVE_GSSMIT
+# include <gssapi/gssapi.h>
 # include <gssapi/gssapi_ext.h>
 #else
 # include <gssapi.h>
