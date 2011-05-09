@@ -38,9 +38,15 @@
         <anyAttribute namespace="##any" processContents="lax"/>
     </complexType>
     
-    <element name="GSSAPI" type="base64Binary">
+    <element name="GSSAPIContext" type="base64Binary">
         <annotation>
             <documentation>A wrapper element for GSS-API contexts.</documentation>
+        </annotation>
+    </element>
+
+    <element name="GSSAPIName" type="base64Binary">
+        <annotation>
+            <documentation>A wrapper element for GSS-API composite names.</documentation>
         </annotation>
     </element>
     
@@ -124,6 +130,11 @@
         <attribute name="authenticated" type="boolean">
             <annotation>
                 <documentation>If true, only an authenticated GSS-API naming attribute will be mapped.</documentation>
+            </annotation>
+        </attribute>
+        <attribute name="binary" type="boolean">
+            <annotation>
+                <documentation>If true, the GSS-API naming attribute will be base64-encoded for internal use.</documentation>
             </annotation>
         </attribute>
         <attribute name="scopeDelimiter" type="am:string">
