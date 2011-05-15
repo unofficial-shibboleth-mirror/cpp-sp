@@ -87,9 +87,9 @@ namespace shibsp {
 
     private:
         struct Rule {
-            Rule() : authenticated(true), scopeDelimiter(0) {}
+            Rule() : authenticated(true), binary(false), scopeDelimiter(0) {}
             vector<string> ids;
-            bool authenticated;
+            bool authenticated,binary;
             char scopeDelimiter;
         };
 
@@ -142,6 +142,7 @@ namespace shibsp {
     static const XMLCh _aliases[] =             UNICODE_LITERAL_7(a,l,i,a,s,e,s);
     static const XMLCh Attributes[] =           UNICODE_LITERAL_10(A,t,t,r,i,b,u,t,e,s);
     static const XMLCh _authenticated[] =       UNICODE_LITERAL_13(a,u,t,h,e,n,t,i,c,a,t,e,d);
+    static const XMLCh _binary[] =              UNICODE_LITERAL_6(b,i,n,a,r,y);
     static const XMLCh GSSAPIAttribute[] =      UNICODE_LITERAL_15(G,S,S,A,P,I,A,t,t,r,i,b,u,t,e);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
     static const XMLCh _name[] =                UNICODE_LITERAL_4(n,a,m,e);
@@ -219,6 +220,7 @@ GSSAPIExtractorImpl::GSSAPIExtractorImpl(const DOMElement* e, Category& log)
         }
 
         decl.authenticated = XMLHelper::getAttrBool(child, true, _authenticated);
+        decl.binary = XMLHelper::getAttrBool(child, false, _binary);
         string delim = XMLHelper::getAttrString(child, "", _scopeDelimiter);
         if (!delim.empty())
             decl.scopeDelimiter = delim[0];
@@ -270,8 +272,24 @@ void GSSAPIExtractorImpl::extractAttributes(
                 gss_release_buffer(&minor, &buf);
                 return;
             }
-            if (buf.length)
-                values.push_back(string(reinterpret_cast<char*>(buf.value), buf.length));
+            if (buf.length) {
+                if (rule->second.binary) {
+                    // base64 encode the value
+                    xsecsize_t len=0;
+                    XMLByte* out=Base64::encode(reinterpret_cast<const XMLByte*>(buf.value), buf.length, &len);
+                    if (out) {
+                        values.push_back(string(reinterpret_cast<char*>(out), len));
+#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
+                        XMLString::release(&out);
+#else
+                        XMLString::release((char**)&out);
+#endif
+                    }
+                }
+                else {
+                    values.push_back(string(reinterpret_cast<char*>(buf.value), buf.length));
+                }
+            }
             gss_release_buffer(&minor, &buf);
         }
         else {
@@ -282,7 +300,7 @@ void GSSAPIExtractorImpl::extractAttributes(
     if (values.empty())
         return;
 
-    if (rule->second.scopeDelimiter) {
+    if (rule->second.scopeDelimiter && !rule->second.binary) {
         auto_ptr<ScopedAttribute> scoped(new ScopedAttribute(rule->second.ids, rule->second.scopeDelimiter));
         vector< pair<string,string> >& dest = scoped->getValues();
         for (vector<string>::const_iterator v = values.begin(); v != values.end(); ++v) {
