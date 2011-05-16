@@ -78,6 +78,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <cstddef>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>		// for getpid()
 #endif
