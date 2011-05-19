@@ -387,6 +387,9 @@
     <ClCompile Include="attribute\filtering\impl\DummyAttributeFilter.cpp">
       <Filter>Source Files\attribute\filtering\impl</Filter>
     </ClCompile>
+    <ClCompile Include="version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
@@ -551,6 +554,9 @@
     <ClInclude Include="GSSRequest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="config_pub_win32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="shibsp.rc">
@@ -560,5 +566,6 @@
   <ItemGroup>
     <None Include="Makefile.am" />
     <None Include="paths.h.in" />
+    <None Include="config_pub.h.in" />
   </ItemGroup>
 </Project>

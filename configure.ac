@@ -291,7 +291,7 @@ LIBS="$XMLSEC_LIBS $LIBS"
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/version.h>]],
-        [[#if _XMLTOOLING_VERSION >= 10400
+        [[#if _XMLTOOLING_VERSION >= 10500
 xmltooling::XMLToolingConfig::getConfig();
 #else
 #error Need XMLTooling version 1.4 or higher
@@ -337,7 +337,7 @@ AC_CHECK_HEADER([saml/saml2/metadata/Metadata.h],,AC_MSG_ERROR([unable to find O
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <saml/SAMLConfig.h>
 #include <saml/version.h>]],
-[[#if _OPENSAML_VERSION >= 20400
+[[#if _OPENSAML_VERSION >= 20500
 opensaml::SAMLConfig::getConfig();
 #else
 #error Need OpenSAML version 2.4 or higher
