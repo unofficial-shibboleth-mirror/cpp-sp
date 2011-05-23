@@ -45,6 +45,7 @@ libshibspinclude_HEADERS = \
 attrinclude_HEADERS = \
 	attribute/Attribute.h \
 	attribute/AttributeDecoder.h \
+	attribute/BinaryAttribute.h \
 	attribute/ExtensibleAttribute.h \
 	attribute/NameIDAttribute.h \
 	attribute/ScopedAttribute.h \
@@ -112,6 +113,7 @@ common_sources = \
 	SPConfig.cpp \
     version.cpp \
 	attribute/Attribute.cpp \
+	attribute/BinaryAttribute.cpp \
 	attribute/ExtensibleAttribute.cpp \
 	attribute/NameIDAttribute.cpp \
 	attribute/SimpleAttribute.cpp \

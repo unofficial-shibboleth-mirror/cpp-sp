@@ -205,6 +205,7 @@
     <ClCompile Include="impl\XMLRequestMapper.cpp" />
     <ClCompile Include="impl\XMLServiceProvider.cpp" />
     <ClCompile Include="attribute\Attribute.cpp" />
+    <ClCompile Include="attribute\BinaryAttribute.cpp" />
     <ClCompile Include="attribute\ExtensibleAttribute.cpp" />
     <ClCompile Include="attribute\NameIDAttribute.cpp" />
     <ClCompile Include="attribute\ScopedAttribute.cpp" />
@@ -267,6 +268,7 @@
     <ClInclude Include="remoting\ddf.h" />
     <ClInclude Include="remoting\ListenerService.h" />
     <ClInclude Include="attribute\Attribute.h" />
+    <ClCompile Include="attribute\BinaryAttribute.h" />
     <ClInclude Include="attribute\ExtensibleAttribute.h" />
     <ClInclude Include="attribute\NameIDAttribute.h" />
     <ClInclude Include="attribute\ScopedAttribute.h" />

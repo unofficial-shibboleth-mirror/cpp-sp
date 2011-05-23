@@ -47,6 +47,7 @@ namespace shibsp {
     SHIBSP_DLLLOCAL Attribute* NameIDAttributeFactory(DDF& in);
     SHIBSP_DLLLOCAL Attribute* ExtensibleAttributeFactory(DDF& in);
     SHIBSP_DLLLOCAL Attribute* XMLAttributeFactory(DDF& in);
+    SHIBSP_DLLLOCAL Attribute* BinaryAttributeFactory(DDF& in);
 
 #ifndef SHIBSP_LITE
     SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory StringAttributeDecoderFactory;
@@ -142,6 +143,7 @@ void shibsp::registerAttributeFactories()
 {
     Attribute::registerFactory("", SimpleAttributeFactory);
     Attribute::registerFactory("Simple", SimpleAttributeFactory);
+    Attribute::registerFactory("Binary", BinaryAttributeFactory);
     Attribute::registerFactory("Scoped", ScopedAttributeFactory);
     Attribute::registerFactory("NameID", NameIDAttributeFactory);
     Attribute::registerFactory("Extensible", ExtensibleAttributeFactory);

@@ -27,6 +27,7 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/Application.h>
 #include <shibsp/SPConfig.h>
+#include <shibsp/attribute/BinaryAttribute.h>
 #include <shibsp/attribute/ScopedAttribute.h>
 #include <shibsp/attribute/SimpleAttribute.h>
 #include <shibsp/attribute/resolver/AttributeExtractor.h>
@@ -273,22 +274,7 @@ void GSSAPIExtractorImpl::extractAttributes(
                 return;
             }
             if (buf.length) {
-                if (rule->second.binary) {
-                    // base64 encode the value
-                    xsecsize_t len=0;
-                    XMLByte* out=Base64::encode(reinterpret_cast<const XMLByte*>(buf.value), buf.length, &len);
-                    if (out) {
-                        values.push_back(string(reinterpret_cast<char*>(out), len));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                        XMLString::release(&out);
-#else
-                        XMLString::release((char**)&out);
-#endif
-                    }
-                }
-                else {
-                    values.push_back(string(reinterpret_cast<char*>(buf.value), buf.length));
-                }
+                values.push_back(string(reinterpret_cast<char*>(buf.value), buf.length));
             }
             gss_release_buffer(&minor, &buf);
         }
@@ -319,8 +305,12 @@ void GSSAPIExtractorImpl::extractAttributes(
         if (!scoped->getValues().empty())
             attributes.push_back(scoped.release());
     }
+    else if (rule->second.binary) {
+        auto_ptr<BinaryAttribute> binary(new BinaryAttribute(rule->second.ids));
+        binary->getValues() = values;
+        attributes.push_back(binary.release());
+    }
     else {
-        // If unscoped, just copy over the values.
         auto_ptr<SimpleAttribute> simple(new SimpleAttribute(rule->second.ids));
         simple->getValues() = values;
         attributes.push_back(simple.release());
