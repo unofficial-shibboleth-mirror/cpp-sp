@@ -53,8 +53,8 @@ namespace shibsp {
 
     public:
         AttributeValueStringFunctor(const DOMElement* e)
-            : m_value(e ? xmltooling::toUTF8(e->getAttributeNS(nullptr,value)) : nullptr),
-                m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)) {
+            	: m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)),
+            	  m_value(e ? xmltooling::toUTF8(e->getAttributeNS(nullptr,value)) : nullptr) {
             if (!m_value || !*m_value) {
                 delete[] m_value;
                 throw ConfigurationException("AttributeValueString MatchFunctor requires non-empty value attribute.");

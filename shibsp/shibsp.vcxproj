@@ -94,7 +94,6 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.;..;..\..\cpp-opensaml;..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;WANT_TCP_SHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
@@ -121,7 +120,6 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.;..;..\..\cpp-opensaml;..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;WANT_TCP_SHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
@@ -290,6 +288,7 @@
     <ClInclude Include="AccessControl.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="base.h" />
+    <ClInclude Include="config_pub_win32.h" />
     <ClInclude Include="exceptions.h" />
     <ClInclude Include="internal.h" />
     <ClInclude Include="RequestMapper.h" />
@@ -343,6 +342,7 @@
   <ItemGroup>
     <None Include="Makefile.am" />
     <None Include="paths.h.in" />
+    <None Include="config_pub.h.in" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

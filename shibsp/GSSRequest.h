@@ -20,15 +20,15 @@
  * Interface to a GSS-authenticated request.
  */
 
-#if !defined(__shibsp_gssreq_h__) && defined(HAVE_GSSAPI)
+#if !defined(__shibsp_gssreq_h__) && defined(SHIBSP_HAVE_GSSAPI)
 #define __shibsp_gssreq_h__
 
 #include <shibsp/base.h>
 #include <xmltooling/io/GenericRequest.h>
 
-#ifdef HAVE_GSSGNU
+#ifdef SHIBSP_HAVE_GSSGNU
 # include <gss.h>
-#elif defined HAVE_GSSMIT
+#elif defined SHIBSP_HAVE_GSSMIT
 # include <gssapi/gssapi.h>
 # include <gssapi/gssapi_generic.h>
 #else

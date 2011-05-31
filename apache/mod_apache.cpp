@@ -78,6 +78,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <cstddef>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>		// for getpid()
 #endif
@@ -311,7 +312,7 @@ extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, con
 
 
 class ShibTargetApache : public AbstractSPRequest
-#if defined(HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
+#if defined(SHIBSP_HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
     , public GSSRequest
 #endif
 {
@@ -355,6 +356,9 @@ public:
 
   const char* getScheme() const {
     return m_sc->szScheme ? m_sc->szScheme : ap_http_method(m_req);
+  }
+  bool isSecure() const {
+      return HTTPRequest::isSecure();
   }
   const char* getHostname() const {
     return ap_get_server_name(m_req);
@@ -450,6 +454,12 @@ public:
     m_gotBody=true;
 #endif
     return m_body.c_str();
+  }
+  const char* getParameter(const char* name) const {
+      return AbstractSPRequest::getParameter(name);
+  }
+  vector<const char*>::size_type getParameters(const char* name, vector<const char*>& values) const {
+      return AbstractSPRequest::getParameters(name, values);
   }
   void clearHeader(const char* rawname, const char* cginame) {
     if (m_dc->bUseHeaders == 1) {
@@ -591,7 +601,7 @@ public:
   }
   long returnDecline(void) { return DECLINED; }
   long returnOK(void) { return OK; }
-#if defined(HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
+#if defined(SHIBSP_HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
   gss_ctx_id_t getGSSContext() const {
     gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
     apr_pool_userdata_get((void**)&ctx, g_szGSSContextKey, m_req->pool);
@@ -919,7 +929,7 @@ void ApacheRequestMapper::getAll(map<string,const char*>& properties) const
         properties["exportAssertion"] = (sta->m_dc->bExportAssertion==1) ? "true" : "false";
 
     if (sta->m_dc->tSettings)
-        ap_table_do(_rm_get_all_table_walk, &properties, sta->m_dc->tSettings, nullptr);
+        ap_table_do(_rm_get_all_table_walk, &properties, sta->m_dc->tSettings, NULL);
 }
 
 const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
@@ -1456,7 +1466,7 @@ static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_out_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
         // can't use overlap call because it will collapse Set-Cookie headers
         //apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
-        apr_table_do(_table_add,r->headers_out, rc->hdr_out,nullptr);
+        apr_table_do(_table_add,r->headers_out, rc->hdr_out,NULL);
     }
 
     /* remove ourselves from the filter chain */
@@ -1475,7 +1485,7 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
         ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
         // can't use overlap call because it will collapse Set-Cookie headers
         //apr_table_overlap(r->err_headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
-        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,nullptr);
+        apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,NULL);
     }
 
     /* remove ourselves from the filter chain */

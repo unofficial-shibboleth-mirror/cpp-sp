@@ -983,7 +983,7 @@ void XMLExtractor::extractAttributes(
         return m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *name1, attributes);
     }
 
-    throw AttributeExtractionException("Unable to extract attributes, unknown object type.");
+    m_log.debug("unable to extract attributes, unknown XML object type: %s", xmlObject.getElementQName().toString().c_str());
 }
 
 pair<bool,DOMElement*> XMLExtractor::background_load()

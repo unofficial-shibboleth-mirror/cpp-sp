@@ -53,8 +53,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,4,2,0
- PRODUCTVERSION 2,4,2,0
+ FILEVERSION 2,4,3,0
+ PRODUCTVERSION 2,4,3,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -69,14 +69,14 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Internet2\0"
+            VALUE "CompanyName", "UCAID\0"
             VALUE "FileDescription", "Shibboleth Memcache Storage Service Plugin\0"
-            VALUE "FileVersion", "2, 4, 2, 0\0"
+            VALUE "FileVersion", "2, 4, 3, 0\0"
             VALUE "InternalName", "memcache-store\0"
-            VALUE "LegalCopyright", "Copyright © 2011 Internet2\0"
+            VALUE "LegalCopyright", "Copyright © 2011 UCAID\0"
             VALUE "OriginalFilename", "memcache-store.so\0"
-            VALUE "ProductName", "Shibboleth 2.4.2\0"
-            VALUE "ProductVersion", "2, 4, 2, 0\0"
+            VALUE "ProductName", "Shibboleth 2.4.3\0"
+            VALUE "ProductVersion", "2, 4, 3, 0\0"
         END
     END
     BLOCK "VarFileInfo"

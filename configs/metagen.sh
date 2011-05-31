@@ -124,11 +124,6 @@ if [ $SAML1 -eq 1 ] ; then
     fi
 fi
 
-if [ $SAML2 -eq 1 ] ; then
-    ACS[${#ACS[*]}]=$SAML20PAOS
-    ACSLOC[${#ACSLOC[*]}]="SAML2/ECP"
-fi
-
 if [ $DECLS -eq 1 ] ; then
     DECLS="xmlns:md=\"urn:oasis:names:tc:SAML:2.0:metadata\" xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\" "
     if [ $DS -eq 1 ] ; then

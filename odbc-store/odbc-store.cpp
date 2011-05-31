@@ -532,7 +532,7 @@ int ODBCStorageService::readRow(
     if (pexpiration)
         q << ",expires";
     if (pvalue)
-        q << ",CASE version WHEN " << version << " THEN nullptr ELSE value END";
+        q << ",CASE version WHEN " << version << " THEN null ELSE value END";
     q << " FROM " << table << " WHERE context='" << scontext << "' AND id='" << skey << "' AND expires > " << timebuf;
     freeSafeSQL(scontext, context);
     freeSafeSQL(skey, key);

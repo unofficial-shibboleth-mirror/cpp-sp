@@ -51,7 +51,7 @@ void SPRequest::setAuthType(const char* authtype)
 {
 }
 
-#ifdef HAVE_GSSAPI
+#ifdef SHIBSP_HAVE_GSSAPI
 GSSRequest::GSSRequest()
 {
 }

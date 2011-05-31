@@ -31,6 +31,12 @@
 # include <saml/base.h>
 #endif
 
+#if defined (_MSC_VER) || defined(__BORLANDC__)
+  #include <shibsp/config_pub_win32.h>
+#else
+  #include <shibsp/config_pub.h>
+#endif
+
 // Windows and GCC4 Symbol Visibility Macros
 #ifdef WIN32
   #define SHIBSP_IMPORT __declspec(dllimport)

@@ -1,5 +1,5 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth],[2.4.2],[https://bugs.internet2.edu/],[shibboleth])
+AC_INIT([shibboleth],[2.4.3],[https://issues.shibboleth.net/],[shibboleth])
 AC_CONFIG_SRCDIR(shibsp)
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_MACRO_DIR(m4)
@@ -31,7 +31,7 @@ else
     GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
 fi
 
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([config.h shibsp/config_pub.h])
 AC_CONFIG_FILES([shibboleth.spec pkginfo Portfile])
 
 AC_PROG_CC([gcc gcc3 cc])
@@ -996,7 +996,7 @@ if test x"$want_gss" = xyes; then
   AC_CHECK_HEADER(gss.h,
     [
       dnl found in the given dirs
-      AC_DEFINE([HAVE_GSSGNU],[1],[if you have the GNU gssapi libraries])
+      AC_DEFINE([SHIBSP_HAVE_GSSGNU],[1],[if you have the GNU gssapi libraries])
       gnu_gss=yes
     ],
     [
@@ -1017,7 +1017,7 @@ AC_INCLUDES_DEFAULT
         AC_CHECK_HEADER([gssapi.h],
             [
               dnl found
-              AC_DEFINE([HAVE_GSSHEIMDAL],[1],[if you have the Heimdal gssapi libraries])
+              AC_DEFINE([SHIBSP_HAVE_GSSHEIMDAL],[1],[if you have the Heimdal gssapi libraries])
             ],
             [
               dnl no header found, disabling GSS
@@ -1027,7 +1027,7 @@ AC_INCLUDES_DEFAULT
           )
       else
         dnl MIT found
-        AC_DEFINE([HAVE_GSSMIT],[1],[if you have the MIT gssapi libraries])
+        AC_DEFINE([SHIBSP_HAVE_GSSMIT],[1],[if you have the MIT gssapi libraries])
         dnl check if we have a really old MIT kerberos (<= 1.2)
         AC_MSG_CHECKING([if gssapi headers declare GSS_C_NT_HOSTBASED_SERVICE])
         AC_COMPILE_IFELSE([
@@ -1055,34 +1055,67 @@ else
   AC_MSG_RESULT(no)
 fi
 if test x"$want_gss" = xyes; then
-  AC_DEFINE([HAVE_GSSAPI],[1],[if you have the gssapi libraries])
+  AC_DEFINE([SHIBSP_HAVE_GSSAPI],[1],[if you have the gssapi libraries])
 
   if test -n "$gnu_gss"; then
     LDFLAGS="$LDFLAGS $GSSAPI_LIB_DIR"
     LIBS="$LIBS -lgss"
-  elif test -z "$GSSAPI_LIB_DIR"; then
-     case $host in
-     *-*-darwin*)
-        LIBS="$LIBS -lgssapi_krb5 -lresolv"
-        ;;
-     *)
-        if test -f "$GSSAPI_ROOT/bin/krb5-config"; then
-           dnl krb5-config doesn't have --libs-only-L or similar, put everything
-           dnl into LIBS
-           gss_libs=`$GSSAPI_ROOT/bin/krb5-config --libs gssapi`
-           LIBS="$LIBS $gss_libs"
-        elif test "$GSSAPI_ROOT" != "yes"; then
-           LDFLAGS="$LDFLAGS -L$GSSAPI_ROOT/lib$libsuff"
-           LIBS="$LIBS -lgssapi"
-        else
-           LIBS="$LIBS -lgssapi"
-        fi
-        ;;
-     esac
   else
-     LDFLAGS="$LDFLAGS $GSSAPI_LIB_DIR"
-     LIBS="$LIBS -lgssapi"
+    if test -z "$GSSAPI_LIB_DIR"; then
+      GSSAPI_LIB_DIR="$GSSAPI_ROOT/lib$libsuff"
+    fi
+    if test "$GSSAPI_ROOT" != "yes"; then
+       LDFLAGS="$LDFLAGS -L$GSSAPI_ROOT/lib$libsuff"
+    fi
+    if test -f "$GSSAPI_ROOT/bin/krb5-config"; then
+      dnl krb5-config doesn't have --libs-only-L or similar, put everything
+      dnl into LIBS
+      gss_libs=`$GSSAPI_ROOT/bin/krb5-config --libs gssapi`
+    else
+      if test "x$not_mit" = "x1"; then
+        gss_libs="-lgssapi"
+      else
+        gss_libs="-lgssapi_krb5"
+      fi
+    fi
+    LIBS="$LIBS $gss_libs"
   fi
+
+  AC_MSG_CHECKING([whether GSS-API naming extensions are available])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[
+#ifdef SHIBSP_HAVE_GSSGNU
+# include <gss.h>
+#elif defined SHIBSP_HAVE_GSSMIT
+# include <gssapi/gssapi.h>
+# include <gssapi/gssapi_ext.h>
+#else
+# include <gssapi.h>
+#endif]],
+    [[gss_get_name_attribute(NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);]])],
+    [AC_MSG_RESULT([yes])AC_DEFINE([HAVE_GSSAPI_NAMINGEXTS],[1],[Define to 1 if GSS-API naming extensions are available.])],
+    [AC_MSG_RESULT([no])])
+
+  AC_MSG_CHECKING([whether GSS-API composite name import is available])
+  AC_COMPILE_IFELSE(
+    [AC_LANG_PROGRAM([[
+#ifdef SHIBSP_HAVE_GSSGNU
+# include <gss.h>
+#elif defined SHIBSP_HAVE_GSSMIT
+# include <gssapi/gssapi.h>
+# include <gssapi/gssapi_ext.h>
+#else
+# include <gssapi.h>
+#endif]],
+    [[
+    OM_uint32 minor;
+    gss_name_t srcname;
+    gss_buffer_desc importbuf;
+    gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME_COMPOSITE, &srcname);
+    ]])],
+    [AC_MSG_RESULT([yes])AC_DEFINE([HAVE_GSSAPI_COMPOSITE_NAME],[1],[Define to 1 if GSS-API composite name import is available.])],
+    [AC_MSG_RESULT([no])])
+    
 else
   CPPFLAGS="$save_CPPFLAGS"
 fi

@@ -29,6 +29,7 @@ libshibspinclude_HEADERS = \
 	AccessControl.h \
 	Application.h \
 	base.h \
+	config_pub.h \
 	exceptions.h \
 	paths.h \
 	GSSRequest.h \
@@ -217,9 +218,9 @@ libshibsp_la_SOURCES = \
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshibsp_la_LDFLAGS = -version-info 5:2:0
+libshibsp_la_LDFLAGS = -version-info 5:3:0
 libshibsp_la_LIBADD = $(XMLSEC_LIBS)
-libshibsp_lite_la_LDFLAGS = -version-info 5:2:0
+libshibsp_lite_la_LDFLAGS = -version-info 5:3:0
 libshibsp_lite_la_LIBADD = $(LITE_LIBS)
 libshibsp_lite_la_CPPFLAGS = -DSHIBSP_LITE
 
@@ -253,6 +254,8 @@ EXTRA_DIST = \
 	shibsp-lite.vcxproj \
 	shibsp.vcxproj.filters \
 	shibsp-lite.vcxproj.filters \
+	config_pub.h.in \
+    config_pub_win32.h\
 	paths.h.in \
 	resource.h \
 	shibsp.rc

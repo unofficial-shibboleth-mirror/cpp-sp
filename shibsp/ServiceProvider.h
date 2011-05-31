@@ -26,6 +26,7 @@
 #include <shibsp/util/PropertySet.h>
 
 #include <set>
+#include <vector>
 #include <xmltooling/Lockable.h>
 
 namespace xmltooling {
