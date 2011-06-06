@@ -72,6 +72,8 @@ namespace shibsp {
 #endif
         }
 
+        void init(const char* location);    // encapsulates actions that need to run either in the c'tor or setParent
+
         void setParent(const PropertySet* parent);
         void receive(DDF& in, ostream& out);
         pair<bool,long> unwrap(SPRequest& request, DDF& out) const;
@@ -127,28 +129,61 @@ namespace shibsp {
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAML2"), nullptr, &m_remapper), m_appId(appId),
-        m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS)
-{
-    static const XMLCh ECP[] = UNICODE_LITERAL_3(E,C,P);
-    const XMLCh* flag = e ? e->getAttributeNS(nullptr,ECP) : nullptr;
-#ifdef SHIBSP_LITE
-    m_ecp = (flag && (*flag == chLatin_t || *flag == chDigit_1));
+        m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS),
+#ifndef SHIBSP_LITE
+        m_outgoing(nullptr), m_ecp(nullptr), m_requestTemplate(nullptr)
 #else
-    m_outgoing=nullptr;
-    m_ecp = nullptr;
-    m_requestTemplate=nullptr;
-
+        m_ecp(false)
+#endif
+{
+#ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // Check for a template AuthnRequest to build from.
         DOMElement* child = XMLHelper::getFirstChildElement(e, samlconstants::SAML20P_NS, AuthnRequest::LOCAL_NAME);
         if (child)
             m_requestTemplate = dynamic_cast<AuthnRequest*>(AuthnRequestBuilder::buildOneFromElement(child));
+    }
+#endif
 
+    // If Location isn't set, defer initialization until the setParent call.
+    pair<bool,const char*> loc = getString("Location");
+    if (loc.first) {
+        init(loc.second);
+    }
+
+    m_supportedOptions.insert("isPassive");
+}
+
+void SAML2SessionInitiator::setParent(const PropertySet* parent)
+{
+    DOMPropertySet::setParent(parent);
+    pair<bool,const char*> loc = getString("Location");
+    init(loc.second);
+}
+
+void SAML2SessionInitiator::init(const char* location)
+{
+    if (location) {
+        string address = m_appId + location + "::run::SAML2SI";
+        setAddress(address.c_str());
+    }
+    else {
+        m_log.warn("no Location property in SAML2 SessionInitiator (or parent), can't register as remoted handler");
+    }
+
+    pair<bool,bool> flag = getBool("ECP");
+#ifdef SHIBSP_LITE
+    m_ecp = flag.first && flag.second;
+#else
+    m_outgoing=nullptr;
+    m_ecp = nullptr;
+
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // If directed, build an ECP encoder.
-        if (flag && (*flag == chLatin_t || *flag == chDigit_1)) {
+        if (flag.first && flag.second) {
             try {
                 m_ecp = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
-                    samlconstants::SAML20_BINDING_PAOS, pair<const DOMElement*,const XMLCh*>(e,nullptr)
+                    samlconstants::SAML20_BINDING_PAOS, pair<const DOMElement*,const XMLCh*>(getElement(), nullptr)
                     );
             }
             catch (exception& ex) {
@@ -179,7 +214,7 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
             try {
                 auto_ptr_char b(start);
                 MessageEncoder * encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
-                    b.get(),pair<const DOMElement*,const XMLCh*>(e,nullptr)
+                    b.get(),pair<const DOMElement*,const XMLCh*>(getElement(), nullptr)
                     );
                 if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                     m_encoders[start] = encoder;
@@ -200,28 +235,6 @@ SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* ap
         }
     }
 #endif
-
-    // If Location isn't set, defer address registration until the setParent call.
-    pair<bool,const char*> loc = getString("Location");
-    if (loc.first) {
-        string address = m_appId + loc.second + "::run::SAML2SI";
-        setAddress(address.c_str());
-    }
-
-    m_supportedOptions.insert("isPassive");
-}
-
-void SAML2SessionInitiator::setParent(const PropertySet* parent)
-{
-    DOMPropertySet::setParent(parent);
-    pair<bool,const char*> loc = getString("Location");
-    if (loc.first) {
-        string address = m_appId + loc.second + "::run::SAML2SI";
-        setAddress(address.c_str());
-    }
-    else {
-        m_log.warn("no Location property in SAML2 SessionInitiator (or parent), can't register as remoted handler");
-    }
 }
 
 pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
