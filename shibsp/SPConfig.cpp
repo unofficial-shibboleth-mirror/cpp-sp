@@ -96,7 +96,21 @@ DECL_XMLTOOLING_EXCEPTION_FACTORY(MetadataException,opensaml::saml2md);
 #endif
 
 namespace shibsp {
-   SPConfig g_config;
+    class SHIBSP_DLLLOCAL SPInternalConfig : public SPConfig
+    {
+    public:
+        SPInternalConfig();
+        ~SPInternalConfig();
+
+        bool init(const char* catalog_path=nullptr, const char* inst_prefix=nullptr);
+        void term();
+
+    private:
+        int m_initCount;
+        Mutex* m_lock;
+    };
+    
+    SPInternalConfig g_config;
 }
 
 SPConfig& SPConfig::getConfig()
@@ -156,9 +170,6 @@ const MessageDecoder::ArtifactResolver* SPConfig::getArtifactResolver() const
 
 bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 {
-#ifdef _DEBUG
-    NDC ndc("init");
-#endif
     if (!inst_prefix)
         inst_prefix = getenv("SHIBSP_PREFIX");
     if (!inst_prefix)
@@ -311,9 +322,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 
 void SPConfig::term()
 {
-#ifdef _DEBUG
-    NDC ndc("term");
-#endif
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
     log.info("%s library shutting down", PACKAGE_STRING);
 
@@ -424,6 +432,60 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
     }
     return false;
 }
+
+SPInternalConfig::SPInternalConfig() : m_initCount(0), m_lock(Mutex::create())
+{
+}
+
+SPInternalConfig::~SPInternalConfig()
+{
+    delete m_lock;
+}
+
+bool SPInternalConfig::init(const char* catalog_path, const char* inst_prefix)
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("init");
+#endif
+
+    Lock initLock(m_lock);
+
+    if (m_initCount == LONG_MAX) {
+        Category::getInstance(SHIBSP_LOGCAT".Config").crit("library initialized too many times");
+        return false;
+    }
+
+    if (m_initCount >= 1) {
+        ++m_initCount;
+        return true;
+    }
+
+    if (!SPConfig::init(catalog_path, inst_prefix)) {
+        return false;
+    }
+
+    ++m_initCount;
+    return true;
+}
+
+void SPInternalConfig::term()
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("term");
+#endif
+    
+    Lock initLock(m_lock);
+    if (m_initCount == 0) {
+        Category::getInstance(SHIBSP_LOGCAT".Config").crit("term without corresponding init");
+        return;
+    }
+    else if (--m_initCount > 0) {
+        return;
+    }
+
+    SPConfig::term();
+}
+
 
 TransactionLog::TransactionLog() : log(logging::Category::getInstance(SHIBSP_TX_LOGCAT)), m_lock(Mutex::create())
 {
