@@ -201,7 +201,7 @@ cd /
 %dir %{_libdir}/%{name}
 %{_libdir}/%{name}/*
 %exclude %{_libdir}/%{name}/*.la
-%dir %{_localstatedir}/log/%{name}
+%attr(0750,-,-) %dir %{_localstatedir}/log/%{name}
 %dir %{_localstatedir}/run/%{name}
 %dir %{_datadir}/xml/%{name}
 %{_datadir}/xml/%{name}/*
@@ -218,8 +218,8 @@ cd /
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
 %{_sysconfdir}/%{name}/shibd-*
-%attr(755, root, root) %{_sysconfdir}/%{name}/keygen.sh
-%attr(755, root, root) %{_sysconfdir}/%{name}/metagen.sh
+%attr(755,-,-) %{_sysconfdir}/%{name}/keygen.sh
+%attr(755,-,-) %{_sysconfdir}/%{name}/metagen.sh
 %{_sysconfdir}/%{name}/*.xsl
 %doc %{pkgdocdir}
 %exclude %{pkgdocdir}/api
@@ -232,6 +232,9 @@ cd /
 %doc %{pkgdocdir}/api
 
 %changelog
+* Fri Jun 10 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
+- Log files shouldn't be world readable.
+
 * Fri Dec 25 2009  Scott Cantor  <cantor.2@osu.edu>  - 2.4-1
 - Update dependencies.
 

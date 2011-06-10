@@ -79,9 +79,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{31B171C1-E
 		doxygen.cfg = doxygen.cfg
 		m4\doxygen.m4 = m4\doxygen.m4
 		Makefile.am = Makefile.am
-		pkginfo.in = pkginfo.in
-		Portfile.in = Portfile.in
-		postinstall = postinstall
 		shibboleth.spec.in = shibboleth.spec.in
 	EndProjectSection
 EndProject

@@ -35,12 +35,11 @@ dist-hook:
 	rm -rf `find $(distdir)/isapi_shib -name .svn`
 	rm -rf `find $(distdir)/doc/api -name .svn`
 
-GENFILES = @PACKAGE_NAME@.spec pkginfo Portfile
+GENFILES = @PACKAGE_NAME@.spec
 
 EXTRA_DIST = $(DX_CONFIG) \
     isapi_shib \
     Shibboleth.sln \
     config_win32.h \
     $(GENFILES) \
-    $(GENFILES:%=%.in) \
-    postinstall
+    $(GENFILES:%=%.in)
