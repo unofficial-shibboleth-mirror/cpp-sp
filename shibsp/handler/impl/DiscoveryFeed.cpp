@@ -327,7 +327,7 @@ void DiscoveryFeed::feedToStream(const Application& application, string& cacheTa
 #ifndef SHIBSP_LITE
     m_log.debug("processing discovery feed request");
 
-    DiscoverableMetadataProvider* m=dynamic_cast<DiscoverableMetadataProvider*>(application.getMetadataProvider());
+    DiscoverableMetadataProvider* m=dynamic_cast<DiscoverableMetadataProvider*>(application.getMetadataProvider(false));
     if (!m)
         m_log.warn("MetadataProvider missing or does not support discovery feed");
     Locker locker(m);
