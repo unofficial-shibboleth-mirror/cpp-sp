@@ -274,48 +274,48 @@ void DiscoveryFeed::feedToFile(const Application& application, string& cacheTag)
 #ifndef SHIBSP_LITE
     m_log.debug("processing discovery feed request");
 
-    DiscoverableMetadataProvider* m=dynamic_cast<DiscoverableMetadataProvider*>(application.getMetadataProvider());
-    if (m) {
-        Locker locker(m);
-        string feedTag = m->getCacheTag();
-        if (cacheTag == ('"' + feedTag + '"')) {
-            // The client already has the same feed we do.
-            m_log.debug("client's cache tag matches our feed (%s)", feedTag.c_str());
-            cacheTag.erase();   // clear the tag to signal no change
-            return;
-        }
+    DiscoverableMetadataProvider* m=dynamic_cast<DiscoverableMetadataProvider*>(application.getMetadataProvider(false));
+    if (!m)
+        m_log.warn("MetadataProvider missing or does not support discovery feed");
+    Locker locker(m);
+    string feedTag = m ? m->getCacheTag() : "empty";
+    if (cacheTag == ('"' + feedTag + '"')) {
+        // The client already has the same feed we do.
+        m_log.debug("client's cache tag matches our feed (%s)", feedTag.c_str());
+        cacheTag.erase();   // clear the tag to signal no change
+        return;
+    }
 
-        cacheTag = feedTag;
+    cacheTag = feedTag;
 
-        // The client is out of date or not caching, so we need to see if our copy is good.
-        Lock lock(m_feedLock);
-        time_t now = time(nullptr);
+    // The client is out of date or not caching, so we need to see if our copy is good.
+    Lock lock(m_feedLock);
+    time_t now = time(nullptr);
 
-        // Clean up any old files.
-        while (m_feedQueue.size() > 1 && (now - m_feedQueue.front().second > 120)) {
-            string fname = m_dir + '/' + m_feedQueue.front().first;
-            remove(fname.c_str());
-            m_feedQueue.pop();
-        }
+    // Clean up any old files.
+    while (m_feedQueue.size() > 1 && (now - m_feedQueue.front().second > 120)) {
+        string fname = m_dir + '/' + m_feedQueue.front().first;
+        remove(fname.c_str());
+        m_feedQueue.pop();
+    }
 
-        if (m_feedQueue.empty() || m_feedQueue.back().first != feedTag) {
-            // We're out of date.
-            string fname = m_dir + '/' + feedTag + ".json";
-            ofstream ofile(fname.c_str());
-            if (!ofile)
-                throw ConfigurationException("Unable to create feed in ($1).", params(1,fname.c_str()));
-            bool first = true;
+    if (m_feedQueue.empty() || m_feedQueue.back().first != feedTag) {
+        // We're out of date.
+        string fname = m_dir + '/' + feedTag + ".json";
+        ofstream ofile(fname.c_str());
+        if (!ofile)
+            throw ConfigurationException("Unable to create feed in ($1).", params(1,fname.c_str()));
+        bool first = true;
+        if (m)
             m->outputFeed(ofile, first);
-            ofile.close();
-            m_feedQueue.push(make_pair(feedTag, now));
-        }
-        else {
-            // Update the back of the queue.
-            m_feedQueue.back().second = now;
-        }
+        else
+            ofile << "[\n]";
+        ofile.close();
+        m_feedQueue.push(make_pair(feedTag, now));
     }
     else {
-        throw MetadataException("MetadataProvider does not support discovery feed.");
+        // Update the back of the queue.
+        m_feedQueue.back().second = now;
     }
 #else
     throw ConfigurationException("Build does not support discovery feed.");
@@ -328,23 +328,23 @@ void DiscoveryFeed::feedToStream(const Application& application, string& cacheTa
     m_log.debug("processing discovery feed request");
 
     DiscoverableMetadataProvider* m=dynamic_cast<DiscoverableMetadataProvider*>(application.getMetadataProvider());
-    if (m) {
-        Locker locker(m);
-        string feedTag = m->getCacheTag();
-        if (cacheTag == ('"' + feedTag + '"')) {
-            // The client already has the same feed we do.
-            m_log.debug("client's cache tag matches our feed (%s)", feedTag.c_str());
-            cacheTag.erase();   // clear the tag to signal no change
-            return;
-        }
+    if (!m)
+        m_log.warn("MetadataProvider missing or does not support discovery feed");
+    Locker locker(m);
+    string feedTag = m ? m->getCacheTag() : "empty";
+    if (cacheTag == ('"' + feedTag + '"')) {
+        // The client already has the same feed we do.
+        m_log.debug("client's cache tag matches our feed (%s)", feedTag.c_str());
+        cacheTag.erase();   // clear the tag to signal no change
+        return;
+    }
 
-        cacheTag = feedTag;
-        bool first = true;
+    cacheTag = feedTag;
+    bool first = true;
+    if (m)
         m->outputFeed(os, first);
-    }
-    else {
-        throw MetadataException("MetadataProvider does not support discovery feed.");
-    }
+    else
+        os << "[\n]";
 #else
     throw ConfigurationException("Build does not support discovery feed.");
 #endif
