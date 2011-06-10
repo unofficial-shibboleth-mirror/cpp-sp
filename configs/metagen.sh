@@ -157,7 +157,7 @@ done
 for h in ${NAKEDHOSTS[@]}
 do
   cat << EOF
-      <disco:DiscoveryResponse xmlns="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Location="http://$h/Shibboleth.sso/DS" index="$count"/>
+      <disco:DiscoveryResponse Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Location="http://$h/Shibboleth.sso/DS" index="$count"/>
 EOF
   let "count++"
 done
