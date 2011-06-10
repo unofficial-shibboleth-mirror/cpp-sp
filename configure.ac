@@ -32,7 +32,7 @@ else
 fi
 
 AC_CONFIG_HEADERS([config.h shibsp/config_pub.h])
-AC_CONFIG_FILES([shibboleth.spec pkginfo Portfile])
+AC_CONFIG_FILES([shibboleth.spec])
 
 AC_PROG_CC([gcc gcc3 cc])
 AC_PROG_CXX([g++ g++3 c++ CC])
