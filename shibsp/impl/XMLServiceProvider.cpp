@@ -133,12 +133,12 @@ namespace {
         MetadataProvider* getMetadataProvider(bool required=true) const {
             if (required && !m_base && !m_metadata)
                 throw ConfigurationException("No MetadataProvider available.");
-            return (!m_metadata && m_base) ? m_base->getMetadataProvider() : m_metadata;
+            return (!m_metadata && m_base) ? m_base->getMetadataProvider(required) : m_metadata;
         }
         TrustEngine* getTrustEngine(bool required=true) const {
             if (required && !m_base && !m_trust)
                 throw ConfigurationException("No TrustEngine available.");
-            return (!m_trust && m_base) ? m_base->getTrustEngine() : m_trust;
+            return (!m_trust && m_base) ? m_base->getTrustEngine(required) : m_trust;
         }
         AttributeExtractor* getAttributeExtractor() const {
             return (!m_attrExtractor && m_base) ? m_base->getAttributeExtractor() : m_attrExtractor;
