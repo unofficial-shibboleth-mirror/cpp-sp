@@ -450,7 +450,7 @@ bool SPInternalConfig::init(const char* catalog_path, const char* inst_prefix)
 
     Lock initLock(m_lock);
 
-    if (m_initCount == LONG_MAX) {
+    if (m_initCount == INT_MAX) {
         Category::getInstance(SHIBSP_LOGCAT".Config").crit("library initialized too many times");
         return false;
     }
