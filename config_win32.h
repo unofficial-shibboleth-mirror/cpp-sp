@@ -126,7 +126,7 @@
 #define PACKAGE "shibboleth"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "https://bugs.internet2.edu/"
+#define PACKAGE_BUGREPORT "https://issues.shibboleth.net/"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "shibboleth"
