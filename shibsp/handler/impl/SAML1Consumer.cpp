@@ -39,6 +39,7 @@
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml1/core/Protocols.h>
 # include <saml/saml2/metadata/Metadata.h>
+# include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/io/HTTPRequest.h>
 # include <xmltooling/util/DateTime.h>
 using namespace opensaml::saml1;
@@ -211,7 +212,8 @@ void SAML1Consumer::implementProtocol(
 
             // Extract message bits and re-verify Issuer information.
             extractMessageDetails(
-                *(*a), (minor.first && minor.second==0) ? samlconstants::SAML10_PROTOCOL_ENUM : samlconstants::SAML11_PROTOCOL_ENUM, policy
+                *(*a),
+                (minor.first && minor.second==0) ? samlconstants::SAML10_PROTOCOL_ENUM : samlconstants::SAML11_PROTOCOL_ENUM, policy
                 );
 
             // Run the policy over the assertion. Handles replay, freshness, and
@@ -227,11 +229,20 @@ void SAML1Consumer::implementProtocol(
             tokens.push_back(*a);
 
             // Save off the first valid SSO statement.
-            const vector<AuthenticationStatement*>& statements = const_cast<const saml1::Assertion*>(*a)->getAuthenticationStatements();
+            const vector<AuthenticationStatement*>& statements =
+                    const_cast<const saml1::Assertion*>(*a)->getAuthenticationStatements();
             for (vector<AuthenticationStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
-                if (authnskew.first && authnskew.second &&
-                    (*s)->getAuthenticationInstant() && (now - (*s)->getAuthenticationInstantEpoch() > authnskew.second))
-                    contextualError = "The gap between now and the time you logged into your identity provider exceeds the limit.";
+                if ((*s)->getAuthenticationInstant() &&
+                        (*s)->getAuthenticationInstantEpoch() - XMLToolingConfig::getConfig().clock_skew_secs > now) {
+                    contextualError = "The login time at your identity provider was future-dated.";
+                }
+                else if (authnskew.first && authnskew.second && (*s)->getAuthenticationInstant() &&
+                        (*s)->getAuthenticationInstantEpoch() <= now && (now - (*s)->getAuthenticationInstantEpoch() > authnskew.second)) {
+                    contextualError = "The gap between now and the time you logged into your identity provider exceeds the allowed limit.";
+                }
+                else if (authnskew.first && authnskew.second && (*s)->getAuthenticationInstant() == nullptr) {
+                    contextualError = "Your identity provider did not supply a time of login, violating local policy.";
+                }
                 else if (!ssoStatement) {
                     ssoStatement = *s;
                     break;
