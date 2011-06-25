@@ -658,9 +658,18 @@ void ADFSConsumer::implementProtocol(
         pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
 
         const saml1::AuthenticationStatement* ssoStatement=saml1token->getAuthenticationStatements().front();
-        if (authnskew.first && authnskew.second &&
-                ssoStatement->getAuthenticationInstant() && (now - ssoStatement->getAuthenticationInstantEpoch() > authnskew.second))
-            throw FatalProfileException("The gap between now and the time you logged into your identity provider exceeds the limit.");
+        if (ssoStatement->getAuthenticationInstant()) {
+            if (ssoStatement->getAuthenticationInstantEpoch() - XMLToolingConfig::getConfig().clock_skew_secs > now) {
+                throw FatalProfileException("The login time at your identity provider was future-dated.");
+            }
+            else if (authnskew.first && authnskew.second && ssoStatement->getAuthenticationInstantEpoch() <= now &&
+                    (now - ssoStatement->getAuthenticationInstantEpoch() > authnskew.second)) {
+                throw FatalProfileException("The gap between now and the time you logged into your identity provider exceeds the allowed limit.");
+            }
+        }
+        else if (authnskew.first && authnskew.second) {
+            throw FatalProfileException("Your identity provider did not supply a time of login, violating local policy.");
+        }
 
         // Address checking.
         saml1::SubjectLocality* locality = ssoStatement->getSubjectLocality();

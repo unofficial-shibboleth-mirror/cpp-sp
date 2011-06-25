@@ -238,10 +238,19 @@ void SAML2Consumer::implementProtocol(
             // Save off the first valid SSO statement, but favor the "soonest" session expiration.
             const vector<AuthnStatement*>& statements = const_cast<const saml2::Assertion*>(*a)->getAuthnStatements();
             for (vector<AuthnStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
-                if (authnskew.first && authnskew.second && (*s)->getAuthnInstant() && (now - (*s)->getAuthnInstantEpoch() > authnskew.second))
-                    contextualError = "The gap between now and the time you logged into your identity provider exceeds the limit.";
-                else if (!ssoStatement || (*s)->getSessionNotOnOrAfterEpoch() < ssoStatement->getSessionNotOnOrAfterEpoch())
+                if ((*s)->getAuthnInstant() && (*s)->getAuthnInstantEpoch() - XMLToolingConfig::getConfig().clock_skew_secs > now) {
+                    contextualError = "The login time at your identity provider was future-dated.";
+                }
+                else if (authnskew.first && authnskew.second && (*s)->getAuthnInstant() &&
+                        (*s)->getAuthnInstantEpoch() <= now && (now - (*s)->getAuthnInstantEpoch() > authnskew.second)) {
+                    contextualError = "The gap between now and the time you logged into your identity provider exceeds the allowed limit.";
+                }
+                else if (authnskew.first && authnskew.second && (*s)->getAuthnInstant() == nullptr) {
+                    contextualError = "Your identity provider did not supply a time of login, violating local policy.";
+                }
+                else if (!ssoStatement || (*s)->getSessionNotOnOrAfterEpoch() < ssoStatement->getSessionNotOnOrAfterEpoch()) {
                     ssoStatement = *s;
+                }
             }
 
             // Save off the first valid Subject, but favor an unencrypted NameID over anything else.
