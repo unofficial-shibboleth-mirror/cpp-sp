@@ -34,10 +34,11 @@ start() {
 			fi
 		fi
 	fi
- 
+
+#_RHEL6_	export LD_LIBRARY_PATH=/opt/shibboleth/lib:$LD_LIBRARY_PATH
 	export SHIBD_PID=$pidfile
- 	touch $pidfile
- 	chown $SHIBD_USER:$SHIBD_USER $pidfile
+	touch $pidfile
+	chown $SHIBD_USER:$SHIBD_USER $pidfile
 	if [ -x /usr/sbin/selinuxenabled ] && /usr/sbin/selinuxenabled; then
 		/sbin/restorecon $pidfile
 	fi

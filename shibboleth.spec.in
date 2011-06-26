@@ -8,7 +8,7 @@ License:	Apache 2.0
 URL:		http://shibboleth.internet2.edu/
 Source:     %{name}-sp-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
-PreReq:     openssl, xmltooling-schemas, opensaml-schemas
+Requires:   openssl, xmltooling-schemas, opensaml-schemas
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:         %{insserv_prereq}
 BuildRequires:  libXerces-c-devel >= 2.8.0
@@ -20,6 +20,9 @@ BuildRequires:  libxmltooling-devel >= 1.4
 BuildRequires:  libsaml-devel >= 2.4
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel}
+%if 0%{?rhel} >= 6
+Requires: libcurl-openssl >= 7.21.7
+%else
 BuildRequires:  gcc-c++, zlib-devel
 %{!?_without_doxygen:BuildRequires: doxygen}
 %{!?_without_odbc:BuildRequires:unixODBC-devel}
@@ -81,6 +84,10 @@ This package includes files needed for development with Shibboleth.
 %if "%{_vendor}" == "suse"
 	%{__sed} -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
 		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/native.logger
+%endif
+%if 0%{?rhel} >= 6
+	%{__sed} -i "s/#_RHEL6_//g" \
+		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-redhat
 %endif
 
 # Plug the SP into the built-in Apache on a recognized system.
@@ -232,8 +239,10 @@ cd /
 %doc %{pkgdocdir}/api
 
 %changelog
-* Fri Jun 10 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
+* Sun Jun 26 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
 - Log files shouldn't be world readable.
+- Explicit requirement for libcurl-openssl on RHEL6
+- Uncomment LD_LIBRARY_PATH in init script for RHEL6 
 
 * Fri Dec 25 2009  Scott Cantor  <cantor.2@osu.edu>  - 2.4-1
 - Update dependencies.
