@@ -22,7 +22,8 @@ BuildRequires:  libsaml-devel >= 2.4
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel}
 %if 0%{?rhel} >= 6
 Requires: libcurl-openssl >= 7.21.7
-%else
+BuildRequires: chrpath
+%endif
 BuildRequires:  gcc-c++, zlib-devel
 %{!?_without_doxygen:BuildRequires: doxygen}
 %{!?_without_odbc:BuildRequires:unixODBC-devel}
@@ -88,6 +89,9 @@ This package includes files needed for development with Shibboleth.
 %if 0%{?rhel} >= 6
 	%{__sed} -i "s/#_RHEL6_//g" \
 		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-redhat
+	chrpath -d $RPM_BUILD_ROOT%{_sbindir}/shibd
+	chrpath -d $RPM_BUILD_ROOT%{_bindir}/mdquery
+	chrpath -d $RPM_BUILD_ROOT%{_bindir}/resolvertest
 %endif
 
 # Plug the SP into the built-in Apache on a recognized system.
@@ -243,6 +247,7 @@ cd /
 - Log files shouldn't be world readable.
 - Explicit requirement for libcurl-openssl on RHEL6
 - Uncomment LD_LIBRARY_PATH in init script for RHEL6 
+- Remove rpath from binaries for RHEL6
 
 * Fri Dec 25 2009  Scott Cantor  <cantor.2@osu.edu>  - 2.4-1
 - Update dependencies.
