@@ -25,16 +25,15 @@ Shibboleth Implementation Team
    wassa@memphis.edu
 
    Chad LaJoie
-   Georgetown University
-   lajoie@georgetown.edu
+   Itumi, LLC.
+   lajoie@itumi.biz
 
    Derek Morr
    Penn State University
    dvm105@psu.edu
 
    Will Norris
-   USC
-   wnorris@usc.edu
+   will@willnorris.com
    
    Brent Putman
    Georgetown University
