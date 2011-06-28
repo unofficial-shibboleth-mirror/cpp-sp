@@ -1,14 +1,15 @@
 Name:		@PACKAGE_NAME@
 Version:	@PACKAGE_VERSION@
 Release:	1
-Summary:    Open source system for attribute-based Web SSO
+Summary:	Open source system for attribute-based Web SSO
 Group:		Productivity/Networking/Security
-Vendor:     Internet2
+Vendor:		Internet2
 License:	Apache 2.0
 URL:		http://shibboleth.internet2.edu/
-Source:     %{name}-sp-%{version}.tar.gz
+Source:		%{name}-sp-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
-Requires:   openssl, xmltooling-schemas, opensaml-schemas
+Requires:	openssl
+PreReq:		xmltooling-schemas, opensaml-schemas
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:         %{insserv_prereq}
 BuildRequires:  libXerces-c-devel >= 2.8.0
@@ -214,7 +215,7 @@ cd /
 %dir %{_libdir}/%{name}
 %{_libdir}/%{name}/*
 %exclude %{_libdir}/%{name}/*.la
-%attr(0750,-,-) %dir %{_localstatedir}/log/%{name}
+%attr(0750,root,root) %dir %{_localstatedir}/log/%{name}
 %dir %{_localstatedir}/run/%{name}
 %dir %{_datadir}/xml/%{name}
 %{_datadir}/xml/%{name}/*
@@ -231,8 +232,8 @@ cd /
 %{_sysconfdir}/%{name}/*.dist
 %{_sysconfdir}/%{name}/apache*.config
 %{_sysconfdir}/%{name}/shibd-*
-%attr(755,-,-) %{_sysconfdir}/%{name}/keygen.sh
-%attr(755,-,-) %{_sysconfdir}/%{name}/metagen.sh
+%attr(0755,root,root) %{_sysconfdir}/%{name}/keygen.sh
+%attr(0755,root,root) %{_sysconfdir}/%{name}/metagen.sh
 %{_sysconfdir}/%{name}/*.xsl
 %doc %{pkgdocdir}
 %exclude %{pkgdocdir}/api
