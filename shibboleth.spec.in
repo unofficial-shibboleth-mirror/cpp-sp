@@ -89,7 +89,7 @@ This package includes files needed for development with Shibboleth.
 %if 0%{?rhel} >= 6
 	%{__sed} -i "s/#_RHEL6_//g" \
 		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-redhat
-	%{__sed} -i "s/\/opt\/shibboleth\/lib/%{_libdir}/g" \
+	%{__sed} -i "s/\/opt\/shibboleth\/lib/\/opt\/shibboleth\/%{_lib}/g" \
 		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-redhat
 	chrpath -d $RPM_BUILD_ROOT%{_sbindir}/shibd
 	chrpath -d $RPM_BUILD_ROOT%{_bindir}/mdquery
