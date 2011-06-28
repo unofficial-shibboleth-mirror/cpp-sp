@@ -3,7 +3,7 @@ Release Notes
 Shibboleth Native SP
 
 Fix/enhancement lists:
-https://bugs.internet2.edu/jira/secure/ReleaseNote.jspa?projectId=10011
+https://wiki.shibboleth.net/confluence/display/DEV/SPRoadmap
 
 NOTE: The shibboleth2.xml configuration format in this release
 is fully compatible with the 2.x releases, but there are significant
