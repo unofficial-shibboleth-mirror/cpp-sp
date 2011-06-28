@@ -10,6 +10,9 @@ for use in the OpenSSL Toolkit. (http://www.openssl.org/).
 This project uses libraries covered by the Lesser GNU Public License.
 Source code for these libraries is available on request.
 
+This product also includes software developed, copyrighted, and
+contributed by The Ohio State University.
+
 This project includes software developed by the National Research Council 
 of Canada.
 

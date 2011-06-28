@@ -85,7 +85,7 @@ Thanks to:
 
     Vishal Goenka (SunGard SCT) for contributing some useful resolver plugins
 
-	Ian Young for donating XSLT scripts for converting metadata across
-	  Shibboleth versions
+    Ian Young for donating XSLT scripts for converting metadata across
+      Shibboleth versions
     
     Kaspar Brand for assisting in the development of CRL-related functionality
