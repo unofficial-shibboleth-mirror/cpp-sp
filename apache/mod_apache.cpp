@@ -173,6 +173,7 @@ struct shib_dir_config
     int bExportAssertion;   // export SAML assertion to the environment?
     int bUseEnvVars;        // use environment?
     int bUseHeaders;        // use headers?
+    int bExpireRedirects;   // expire redirects?
 };
 
 // creates per-directory config structure
@@ -193,6 +194,7 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
     dc->bExportAssertion = -1;
     dc->bUseEnvVars = -1;
     dc->bUseHeaders = -1;
+    dc->bExpireRedirects = -1;
     return dc;
 }
 
@@ -257,6 +259,7 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     dc->bAuthoritative=((child->bAuthoritative==-1) ? parent->bAuthoritative : child->bAuthoritative);
     dc->bUseEnvVars=((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
     dc->bUseHeaders=((child->bUseHeaders==-1) ? parent->bUseHeaders : child->bUseHeaders);
+    dc->bExpireRedirects=((child->bExpireRedirects==-1) ? parent->bExpireRedirects : child->bExpireRedirects);
     return dc;
 }
 
@@ -587,6 +590,10 @@ public:
   long sendRedirect(const char* url) {
     HTTPResponse::sendRedirect(url);
     ap_table_set(m_req->headers_out, "Location", url);
+    if (m_dc->bExpireRedirects == 1) {
+        ap_table_set(m_req->headers_out, "Expires", "01-Jan-1997 12:00:00 GMT");
+        ap_table_set(m_req->headers_out, "Cache-Control", "private,no-store,no-cache");
+    }
     return REDIRECT;
   }
   const vector<string>& getClientCertificates() const {
@@ -1561,6 +1568,9 @@ static command_rec shire_cmds[] = {
   {"ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bUseHeaders),
    OR_AUTHCFG, FLAG, "Export attributes using custom HTTP headers"},
+  {"ShibExpireRedirects", (config_fn_t)ap_set_flag_slot,
+   (void *) XtOffsetOf (shib_dir_config, bExpireRedirects),
+   OR_AUTHCFG, FLAG, "Expire SP-generated redirects"},
 
   {nullptr}
 };
@@ -1680,6 +1690,9 @@ static command_rec shib_cmds[] = {
     AP_INIT_FLAG("ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bUseHeaders),
         OR_AUTHCFG, "Export attributes using custom HTTP headers"),
+    AP_INIT_FLAG("ShibExpireRedirects", (config_fn_t)ap_set_flag_slot,
+        (void *) offsetof (shib_dir_config, bExpireRedirects),
+        OR_AUTHCFG, "Expire SP-generated redirects"),
 
     {nullptr}
 };
