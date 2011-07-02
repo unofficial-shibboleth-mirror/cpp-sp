@@ -591,8 +591,8 @@ public:
     HTTPResponse::sendRedirect(url);
     ap_table_set(m_req->headers_out, "Location", url);
     if (m_dc->bExpireRedirects == 1) {
-        ap_table_set(m_req->err_headers_out, "Expires", "01-Jan-1997 12:00:00 GMT");
-        ap_table_set(m_req->err_headers_out, "Cache-Control", "private,no-store,no-cache");
+        ap_table_set(m_req->err_headers_out, "Expires", "Wed, 01 Jan 1997 12:00:00 GMT");
+        ap_table_set(m_req->err_headers_out, "Cache-Control", "private,no-store,no-cache,max-age=0");
     }
     return REDIRECT;
   }
