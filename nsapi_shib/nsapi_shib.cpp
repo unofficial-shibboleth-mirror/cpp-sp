@@ -448,8 +448,8 @@ public:
     HTTPResponse::sendRedirect(url);
     param_free(pblock_remove("content-type", m_rq->srvhdrs));
     pblock_nninsert("content-length", 0, m_rq->srvhdrs);
-    pblock_nvinsert("expires", "01-Jan-1997 12:00:00 GMT", m_rq->srvhdrs);
-    pblock_nvinsert("cache-control", "private,no-store,no-cache", m_rq->srvhdrs);
+    pblock_nvinsert("expires", "Wed, 01 Jan 1997 12:00:00 GMT", m_rq->srvhdrs);
+    pblock_nvinsert("cache-control", "private,no-store,no-cache,max-age=0", m_rq->srvhdrs);
     pblock_nvinsert("location", url, m_rq->srvhdrs);
     pblock_nvinsert("connection","close",m_rq->srvhdrs);
     protocol_status(m_sn, m_rq, PROTOCOL_REDIRECT, nullptr);
