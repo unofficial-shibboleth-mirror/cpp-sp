@@ -100,8 +100,8 @@ namespace shibsp {
         }
 
         request.setContentType("text/html");
-        request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-        request.setResponseHeader("Cache-Control","private,no-store,no-cache");
+        request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
+        request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
 
         // Nothing in the request map, so check for a property named "page" in the Errors property set.
         if (!pathname.first && props) {

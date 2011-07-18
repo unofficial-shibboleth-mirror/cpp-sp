@@ -762,8 +762,8 @@ long AbstractHandler::sendPostResponse(
 
     httpResponse.setContentType("text/html");
     if (!postExpire.first || postExpire.second) {
-        httpResponse.setResponseHeader("Expires", "01-Jan-1997 12:00:00 GMT");
-        httpResponse.setResponseHeader("Cache-Control", "no-cache, no-store, must-revalidate, private");
+        httpResponse.setResponseHeader("Expires", "Wed, 01 Jan 1997 12:00:00 GMT");
+        httpResponse.setResponseHeader("Cache-Control", "no-cache, no-store, must-revalidate, private, max-age=0");
         httpResponse.setResponseHeader("Pragma", "no-cache");
     }
     return httpResponse.sendResponse(str);

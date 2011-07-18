@@ -123,8 +123,8 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
         if (!session) {
             s << "A valid session was not found.</pre></body></html>" << endl;
             request.setContentType("text/html");
-            request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-            request.setResponseHeader("Cache-Control","private,no-store,no-cache");
+            request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
+            request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
             return make_pair(true, request.sendResponse(s));
         }
     }
@@ -132,8 +132,8 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
         s << "Exception while retrieving active session:" << endl
             << '\t' << ex.what() << "</pre></body></html>" << endl;
         request.setContentType("text/html");
-        request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-        request.setResponseHeader("Cache-Control","private,no-store,no-cache");
+        request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
+        request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
         return make_pair(true, request.sendResponse(s));
     }
 
@@ -198,7 +198,7 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
 
     s << "</pre></body></html>";
     request.setContentType("text/html; charset=UTF-8");
-    request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-    request.setResponseHeader("Cache-Control","private,no-store,no-cache");
+    request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
+    request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
     return make_pair(true, request.sendResponse(s));
 }

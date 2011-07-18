@@ -69,8 +69,8 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
         prop.second = tname.c_str();
     }
     response.setContentType("text/html");
-    response.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-    response.setResponseHeader("Cache-Control","private,no-store,no-cache");
+    response.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
+    response.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
     string fname(prop.second);
     ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
     if (!infile)

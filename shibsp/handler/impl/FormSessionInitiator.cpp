@@ -117,8 +117,8 @@ pair<bool,long> FormSessionInitiator::run(SPRequest& request, string& entityID, 
     preserveRelayState(app, request, target);
 
     request.setContentType("text/html");
-    request.setResponseHeader("Expires","01-Jan-1997 12:00:00 GMT");
-    request.setResponseHeader("Cache-Control","private,no-store,no-cache");
+    request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
+    request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
     string fname(m_template);
     ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
     if (!infile)
