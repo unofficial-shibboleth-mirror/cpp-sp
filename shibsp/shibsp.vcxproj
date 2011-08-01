@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -313,7 +313,7 @@
     <ClInclude Include="remoting\ddf.h" />
     <ClInclude Include="remoting\ListenerService.h" />
     <ClInclude Include="attribute\Attribute.h" />
-    <ClCompile Include="attribute\BinaryAttribute.h" />
+    <ClInclude Include="attribute\BinaryAttribute.h" />
     <ClInclude Include="attribute\AttributeDecoder.h" />
     <ClInclude Include="attribute\ExtensibleAttribute.h" />
     <ClInclude Include="attribute\NameIDAttribute.h" />
