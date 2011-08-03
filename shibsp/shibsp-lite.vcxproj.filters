@@ -225,6 +225,9 @@
     <ClCompile Include="version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="attribute\BinaryAttribute.cpp">
+      <Filter>Source Files\attribute</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">
@@ -346,6 +349,9 @@
     </ClInclude>
     <ClInclude Include="config_pub_win32.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="attribute\BinaryAttribute.h">
+      <Filter>Header Files\attribute</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -27,14 +27,10 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "SPConfig.h"
+#include "attribute/SimpleAttribute.h"
 #ifndef SHIBSP_LITE
 # include "attribute/AttributeDecoder.h"
 #endif
-#include "attribute/SimpleAttribute.h"
-#include "attribute/ScopedAttribute.h"
-#include "attribute/NameIDAttribute.h"
-#include "attribute/ExtensibleAttribute.h"
-#include "attribute/XMLAttribute.h"
 #include "util/SPConstants.h"
 
 #include <xercesc/util/XMLUniDefs.hpp>

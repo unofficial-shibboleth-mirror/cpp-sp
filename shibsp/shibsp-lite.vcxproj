@@ -268,7 +268,7 @@
     <ClInclude Include="remoting\ddf.h" />
     <ClInclude Include="remoting\ListenerService.h" />
     <ClInclude Include="attribute\Attribute.h" />
-    <ClCompile Include="attribute\BinaryAttribute.h" />
+    <ClInclude Include="attribute\BinaryAttribute.h" />
     <ClInclude Include="attribute\ExtensibleAttribute.h" />
     <ClInclude Include="attribute\NameIDAttribute.h" />
     <ClInclude Include="attribute\ScopedAttribute.h" />
