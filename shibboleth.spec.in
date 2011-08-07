@@ -21,7 +21,7 @@ BuildRequires:  libxmltooling-devel >= 1.4
 BuildRequires:  libsaml-devel >= 2.4
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel}
-%if 0%{?rhel} >= 6
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
 Requires: libcurl-openssl >= 7.21.7
 BuildRequires: chrpath
 %endif
@@ -87,7 +87,7 @@ This package includes files needed for development with Shibboleth.
 	%{__sed} -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
 		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/native.logger
 %endif
-%if 0%{?rhel} >= 6
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
 	%{__sed} -i "s/#_RHEL6_//g" \
 		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-redhat
 	%{__sed} -i "s/\/opt\/shibboleth\/lib/\/opt\/shibboleth\/%{_lib}/g" \
