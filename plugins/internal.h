@@ -43,6 +43,5 @@
 #include <xmltooling/logging.h>
 
 using namespace xmltooling::logging;
-using namespace xercesc;
 
 #endif /* __plugins_internal_h__ */

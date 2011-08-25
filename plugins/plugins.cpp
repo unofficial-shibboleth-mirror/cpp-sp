@@ -31,6 +31,7 @@
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace std;
 
 #ifdef WIN32

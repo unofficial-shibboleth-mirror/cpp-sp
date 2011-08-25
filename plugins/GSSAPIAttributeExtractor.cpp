@@ -61,6 +61,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {

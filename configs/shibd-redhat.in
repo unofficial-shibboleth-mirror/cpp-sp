@@ -12,30 +12,26 @@
 . /etc/rc.d/init.d/functions
 shibd="@-PREFIX-@/sbin/shibd"
 SHIBD_USER=root
-pidfile=@-PKGRUNDIR-@/shibd.pid
 prog=shibd
-#VER=`cat /etc/redhat-release | awk '{print $3}' | awk -F . '{print $1}'`
-RETVAL=0
+pidfile=@-PKGRUNDIR-@/shibd.pid
+lockfile=/var/lock/subsys/$prog
 
-if [ -f /etc/sysconfig/shibd ] ; then
-    . /etc/sysconfig/shibd
-fi
+[ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
 
 start() {
 	echo -n $"Starting $prog: "
-	if [ -f /var/lock/subsys/shibd ] ; then
+	if [ -f $lockfile ] ; then
 		if [ -f $pidfile ]; then
 			read kpid < $pidfile
 			if checkpid $kpid 2>&1; then
 				echo "process already running"
-					return -1
+					return 1;
 				else
 					echo "lock file found but no process running for pid $kpid, continuing"
 			fi
 		fi
 	fi
 
-#_RHEL6_	export LD_LIBRARY_PATH=/opt/shibboleth/lib:$LD_LIBRARY_PATH
 	export SHIBD_PID=$pidfile
 	touch $pidfile
 	chown $SHIBD_USER:$SHIBD_USER $pidfile
@@ -43,12 +39,12 @@ start() {
 		/sbin/restorecon $pidfile
 	fi
 	# Handle transition from root to non-root packages.
-	chown $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@/*
+	chown $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@/* 2>/dev/null || :
 	daemon --user $SHIBD_USER $shibd -p $pidfile -f -w 30
 
 	RETVAL=$?
 	echo
-		[ $RETVAL = 0 ] && touch /var/lock/subsys/shibd
+		[ $RETVAL -eq 0 ] && touch $lockfile
 	return $RETVAL
 }
 
@@ -58,29 +54,62 @@ stop() {
 
 	RETVAL=$?
 	echo
-	[ $RETVAL = 0 ] && rm -f /var/lock/subsys/shibd $pidfile
+	[ $RETVAL -eq 0 ] && rm -f $lockfile $pidfile
+	return $RETVAL
 }
 
-# See how we were called.
-case "$1" in
-  start)
-	start
-	;;
-  stop)
-	stop
-	;;
-  status)
-	status $shibd
-	RETVAL=$?
-	;;
-  restart)
+restart() {
 	stop
 	sleep 5
 	start
-	;;
-  *)
-	echo $"Usage: $prog {start|stop|status|restart}"
-	exit 1
+}
+
+reload() {
+	restart
+}
+
+force_reload() {
+	restart
+}
+
+rh_status() {
+	# run checks to determine if the service is running or use generic status
+	status $prog
+}
+
+rh_status_q() {
+	rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+	start)
+		rh_status_q && exit 0
+		$1
+		;;
+	stop)
+		rh_status_q || exit 0
+		$1
+		;;
+	restart)
+		$1
+		;;
+	reload)
+		rh_status_q || exit 7
+		$1
+		;;
+	force-reload)
+		force_reload
+		;;
+	status)
+		rh_status
+		;;
+	condrestart|try-restart)
+		rh_status_q || exit 0
+		restart
+		;;
+	*)
+		echo $"Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload}"
+		exit 2
 esac
 
-exit $RETVAL
+exit $?
