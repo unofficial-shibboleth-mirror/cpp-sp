@@ -32,11 +32,14 @@ BuildRequires:  gcc-c++, zlib-devel
 %if "%{_vendor}" == "redhat"
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
 BuildRequires: redhat-rpm-config
+Requires(pre): shadow-utils
 %endif
 %if "%{_vendor}" == "suse"
+Requires(pre): pwdutils
 %{!?_without_builtinapache:BuildRequires: apache2-devel}
 %endif
 
+%define runuser shibboleth
 %if "%{_vendor}" == "suse"
 %define pkgdocdir %{_docdir}/%{name}
 %else
@@ -87,6 +90,7 @@ This package includes files needed for development with Shibboleth.
 	%{__sed} -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
 		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/native.logger
 %endif
+
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
 	%{__sed} -i "s/#_RHEL6_//g" \
 		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-redhat
@@ -126,6 +130,8 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
 fi
 
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "suse"
+	%{__sed} -i "s/SHIBD_USER=root/SHIBD_USER=%{runuser}/g" \
+		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-%{_vendor}
 	# %{_initddir} not yet in RHEL5, use deprecated %{_initrddir}
 	install -d -m 0755 $RPM_BUILD_ROOT%{_initrddir}
 	install -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
@@ -141,6 +147,12 @@ fi
 %clean
 [ "$RPM_BUILD_ROOT" != "/" ] && %{__rm} -rf $RPM_BUILD_ROOT
 
+%pre
+getent group %{runuser} >/dev/null || groupadd -r %{runuser}
+getent passwd %{runuser} >/dev/null || useradd -r -g %{runuser} \
+	-d  %{_localstatedir}/run/%{name} -s /sbin/nologin -c "Shibboleth SP daemon" %{runuser}
+exit 0
+
 %post
 %ifnos solaris2.8 solaris2.9 solaris2.10
 /sbin/ldconfig
@@ -148,7 +160,7 @@ fi
 
 # Key generation
 cd %{_sysconfdir}/%{name}
-sh ./keygen.sh -b
+sh ./keygen.sh -b -u %{runuser} -g %{runuser} 
 
 %if "%{_vendor}" == "redhat"
 	if [ "$1" -gt "1" ] ; then
@@ -234,8 +246,8 @@ fi
 %dir %{_libdir}/%{name}
 %{_libdir}/%{name}/*
 %exclude %{_libdir}/%{name}/*.la
-%attr(0750,root,root) %dir %{_localstatedir}/log/%{name}
-%dir %{_localstatedir}/run/%{name}
+%attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/%{name}
+%attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/%{name}
 %dir %{_datadir}/xml/%{name}
 %{_datadir}/xml/%{name}/*
 %dir %{_datadir}/%{name}
@@ -271,6 +283,7 @@ fi
 - Move logo and stylesheet to version-independent tree
 - Make shib.conf noreplace
 - Post-fixup of Alias commands in older shib.conf
+- Run shibd as non-root
 
 * Sun Jun 26 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
 - Log files shouldn't be world readable.

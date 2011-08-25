@@ -24,6 +24,7 @@ SHIB_CONFIG=@-PKGSYSCONFDIR-@/shibboleth2.xml
 DAEMON=@-PREFIX-@/sbin/$NAME
 SCRIPTNAME=/etc/init.d/$NAME
 PID_FILE=@-PKGRUNDIR-@/shibd.pid
+SHIBD_USER=root
 DAEMON_OPTS=""
  
 # Force removal of socket
@@ -31,6 +32,9 @@ DAEMON_OPTS="$DAEMON_OPTS -f"
  
 # Use defined configuration file
 DAEMON_OPTS="$DAEMON_OPTS -c $SHIB_CONFIG"
+
+# Set uid to run as
+DAEMON_OPTS="$DAEMON_OPTS -u $SHIBD_USER"
  
 # Specify pid file to use
 DAEMON_OPTS="$DAEMON_OPTS -p $PID_FILE"
@@ -48,6 +52,9 @@ rc_reset
  
 case "$1" in
     start)
+		# Handle transition from root to non-root packages.
+		chown $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@/*
+		
         echo -n "Starting $DESC ($NAME)"
         ## Start daemon with startproc(8). If this fails
         ## the echo return value is set appropriate.

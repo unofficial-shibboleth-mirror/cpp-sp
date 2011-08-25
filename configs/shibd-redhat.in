@@ -42,6 +42,8 @@ start() {
 	if [ -x /usr/sbin/selinuxenabled ] && /usr/sbin/selinuxenabled; then
 		/sbin/restorecon $pidfile
 	fi
+	# Handle transition from root to non-root packages.
+	chown $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@/*
 	daemon --user $SHIBD_USER $shibd -p $pidfile -f -w 30
 
 	RETVAL=$?
