@@ -11,19 +11,19 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 Requires:	openssl
 PreReq:		xmltooling-schemas, opensaml-schemas
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
-PreReq:         %{insserv_prereq}
-BuildRequires:  libXerces-c-devel >= 2.8.0
+PreReq:		%{insserv_prereq}
+BuildRequires:	libXerces-c-devel >= 2.8.0
 %else
-BuildRequires:  libxerces-c-devel >= 2.8.0
+BuildRequires:	libxerces-c-devel >= 2.8.0
 %endif
-BuildRequires:  libxml-security-c-devel >= 1.4.0
-BuildRequires:  libxmltooling-devel >= 1.5
-BuildRequires:  libsaml-devel >= 2.5
+BuildRequires:	libxml-security-c-devel >= 1.4.0
+BuildRequires:	libxmltooling-devel >= 1.5
+BuildRequires:	libsaml-devel >= 2.5
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
-Requires: libcurl-openssl >= 7.21.7
-BuildRequires: chrpath
+Requires:		libcurl-openssl >= 7.21.7
+BuildRequires:	chrpath
 %endif
 BuildRequires:  gcc-c++, zlib-devel
 %{!?_without_doxygen:BuildRequires: doxygen}
@@ -48,11 +48,11 @@ Shibboleth is a Web Single Sign-On implementations based on OpenSAML
 that supports multiple protocols, federated identity, and the extensible
 exchange of rich attributes subject to privacy controls.
 
-This package contains the Shibboleth Service Provider runtime libraries
-and Apache module(s).
+This package contains the Shibboleth Service Provider runtime libraries,
+daemon, default plugins, and Apache module(s).
 
 %package devel
-Summary:	Shibboleth development Headers
+Summary:	Shibboleth Development Headers
 Group:		Development/Libraries/C and C++
 Requires:	%{name} = %{version}-%{release}
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
@@ -101,28 +101,28 @@ This package includes files needed for development with Shibboleth.
 touch rpm.filelist
 APACHE_CONFIG="no"
 if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_13.so ] ; then
-    APACHE_CONFIG="apache.config"
+	APACHE_CONFIG="apache.config"
 fi
 if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_20.so ] ; then
-    APACHE_CONFIG="apache2.config"
+	APACHE_CONFIG="apache2.config"
 fi
 if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_22.so ] ; then
-    APACHE_CONFIG="apache22.config"
+	APACHE_CONFIG="apache22.config"
 fi
 %{?_without_builtinapache:APACHE_CONFIG="no"}
 if [ "$APACHE_CONFIG" != "no" ] ; then
-    APACHE_CONFD="no"
-    if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
-            APACHE_CONFD="%{_sysconfdir}/httpd/conf.d"
-    fi
-    if [ -d %{_sysconfdir}/apache2/conf.d ] ; then
-            APACHE_CONFD="%{_sysconfdir}/apache2/conf.d"
-    fi
-    if [ "$APACHE_CONFD" != "no" ] ; then
-        %{__mkdir} -p $RPM_BUILD_ROOT$APACHE_CONFD
-        %{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/$APACHE_CONFIG $RPM_BUILD_ROOT$APACHE_CONFD/shib.conf 
-        echo "%config(noreplace) $APACHE_CONFD/shib.conf" > rpm.filelist
-    fi
+	APACHE_CONFD="no"
+	if [ -d %{_sysconfdir}/httpd/conf.d ] ; then
+		APACHE_CONFD="%{_sysconfdir}/httpd/conf.d"
+	fi
+	if [ -d %{_sysconfdir}/apache2/conf.d ] ; then
+		APACHE_CONFD="%{_sysconfdir}/apache2/conf.d"
+	fi
+	if [ "$APACHE_CONFD" != "no" ] ; then
+		%{__mkdir} -p $RPM_BUILD_ROOT$APACHE_CONFD
+		%{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/$APACHE_CONFIG $RPM_BUILD_ROOT$APACHE_CONFD/shib.conf 
+		echo "%config(noreplace) $APACHE_CONFD/shib.conf" > rpm.filelist
+	fi
 fi
 
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "suse"
@@ -150,20 +150,40 @@ fi
 cd %{_sysconfdir}/%{name}
 sh ./keygen.sh -b
 
+if [ "$1" -gt "1" ] ; then
+	# On systems with shib.conf installed, clean up old Alias commands
+	# by pointing them at new version-independent /usr/share/share tree.
+	# Any Aliases we didn't create we assume are custom files.
+	# This is to accomodate making shib.conf a noreplace config file.
+	APACHE_CONF="no"
+	if [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] ; then
+		APACHE_CONF="%{_sysconfdir}/httpd/conf.d/shib.conf"
+	fi
+	if [ -f %{_sysconfdir}/apache2/conf.d/shib.conf ] ; then
+		APACHE_CONF="%{_sysconfdir}/apache2/conf.d/shib.conf"
+	fi
+	if [ "$APACHE_CONF" != "no" ] ; then
+		%{__sed} -i "s/\/usr\/share\/doc\/shibboleth\(\-\(.\)\{1,\}\)\{0,1\}\/main\.css/\/usr\/share\/shibboleth\/main.css/g" \
+			$APACHE_CONF
+		%{__sed} -i "s/\/usr\/share\/doc\/shibboleth\(\-\(.\)\{1,\}\)\{0,1\}\/logo\.jpg/\/usr\/share\/shibboleth\/logo.jpg/g" \
+			$APACHE_CONF
+	fi
+fi
+
 %if "%{_vendor}" == "redhat"
 	# This adds the proper /etc/rc*.d links for the script
 	/sbin/chkconfig --add shibd
 	# On upgrade, restart components if they're already running.
-    if [ "$1" -gt "1" ] ; then
-        /etc/init.d/shibd status 1>/dev/null && /etc/init.d/shibd restart 1>/dev/null
-        %{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
-        exit 0
-    fi
+	if [ "$1" -gt "1" ] ; then
+		/etc/init.d/shibd status 1>/dev/null && /etc/init.d/shibd restart 1>/dev/null
+		%{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
+		exit 0
+	fi
 %endif
 %if "%{_vendor}" == "suse"
-    # This adds the proper /etc/rc*.d links for the script
-    cd /
-    %insserv_force_if_yast shibd
+	# This adds the proper /etc/rc*.d links for the script
+	cd /
+	%insserv_force_if_yast shibd
 %endif
 
 %preun
@@ -171,14 +191,14 @@ sh ./keygen.sh -b
 	if [ "$1" = 0 ] ; then
 		/sbin/service shibd stop >/dev/null 2>&1
 		/sbin/chkconfig --del shibd
-        %{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
+		%{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
 	fi
 %endif
 %if "%{_vendor}" == "suse"
-    %stop_on_removal shibd
-    if [ "$1" = 0 ] ; then
-        %{!?_without_builtinapache:/etc/init.d/apache2 status 1>/dev/null && /etc/init.d/apache2 restart 1>/dev/null}
-    fi
+	%stop_on_removal shibd
+	if [ "$1" = 0 ] ; then
+		%{!?_without_builtinapache:/etc/init.d/apache2 status 1>/dev/null && /etc/init.d/apache2 restart 1>/dev/null}
+	fi
 %endif
 exit 0
 
@@ -196,13 +216,13 @@ cd /
 %posttrans
 # ugly hack if init script got removed during %postun by upgraded (buggy/2.1) package
 %if "%{_vendor}" == "redhat"
-    if [ ! -f %{_initrddir}/shibd ] ; then
-        if [ -f %{_sysconfdir}/%{name}/shibd-%{_vendor} ] ; then
-            %{__cp} -p %{_sysconfdir}/%{name}/shibd-%{_vendor} %{_initrddir}/shibd
-            %{__chmod} 755 %{_initrddir}/shibd
-            /sbin/chkconfig --add shibd
-        fi
-    fi
+	if [ ! -f %{_initrddir}/shibd ] ; then
+		if [ -f %{_sysconfdir}/%{name}/shibd-%{_vendor} ] ; then
+			%{__cp} -p %{_sysconfdir}/%{name}/shibd-%{_vendor} %{_initrddir}/shibd
+			%{__chmod} 755 %{_initrddir}/shibd
+			/sbin/chkconfig --add shibd
+	fi
+fi
 %endif
 
 %files -f rpm.filelist
@@ -248,6 +268,11 @@ cd /
 %doc %{pkgdocdir}/api
 
 %changelog
+* Tue Aug 9 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.5-1
+- Move logo and stylesheet to version-independent tree
+- Make shib.conf noreplace
+- Post-fixup of Alias commands in older shib.conf
+
 * Sun Jun 26 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
 - Log files shouldn't be world readable.
 - Explicit requirement for libcurl-openssl on RHEL6
