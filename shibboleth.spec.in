@@ -150,27 +150,26 @@ fi
 cd %{_sysconfdir}/%{name}
 sh ./keygen.sh -b
 
-if [ "$1" -gt "1" ] ; then
-	# On systems with shib.conf installed, clean up old Alias commands
-	# by pointing them at new version-independent /usr/share/share tree.
-	# Any Aliases we didn't create we assume are custom files.
-	# This is to accomodate making shib.conf a noreplace config file.
-	APACHE_CONF="no"
-	if [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] ; then
-		APACHE_CONF="%{_sysconfdir}/httpd/conf.d/shib.conf"
-	fi
-	if [ -f %{_sysconfdir}/apache2/conf.d/shib.conf ] ; then
-		APACHE_CONF="%{_sysconfdir}/apache2/conf.d/shib.conf"
-	fi
-	if [ "$APACHE_CONF" != "no" ] ; then
-		%{__sed} -i "s/\/usr\/share\/doc\/shibboleth\(\-\(.\)\{1,\}\)\{0,1\}\/main\.css/\/usr\/share\/shibboleth\/main.css/g" \
-			$APACHE_CONF
-		%{__sed} -i "s/\/usr\/share\/doc\/shibboleth\(\-\(.\)\{1,\}\)\{0,1\}\/logo\.jpg/\/usr\/share\/shibboleth\/logo.jpg/g" \
-			$APACHE_CONF
-	fi
-fi
-
 %if "%{_vendor}" == "redhat"
+	if [ "$1" -gt "1" ] ; then
+		# On Red Hat with shib.conf installed, clean up old Alias commands
+		# by pointing them at new version-independent /usr/share/share tree.
+		# Any Aliases we didn't create we assume are custom files.
+		# This is to accomodate making shib.conf a noreplace config file.
+		# We can't do this for SUSE, because they disallow changes to
+		# packaged files in scriplets.
+		APACHE_CONF="no"
+		if [ -f %{_sysconfdir}/httpd/conf.d/shib.conf ] ; then
+			APACHE_CONF="%{_sysconfdir}/httpd/conf.d/shib.conf"
+		fi
+		if [ "$APACHE_CONF" != "no" ] ; then
+			%{__sed} -i "s/\/usr\/share\/doc\/shibboleth\(\-\(.\)\{1,\}\)\{0,1\}\/main\.css/\/usr\/share\/shibboleth\/main.css/g" \
+				$APACHE_CONF
+			%{__sed} -i "s/\/usr\/share\/doc\/shibboleth\(\-\(.\)\{1,\}\)\{0,1\}\/logo\.jpg/\/usr\/share\/shibboleth\/logo.jpg/g" \
+				$APACHE_CONF
+		fi
+	fi
+
 	# This adds the proper /etc/rc*.d links for the script
 	/sbin/chkconfig --add shibd
 	# On upgrade, restart components if they're already running.
