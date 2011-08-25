@@ -44,7 +44,7 @@ dnl Determine whether we have gcc of a particular version or later,
 dnl based on major, minor, patchlevel versions and date.
 dnl AC_HAVE_GCC_VERSION(MAJOR_VERSION, MINOR_VERSION, PATCH_LEVEL, 
 dnl 	SNAPSHOT_DATE [, ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND]])
-AC_DEFUN(AC_HAVE_GCC_VERSION,
+AC_DEFUN([AC_HAVE_GCC_VERSION],
 [AC_CACHE_CHECK([gcc is at least version $1.$2.$3.$4],
           ac_cv_gcc_version_$1_$2_$3_$4,
 [
