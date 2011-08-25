@@ -1,4 +1,4 @@
-# https://spaces.internet2.edu/display/SHIB2/NativeSPApacheConfig
+# https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApacheConfig
 
 # RPM installations on platforms with a conf.d directory will
 # result in this file being copied into that directory for you
@@ -32,8 +32,8 @@ SetHandler shib-handler
 # Used for example logo and style sheet in error templates.
 #
 <IfModule mod_alias.c>
-  Alias /shibboleth-sp/main.css @-PKGDOCDIR-@/main.css
-  Alias /shibboleth-sp/logo.jpg @-PKGDOCDIR-@/logo.jpg
+  Alias /shibboleth-sp/main.css @-PKGWEBDIR-@/main.css
+  Alias /shibboleth-sp/logo.jpg @-PKGWEBDIR-@/logo.jpg
 </IfModule>
 
 #

@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 pkgdocdir = $(datadir)/doc/@PACKAGE@-@PACKAGE_VERSION@
+pkgwebdir = $(datadir)/@PACKAGE@
 
 install-data-hook:
 	if test -d api ; then \
@@ -16,10 +17,12 @@ docfiles = \
 	RELEASE.txt \
 	FASTCGI.LICENSE \
 	OPENSSL.LICENSE \
-	LOG4CPP.LICENSE \
-	main.css \
-	logo.jpg
-	
+	LOG4CPP.LICENSE
+
+webfiles = main.css logo.jpg
+
 pkgdoc_DATA = $(docfiles)
 
-EXTRA_DIST = $(docfiles) api
+pkgweb_DATA = $(webfiles)
+
+EXTRA_DIST = $(docfiles) $(webfiles) api

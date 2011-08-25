@@ -4,9 +4,9 @@ AUTOMAKE_OPTIONS = foreign
 
 pkglibdir = ${libdir}/@PACKAGE@
 pkglogdir = ${localstatedir}/log/@PACKAGE@
-pkgdocdir = $(datadir)/doc/@PACKAGE@-@PACKAGE_VERSION@
 shirelogdir = ${localstatedir}/log/httpd
 pkgxmldir = $(datadir)/xml/@PACKAGE@
+pkgwebdir = $(datadir)/@PACKAGE@
 pkgrundir = $(localstatedir)/run/@PACKAGE@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
@@ -46,7 +46,7 @@ CONFIGFILES = \
 	metadataError.html \
 	bindingTemplate.html \
 	discoveryTemplate.html \
-    postTemplate.html \
+	postTemplate.html \
 	localLogout.html \
 	globalLogout.html \
 	partialLogout.html \
@@ -61,8 +61,8 @@ do-build-file:
         -e 's:@-PREFIX-@:${prefix}:g' \
         -e 's:@-PKGLIBDIR-@:${pkglibdir}:g' \
         -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
-        -e 's:@-PKGDOCDIR-@:${pkgdocdir}:g' \
         -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
+        -e 's:@-PKGWEBDIR-@:${pkgwebdir}:g' \
         -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
         -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
         -e 's:@-PKGRUNDIR-@:${pkgrundir}:g'
@@ -100,7 +100,6 @@ all-data-local: $(BUILTCONFIGFILES)
 
 install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(pkglogdir)
-	$(mkinstalldirs) $(DESTDIR)$(pkgdocdir)
 	$(mkinstalldirs) $(DESTDIR)$(shirelogdir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgrundir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgxmldir)

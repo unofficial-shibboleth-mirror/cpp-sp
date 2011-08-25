@@ -121,7 +121,7 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
     if [ "$APACHE_CONFD" != "no" ] ; then
         %{__mkdir} -p $RPM_BUILD_ROOT$APACHE_CONFD
         %{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/$APACHE_CONFIG $RPM_BUILD_ROOT$APACHE_CONFD/shib.conf 
-        echo "%config $APACHE_CONFD/shib.conf" > rpm.filelist
+        echo "%config(noreplace) $APACHE_CONFD/shib.conf" > rpm.filelist
     fi
 fi
 
@@ -219,6 +219,8 @@ cd /
 %dir %{_localstatedir}/run/%{name}
 %dir %{_datadir}/xml/%{name}
 %{_datadir}/xml/%{name}/*
+%dir %{_datadir}/%{name}
+%{_datadir}/%{name}/*
 %dir %{_sysconfdir}/%{name}
 %config(noreplace) %{_sysconfdir}/%{name}/*.xml
 %config(noreplace) %{_sysconfdir}/%{name}/*.html
