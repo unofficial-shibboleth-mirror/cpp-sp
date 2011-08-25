@@ -294,7 +294,7 @@ AC_LINK_IFELSE(
         [[#if _XMLTOOLING_VERSION >= 10500
 xmltooling::XMLToolingConfig::getConfig();
 #else
-#error Need XMLTooling version 1.4 or higher
+#error Need XMLTooling version 1.5 or higher
 #endif]])],
     ,[AC_MSG_ERROR([unable to link with XMLTooling, or version was too old])])
 
@@ -340,7 +340,7 @@ AC_LINK_IFELSE(
 [[#if _OPENSAML_VERSION >= 20500
 opensaml::SAMLConfig::getConfig();
 #else
-#error Need OpenSAML version 2.4 or higher
+#error Need OpenSAML version 2.5 or higher
 #endif]])],
     ,[AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])
 	])

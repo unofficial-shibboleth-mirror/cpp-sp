@@ -17,8 +17,8 @@ BuildRequires:  libXerces-c-devel >= 2.8.0
 BuildRequires:  libxerces-c-devel >= 2.8.0
 %endif
 BuildRequires:  libxml-security-c-devel >= 1.4.0
-BuildRequires:  libxmltooling-devel >= 1.4
-BuildRequires:  libsaml-devel >= 2.4
+BuildRequires:  libxmltooling-devel >= 1.5
+BuildRequires:  libsaml-devel >= 2.5
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
@@ -61,8 +61,8 @@ Requires:	libXerces-c-devel >= 2.8.0
 Requires: 	libxerces-c-devel >= 2.8.0
 %endif
 Requires: 	libxml-security-c-devel >= 1.4.0
-Requires: 	libxmltooling-devel >= 1.4
-Requires: 	libsaml-devel >= 2.4
+Requires: 	libxmltooling-devel >= 1.5
+Requires: 	libsaml-devel >= 2.5
 %{?_with_log4cpp:Requires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:Requires: liblog4shib-devel}
 
