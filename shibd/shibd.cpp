@@ -168,6 +168,8 @@ int real_main(int preinit)
 int daemon_wait = 3;
 bool shibd_running = false;
 bool daemonize = true;
+uid_t runasuser = 0;
+gid_t runasgroup = 0;
 
 static void term_handler(int arg)
 {
@@ -234,16 +236,18 @@ static int setup_signals(void)
 static void usage(char* whoami)
 {
     fprintf(stderr, "usage: %s [-dcxtfpvh]\n", whoami);
-    fprintf(stderr, "  -d\tinstallation prefix to use.\n");
-    fprintf(stderr, "  -c\tconfig file to use.\n");
-    fprintf(stderr, "  -x\tXML schema catalogs to use.\n");
-    fprintf(stderr, "  -t\ttest configuration file for problems.\n");
-    fprintf(stderr, "  -f\tforce removal of listener socket.\n");
-    fprintf(stderr, "  -F\tstay in the foreground.\n");
-    fprintf(stderr, "  -p\tpid file to use.\n");
-    fprintf(stderr, "  -w\tseconds to wait for successful daemonization.\n");
-    fprintf(stderr, "  -v\tprint software version.\n");
-    fprintf(stderr, "  -h\tprint this help message.\n");
+    fprintf(stderr, "  -d\tinstallation prefix to use\n");
+    fprintf(stderr, "  -c\tconfig file to use\n");
+    fprintf(stderr, "  -x\tXML schema catalogs to use\n");
+    fprintf(stderr, "  -t\ttest configuration file for problems\n");
+    fprintf(stderr, "  -f\tforce removal of listener socket\n");
+    fprintf(stderr, "  -F\tstay in the foreground\n");
+    fprintf(stderr, "  -p\tpid file to use\n");
+    fprintf(stderr, "  -w\tseconds to wait for successful daemonization\n");
+    fprintf(stderr, "  -u\tuid to run under\n");
+    fprintf(stderr, "  -g\tgid to run under\n");
+    fprintf(stderr, "  -v\tprint software version\n");
+    fprintf(stderr, "  -h\tprint this help message\n");
     exit(1);
 }
 
@@ -251,7 +255,7 @@ static int parse_args(int argc, char* argv[])
 {
     int opt;
 
-    while ((opt = getopt(argc, argv, "d:c:x:p:w:fFtvh")) > 0) {
+    while ((opt = getopt(argc, argv, "d:c:x:p:w:u:g:fFtvh")) > 0) {
         switch (opt) {
             case 'd':
                 shar_prefix=optarg;
@@ -284,6 +288,14 @@ static int parse_args(int argc, char* argv[])
                 if (daemon_wait <= 0)
                     daemon_wait = 3;
                 break;
+            case 'u':
+                if (optarg)
+                    runasuser = atoi(optarg);
+                break;
+            case 'g':
+                if (optarg)
+                    runasgroup = atoi(optarg);
+                break;
             default:
                 return -1;
         }
@@ -302,6 +314,16 @@ int main(int argc, char *argv[])
 
     if (setup_signals() != 0)
         return -1;
+
+    if (runasuser > 0 && setuid(runasuser) != 0) {
+        fprintf(stderr, "setuid failed, check -u option");
+        return -1;
+    }
+
+    if (runasgroup > 0 && setgid(runasgroup) != 0) {
+        fprintf(stderr, "setgid failed, check -g option");
+        return -1;
+    }
 
     // initialize the shib-target library
     SPConfig& conf=SPConfig::getConfig();
