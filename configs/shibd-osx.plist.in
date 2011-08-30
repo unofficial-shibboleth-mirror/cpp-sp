@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key> <string>edu.internet2.shibboleth.shibd</string>
-	<key>ServiceDescription</key> <string>Shibboleth 2.0 Service Provider daemon</string>
+	<key>ServiceDescription</key> <string>Shibboleth 2 Service Provider daemon</string>
 
 	<key>ProgramArguments</key>
 	<array>
@@ -17,5 +17,6 @@
 	<key>RunAtLoad</key> <false/>
 	<key>OnDemand</key> <true/>
 	<key>StandardErrorPath</key> <string>/dev/null</string>
+	<key>UserName</key> <string>root</string>
 </dict>
 </plist>
