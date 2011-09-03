@@ -315,13 +315,13 @@ int main(int argc, char *argv[])
     if (setup_signals() != 0)
         return -1;
 
-    if (runasuser > 0 && setuid(runasuser) != 0) {
-        fprintf(stderr, "setuid failed, check -u option");
+    if (runasgroup > 0 && setgid(runasgroup) != 0) {
+        fprintf(stderr, "setgid failed, check -g option");
         return -1;
     }
 
-    if (runasgroup > 0 && setgid(runasgroup) != 0) {
-        fprintf(stderr, "setgid failed, check -g option");
+    if (runasuser > 0 && setuid(runasuser) != 0) {
+        fprintf(stderr, "setuid failed, check -u option");
         return -1;
     }
 
