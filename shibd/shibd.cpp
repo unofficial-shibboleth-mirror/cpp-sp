@@ -19,7 +19,7 @@
  */
 
 /*
- * shibd.cpp -- the shibd "main" code.  All the functionality is elsewhere
+ * shibd.cpp -- the shibd "main" code.
  */
 
 
@@ -38,8 +38,13 @@
 #include <shibsp/SPConfig.h>
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#include <sys/select.h>
+# include <unistd.h>
+# include <sys/select.h>
+#endif
+
+#if defined(HAVE_GRP_H) && defined(HAVE_PWD_H)
+# include <pwd.h>
+# include <grp.h>
 #endif
 
 #include <stdio.h>
@@ -168,8 +173,8 @@ int real_main(int preinit)
 int daemon_wait = 3;
 bool shibd_running = false;
 bool daemonize = true;
-uid_t runasuser = 0;
-gid_t runasgroup = 0;
+const char* runasuser = nullptr;
+const char* runasgroup = nullptr;
 
 static void term_handler(int arg)
 {
@@ -235,7 +240,7 @@ static int setup_signals(void)
 
 static void usage(char* whoami)
 {
-    fprintf(stderr, "usage: %s [-dcxtfpvh]\n", whoami);
+    fprintf(stderr, "usage: %s [-dcxtfFpwugvh]\n", whoami);
     fprintf(stderr, "  -d\tinstallation prefix to use\n");
     fprintf(stderr, "  -c\tconfig file to use\n");
     fprintf(stderr, "  -x\tXML schema catalogs to use\n");
@@ -244,8 +249,8 @@ static void usage(char* whoami)
     fprintf(stderr, "  -F\tstay in the foreground\n");
     fprintf(stderr, "  -p\tpid file to use\n");
     fprintf(stderr, "  -w\tseconds to wait for successful daemonization\n");
-    fprintf(stderr, "  -u\tuid to run under\n");
-    fprintf(stderr, "  -g\tgid to run under\n");
+    fprintf(stderr, "  -u\tuser to run under\n");
+    fprintf(stderr, "  -g\tgroup to run under\n");
     fprintf(stderr, "  -v\tprint software version\n");
     fprintf(stderr, "  -h\tprint this help message\n");
     exit(1);
@@ -290,11 +295,11 @@ static int parse_args(int argc, char* argv[])
                 break;
             case 'u':
                 if (optarg)
-                    runasuser = atoi(optarg);
+                    runasuser = optarg;
                 break;
             case 'g':
                 if (optarg)
-                    runasgroup = atoi(optarg);
+                    runasgroup = optarg;
                 break;
             default:
                 return -1;
@@ -315,14 +320,38 @@ int main(int argc, char *argv[])
     if (setup_signals() != 0)
         return -1;
 
-    if (runasgroup > 0 && setgid(runasgroup) != 0) {
-        fprintf(stderr, "setgid failed, check -g option");
+    if (runasgroup) {
+#ifdef HAVE_GETGRNAM
+        struct group* grp = getgrnam(runasgroup);
+        if (!grp) {
+            fprintf(stderr, "getgrnam failed, check -g option\n");
+            return -1;
+        }
+        if (setgid(grp->gr_gid) != 0) {
+            fprintf(stderr, "setgid failed, check -g option\n");
+            return -1;
+        }
+#else
+        fprintf(stderr, "-g not supported on this platform");
         return -1;
+#endif
     }
 
-    if (runasuser > 0 && setuid(runasuser) != 0) {
-        fprintf(stderr, "setuid failed, check -u option");
+    if (runasuser) {
+#ifdef HAVE_GETPWNAM
+        struct passwd* pwd = getpwnam(runasuser);
+        if (!pwd) {
+            fprintf(stderr, "getpwnam failed, check -u option\n");
+            return -1;
+        }
+        if (setuid(pwd->pw_uid) != 0) {
+            fprintf(stderr, "setuid failed, check -u option\n");
+            return -1;
+        }
+#else
+        fprintf(stderr, "-u not supported on this platform");
         return -1;
+#endif
     }
 
     // initialize the shib-target library
