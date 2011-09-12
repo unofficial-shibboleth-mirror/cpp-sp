@@ -963,7 +963,9 @@ void SSCache::insert(
         }
     }
 
-    auto_ptr_char key(SAMLConfig::getConfig().generateIdentifier());
+    XMLCh* widekey = SAMLConfig::getConfig().generateIdentifier();
+    auto_ptr_char key(widekey);
+    XMLString::release(&widekey);
 
     // Store session properties in DDF.
     DDF obj = DDF(key.get()).structure();

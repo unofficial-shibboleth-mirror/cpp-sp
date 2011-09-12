@@ -72,6 +72,10 @@ namespace shibsp {
             }
         }
 
+        virtual ~AttributeValueRegexFunctor() {
+            delete m_regex;
+        }
+
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
             if (m_attributeID.empty())
                 throw AttributeFilteringException("No attributeID specified.");
