@@ -290,10 +290,12 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
 #ifndef SHIBSP_LITE
                     StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
                     if (storage) {
+                        // Use a random key
                         string rsKey;
-                        generateRandomHex(rsKey,32);
+                        SAMLConfig::getConfig().generateRandomBytes(rsKey,32);
+                        rsKey = SAMLArtifact::toHex(rsKey);
                         if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(nullptr) + 600))
-                            throw IOException("Attempted to insert duplicate storage key.");
+                            throw IOException("Collision generating in-memory relay state key.");
                         relayState = string(mech.second-3) + ':' + rsKey;
                     }
                     else {
@@ -302,6 +304,8 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
                         log(SPRequest::SPError, msg);
                         relayState.erase();
                     }
+#else
+                    throw ConfigurationException("Lite version of library cannot be used out of process.");
 #endif
                 }
                 else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
@@ -643,6 +647,8 @@ void AbstractHandler::preservePostData(
             else {
                 m_log.error("storage-backed PostData mechanism with invalid StorageService ID (%s)", mech.second);
             }
+#else
+            throw ConfigurationException("Lite version of library cannot be used out of process.");
 #endif
         }
         else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
