@@ -28,7 +28,7 @@
         You MUST supply an effectively unique handlerURL value for each of your applications.
         The value defaults to /Shibboleth.sso, and should be a relative path, with the SP computing
         a relative value based on the virtual host. Using handlerSSL="true", the default, will force
-        the protocol to be https. You should also add a cookieProps setting of "; path=/; secure"
+        the protocol to be https. You should also add a cookieProps setting of "; path=/; secure; HttpOnly"
         in that case. Note that while we default checkAddress to "false", this has a negative
         impact on the security of the SP. Stealing cookies/sessions is much easier with this disabled.
         -->

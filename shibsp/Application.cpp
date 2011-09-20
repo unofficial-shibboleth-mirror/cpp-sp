@@ -60,7 +60,7 @@ const char* Application::getId() const
 
 pair<string,const char*> Application::getCookieNameProps(const char* prefix, time_t* lifetime) const
 {
-    static const char* defProps="; path=/";
+    static const char* defProps="; path=/; HttpOnly";
 
     if (lifetime)
         *lifetime = 0;
