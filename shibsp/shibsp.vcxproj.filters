@@ -393,6 +393,9 @@
     <ClCompile Include="version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\AuthnAuthorityAttributeExtractor.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">

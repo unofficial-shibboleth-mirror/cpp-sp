@@ -109,6 +109,9 @@ namespace shibsp {
     /** AttributeExtractor for KeyInfo information. */
     #define KEYDESCRIPTOR_ATTRIBUTE_EXTRACTOR "KeyDescriptor"
 
+    /** AttributeExtractor for AuthenticatingAuthority information. */
+    #define AUTHNAUTHORITY_ATTRIBUTE_EXTRACTOR "AuthnAuthority"
+
     /** AttributeExtractor based on chaining together other extractors. */
     #define CHAINING_ATTRIBUTE_EXTRACTOR "Chaining"
 };
