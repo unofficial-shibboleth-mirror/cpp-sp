@@ -181,7 +181,7 @@ namespace shibsp {
             }
         }
 
-        ~DummyRequest() {
+        virtual ~DummyRequest() {
             delete m_parser;
         }
 
@@ -451,18 +451,19 @@ pair<bool,long> StatusHandler::processMessage(
             status = "<Partial/>";
         }
 
+        MetadataProvider* m = application.getMetadataProvider();
+        Locker mlock(m);
+
         const PropertySet* relyingParty=nullptr;
         param=httpRequest.getParameter("entityID");
-        if (param) {
-            MetadataProvider* m = application.getMetadataProvider();
-            Locker mlock(m);
+        if (param)
             relyingParty = application.getRelyingParty(m->getEntityDescriptor(MetadataProviderCriteria(application, param)).first);
-        }
-        else {
+        else
             relyingParty = &application;
-        }
 
         s << "<Application id='" << application.getId() << "' entityID='" << relyingParty->getString("entityID").second << "'/>";
+
+        m->outputStatus(s);
 
         s << "<Handlers>";
         vector<const Handler*> handlers;
