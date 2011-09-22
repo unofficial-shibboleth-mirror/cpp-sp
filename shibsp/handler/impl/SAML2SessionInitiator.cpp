@@ -674,10 +674,23 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
         if (authnContextClassRef) {
             reqContext->getAuthnContextDeclRefs().clear();
-            auto_ptr_XMLCh wideclass(authnContextClassRef);
-            AuthnContextClassRef* cref = AuthnContextClassRefBuilder::buildAuthnContextClassRef();
-            cref->setReference(wideclass.get());
-            reqContext->getAuthnContextClassRefs().push_back(cref);
+            XMLCh* wideclass = XMLString::transcode(authnContextClassRef);
+            XMLString::trim(wideclass);
+            int pos;
+            XMLCh* start = wideclass;
+            while (start && *start) {
+                pos = XMLString::indexOf(start, chSpace);
+                if (pos != -1)
+                    *(start + pos) = chNull;
+                AuthnContextClassRef* cref = AuthnContextClassRefBuilder::buildAuthnContextClassRef();
+                cref->setReference(start);
+                reqContext->getAuthnContextClassRefs().push_back(cref);
+                if (pos != -1)
+                    start = start + pos + 1;
+                else
+                    break;
+            }
+            XMLString::release(&wideclass);
         }
 
         if (reqContext->getAuthnContextClassRefs().empty() && reqContext->getAuthnContextDeclRefs().empty()) {
