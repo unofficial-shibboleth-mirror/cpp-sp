@@ -314,6 +314,33 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     const vector<const Assertion*>* tokens
     ) const
 {
+    return resolveAttributes(
+        application,
+        issuer,
+        protocol,
+        v1nameid,
+        nullptr,
+        nameid,
+        nullptr,
+        authncontext_class,
+        authncontext_decl,
+        tokens
+        );
+}
+
+ResolutionContext* AssertionConsumerService::resolveAttributes(
+    const Application& application,
+    const saml2md::RoleDescriptor* issuer,
+    const XMLCh* protocol,
+    const saml1::NameIdentifier* v1nameid,
+    const saml1::AuthenticationStatement* v1statement,
+    const saml2::NameID* nameid,
+    const saml2::AuthnStatement* statement,
+    const XMLCh* authncontext_class,
+    const XMLCh* authncontext_decl,
+    const vector<const Assertion*>* tokens
+    ) const
+{
     // First we do the extraction of any pushed information, including from metadata.
     vector<Attribute*> resolvedAttributes;
     AttributeExtractor* extractor = application.getAttributeExtractor();
@@ -337,23 +364,33 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                 }
             }
         }
+
         m_log.debug("extracting pushed attributes...");
-        if (v1nameid) {
+
+        if (v1nameid || nameid) {
             try {
-                extractor->extractAttributes(application, issuer, *v1nameid, resolvedAttributes);
+                if (v1nameid)
+                    extractor->extractAttributes(application, issuer, *v1nameid, resolvedAttributes);
+                else
+                    extractor->extractAttributes(application, issuer, *nameid, resolvedAttributes);
             }
             catch (exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
-        else if (nameid) {
+
+        if (v1statement || statement) {
             try {
-                extractor->extractAttributes(application, issuer, *nameid, resolvedAttributes);
+                if (v1statement)
+                    extractor->extractAttributes(application, issuer, *v1statement, resolvedAttributes);
+                else
+                    extractor->extractAttributes(application, issuer, *statement, resolvedAttributes);
             }
             catch (exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
+
         if (tokens) {
             for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
                 try {

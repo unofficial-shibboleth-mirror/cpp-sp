@@ -639,8 +639,10 @@ void ADFSConsumer::implementProtocol(
     if (!policy.isAuthenticated())
         throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
-    saml1::NameIdentifier* saml1name=nullptr;
+    const saml1::NameIdentifier* saml1name=nullptr;
+    const saml1::AuthenticationStatement* saml1statement=nullptr;
     saml2::NameID* saml2name=nullptr;
+    const saml2::AuthnStatement* saml2statement=nullptr;
     const XMLCh* authMethod=nullptr;
     const XMLCh* authInstant=nullptr;
     time_t now = time(nullptr), sessionExp = 0;
@@ -657,13 +659,13 @@ void ADFSConsumer::implementProtocol(
         // authnskew allows rejection of SSO if AuthnInstant is too old.
         pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
 
-        const saml1::AuthenticationStatement* ssoStatement=saml1token->getAuthenticationStatements().front();
-        if (ssoStatement->getAuthenticationInstant()) {
-            if (ssoStatement->getAuthenticationInstantEpoch() - XMLToolingConfig::getConfig().clock_skew_secs > now) {
+        saml1statement = saml1token->getAuthenticationStatements().front();
+        if (saml1statement->getAuthenticationInstant()) {
+            if (saml1statement->getAuthenticationInstantEpoch() - XMLToolingConfig::getConfig().clock_skew_secs > now) {
                 throw FatalProfileException("The login time at your identity provider was future-dated.");
             }
-            else if (authnskew.first && authnskew.second && ssoStatement->getAuthenticationInstantEpoch() <= now &&
-                    (now - ssoStatement->getAuthenticationInstantEpoch() > authnskew.second)) {
+            else if (authnskew.first && authnskew.second && saml1statement->getAuthenticationInstantEpoch() <= now &&
+                    (now - saml1statement->getAuthenticationInstantEpoch() > authnskew.second)) {
                 throw FatalProfileException("The gap between now and the time you logged into your identity provider exceeds the allowed limit.");
             }
         }
@@ -672,16 +674,16 @@ void ADFSConsumer::implementProtocol(
         }
 
         // Address checking.
-        saml1::SubjectLocality* locality = ssoStatement->getSubjectLocality();
+        saml1::SubjectLocality* locality = saml1statement->getSubjectLocality();
         if (locality && locality->getIPAddress()) {
             auto_ptr_char ip(locality->getIPAddress());
             checkAddress(application, httpRequest, ip.get());
         }
 
-        saml1name = ssoStatement->getSubject()->getNameIdentifier();
-        authMethod = ssoStatement->getAuthenticationMethod();
-        if (ssoStatement->getAuthenticationInstant())
-            authInstant = ssoStatement->getAuthenticationInstant()->getRawData();
+        saml1name = saml1statement->getSubject()->getNameIdentifier();
+        authMethod = saml1statement->getAuthenticationMethod();
+        if (saml1statement->getAuthenticationInstant())
+            authInstant = saml1statement->getAuthenticationInstant()->getRawData();
 
         // Session expiration.
         pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
@@ -703,26 +705,26 @@ void ADFSConsumer::implementProtocol(
         // authnskew allows rejection of SSO if AuthnInstant is too old.
         pair<bool,unsigned int> authnskew = sessionProps ? sessionProps->getUnsignedInt("maxTimeSinceAuthn") : pair<bool,unsigned int>(false,0);
 
-        const saml2::AuthnStatement* ssoStatement=saml2token->getAuthnStatements().front();
+        saml2statement = saml2token->getAuthnStatements().front();
         if (authnskew.first && authnskew.second &&
-                ssoStatement->getAuthnInstant() && (now - ssoStatement->getAuthnInstantEpoch() > authnskew.second))
+                saml2statement->getAuthnInstant() && (now - saml2statement->getAuthnInstantEpoch() > authnskew.second))
             throw FatalProfileException("The gap between now and the time you logged into your identity provider exceeds the limit.");
 
         // Address checking.
-        saml2::SubjectLocality* locality = ssoStatement->getSubjectLocality();
+        saml2::SubjectLocality* locality = saml2statement->getSubjectLocality();
         if (locality && locality->getAddress()) {
             auto_ptr_char ip(locality->getAddress());
             checkAddress(application, httpRequest, ip.get());
         }
 
         saml2name = saml2token->getSubject() ? saml2token->getSubject()->getNameID() : nullptr;
-        if (ssoStatement->getAuthnContext() && ssoStatement->getAuthnContext()->getAuthnContextClassRef())
-            authMethod = ssoStatement->getAuthnContext()->getAuthnContextClassRef()->getReference();
-        if (ssoStatement->getAuthnInstant())
-            authInstant = ssoStatement->getAuthnInstant()->getRawData();
+        if (saml2statement->getAuthnContext() && saml2statement->getAuthnContext()->getAuthnContextClassRef())
+            authMethod = saml2statement->getAuthnContext()->getAuthnContextClassRef()->getReference();
+        if (saml2statement->getAuthnInstant())
+            authInstant = saml2statement->getAuthnInstant()->getRawData();
 
         // Session expiration for SAML 2.0 is jointly IdP- and SP-driven.
-        sessionExp = ssoStatement->getSessionNotOnOrAfter() ? ssoStatement->getSessionNotOnOrAfterEpoch() : 0;
+        sessionExp = saml2statement->getSessionNotOnOrAfter() ? saml2statement->getSessionNotOnOrAfterEpoch() : 0;
         pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
         if (!lifetime.first || lifetime.second == 0)
             lifetime.second = 28800;
@@ -753,7 +755,9 @@ void ADFSConsumer::implementProtocol(
             policy.getIssuerMetadata(),
             m_protocol.get(),
             saml1name,
+            saml1statement,
             (saml1name ? nameid.get() : saml2name),
+            saml2statement,
             authMethod,
             nullptr,
             &tokens

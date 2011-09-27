@@ -35,9 +35,11 @@ namespace opensaml {
     class SAML_API Assertion;
     class SAML_API MessageDecoder;
     namespace saml1 {
+        class SAML_API AuthenticationStatement;
         class SAML_API NameIdentifier;
     };
     namespace saml2 {
+        class SAML_API AuthnStatement;
         class SAML_API NameID;
     };
     namespace saml2md {
@@ -150,6 +152,7 @@ namespace shibsp {
             ) const;
 
         /**
+         * @deprecated
          * Attempt SSO-initiated attribute resolution using the supplied information,
          * including NameID and token extraction and filtering followed by
          * secondary resolution.
@@ -171,6 +174,36 @@ namespace shibsp {
             const XMLCh* protocol=nullptr,
             const opensaml::saml1::NameIdentifier* v1nameid=nullptr,
             const opensaml::saml2::NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const std::vector<const opensaml::Assertion*>* tokens=nullptr
+            ) const;
+
+        /**
+         * @deprecated
+         * Attempt SSO-initiated attribute resolution using the supplied information,
+         * including NameID and token extraction and filtering followed by
+         * secondary resolution.
+         * 
+         * <p>The caller must free the returned context handle.
+         * 
+         * @param application           reference to application receiving message
+         * @param issuer                source of SSO tokens
+         * @param protocol              SSO protocol used
+         * @param v1nameid              identifier of principal in SAML 1.x form, if any
+         * @param nameid                identifier of principal in SAML 2.0 form
+         * @param authncontext_class    method/category of authentication event, if known
+         * @param authncontext_decl     specifics of authentication event, if known
+         * @param tokens                available assertions, if any
+         */
+        ResolutionContext* resolveAttributes(
+            const Application& application,
+            const opensaml::saml2md::RoleDescriptor* issuer=nullptr,
+            const XMLCh* protocol=nullptr,
+            const opensaml::saml1::NameIdentifier* v1nameid=nullptr,
+            const opensaml::saml1::AuthenticationStatement* v1statement=nullptr,
+            const opensaml::saml2::NameID* nameid=nullptr,
+            const opensaml::saml2::AuthnStatement* statement=nullptr,
             const XMLCh* authncontext_class=nullptr,
             const XMLCh* authncontext_decl=nullptr,
             const std::vector<const opensaml::Assertion*>* tokens=nullptr

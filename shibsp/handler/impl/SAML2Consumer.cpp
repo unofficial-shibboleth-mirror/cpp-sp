@@ -419,7 +419,9 @@ void SAML2Consumer::implementProtocol(
                 policy.getIssuerMetadata(),
                 samlconstants::SAML20P_NS,
                 nullptr,
+                nullptr,
                 ssoName,
+                ssoStatement,
                 (authnContext && authnContext->getAuthnContextClassRef()) ? authnContext->getAuthnContextClassRef()->getReference() : nullptr,
                 (authnContext && authnContext->getAuthnContextDeclRef()) ? authnContext->getAuthnContextDeclRef()->getReference() : nullptr,
                 &tokens

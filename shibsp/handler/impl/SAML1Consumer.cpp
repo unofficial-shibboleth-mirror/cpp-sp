@@ -300,7 +300,9 @@ void SAML1Consumer::implementProtocol(
             (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
                 samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
             n,
+            ssoStatement,
             nameid.get(),
+            nullptr,
             ssoStatement->getAuthenticationMethod(),
             nullptr,
             &tokens
