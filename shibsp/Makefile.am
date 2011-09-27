@@ -205,7 +205,7 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
 	attribute/resolver/impl/SimpleAggregationAttributeResolver.cpp \
-    attribute/resolver/impl/AuthnAuthorityAttributeExtractor.cpp \
+    attribute/resolver/impl/AssertionAttributeExtractor.cpp \
 	attribute/resolver/impl/ChainingAttributeExtractor.cpp \
 	attribute/resolver/impl/DelegationAttributeExtractor.cpp \
 	attribute/resolver/impl/KeyDescriptorAttributeExtractor.cpp \

@@ -452,24 +452,29 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         app->setHeader(request, "Shib-Application-ID", app->getId());
         app->setHeader(request, "Shib-Session-ID", session->getID());
 
-        // Export the IdP name and Authn method/context info.
-        const char* hval = session->getEntityID();
-        if (hval)
-            app->setHeader(request, "Shib-Identity-Provider", hval);
-        hval = session->getAuthnInstant();
-        if (hval)
-            app->setHeader(request, "Shib-Authentication-Instant", hval);
-        hval = session->getAuthnContextClassRef();
-        if (hval) {
-            app->setHeader(request, "Shib-Authentication-Method", hval);
-            app->setHeader(request, "Shib-AuthnContext-Class", hval);
+        // Check for export of "standard" variables.
+        // A 3.0 release would switch this default to false and rely solely on the
+        // Assertion extractor plugin and ship out of the box with the same defaults.
+        pair<bool,bool> stdvars = settings.first->getBool("exportStdVars");
+        if (!stdvars.first || stdvars.second) {
+            const char* hval = session->getEntityID();
+            if (hval)
+                app->setHeader(request, "Shib-Identity-Provider", hval);
+            hval = session->getAuthnInstant();
+            if (hval)
+                app->setHeader(request, "Shib-Authentication-Instant", hval);
+            hval = session->getAuthnContextClassRef();
+            if (hval) {
+                app->setHeader(request, "Shib-Authentication-Method", hval);
+                app->setHeader(request, "Shib-AuthnContext-Class", hval);
+            }
+            hval = session->getAuthnContextDeclRef();
+            if (hval)
+                app->setHeader(request, "Shib-AuthnContext-Decl", hval);
+            hval = session->getSessionIndex();
+            if (hval)
+                app->setHeader(request, "Shib-Session-Index", hval);
         }
-        hval = session->getAuthnContextDeclRef();
-        if (hval)
-            app->setHeader(request, "Shib-AuthnContext-Decl", hval);
-        hval = session->getSessionIndex();
-        if (hval)
-            app->setHeader(request, "Shib-Session-Index", hval);
 
         // Maybe export the assertion keys.
         pair<bool,bool> exp=settings.first->getBool("exportAssertion");

@@ -82,7 +82,7 @@ namespace shibsp {
     static const XMLCh _AttributeExtractor[] =  UNICODE_LITERAL_18(A,t,t,r,i,b,u,t,e,E,x,t,r,a,c,t,o,r);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 
-    SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory AuthnAuthorityAttributeExtractorFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory AssertionAttributeExtractorFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory DelegationAttributeExtractorFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory KeyDescriptorAttributeExtractorFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory XMLAttributeExtractorFactory;
@@ -94,7 +94,7 @@ namespace shibsp {
 
 void SHIBSP_API shibsp::registerAttributeExtractors()
 {
-    SPConfig::getConfig().AttributeExtractorManager.registerFactory(AUTHNAUTHORITY_ATTRIBUTE_EXTRACTOR, AuthnAuthorityAttributeExtractorFactory);
+    SPConfig::getConfig().AttributeExtractorManager.registerFactory(ASSERTION_ATTRIBUTE_EXTRACTOR, AssertionAttributeExtractorFactory);
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(DELEGATION_ATTRIBUTE_EXTRACTOR, DelegationAttributeExtractorFactory);
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(KEYDESCRIPTOR_ATTRIBUTE_EXTRACTOR, KeyDescriptorAttributeExtractorFactory);
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(XML_ATTRIBUTE_EXTRACTOR, XMLAttributeExtractorFactory);

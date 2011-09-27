@@ -59,7 +59,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		configs\shibboleth2.xml = configs\shibboleth2.xml
 		configs\shibd-debian.in = configs\shibd-debian.in
 		configs\shibd-osx.plist.in = configs\shibd-osx.plist.in
-		configs\shibd-redhat.in = configs\shibd-redhat.in
 		configs\shibd-suse.in = configs\shibd-suse.in
 		configs\shibd.logger.in = configs\shibd.logger.in
 		configs\sslError.html = configs\sslError.html
@@ -79,7 +78,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{31B171C1-E
 		doxygen.cfg = doxygen.cfg
 		m4\doxygen.m4 = m4\doxygen.m4
 		Makefile.am = Makefile.am
-		shibboleth.spec.in = shibboleth.spec.in
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Doc", "Doc", "{6ED5E3E7-1B0E-43FB-A8D1-77A0FCAE9AC8}"

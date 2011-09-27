@@ -103,14 +103,14 @@ namespace shibsp {
     /** AttributeExtractor based on an XML mapping schema. */
     #define XML_ATTRIBUTE_EXTRACTOR "XML"
 
+    /** AttributeExtractor for SAML assertion information. */
+    #define ASSERTION_ATTRIBUTE_EXTRACTOR "Assertion"
+
     /** AttributeExtractor for DelegationRestriction information. */
     #define DELEGATION_ATTRIBUTE_EXTRACTOR "Delegation"
 
     /** AttributeExtractor for KeyInfo information. */
     #define KEYDESCRIPTOR_ATTRIBUTE_EXTRACTOR "KeyDescriptor"
-
-    /** AttributeExtractor for AuthenticatingAuthority information. */
-    #define AUTHNAUTHORITY_ATTRIBUTE_EXTRACTOR "AuthnAuthority"
 
     /** AttributeExtractor based on chaining together other extractors. */
     #define CHAINING_ATTRIBUTE_EXTRACTOR "Chaining"

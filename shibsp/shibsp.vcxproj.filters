@@ -393,7 +393,7 @@
     <ClCompile Include="version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="attribute\resolver\impl\AuthnAuthorityAttributeExtractor.cpp">
+    <ClCompile Include="attribute\resolver\impl\AssertionAttributeExtractor.cpp">
       <Filter>Source Files\attribute\resolver\impl</Filter>
     </ClCompile>
   </ItemGroup>
