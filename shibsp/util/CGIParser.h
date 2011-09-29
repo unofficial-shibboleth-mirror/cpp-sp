@@ -51,11 +51,12 @@ namespace shibsp {
         MAKE_NONCOPYABLE(CGIParser);
     public:
         /**
-         * Constructor
+         * Constructor.
          * 
          * @param request   HTTP request interface
+         * @param queryOnly true iff the POST body should be ignored
          */
-        CGIParser(const xmltooling::HTTPRequest& request);
+        CGIParser(const xmltooling::HTTPRequest& request, bool queryOnly=false);
 
         ~CGIParser();
 
@@ -71,10 +72,7 @@ namespace shibsp {
         std::pair<walker,walker> getParameters(const char* name) const;
         
     private:
-        char* fmakeword(char stop, size_t *cl, const char** ppch);
-        char* makeword(char *line, char stop);
-        void plustospace(char *str);
-
+        void parse(const char* pch);
         std::multimap<std::string,char*> kvp_map;
     };
 

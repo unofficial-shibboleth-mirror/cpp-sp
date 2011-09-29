@@ -795,7 +795,7 @@ pair<string,const char*> AbstractHandler::getPostCookieNameProps(const Applicati
 DDF AbstractHandler::getPostData(const Application& application, const HTTPRequest& request) const
 {
     string contentType = request.getContentType();
-    if (contentType.compare("application/x-www-form-urlencoded") == 0) {
+    if (contentType.find("application/x-www-form-urlencoded") != string::npos) {
         const PropertySet* props=application.getPropertySet("Sessions");
         pair<bool,unsigned int> plimit = props ? props->getUnsignedInt("postLimit") : pair<bool,unsigned int>(false,0);
         if (!plimit.first)
