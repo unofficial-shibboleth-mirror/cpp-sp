@@ -112,7 +112,6 @@ namespace xmltooling {
     void deserialize(string &source, mc_record &dest);
     void deserialize(string &source, list<string> &dest);
 
-    bool addSessionToUser(string &key, string &user);
     bool addLock(string what, bool use_prefix = true);
     void deleteLock(string what, bool use_prefix = true);
 
@@ -156,9 +155,8 @@ namespace xmltooling {
     private:
 
     Category& m_log;
+    Capabilities m_caps;
     bool m_buildMap;
-
-
   };
 
   StorageService* MemcacheStorageServiceFactory(const DOMElement* const & e) {
@@ -230,58 +228,6 @@ void MemcacheBase::serialize(list<string> &source, string &dest) {
     os << *iter;
   }
   dest = os.str();
-}
-
-bool MemcacheBase::addSessionToUser(string &key, string &user) {
-
-  if (! addLock(user, false)) {
-    return false;
-  }
-
-  // Aquired lock
-
-  string sessid = m_prefix + key; // add specific prefix to session
-  string delimiter = ";";
-  string user_key = "UDATA:";
-  user_key += user;
-  string user_val;
-  uint32_t flags;
-  bool result = getMemcache(user_key.c_str(), user_val, &flags, false);
-
-  if (result) {
-    bool already_there = false;
-    // skip delimiters at beginning.
-    string::size_type lastPos = user_val.find_first_not_of(delimiter, 0);
-    
-    // find first "non-delimiter".
-    string::size_type pos = user_val.find_first_of(delimiter, lastPos);
-    
-    while (string::npos != pos || string::npos != lastPos) {
-      // found a token, add it to the vector.
-      string session = user_val.substr(lastPos, pos - lastPos);
-      if (strcmp(session.c_str(), sessid.c_str()) == 0) {
-        already_there = true;
-        break;
-      }
-      
-      // skip delimiters.  Note the "not_of"
-      lastPos = user_val.find_first_not_of(delimiter, pos);
-      
-      // find next "non-delimiter"
-      pos = user_val.find_first_of(delimiter, lastPos);
-    }
-    
-    if (!already_there) {
-      user_val += delimiter + sessid;
-      replaceMemcache(user_key.c_str(), user_val, 0, 0, false);
-    }
-  } else {
-    addMemcache(user_key.c_str(), sessid, 0, 0, false);
-  }
-
-  deleteLock(user, false);
-  return true;
-  
 }
 
 bool MemcacheBase::deleteMemcache(const char *key,
@@ -475,7 +421,7 @@ bool MemcacheBase::replaceMemcache(const char *key,
   return success;
 }
 
-MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getInstance("XMLTooling.MemcacheBase")), m_prefix("") {
+MemcacheBase::MemcacheBase(const DOMElement* e) : m_root(e), log(Category::getInstance("XMLTooling.StorageService.MEMCACHE")), m_prefix("") {
 
   auto_ptr_char p(e ? e->getAttributeNS(nullptr,prefix) : nullptr);
   if (p.get() && *p.get()) {
@@ -570,19 +516,14 @@ MemcacheBase::~MemcacheBase() {
 }
 
 MemcacheStorageService::MemcacheStorageService(const DOMElement* e)
-  : MemcacheBase(e), m_log(Category::getInstance("XMLTooling.MemcacheStorageService")), m_buildMap(false) {
-
-    const XMLCh* tag=e ? e->getAttributeNS(nullptr,buildMap) : nullptr;
-    if (tag && *tag && XMLString::parseInt(tag) != 0) {
-        m_buildMap = true;
+    : MemcacheBase(e), m_log(Category::getInstance("XMLTooling.StorageService.MEMCACHE")),
+        m_caps(80, 250 - m_prefix.length() - 1 - 80, 255),
+        m_buildMap(XMLHelper::getAttrBool(e, false, buildMap)) {
+    if (m_buildMap)
         m_log.debug("Cache built with buildMap ON");
-    }
-
 }
 
 MemcacheStorageService::~MemcacheStorageService() {
-
-  
 }
 
 bool MemcacheStorageService::createString(const char* context, const char* key, const char* value, time_t expiration) {
