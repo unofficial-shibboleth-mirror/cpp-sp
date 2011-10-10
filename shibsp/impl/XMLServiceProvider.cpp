@@ -2147,6 +2147,10 @@ void XMLConfig::receive(DDF& in, ostream& out)
                 if (in["clear"].integer())
                     storage->deleteString("RelayState",key);
             }
+            else if (storage->readText("RelayState",key,&relayState)>0) {
+                if (in["clear"].integer())
+                    storage->deleteText("RelayState",key);
+            }
         }
         else {
             Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
@@ -2168,9 +2172,12 @@ void XMLConfig::receive(DDF& in, ostream& out)
         string rsKey;
         StorageService* storage = getStorageService(id);
         if (storage) {
-            SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+            SAMLConfig::getConfig().generateRandomBytes(rsKey,32);
             rsKey = SAMLArtifact::toHex(rsKey);
-            storage->createString("RelayState", rsKey.c_str(), value, time(nullptr) + 600);
+            if (strlen(value) <= storage->getCapabilities().getStringSize())
+                storage->createString("RelayState", rsKey.c_str(), value, time(nullptr) + 600);
+            else
+                storage->createText("RelayState", rsKey.c_str(), value, time(nullptr) + 600);
         }
         else {
             Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
@@ -2192,8 +2199,8 @@ void XMLConfig::receive(DDF& in, ostream& out)
         string postData;
         StorageService* storage = getStorageService(id);
         if (storage) {
-            if (storage->readString("PostData",key,&postData) > 0) {
-                storage->deleteString("PostData",key);
+            if (storage->readText("PostData",key,&postData) > 0) {
+                storage->deleteText("PostData",key);
             }
         }
         else {
@@ -2220,11 +2227,11 @@ void XMLConfig::receive(DDF& in, ostream& out)
         string rsKey;
         StorageService* storage = getStorageService(id);
         if (storage) {
-            SAMLConfig::getConfig().generateRandomBytes(rsKey,20);
+            SAMLConfig::getConfig().generateRandomBytes(rsKey,32);
             rsKey = SAMLArtifact::toHex(rsKey);
             ostringstream params;
             params << in["parameters"];
-            storage->createString("PostData", rsKey.c_str(), params.str().c_str(), time(nullptr) + 600);
+            storage->createText("PostData", rsKey.c_str(), params.str().c_str(), time(nullptr) + 600);
         }
         else {
             Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(

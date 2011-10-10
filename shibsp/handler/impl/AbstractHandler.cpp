@@ -294,8 +294,14 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
                         string rsKey;
                         SAMLConfig::getConfig().generateRandomBytes(rsKey,32);
                         rsKey = SAMLArtifact::toHex(rsKey);
-                        if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(nullptr) + 600))
-                            throw IOException("Collision generating in-memory relay state key.");
+                        if (relayState.length() <= storage->getCapabilities().getStringSize()) {
+                            if (!storage->createString("RelayState", rsKey.c_str(), relayState.c_str(), time(nullptr) + 600))
+                                throw IOException("Collision generating in-memory relay state key.");
+                        }
+                        else {
+                            if (!storage->createText("RelayState", rsKey.c_str(), relayState.c_str(), time(nullptr) + 600))
+                                throw IOException("Collision generating in-memory relay state key.");
+                        }
                         relayState = string(mech.second-3) + ':' + rsKey;
                     }
                     else {
@@ -351,8 +357,15 @@ void Handler::recoverRelayState(
                             absolutize(request, relayState);
                             return;
                         }
-                        else
+                        else if (storage->readText("RelayState",ssid.c_str(),&relayState) > 0) {
+                            if (clear)
+                                storage->deleteText("RelayState",ssid.c_str());
+                            absolutize(request, relayState);
+                            return;
+                        }
+                        else {
                             relayState.erase();
+                        }
                     }
                     else {
                         string msg("Storage-backed RelayState with invalid StorageService ID (");
@@ -640,7 +653,7 @@ void AbstractHandler::preservePostData(
                 rsKey = SAMLArtifact::toHex(rsKey);
                 ostringstream out;
                 out << postData;
-                if (!storage->createString("PostData", rsKey.c_str(), out.str().c_str(), time(nullptr) + 600))
+                if (!storage->createText("PostData", rsKey.c_str(), out.str().c_str(), time(nullptr) + 600))
                     throw IOException("Attempted to insert duplicate storage key.");
                 postkey = string(mech.second-3) + ':' + rsKey;
             }
@@ -702,8 +715,8 @@ DDF AbstractHandler::recoverPostData(
 #ifndef SHIBSP_LITE
                     StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
                     if (storage) {
-                        if (storage->readString("PostData", key, &ssid) > 0) {
-                            storage->deleteString("PostData", key);
+                        if (storage->readText("PostData", key, &ssid) > 0) {
+                            storage->deleteText("PostData", key);
                             istringstream inret(ssid);
                             DDF ret;
                             inret >> ret;

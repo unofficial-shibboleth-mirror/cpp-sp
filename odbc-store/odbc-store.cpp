@@ -100,6 +100,9 @@ namespace {
     static const XMLCh isolationLevel[] =   UNICODE_LITERAL_14(i,s,o,l,a,t,i,o,n,L,e,v,e,l);
     static const XMLCh ConnectionString[] = UNICODE_LITERAL_16(C,o,n,n,e,c,t,i,o,n,S,t,r,i,n,g);
     static const XMLCh RetryOnError[] =     UNICODE_LITERAL_12(R,e,t,r,y,O,n,E,r,r,o,r);
+    static const XMLCh contextSize[] =      UNICODE_LITERAL_11(c,o,n,t,e,x,t,S,i,z,e);
+    static const XMLCh keySize[] =          UNICODE_LITERAL_7(k,e,y,S,i,z,e);
+    static const XMLCh stringSize[] =       UNICODE_LITERAL_10(s,t,r,i,n,g,S,i,z,e);
 
     // RAII for ODBC handles
     struct ODBCConn {
@@ -123,6 +126,10 @@ namespace {
     public:
         ODBCStorageService(const DOMElement* e);
         virtual ~ODBCStorageService();
+
+        const Capabilities& getCapabilities() const {
+            return m_caps;
+        }
 
         bool createString(const char* context, const char* key, const char* value, time_t expiration) {
             return createRow(STRING_TABLE, context, key, value, expiration);
@@ -185,6 +192,7 @@ namespace {
         void cleanup();
 
         Category& m_log;
+        Capabilities m_caps;
         int m_cleanupInterval;
         CondWait* shutdown_wait;
         Thread* cleanup_thread;
@@ -262,7 +270,8 @@ namespace {
 };
 
 ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::getInstance("XMLTooling.StorageService")),
-   m_cleanupInterval(900), shutdown_wait(nullptr), cleanup_thread(nullptr), shutdown(false), m_henv(SQL_NULL_HANDLE), m_isolation(SQL_TXN_SERIALIZABLE)
+    m_caps(XMLHelper::getAttrInt(e, 255, contextSize), XMLHelper::getAttrInt(e, 255, keySize), XMLHelper::getAttrInt(e, 255, stringSize)),
+    m_cleanupInterval(900), shutdown_wait(nullptr), cleanup_thread(nullptr), shutdown(false), m_henv(SQL_NULL_HANDLE), m_isolation(SQL_TXN_SERIALIZABLE)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("ODBCStorageService");

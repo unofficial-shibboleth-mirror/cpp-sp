@@ -628,11 +628,14 @@ void StoredSession::addAssertion(Assertion* assertion)
 
     if (!m_cache->m_storage)
         throw ConfigurationException("Session modification requires a StorageService.");
-
-    if (!assertion)
+    else if (!assertion)
         throw FatalProfileException("Unknown object type passed to session for storage.");
 
     auto_ptr_char id(assertion->getID());
+    if (!id.get() || !*id.get())
+        throw IOException("Assertion did not carry an ID.");
+    else if (strlen(id.get()) > m_cache->m_storage->getCapabilities().getKeySize())
+        throw IOException("Assertion ID ($1) exceeds allowable storage key size.", params(1, id.get()));
 
     m_cache->m_log.debug("adding assertion (%s) to session (%s)", id.get(), getID());
 
@@ -858,8 +861,9 @@ void SSCache::test()
 void SSCache::insert(const char* key, time_t expires, const char* name, const char* index)
 {
     string dup;
-    if (strlen(name) > 255) {
-        dup = string(name).substr(0,255);
+    unsigned int storageLimit = m_storage_lite->getCapabilities().getKeySize();
+    if (strlen(name) > storageLimit) {
+        dup = string(name).substr(0, storageLimit);
         name = dup.c_str();
     }
 
@@ -935,13 +939,14 @@ void SSCache::insert(
     auto_ptr_char entity_id(issuer ? issuer->getEntityID() : nullptr);
     auto_ptr_char name(nameid ? nameid->getName() : nullptr);
 
-    if (nameid) {
+    if (name.get() && *name.get()) {
         // Check for a pending logout.
-        char namebuf[256];
-        strncpy(namebuf, name.get(), 255);
-        namebuf[255] = 0;
+        unsigned int storageLimit = m_storage_lite->getCapabilities().getKeySize();
+        string namebuf = name.get();
+        if (namebuf.length() > storageLimit)
+            namebuf = namebuf.substr(0, storageLimit);
         string pending;
-        int ver = m_storage_lite->readText("Logout", namebuf, &pending);
+        int ver = m_storage_lite->readText("Logout", namebuf.c_str(), &pending);
         if (ver > 0) {
             DDF pendobj;
             DDFJanitor jpend(pendobj);
@@ -1053,8 +1058,10 @@ void SSCache::insert(
                 ostringstream tokenstr;
                 tokenstr << *(*t);
                 auto_ptr_char tokenid((*t)->getID());
-                if (!m_storage->createText(key.get(), tokenid.get(), tokenstr.str().c_str(), now + cacheTimeout))
-                    throw IOException("duplicate assertion ID ($1)", params(1, tokenid.get()));
+                if (!tokenid.get() || !*tokenid.get() || strlen(tokenid.get()) > m_storage->getCapabilities().getKeySize())
+                    throw IOException("Assertion ID is missing or exceeds key size of storage service.");
+                else if (!m_storage->createText(key.get(), tokenid.get(), tokenstr.str().c_str(), now + cacheTimeout))
+                    throw IOException("Duplicate assertion ID ($1)", params(1, tokenid.get()));
             }
         }
         catch (exception& ex) {
@@ -1177,8 +1184,9 @@ vector<string>::size_type SSCache::logout(
 
     m_log.info("request to logout sessions from (%s) for (%s)", entityID.get() ? entityID.get() : "unknown", name.get());
 
-    if (strlen(name.get()) > 255)
-        const_cast<char*>(name.get())[255] = 0;
+    unsigned int storageLimit = m_storage_lite->getCapabilities().getKeySize();
+    if (strlen(name.get()) > storageLimit)
+        const_cast<char*>(name.get())[storageLimit] = 0;
 
     DDF obj;
     DDFJanitor jobj(obj);
