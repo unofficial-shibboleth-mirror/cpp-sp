@@ -144,7 +144,7 @@ namespace shibsp {
 
         unsigned long getCacheTimeout(const Application& app) {
             // Computes offset for adjusting expiration of sessions.
-            // This can either be static, or dynamic based on the per-app session timeout.
+            // This can either be static, or dynamic based on the per-app session timeout or lifetime.
             if (m_cacheTimeout)
                 return m_cacheTimeout;
             pair<bool,unsigned int> timeout = pair<bool,unsigned int>(false, 3600);
@@ -154,7 +154,18 @@ namespace shibsp {
                 if (!timeout.first)
                     timeout.second = 3600;
             }
-            return timeout.second + m_cacheAllowance;
+            // As long as one of the two factors is set, add them together.
+            if (timeout.second > 0 || m_cacheAllowance > 0)
+                return timeout.second + m_cacheAllowance;
+
+            // If timeouts are off, and there's no cache slop set, then use the lifetime.
+            timeout = pair<bool,unsigned int>(false, 28800);
+            if (props) {
+                timeout = props->getUnsignedInt("lifetime");
+                if (!timeout.first || timeout.second == 0)
+                    timeout.second = 28800;
+            }
+            return timeout.second;
         }
 
         Category& m_log;
