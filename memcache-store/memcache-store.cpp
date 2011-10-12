@@ -129,6 +129,10 @@ namespace xmltooling {
     MemcacheStorageService(const DOMElement* e);
     ~MemcacheStorageService();
     
+    const Capabilities& getCapabilities() const {
+        return m_caps;
+    }
+
     bool createString(const char* context, const char* key, const char* value, time_t expiration);
     int readString(const char* context, const char* key, string* pvalue=nullptr, time_t* pexpiration=nullptr, int version=0);
     int updateString(const char* context, const char* key, const char* value=nullptr, time_t expiration=0, int version=0);
