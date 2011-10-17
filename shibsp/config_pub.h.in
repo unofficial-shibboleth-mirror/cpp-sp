@@ -24,3 +24,6 @@
 
 /* Define to 1 if XML-Security-C supports white/blacklisting algorithms. */
 #undef SHIBSP_XMLSEC_WHITELISTING
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#undef SHIBSP_HAVE_SYS_SOCKET_H

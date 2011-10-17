@@ -102,7 +102,7 @@ bool UnixListener::create(ShibSocket& sock) const
 {
     sock = socket(PF_UNIX, SOCK_STREAM, 0);
     if (sock < 0)
-        return log_error();
+        return log_error("socket");
     return true;
 }
 
@@ -117,7 +117,7 @@ bool UnixListener::bind(ShibSocket& s, bool force) const
         unlink(m_address.c_str());
 
     if (::bind(s, (struct sockaddr *)&addr, sizeof (addr)) < 0) {
-        log_error();
+        log_error("bind");
         close(s);
         return false;
     }
@@ -125,7 +125,7 @@ bool UnixListener::bind(ShibSocket& s, bool force) const
     // Make sure that only the creator can read -- we don't want just
     // anyone connecting, do we?
     if (chmod(m_address.c_str(),0777) < 0) {
-        log_error();
+        log_error("chmod");
         close(s);
         unlink(m_address.c_str());
         return false;
@@ -143,7 +143,7 @@ bool UnixListener::connect(ShibSocket& s) const
     strncpy(addr.sun_path, m_address.c_str(), UNIX_PATH_MAX);
 
     if (::connect(s, (struct sockaddr *)&addr, sizeof (addr)) < 0)
-        return log_error();
+        return log_error("connect");
     return true;
 }
 
@@ -157,6 +157,6 @@ bool UnixListener::accept(ShibSocket& listener, ShibSocket& s) const
 {
     s=::accept(listener,nullptr,nullptr);
     if (s < 0)
-        return log_error();
+        return log_error("accept");
     return true;
 }

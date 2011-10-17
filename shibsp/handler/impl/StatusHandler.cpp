@@ -31,6 +31,7 @@
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
+#include "util/IPRange.h"
 #include "util/CGIParser.h"
 
 #include <xmltooling/version.h>
@@ -90,7 +91,7 @@ namespace shibsp {
         pair<bool,long> processMessage(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
         ostream& systemInfo(ostream& os) const;
 
-        set<string> m_acl;
+        vector<IPRange> m_acl;
     };
 
 #if defined (_MSC_VER)
@@ -267,9 +268,6 @@ namespace shibsp {
 StatusHandler::StatusHandler(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".StatusHandler"), &g_Blocker)
 {
-    string address(appId);
-    address += getString("Location").second;
-    setAddress(address.c_str());
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
         pair<bool,const char*> acl = getString("acl");
         if (acl.first) {
@@ -277,20 +275,43 @@ StatusHandler::StatusHandler(const DOMElement* e, const char* appId)
             int j = 0;
             for (unsigned int i=0;  i < aclbuf.length();  i++) {
                 if (aclbuf.at(i)==' ') {
-                    m_acl.insert(aclbuf.substr(j, i-j));
-                    j = i+1;
+                    try {
+                        m_acl.push_back(IPRange::parseCIDRBlock(aclbuf.substr(j, i-j).c_str()));
+                    }
+                    catch (exception& ex) {
+                        m_log.error("invalid CIDR block (%s): %s", aclbuf.substr(j, i-j).c_str(), ex.what());
+                    }
+                    j = i + 1;
                 }
             }
-            m_acl.insert(aclbuf.substr(j, aclbuf.length()-j));
+            try {
+                m_acl.push_back(IPRange::parseCIDRBlock(aclbuf.substr(j, aclbuf.length()-j).c_str()));
+            }
+            catch (exception& ex) {
+                m_log.error("invalid CIDR block (%s): %s", aclbuf.substr(j, aclbuf.length()-j).c_str(), ex.what());
+            }
+
+            if (m_acl.empty()) {
+                m_log.warn("invalid CIDR range(s) in Status handler acl property, allowing 127.0.0.1 as a fall back");
+                m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
+            }
         }
     }
+
+    string address(appId);
+    address += getString("Location").second;
+    setAddress(address.c_str());
 }
 
 pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
 {
     SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::InProcess)) {
-        if (!m_acl.empty() && m_acl.count(request.getRemoteAddr()) == 0) {
+    if (conf.isEnabled(SPConfig::InProcess) && !m_acl.empty()) {
+        bool found = false;
+        for (vector<IPRange>::const_iterator acl = m_acl.begin(); !found && acl != m_acl.end(); ++acl) {
+            found = acl->contains(request.getRemoteAddr().c_str());
+        }
+        if (!found) {
             m_log.error("status handler request blocked from invalid address (%s)", request.getRemoteAddr().c_str());
             istringstream msg("Status Handler Blocked");
             return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));

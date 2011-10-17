@@ -188,6 +188,7 @@
     <ClCompile Include="SPConfig.cpp" />
     <ClCompile Include="util\CGIParser.cpp" />
     <ClCompile Include="util\DOMPropertySet.cpp" />
+    <ClCompile Include="util\IPRange.cpp" />
     <ClCompile Include="util\SPConstants.cpp" />
     <ClCompile Include="util\TemplateParameters.cpp" />
     <ClCompile Include="security\PKIXTrustEngine.cpp" />
@@ -302,6 +303,7 @@
     <ClInclude Include="version.h" />
     <ClInclude Include="util\CGIParser.h" />
     <ClInclude Include="util\DOMPropertySet.h" />
+    <ClInclude Include="util\IPRange.h" />
     <ClInclude Include="util\PropertySet.h" />
     <ClInclude Include="util\SPConstants.h" />
     <ClInclude Include="util\TemplateParameters.h" />

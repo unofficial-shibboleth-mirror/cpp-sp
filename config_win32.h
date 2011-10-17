@@ -122,6 +122,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 /* #undef HAVE_UNISTD_H */
 
+/* Define to 1 if the system has the type `struct sockaddr_storage'. */
+#define HAVE_STRUCT_SOCKADDR_STORAGE 1
+
 /* Name of package */
 #define PACKAGE "shibboleth"
 

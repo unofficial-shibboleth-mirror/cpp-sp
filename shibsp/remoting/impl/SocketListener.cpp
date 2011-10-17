@@ -390,8 +390,10 @@ DDF SocketListener::send(const DDF& in)
     return out;
 }
 
-bool SocketListener::log_error() const
+bool SocketListener::log_error(const char* fn) const
 {
+    if (!fn)
+        fn = "unknown";
 #ifdef WIN32
     int rc=WSAGetLastError();
 #else
@@ -401,10 +403,10 @@ bool SocketListener::log_error() const
     char buf[256];
     memset(buf,0,sizeof(buf));
     strerror_r(rc,buf,sizeof(buf));
-    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
+    log->error("socket call (%s) resulted in error (%d): %s",fn, rc, isprint(*buf) ? buf : "no message");
 #else
     const char* buf=strerror(rc);
-    log->error("socket call resulted in error (%d): %s",rc,isprint(*buf) ? buf : "no message");
+    log->error("socket call (%s) resulted in error (%d): %s", fn, rc, isprint(*buf) ? buf : "no message");
 #endif
     return false;
 }

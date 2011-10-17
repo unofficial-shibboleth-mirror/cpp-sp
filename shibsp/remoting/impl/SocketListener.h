@@ -78,7 +78,7 @@ namespace shibsp {
 
         bool m_catchAll;
     protected:
-        bool log_error() const; // for OS-level errors
+        bool log_error(const char* fn=nullptr) const; // for OS-level errors
         xmltooling::logging::Category* log;
         /// @endcond
 
