@@ -115,7 +115,7 @@ bool IPRange::contains(const struct sockaddr* address) const
             return false;
         unsigned long raw = 0;
         memcpy(&raw, &((struct sockaddr_in*)address)->sin_addr, 4);
-        bitset<32> rawbits(ntohl(raw));    // the bitset loads from a host-order variable
+        bitset<32> rawbits((int)ntohl(raw));    // the bitset loads from a host-order variable
         if (log.isDebugEnabled()) {
             log.debug(
                 "comparing address (%s) to network (%s) with mask (%s)",
@@ -172,7 +172,7 @@ IPRange IPRange::parseCIDRBlock(const char* cidrBlock)
          unsigned long raw = 0;
          memcpy(&raw, &((struct sockaddr_in*)address->ai_addr)->sin_addr, 4);
          freeaddrinfo(address);
-         bitset<32> rawbits(ntohl(raw));    // the bitset loads from a host-order variable
+         bitset<32> rawbits((int)ntohl(raw));    // the bitset loads from a host-order variable
          return IPRange(rawbits, maskSize);
     }
 #ifdef AF_INET6

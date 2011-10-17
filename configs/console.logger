@@ -3,6 +3,7 @@ log4j.rootCategory=WARN, console
 # fairly verbose for DEBUG, so generally leave at INFO
 log4j.category.XMLTooling.XMLObject=INFO
 log4j.category.XMLTooling.KeyInfoResolver=INFO
+log4j.category.Shibboleth.IPRange=INFO
 log4j.category.Shibboleth.PropertySet=INFO
 
 # raise for low-level tracing of SOAP client HTTP/SSL behavior

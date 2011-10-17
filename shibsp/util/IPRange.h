@@ -32,7 +32,7 @@
 #include <bitset>
 
 #ifdef WIN32
-# include <winsock.h>
+# include <winsock2.h>
 #elif defined(SHIBSP_HAVE_SYS_SOCKET_H)
 # include <sys/socket.h>
 #endif

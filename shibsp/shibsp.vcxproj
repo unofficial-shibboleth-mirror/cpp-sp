@@ -99,7 +99,7 @@
       <PreprocessorDefinitions>_UNICODE;UNICODE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xsec_1D.lib;saml2D.lib;xmltooling1D.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xsec_1D.lib;saml2D.lib;xmltooling1D.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\cpp-opensaml\$(Configuration);..\..\cpp-xmltooling\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -125,7 +125,7 @@
       <PreprocessorDefinitions>_UNICODE;UNICODE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xsec_1D.lib;saml2D.lib;xmltooling1D.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xsec_1D.lib;saml2D.lib;xmltooling1D.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\cpp-opensaml\$(Platform)\$(Configuration);..\..\cpp-xmltooling\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -141,7 +141,7 @@
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_1.lib;saml2.lib;xmltooling1.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_1.lib;saml2.lib;xmltooling1.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\cpp-opensaml\$(Configuration);..\..\cpp-xmltooling\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -162,7 +162,7 @@
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_1.lib;saml2.lib;xmltooling1.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_1.lib;saml2.lib;xmltooling1.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\cpp-opensaml\$(Platform)\$(Configuration);..\..\cpp-xmltooling\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>

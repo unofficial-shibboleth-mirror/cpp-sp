@@ -205,7 +205,7 @@ bool TCPListener::bind(ShibSocket& s, bool force) const
     ::setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt));
 
 #ifdef WIN32
-    if (SOCKET_ERROR==::bind(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.ss_len) || SOCKET_ERROR==::listen(s, 3)) {
+    if (SOCKET_ERROR==::bind(s, (const struct sockaddr*)&m_sockaddr, sizeof(m_sockaddr)) || SOCKET_ERROR==::listen(s, 3)) {
         log_error("bind");
         close(s);
         return false;
@@ -229,7 +229,7 @@ bool TCPListener::bind(ShibSocket& s, bool force) const
 bool TCPListener::connect(ShibSocket& s) const
 {
 #ifdef WIN32
-    if(SOCKET_ERROR==::connect(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.ss_len))
+    if(SOCKET_ERROR==::connect(s, (const struct sockaddr*)&m_sockaddr, sizeof(m_sockaddr)))
         return log_error("connect");
 #else
 # ifdef HAVE_STRUCT_SOCKADDR_STORAGE
