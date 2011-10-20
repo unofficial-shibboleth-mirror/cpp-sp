@@ -1188,7 +1188,7 @@ vector<string>::size_type SSCache::logout(
 #endif
 
     if (!m_storage)
-        throw ConfigurationException("SessionCache insertion requires a StorageService.");
+        throw ConfigurationException("SessionCache logout requires a StorageService.");
 
     auto_ptr_char entityID(issuer ? issuer->getEntityID() : nullptr);
     auto_ptr_char name(nameid.getName());
