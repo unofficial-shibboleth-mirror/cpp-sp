@@ -740,6 +740,20 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
     }
 
+    req->setID(SAMLConfig::getConfig().generateIdentifier());
+    req->setIssueInstant(time(nullptr));
+
+    auto_ptr<AuthnRequestEvent> ar_event(newAuthnRequestEvent(app, httpRequest));
+    if (ar_event.get()) {
+        auto_ptr_char b(ep ? ep->getBinding() : nullptr);
+        ar_event->m_binding = b.get() ? b.get() : samlconstants::SAML20_BINDING_SOAP;
+        auto_ptr_char prot(getProtocolFamily());
+        ar_event->m_protocol = prot.get();
+        ar_event->m_peer = entity.first;
+        ar_event->m_saml2Request = req.get();
+        app.getServiceProvider().getTransactionLog()->write(*ar_event);
+    }
+
     auto_ptr_char dest(ep ? ep->getLocation() : nullptr);
 
     if (httpRequest) {

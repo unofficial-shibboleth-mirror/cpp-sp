@@ -33,6 +33,10 @@ log4j.additivity.XMLTooling.Signature.Debugger=false
 # Level should be left at INFO for this category
 log4j.category.Shibboleth-TRANSACTION=INFO, tran_log
 log4j.additivity.Shibboleth-TRANSACTION=false
+# uncomment to suppress particular event types
+#log4j.category.Shibboleth-TRANSACTION.AuthnRequest=WARN
+#log4j.category.Shibboleth-TRANSACTION.Login=WARN
+#log4j.category.Shibboleth-TRANSACTION.Logout=WARN
 
 # define the appenders
 

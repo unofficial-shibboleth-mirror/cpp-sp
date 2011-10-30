@@ -225,6 +225,7 @@ pair<bool,long> SAML2NameIDMgmt::run(SPRequest& request, bool isHandler) const
     else {
         // When not out of process, we remote all the message processing.
         vector<string> headers(1,"Cookie");
+        headers.push_back("User-Agent");
         DDF out,in = wrap(request, &headers, true);
         DDFJanitor jin(in), jout(out);
         out=request.getServiceProvider().getListenerService()->send(in);

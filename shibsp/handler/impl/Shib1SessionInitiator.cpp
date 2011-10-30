@@ -303,6 +303,16 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
 
     preserveRelayState(app, httpResponse, relayState);
 
+    auto_ptr<AuthnRequestEvent> ar_event(newAuthnRequestEvent(app, httpRequest));
+    if (ar_event.get()) {
+        auto_ptr_char prot(getProtocolFamily());
+        ar_event->m_protocol = prot.get();
+        auto_ptr_char b(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
+        ar_event->m_binding = b.get();
+        ar_event->m_peer = entity.first;
+        app.getServiceProvider().getTransactionLog()->write(*ar_event);
+    }
+
     // Shib 1.x requires a target value.
     if (relayState.empty())
         relayState = "default";

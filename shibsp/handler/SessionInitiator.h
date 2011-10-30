@@ -35,6 +35,8 @@
 
 namespace shibsp {
 
+    class SHIBSP_API AuthnRequestEvent;
+
     /**
      * Pluggable runtime functionality that handles initiating sessions.
      *
@@ -64,6 +66,19 @@ namespace shibsp {
          * @return  true iff the request appears to be compatible
          */
         bool checkCompatibility(SPRequest& request, bool isHandler) const;
+
+#ifndef SHIBSP_LITE
+        /**
+         * Creates a new AuthnRequestEvent for the event log.
+         *
+         * @param application   the Application associated with the event
+         * @param request       the HTTP client request associated with the event, or nullptr
+         * @return  a fresh AuthnRequestEvent, prepopulated by the input parameters, or nullptr if an error occurs
+         */
+        virtual AuthnRequestEvent* newAuthnRequestEvent(
+            const Application& application, const xmltooling::HTTPRequest* request=nullptr
+            ) const;
+#endif
 
     public:
         virtual ~SessionInitiator();

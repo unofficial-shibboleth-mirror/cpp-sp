@@ -25,6 +25,7 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
@@ -50,9 +51,14 @@ namespace shibsp {
         virtual ~LocalLogoutInitiator() {}
         
         void setParent(const PropertySet* parent);
+        void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
+        pair<bool,long> doRequest(
+            const Application& application, const HTTPRequest& request, HTTPResponse& httpResponse, Session* session
+            ) const;
+
         string m_appId;
     };
 
@@ -96,22 +102,95 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
     if (ret.first)
         return ret;
 
-    const Application& app = request.getApplication();
-    string session_id = app.getServiceProvider().getSessionCache()->active(app, request);
-    if (!session_id.empty()) {
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        // When out of process, we run natively.
+        Session* session = nullptr;
+        try {
+            session = request.getSession(false, true, false);  // don't cache it and ignore all checks
+        }
+        catch (exception& ex) {
+            m_log.error("error accessing current session: %s", ex.what());
+        }
+        return doRequest(request.getApplication(), request, request, session);
+    }
+    else {
+        // When not out of process, we remote the request.
+        vector<string> headers(1,"Cookie");
+        DDF out,in = wrap(request,&headers);
+        DDFJanitor jin(in), jout(out);
+        out=request.getServiceProvider().getListenerService()->send(in);
+        return unwrap(request, out);
+    }
+}
+
+void LocalLogoutInitiator::receive(DDF& in, ostream& out)
+{
+#ifndef SHIBSP_LITE
+    // Defer to base class for back channel notifications
+    if (in["notify"].integer() == 1)
+        return LogoutHandler::receive(in, out);
+
+    // Find application.
+    const char* aid=in["application_id"].string();
+    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
+    if (!app) {
+        // Something's horribly wrong.
+        m_log.error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
+        throw ConfigurationException("Unable to locate application for logout, deleted?");
+    }
+
+    // Unpack the request.
+    auto_ptr<HTTPRequest> req(getRequest(in));
+
+    // Set up a response shim.
+    DDF ret(nullptr);
+    DDFJanitor jout(ret);
+    auto_ptr<HTTPResponse> resp(getResponse(ret));
+
+    Session* session = nullptr;
+    try {
+         session = app->getServiceProvider().getSessionCache()->find(*app, *req.get(), nullptr, nullptr);
+    }
+    catch (exception& ex) {
+        m_log.error("error accessing current session: %s", ex.what());
+    }
+
+    // This is the "last chance" handler so even without a session, we "complete" the logout.
+    doRequest(*app, *req.get(), *resp.get(), session);
+
+    out << ret;
+#else
+    throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
+#endif
+}
+
+pair<bool,long> LocalLogoutInitiator::doRequest(
+    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, Session* session
+    ) const
+{
+    if (session) {
         // Do back channel notification.
-        vector<string> sessions(1, session_id);
-        bool result = notifyBackChannel(app, request.getRequestURL(), sessions, true);
-        app.getServiceProvider().getSessionCache()->remove(app, request, &request);
+        bool result;
+        vector<string> sessions(1, session->getID());
+        result = notifyBackChannel(application, httpRequest.getRequestURL(), sessions, true);
+#ifndef SHIBSP_LITE
+        auto_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
+        if (logout_event.get()) {
+            logout_event->m_logoutType = result ? LogoutEvent::LOGOUT_EVENT_LOCAL : LogoutEvent::LOGOUT_EVENT_PARTIAL;
+            application.getServiceProvider().getTransactionLog()->write(*logout_event);
+        }
+#endif
+        session->unlock();
+        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
         if (!result)
-            return sendLogoutPage(app, request, request, "partial");
+            return sendLogoutPage(application, httpRequest, httpResponse, "partial");
     }
 
     // Route back to return location specified, or use the local template.
-    const char* dest = request.getParameter("return");
+    const char* dest = httpRequest.getParameter("return");
     if (dest) {
-        limitRelayState(m_log, app, request, dest);
-        return make_pair(true, request.sendRedirect(dest));
+        limitRelayState(m_log, application, httpRequest, dest);
+        return make_pair(true, httpResponse.sendRedirect(dest));
     }
-    return sendLogoutPage(app, request, request, "local");
+    return sendLogoutPage(application, httpRequest, httpResponse, "local");
 }

@@ -45,7 +45,6 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPConfig.h"
-#include "TransactionLog.h"
 #include "attribute/Attribute.h"
 #include "binding/ProtocolProvider.h"
 #include "handler/LogoutInitiator.h"
@@ -299,6 +298,9 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         registerAttributeFilters();
         registerMatchFunctors();
     }
+    if (isEnabled(Logging)) {
+        registerEvents();
+    }
     registerSecurityPolicyProviders();
 #endif
 
@@ -352,6 +354,9 @@ void SPConfig::term()
 
 #ifndef SHIBSP_LITE
     SecurityPolicyProviderManager.deregisterFactories();
+    if (isEnabled(Logging)) {
+        EventManager.deregisterFactories();
+    }
     if (isEnabled(AttributeResolution)) {
         MatchFunctorManager.deregisterFactories();
         AttributeFilterManager.deregisterFactories();
@@ -487,25 +492,4 @@ void SPInternalConfig::term()
     }
 
     SPConfig::term();
-}
-
-
-TransactionLog::TransactionLog() : log(logging::Category::getInstance(SHIBSP_TX_LOGCAT)), m_lock(Mutex::create())
-{
-}
-
-TransactionLog::~TransactionLog()
-{
-    delete m_lock;
-}
-
-Lockable* TransactionLog::lock()
-{
-    m_lock->lock();
-    return this;
-}
-
-void TransactionLog::unlock()
-{
-    m_lock->unlock();
 }

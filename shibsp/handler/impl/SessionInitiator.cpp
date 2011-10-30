@@ -201,3 +201,30 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         throw;
     }
 }
+
+#ifndef SHIBSP_LITE
+
+AuthnRequestEvent* SessionInitiator::newAuthnRequestEvent(const Application& application, const xmltooling::HTTPRequest* request) const
+{
+    if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
+        return nullptr;
+    try {
+        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(AUTHNREQUEST_EVENT, nullptr));
+        AuthnRequestEvent* ar_event = dynamic_cast<AuthnRequestEvent*>(event.get());
+        if (ar_event) {
+            ar_event->m_request = request;
+            ar_event->m_app = &application;
+            event.release();
+            return ar_event;
+        }
+        else {
+            Category::getInstance(SHIBSP_LOGCAT".SessionInitiator").warn("unable to audit event, log event object was of an incorrect type");
+        }
+    }
+    catch (exception& ex) {
+        Category::getInstance(SHIBSP_LOGCAT".SessionInitiator").warn("exception auditing event: %s", ex.what());
+    }
+    return nullptr;
+}
+
+#endif

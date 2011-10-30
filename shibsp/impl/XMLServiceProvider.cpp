@@ -60,7 +60,6 @@
 #include <xmltooling/util/XMLHelper.h>
 
 #ifndef SHIBSP_LITE
-# include "TransactionLog.h"
 # include "attribute/filtering/AttributeFilter.h"
 # include "attribute/resolver/AttributeExtractor.h"
 # include "attribute/resolver/AttributeResolver.h"
@@ -281,6 +280,7 @@ namespace {
         RequestMapper* m_requestMapper;
         map<string,Application*> m_appmap;
 #ifndef SHIBSP_LITE
+        TransactionLog* m_tranLog;
         SecurityPolicyProvider* m_policy;
         vector< pair< string, pair<string,string> > > m_transportOptions;
 #endif
@@ -313,11 +313,7 @@ namespace {
     {
     public:
         XMLConfig(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".Config")),
-            m_impl(nullptr), m_listener(nullptr), m_sessionCache(nullptr)
-#ifndef SHIBSP_LITE
-            , m_tranLog(nullptr)
-#endif
-        {
+            m_impl(nullptr), m_listener(nullptr), m_sessionCache(nullptr) {
         }
 
         void init() {
@@ -330,7 +326,6 @@ namespace {
             delete m_sessionCache;
             delete m_listener;
 #ifndef SHIBSP_LITE
-            delete m_tranLog;
             SAMLConfig::getConfig().setArtifactMap(nullptr);
             XMLToolingConfig::getConfig().setReplayCache(nullptr);
             for_each(m_storage.begin(), m_storage.end(), cleanup_pair<string,StorageService>());
@@ -370,8 +365,8 @@ namespace {
         void receive(DDF& in, ostream& out);
 
         TransactionLog* getTransactionLog() const {
-            if (m_tranLog)
-                return m_tranLog;
+            if (m_impl->m_tranLog)
+                return m_impl->m_tranLog;
             throw ConfigurationException("No TransactionLog available.");
         }
 
@@ -447,7 +442,6 @@ namespace {
         ListenerService* m_listener;
         SessionCache* m_sessionCache;
 #ifndef SHIBSP_LITE
-        TransactionLog* m_tranLog;
         map<string,StorageService*> m_storage;
 #endif
     };
@@ -504,6 +498,8 @@ namespace {
     static const XMLCh SSO[] =                  UNICODE_LITERAL_3(S,S,O);
     static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
+    static const XMLCh tranLogFiller[] =        UNICODE_LITERAL_13(t,r,a,n,L,o,g,F,i,l,l,e,r);
+    static const XMLCh tranLogFormat[] =        UNICODE_LITERAL_13(t,r,a,n,L,o,g,F,o,r,m,a,t);
     static const XMLCh TransportOption[] =      UNICODE_LITERAL_15(T,r,a,n,s,p,o,r,t,O,p,t,i,o,n);
     static const XMLCh _TrustEngine[] =         UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
@@ -746,27 +742,27 @@ void XMLApplication::doAttributeInfo()
         }
     }
 
+    pair<bool,const char*> attributes = getString("REMOTE_USER");
+    if (attributes.first) {
+        char* dup = strdup(attributes.second);
+        char* pos;
+        char* start = dup;
+        while (start && *start) {
+            while (*start && isspace(*start))
+                start++;
+            if (!*start)
+                break;
+            pos = strchr(start,' ');
+            if (pos)
+                *pos=0;
+            m_remoteUsers.push_back(start);
+            start = pos ? pos+1 : nullptr;
+        }
+        free(dup);
+    }
+
     // Load attribute ID lists for REMOTE_USER and header clearing.
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
-        pair<bool,const char*> attributes = getString("REMOTE_USER");
-        if (attributes.first) {
-            char* dup = strdup(attributes.second);
-            char* pos;
-            char* start = dup;
-            while (start && *start) {
-                while (*start && isspace(*start))
-                    start++;
-                if (!*start)
-                    break;
-                pos = strchr(start,' ');
-                if (pos)
-                    *pos=0;
-                m_remoteUsers.push_back(start);
-                start = pos ? pos+1 : nullptr;
-            }
-            free(dup);
-        }
-
         attributes = getString("unsetHeaders");
         if (attributes.first) {
             string transformedprefix(m_attributePrefix.second);
@@ -1847,6 +1843,7 @@ void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& lo
 XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, Category& log)
     : m_requestMapper(nullptr),
 #ifndef SHIBSP_LITE
+        m_tranLog(nullptr),
         m_policy(nullptr),
 #endif
         m_document(nullptr)
@@ -1886,8 +1883,10 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             }
 
 #ifndef SHIBSP_LITE
-            if (first)
-                outer->m_tranLog = new TransactionLog();
+            m_tranLog = new TransactionLog(
+                XMLHelper::getAttrString(SHAR, nullptr, tranLogFormat).c_str(),
+                XMLHelper::getAttrString(SHAR, nullptr, tranLogFiller).c_str()
+                );
 #endif
         }
 
@@ -2123,6 +2122,8 @@ void XMLConfigImpl::cleanup()
 #ifndef SHIBSP_LITE
     delete m_policy;
     m_policy = nullptr;
+    delete m_tranLog;
+    m_tranLog = nullptr;
 #endif
     delete m_requestMapper;
     m_requestMapper = nullptr;

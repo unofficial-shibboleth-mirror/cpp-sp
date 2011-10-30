@@ -96,6 +96,15 @@ namespace shibsp {
             const Application& application, const Session& session, const RoleDescriptor& role, const MessageEncoder* encoder=nullptr
             ) const;
 
+        LogoutEvent* newLogoutEvent(
+            const Application& application, const HTTPRequest* request=nullptr, const Session* session=nullptr
+            ) const {
+            LogoutEvent* e = LogoutHandler::newLogoutEvent(application, request, session);
+            if (e)
+                e->m_protocol = m_protocol.get();
+            return e;
+        }
+
         XMLCh* m_outgoing;
         vector<const XMLCh*> m_bindings;
         map<const XMLCh*,MessageEncoder*> m_encoders;
@@ -275,9 +284,9 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
             doRequest(*app, *req.get(), *resp.get(), session);
         }
         else {
-             m_log.log(getParent() ? Priority::WARN : Priority::ERROR, "bypassing SAML 2.0 logout, no NameID or issuing entityID found in session");
-             session->unlock();
-             app->getServiceProvider().getSessionCache()->remove(*app, *req.get(), resp.get());
+            m_log.log(getParent() ? Priority::WARN : Priority::ERROR, "bypassing SAML 2.0 logout, no NameID or issuing entityID found in session");
+            session->unlock();
+            app->getServiceProvider().getSessionCache()->remove(*app, *req.get(), resp.get());
         }
     }
     out << ret;
@@ -290,9 +299,19 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, Session* session
     ) const
 {
+#ifndef SHIBSP_LITE
+    auto_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
+#endif
+
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
+#ifndef SHIBSP_LITE
+        if (logout_event.get()) {
+            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
+            application.getServiceProvider().getTransactionLog()->write(*logout_event);
+        }
+#endif
         session->unlock();
         application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
         return sendLogoutPage(application, httpRequest, httpResponse, "partial");
@@ -349,8 +368,15 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                     if (!XMLString::equals((*epit)->getBinding(),binding.get()))
                         continue;
                     LogoutRequest* msg = buildRequest(application, *session, *role);
-                    auto_ptr_char dest((*epit)->getLocation());
 
+                    // Log the request.
+                    if (logout_event.get()) {
+                        logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_UNKNOWN;
+                        logout_event->m_saml2Request = msg;
+                        application.getServiceProvider().getTransactionLog()->write(*logout_event);
+                    }
+
+                    auto_ptr_char dest((*epit)->getLocation());
                     SAML2SOAPClient client(soaper, false);
                     client.sendSAML(msg, application.getId(), mcc, dest.get());
                     StatusResponseType* srt = client.receiveSAML();
@@ -371,6 +397,13 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                     m_log.info("IdP doesn't support single logout protocol over a compatible binding");
                 else
                     m_log.warn("IdP didn't respond to logout request");
+
+                // Log the end result.
+                if (logout_event.get()) {
+                    logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
+                    application.getServiceProvider().getTransactionLog()->write(*logout_event);
+                }
+
                 ret = sendLogoutPage(application, httpRequest, httpResponse, "partial");
             }
             else {
@@ -381,6 +414,14 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                     // Success, but still need to check for partial.
                     partial = XMLString::equals(sc->getStatusCode()->getValue(), StatusCode::PARTIAL_LOGOUT);
                 }
+
+                // Log the end result.
+                if (logout_event.get()) {
+                    logout_event->m_logoutType = partial ? LogoutEvent::LOGOUT_EVENT_PARTIAL : LogoutEvent::LOGOUT_EVENT_GLOBAL;
+                    logout_event->m_saml2Response = logoutResponse;
+                    application.getServiceProvider().getTransactionLog()->write(*logout_event);
+                }
+
                 delete logoutResponse;
                 if (partial)
                     ret = sendLogoutPage(application, httpRequest, httpResponse, "partial");
@@ -414,27 +455,40 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         }
 
         auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, encoder));
-
         msg->setDestination(ep->getLocation());
+
+        // Log the request.
+        if (logout_event.get()) {
+            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_UNKNOWN;
+            logout_event->m_saml2Request = msg.get();
+            application.getServiceProvider().getTransactionLog()->write(*logout_event);
+        }
+
         auto_ptr_char dest(ep->getLocation());
         ret.second = sendMessage(*encoder, msg.get(), relayState.c_str(), dest.get(), role, application, httpResponse);
         ret.first = true;
         msg.release();  // freed by encoder
+
+        if (session) {
+            session->unlock();
+            session = nullptr;
+            application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+        }
+    }
+    catch (MetadataException& mex) {
+        // Less noise for IdPs that don't support logout (i.e. most)
+        m_log.info("unable to issue SAML 2.0 logout request: %s", mex.what());
     }
     catch (exception& ex) {
         m_log.error("error issuing SAML 2.0 logout request: %s", ex.what());
     }
 
-    if (session) {
+    if (session)
         session->unlock();
-        session = nullptr;
-        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
-    }
-
     return ret;
 #else
-    session->unlock();
-    application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+    if (session)
+        session->unlock();
     throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
 #endif
 }
@@ -476,6 +530,9 @@ LogoutRequest* SAML2LogoutInitiator::buildRequest(
     else {
         msg->setNameID(nameid->cloneNameID());
     }
+
+    msg->setID(SAMLConfig::getConfig().generateIdentifier());
+    msg->setIssueInstant(time(nullptr));
 
     return msg.release();
 }

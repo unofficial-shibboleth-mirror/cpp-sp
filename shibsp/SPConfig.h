@@ -31,6 +31,7 @@
 
 #include <string>
 #ifndef SHIBSP_LITE
+# include <shibsp/TransactionLog.h>
 # include <saml/binding/MessageDecoder.h>
 # include <saml/binding/MessageEncoder.h>
 #endif
@@ -221,6 +222,11 @@ namespace shibsp {
          * Manages factories for AttributeResolver plugins.
          */
         xmltooling::PluginManager<AttributeResolver,std::string,const xercesc::DOMElement*> AttributeResolverManager;
+
+        /**
+         * Manages factories for Event plugins.
+         */
+        xmltooling::PluginManager<TransactionLog::Event,std::string,void*> EventManager;
 
         /**
          * Manages factories for MatchFunctor plugins.

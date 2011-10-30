@@ -203,6 +203,7 @@
     <ClCompile Include="remoting\impl\TCPListener.cpp" />
     <ClCompile Include="impl\ChainingAccessControl.cpp" />
     <ClCompile Include="impl\StorageServiceSessionCache.cpp" />
+    <ClCompile Include="impl\TransactionLog.cpp" />
     <ClCompile Include="impl\XMLAccessControl.cpp" />
     <ClCompile Include="impl\XMLRequestMapper.cpp" />
     <ClCompile Include="impl\XMLServiceProvider.cpp" />

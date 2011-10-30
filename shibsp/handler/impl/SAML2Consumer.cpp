@@ -31,6 +31,7 @@
 # include "Application.h"
 # include "ServiceProvider.h"
 # include "SessionCache.h"
+# include "TransactionLog.h"
 # include "attribute/resolver/ResolutionContext.h"
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
@@ -436,7 +437,9 @@ void SAML2Consumer::implementProtocol(
         // Now merge in bad tokens for caching.
         tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
 
+        string session_id;
         application.getServiceProvider().getSessionCache()->insert(
+            session_id,
             application,
             httpRequest,
             httpResponse,
@@ -451,6 +454,29 @@ void SAML2Consumer::implementProtocol(
             &tokens,
             ctx.get() ? &ctx->getResolvedAttributes() : nullptr
             );
+
+        try {
+            auto_ptr<TransactionLog::Event> event(newLoginEvent(application, httpRequest));
+            LoginEvent* login_event = dynamic_cast<LoginEvent*>(event.get());
+            if (login_event) {
+                login_event->m_sessionID = session_id.c_str();
+                login_event->m_peer = entity;
+                auto_ptr_char prot(getProtocolFamily());
+                login_event->m_protocol = prot.get();
+                login_event->m_nameID = ssoName;
+                login_event->m_saml2AuthnStatement = ssoStatement;
+                login_event->m_saml2Response = response;
+                if (ctx.get())
+                    login_event->m_attributes = &ctx->getResolvedAttributes();
+                application.getServiceProvider().getTransactionLog()->write(*login_event);
+            }
+            else {
+                m_log.warn("unable to audit event, log event object was of an incorrect type");
+            }
+        }
+        catch (exception& ex) {
+            m_log.warn("exception auditing event: %s", ex.what());
+        }
 
         if (ownedName)
             delete ssoName;

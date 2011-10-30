@@ -228,6 +228,7 @@ namespace shibsp {
 
 #ifndef SHIBSP_LITE
         /**
+         * @deprecated
          * Inserts a new session into the cache and binds the session to the outgoing
          * client response.
          *
@@ -262,6 +263,46 @@ namespace shibsp {
             const std::vector<const opensaml::Assertion*>* tokens=nullptr,
             const std::vector<Attribute*>* attributes=nullptr
             )=0;
+
+        /**
+         * Inserts a new session into the cache and binds the session to the outgoing
+         * client response.
+         *
+         * <p>The newly created session ID is placed into the first parameter.
+         *
+         * <p>The SSO tokens and Attributes remain owned by the caller and are copied by the cache.
+         *
+         * @param sessionID         reference to string to capture newly inserted session ID
+         * @param application       reference to Application that owns the Session
+         * @param httpRequest       request that initiated session
+         * @param httpResponse      current response to client
+         * @param expires           expiration time of session
+         * @param issuer            issuing metadata of assertion issuer, if known
+         * @param protocol          protocol family used to initiate the session
+         * @param nameid            principal identifier, normalized to SAML 2, if any
+         * @param authn_instant     UTC timestamp of authentication at IdP, if known
+         * @param session_index     index of session between principal and IdP, if any
+         * @param authncontext_class    method/category of authentication event, if known
+         * @param authncontext_decl specifics of authentication event, if known
+         * @param tokens            assertions to cache with session, if any
+         * @param attributes        optional array of resolved Attributes to cache with session
+         */
+        virtual void insert(
+            std::string& sessionID,
+            const Application& application,
+            const xmltooling::HTTPRequest& httpRequest,
+            xmltooling::HTTPResponse& httpResponse,
+            time_t expires,
+            const opensaml::saml2md::EntityDescriptor* issuer=nullptr,
+            const XMLCh* protocol=nullptr,
+            const opensaml::saml2::NameID* nameid=nullptr,
+            const XMLCh* authn_instant=nullptr,
+            const XMLCh* session_index=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const std::vector<const opensaml::Assertion*>* tokens=nullptr,
+            const std::vector<Attribute*>* attributes=nullptr
+            );
 
         /**
          * Determines whether the Session bound to a client request matches a set of input criteria.

@@ -46,6 +46,8 @@
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml1/core/Assertions.h>
+# include <saml/saml1/core/Protocols.h>
+# include <saml/saml2/core/Protocols.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/util/CommonDomainCookie.h>
 using namespace samlconstants;
@@ -105,6 +107,7 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
     else {
         // When not out of process, we remote all the message processing.
         vector<string> headers(1, "Cookie");
+        headers.push_back("User-Agent");
         DDF out,in = wrap(request, &headers);
         DDFJanitor jin(in), jout(out);
         out=request.getServiceProvider().getListenerService()->send(in);
@@ -158,11 +161,13 @@ pair<bool,long> AssertionConsumerService::processMessage(
 
     string relayState;
     bool relayStateOK = true;
+    auto_ptr<XMLObject> msg(nullptr);
     try {
         // Decode the message and process it in a protocol-specific way.
-        auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, *(policy.get())));
-        if (!msg.get())
+        auto_ptr<XMLObject> msg2(m_decoder->decode(relayState, httpRequest, *(policy.get())));
+        if (!msg2.get())
             throw BindingException("Failed to decode an SSO protocol response.");
+        msg = msg2; // save off to allow access from within exception handler.
         DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
         DDFJanitor postjan(postData);
         recoverRelayState(application, httpRequest, httpResponse, relayState);
@@ -200,6 +205,33 @@ pair<bool,long> AssertionConsumerService::processMessage(
         }
         if (!relayState.empty())
             ex.addProperty("RelayState", relayState.c_str());
+
+        // Log the error.
+        try {
+            auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
+            LoginEvent* error_event = dynamic_cast<LoginEvent*>(event.get());
+            if (error_event) {
+                error_event->m_exception = &ex;
+                error_event->m_request = &httpRequest;
+                error_event->m_app = &application;
+                if (policy->getIssuerMetadata())
+                    error_event->m_peer = dynamic_cast<const EntityDescriptor*>(policy->getIssuerMetadata()->getParent());
+                auto_ptr_char prot(getProtocolFamily());
+                error_event->m_protocol = prot.get();
+                error_event->m_binding = getString("Binding").second;
+                error_event->m_saml2Response = dynamic_cast<const saml2p::StatusResponseType*>(msg.get());
+                if (!error_event->m_saml2Response)
+                    error_event->m_saml1Response = dynamic_cast<const saml1p::Response*>(msg.get());
+                application.getServiceProvider().getTransactionLog()->write(*error_event);
+            }
+            else {
+                m_log.warn("unable to audit event, log event object was of an incorrect type");
+            }
+        }
+        catch (exception& ex) {
+            m_log.warn("exception auditing event: %s", ex.what());
+        }
+
         throw;
     }
 #else
@@ -498,6 +530,30 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
             policy.setIssuerMetadata(entity.second);
         }
     }
+}
+
+LoginEvent* AssertionConsumerService::newLoginEvent(const Application& application, const xmltooling::HTTPRequest& request) const
+{
+    if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
+        return nullptr;
+    try {
+        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
+        LoginEvent* login_event = dynamic_cast<LoginEvent*>(event.get());
+        if (login_event) {
+            login_event->m_request = &request;
+            login_event->m_app = &application;
+            login_event->m_binding = getString("Binding").second;
+            event.release();
+            return login_event;
+        }
+        else {
+            m_log.warn("unable to audit event, log event object was of an incorrect type");
+        }
+    }
+    catch (exception& ex) {
+        m_log.warn("exception auditing event: %s", ex.what());
+    }
+    return nullptr;
 }
 
 #endif

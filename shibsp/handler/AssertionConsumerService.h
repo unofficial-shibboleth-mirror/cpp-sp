@@ -51,6 +51,7 @@ namespace opensaml {
 namespace shibsp {
 
     class SHIBSP_API Attribute;
+    class SHIBSP_API LoginEvent;
     class SHIBSP_API ResolutionContext;
 
 #if defined (_MSC_VER)
@@ -180,7 +181,6 @@ namespace shibsp {
             ) const;
 
         /**
-         * @deprecated
          * Attempt SSO-initiated attribute resolution using the supplied information,
          * including NameID and token extraction and filtering followed by
          * secondary resolution.
@@ -191,7 +191,9 @@ namespace shibsp {
          * @param issuer                source of SSO tokens
          * @param protocol              SSO protocol used
          * @param v1nameid              identifier of principal in SAML 1.x form, if any
+         * @param v1statement           SAML 1.x authentication statement, if any
          * @param nameid                identifier of principal in SAML 2.0 form
+         * @param statement             SAML 2.0 authentication statement, if any
          * @param authncontext_class    method/category of authentication event, if known
          * @param authncontext_decl     specifics of authentication event, if known
          * @param tokens                available assertions, if any
@@ -208,6 +210,15 @@ namespace shibsp {
             const XMLCh* authncontext_decl=nullptr,
             const std::vector<const opensaml::Assertion*>* tokens=nullptr
             ) const;
+
+        /**
+         * Creates a new AuthnRequestEvent for the event log.
+         *
+         * @param application   the Application associated with the event
+         * @param request       the HTTP client request associated with the event
+         * @return  a fresh LoginEvent, prepopulated by the input parameters, or nullptr if an error occurs
+         */
+        virtual LoginEvent* newLoginEvent(const Application& application, const xmltooling::HTTPRequest& request) const;
 
     public:
         const char* getType() const;

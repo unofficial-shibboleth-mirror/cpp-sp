@@ -31,6 +31,7 @@
 # include "Application.h"
 # include "ServiceProvider.h"
 # include "SessionCache.h"
+# include "TransactionLog.h"
 # include "attribute/resolver/ResolutionContext.h"
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
@@ -317,7 +318,9 @@ void SAML1Consumer::implementProtocol(
     // Now merge in bad tokens for caching.
     tokens.insert(tokens.end(), badtokens.begin(), badtokens.end());
 
+    string session_id;
     application.getServiceProvider().getSessionCache()->insert(
+        session_id,
         application,
         httpRequest,
         httpResponse,
@@ -333,6 +336,23 @@ void SAML1Consumer::implementProtocol(
         &tokens,
         ctx.get() ? &ctx->getResolvedAttributes() : nullptr
         );
+
+    auto_ptr<LoginEvent> login_event(newLoginEvent(application, httpRequest));
+    if (login_event.get()) {
+        login_event->m_sessionID = session_id.c_str();
+        login_event->m_peer = entity;
+        auto_ptr_char prot(
+            (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
+                samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM
+            );
+        login_event->m_protocol = prot.get();
+        login_event->m_nameID = nameid.get();
+        login_event->m_saml1AuthnStatement = ssoStatement;
+        login_event->m_saml1Response = response;
+        if (ctx.get())
+            login_event->m_attributes = &ctx->getResolvedAttributes();
+        application.getServiceProvider().getTransactionLog()->write(*login_event);
+    }
 }
 
 #endif

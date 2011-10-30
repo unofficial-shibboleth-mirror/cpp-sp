@@ -45,6 +45,7 @@
 #include <shibsp/SessionCache.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/SPRequest.h>
+#include <shibsp/TransactionLog.h>
 #include <shibsp/handler/AssertionConsumerService.h>
 #include <shibsp/handler/LogoutInitiator.h>
 #include <shibsp/handler/SessionInitiator.h>
@@ -510,6 +511,14 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
 
     preserveRelayState(app, httpResponse, relayState);
 
+    auto_ptr<AuthnRequestEvent> ar_event(newAuthnRequestEvent(app, httpRequest));
+    if (ar_event.get()) {
+        ar_event->m_binding = WSFED_NS;
+        ar_event->m_protocol = WSFED_NS;
+        ar_event->m_peer = entity.first;
+        app.getServiceProvider().getTransactionLog()->write(*ar_event);
+    }
+
     // UTC timestamp
     time_t epoch=time(nullptr);
 #ifndef HAVE_GMTIME_R
@@ -769,7 +778,9 @@ void ADFSConsumer::implementProtocol(
         tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
     }
 
+    string session_id;
     application.getServiceProvider().getSessionCache()->insert(
+        session_id,
         application,
         httpRequest,
         httpResponse,
@@ -784,6 +795,20 @@ void ADFSConsumer::implementProtocol(
         &tokens,
         ctx.get() ? &ctx->getResolvedAttributes() : nullptr
         );
+
+    auto_ptr<LoginEvent> login_event(newLoginEvent(application, httpRequest));
+    if (login_event.get()) {
+        login_event->m_sessionID = session_id.c_str();
+        login_event->m_peer = entity;
+        login_event->m_protocol = WSFED_NS;
+        login_event->m_binding = WSFED_NS;
+        login_event->m_saml1AuthnStatement = saml1statement;
+        login_event->m_nameID = (saml1name ? nameid.get() : saml2name);
+        login_event->m_saml2AuthnStatement = saml2statement;
+        if (ctx.get())
+            login_event->m_attributes = &ctx->getResolvedAttributes();
+        application.getServiceProvider().getTransactionLog()->write(*login_event);
+    }
 }
 
 #endif
@@ -813,7 +838,6 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
         return make_pair(false,0L);
     }
 
-    string entityID(session->getEntityID());
     session->unlock();
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
@@ -824,6 +848,7 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
         // When not out of process, we remote the request.
         session->unlock();
         vector<string> headers(1,"Cookie");
+        headers.push_back("User-Agent");
         DDF out,in = wrap(request,&headers);
         DDFJanitor jin(in), jout(out);
         out=request.getServiceProvider().getListenerService()->send(in);
@@ -872,9 +897,9 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
             doRequest(*app, *req.get(), *resp.get(), session);
         }
         else {
-             m_log.error("no issuing entityID found in session");
-             session->unlock();
-             app->getServiceProvider().getSessionCache()->remove(*app, *req.get(), resp.get());
+            m_log.error("no issuing entityID found in session");
+            session->unlock();
+            app->getServiceProvider().getSessionCache()->remove(*app, *req.get(), resp.get());
         }
     }
     out << ret;
@@ -890,6 +915,13 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
+#ifndef SHIBSP_LITE
+        auto_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
+        if (logout_event.get()) {
+            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
+            application.getServiceProvider().getTransactionLog()->write(*logout_event);
+        }
+#endif
         session->unlock();
         application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
         return sendLogoutPage(application, httpRequest, httpResponse, "partial");
@@ -925,6 +957,13 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
                 );
         }
 
+        // Log the request.
+        auto_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
+        if (logout_event.get()) {
+            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_UNKNOWN;
+            application.getServiceProvider().getTransactionLog()->write(*logout_event);
+        }
+
         const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
         const char* returnloc = httpRequest.getParameter("return");
         auto_ptr_char dest(ep->getLocation());
@@ -933,16 +972,23 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
             req += "&wreply=" + urlenc->encode(returnloc);
         ret.second = httpResponse.sendRedirect(req.c_str());
         ret.first = true;
+
+        if (session) {
+            session->unlock();
+            session = nullptr;
+            application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+        }
+    }
+    catch (MetadataException& mex) {
+        // Less noise for IdPs that don't support logout
+        m_log.info("unable to issue ADFS logout request: %s", mex.what());
     }
     catch (exception& ex) {
         m_log.error("error issuing ADFS logout request: %s", ex.what());
     }
 
-    if (session) {
+    if (session)
         session->unlock();
-        session = nullptr;
-        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
-    }
 
     return ret;
 #else

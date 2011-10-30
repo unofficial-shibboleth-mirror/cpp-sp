@@ -142,6 +142,8 @@
       <any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
     </sequence>
     <attribute name="logger" type="anyURI"/>
+    <attribute name="tranLogFormat" type="conf:string"/>
+    <attribute name="tranLogFiller" type="conf:string"/>
     <attribute name="catchAll" type="boolean"/>
     <anyAttribute namespace="##other" processContents="lax"/>
   </complexType>

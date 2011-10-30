@@ -30,6 +30,7 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
+#include "TransactionLog.h"
 #include "handler/LogoutHandler.h"
 #include "util/TemplateParameters.h"
 
@@ -283,3 +284,38 @@ bool LogoutHandler::notifyBackChannel(
     out=application.getServiceProvider().getListenerService()->send(in);
     return (out.integer() == 1);
 }
+
+#ifndef SHIBSP_LITE
+
+LogoutEvent* LogoutHandler::newLogoutEvent(
+    const Application& application, const xmltooling::HTTPRequest* request, const Session* session
+    ) const
+{
+    if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
+        return nullptr;
+    try {
+        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGOUT_EVENT, nullptr));
+        LogoutEvent* logout_event = dynamic_cast<LogoutEvent*>(event.get());
+        if (logout_event) {
+            logout_event->m_request = request;
+            logout_event->m_app = &application;
+            logout_event->m_binding = getString("Binding").second;
+            logout_event->m_session = session;
+            if (session) {
+                logout_event->m_nameID = session->getNameID();
+                logout_event->m_sessions.push_back(session->getID());
+            }
+            event.release();
+            return logout_event;
+        }
+        else {
+            Category::getInstance(SHIBSP_LOGCAT".Logout").warn("unable to audit event, log event object was of an incorrect type");
+        }
+    }
+    catch (exception& ex) {
+        Category::getInstance(SHIBSP_LOGCAT".Logout").warn("exception auditing event: %s", ex.what());
+    }
+    return nullptr;
+}
+
+#endif
