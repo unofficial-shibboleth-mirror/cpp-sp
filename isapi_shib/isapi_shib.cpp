@@ -643,6 +643,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Determine web site number. This can't really fail, I don't think.
         dynabuf buf(128);
         GetServerVariable(pfc,"INSTANCE_ID",buf,10);
+        if (buf.empty())
+            return WriteClientError(pfc, "Shibboleth Extension failed to obtain INSTANCE_ID server variable.");
 
         // Match site instance to host name, skip if no match.
         map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
