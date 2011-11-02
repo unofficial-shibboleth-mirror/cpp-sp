@@ -560,7 +560,7 @@ public:
     s.erase();
     size=s.size();
 
-    while (m_pfc->GetServerVariable(m_pfc,lpszVariable,s,&size)) {
+    while (!m_pfc->GetServerVariable(m_pfc,lpszVariable,s,&size)) {
         // Grumble. Check the error.
         DWORD e=GetLastError();
         if (e==ERROR_INSUFFICIENT_BUFFER)
@@ -613,7 +613,7 @@ void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s,
     s.erase();
     size=s.size();
 
-    while (pfc->GetServerVariable(pfc,lpszVariable,s,&size)) {
+    while (!pfc->GetServerVariable(pfc,lpszVariable,s,&size)) {
         // Grumble. Check the error.
         DWORD e=GetLastError();
         if (e==ERROR_INSUFFICIENT_BUFFER)
@@ -644,7 +644,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         dynabuf buf(128);
         GetServerVariable(pfc,"INSTANCE_ID",buf,10);
         if (buf.empty())
-            return WriteClientError(pfc, "Shibboleth Extension failed to obtain INSTANCE_ID server variable.");
+            return WriteClientError(pfc, "Shibboleth Filter failed to obtain INSTANCE_ID server variable.");
 
         // Match site instance to host name, skip if no match.
         map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
@@ -657,13 +657,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         ShibTargetIsapiF stf(pfc, pn, map_i->second);
 
-        // "false" because we don't override the Shib settings
         pair<bool,long> res = stf.getServiceProvider().doAuthentication(stf);
         if (!g_spoofKey.empty())
             pn->SetHeader(pfc, "ShibSpoofCheck:", const_cast<char*>(g_spoofKey.c_str()));
         if (res.first) return res.second;
 
-        // "false" because we don't override the Shib settings
         res = stf.getServiceProvider().doExport(stf);
         if (res.first) return res.second;
 
