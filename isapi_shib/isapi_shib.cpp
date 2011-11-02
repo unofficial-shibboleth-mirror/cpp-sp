@@ -321,61 +321,6 @@ bool dynabuf::operator==(const char* s) const
         return strcmp(bufptr,s)==0;
 }
 
-void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
-{
-    s.reserve(size);
-    s.erase();
-    size=s.size();
-
-    while (!pfc->GetServerVariable(pfc,lpszVariable,s,&size)) {
-        // Grumble. Check the error.
-        DWORD e=GetLastError();
-        if (e==ERROR_INSUFFICIENT_BUFFER)
-            s.reserve(size);
-        else
-            break;
-    }
-    if (bRequired && s.empty())
-        throw ERROR_NO_DATA;
-}
-
-void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
-{
-    s.reserve(size);
-    s.erase();
-    size=s.size();
-
-    while (!lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size)) {
-        // Grumble. Check the error.
-        DWORD e=GetLastError();
-        if (e==ERROR_INSUFFICIENT_BUFFER)
-            s.reserve(size);
-        else
-            break;
-    }
-    if (bRequired && s.empty())
-        throw ERROR_NO_DATA;
-}
-
-void GetHeader(PHTTP_FILTER_PREPROC_HEADERS pn, PHTTP_FILTER_CONTEXT pfc,
-               LPSTR lpszName, dynabuf& s, DWORD size=80, bool bRequired=true)
-{
-    s.reserve(size);
-    s.erase();
-    size=s.size();
-
-    while (!pn->GetHeader(pfc,lpszName,s,&size)) {
-        // Grumble. Check the error.
-        DWORD e=GetLastError();
-        if (e==ERROR_INSUFFICIENT_BUFFER)
-            s.reserve(size);
-        else
-            break;
-    }
-    if (bRequired && s.empty())
-        throw ERROR_NO_DATA;
-}
-
 /****************************************************************************/
 // ISAPI Filter
 
@@ -396,13 +341,18 @@ public:
 
     // URL path always come from IIS.
     dynabuf var(256);
-    GetHeader(pn,pfc,"url",var,256,false);
+    GetHeader("url",var,256,false);
     setRequestURI(var);
 
     // Port may come from IIS or from site def.
     if (!g_bNormalizeRequest || (pfc->fIsSecurePort && site.m_sslport.empty()) || (!pfc->fIsSecurePort && site.m_port.empty())) {
-        GetServerVariable(pfc,"SERVER_PORT",var,10);
-        m_port = atoi(var);
+        GetServerVariable("SERVER_PORT",var,10);
+        if (var.empty()) {
+            m_port = pfc->fIsSecurePort ? 443 : 80;
+        }
+        else {
+            m_port = atoi(var);
+        }
     }
     else if (pfc->fIsSecurePort) {
         m_port = atoi(site.m_sslport.c_str());
@@ -416,15 +366,20 @@ public:
     if (m_scheme.empty() || !g_bNormalizeRequest)
         m_scheme=pfc->fIsSecurePort ? "https" : "http";
 
-    GetServerVariable(pfc,"SERVER_NAME",var,32);
+    GetServerVariable("SERVER_NAME",var,32);
 
-    // Make sure SERVER_NAME is "authorized" for use on this site. If not, set to canonical name.
-    m_hostname = var;
-    if (site.m_name!=m_hostname && site.m_aliases.find(m_hostname)==site.m_aliases.end())
-        m_hostname=site.m_name;
+    // Make sure SERVER_NAME is "authorized" for use on this site. If not, or empty, set to canonical name.
+    if (var.empty()) {
+        m_hostname = site.m_name;
+    }
+    else {
+        m_hostname = var;
+        if (site.m_name!=m_hostname && site.m_aliases.find(m_hostname)==site.m_aliases.end())
+            m_hostname=site.m_name;
+    }
 
     if (!g_spoofKey.empty()) {
-        GetHeader(pn, pfc, "ShibSpoofCheck:", var, 32, false);
+        GetHeader("ShibSpoofCheck:", var, 32, false);
         if (!var.empty() && g_spoofKey == (char*)var)
             m_firsttime = false;
     }
@@ -451,7 +406,7 @@ public:
   const char* getMethod() const {
     if (m_method.empty()) {
         dynabuf var(5);
-        GetServerVariable(m_pfc,"HTTP_METHOD",var,5,false);
+        GetServerVariable("HTTP_METHOD",var,5,false);
         if (!var.empty())
             m_method = var;
     }
@@ -460,7 +415,7 @@ public:
   string getContentType() const {
     if (m_content_type.empty()) {
         dynabuf var(32);
-        GetServerVariable(m_pfc,"HTTP_CONTENT_TYPE",var,32,false);
+        GetServerVariable("HTTP_CONTENT_TYPE",var,32,false);
         if (!var.empty())
             m_content_type = var;
     }
@@ -470,13 +425,13 @@ public:
     m_remote_addr = AbstractSPRequest::getRemoteAddr();
     if (m_remote_addr.empty()) {
         dynabuf var(16);
-        GetServerVariable(m_pfc,"REMOTE_ADDR",var,16,false);
+        GetServerVariable("REMOTE_ADDR",var,16,false);
         if (!var.empty())
             m_remote_addr = var;
     }
     return m_remote_addr;
   }
-  void log(SPLogLevel level, const string& msg) {
+  void log(SPLogLevel level, const string& msg) const {
     AbstractSPRequest::log(level,msg);
     if (level >= SPCrit)
         LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg.c_str());
@@ -492,10 +447,12 @@ public:
   void clearHeader(const char* rawname, const char* cginame) {
     if (g_checkSpoofing && m_firsttime) {
         if (m_allhttp.empty())
-	        GetServerVariable(m_pfc, "ALL_HTTP", m_allhttp, 4096);
-        string hdr = g_bSafeHeaderNames ? ("HTTP_" + makeSafeHeader(cginame + 5)) : (string(cginame) + ':');
-        if (strstr(m_allhttp, hdr.c_str()))
-            throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, hdr.c_str()));
+	        GetServerVariable( "ALL_HTTP", m_allhttp, 4096, false);
+        if (!m_allhttp.empty()) {
+            string hdr = g_bSafeHeaderNames ? ("HTTP_" + makeSafeHeader(cginame + 5)) : (string(cginame) + ':');
+            if (strstr(m_allhttp, hdr.c_str()))
+                throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, hdr.c_str()));
+        }
     }
     if (g_bSafeHeaderNames) {
         string hdr = makeSafeHeader(rawname);
@@ -517,14 +474,14 @@ public:
   string getSecureHeader(const char* name) const {
     string hdr = g_bSafeHeaderNames ? makeSafeHeader(name) : (string(name) + ':');
     dynabuf buf(256);
-    GetHeader(m_pn, m_pfc, const_cast<char*>(hdr.c_str()), buf, 256, false);
+    GetHeader(const_cast<char*>(hdr.c_str()), buf, 256, false);
     return string(buf.empty() ? "" : buf);
   }
   string getHeader(const char* name) const {
     string hdr(name);
     hdr += ':';
     dynabuf buf(256);
-    GetHeader(m_pn, m_pfc, const_cast<char*>(hdr.c_str()), buf, 256, false);
+    GetHeader(const_cast<char*>(hdr.c_str()), buf, 256, false);
     return string(buf.empty() ? "" : buf);
   }
   void setRemoteUser(const char* user) {
@@ -558,7 +515,7 @@ public:
         case XMLTOOLING_HTTP_STATUS_NOTFOUND:       codestr="404 Not Found"; break;
         case XMLTOOLING_HTTP_STATUS_ERROR:          codestr="500 Server Error"; break;
     }
-    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, (void*)codestr, (DWORD)hdr.c_str(), 0);
+    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, (void*)codestr, (ULONG_PTR)hdr.c_str(), 0);
     char buf[1024];
     while (in) {
         in.read(buf,1024);
@@ -577,7 +534,7 @@ public:
     for (multimap<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
         hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
-    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "302 Please Wait", (DWORD)hdr.c_str(), 0);
+    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "302 Please Wait", (ULONG_PTR)hdr.c_str(), 0);
     static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
     DWORD resplen=40;
     m_pfc->WriteClient(m_pfc, (LPVOID)redmsg, &resplen, 0);
@@ -597,13 +554,47 @@ public:
   // The filter never processes the POST, so stub these methods.
   long getContentLength() const { throw IOException("The request's Content-Length is not available to an ISAPI filter."); }
   const char* getRequestBody() const { throw IOException("The request body is not available to an ISAPI filter."); }
+
+  void GetServerVariable(LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true) const {
+    s.reserve(size);
+    s.erase();
+    size=s.size();
+
+    while (!m_pfc->GetServerVariable(m_pfc,lpszVariable,s,&size)) {
+        // Grumble. Check the error.
+        DWORD e=GetLastError();
+        if (e==ERROR_INSUFFICIENT_BUFFER)
+            s.reserve(size);
+        else
+            break;
+    }
+    if (bRequired && s.empty())
+        log(SPRequest::SPError, string("missing required server variable: ") + lpszVariable);
+  }
+
+  void GetHeader(LPSTR lpszName, dynabuf& s, DWORD size=80, bool bRequired=true) const {
+    s.reserve(size);
+    s.erase();
+    size=s.size();
+
+    while (!m_pn->GetHeader(m_pfc,lpszName,s,&size)) {
+        // Grumble. Check the error.
+        DWORD e=GetLastError();
+        if (e==ERROR_INSUFFICIENT_BUFFER)
+            s.reserve(size);
+        else
+            break;
+    }
+    if (bRequired && s.empty())
+        log(SPRequest::SPError, string("missing required header: ") + lpszName);
+  }
 };
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 {
     LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg);
     static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
-    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(DWORD)ctype,0);
+    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(ULONG_PTR)ctype,0);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
                             "<H1>Shibboleth Filter Error</H1>";
     DWORD resplen=strlen(xmsg);
@@ -615,6 +606,27 @@ DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
     pfc->WriteClient(pfc,(LPVOID)xmsg2,&resplen,0);
     return SF_STATUS_REQ_FINISHED;
 }
+
+void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
+{
+    s.reserve(size);
+    s.erase();
+    size=s.size();
+
+    while (!pfc->GetServerVariable(pfc,lpszVariable,s,&size)) {
+        // Grumble. Check the error.
+        DWORD e=GetLastError();
+        if (e==ERROR_INSUFFICIENT_BUFFER)
+            s.reserve(size);
+        else
+            break;
+    }
+    if (bRequired && s.empty()) {
+        string msg = string("Missing required server variable: ") + lpszVariable;
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg.c_str());
+    }
+}
+
 
 extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificationType, LPVOID pvNotification)
 {
@@ -631,6 +643,8 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
         // Determine web site number. This can't really fail, I don't think.
         dynabuf buf(128);
         GetServerVariable(pfc,"INSTANCE_ID",buf,10);
+        if (buf.empty())
+            return WriteClientError(pfc, "Shibboleth Filter failed to obtain INSTANCE_ID server variable.");
 
         // Match site instance to host name, skip if no match.
         map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
@@ -643,13 +657,11 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         ShibTargetIsapiF stf(pfc, pn, map_i->second);
 
-        // "false" because we don't override the Shib settings
         pair<bool,long> res = stf.getServiceProvider().doAuthentication(stf);
         if (!g_spoofKey.empty())
             pn->SetHeader(pfc, "ShibSpoofCheck:", const_cast<char*>(g_spoofKey.c_str()));
         if (res.first) return res.second;
 
-        // "false" because we don't override the Shib settings
         res = stf.getServiceProvider().doExport(stf);
         if (res.first) return res.second;
 
@@ -717,7 +729,7 @@ public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
       : AbstractSPRequest(SHIBSP_LOGCAT".ISAPI"), m_lpECB(lpECB), m_gotBody(false) {
     dynabuf ssl(5);
-    GetServerVariable(lpECB,"HTTPS",ssl,5);
+    GetServerVariable("HTTPS",ssl,5);
     bool SSL=(ssl=="on" || ssl=="ON");
 
     // Scheme may come from site def or be derived from IIS.
@@ -727,29 +739,37 @@ public:
 
     // URL path always come from IIS.
     dynabuf url(256);
-    GetServerVariable(lpECB,"URL",url,255);
+    GetServerVariable("URL",url,255);
 
     // Port may come from IIS or from site def.
-    dynabuf port(11);
-    if (!g_bNormalizeRequest || (SSL && site.m_sslport.empty()) || (!SSL && site.m_port.empty()))
-        GetServerVariable(lpECB,"SERVER_PORT",port,10);
+    if (!g_bNormalizeRequest || (SSL && site.m_sslport.empty()) || (!SSL && site.m_port.empty())) {
+        dynabuf port(11);
+        GetServerVariable("SERVER_PORT",port,10);
+        if (port.empty()) {
+            m_port = SSL ? 443 : 80;
+        }
+        else {
+            m_port = atoi(port);
+        }
+    }
     else if (SSL) {
-        strncpy(port,site.m_sslport.c_str(),10);
-        static_cast<char*>(port)[10]=0;
+        m_port = atoi(site.m_sslport.c_str());
     }
     else {
-        strncpy(port,site.m_port.c_str(),10);
-        static_cast<char*>(port)[10]=0;
+        m_port = atoi(site.m_port.c_str());
     }
-    m_port = atoi(port);
 
     dynabuf var(32);
-    GetServerVariable(lpECB, "SERVER_NAME", var, 32);
-
-    // Make sure SERVER_NAME is "authorized" for use on this site. If not, set to canonical name.
-    m_hostname=var;
-    if (site.m_name!=m_hostname && site.m_aliases.find(m_hostname)==site.m_aliases.end())
-        m_hostname=site.m_name;
+    GetServerVariable("SERVER_NAME", var, 32);
+    if (var.empty()) {
+        m_hostname = site.m_name;
+    }
+    else {
+        // Make sure SERVER_NAME is "authorized" for use on this site. If not, set to canonical name.
+        m_hostname=var;
+        if (site.m_name!=m_hostname && site.m_aliases.find(m_hostname)==site.m_aliases.end())
+            m_hostname=site.m_name;
+    }
 
     /*
      * IIS screws us over on PATH_INFO (the hits keep on coming). We need to figure out if
@@ -776,11 +796,12 @@ public:
             // Pretty good chance we're in bad mode, unless the PathInfo repeats the path itself.
             uri = lpECB->lpszPathInfo;
         else {
-            uri = url;
+            if (!url.empty())
+                uri = url;
             uri += lpECB->lpszPathInfo;
         }
     }
-    else {
+    else if (!url.empty()) {
         uri = url;
     }
 
@@ -815,7 +836,7 @@ public:
   string getRemoteUser() const {
     if (m_remote_user.empty()) {
         dynabuf var(16);
-        GetServerVariable(m_lpECB, "REMOTE_USER", var, 32, false);
+        GetServerVariable("REMOTE_USER", var, 32, false);
         if (!var.empty())
             m_remote_user = var;
     }
@@ -825,7 +846,7 @@ public:
     m_remote_addr = AbstractSPRequest::getRemoteAddr();
     if (m_remote_addr.empty()) {
         dynabuf var(16);
-        GetServerVariable(m_lpECB, "REMOTE_ADDR", var, 16, false);
+        GetServerVariable("REMOTE_ADDR", var, 16, false);
         if (!var.empty())
             m_remote_addr = var;
     }
@@ -845,7 +866,7 @@ public:
             hdr += toupper(*name);
     }
     dynabuf buf(128);
-    GetServerVariable(m_lpECB, const_cast<char*>(hdr.c_str()), buf, 128, false);
+    GetServerVariable(const_cast<char*>(hdr.c_str()), buf, 128, false);
     return buf.empty() ? "" : buf;
   }
   void setResponseHeader(const char* name, const char* value) {
@@ -971,7 +992,44 @@ public:
   void clearHeader(const char* rawname, const char* cginame) { throw runtime_error("clearHeader not implemented"); }
   void setHeader(const char* name, const char* value) { throw runtime_error("setHeader not implemented"); }
   void setRemoteUser(const char* user) { throw runtime_error("setRemoteUser not implemented"); }
+
+  void GetServerVariable(LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true) const {
+    s.reserve(size);
+    s.erase();
+    size=s.size();
+
+    while (!m_lpECB->GetServerVariable(m_lpECB->ConnID,lpszVariable,s,&size)) {
+        // Grumble. Check the error.
+        DWORD e=GetLastError();
+        if (e==ERROR_INSUFFICIENT_BUFFER)
+            s.reserve(size);
+        else
+            break;
+    }
+    if (bRequired && s.empty())
+        log(SPRequest::SPError, string("missing required server variable: ") + lpszVariable);
+  }
 };
+
+void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dynabuf& s, DWORD size=80, bool bRequired=true)
+{
+    s.reserve(size);
+    s.erase();
+    size=s.size();
+
+    while (!lpECB->GetServerVariable(lpECB->ConnID,lpszVariable,s,&size)) {
+        // Grumble. Check the error.
+        DWORD e=GetLastError();
+        if (e==ERROR_INSUFFICIENT_BUFFER)
+            s.reserve(size);
+        else
+            break;
+    }
+    if (bRequired && s.empty()) {
+        string msg = string("Missing required server variable: ") + lpszVariable;
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg.c_str());
+    }
+}
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 {
@@ -983,6 +1041,8 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
         // Determine web site number. This can't really fail, I don't think.
         dynabuf buf(128);
         GetServerVariable(lpECB,"INSTANCE_ID",buf,10);
+        if (buf.empty())
+            return WriteClientError(lpECB, "Shibboleth Extension failed to obtain INSTANCE_ID server variable.");
 
         // Match site instance to host name, skip if no match.
         map<string,site_t>::const_iterator map_i=g_Sites.find(static_cast<char*>(buf));
