@@ -465,7 +465,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         }
 
         auto_ptr_char dest(ep->getLocation());
-        ret.second = sendMessage(*encoder, msg.get(), relayState.c_str(), dest.get(), role, application, httpResponse);
+        ret.second = sendMessage(*encoder, msg.get(), relayState.c_str(), dest.get(), role, application, httpResponse, true);
         ret.first = true;
         msg.release();  // freed by encoder
 

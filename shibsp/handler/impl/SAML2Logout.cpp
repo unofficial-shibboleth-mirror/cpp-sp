@@ -710,7 +710,7 @@ pair<bool,long> SAML2Logout::sendResponse(
     }
 
     auto_ptr_char dest(logout->getDestination());
-    long ret = sendMessage(*encoder, logout.get(), relayState, dest.get(), role, application, httpResponse);
+    long ret = sendMessage(*encoder, logout.get(), relayState, dest.get(), role, application, httpResponse, front);
     logout.release();  // freed by encoder
     return make_pair(true,ret);
 }
