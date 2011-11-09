@@ -424,10 +424,8 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
 
     // Address check?
     if (client_addr) {
-        if (m_cache->m_log.isDebugEnabled())
-            m_cache->m_log.debug("comparing client address %s against %s", client_addr, getClientAddress());
         if (!XMLString::equals(getClientAddress(),client_addr)) {
-            m_cache->m_log.warn("client address mismatch");
+            m_cache->m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, getClientAddress());
             throw RetryableProfileException(
                 "Your IP address ($1) does not match the address recorded at the time the session was established.",
                 params(1,client_addr)
