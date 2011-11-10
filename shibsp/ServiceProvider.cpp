@@ -345,6 +345,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
     const Application* app=nullptr;
+    const Session* session = nullptr;
     string targetURL = request.getRequestURL();
 
     try {
@@ -371,7 +372,6 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 
         // Do we have an access control plugin?
         if (settings.second) {
-            const Session* session = nullptr;
             try {
                 session = request.getSession(false);
             }
@@ -388,7 +388,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
                 case AccessControl::shib_acl_false:
                 {
                     log.warn("access control provider denied access");
-                    TemplateParameters tp;
+                    TemplateParameters tp(nullptr, nullptr, session);
                     tp.m_map["requestURL"] = targetURL;
                     return make_pair(true,sendError(log, request, app, "access", tp, false));
                 }
@@ -404,7 +404,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
     }
     catch (exception& e) {
         request.log(SPRequest::SPError, e.what());
-        TemplateParameters tp(&e);
+        TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(log, request, app, "access", tp));
     }
@@ -418,13 +418,13 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
     const Application* app=nullptr;
+    const Session* session = nullptr;
     string targetURL = request.getRequestURL();
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
 
-        const Session* session = nullptr;
         try {
             session = request.getSession(false);
         }
@@ -559,7 +559,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     }
     catch (exception& e) {
         request.log(SPRequest::SPError, e.what());
-        TemplateParameters tp(&e);
+        TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true,sendError(log, request, app, "session", tp));
     }
@@ -639,7 +639,13 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
     }
     catch (exception& e) {
         request.log(SPRequest::SPError, e.what());
-        TemplateParameters tp(&e);
+        const Session* session = nullptr;
+        try {
+            session = request.getSession(false, true);
+        }
+        catch (exception& e2) {
+        }
+        TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         tp.m_request = &request;
         return make_pair(true,sendError(log, request, app, "session", tp));

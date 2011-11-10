@@ -25,6 +25,8 @@
  */
 
 #include "internal.h"
+#include "SessionCache.h"
+#include "attribute/Attribute.h"
 #include "util/PropertySet.h"
 #include "util/TemplateParameters.h"
 
@@ -36,8 +38,8 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
-TemplateParameters::TemplateParameters(const exception* e, const PropertySet* props)
-    : m_exception(e), m_toolingException(dynamic_cast<const XMLToolingException*>(e))
+TemplateParameters::TemplateParameters(const exception* e, const PropertySet* props, const Session* session)
+    : m_exception(e), m_toolingException(dynamic_cast<const XMLToolingException*>(e)), m_session(session)
 {
     setPropertySet(props);
 }
@@ -78,10 +80,25 @@ const char* TemplateParameters::getParameter(const char* name) const
     }
 
     const char* pch = TemplateEngine::TemplateParameters::getParameter(name);
-    if (pch || !m_props)
+    if (pch)
         return pch;
-    pair<bool,const char*> p = m_props->getString(name);
-    return p.first ? p.second : nullptr;
+
+    if (m_session) {
+        const multimap<string,const Attribute*>& attrs = m_session->getIndexedAttributes();
+        pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> walker;
+        for (walker = attrs.equal_range(name); walker.first != walker.second; ++walker.first) {
+            if (walker.first->second->valueCount() > 0)
+                return walker.first->second->getSerializedValues().front().c_str();
+        }
+    }
+
+    if (m_props) {
+        pair<bool,const char*> p = m_props->getString(name);
+        if (p.first)
+            return p.second;
+    }
+
+    return nullptr;
 }
 
 string TemplateParameters::toQueryString() const

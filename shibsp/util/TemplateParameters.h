@@ -21,7 +21,7 @@
 /**
  * @file shibsp/util/TemplateParameters.h
  * 
- * Supplies xmltooling TemplateEngine with additional parameters from a PropertySet. 
+ * Supplies xmltooling TemplateEngine with additional parameters.
  */
 
 #ifndef __shibsp_tempparams_h__
@@ -34,20 +34,24 @@
 namespace shibsp {
 
     class SHIBSP_API PropertySet;
+    class SHIBSP_API Session;
 
     /**
-     * Supplies xmltooling TemplateEngine with additional parameters from a PropertySet.
+     * Supplies xmltooling TemplateEngine with additional parameters.
      */
     class SHIBSP_API TemplateParameters : public xmltooling::TemplateEngine::TemplateParameters
     {
     public:
         /**
-         * Constructor
+         * Constructor.
          * 
-         * @param e     an exception to supply additional parameters
-         * @param props a PropertySet to supply additional parameters
+         * @param e         an exception to supply additional parameters
+         * @param props     a PropertySet to supply additional parameters
+         * @param session   an active user session
          */
-        TemplateParameters(const std::exception* e=nullptr, const PropertySet* props=nullptr);
+        TemplateParameters(
+            const std::exception* e=nullptr, const PropertySet* props=nullptr, const Session* session=nullptr
+            );
 
         virtual ~TemplateParameters();
         
@@ -80,6 +84,7 @@ namespace shibsp {
         const PropertySet* m_props;
         const std::exception* m_exception;
         const xmltooling::XMLToolingException* m_toolingException;
+        const Session* m_session;
     };
 };
 
