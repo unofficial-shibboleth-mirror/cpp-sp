@@ -307,28 +307,6 @@ void AssertionExtractor::extractAttributes(
             }
         }
     }
-
-    /*auto_ptr<SimpleAttribute> attr(new SimpleAttribute(vector<string>(1,m_attributeId)));
-
-        if (!(*s)->getAuthnContext() || (*s)->getAuthnContext()->getAuthenticatingAuthoritys().empty())
-            continue;
-
-        const vector<AuthenticatingAuthority*>& authorities =
-            const_cast<const AuthnContext*>((*s)->getAuthnContext())->getAuthenticatingAuthoritys();
-        for (vector<AuthenticatingAuthority*>::const_iterator a = authorities.begin(); a != authorities.end(); ++a) {
-            const XMLCh* n = (*a)->getID();
-            if (n && *n) {
-                auto_ptr_char temp(n);
-                attr->getValues().push_back(temp.get());
-            }
-        }
-
-        if (attr->valueCount() > 0) {
-            attributes.push_back(attr.release());
-            return;
-        }
-    }
-    */
 }
 
 void AssertionExtractor::getAttributeIds(vector<string>& attributes) const
