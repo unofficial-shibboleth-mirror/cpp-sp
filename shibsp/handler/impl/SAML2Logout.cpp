@@ -38,7 +38,6 @@
 # include "security/SecurityPolicy.h"
 # include "security/SecurityPolicyProvider.h"
 # include "metadata/MetadataProviderCriteria.h"
-# include "util/TemplateParameters.h"
 # include <fstream>
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
@@ -669,7 +668,7 @@ pair<bool,long> SAML2Logout::sendResponse(
     if (front) {
         const IDPSSODescriptor* idp = dynamic_cast<const IDPSSODescriptor*>(role);
         for (vector<const XMLCh*>::const_iterator b = m_bindings.begin(); idp && b!=m_bindings.end(); ++b) {
-            if (ep=EndpointManager<SingleLogoutService>(idp->getSingleLogoutServices()).getByBinding(*b)) {
+            if ((ep=EndpointManager<SingleLogoutService>(idp->getSingleLogoutServices()).getByBinding(*b))) {
                 map<const XMLCh*,MessageEncoder*>::const_iterator enc = m_encoders.find(*b);
                 if (enc!=m_encoders.end())
                     encoder = enc->second;
