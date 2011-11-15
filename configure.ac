@@ -192,12 +192,15 @@ fi
 
 # Xerces settings
 AC_ARG_WITH(xerces,
-    AS_HELP_STRING([--with-xerces=PATH],[where xerces-c is installed]),
-    [if test x_$with_xerces != x_/usr; then
-        LDFLAGS="-L${with_xerces}/lib $LDFLAGS"
-        CPPFLAGS="-I${with_xerces}/include $CPPFLAGS"
-    fi])
-LIBS="-lxerces-c $LIBS"
+    AS_HELP_STRING([--with-xerces=PATH],[where xerces-c is installed]),,
+    [with_xerces=/usr])
+if test x_$with_xerces != x_/usr; then
+    CPPFLAGS="-I${with_xerces}/include $CPPFLAGS"
+    LIBS="-L${with_xerces}/lib -lxerces-c $LIBS"
+else
+    LIBS="-lxerces-c $LIBS"
+fi
+
 AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,AC_MSG_ERROR([unable to find xerces header files]))
 AC_MSG_CHECKING([Xerces version])
 AC_PREPROC_IFELSE(
@@ -239,12 +242,12 @@ AC_COMPILE_IFELSE(
 AC_ARG_WITH(xmlsec,
     AS_HELP_STRING([--with-xmlsec=PATH],[where xmlsec is installed]),,
     [with_xmlsec=/usr])
-
 if test x_$with_xmlsec != x_/usr; then
-    LDFLAGS="-L${with_xmlsec}/lib $LDFLAGS"
     CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
-fi        
-XMLSEC_LIBS="-lxml-security-c $XMLSEC_LIBS"
+    XMLSEC_LIBS="-L${with_xmlsec}/lib -lxml-security-c $XMLSEC_LIBS"
+else
+    XMLSEC_LIBS="-lxml-security-c $XMLSEC_LIBS"
+fi
 
 # save and append master libs
 save_LIBS="$LIBS"
@@ -275,16 +278,19 @@ LIBS="$save_LIBS"
 
 #XML-Tooling settings
 AC_ARG_WITH(xmltooling,
-    AS_HELP_STRING([--with-xmltooling=PATH],[where xmltooling is installed]),
-    [if test x_$with_xmltooling != x_/usr; then
-        LDFLAGS="-L${with_xmltooling}/lib $LDFLAGS"
-        CPPFLAGS="-I${with_xmltooling}/include $CPPFLAGS"
-        DX_INCLUDE="${with_xmltooling}/include"
-    fi])
-LITE_LIBS="-lxmltooling-lite"
-XMLSEC_LIBS="-lxmltooling $XMLSEC_LIBS"
+    AS_HELP_STRING([--with-xmltooling=PATH],[where xmltooling is installed]),,
+    [with_xmltooling=/usr])
+if test x_$with_xmltooling != x_/usr; then
+    CPPFLAGS="-I${with_xmltooling}/include $CPPFLAGS"
+    DX_INCLUDE="${with_xmltooling}/include"
+    LITE_LIBS="-L${with_xmltooling}/lib -lxmltooling-lite"
+    XMLSEC_LIBS="-L${with_xmltooling}/lib -lxmltooling $XMLSEC_LIBS"
+else
+    LITE_LIBS="-lxmltooling-lite"
+    XMLSEC_LIBS="-lxmltooling $XMLSEC_LIBS"
+fi
+
 AC_CHECK_HEADER([xmltooling/base.h],,AC_MSG_ERROR([unable to find xmltooling header files]))
-                
 
 # save and append master libs
 save_LIBS="$LIBS"
@@ -323,13 +329,15 @@ AC_SUBST(XMLTOOLINGXMLDIR)
 
 # OpenSAML settings
 AC_ARG_WITH(saml,
-    AS_HELP_STRING([--with-saml=PATH],[where saml is installed]),
-    [if test x_$with_saml != x_/usr; then
-        LDFLAGS="-L${with_saml}/lib $LDFLAGS"
-        CPPFLAGS="-I${with_saml}/include $CPPFLAGS"
-        DX_INCLUDE="$DX_INCLUDE ${with_saml}/include"
-    fi])
-XMLSEC_LIBS="-lsaml $XMLSEC_LIBS"
+    AS_HELP_STRING([--with-saml=PATH],[where opensaml is installed]),,
+    [with_saml=/usr])
+if test x_$with_xmltooling != x_/usr; then
+    CPPFLAGS="-I${with_saml}/include $CPPFLAGS"
+    DX_INCLUDE="$DX_INCLUDE ${with_saml}/include"
+    XMLSEC_LIBS="-L${with_saml}/lib -lsaml $XMLSEC_LIBS"
+else
+    XMLSEC_LIBS="-lsaml $XMLSEC_LIBS"
+fi
 
 # save and append master libs
 save_LIBS="$LIBS"
