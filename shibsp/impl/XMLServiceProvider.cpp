@@ -1623,7 +1623,7 @@ const Handler* XMLApplication::getAssertionConsumerServiceByProtocol(const XMLCh
                 return *j;
         }
     }
-    return m_base ? m_base->getAssertionConsumerServiceByProtocol(protocol) : nullptr;
+    return m_base ? m_base->getAssertionConsumerServiceByProtocol(protocol, binding) : nullptr;
 }
 
 const vector<const Handler*>& XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
