@@ -25,7 +25,7 @@ BuildRequires:	libsaml-devel >= 2.5
 Requires:		libcurl-openssl >= 7.21.7
 BuildRequires:	chrpath
 %endif
-BuildRequires:  gcc-c++, zlib-devel
+BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
 %{!?_without_doxygen:BuildRequires: doxygen}
 %{!?_without_odbc:BuildRequires:unixODBC-devel}
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
@@ -323,13 +323,14 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
-* Wed Aug 24 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.5-1
+* Wed Dec 14 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.5-1
 - Move logo and stylesheet to version-independent tree
 - Make shib.conf noreplace
 - Post-fixup of Alias commands in older shib.conf
 - Changes to run shibd as non-root shibboleth user
 - Move init customizations to /etc/sysconfig/shibd
 - Copy shibd restart for Red Hat to postun
+- Add boost-devel dependency
 
 * Sun Jun 26 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
 - Log files shouldn't be world readable.
