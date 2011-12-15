@@ -211,12 +211,7 @@ bool TCPListener::bind(ShibSocket& s, bool force) const
         return false;
     }
 #else
-# ifdef HAVE_STRUCT_SOCKADDR_STORAGE
-    if (::bind(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.ss_len) < 0)
-# else
-    if (::bind(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.sin_len) < 0)
-# endif
-    {
+    if (::bind(s, (const struct sockaddr*)&m_sockaddr, sizeof(m_sockaddr)) < 0) {
         log_error("bind");
         close(s);
         return false;
@@ -232,11 +227,7 @@ bool TCPListener::connect(ShibSocket& s) const
     if(SOCKET_ERROR==::connect(s, (const struct sockaddr*)&m_sockaddr, sizeof(m_sockaddr)))
         return log_error("connect");
 #else
-# ifdef HAVE_STRUCT_SOCKADDR_STORAGE
-    if (::connect(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.ss_len) < 0)
-# else
-    if (::connect(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.sin_len) < 0)
-# endif
+    if (::connect(s, (const struct sockaddr*)&m_sockaddr, sizeof(m_sockaddr)) < 0)
         return log_error("connect");
 #endif
     return true;
