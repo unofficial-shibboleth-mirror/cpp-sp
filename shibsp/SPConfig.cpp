@@ -197,12 +197,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
     log.debug("%s library initialization started", PACKAGE_STRING);
 
-    if (!catalog_path)
-        catalog_path = getenv("SHIBSP_SCHEMAS");
-    if (!catalog_path)
-        catalog_path = SHIBSP_SCHEMAS;
-    XMLToolingConfig::getConfig().catalog_path = catalog_path;
-
 #ifndef SHIBSP_LITE
     XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION +
         " OpenSAML/" + gOpenSAMLDotVersionStr +
@@ -232,6 +226,14 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         return false;
     }
 #endif
+    if (!catalog_path)
+        catalog_path = getenv("SHIBSP_SCHEMAS");
+    if (!catalog_path)
+        catalog_path = SHIBSP_SCHEMAS;
+    if (!XMLToolingConfig::getConfig().getValidatingParser().loadCatalogs(catalog_path)) {
+        log.warn("failed to load schema catalogs into validating parser");
+    }
+
     PathResolver* pr = XMLToolingConfig::getConfig().getPathResolver();
     pr->setDefaultPackageName(PACKAGE_NAME);
     pr->setDefaultPrefix(inst_prefix2.c_str());
