@@ -72,6 +72,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{31B171C1-E
 	ProjectSection(SolutionItems) = preProject
 		m4\acinclude.m4 = m4\acinclude.m4
 		m4\acx_pthread.m4 = m4\acx_pthread.m4
+		m4\boost.m4 = m4\boost.m4
 		configure.ac = configure.ac
 		doxygen.am = doxygen.am
 		doxygen.cfg = doxygen.cfg

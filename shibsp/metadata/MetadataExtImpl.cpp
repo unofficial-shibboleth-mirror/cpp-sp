@@ -28,6 +28,7 @@
 #include "exceptions.h"
 #include "metadata/MetadataExt.h"
 
+#include <boost/lexical_cast.hpp>
 #include <xmltooling/AbstractComplexElement.h>
 #include <xmltooling/AbstractSimpleElement.h>
 #include <xmltooling/impl/AnyElement.h>
