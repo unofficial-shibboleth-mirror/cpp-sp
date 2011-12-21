@@ -29,6 +29,10 @@
 #include "metadata/MetadataExt.h"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/casts.hpp>
+#include <boost/lambda/if.hpp>
+#include <boost/lambda/lambda.hpp>
 #include <xmltooling/AbstractComplexElement.h>
 #include <xmltooling/AbstractSimpleElement.h>
 #include <xmltooling/impl/AnyElement.h>
@@ -73,7 +77,7 @@ namespace shibsp {
         ScopeImpl(const ScopeImpl& src)
                 : AbstractXMLObject(src), AbstractSimpleElement(src), AbstractDOMCachingXMLObject(src) {
             init();
-            Regexp(src.m_Regexp);
+            IMPL_CLONE_BOOLEAN_ATTRIB(Regexp);
         }
         
         IMPL_XMLOBJECT_CLONE(Scope);
@@ -114,10 +118,8 @@ namespace shibsp {
                 : AbstractXMLObject(src), AbstractComplexElement(src),
                     AbstractAttributeExtensibleXMLObject(src), AbstractDOMCachingXMLObject(src) {
             init();
-            setVerifyDepth(src.m_VerifyDepth);
-            VectorOf(KeyInfo) v=getKeyInfos();
-            for (vector<KeyInfo*>::const_iterator i=src.m_KeyInfos.begin(); i!=src.m_KeyInfos.end(); ++i)
-                v.push_back((*i)->cloneKeyInfo());
+            IMPL_CLONE_INTEGER_ATTRIB(VerifyDepth);
+            IMPL_CLONE_TYPED_CHILDREN(KeyInfo);
         }
         
         IMPL_XMLOBJECT_CLONE(KeyAuthority);
