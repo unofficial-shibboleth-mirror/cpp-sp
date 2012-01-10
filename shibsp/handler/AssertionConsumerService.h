@@ -30,6 +30,8 @@
 #include <shibsp/handler/AbstractHandler.h>
 #include <shibsp/handler/RemotedHandler.h>
 
+#include <boost/scoped_ptr.hpp>
+
 #ifndef SHIBSP_LITE
 namespace opensaml {
     class SAML_API Assertion;
@@ -242,8 +244,7 @@ namespace shibsp {
             ) const;
                 
 #ifndef SHIBSP_LITE
-        opensaml::MessageDecoder* m_decoder;
-        xmltooling::QName m_role;
+        boost::scoped_ptr<opensaml::MessageDecoder> m_decoder;
 #endif
     };
 

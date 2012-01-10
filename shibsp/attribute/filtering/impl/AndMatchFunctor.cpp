@@ -30,11 +30,16 @@
 #include "attribute/filtering/MatchFunctor.h"
 #include "util/SPConstants.h"
 
+#include <boost/scoped_ptr.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost::lambda;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -50,19 +55,21 @@ namespace shibsp {
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
             if (m_functors.empty())
                 return false;
-            for (vector<const MatchFunctor*>::const_iterator mf = m_functors.begin(); mf!=m_functors.end(); ++mf)
-                if (!(*mf)->evaluatePolicyRequirement(filterContext))
-                    return false;
-            return true;
+            vector<const MatchFunctor*>::const_iterator i = find_if(
+                m_functors.begin(), m_functors.end(),
+                lambda::bind(&MatchFunctor::evaluatePolicyRequirement, _1, boost::ref(filterContext)) == false
+                );
+            return (i == m_functors.end());
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {
             if (m_functors.empty())
                 return false;
-            for (vector<const MatchFunctor*>::const_iterator mf = m_functors.begin(); mf!=m_functors.end(); ++mf)
-                if (!(*mf)->evaluatePermitValue(filterContext, attribute, index))
-                    return false;
-            return true;
+            vector<const MatchFunctor*>::const_iterator i = find_if(
+                m_functors.begin(), m_functors.end(),
+                lambda::bind(&MatchFunctor::evaluatePermitValue, _1, boost::ref(filterContext), boost::ref(attribute), index) == false
+                );
+            return (i == m_functors.end());
         }
 
     private:
@@ -113,11 +120,11 @@ MatchFunctor* AndMatchFunctor::buildFunctor(const DOMElement* e, const FilterPol
     if (!id.empty() && functorMap->getMatchFunctors().count(id))
         id.clear();
 
-    auto_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
-    if (!type.get())
+    scoped_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
+    if (!type)
         throw ConfigurationException("Child Rule found with no xsi:type.");
 
-    MatchFunctor* func = SPConfig::getConfig().MatchFunctorManager.newPlugin(*type.get(), make_pair(functorMap,e));
-    functorMap->getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func));
-    return func;
+    auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(functorMap,e)));
+    functorMap->getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func.get()));
+    return func.release();
 }

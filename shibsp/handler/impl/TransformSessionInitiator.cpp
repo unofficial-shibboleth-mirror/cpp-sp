@@ -38,6 +38,7 @@
 # include "metadata/MetadataProviderCriteria.h"
 # include <saml/saml2/metadata/Metadata.h>
 #endif
+#include <boost/tuple/tuple.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -47,6 +48,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -97,19 +99,17 @@ namespace shibsp {
                 e = XMLHelper::getFirstChildElement(e);
                 while (e) {
                     if (e->hasChildNodes()) {
-                        const XMLCh* flag = e->getAttributeNS(nullptr, force);
-                        if (!flag)
-                            flag = &chNull;
+                        bool flag = XMLHelper::getAttrBool(e, false, force);
                         if (XMLString::equals(e->getLocalName(), Subst)) {
-                            auto_ptr_char temp(e->getFirstChild()->getNodeValue());
+                            auto_ptr_char temp(e->getTextContent());
                             if (temp.get() && *temp.get())
-                                m_subst.push_back(pair<bool,string>((*flag==chDigit_1 || *flag==chLatin_t), temp.get()));
+                                m_subst.push_back(pair<bool,string>(flag, temp.get()));
                         }
                         else if (XMLString::equals(e->getLocalName(), Regex) && e->hasAttributeNS(nullptr, match)) {
                             auto_ptr_char m(e->getAttributeNS(nullptr, match));
-                            auto_ptr_char repl(e->getFirstChild()->getNodeValue());
+                            auto_ptr_char repl(e->getTextContent());
                             if (m.get() && *m.get() && repl.get() && *repl.get())
-                                m_regex.push_back(make_pair((*flag==chDigit_1 || *flag==chLatin_t), pair<string,string>(m.get(), repl.get())));
+                                m_regex.push_back(tuple<bool,string,string>(flag, m.get(), repl.get()));
                         }
                         else {
                             m_log.warn("Unknown element found in Transform SessionInitiator configuration, check for errors.");
@@ -133,7 +133,7 @@ namespace shibsp {
 #ifndef SHIBSP_LITE
         bool m_alwaysRun;
         vector< pair<bool, string> > m_subst;
-        vector< pair< bool, pair<string,string> > > m_regex;
+        vector< tuple<bool,string,string> > m_regex;
 #endif
     };
 
@@ -165,9 +165,9 @@ pair<bool,long> TransformSessionInitiator::run(SPRequest& request, string& entit
 {
     // We have to have a candidate name to function.
     if (entityID.empty() || !checkCompatibility(request, isHandler))
-        return make_pair(false,0L);
+        return make_pair(false, 0L);
 
-    const Application& app=request.getApplication();
+    const Application& app = request.getApplication();
 
     m_log.debug("attempting to transform input (%s) into a valid entityID", entityID.c_str());
 
@@ -186,14 +186,14 @@ pair<bool,long> TransformSessionInitiator::run(SPRequest& request, string& entit
             entityID = out.string();
     }
     
-    return make_pair(false,0L);
+    return make_pair(false, 0L);
 }
 
 void TransformSessionInitiator::receive(DDF& in, ostream& out)
 {
     // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
+    const char* aid = in["application_id"].string();
+    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) to generate AuthnRequest", aid ? aid : "(missing)");
@@ -214,7 +214,7 @@ void TransformSessionInitiator::receive(DDF& in, ostream& out)
 void TransformSessionInitiator::doRequest(const Application& application, string& entityID) const
 {
 #ifndef SHIBSP_LITE
-    MetadataProvider* m=application.getMetadataProvider();
+    MetadataProvider* m = application.getMetadataProvider();
     Locker locker(m);
 
     MetadataProviderCriteria mc(application, entityID.c_str(), &IDPSSODescriptor::ELEMENT_QNAME);
@@ -254,10 +254,10 @@ void TransformSessionInitiator::doRequest(const Application& application, string
     }
 
     // Now try regexs.
-    for (vector< pair< bool, pair<string,string> > >::const_iterator r = m_regex.begin(); r != m_regex.end(); ++r) {
+    for (vector< tuple<bool,string,string> >::const_iterator r = m_regex.begin(); r != m_regex.end(); ++r) {
         try {
-            RegularExpression exp(r->second.first.c_str());
-            XMLCh* temp = exp.replace(entityID.c_str(), r->second.second.c_str());
+            RegularExpression exp(r->get<1>().c_str());
+            XMLCh* temp = exp.replace(entityID.c_str(), r->get<2>().c_str());
             if (temp) {
                 auto_ptr_char narrow(temp);
                 XMLString::release(&temp);
@@ -266,7 +266,7 @@ void TransformSessionInitiator::doRequest(const Application& application, string
                 if (entityID == narrow.get())
                     continue;
 
-                if (r->first) {
+                if (r->get<0>()) {
                     m_log.info("forcibly transformed entityID from (%s) to (%s)", entityID.c_str(), narrow.get());
                     entityID = narrow.get();
                 }
@@ -277,7 +277,7 @@ void TransformSessionInitiator::doRequest(const Application& application, string
                 entity = m->getEntityDescriptor(mc);
                 if (entity.first) {
                     m_log.info("transformed entityID from (%s) to (%s)", entityID.c_str(), narrow.get());
-                    if (!r->first)
+                    if (!r->get<0>())
                         entityID = narrow.get();
                     return;
                 }

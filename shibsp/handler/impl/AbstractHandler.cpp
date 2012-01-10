@@ -38,6 +38,9 @@
 
 #include <vector>
 #include <fstream>
+#include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
@@ -68,6 +71,7 @@ using namespace shibsp;
 using namespace samlconstants;
 using namespace xmltooling;
 using namespace xercesc;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -91,10 +95,8 @@ namespace shibsp {
             int port = request.getPort();
             const char* scheme = request.getScheme();
             string root = string(scheme) + "://" + request.getHostname();
-            if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
-                ostringstream portstr;
-                portstr << port;
-                root += ":" + portstr.str();
+            if ((!strcmp(scheme, "http") && port != 80) || (!strcmp(scheme, "https") && port != 443)) {
+                root += ":" + lexical_cast<string>(port);
             }
             url = root + url;
         }
@@ -132,9 +134,9 @@ namespace shibsp {
                     else if (!strcmp(httpRequest.getScheme(), "http") && httpRequest.getPort() == 80) {
                         whitelist.push_back(string("http://") + httpRequest.getHostname() + '/');
                     }
-                    ostringstream portstr;
-                    portstr << httpRequest.getPort();
-                    whitelist.push_back(string(httpRequest.getScheme()) + "://" + httpRequest.getHostname() + ':' + portstr.str() + '/');
+                    whitelist.push_back(
+                        string(httpRequest.getScheme()) + "://" + httpRequest.getHostname() + ':' + lexical_cast<string>(httpRequest.getPort()) + '/'
+                        );
                 }
                 else if (!strcmp(relayStateLimit.second, "host")) {
                     // Allow any scheme or port.
@@ -147,20 +149,8 @@ namespace shibsp {
                     // Literal set of comparisons to use.
                     pair<bool,const char*> whitelistval = sessionProps->getString("relayStateWhitelist");
                     if (whitelistval.first) {
-#ifdef HAVE_STRTOK_R
-                        char* pos=nullptr;
-                        const char* token = strtok_r(const_cast<char*>(whitelistval.second), " ", &pos);
-#else
-                        const char* token = strtok(const_cast<char*>(whitelistval.second), " ");
-#endif
-                        while (token) {
-                            whitelist.push_back(token);
-#ifdef HAVE_STRTOK_R
-                            token = strtok_r(nullptr, " ", &pos);
-#else
-                            token = strtok(nullptr, " ");
-#endif
-                        }
+                        string dup(whitelistval.second);
+                        split(whitelist, dup, is_space(), algorithm::token_compress_on);
                     }
                 }
                 else {
@@ -168,14 +158,12 @@ namespace shibsp {
                     throw opensaml::SecurityPolicyException("Unrecognized relayStateLimit setting.");
                 }
 
-                for (vector<string>::const_iterator w = whitelist.begin(); w != whitelist.end(); ++w) {
-                    if (XMLString::startsWithI(relayState, w->c_str())) {
-                        return;
-                    }
+                static bool (*startsWithI)(const char*,const char*) = XMLString::startsWithI;
+                if (find_if(whitelist.begin(), whitelist.end(),
+                        boost::bind(startsWithI, relayState, boost::bind(&string::c_str, _1))) == whitelist.end()) {
+                    log.warn("relayStateLimit policy (%s), blocked redirect to (%s)", relayStateLimit.second, relayState);
+                    throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
                 }
-
-                log.warn("relayStateLimit policy (%s), blocked redirect to (%s)", relayStateLimit.second, relayState);
-                throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
             }
         }
     }
@@ -276,9 +264,9 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
             string stateval = urlenc->encode(relayState.c_str()) + shib_cookie.second;
             // Generate a random key for the cookie name instead of the fixed name.
             string rsKey;
-            generateRandomHex(rsKey,5);
+            generateRandomHex(rsKey, 5);
             shib_cookie.first = "_shibstate_" + rsKey;
-            response.setCookie(shib_cookie.first.c_str(),stateval.c_str());
+            response.setCookie(shib_cookie.first.c_str(), stateval.c_str());
             relayState = "cookie:" + rsKey;
         }
     }
@@ -439,7 +427,7 @@ void Handler::recoverRelayState(
 AbstractHandler::AbstractHandler(
     const DOMElement* e, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
     ) : m_log(log), m_configNS(shibspconstants::SHIB2SPCONFIG_NS) {
-    load(e,nullptr,filter,remapper);
+    load(e, nullptr, filter, remapper);
 }
 
 AbstractHandler::~AbstractHandler()
@@ -649,7 +637,7 @@ void AbstractHandler::preservePostData(
             if (storage) {
                 // Use a random key
                 string rsKey;
-                SAMLConfig::getConfig().generateRandomBytes(rsKey,32);
+                SAMLConfig::getConfig().generateRandomBytes(rsKey, 32);
                 rsKey = SAMLArtifact::toHex(rsKey);
                 ostringstream out;
                 out << postData;
@@ -809,7 +797,7 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
 {
     string contentType = request.getContentType();
     if (contentType.find("application/x-www-form-urlencoded") != string::npos) {
-        const PropertySet* props=application.getPropertySet("Sessions");
+        const PropertySet* props = application.getPropertySet("Sessions");
         pair<bool,unsigned int> plimit = props ? props->getUnsignedInt("postLimit") : pair<bool,unsigned int>(false,0);
         if (!plimit.first)
             plimit.second = 1024 * 1024;
@@ -884,8 +872,14 @@ pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const 
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
-        if (param && *param)
-            return pair<bool,unsigned int>(true, strtol(param,nullptr,10));
+        if (param && *param) {
+            try {
+                return pair<bool,unsigned int>(true, lexical_cast<unsigned int>(param));
+            }
+            catch (bad_lexical_cast&) {
+                return pair<bool,unsigned int>(false,0);
+            }
+        }
     }
     
     if (type & HANDLER_PROPERTY_MAP) {

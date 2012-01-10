@@ -35,9 +35,12 @@
 #include "util/IPRange.h"
 
 #include <ctime>
+#include <boost/bind.hpp>
+#include <boost/algorithm/string.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -71,6 +74,15 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
+        void parseACL(const string& acl) {
+            try {
+                m_acl.push_back(IPRange::parseCIDRBlock(acl.c_str()));
+            }
+            catch (std::exception& ex) {
+                m_log.error("invalid CIDR block (%s): %s", acl.c_str(), ex.what());
+            }
+        }
+
         bool m_values;
         vector<IPRange> m_acl;
     };
@@ -92,25 +104,9 @@ SessionHandler::SessionHandler(const DOMElement* e, const char* appId)
     pair<bool,const char*> acl = getString("acl");
     if (acl.first) {
         string aclbuf=acl.second;
-        int j = 0;
-        for (unsigned int i=0;  i < aclbuf.length();  ++i) {
-            if (aclbuf.at(i)==' ') {
-                try {
-                    m_acl.push_back(IPRange::parseCIDRBlock(aclbuf.substr(j, i-j).c_str()));
-                }
-                catch (exception& ex) {
-                    m_log.error("invalid CIDR block (%s): %s", aclbuf.substr(j, i-j).c_str(), ex.what());
-                }
-                j = i + 1;
-            }
-        }
-        try {
-            m_acl.push_back(IPRange::parseCIDRBlock(aclbuf.substr(j, aclbuf.length()-j).c_str()));
-        }
-        catch (exception& ex) {
-            m_log.error("invalid CIDR block (%s): %s", aclbuf.substr(j, aclbuf.length()-j).c_str(), ex.what());
-        }
-
+        vector<string> aclarray;
+        split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
+        for_each(aclarray.begin(), aclarray.end(), boost::bind(&SessionHandler::parseACL, this, _1));
         if (m_acl.empty()) {
             m_log.warn("invalid CIDR range(s) in Session handler acl property, allowing 127.0.0.1 as a fall back");
             m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
@@ -125,11 +121,8 @@ SessionHandler::SessionHandler(const DOMElement* e, const char* appId)
 pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
 {
     if (!m_acl.empty()) {
-        bool found = false;
-        for (vector<IPRange>::const_iterator acl = m_acl.begin(); !found && acl != m_acl.end(); ++acl) {
-            found = acl->contains(request.getRemoteAddr().c_str());
-        }
-        if (!found) {
+        static bool (IPRange::* contains)(const char*) const = &IPRange::contains;
+        if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
             m_log.error("session handler request blocked from invalid address (%s)", request.getRemoteAddr().c_str());
             istringstream msg("Session Handler Blocked");
             return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
@@ -141,7 +134,7 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
 
     Session* session = nullptr;
     try {
-        session = request.getSession();
+        session = request.getSession(); // caches the locked session in the request so it's unlocked automatically
         if (!session) {
             s << "A valid session was not found.</pre></body></html>" << endl;
             request.setContentType("text/html");
@@ -150,7 +143,7 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
             return make_pair(true, request.sendResponse(s));
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         s << "Exception while retrieving active session:" << endl
             << '\t' << ex.what() << "</pre></body></html>" << endl;
         request.setContentType("text/html");

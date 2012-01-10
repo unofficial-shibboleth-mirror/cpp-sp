@@ -656,7 +656,7 @@ void XMLExtractorImpl::extractAttributes(
             ) const = &XMLExtractorImpl::extractAttributes;
         for_each(
             make_indirect_iterator(container->getAttributes().begin()), make_indirect_iterator(container->getAttributes().end()),
-            boost::bind(extractV2Attr, this, boost::ref(application), nullptr, relyingParty, _1, boost::ref(holding))
+            boost::bind(extractV2Attr, this, boost::ref(application), (const char*)nullptr, relyingParty, _1, boost::ref(holding))
             );
 
         if (entityID && m_entityAssertions) {

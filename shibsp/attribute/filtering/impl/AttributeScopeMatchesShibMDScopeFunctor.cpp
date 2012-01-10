@@ -62,21 +62,16 @@ namespace shibsp {
             const char* scope = attribute.getScope(index);
             if (!scope || !*scope)
                 return false;
+            auto_arrayptr<XMLCh> widescope(fromUTF8(scope));
 
             const Scope* rule;
-            const XMLCh* widescope=nullptr;
             const Extensions* ext = issuer->getExtensions();
             if (ext) {
                 const vector<XMLObject*>& exts = ext->getUnknownXMLObjects();
-                for (vector<XMLObject*>::const_iterator e = exts.begin(); e!=exts.end(); ++e) {
+                for (vector<XMLObject*>::const_iterator e = exts.begin(); e != exts.end(); ++e) {
                     rule = dynamic_cast<const Scope*>(*e);
-                    if (rule) {
-                        if (!widescope)
-                            widescope = fromUTF8(scope);
-                        if (matches(*rule, widescope)) {
-                            delete[] widescope;
-                            return true;
-                        }
+                    if (rule && matches(*rule, widescope)) {
+                        return true;
                     }
                 }
             }
@@ -84,40 +79,34 @@ namespace shibsp {
             ext = dynamic_cast<const EntityDescriptor*>(issuer->getParent())->getExtensions();
             if (ext) {
                 const vector<XMLObject*>& exts = ext->getUnknownXMLObjects();
-                for (vector<XMLObject*>::const_iterator e = exts.begin(); e!=exts.end(); ++e) {
+                for (vector<XMLObject*>::const_iterator e = exts.begin(); e != exts.end(); ++e) {
                     rule = dynamic_cast<const Scope*>(*e);
-                    if (rule) {
-                        if (!widescope)
-                            widescope = fromUTF8(scope);
-                        if (matches(*rule, widescope)) {
-                            delete[] widescope;
-                            return true;
-                        }
+                    if (rule && matches(*rule, widescope)) {
+                        return true;
                     }
                 }
             }
 
-            delete[] widescope;
             return false;
         }
 
     private:
-        bool matches(const Scope& rule, const XMLCh* scope) const {
+        bool matches(const Scope& rule, auto_arrayptr<XMLCh>& scope) const {
             const XMLCh* val = rule.getValue();
             if (val && *val) {
                 if (rule.Regexp()) {
                     RegularExpression re(val);
-                    return re.matches(scope);
+                    return re.matches(scope.get());
                 }
                 else {
-                    return XMLString::equals(val, scope);
+                    return XMLString::equals(val, scope.get());
                 }
             }
             return false;
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeMatchesShibMDScopeFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new AttributeScopeMatchesShibMDScopeFunctor();
     }

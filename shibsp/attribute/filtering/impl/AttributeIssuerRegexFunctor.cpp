@@ -31,6 +31,7 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
+#include <boost/scoped_ptr.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
 namespace shibsp {
@@ -44,14 +45,14 @@ namespace shibsp {
      */
     class SHIBSP_DLLLOCAL AttributeIssuerRegexFunctor : public MatchFunctor
     {
-        RegularExpression* m_regex;
+        boost::scoped_ptr<RegularExpression> m_regex;
     public:
-        AttributeIssuerRegexFunctor(const DOMElement* e) : m_regex(nullptr) {
-            const XMLCh* r = e ? e->getAttributeNS(nullptr,regex) : nullptr;
+        AttributeIssuerRegexFunctor(const DOMElement* e) {
+            const XMLCh* r = e ? e->getAttributeNS(nullptr, regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AttributeIssuerRegex MatchFunctor requires non-empty regex attribute.");
             try {
-                m_regex = new RegularExpression(r, e->getAttributeNS(nullptr,options));
+                m_regex.reset(new RegularExpression(r, e->getAttributeNS(nullptr,options)));
             }
             catch (XMLException& ex) {
                 xmltooling::auto_ptr_char temp(ex.getMessage());
@@ -59,9 +60,7 @@ namespace shibsp {
             }
         }
 
-        virtual ~AttributeIssuerRegexFunctor() {
-            delete m_regex;
-        }
+        virtual ~AttributeIssuerRegexFunctor() {}
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
             return m_regex->matches(filterContext.getAttributeIssuer());

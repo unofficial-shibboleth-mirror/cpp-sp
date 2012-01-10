@@ -40,6 +40,9 @@
 #include "security/SecurityPolicyProvider.h"
 #include "util/SPConstants.h"
 
+#include <boost/scoped_ptr.hpp>
+#include <boost/iterator/indirect_iterator.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <saml/exceptions.h>
 #include <saml/saml1/binding/SAML1SOAPClient.h>
 #include <saml/saml1/core/Assertions.h>
@@ -63,6 +66,7 @@ using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -175,10 +179,7 @@ namespace shibsp {
     {
     public:
         QueryResolver(const DOMElement* e);
-        ~QueryResolver() {
-            for_each(m_SAML1Designators.begin(), m_SAML1Designators.end(), xmltooling::cleanup<AttributeDesignator>());
-            for_each(m_SAML2Designators.begin(), m_SAML2Designators.end(), xmltooling::cleanup<saml2::Attribute>());
-        }
+        ~QueryResolver() {}
 
         Lockable* lock() {return this;}
         void unlock() {}
@@ -213,8 +214,8 @@ namespace shibsp {
         Category& m_log;
         string m_policyId;
         bool m_subjectMatch;
-        vector<AttributeDesignator*> m_SAML1Designators;
-        vector<saml2::Attribute*> m_SAML2Designators;
+        ptr_vector<AttributeDesignator> m_SAML1Designators;
+        ptr_vector<saml2::Attribute> m_SAML2Designators;
         vector<string> m_exceptionId;
     };
 
@@ -289,20 +290,21 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
     const char* policyId = m_policyId.empty() ? application.getString("policyId").second : m_policyId.c_str();
 
     // Set up policy and SOAP client.
-    auto_ptr<SecurityPolicy> policy(
+    scoped_ptr<SecurityPolicy> policy(
         application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, nullptr, policyId)
         );
     policy->getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);
-    shibsp::SOAPClient soaper(*policy.get());
+    shibsp::SOAPClient soaper(*policy);
 
     auto_ptr_XMLCh binding(samlconstants::SAML1_BINDING_SOAP);
-    saml1p::Response* response=nullptr;
+    auto_ptr<saml1p::Response> response;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
-    for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !response && ep!=endpoints.end(); ++ep) {
-        if (!XMLString::equals((*ep)->getBinding(),binding.get()) || !(*ep)->getLocation())
+    for (indirect_iterator<vector<AttributeService*>::const_iterator> ep = make_indirect_iterator(endpoints.begin());
+            !response.get() && ep != make_indirect_iterator(endpoints.end()); ++ep) {
+        if (!XMLString::equals(ep->getBinding(), binding.get()) || !ep->getLocation())
             continue;
-        auto_ptr_char loc((*ep)->getLocation());
+        auto_ptr_char loc(ep->getLocation());
         try {
             NameIdentifier* nameid = NameIdentifierBuilder::buildNameIdentifier();
             nameid->setName(ctx.getNameID()->getName());
@@ -313,15 +315,18 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
             saml1p::AttributeQuery* query = saml1p::AttributeQueryBuilder::buildAttributeQuery();
             query->setSubject(subject);
             query->setResource(relyingParty->getXMLString("entityID").second);
-            for (vector<AttributeDesignator*>::const_iterator ad = m_SAML1Designators.begin(); ad!=m_SAML1Designators.end(); ++ad)
-                query->getAttributeDesignators().push_back((*ad)->cloneAttributeDesignator());
+            for (ptr_vector<AttributeDesignator>::const_iterator ad = m_SAML1Designators.begin(); ad != m_SAML1Designators.end(); ++ad) {
+                auto_ptr<AttributeDesignator> adwrapper(ad->cloneAttributeDesignator());
+                query->getAttributeDesignators().push_back(adwrapper.get());
+                adwrapper.release();
+            }
             Request* request = RequestBuilder::buildRequest();
             request->setAttributeQuery(query);
             request->setMinorVersion(version);
 
             SAML1SOAPClient client(soaper, false);
             client.sendSAML(request, application.getId(), mcc, loc.get());
-            response = client.receiveSAML();
+            response.reset(client.receiveSAML());
         }
         catch (exception& ex) {
             m_log.error("exception during SAML query to %s: %s", loc.get(), ex.what());
@@ -329,28 +334,25 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
         }
     }
 
-    if (!response) {
+    if (!response.get()) {
         m_log.error("unable to obtain a SAML response from attribute authority");
         throw BindingException("Unable to obtain a SAML response from attribute authority.");
     }
     else if (!response->getStatus() || !response->getStatus()->getStatusCode() || response->getStatus()->getStatusCode()->getValue()==nullptr ||
             *(response->getStatus()->getStatusCode()->getValue()) != saml1p::StatusCode::SUCCESS) {
-        delete response;
         m_log.error("attribute authority returned a SAML error");
         throw FatalProfileException("Attribute authority returned a SAML error.");
     }
 
-    const vector<saml1::Assertion*>& assertions = const_cast<const saml1p::Response*>(response)->getAssertions();
+    const vector<saml1::Assertion*>& assertions = const_cast<const saml1p::Response*>(response.get())->getAssertions();
     if (assertions.empty()) {
-        delete response;
         m_log.warn("response from attribute authority was empty");
         return;
     }
-    else if (assertions.size()>1) {
+    else if (assertions.size() > 1) {
         m_log.warn("simple resolver only supports one assertion in the query response");
     }
 
-    auto_ptr<saml1p::Response> wrapper(response);
     saml1::Assertion* newtoken = assertions.front();
 
     pair<bool,bool> signedAssertions = relyingParty->getBool("requireSignedAssertions");
@@ -378,7 +380,7 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
     }
 
     newtoken->detach();
-    wrapper.release();  // detach blows away the Response
+    response.release();  // detach blows away the Response
     ctx.getResolvedAssertions().push_back(newtoken);
 
     // Finally, extract and filter the result.
@@ -387,10 +389,11 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
         if (extractor) {
             Locker extlocker(extractor);
             const vector<saml1::AttributeStatement*>& statements = const_cast<const saml1::Assertion*>(newtoken)->getAttributeStatements();
-            for (vector<saml1::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
+            for (indirect_iterator<vector<saml1::AttributeStatement*>::const_iterator> s = make_indirect_iterator(statements.begin());
+                    s != make_indirect_iterator(statements.end()); ++s) {
                 if (m_subjectMatch) {
                     // Check for subject match.
-                    const NameIdentifier* respName = (*s)->getSubject() ? (*s)->getSubject()->getNameIdentifier() : nullptr;
+                    const NameIdentifier* respName = s->getSubject() ? s->getSubject()->getNameIdentifier() : nullptr;
                     if (!respName || !XMLString::equals(respName->getName(), ctx.getNameID()->getName()) ||
                         !XMLString::equals(respName->getFormat(), ctx.getNameID()->getFormat()) ||
                         !XMLString::equals(respName->getNameQualifier(), ctx.getNameID()->getNameQualifier())) {
@@ -402,7 +405,7 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
                         continue;
                     }
                 }
-                extractor->extractAttributes(application, AA, *(*s), ctx.getResolvedAttributes());
+                extractor->extractAttributes(application, AA, *s, ctx.getResolvedAttributes());
             }
         }
 
@@ -443,20 +446,21 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
     const char* policyId = m_policyId.empty() ? application.getString("policyId").second : m_policyId.c_str();
 
     // Set up policy and SOAP client.
-    auto_ptr<SecurityPolicy> policy(
+    scoped_ptr<SecurityPolicy> policy(
         application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, nullptr, policyId)
         );
     policy->getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);
-    shibsp::SOAPClient soaper(*policy.get());
+    shibsp::SOAPClient soaper(*policy);
 
     auto_ptr_XMLCh binding(samlconstants::SAML20_BINDING_SOAP);
-    saml2p::StatusResponseType* srt=nullptr;
+    auto_ptr<saml2p::StatusResponseType> srt;
     const vector<AttributeService*>& endpoints=AA->getAttributeServices();
-    for (vector<AttributeService*>::const_iterator ep=endpoints.begin(); !srt && ep!=endpoints.end(); ++ep) {
-        if (!XMLString::equals((*ep)->getBinding(),binding.get())  || !(*ep)->getLocation())
+    for (indirect_iterator<vector<AttributeService*>::const_iterator> ep = make_indirect_iterator(endpoints.begin());
+            !srt.get() && ep != make_indirect_iterator(endpoints.end()); ++ep) {
+        if (!XMLString::equals(ep->getBinding(), binding.get())  || !ep->getLocation())
             continue;
-        auto_ptr_char loc((*ep)->getLocation());
+        auto_ptr_char loc(ep->getLocation());
         try {
             auto_ptr<saml2::Subject> subject(saml2::SubjectBuilder::buildSubject());
 
@@ -470,10 +474,13 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
                     false,
                     relyingParty->getXMLString("encryptionAlg").second
                     );
-                subject->setEncryptedID(encrypted.release());
+                subject->setEncryptedID(encrypted.get());
+                encrypted.release();
             }
             else {
-                subject->setNameID(ctx.getNameID()->cloneNameID());
+                auto_ptr<NameID> namewrapper(ctx.getNameID()->cloneNameID());
+                subject->setNameID(namewrapper.get());
+                namewrapper.release();
             }
 
             saml2p::AttributeQuery* query = saml2p::AttributeQueryBuilder::buildAttributeQuery();
@@ -481,12 +488,15 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
             Issuer* iss = IssuerBuilder::buildIssuer();
             iss->setName(relyingParty->getXMLString("entityID").second);
             query->setIssuer(iss);
-            for (vector<saml2::Attribute*>::const_iterator ad = m_SAML2Designators.begin(); ad!=m_SAML2Designators.end(); ++ad)
-                query->getAttributes().push_back((*ad)->cloneAttribute());
+            for (ptr_vector<saml2::Attribute>::const_iterator ad = m_SAML2Designators.begin(); ad != m_SAML2Designators.end(); ++ad) {
+                auto_ptr<saml2::Attribute> adwrapper(ad->cloneAttribute());
+                query->getAttributes().push_back(adwrapper.get());
+                adwrapper.release();
+            }
 
             SAML2SOAPClient client(soaper, false);
             client.sendSAML(query, application.getId(), mcc, loc.get());
-            srt = client.receiveSAML();
+            srt.reset(client.receiveSAML());
         }
         catch (exception& ex) {
             m_log.error("exception during SAML query to %s: %s", loc.get(), ex.what());
@@ -494,14 +504,12 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
         }
     }
 
-    if (!srt) {
+    if (!srt.get()) {
         m_log.error("unable to obtain a SAML response from attribute authority");
         throw BindingException("Unable to obtain a SAML response from attribute authority.");
     }
 
-    auto_ptr<saml2p::StatusResponseType> wrapper(srt);
-
-    saml2p::Response* response = dynamic_cast<saml2p::Response*>(srt);
+    saml2p::Response* response = dynamic_cast<saml2p::Response*>(srt.get());
     if (!response) {
         m_log.error("message was not a samlp:Response");
         throw FatalProfileException("Attribute authority returned an unrecognized message.");
@@ -513,6 +521,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
     }
 
     saml2::Assertion* newtoken = nullptr;
+    auto_ptr<saml2::Assertion> newtokenwrapper;
     const vector<saml2::Assertion*>& assertions = const_cast<const saml2p::Response*>(response)->getAssertions();
     if (assertions.empty()) {
         // Check for encryption.
@@ -538,10 +547,9 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
             newtoken = dynamic_cast<saml2::Assertion*>(tokenwrapper.get());
             if (newtoken) {
                 tokenwrapper.release();
+                newtokenwrapper.reset(newtoken);
                 if (m_log.isDebugEnabled())
                     m_log.debugStream() << "decrypted Assertion: " << *newtoken << logging::eol;
-                // Free the Response now, so we know this is a stand-alone token later.
-                delete wrapper.release();
             }
         }
         catch (exception& ex) {
@@ -557,8 +565,6 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
 
     if (!newtoken->getSignature() && signedAssertions.first && signedAssertions.second) {
         m_log.error("assertion unsigned, rejecting it based on signedAssertions policy");
-        if (!wrapper.get())
-            delete newtoken;
         throw SecurityPolicyException("Rejected unsigned assertion based on local policy.");
     }
 
@@ -577,7 +583,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
 
         if (m_subjectMatch) {
             // Check for subject match.
-            bool ownedName = false;
+            auto_ptr<NameID> nameIDwrapper;
             NameID* respName = newtoken->getSubject() ? newtoken->getSubject()->getNameID() : nullptr;
             if (!respName) {
                 // Check for encryption.
@@ -591,16 +597,14 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
                         auto_ptr<XMLObject> decryptedID(encname->decrypt(*cr, relyingParty->getXMLString("entityID").second, &mcc));
                         respName = dynamic_cast<NameID*>(decryptedID.get());
                         if (respName) {
-                            ownedName = true;
                             decryptedID.release();
+                            nameIDwrapper.reset(respName);
                             if (m_log.isDebugEnabled())
                                 m_log.debugStream() << "decrypted NameID: " << *respName << logging::eol;
                         }
                     }
                 }
             }
-
-            auto_ptr<NameID> nameIDwrapper(ownedName ? respName : nullptr);
 
             if (!respName || !XMLString::equals(respName->getName(), ctx.getNameID()->getName()) ||
                 !XMLString::equals(respName->getFormat(), ctx.getNameID()->getFormat()) ||
@@ -611,24 +615,23 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
                         *respName << logging::eol;
                 else
                     m_log.warn("ignoring Assertion without NameID in Subject");
-                if (!wrapper.get())
-                    delete newtoken;
                 return;
             }
         }
     }
     catch (exception& ex) {
         m_log.error("assertion failed policy validation: %s", ex.what());
-        if (!wrapper.get())
-            delete newtoken;
         throw;
     }
 
-    if (wrapper.get()) {
+    // If the token's embedded, detach it.
+    if (!newtokenwrapper.get()) {
         newtoken->detach();
-        wrapper.release();  // detach blows away the Response
+        srt.release();  // detach blows away the Response, so avoid a double free
+        newtokenwrapper.reset(newtoken);
     }
     ctx.getResolvedAssertions().push_back(newtoken);
+    newtokenwrapper.release();
 
     // Finally, extract and filter the result.
     try {
@@ -687,9 +690,10 @@ void QueryResolver::resolveAttributes(ResolutionContext& ctx) const
     catch (exception& ex) {
         // Already logged.
         if (!m_exceptionId.empty()) {
-            SimpleAttribute* attr = new SimpleAttribute(m_exceptionId);
+            auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_exceptionId));
             attr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
-            qctx.getResolvedAttributes().push_back(attr);
+            qctx.getResolvedAttributes().push_back(attr.get());
+            attr.release();
         }
     }
 }

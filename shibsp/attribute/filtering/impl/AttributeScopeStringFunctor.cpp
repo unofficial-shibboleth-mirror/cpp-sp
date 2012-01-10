@@ -35,8 +35,8 @@
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
+using namespace xmltooling;
 using namespace std;
-using xmltooling::XMLHelper;
 
 namespace shibsp {
 
@@ -50,7 +50,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AttributeScopeStringFunctor : public MatchFunctor
     {
         string m_attributeID;
-        char* m_value;
+        auto_arrayptr<char> m_value;
         bool m_ignoreCase;
 
         bool hasScope(const FilteringContext& filterContext) const;
@@ -58,17 +58,14 @@ namespace shibsp {
     public:
         AttributeScopeStringFunctor(const DOMElement* e)
             : m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)),
-                m_value(e ? xmltooling::toUTF8(e->getAttributeNS(nullptr,value)) : nullptr),
+                m_value(e ? toUTF8(e->getAttributeNS(nullptr, value)) : nullptr),
                 m_ignoreCase(XMLHelper::getAttrBool(e, false, ignoreCase)) {
-            if (!m_value || !*m_value) {
-                delete[] m_value;
+            if (!m_value.get() || !*m_value.get()) {
                 throw ConfigurationException("AttributeScopeString MatchFunctor requires non-empty value attribute.");
             }
         }
 
-        virtual ~AttributeScopeStringFunctor() {
-            delete[] m_value;
-        }
+        virtual ~AttributeScopeStringFunctor() {}
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
             if (m_attributeID.empty())
@@ -78,21 +75,26 @@ namespace shibsp {
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {
             if (m_attributeID.empty() || m_attributeID == attribute.getId()) {
-                if (m_ignoreCase) {
+                const char* scope = attribute.getScope(index);
+                if (!scope) {
+                    return false;
+                }
+                else if (m_ignoreCase) {
 #ifdef HAVE_STRCASECMP
-                    return !strcasecmp(attribute.getScope(index), m_value);
+                    return !strcasecmp(scope, m_value.get());
 #else
-                    return !stricmp(attribute.getScope(index), m_value);
+                    return !stricmp(scope, m_value.get());
 #endif
                 }
-                else
-                    return !strcmp(attribute.getScope(index), m_value);
+                else {
+                    return !strcmp(scope, m_value.get());
+                }
             }
             return hasScope(filterContext);
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeStringFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeStringFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new AttributeScopeStringFunctor(p.second);
     }
@@ -102,22 +104,27 @@ namespace shibsp {
 bool AttributeScopeStringFunctor::hasScope(const FilteringContext& filterContext) const
 {
     size_t count;
+    const char* scope;
     pair<multimap<string,Attribute*>::const_iterator,multimap<string,Attribute*>::const_iterator> attrs =
         filterContext.getAttributes().equal_range(m_attributeID);
     for (; attrs.first != attrs.second; ++attrs.first) {
         count = attrs.first->second->valueCount();
         for (size_t index = 0; index < count; ++index) {
-            if (m_ignoreCase) {
+            scope = attrs.first->second->getScope(index);
+            if (!scope) {
+                return false;
+            }
+            else if (m_ignoreCase) {
 #ifdef HAVE_STRCASECMP
-                if (!strcasecmp(attrs.first->second->getScope(index), m_value))
+                if (!strcasecmp(scope, m_value.get()))
                     return true;
 #else
-                if (!stricmp(attrs.first->second->getScope(index), m_value))
+                if (!stricmp(scope, m_value.get()))
                     return true;
 #endif
             }
             else {
-                if (!strcmp(attrs.first->second->getScope(index), m_value))
+                if (!strcmp(scope, m_value.get()))
                     return true;
             }
         }

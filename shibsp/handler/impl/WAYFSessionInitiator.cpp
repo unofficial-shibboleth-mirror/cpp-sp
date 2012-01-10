@@ -38,12 +38,14 @@
 #endif
 
 #include <ctime>
+#include <boost/lexical_cast.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -91,12 +93,12 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     // The IdP CANNOT be specified for us to run. Otherwise, we'd be redirecting to a WAYF
     // anytime the IdP's metadata was wrong.
     if (!entityID.empty() || !checkCompatibility(request, isHandler))
-        return make_pair(false,0L);
+        return make_pair(false, 0L);
 
     string target;
     pair<bool,const char*> prop;
-    const Handler* ACS=nullptr;
-    const Application& app=request.getApplication();
+    const Handler* ACS = nullptr;
+    const Application& app = request.getApplication();
     pair<bool,const char*> discoveryURL = pair<bool,const char*>(true, m_url);
 
     if (isHandler) {
@@ -175,11 +177,9 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     if (target.empty())
         target = "default";
 
-    char timebuf[16];
-    sprintf(timebuf,"%lu",time(nullptr));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
-        "&time=" + timebuf + "&target=" + urlenc->encode(target.c_str()) +
+        "&time=" + lexical_cast<string>(time(nullptr)) + "&target=" + urlenc->encode(target.c_str()) +
         "&providerId=" + urlenc->encode(app.getString("entityID").second);
 
     return make_pair(true, request.sendRedirect(req.c_str()));

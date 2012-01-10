@@ -35,12 +35,14 @@
 
 #ifndef SHIBSP_LITE
 # include "metadata/MetadataProviderCriteria.h"
+# include <boost/lexical_cast.hpp>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/EndpointManager.h>
 # include <saml/util/SAMLConstants.h>
 #else
 # include "lite/SAMLConstants.h"
 #endif
+#include <boost/scoped_ptr.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
@@ -48,6 +50,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -121,11 +124,11 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
 {
     // We have to know the IdP to function.
     if (entityID.empty() || !checkCompatibility(request, isHandler))
-        return make_pair(false,0L);
+        return make_pair(false, 0L);
 
     string target;
     pair<bool,const char*> prop;
-    const Handler* ACS=nullptr;
+    const Handler* ACS = nullptr;
     const Application& app = request.getApplication();
 
     if (isHandler) {
@@ -227,8 +230,8 @@ pair<bool,long> Shib1SessionInitiator::unwrap(SPRequest& request, DDF& out) cons
 void Shib1SessionInitiator::receive(DDF& in, ostream& out)
 {
     // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
+    const char* aid = in["application_id"].string();
+    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) to generate AuthnRequest", aid ? aid : "(missing)");
@@ -244,14 +247,14 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
     DDFJanitor jout(ret);
 
     // Wrap the outgoing object with a Response facade.
-    auto_ptr<HTTPResponse> http(getResponse(ret));
+    scoped_ptr<HTTPResponse> http(getResponse(ret));
 
     string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
 
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, nullptr, *http.get(), entityID, acsLocation, (in["artifact"].integer() != 0), relayState);
+    doRequest(*app, nullptr, *http, entityID, acsLocation, (in["artifact"].integer() != 0), relayState);
     if (!ret.isstruct())
         ret.structure();
     ret.addmember("RelayState").unsafe_string(relayState.c_str());
@@ -270,7 +273,7 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
 {
 #ifndef SHIBSP_LITE
     // Use metadata to invoke the SSO service directly.
-    MetadataProvider* m=app.getMetadataProvider();
+    MetadataProvider* m = app.getMetadataProvider();
     Locker locker(m);
     MetadataProviderCriteria mc(app, entityID, &IDPSSODescriptor::ELEMENT_QNAME, shibspconstants::SHIB1_PROTOCOL_ENUM);
     pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
@@ -281,30 +284,30 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     else if (!entity.second) {
         m_log.log(getParent() ? Priority::INFO : Priority::WARN, "unable to locate Shibboleth-aware identity provider role for provider (%s)", entityID);
         if (getParent())
-            return make_pair(false,0L);
+            return make_pair(false, 0L);
         throw MetadataException("Unable to locate Shibboleth-aware identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     else if (artifact && !SPConfig::getConfig().getArtifactResolver()->isSupported(dynamic_cast<const SSODescriptorType&>(*entity.second))) {
         m_log.warn("artifact profile selected for response, but identity provider lacks support");
         if (getParent())
-            return make_pair(false,0L);
+            return make_pair(false, 0L);
         throw MetadataException("Identity provider ($entityID) lacks SAML artifact support.", namedparams(1, "entityID", entityID));
     }
 
-    const EndpointType* ep=EndpointManager<SingleSignOnService>(
+    const EndpointType* ep = EndpointManager<SingleSignOnService>(
         dynamic_cast<const IDPSSODescriptor*>(entity.second)->getSingleSignOnServices()
         ).getByBinding(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
     if (!ep) {
         m_log.warn("unable to locate compatible SSO service for provider (%s)", entityID);
         if (getParent())
-            return make_pair(false,0L);
+            return make_pair(false, 0L);
         throw MetadataException("Unable to locate compatible SSO service for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
 
     preserveRelayState(app, httpResponse, relayState);
 
-    auto_ptr<AuthnRequestEvent> ar_event(newAuthnRequestEvent(app, httpRequest));
-    if (ar_event.get()) {
+    scoped_ptr<AuthnRequestEvent> ar_event(newAuthnRequestEvent(app, httpRequest));
+    if (ar_event) {
         auto_ptr_char prot(getProtocolFamily());
         ar_event->m_protocol = prot.get();
         auto_ptr_char b(shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI);
@@ -317,12 +320,10 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
     if (relayState.empty())
         relayState = "default";
 
-    char timebuf[16];
-    sprintf(timebuf,"%lu",time(nullptr));
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     auto_ptr_char dest(ep->getLocation());
     string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "shire=" + urlenc->encode(acsLocation) +
-        "&time=" + timebuf + "&target=" + urlenc->encode(relayState.c_str()) +
+        "&time=" + lexical_cast<string>(time(nullptr)) + "&target=" + urlenc->encode(relayState.c_str()) +
         "&providerId=" + urlenc->encode(app.getRelyingParty(entity.first)->getString("entityID").second);
 
     if (httpRequest) {
@@ -332,6 +333,6 @@ pair<bool,long> Shib1SessionInitiator::doRequest(
 
     return make_pair(true, httpResponse.sendRedirect(req.c_str()));
 #else
-    return make_pair(false,0L);
+    return make_pair(false, 0L);
 #endif
 }

@@ -31,6 +31,7 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
+#include <boost/scoped_ptr.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
 namespace shibsp {
@@ -44,14 +45,14 @@ namespace shibsp {
      */
     class SHIBSP_DLLLOCAL AuthenticationMethodRegexFunctor : public MatchFunctor
     {
-        RegularExpression* m_regex;
+        boost::scoped_ptr<RegularExpression> m_regex;
     public:
-        AuthenticationMethodRegexFunctor(const DOMElement* e) : m_regex(nullptr) {
-            const XMLCh* r = e ? e->getAttributeNS(nullptr,regex) : nullptr;
+        AuthenticationMethodRegexFunctor(const DOMElement* e) {
+            const XMLCh* r = e ? e->getAttributeNS(nullptr, regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AuthenticationMethodRegex MatchFunctor requires non-empty regex attribute.");
             try {
-                m_regex = new RegularExpression(r, e->getAttributeNS(nullptr,options));
+                m_regex.reset(new RegularExpression(r, e->getAttributeNS(nullptr, options)));
             }
             catch (XMLException& ex) {
                 xmltooling::auto_ptr_char temp(ex.getMessage());
@@ -59,9 +60,7 @@ namespace shibsp {
             }
         }
 
-        virtual ~AuthenticationMethodRegexFunctor() {
-            delete m_regex;
-        }
+        virtual ~AuthenticationMethodRegexFunctor() {}
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
             return (m_regex->matches(filterContext.getAuthnContextClassRef()) || m_regex->matches(filterContext.getAuthnContextDeclRef()));

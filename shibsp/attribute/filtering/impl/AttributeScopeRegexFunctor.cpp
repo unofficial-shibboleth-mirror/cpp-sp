@@ -32,12 +32,14 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
+#include <boost/scoped_ptr.hpp>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
 using namespace shibsp;
+using namespace xmltooling;
+using namespace boost;
 using namespace std;
-using xmltooling::XMLHelper;
 
 namespace shibsp {
 
@@ -51,18 +53,18 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AttributeScopeRegexFunctor : public MatchFunctor
     {
         string m_attributeID;
-        RegularExpression* m_regex;
+        scoped_ptr<RegularExpression> m_regex;
 
         bool hasScope(const FilteringContext& filterContext) const;
         bool matches(const Attribute& attribute, size_t index) const;
 
     public:
-        AttributeScopeRegexFunctor(const DOMElement* e) : m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)), m_regex(nullptr) {
-            const XMLCh* r = e ? e->getAttributeNS(nullptr,regex) : nullptr;
+        AttributeScopeRegexFunctor(const DOMElement* e) : m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)) {
+            const XMLCh* r = e ? e->getAttributeNS(nullptr, regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AttributeScopeRegex MatchFunctor requires non-empty regex attribute.");
             try {
-                m_regex = new RegularExpression(r, e->getAttributeNS(nullptr,options));
+                m_regex.reset(new RegularExpression(r, e->getAttributeNS(nullptr, options)));
             }
             catch (XMLException& ex) {
                 xmltooling::auto_ptr_char temp(ex.getMessage());
@@ -70,9 +72,7 @@ namespace shibsp {
             }
         }
 
-        virtual ~AttributeScopeRegexFunctor() {
-            delete m_regex;
-        }
+        virtual ~AttributeScopeRegexFunctor() {}
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
             if (m_attributeID.empty())
@@ -87,7 +87,7 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeRegexFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeRegexFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new AttributeScopeRegexFunctor(p.second);
     }
@@ -114,8 +114,6 @@ bool AttributeScopeRegexFunctor::matches(const Attribute& attribute, size_t inde
     const char* val = attribute.getScope(index);
     if (!val)
         return false;
-    XMLCh* temp = xmltooling::fromUTF8(val);
-    bool ret = m_regex->matches(temp);
-    delete[] temp;
-    return ret;
+    auto_arrayptr<XMLCh> temp(fromUTF8(val));
+    return m_regex->matches(temp.get());
 }

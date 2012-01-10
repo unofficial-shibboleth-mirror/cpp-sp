@@ -43,6 +43,7 @@
 # include "metadata/MetadataProviderCriteria.h"
 # include "security/SecurityPolicy.h"
 # include "security/SecurityPolicyProvider.h"
+# include <boost/iterator/indirect_iterator.hpp>
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml1/core/Assertions.h>
@@ -64,14 +65,12 @@ using namespace shibspconstants;
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 AssertionConsumerService::AssertionConsumerService(
     const DOMElement* e, const char* appId, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
     ) : AbstractHandler(e, log, filter, remapper)
-#ifndef SHIBSP_LITE
-        ,m_decoder(nullptr), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
-#endif
 {
     if (!e)
         return;
@@ -80,8 +79,10 @@ AssertionConsumerService::AssertionConsumerService(
     setAddress(address.c_str());
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        m_decoder = SAMLConfig::getConfig().MessageDecoderManager.newPlugin(
-            getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+        m_decoder.reset(
+            SAMLConfig::getConfig().MessageDecoderManager.newPlugin(
+                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+                )
             );
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
     }
@@ -90,9 +91,6 @@ AssertionConsumerService::AssertionConsumerService(
 
 AssertionConsumerService::~AssertionConsumerService()
 {
-#ifndef SHIBSP_LITE
-    delete m_decoder;
-#endif
 }
 
 pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler) const
@@ -127,17 +125,17 @@ void AssertionConsumerService::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    auto_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(in));
 
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    auto_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(ret));
 
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    processMessage(*app, *req.get(), *resp.get());
+    processMessage(*app, *req, *resp);
     out << ret;
 }
 
@@ -155,24 +153,23 @@ pair<bool,long> AssertionConsumerService::processMessage(
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
-    auto_ptr<opensaml::SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &m_role, policyId.second)
+    scoped_ptr<opensaml::SecurityPolicy> policy(
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second)
         );
 
     string relayState;
     bool relayStateOK = true;
-    auto_ptr<XMLObject> msg(nullptr);
+    scoped_ptr<XMLObject> msg;
     try {
         // Decode the message and process it in a protocol-specific way.
-        auto_ptr<XMLObject> msg2(m_decoder->decode(relayState, httpRequest, *(policy.get())));
-        if (!msg2.get())
+        msg.reset(m_decoder->decode(relayState, httpRequest, *(policy.get())));
+        if (!msg)
             throw BindingException("Failed to decode an SSO protocol response.");
-        msg = msg2; // save off to allow access from within exception handler.
         DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
         DDFJanitor postjan(postData);
         recoverRelayState(application, httpRequest, httpResponse, relayState);
         limitRelayState(m_log, application, httpRequest, relayState.c_str());
-        implementProtocol(application, httpRequest, httpResponse, *(policy.get()), NULL, *msg.get());
+        implementProtocol(application, httpRequest, httpResponse, *policy, nullptr, *msg);
 
         auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : nullptr);
 
@@ -208,7 +205,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
 
         // Log the error.
         try {
-            auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
+            scoped_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
             LoginEvent* error_event = dynamic_cast<LoginEvent*>(event.get());
             if (error_event) {
                 error_event->m_exception = &ex;
@@ -228,7 +225,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
                 m_log.warn("unable to audit event, log event object was of an incorrect type");
             }
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
             m_log.warn("exception auditing event: %s", ex.what());
         }
 
@@ -244,10 +241,10 @@ void AssertionConsumerService::checkAddress(const Application& application, cons
     if (!issuedTo || !*issuedTo)
         return;
 
-    const PropertySet* props=application.getPropertySet("Sessions");
+    const PropertySet* props = application.getPropertySet("Sessions");
     pair<bool,bool> checkAddress = props ? props->getBool("checkAddress") : make_pair(false,true);
     if (!checkAddress.first)
-        checkAddress.second=true;
+        checkAddress.second = true;
 
     if (checkAddress.second) {
         m_log.debug("checking client address");
@@ -256,7 +253,7 @@ void AssertionConsumerService::checkAddress(const Application& application, cons
                "Your client's current address ($client_addr) differs from the one used when you authenticated "
                 "to your identity provider. To correct this problem, you may need to bypass a proxy server. "
                 "Please contact your local support staff or help desk for assistance.",
-                namedparams(1,"client_addr",httpRequest.getRemoteAddr().c_str())
+                namedparams(1, "client_addr", httpRequest.getRemoteAddr().c_str())
                 );
         }
     }
@@ -385,13 +382,14 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                 try {
                     // We pass nullptr for "issuer" because the IdP isn't the one asserting metadata-based attributes.
                     extractor->extractAttributes(application, nullptr, *issuer, resolvedAttributes);
-                    for (vector<Attribute*>::iterator a = resolvedAttributes.begin(); a != resolvedAttributes.end(); ++a) {
-                        vector<string>& ids = (*a)->getAliases();
+                    for (indirect_iterator<vector<Attribute*>::iterator> a = make_indirect_iterator(resolvedAttributes.begin());
+                            a != make_indirect_iterator(resolvedAttributes.end()); ++a) {
+                        vector<string>& ids = a->getAliases();
                         for (vector<string>::iterator id = ids.begin(); id != ids.end(); ++id)
                             *id = mprefix.second + *id;
                     }
                 }
-                catch (exception& ex) {
+                catch (std::exception& ex) {
                     m_log.error("caught exception extracting attributes: %s", ex.what());
                 }
             }
@@ -406,7 +404,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                 else
                     extractor->extractAttributes(application, issuer, *nameid, resolvedAttributes);
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
@@ -418,17 +416,18 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                 else
                     extractor->extractAttributes(application, issuer, *statement, resolvedAttributes);
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
 
         if (tokens) {
-            for (vector<const Assertion*>::const_iterator t = tokens->begin(); t!=tokens->end(); ++t) {
+            for (indirect_iterator<vector<const Assertion*>::const_iterator> t = make_indirect_iterator(tokens->begin());
+                    t != make_indirect_iterator(tokens->end()); ++t) {
                 try {
-                    extractor->extractAttributes(application, issuer, *(*t), resolvedAttributes);
+                    extractor->extractAttributes(application, issuer, *t, resolvedAttributes);
                 }
-                catch (exception& ex) {
+                catch (std::exception& ex) {
                     m_log.error("caught exception extracting attributes: %s", ex.what());
                 }
             }
@@ -441,7 +440,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             try {
                 filter->filterAttributes(fc, resolvedAttributes);
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_log.error("caught exception filtering attributes: %s", ex.what());
                 m_log.error("dumping extracted attributes due to filtering exception");
                 for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
@@ -471,19 +470,27 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                     &resolvedAttributes
                     )
                 );
-            resolver->resolveAttributes(*ctx.get());
+            resolver->resolveAttributes(*ctx);
             // Copy over any pushed attributes.
-            if (!resolvedAttributes.empty())
-                ctx->getResolvedAttributes().insert(ctx->getResolvedAttributes().end(), resolvedAttributes.begin(), resolvedAttributes.end());
+            while (!resolvedAttributes.empty()) {
+                ctx->getResolvedAttributes().push_back(resolvedAttributes.back());
+                resolvedAttributes.pop_back();
+            }
             return ctx.release();
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("attribute resolution failed: %s", ex.what());
     }
 
-    if (!resolvedAttributes.empty())
-        return new DummyContext(resolvedAttributes);
+    if (!resolvedAttributes.empty()) {
+        try {
+            return new DummyContext(resolvedAttributes);
+        }
+        catch (bad_alloc&) {
+            for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
+        }
+    }
     return nullptr;
 }
 
@@ -550,7 +557,7 @@ LoginEvent* AssertionConsumerService::newLoginEvent(const Application& applicati
             m_log.warn("unable to audit event, log event object was of an incorrect type");
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.warn("exception auditing event: %s", ex.what());
     }
     return nullptr;

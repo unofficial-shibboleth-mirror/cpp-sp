@@ -31,6 +31,8 @@
 #include "attribute/resolver/AttributeExtractor.h"
 #include "util/SPConstants.h"
 
+#include <boost/shared_ptr.hpp>
+#include <boost/iterator/indirect_iterator.hpp>
 #include <saml/saml2/core/Assertions.h>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataCredentialCriteria.h>
@@ -43,6 +45,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -113,14 +116,16 @@ void DelegationExtractor::extractAttributes(
             auto_ptr<ExtensibleAttribute> attr(new ExtensibleAttribute(vector<string>(1,m_attributeId), m_formatter.c_str()));
 
             const vector<saml2::Delegate*>& dels = drt->getDelegates();
-            for (vector<saml2::Delegate*>::const_iterator d = dels.begin(); d != dels.end(); ++d) {
-                if ((*d)->getBaseID()) {
+            for (indirect_iterator<vector<saml2::Delegate*>::const_iterator> d = make_indirect_iterator(dels.begin());
+                    d != make_indirect_iterator(dels.end()); ++d) {
+                if (d->getBaseID()) {
                     log.error("delegate identified by saml:BaseID cannot be processed into an attribute value");
                     continue;
                 }
 
                 saml2::NameID* n = nullptr;
-                if ((*d)->getEncryptedID()) {
+                boost::shared_ptr<saml2::NameID> namewrapper;
+                if (d->getEncryptedID()) {
                     CredentialResolver* cr = application.getCredentialResolver();
                     if (!cr) {
                         log.warn("found encrypted Delegate, but no CredentialResolver was available");
@@ -133,61 +138,56 @@ void DelegationExtractor::extractAttributes(
                         Locker credlocker(cr);
                         if (issuer) {
                             MetadataCredentialCriteria mcc(*issuer);
-                            auto_ptr<XMLObject> decrypted((*d)->getEncryptedID()->decrypt(*cr, recipient, &mcc));
-                            n = dynamic_cast<saml2::NameID*>(decrypted.release());
+                            boost::shared_ptr<XMLObject> decrypted(d->getEncryptedID()->decrypt(*cr, recipient, &mcc));
+                            namewrapper = dynamic_pointer_cast<saml2::NameID>(decrypted);
+                            n = namewrapper.get();
                         }
                         else {
-                            auto_ptr<XMLObject> decrypted((*d)->getEncryptedID()->decrypt(*cr, recipient));
-                            n = dynamic_cast<saml2::NameID*>(decrypted.release());
+                            boost::shared_ptr<XMLObject> decrypted(d->getEncryptedID()->decrypt(*cr, recipient));
+                            namewrapper = dynamic_pointer_cast<saml2::NameID>(decrypted);
+                            n = namewrapper.get();
                         }
                         if (n && log.isDebugEnabled())
                             log.debugStream() << "decrypted Delegate: " << *n << logging::eol;
                     }
-                    catch (exception& ex) {
+                    catch (std::exception& ex) {
                         log.error("caught exception decrypting Delegate: %s", ex.what());
                     }
                 }
                 else {
-                    n = (*d)->getNameID();
+                    n = d->getNameID();
                 }
 
                 if (n) {
                     DDF val = DDF(nullptr).structure();
-                    if ((*d)->getConfirmationMethod()) {
-                        auto_ptr_char temp((*d)->getConfirmationMethod());
+                    if (d->getConfirmationMethod()) {
+                        auto_ptr_char temp(d->getConfirmationMethod());
                         val.addmember("ConfirmationMethod").string(temp.get());
                     }
-                    if ((*d)->getDelegationInstant()) {
-                        auto_ptr_char temp((*d)->getDelegationInstant()->getRawData());
+                    if (d->getDelegationInstant()) {
+                        auto_ptr_char temp(d->getDelegationInstant()->getRawData());
                         val.addmember("DelegationInstant").string(temp.get());
                     }
 
                     auto_arrayptr<char> name(toUTF8(n->getName()));
                     if (name.get() && *name.get()) {
                         val.addmember("Name").string(name.get());
-                        char* str = toUTF8(n->getFormat());
-                        if (str && *str)
-                            val.addmember("Format").string(str);
-                        delete[] str;
+                        auto_arrayptr<char> format(toUTF8(n->getFormat()));
+                        if (format.get())
+                            val.addmember("Format").string(format.get());
 
-                        str = toUTF8(n->getNameQualifier());
-                        if (str && *str)
-                            val.addmember("NameQualifier").string(str);
-                        delete[] str;
+                        auto_arrayptr<char> nq(toUTF8(n->getNameQualifier()));
+                        if (nq.get())
+                            val.addmember("NameQualifier").string(nq.get());
 
-                        str = toUTF8(n->getSPNameQualifier());
-                        if (str && *str)
-                            val.addmember("SPNameQualifier").string(str);
-                        delete[] str;
+                        auto_arrayptr<char> spnq(toUTF8(n->getSPNameQualifier()));
+                        if (spnq.get())
+                            val.addmember("SPNameQualifier").string(spnq.get());
 
-                        str = toUTF8(n->getSPProvidedID());
-                        if (str && *str)
-                            val.addmember("SPProvidedID").string(str);
-                        delete[] str;
+                        auto_arrayptr<char> sppid(toUTF8(n->getSPProvidedID()));
+                        if (sppid.get())
+                            val.addmember("SPProvidedID").string(sppid.get());
                     }
-
-                    if (n != (*d)->getNameID())
-                        delete n;
 
                     if (val.integer())
                         attr->getValues().add(val);
@@ -196,7 +196,8 @@ void DelegationExtractor::extractAttributes(
                 }
             }
 
-            attributes.push_back(attr.release());
+            attributes.push_back(attr.get());
+            attr.release();
         }
     }
 }

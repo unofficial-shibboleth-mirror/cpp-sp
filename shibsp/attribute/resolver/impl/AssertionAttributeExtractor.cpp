@@ -121,22 +121,24 @@ void AssertionExtractor::extractAttributes(
         if (!m_issuer.empty()) {
             const Issuer* i = saml2assertion->getIssuer();
             if (i && (!i->getFormat() || !*(i->getFormat()) || XMLString::equals(i->getFormat(), NameIDType::ENTITY))) {
-                auto_ptr<SimpleAttribute> issuer(new SimpleAttribute(vector<string>(1, m_issuer)));
                 auto_ptr_char temp(i->getName());
                 if (temp.get()) {
+                    auto_ptr<SimpleAttribute> issuer(new SimpleAttribute(vector<string>(1, m_issuer)));
                     issuer->getValues().push_back(temp.get());
-                    attributes.push_back(issuer.release());
+                    attributes.push_back(issuer.get());
+                    issuer.release();
                 }
             }
         }
 
         // NotOnOrAfter
         if (!m_notOnOrAfter.empty() && saml2assertion->getConditions() && saml2assertion->getConditions()->getNotOnOrAfter()) {
-            auto_ptr<SimpleAttribute> notonorafter(new SimpleAttribute(vector<string>(1, m_notOnOrAfter)));
             auto_ptr_char temp(saml2assertion->getConditions()->getNotOnOrAfter()->getRawData());
             if (temp.get()) {
+                auto_ptr<SimpleAttribute> notonorafter(new SimpleAttribute(vector<string>(1, m_notOnOrAfter)));
                 notonorafter->getValues().push_back(temp.get());
-                attributes.push_back(notonorafter.release());
+                attributes.push_back(notonorafter.get());
+                notonorafter.release();
             }
         }
     }
@@ -145,31 +147,34 @@ void AssertionExtractor::extractAttributes(
         if (saml2statement) {
             // AuthnInstant
             if (!m_authnInstant.empty() && saml2statement->getAuthnInstant()) {
-                auto_ptr<SimpleAttribute> authninstant(new SimpleAttribute(vector<string>(1, m_authnInstant)));
                 auto_ptr_char temp(saml2statement->getAuthnInstant()->getRawData());
                 if (temp.get()) {
+                    auto_ptr<SimpleAttribute> authninstant(new SimpleAttribute(vector<string>(1, m_authnInstant)));
                     authninstant->getValues().push_back(temp.get());
-                    attributes.push_back(authninstant.release());
+                    attributes.push_back(authninstant.get());
+                    authninstant.release();
                 }
             }
 
             // SessionIndex
             if (!m_sessionIndex.empty() && saml2statement->getSessionIndex() && *(saml2statement->getSessionIndex())) {
-                auto_ptr<SimpleAttribute> sessionindex(new SimpleAttribute(vector<string>(1, m_sessionIndex)));
                 auto_ptr_char temp(saml2statement->getSessionIndex());
                 if (temp.get()) {
+                    auto_ptr<SimpleAttribute> sessionindex(new SimpleAttribute(vector<string>(1, m_sessionIndex)));
                     sessionindex->getValues().push_back(temp.get());
-                    attributes.push_back(sessionindex.release());
+                    attributes.push_back(sessionindex.get());
+                    sessionindex.release();
                 }
             }
 
             // SessionNotOnOrAfter
             if (!m_sessionNotOnOrAfter.empty() && saml2statement->getSessionNotOnOrAfter()) {
-                auto_ptr<SimpleAttribute> sessionnotonorafter(new SimpleAttribute(vector<string>(1, m_sessionNotOnOrAfter)));
                 auto_ptr_char temp(saml2statement->getSessionNotOnOrAfter()->getRawData());
                 if (temp.get()) {
+                    auto_ptr<SimpleAttribute> sessionnotonorafter(new SimpleAttribute(vector<string>(1, m_sessionNotOnOrAfter)));
                     sessionnotonorafter->getValues().push_back(temp.get());
-                    attributes.push_back(sessionnotonorafter.release());
+                    attributes.push_back(sessionnotonorafter.get());
+                    sessionnotonorafter.release();
                 }
             }
 
@@ -177,21 +182,23 @@ void AssertionExtractor::extractAttributes(
                 const saml2::SubjectLocality* locality = saml2statement->getSubjectLocality();
                 // Address
                 if (!m_subjectAddress.empty() && locality->getAddress() && *(locality->getAddress())) {
-                    auto_ptr<SimpleAttribute> address(new SimpleAttribute(vector<string>(1, m_subjectAddress)));
                     auto_ptr_char temp(locality->getAddress());
                     if (temp.get()) {
+                        auto_ptr<SimpleAttribute> address(new SimpleAttribute(vector<string>(1, m_subjectAddress)));
                         address->getValues().push_back(temp.get());
-                        attributes.push_back(address.release());
+                        attributes.push_back(address.get());
+                        address.release();
                     }
                 }
 
                 // DNSName
                 if (!m_subjectDNS.empty() && locality->getDNSName() && *(locality->getDNSName())) {
-                    auto_ptr<SimpleAttribute> dns(new SimpleAttribute(vector<string>(1, m_subjectDNS)));
                     auto_ptr_char temp(locality->getDNSName());
                     if (temp.get()) {
+                        auto_ptr<SimpleAttribute> dns(new SimpleAttribute(vector<string>(1, m_subjectDNS)));
                         dns->getValues().push_back(temp.get());
-                        attributes.push_back(dns.release());
+                        attributes.push_back(dns.get());
+                        dns.release();
                     }
                 }
             }
@@ -200,21 +207,23 @@ void AssertionExtractor::extractAttributes(
                 const AuthnContext* ac = saml2statement->getAuthnContext();
                 // AuthnContextClassRef
                 if (!m_authnClass.empty() && ac->getAuthnContextClassRef() && ac->getAuthnContextClassRef()->getReference()) {
-                    auto_ptr<SimpleAttribute> classref(new SimpleAttribute(vector<string>(1, m_authnClass)));
                     auto_ptr_char temp(ac->getAuthnContextClassRef()->getReference());
                     if (temp.get()) {
+                        auto_ptr<SimpleAttribute> classref(new SimpleAttribute(vector<string>(1, m_authnClass)));
                         classref->getValues().push_back(temp.get());
-                        attributes.push_back(classref.release());
+                        attributes.push_back(classref.get());
+                        classref.release();
                     }
                 }
 
                 // AuthnContextDeclRef
                 if (!m_authnDecl.empty() && ac->getAuthnContextDeclRef() && ac->getAuthnContextDeclRef()->getReference()) {
-                    auto_ptr<SimpleAttribute> declref(new SimpleAttribute(vector<string>(1, m_authnDecl)));
                     auto_ptr_char temp(ac->getAuthnContextDeclRef()->getReference());
                     if (temp.get()) {
+                        auto_ptr<SimpleAttribute> declref(new SimpleAttribute(vector<string>(1, m_authnDecl)));
                         declref->getValues().push_back(temp.get());
-                        attributes.push_back(declref.release());
+                        attributes.push_back(declref.get());
+                        declref.release();
                     }
                 }
 
@@ -228,7 +237,8 @@ void AssertionExtractor::extractAttributes(
                             attr->getValues().push_back(temp.get());
                     }
                     if (attr->valueCount() > 0) {
-                        attributes.push_back(attr.release());
+                        attributes.push_back(attr.get());
+                        attr.release();
                     }
                 }
             }
@@ -239,22 +249,24 @@ void AssertionExtractor::extractAttributes(
                 // Issuer
                 if (!m_issuer.empty()) {
                     if (saml1assertion->getIssuer() && *(saml1assertion->getIssuer())) {
-                        auto_ptr<SimpleAttribute> issuer(new SimpleAttribute(vector<string>(1, m_issuer)));
                         auto_ptr_char temp(saml1assertion->getIssuer());
                         if (temp.get()) {
+                            auto_ptr<SimpleAttribute> issuer(new SimpleAttribute(vector<string>(1, m_issuer)));
                             issuer->getValues().push_back(temp.get());
-                            attributes.push_back(issuer.release());
+                            attributes.push_back(issuer.get());
+                            issuer.release();
                         }
                     }
                 }
 
                 // NotOnOrAfter
                 if (!m_notOnOrAfter.empty() && saml1assertion->getConditions() && saml1assertion->getConditions()->getNotOnOrAfter()) {
-                    auto_ptr<SimpleAttribute> notonorafter(new SimpleAttribute(vector<string>(1, m_notOnOrAfter)));
                     auto_ptr_char temp(saml1assertion->getConditions()->getNotOnOrAfter()->getRawData());
                     if (temp.get()) {
+                        auto_ptr<SimpleAttribute> notonorafter(new SimpleAttribute(vector<string>(1, m_notOnOrAfter)));
                         notonorafter->getValues().push_back(temp.get());
-                        attributes.push_back(notonorafter.release());
+                        attributes.push_back(notonorafter.get());
+                        notonorafter.release();
                     }
                 }
             }
@@ -263,21 +275,23 @@ void AssertionExtractor::extractAttributes(
                 if (saml1statement) {
                     // AuthnInstant
                     if (!m_authnInstant.empty() && saml1statement->getAuthenticationInstant()) {
-                        auto_ptr<SimpleAttribute> authninstant(new SimpleAttribute(vector<string>(1, m_authnInstant)));
                         auto_ptr_char temp(saml1statement->getAuthenticationInstant()->getRawData());
                         if (temp.get()) {
+                            auto_ptr<SimpleAttribute> authninstant(new SimpleAttribute(vector<string>(1, m_authnInstant)));
                             authninstant->getValues().push_back(temp.get());
-                            attributes.push_back(authninstant.release());
+                            attributes.push_back(authninstant.get());
+                            authninstant.release();
                         }
                     }
 
                     // AuthenticationMethod
                     if (!m_authnClass.empty() && saml1statement->getAuthenticationMethod() && *(saml1statement->getAuthenticationMethod())) {
-                        auto_ptr<SimpleAttribute> authnmethod(new SimpleAttribute(vector<string>(1, m_authnClass)));
                         auto_ptr_char temp(saml1statement->getAuthenticationMethod());
                         if (temp.get()) {
+                            auto_ptr<SimpleAttribute> authnmethod(new SimpleAttribute(vector<string>(1, m_authnClass)));
                             authnmethod->getValues().push_back(temp.get());
-                            attributes.push_back(authnmethod.release());
+                            attributes.push_back(authnmethod.get());
+                            authnmethod.release();
                         }
                     }
 
@@ -285,21 +299,23 @@ void AssertionExtractor::extractAttributes(
                         const saml1::SubjectLocality* locality = saml1statement->getSubjectLocality();
                         // IPAddress
                         if (!m_subjectAddress.empty() && locality->getIPAddress() && *(locality->getIPAddress())) {
-                            auto_ptr<SimpleAttribute> address(new SimpleAttribute(vector<string>(1, m_subjectAddress)));
                             auto_ptr_char temp(locality->getIPAddress());
                             if (temp.get()) {
+                                auto_ptr<SimpleAttribute> address(new SimpleAttribute(vector<string>(1, m_subjectAddress)));
                                 address->getValues().push_back(temp.get());
-                                attributes.push_back(address.release());
+                                attributes.push_back(address.get());
+                                address.release();
                             }
                         }
 
                         // DNSAddress
                         if (!m_subjectDNS.empty() && locality->getDNSAddress() && *(locality->getDNSAddress())) {
-                            auto_ptr<SimpleAttribute> dns(new SimpleAttribute(vector<string>(1, m_subjectDNS)));
                             auto_ptr_char temp(locality->getDNSAddress());
                             if (temp.get()) {
+                                auto_ptr<SimpleAttribute> dns(new SimpleAttribute(vector<string>(1, m_subjectDNS)));
                                 dns->getValues().push_back(temp.get());
-                                attributes.push_back(dns.release());
+                                attributes.push_back(dns.get());
+                                dns.release();
                             }
                         }
                     }

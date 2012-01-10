@@ -46,8 +46,9 @@ namespace shibsp {
         const XMLCh* m_value;
         bool m_ignoreCase;
     public:
-        AttributeRequesterStringFunctor(const DOMElement* e) : m_value(nullptr), m_ignoreCase(XMLHelper::getAttrBool(e, false, ignoreCase)) {
-            m_value = e ? e->getAttributeNS(nullptr,value) : nullptr;
+        AttributeRequesterStringFunctor(const DOMElement* e)
+                : m_value(e ? e->getAttributeNS(nullptr,value) : nullptr),
+                    m_ignoreCase(XMLHelper::getAttrBool(e, false, ignoreCase)) {
             if (!m_value || !*m_value)
                 throw ConfigurationException("AttributeRequesterString MatchFunctor requires non-empty value attribute.");
         }

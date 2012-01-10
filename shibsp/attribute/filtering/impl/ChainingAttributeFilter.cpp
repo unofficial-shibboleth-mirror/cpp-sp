@@ -29,11 +29,13 @@
 #include "attribute/filtering/AttributeFilter.h"
 #include "attribute/filtering/FilteringContext.h"
 
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -42,9 +44,7 @@ namespace shibsp {
     {
     public:
         ChainingAttributeFilter(const DOMElement* e);
-        virtual ~ChainingAttributeFilter() {
-            for_each(m_filters.begin(), m_filters.end(), xmltooling::cleanup<AttributeFilter>());
-        }
+        virtual ~ChainingAttributeFilter() {}
         
         Lockable* lock() {
             return this;
@@ -53,14 +53,14 @@ namespace shibsp {
         }
         
         void filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const {
-            for (vector<AttributeFilter*>::const_iterator i=m_filters.begin(); i!=m_filters.end(); ++i) {
-                Locker locker(*i);
-                (*i)->filterAttributes(context, attributes);
+            for (ptr_vector<AttributeFilter>::iterator i = m_filters.begin(); i != m_filters.end(); ++i) {
+                Locker locker(&(*i));
+                i->filterAttributes(context, attributes);
             }
         }
 
     private:
-        vector<AttributeFilter*> m_filters;
+        mutable ptr_vector<AttributeFilter> m_filters;
     };
 
     static const XMLCh _AttributeFilter[] = UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
@@ -75,20 +75,15 @@ namespace shibsp {
 ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
 {
     // Load up the chain of handlers.
-    try {
-        e = XMLHelper::getFirstChildElement(e, _AttributeFilter);
-        while (e) {
-            string t(XMLHelper::getAttrString(e, nullptr, _type));
-            if (!t.empty()) {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").info("building AttributeFilter of type (%s)...", t.c_str());
-                m_filters.push_back(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), e));
-            }
-            e = XMLHelper::getNextSiblingElement(e, _AttributeFilter);
+    e = XMLHelper::getFirstChildElement(e, _AttributeFilter);
+    while (e) {
+        string t(XMLHelper::getAttrString(e, nullptr, _type));
+        if (!t.empty()) {
+            Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").info("building AttributeFilter of type (%s)...", t.c_str());
+            auto_ptr<AttributeFilter> np(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), e));
+            m_filters.push_back(np);
         }
-    }
-    catch (exception&) {
-        for_each(m_filters.begin(), m_filters.end(), xmltooling::cleanup<AttributeFilter>());
-        throw;
+        e = XMLHelper::getNextSiblingElement(e, _AttributeFilter);
     }
     if (m_filters.empty())
         throw ConfigurationException("Chaining AttributeFilter plugin requires at least one child plugin.");

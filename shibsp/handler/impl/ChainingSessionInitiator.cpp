@@ -30,11 +30,14 @@
 #include "handler/SessionInitiator.h"
 #include "util/SPConstants.h"
 
+#include <boost/bind.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -48,22 +51,19 @@ namespace shibsp {
     {
     public:
         ChainingSessionInitiator(const DOMElement* e, const char* appId);
-        virtual ~ChainingSessionInitiator() {
-            for_each(m_handlers.begin(), m_handlers.end(), xmltooling::cleanup<SessionInitiator>());
-        }
+        virtual ~ChainingSessionInitiator() {}
         
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
 #ifndef SHIBSP_LITE
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
             SessionInitiator::generateMetadata(role, handlerURL);
-            for (vector<SessionInitiator*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i)
-                (*i)->generateMetadata(role, handlerURL);
+            for_each(m_handlers.begin(), m_handlers.end(), boost::bind(&SessionInitiator::generateMetadata, _1, boost::ref(role), handlerURL));
         }
 #endif
 
     private:
-        vector<SessionInitiator*> m_handlers;
+        ptr_vector<SessionInitiator> m_handlers;
     };
 
 #if defined (_MSC_VER)
@@ -104,13 +104,14 @@ ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const ch
     // Load up the chain of handlers.
     e = e ? XMLHelper::getFirstChildElement(e, _SessionInitiator) : nullptr;
     while (e) {
-        auto_ptr_char type(e->getAttributeNS(nullptr,_type));
-        if (type.get() && *(type.get())) {
+        string t(XMLHelper::getAttrString(e, nullptr, _type));
+        if (!t.empty()) {
             try {
-                m_handlers.push_back(conf.SessionInitiatorManager.newPlugin(type.get(),make_pair(e, appId)));
-                m_handlers.back()->setParent(this);
+                auto_ptr<SessionInitiator> np(conf.SessionInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId)));
+                m_handlers.push_back(np);
+                m_handlers.back().setParent(this);
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_log.error("caught exception processing embedded SessionInitiator element: %s", ex.what());
             }
         }
@@ -123,11 +124,11 @@ ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const ch
 pair<bool,long> ChainingSessionInitiator::run(SPRequest& request, string& entityID, bool isHandler) const
 {
     if (!checkCompatibility(request, isHandler))
-        return make_pair(false,0L);
+        return make_pair(false, 0L);
 
     pair<bool,long> ret;
-    for (vector<SessionInitiator*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i) {
-        ret = (*i)->run(request, entityID, isHandler);
+    for (ptr_vector<SessionInitiator>::const_iterator i = m_handlers.begin(); i != m_handlers.end(); ++i) {
+        ret = i->run(request, entityID, isHandler);
         if (ret.first)
             return ret;
     }

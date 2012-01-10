@@ -31,6 +31,7 @@
 #include "attribute/SimpleAttribute.h"
 #include "attribute/resolver/AttributeExtractor.h"
 
+#include <boost/iterator/indirect_iterator.hpp>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
@@ -43,6 +44,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -134,28 +136,34 @@ void KeyDescriptorExtractor::extractAttributes(
             if (!m_hashId.empty()) {
                 auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_hashId));
                 vector<string>& vals = attr->getValues();
-                for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+                for (indirect_iterator<vector<const Credential*>::const_iterator> c = make_indirect_iterator(creds.begin());
+                        c != make_indirect_iterator(creds.end()); ++c) {
                     if (vals.empty() || !vals.back().empty())
                         vals.push_back(string());
-                    vals.back() = SecurityHelper::getDEREncoding(*(*c), m_hashAlg.c_str());
+                    vals.back() = SecurityHelper::getDEREncoding(*c, m_hashAlg.c_str());
                 }
                 if (vals.back().empty())
                     vals.pop_back();
-                if (!vals.empty())
-                    attributes.push_back(attr.release());
+                if (!vals.empty()) {
+                    attributes.push_back(attr.get());
+                    attr.release();
+                }
             }
             if (!m_signingId.empty()) {
                 auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_signingId));
                 vector<string>& vals = attr->getValues();
-                for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+                for (indirect_iterator<vector<const Credential*>::const_iterator> c = make_indirect_iterator(creds.begin());
+                        c != make_indirect_iterator(creds.end()); ++c) {
                     if (vals.empty() || !vals.back().empty())
                         vals.push_back(string());
-                    vals.back() = SecurityHelper::getDEREncoding(*(*c));
+                    vals.back() = SecurityHelper::getDEREncoding(*c);
                 }
                 if (vals.back().empty())
                     vals.pop_back();
-                if (!vals.empty())
-                    attributes.push_back(attr.release());
+                if (!vals.empty()) {
+                    attributes.push_back(attr.get());
+                    attr.release();
+                }
             }
             creds.clear();
         }
@@ -166,15 +174,18 @@ void KeyDescriptorExtractor::extractAttributes(
         if (application.getMetadataProvider()->resolve(creds, &mcc)) {
             auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_encryptionId));
             vector<string>& vals = attr->getValues();
-            for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
+            for (indirect_iterator<vector<const Credential*>::const_iterator> c = make_indirect_iterator(creds.begin());
+                    c != make_indirect_iterator(creds.end()); ++c) {
                 if (vals.empty() || !vals.back().empty())
                     vals.push_back(string());
-                vals.back() = SecurityHelper::getDEREncoding(*(*c));
+                vals.back() = SecurityHelper::getDEREncoding(*c);
             }
             if (vals.back().empty())
                 vals.pop_back();
-            if (!vals.empty())
-                attributes.push_back(attr.release());
+            if (!vals.empty()) {
+                attributes.push_back(attr.get());
+                attr.release();
+            }
         }
     }
 }

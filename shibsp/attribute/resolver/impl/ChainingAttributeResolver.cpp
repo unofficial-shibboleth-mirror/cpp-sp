@@ -31,14 +31,17 @@
 #include "attribute/resolver/AttributeResolver.h"
 #include "attribute/resolver/ResolutionContext.h"
 
-#include <saml/Assertion.h>
+#include <boost/scoped_ptr.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <saml/Assertion.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace opensaml::saml2;
 using namespace opensaml::saml2md;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -95,9 +98,7 @@ namespace shibsp {
     {
     public:
         ChainingAttributeResolver(const DOMElement* e);
-        virtual ~ChainingAttributeResolver() {
-            for_each(m_resolvers.begin(), m_resolvers.end(), xmltooling::cleanup<AttributeResolver>());
-        }
+        virtual ~ChainingAttributeResolver() {}
 
         Lockable* lock() {
             return this;
@@ -125,14 +126,14 @@ namespace shibsp {
         void resolveAttributes(ResolutionContext& ctx) const;
 
         void getAttributeIds(vector<string>& attributes) const {
-            for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i) {
-                Locker locker(*i);
-                (*i)->getAttributeIds(attributes);
+            for (ptr_vector<AttributeResolver>::iterator i = m_resolvers.begin(); i != m_resolvers.end(); ++i) {
+                Locker locker(&(*i));
+                i->getAttributeIds(attributes);
             }
         }
 
     private:
-        vector<AttributeResolver*> m_resolvers;
+        mutable ptr_vector<AttributeResolver> m_resolvers;
     };
 
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
@@ -183,7 +184,8 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
                 Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Chaining").info(
                     "building AttributeResolver of type (%s)...", t.c_str()
                     );
-                m_resolvers.push_back(conf.AttributeResolverManager.newPlugin(t.c_str(), e));
+                auto_ptr<AttributeResolver> np(conf.AttributeResolverManager.newPlugin(t.c_str(), e));
+                m_resolvers.push_back(np);
             }
             catch (exception& ex) {
                 Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Chaining").error(
@@ -198,17 +200,17 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
 void ChainingAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
 {
     ChainingContext& chain = dynamic_cast<ChainingContext&>(ctx);
-    for (vector<AttributeResolver*>::const_iterator i=m_resolvers.begin(); i!=m_resolvers.end(); ++i) {
-        Locker locker(*i);
-        auto_ptr<ResolutionContext> context(
+    for (ptr_vector<AttributeResolver>::iterator i = m_resolvers.begin(); i != m_resolvers.end(); ++i) {
+        Locker locker(&(*i));
+        scoped_ptr<ResolutionContext> context(
             chain.m_session ?
-                (*i)->createResolutionContext(chain.m_app, *chain.m_session) :
-                (*i)->createResolutionContext(
+                i->createResolutionContext(chain.m_app, *chain.m_session) :
+                i->createResolutionContext(
                     chain.m_app, chain.m_issuer, chain.m_protocol, chain.m_nameid, chain.m_authclass, chain.m_authdecl, &chain.m_tokens, &chain.m_attributes
                     )
             );
 
-        (*i)->resolveAttributes(*context.get());
+        i->resolveAttributes(*context);
 
         chain.m_attributes.insert(chain.m_attributes.end(), context->getResolvedAttributes().begin(), context->getResolvedAttributes().end());
         chain.m_ownedAttributes.insert(chain.m_ownedAttributes.end(), context->getResolvedAttributes().begin(), context->getResolvedAttributes().end());

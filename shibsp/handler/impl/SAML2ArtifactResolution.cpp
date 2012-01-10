@@ -53,12 +53,14 @@ using namespace opensaml;
 # include "lite/SAMLConstants.h"
 #endif
 
+#include <boost/scoped_ptr.hpp>
 #include <xmltooling/soap/SOAP.h>
 
 using namespace shibspconstants;
 using namespace shibsp;
 using namespace soap11;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -72,7 +74,7 @@ namespace shibsp {
     {
     public:
         SAML2ArtifactResolution(const DOMElement* e, const char* appId);
-        virtual ~SAML2ArtifactResolution();
+        virtual ~SAML2ArtifactResolution() {}
 
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
         void receive(DDF& in, ostream& out);
@@ -104,11 +106,12 @@ namespace shibsp {
             hurl += loc;
             auto_ptr_XMLCh widen(hurl.c_str());
 
-            ArtifactResolutionService* ep = ArtifactResolutionServiceBuilder::buildArtifactResolutionService();
+            auto_ptr<ArtifactResolutionService> ep(ArtifactResolutionServiceBuilder::buildArtifactResolutionService());
             ep->setLocation(widen.get());
             ep->setBinding(getXMLString("Binding").second);
             ep->setIndex(ix.second);
-            role.getArtifactResolutionServices().push_back(ep);
+            role.getArtifactResolutionServices().push_back(ep.get());
+            ep.release();
         }
 #endif
         const XMLCh* getProtocolFamily() const {
@@ -122,9 +125,8 @@ namespace shibsp {
             const Application& app, const ArtifactResolve& request, HTTPResponse& httpResponse, const EntityDescriptor* recipient
             ) const;
 
-        MessageEncoder* m_encoder;
-        MessageDecoder* m_decoder;
-        xmltooling::QName m_role;
+        scoped_ptr<MessageEncoder> m_encoder;
+        scoped_ptr<MessageDecoder> m_decoder;
 #endif
     };
 
@@ -141,40 +143,25 @@ namespace shibsp {
 
 SAML2ArtifactResolution::SAML2ArtifactResolution(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".ArtifactResolution.SAML2"))
-#ifndef SHIBSP_LITE
-        ,m_encoder(nullptr), m_decoder(nullptr), m_role(samlconstants::SAML20MD_NS, opensaml::saml2md::IDPSSODescriptor::LOCAL_NAME)
-#endif
 {
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        try {
-            m_encoder = SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
-                getString("Binding").second,pair<const DOMElement*,const XMLCh*>(e,nullptr)
-                );
-            m_decoder = SAMLConfig::getConfig().MessageDecoderManager.newPlugin(
-                getString("Binding").second,pair<const DOMElement*,const XMLCh*>(e,nullptr)
-                );
-        }
-        catch (exception&) {
-            m_log.error("error building MessageEncoder/Decoder pair for binding (%s)", getString("Binding").second);
-            delete m_encoder;
-            delete m_decoder;
-            throw;
-        }
+        m_encoder.reset(
+            SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
+                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+                )
+            );
+        m_decoder.reset(
+            SAMLConfig::getConfig().MessageDecoderManager.newPlugin(
+                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+                )
+            );
     }
 #endif
     string address(appId);
     address += getString("Location").second;
     address += "::run::SAML2Artifact";
     setAddress(address.c_str());
-}
-
-SAML2ArtifactResolution::~SAML2ArtifactResolution()
-{
-#ifndef SHIBSP_LITE
-    delete m_encoder;
-    delete m_decoder;
-#endif
 }
 
 pair<bool,long> SAML2ArtifactResolution::run(SPRequest& request, bool isHandler) const
@@ -192,11 +179,11 @@ pair<bool,long> SAML2ArtifactResolution::run(SPRequest& request, bool isHandler)
             DDF out,in = wrap(request, nullptr, true);
             DDFJanitor jin(in), jout(out);
             
-            out=request.getServiceProvider().getListenerService()->send(in);
+            out = request.getServiceProvider().getListenerService()->send(in);
             return unwrap(request, out);
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
 
         // Build a SOAP fault around the error.
@@ -216,10 +203,11 @@ pair<bool,long> SAML2ArtifactResolution::run(SPRequest& request, bool isHandler)
         return make_pair(true, ret);
 #else
         // Brute force the fault to avoid library dependency.
-        auto_ptr<Envelope> env(EnvelopeBuilder::buildEnvelope());
+        scoped_ptr<Envelope> env(EnvelopeBuilder::buildEnvelope());
         Body* body = BodyBuilder::buildBody();
         env->setBody(body);
-        body->getUnknownXMLObjects().push_back(fault.release());
+        body->getUnknownXMLObjects().push_back(fault.get());
+        fault.release();
         string xmlbuf;
         XMLHelper::serialize(env->marshall(), xmlbuf);
         istringstream s(xmlbuf);
@@ -241,22 +229,22 @@ void SAML2ArtifactResolution::receive(DDF& in, ostream& out)
     }
     
     // Unpack the request.
-    auto_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(in));
     //m_log.debug("found %d client certificates", req->getClientCertificates().size());
 
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    auto_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(ret));
         
     try {
         // Since we're remoted, the result should either be a throw, a false/0 return,
         // which we just return as an empty structure, or a response/redirect,
         // which we capture in the facade and send back.
-        processMessage(*app, *req.get(), *resp.get());
+        processMessage(*app, *req, *resp);
         out << ret;
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
 #ifndef SHIBSP_LITE
         m_log.error("error while processing request: %s", ex.what());
 
@@ -270,7 +258,7 @@ void SAML2ArtifactResolution::receive(DDF& in, ostream& out)
         pair<bool,bool> flag = getBool("detailedErrors", m_configNS.get());
         auto_ptr_XMLCh msg((flag.first && flag.second) ? ex.what() : "Error processing request.");
         fs->setString(msg.get());
-        m_encoder->encode(*resp.get(), fault.get(), nullptr);
+        m_encoder->encode(*resp, fault.get(), nullptr);
         fault.release();
         out << ret;
 #else
@@ -297,14 +285,14 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
-    auto_ptr<SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &m_role, policyId.second)
+    scoped_ptr<SecurityPolicy> policy(
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second)
         );
     
     // Decode the message and verify that it's a secured ArtifactResolve request.
     string relayState;
-    auto_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, *policy.get()));
-    if (!msg.get())
+    scoped_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, *policy));
+    if (!msg)
         throw BindingException("Failed to decode a SAML request.");
     const ArtifactResolve* req = dynamic_cast<const ArtifactResolve*>(msg.get());
     if (!req)
@@ -321,7 +309,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         m_log.info("resolving artifact (%s) for (%s)", artifact.get(), issuer.get() ? issuer.get() : "unknown");
 
         // Parse the artifact and retrieve the object.
-        auto_ptr<SAMLArtifact> artobj(SAMLArtifact::parse(artifact.get()));
+        scoped_ptr<SAMLArtifact> artobj(SAMLArtifact::parse(artifact.get()));
         auto_ptr<XMLObject> payload(artmap->retrieveContent(artobj.get(), issuer.get()));
 
         if (!policy->isAuthenticated()) {
@@ -336,15 +324,16 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         resp->setInResponseTo(req->getID());
         Issuer* me = IssuerBuilder::buildIssuer();
         me->setName(application.getRelyingParty(entity)->getXMLString("entityID").second);
-        resp->setPayload(payload.release());
+        resp->setPayload(payload.get());
+        payload.release();
 
         long ret = sendMessage(
             *m_encoder, resp.get(), relayState.c_str(), nullptr, policy->getIssuerMetadata(), application, httpResponse, "signResponses"
             );
         resp.release();  // freed by encoder
-        return make_pair(true,ret);
+        return make_pair(true, ret);
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         // Trap localized errors.
         m_log.error("error processing artifact request: %s", ex.what());
         return emptyResponse(application, *req, httpResponse, entity);
@@ -363,9 +352,9 @@ pair<bool,long> SAML2ArtifactResolution::emptyResponse(
     resp->setInResponseTo(request.getID());
     Issuer* me = IssuerBuilder::buildIssuer();
     me->setName(app.getRelyingParty(recipient)->getXMLString("entityID").second);
-    fillStatus(*resp.get(), StatusCode::SUCCESS);
+    fillStatus(*resp, StatusCode::SUCCESS);
     long ret = m_encoder->encode(httpResponse, resp.get(), nullptr);
     resp.release();  // freed by encoder
-    return make_pair(true,ret);
+    return make_pair(true, ret);
 }
 #endif

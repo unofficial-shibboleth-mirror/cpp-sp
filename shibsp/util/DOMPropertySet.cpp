@@ -160,7 +160,7 @@ void DOMPropertySet::load(
 
 pair<bool,bool> DOMPropertySet::getBool(const char* name, const char* ns) const
 {
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+    map< string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
         i=m_map.find(string("{") + ns + '}' + name);
@@ -177,7 +177,7 @@ pair<bool,bool> DOMPropertySet::getBool(const char* name, const char* ns) const
 pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* ns) const
 {
     pair<bool,const char*> ret(false,nullptr);
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+    map< string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
         i=m_map.find(string("{") + ns + '}' + name);
@@ -193,7 +193,7 @@ pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* n
 
 pair<bool,const XMLCh*> DOMPropertySet::getXMLString(const char* name, const char* ns) const
 {
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+    map< string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
         i=m_map.find(string("{") + ns + '}' + name);
@@ -225,7 +225,7 @@ pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const c
 
 pair<bool,int> DOMPropertySet::getInt(const char* name, const char* ns) const
 {
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+    map< string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
         i=m_map.find(string("{") + ns + '}' + name);
@@ -249,7 +249,7 @@ void DOMPropertySet::getAll(std::map<std::string,const char*>& properties) const
 
 const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* ns) const
 {
-    map<string,boost::shared_ptr<DOMPropertySet>>::const_iterator i;
+    map< string,boost::shared_ptr<DOMPropertySet> >::const_iterator i;
 
     if (ns)
         i = m_nested.find(string("{") + ns + '}' + name);

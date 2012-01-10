@@ -348,7 +348,7 @@ namespace shibsp {
         DDF m_obj;
 #ifndef SHIBSP_LITE
         scoped_ptr<saml2::NameID> m_nameid;
-        mutable map<string,boost::shared_ptr<Assertion>> m_tokens;
+        mutable map< string,boost::shared_ptr<Assertion> > m_tokens;
 #endif
         mutable vector<Attribute*> m_attributes;
         mutable multimap<string,const Attribute*> m_attributeIndex;

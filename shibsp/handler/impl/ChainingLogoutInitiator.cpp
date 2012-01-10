@@ -30,11 +30,14 @@
 #include "handler/LogoutInitiator.h"
 #include "util/SPConstants.h"
 
+#include <boost/bind.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -48,21 +51,18 @@ namespace shibsp {
     {
     public:
         ChainingLogoutInitiator(const DOMElement* e, const char* appId);
-        virtual ~ChainingLogoutInitiator() {
-            for_each(m_handlers.begin(), m_handlers.end(), xmltooling::cleanup<Handler>());
-        }
+        virtual ~ChainingLogoutInitiator() {}
         
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
 #ifndef SHIBSP_LITE
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
-            for (vector<Handler*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i)
-                (*i)->generateMetadata(role, handlerURL);
+            for_each(m_handlers.begin(), m_handlers.end(), boost::bind(&Handler::generateMetadata, _1, boost::ref(role), handlerURL));
         }
 #endif
 
     private:
-        vector<Handler*> m_handlers;
+        ptr_vector<Handler> m_handlers;
     };
 
 #if defined (_MSC_VER)
@@ -106,10 +106,11 @@ ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
-                m_handlers.push_back(conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId)));
-                m_handlers.back()->setParent(this);
+                auto_ptr<Handler> np(conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId)));
+                m_handlers.push_back(np);
+                m_handlers.back().setParent(this);
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_log.error("caught exception processing embedded LogoutInitiator element: %s", ex.what());
             }
         }
@@ -124,8 +125,8 @@ pair<bool,long> ChainingLogoutInitiator::run(SPRequest& request, bool isHandler)
     if (ret.first)
         return ret;
 
-    for (vector<Handler*>::const_iterator i = m_handlers.begin(); i!=m_handlers.end(); ++i) {
-        ret = (*i)->run(request, isHandler);
+    for (ptr_vector<Handler>::const_iterator i = m_handlers.begin(); i != m_handlers.end(); ++i) {
+        ret = i->run(request, isHandler);
         if (ret.first)
             return ret;
     }

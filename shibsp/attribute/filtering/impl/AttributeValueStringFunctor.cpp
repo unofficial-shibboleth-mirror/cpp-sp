@@ -35,8 +35,8 @@
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
+using namespace xmltooling;
 using namespace std;
-using xmltooling::XMLHelper;
 
 namespace shibsp {
 
@@ -50,7 +50,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AttributeValueStringFunctor : public MatchFunctor
     {
         string m_attributeID;
-        char* m_value;
+        auto_arrayptr<char> m_value;
 
         bool hasValue(const FilteringContext& filterContext) const;
         bool matches(const Attribute& attribute, size_t index) const;
@@ -58,21 +58,18 @@ namespace shibsp {
     public:
         AttributeValueStringFunctor(const DOMElement* e)
             	: m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)),
-            	  m_value(e ? xmltooling::toUTF8(e->getAttributeNS(nullptr,value)) : nullptr) {
-            if (!m_value || !*m_value) {
-                delete[] m_value;
+            	  m_value(e ? toUTF8(e->getAttributeNS(nullptr, value)) : nullptr) {
+            if (!m_value.get() || !*m_value.get()) {
                 throw ConfigurationException("AttributeValueString MatchFunctor requires non-empty value attribute.");
             }
-            if (e && e->hasAttributeNS(nullptr,ignoreCase)) {
-                xmltooling::logging::Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+            if (e && e->hasAttributeNS(nullptr, ignoreCase)) {
+                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
                     "ignoreCase property ignored by AttributeValueString MatchFunctor in favor of attribute's caseSensitive property"
                     );
             }
         }
 
-        virtual ~AttributeValueStringFunctor() {
-            delete[] m_value;
-        }
+        virtual ~AttributeValueStringFunctor() {}
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
             if (m_attributeID.empty())
@@ -87,7 +84,7 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueStringFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueStringFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new AttributeValueStringFunctor(p.second);
     }
@@ -115,11 +112,11 @@ bool AttributeValueStringFunctor::matches(const Attribute& attribute, size_t ind
     if (!val)
         return false;
     if (attribute.isCaseSensitive())
-        return !strcmp(m_value, val);
+        return !strcmp(m_value.get(), val);
 
 #ifdef HAVE_STRCASECMP
-    return !strcasecmp(m_value, val);
+    return !strcasecmp(m_value.get(), val);
 #else
-    return !stricmp(m_value, val);
+    return !stricmp(m_value.get(), val);
 #endif
 }

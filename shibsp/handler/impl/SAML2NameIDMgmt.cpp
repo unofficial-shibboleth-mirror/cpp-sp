@@ -38,6 +38,8 @@
 # include "security/SecurityPolicy.h"
 # include "security/SecurityPolicyProvider.h"
 # include <fstream>
+# include <boost/algorithm/string.hpp>
+# include <boost/iterator/indirect_iterator.hpp>
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml2/core/Protocols.h>
@@ -53,8 +55,11 @@ using namespace opensaml;
 # include "lite/SAMLConstants.h"
 #endif
 
+#include <boost/scoped_ptr.hpp>
+
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -68,15 +73,7 @@ namespace shibsp {
     {
     public:
         SAML2NameIDMgmt(const DOMElement* e, const char* appId);
-        virtual ~SAML2NameIDMgmt() {
-#ifndef SHIBSP_LITE
-            if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-                delete m_decoder;
-                XMLString::release(&m_outgoing);
-                for_each(m_encoders.begin(), m_encoders.end(), cleanup_pair<const XMLCh*,MessageEncoder>());
-            }
-#endif
-        }
+        virtual ~SAML2NameIDMgmt() {}
 
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
@@ -122,11 +119,9 @@ namespace shibsp {
             bool front
             ) const;
 
-        xmltooling::QName m_role;
-        MessageDecoder* m_decoder;
-        XMLCh* m_outgoing;
-        vector<const XMLCh*> m_bindings;
-        map<const XMLCh*,MessageEncoder*> m_encoders;
+        scoped_ptr<MessageDecoder> m_decoder;
+        vector<string> m_bindings;
+        map< string,boost::shared_ptr<MessageEncoder> > m_encoders;
 #endif
     };
 
@@ -142,69 +137,57 @@ namespace shibsp {
 
 SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".NameIDMgmt.SAML2"))
-#ifndef SHIBSP_LITE
-        ,m_role(samlconstants::SAML20MD_NS, IDPSSODescriptor::LOCAL_NAME), m_decoder(nullptr), m_outgoing(nullptr)
-#endif
 {
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         SAMLConfig& conf = SAMLConfig::getConfig();
 
         // Handle incoming binding.
-        m_decoder = conf.MessageDecoderManager.newPlugin(
-            getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+        m_decoder.reset(
+            conf.MessageDecoderManager.newPlugin(
+                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+                )
             );
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
 
         if (m_decoder->isUserAgentPresent()) {
             // Handle front-channel binding setup.
-            pair<bool,const XMLCh*> outgoing = getXMLString("outgoingBindings", m_configNS.get());
+            string dupBindings;
+            pair<bool,const char*> outgoing = getString("outgoingBindings", m_configNS.get());
             if (outgoing.first) {
-                m_outgoing = XMLString::replicate(outgoing.second);
-                XMLString::trim(m_outgoing);
+                dupBindings = outgoing.second;
             }
             else {
                 // No override, so we'll install a default binding precedence.
-                string prec = string(samlconstants::SAML20_BINDING_HTTP_REDIRECT) + ' ' + samlconstants::SAML20_BINDING_HTTP_POST + ' ' +
+                dupBindings = string(samlconstants::SAML20_BINDING_HTTP_REDIRECT) + ' ' + samlconstants::SAML20_BINDING_HTTP_POST + ' ' +
                     samlconstants::SAML20_BINDING_HTTP_POST_SIMPLESIGN + ' ' + samlconstants::SAML20_BINDING_HTTP_ARTIFACT;
-                m_outgoing = XMLString::transcode(prec.c_str());
             }
 
-            int pos;
-            XMLCh* start = m_outgoing;
-            while (start && *start) {
-                pos = XMLString::indexOf(start,chSpace);
-                if (pos != -1)
-                    *(start + pos)=chNull;
-                m_bindings.push_back(start);
+            split(m_bindings, dupBindings, is_space(), algorithm::token_compress_on);
+            for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
                 try {
-                    auto_ptr_char b(start);
-                    MessageEncoder * encoder = conf.MessageEncoderManager.newPlugin(
-                        b.get(), pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+                    boost::shared_ptr<MessageEncoder> encoder(
+                        conf.MessageEncoderManager.newPlugin(*b, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS))
                         );
                     if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
-                        m_encoders[start] = encoder;
-                        m_log.debug("supporting outgoing binding (%s)", b.get());
+                        m_encoders[*b] = encoder;
+                        m_log.debug("supporting outgoing binding (%s)", b->c_str());
                     }
                     else {
-                        delete encoder;
-                        m_log.warn("skipping outgoing binding (%s), not a SAML 2.0 front-channel mechanism", b.get());
+                        m_log.warn("skipping outgoing binding (%s), not a SAML 2.0 front-channel mechanism", b->c_str());
                     }
                 }
-                catch (exception& ex) {
+                catch (std::exception& ex) {
                     m_log.error("error building MessageEncoder: %s", ex.what());
                 }
-                if (pos != -1)
-                    start = start + pos + 1;
-                else
-                    break;
             }
         }
         else {
-            MessageEncoder* encoder = conf.MessageEncoderManager.newPlugin(
-                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
+            pair<bool,const char*> b = getString("Binding");
+            boost::shared_ptr<MessageEncoder> encoder(
+                conf.MessageEncoderManager.newPlugin(b.second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS))
                 );
-            m_encoders.insert(pair<const XMLCh*,MessageEncoder*>(nullptr, encoder));
+            m_encoders[b.second] = encoder;
         }
     }
 #endif
@@ -235,8 +218,8 @@ pair<bool,long> SAML2NameIDMgmt::run(SPRequest& request, bool isHandler) const
 void SAML2NameIDMgmt::receive(DDF& in, ostream& out)
 {
     // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
+    const char* aid = in["application_id"].string();
+    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for NameID mgmt", aid ? aid : "(missing)");
@@ -244,23 +227,21 @@ void SAML2NameIDMgmt::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    auto_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(in));
 
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    auto_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(ret));
 
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, *req.get(), *resp.get());
+    doRequest(*app, *req, *resp);
     out << ret;
 }
 
-pair<bool,long> SAML2NameIDMgmt::doRequest(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response
-    ) const
+pair<bool,long> SAML2NameIDMgmt::doRequest(const Application& application, const HTTPRequest& request, HTTPResponse& response) const
 {
 #ifndef SHIBSP_LITE
     SessionCache* cache = application.getServiceProvider().getSessionCache();
@@ -274,13 +255,13 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
-    auto_ptr<SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &m_role, policyId.second)
+    scoped_ptr<SecurityPolicy> policy(
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second)
         );
 
     // Decode the message.
     string relayState;
-    auto_ptr<XMLObject> msg(m_decoder->decode(relayState, request, *policy.get()));
+    scoped_ptr<XMLObject> msg(m_decoder->decode(relayState, request, *policy));
     const ManageNameIDRequest* mgmtRequest = dynamic_cast<ManageNameIDRequest*>(msg.get());
     if (mgmtRequest) {
         if (!policy->isAuthenticated())
@@ -305,7 +286,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
 
         EntityDescriptor* entity = policy->getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy->getIssuerMetadata()->getParent()) : nullptr;
 
-        bool ownedName = false;
+        scoped_ptr<XMLObject> decryptedID;
         NameID* nameid = mgmtRequest->getNameID();
         if (!nameid) {
             // Check for EncryptedID.
@@ -316,20 +297,14 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
                     m_log.warn("found encrypted NameID, but no decryption credential was available");
                 else {
                     Locker credlocker(cr);
-                    auto_ptr<MetadataCredentialCriteria> mcc(
+                    scoped_ptr<MetadataCredentialCriteria> mcc(
                         policy->getIssuerMetadata() ? new MetadataCredentialCriteria(*policy->getIssuerMetadata()) : nullptr
                         );
                     try {
-                        auto_ptr<XMLObject> decryptedID(
-                            encname->decrypt(*cr,application.getRelyingParty(entity)->getXMLString("entityID").second,mcc.get())
-                            );
+                        decryptedID.reset(encname->decrypt(*cr, application.getRelyingParty(entity)->getXMLString("entityID").second, mcc.get()));
                         nameid = dynamic_cast<NameID*>(decryptedID.get());
-                        if (nameid) {
-                            ownedName = true;
-                            decryptedID.release();
-                        }
                     }
-                    catch (exception& ex) {
+                    catch (std::exception& ex) {
                         m_log.error(ex.what());
                     }
                 }
@@ -349,8 +324,6 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
                 );
         }
 
-        auto_ptr<NameID> namewrapper(ownedName ? nameid : nullptr);
-
         // For a front-channel request, we have to match the information in the request
         // against the current session.
         if (!session_id.empty()) {
@@ -369,7 +342,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
         }
 
         // Determine what's happening...
-        bool ownedNewID = false;
+        scoped_ptr<XMLObject> newDecryptedID;
         NewID* newid = nullptr;
         if (!mgmtRequest->getTerminate()) {
             // Better be a NewID in there.
@@ -383,20 +356,14 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
                         m_log.warn("found encrypted NewID, but no decryption credential was available");
                     else {
                         Locker credlocker(cr);
-                        auto_ptr<MetadataCredentialCriteria> mcc(
+                        scoped_ptr<MetadataCredentialCriteria> mcc(
                             policy->getIssuerMetadata() ? new MetadataCredentialCriteria(*policy->getIssuerMetadata()) : nullptr
                             );
                         try {
-                            auto_ptr<XMLObject> decryptedID(
-                                encnewid->decrypt(*cr,application.getRelyingParty(entity)->getXMLString("entityID").second,mcc.get())
-                                );
-                            newid = dynamic_cast<NewID*>(decryptedID.get());
-                            if (newid) {
-                                ownedNewID = true;
-                                decryptedID.release();
-                            }
+                            newDecryptedID.reset(encnewid->decrypt(*cr, application.getRelyingParty(entity)->getXMLString("entityID").second, mcc.get()));
+                            newid = dynamic_cast<NewID*>(newDecryptedID.get());
                         }
-                        catch (exception& ex) {
+                        catch (std::exception& ex) {
                             m_log.error(ex.what());
                         }
                     }
@@ -417,8 +384,6 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
                     );
             }
         }
-
-        auto_ptr<NewID> newwrapper(ownedNewID ? newid : nullptr);
 
         // TODO: maybe support in-place modification of sessions?
         /*
@@ -448,7 +413,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
         */
 
         // Do back-channel app notifications.
-        // Not supporting front-channel due to privacy fears.
+        // Not supporting front-channel due to privacy concerns.
         bool worked = notifyBackChannel(application, request.getRequestURL(), *nameid, newid);
 
         return sendResponse(
@@ -485,7 +450,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(
     if (policy->getIssuerMetadata())
         annotateException(&ex, policy->getIssuerMetadata()); // throws it
     ex.raise();
-    return make_pair(false,0L);  // never happen, satisfies compiler
+    return make_pair(false, 0L);  // never happen, satisfies compiler
 #else
     throw ConfigurationException("Cannot process NameID mgmt message using lite version of shibsp library.");
 #endif
@@ -510,11 +475,12 @@ pair<bool,long> SAML2NameIDMgmt::sendResponse(
     const MessageEncoder* encoder = nullptr;
     if (front) {
         const IDPSSODescriptor* idp = dynamic_cast<const IDPSSODescriptor*>(role);
-        for (vector<const XMLCh*>::const_iterator b = m_bindings.begin(); idp && b!=m_bindings.end(); ++b) {
-            if ((ep=EndpointManager<ManageNameIDService>(idp->getManageNameIDServices()).getByBinding(*b))) {
-                map<const XMLCh*,MessageEncoder*>::const_iterator enc = m_encoders.find(*b);
-                if (enc!=m_encoders.end())
-                    encoder = enc->second;
+        for (vector<string>::const_iterator b = m_bindings.begin(); idp && b != m_bindings.end(); ++b) {
+            auto_ptr_XMLCh wideb(b->c_str());
+            if ((ep = EndpointManager<ManageNameIDService>(idp->getManageNameIDServices()).getByBinding(wideb.get()))) {
+                map< string,boost::shared_ptr<MessageEncoder> >::const_iterator enc = m_encoders.find(*b);
+                if (enc != m_encoders.end())
+                    encoder = enc->second.get();
                 break;
             }
         }
@@ -526,7 +492,7 @@ pair<bool,long> SAML2NameIDMgmt::sendResponse(
         }
     }
     else {
-        encoder = m_encoders.begin()->second;
+        encoder = m_encoders.begin()->second.get();
     }
 
     // Prepare response.
@@ -541,13 +507,13 @@ pair<bool,long> SAML2NameIDMgmt::sendResponse(
     Issuer* issuer = IssuerBuilder::buildIssuer();
     nim->setIssuer(issuer);
     issuer->setName(application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role->getParent()))->getXMLString("entityID").second);
-    fillStatus(*nim.get(), code, subcode, msg);
+    fillStatus(*nim, code, subcode, msg);
 
     auto_ptr_char dest(nim->getDestination());
 
     long ret = sendMessage(*encoder, nim.get(), relayState, dest.get(), role, application, httpResponse);
     nim.release();  // freed by encoder
-    return make_pair(true,ret);
+    return make_pair(true, ret);
 }
 
 #include "util/SPConstants.h"
@@ -570,7 +536,6 @@ namespace {
             HTTPSOAPTransport* http = dynamic_cast<HTTPSOAPTransport*>(&transport);
             if (http) {
                 http->useChunkedEncoding(false);
-                http->setRequestHeader("User-Agent", PACKAGE_NAME);
                 http->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION);
             }
         }
@@ -586,7 +551,7 @@ bool SAML2NameIDMgmt::notifyBackChannel(
     if (endpoint.empty())
         return true;
 
-    auto_ptr<Envelope> env(EnvelopeBuilder::buildEnvelope());
+    scoped_ptr<Envelope> env(EnvelopeBuilder::buildEnvelope());
     Body* body = BodyBuilder::buildBody();
     env->setBody(body);
     ElementProxy* msg = new AnyElementImpl(shibspconstants::SHIB2SPNOTIFY_NS, NameIDNotification);
@@ -601,10 +566,10 @@ bool SAML2NameIDMgmt::notifyBackChannel(
     SOAPNotifier soaper;
     while (!endpoint.empty()) {
         try {
-            soaper.send(*env.get(), SOAPTransport::Address(application.getId(), application.getId(), endpoint.c_str()));
+            soaper.send(*env, SOAPTransport::Address(application.getId(), application.getId(), endpoint.c_str()));
             delete soaper.receive();
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
             m_log.error("error notifying application of logout event: %s", ex.what());
             result = false;
         }

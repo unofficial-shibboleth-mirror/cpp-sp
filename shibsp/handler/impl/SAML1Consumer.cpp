@@ -33,6 +33,8 @@
 # include "SessionCache.h"
 # include "TransactionLog.h"
 # include "attribute/resolver/ResolutionContext.h"
+# include <boost/scoped_ptr.hpp>
+# include <boost/iterator/indirect_iterator.hpp>
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/binding/SecurityPolicy.h>
@@ -46,6 +48,7 @@
 using namespace opensaml::saml1;
 using namespace opensaml::saml1p;
 using namespace opensaml;
+using namespace boost;
 using saml2::NameID;
 using saml2::NameIDBuilder;
 using saml2md::EntityDescriptor;
@@ -72,17 +75,12 @@ namespace shibsp {
         SAML1Consumer(const DOMElement* e, const char* appId)
             : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SSO.SAML1")) {
 #ifndef SHIBSP_LITE
-            m_ssoRule = nullptr;
             m_post = XMLString::equals(getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_POST);
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-                m_ssoRule = SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(SAML1BROWSERSSO_POLICY_RULE, e);
+                m_ssoRule.reset(SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(SAML1BROWSERSSO_POLICY_RULE, e));
 #endif
         }
-        virtual ~SAML1Consumer() {
-#ifndef SHIBSP_LITE
-            delete m_ssoRule;
-#endif
-        }
+        virtual ~SAML1Consumer() {}
 
 #ifndef SHIBSP_LITE
         void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
@@ -102,7 +100,7 @@ namespace shibsp {
             ) const;
 
         bool m_post;
-        SecurityPolicyRule* m_ssoRule;
+        scoped_ptr<SecurityPolicyRule> m_ssoRule;
 #else
         const XMLCh* getProtocolFamily() const {
             return samlconstants::SAML11_PROTOCOL_ENUM;
@@ -195,16 +193,17 @@ void SAML1Consumer::implementProtocol(
 
     // Ensure the BrowserSSO rule is in the policy set.
     if (find_if(policy.getRules(), _rulenamed(SAML1BROWSERSSO_POLICY_RULE)) == nullptr)
-        policy.getRules().push_back(m_ssoRule);
+        policy.getRules().push_back(m_ssoRule.get());
 
     // Populate recipient as audience.
     policy.getAudiences().push_back(application.getRelyingParty(entity)->getXMLString("entityID").second);
 
     time_t now = time(nullptr);
-    for (vector<saml1::Assertion*>::const_iterator a = assertions.begin(); a!=assertions.end(); ++a) {
+    for (indirect_iterator<vector<saml1::Assertion*>::const_iterator> a = make_indirect_iterator(assertions.begin());
+            a != make_indirect_iterator(assertions.end()); ++a) {
         try {
             // Skip unsigned assertion?
-            if (!(*a)->getSignature() && flag.first && flag.second)
+            if (!a->getSignature() && flag.first && flag.second)
                 throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
 
             // We clear the security flag, so we can tell whether the token was secured on its own.
@@ -213,48 +212,48 @@ void SAML1Consumer::implementProtocol(
 
             // Extract message bits and re-verify Issuer information.
             extractMessageDetails(
-                *(*a),
-                (minor.first && minor.second==0) ? samlconstants::SAML10_PROTOCOL_ENUM : samlconstants::SAML11_PROTOCOL_ENUM, policy
+                *a, (minor.first && minor.second==0) ? samlconstants::SAML10_PROTOCOL_ENUM : samlconstants::SAML11_PROTOCOL_ENUM, policy
                 );
 
             // Run the policy over the assertion. Handles replay, freshness, and
             // signature verification, assuming the relevant rules are configured,
             // along with condition and profile enforcement.
-            policy.evaluate(*(*a), &httpRequest);
+            policy.evaluate(*a, &httpRequest);
 
             // If no security is in place now, we kick it.
             if (!alreadySecured && !policy.isAuthenticated())
                 throw SecurityPolicyException("Unable to establish security of incoming assertion.");
 
             // Track it as a valid token.
-            tokens.push_back(*a);
+            tokens.push_back(&(*a));
 
             // Save off the first valid SSO statement.
             const vector<AuthenticationStatement*>& statements =
-                    const_cast<const saml1::Assertion*>(*a)->getAuthenticationStatements();
-            for (vector<AuthenticationStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
-                if ((*s)->getAuthenticationInstant() &&
-                        (*s)->getAuthenticationInstantEpoch() - XMLToolingConfig::getConfig().clock_skew_secs > now) {
+                    const_cast<const saml1::Assertion&>(*a).getAuthenticationStatements();
+            for (indirect_iterator<vector<AuthenticationStatement*>::const_iterator> s = make_indirect_iterator(statements.begin());
+                    s != make_indirect_iterator(statements.end()); ++s) {
+                if (s->getAuthenticationInstant() &&
+                        s->getAuthenticationInstantEpoch() - XMLToolingConfig::getConfig().clock_skew_secs > now) {
                     contextualError = "The login time at your identity provider was future-dated.";
                 }
-                else if (authnskew.first && authnskew.second && (*s)->getAuthenticationInstant() &&
-                        (*s)->getAuthenticationInstantEpoch() <= now && (now - (*s)->getAuthenticationInstantEpoch() > authnskew.second)) {
+                else if (authnskew.first && authnskew.second && s->getAuthenticationInstant() &&
+                        s->getAuthenticationInstantEpoch() <= now && (now - s->getAuthenticationInstantEpoch() > authnskew.second)) {
                     contextualError = "The gap between now and the time you logged into your identity provider exceeds the allowed limit.";
                 }
-                else if (authnskew.first && authnskew.second && (*s)->getAuthenticationInstant() == nullptr) {
+                else if (authnskew.first && authnskew.second && s->getAuthenticationInstant() == nullptr) {
                     contextualError = "Your identity provider did not supply a time of login, violating local policy.";
                 }
                 else if (!ssoStatement) {
-                    ssoStatement = *s;
+                    ssoStatement = &(*s);
                     break;
                 }
             }
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
             m_log.warn("detected a problem with assertion: %s", ex.what());
             if (!ssoStatement)
                 contextualError = ex.what();
-            badtokens.push_back(*a);
+            badtokens.push_back(&(*a));
         }
     }
 
@@ -286,7 +285,7 @@ void SAML1Consumer::implementProtocol(
     // To complete processing, we need to extract and resolve attributes and then create the session.
 
     // Normalize the SAML 1.x NameIdentifier...
-    auto_ptr<NameID> nameid(n ? NameIDBuilder::buildNameID() : nullptr);
+    scoped_ptr<NameID> nameid(n ? NameIDBuilder::buildNameID() : nullptr);
     if (n) {
         nameid->setName(n->getName());
         nameid->setFormat(n->getFormat());
@@ -294,7 +293,7 @@ void SAML1Consumer::implementProtocol(
     }
 
     // The context will handle deleting attributes and new tokens.
-    auto_ptr<ResolutionContext> ctx(
+    scoped_ptr<ResolutionContext> ctx(
         resolveAttributes(
             application,
             policy.getIssuerMetadata(),
@@ -310,7 +309,7 @@ void SAML1Consumer::implementProtocol(
             )
         );
 
-    if (ctx.get()) {
+    if (ctx) {
         // Copy over any new tokens, but leave them in the context for cleanup.
         tokens.insert(tokens.end(), ctx->getResolvedAssertions().begin(), ctx->getResolvedAssertions().end());
     }
@@ -334,11 +333,11 @@ void SAML1Consumer::implementProtocol(
         ssoStatement->getAuthenticationMethod(),
         nullptr,
         &tokens,
-        ctx.get() ? &ctx->getResolvedAttributes() : nullptr
+        ctx ? &ctx->getResolvedAttributes() : nullptr
         );
 
-    auto_ptr<LoginEvent> login_event(newLoginEvent(application, httpRequest));
-    if (login_event.get()) {
+    scoped_ptr<LoginEvent> login_event(newLoginEvent(application, httpRequest));
+    if (login_event) {
         login_event->m_sessionID = session_id.c_str();
         login_event->m_peer = entity;
         auto_ptr_char prot(
@@ -349,7 +348,7 @@ void SAML1Consumer::implementProtocol(
         login_event->m_nameID = nameid.get();
         login_event->m_saml1AuthnStatement = ssoStatement;
         login_event->m_saml1Response = response;
-        if (ctx.get())
+        if (ctx)
             login_event->m_attributes = &ctx->getResolvedAttributes();
         application.getServiceProvider().getTransactionLog()->write(*login_event);
     }

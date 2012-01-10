@@ -30,11 +30,13 @@
 #include "attribute/filtering/MatchFunctor.h"
 #include "util/SPConstants.h"
 
+#include <boost/scoped_ptr.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -103,11 +105,11 @@ MatchFunctor* NotMatchFunctor::buildFunctor(const DOMElement* e, const FilterPol
     if (!id.empty() && functorMap->getMatchFunctors().count(id))
         id.clear();
 
-    auto_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
-    if (!type.get())
+    scoped_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
+    if (!type)
         throw ConfigurationException("Child Rule found with no xsi:type.");
 
-    MatchFunctor* func = SPConfig::getConfig().MatchFunctorManager.newPlugin(*type.get(), make_pair(functorMap,e));
-    functorMap->getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func));
-    return func;
+    auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(functorMap,e)));
+    functorMap->getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func.get()));
+    return func.release();
 }

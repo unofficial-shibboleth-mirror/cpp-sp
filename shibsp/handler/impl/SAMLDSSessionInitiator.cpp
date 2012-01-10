@@ -30,12 +30,14 @@
 #include "handler/AbstractHandler.h"
 #include "handler/SessionInitiator.h"
 
+#include <boost/algorithm/string.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 #ifndef SHIBSP_LITE
@@ -132,15 +134,8 @@ SAMLDSSessionInitiator::SAMLDSSessionInitiator(const DOMElement* e, const char* 
 
     pair<bool,const char*> options = getString("preservedOptions");
     if (options.first) {
-        int j = 0;
         string opt = options.second;
-        for (unsigned int i = 0;  i < opt.length();  i++) {
-            if (opt.at(i) == ' ') {
-                m_preservedOptions.push_back(opt.substr(j, i-j));
-                j = i+1;
-            }
-        }
-        m_preservedOptions.push_back(opt.substr(j, opt.length()-j));
+        split(m_preservedOptions, opt, is_space(), algorithm::token_compress_on);
     }
     else {
         m_preservedOptions.push_back("isPassive");
@@ -164,8 +159,8 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
 
     string target;
     pair<bool,const char*> prop;
-    bool isPassive=false;
-    const Application& app=request.getApplication();
+    bool isPassive = false;
+    const Application& app = request.getApplication();
     pair<bool,const char*> discoveryURL = pair<bool,const char*>(true, m_url);
 
     if (isHandler) {

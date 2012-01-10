@@ -33,6 +33,7 @@
 #include "handler/RemotedHandler.h"
 
 #include <algorithm>
+#include <boost/scoped_ptr.hpp>
 #include <xmltooling/unicode.h>
 #include <xercesc/util/Base64.hpp>
 
@@ -48,6 +49,7 @@ using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
 using namespace xercesc;
+using namespace boost;
 using namespace std;
 
 #ifndef SHIBSP_LITE
@@ -59,7 +61,7 @@ namespace shibsp {
         public HTTPRequest
     {
         DDF& m_input;
-        mutable CGIParser* m_parser;
+        mutable scoped_ptr<CGIParser> m_parser;
         mutable vector<XSECCryptoX509*> m_certs;
 #ifdef SHIBSP_HAVE_GSSAPI
         mutable gss_ctx_id_t m_gss;
@@ -74,7 +76,6 @@ namespace shibsp {
 
         virtual ~RemotedRequest() {
             for_each(m_certs.begin(), m_certs.end(), xmltooling::cleanup<XSECCryptoX509>());
-            delete m_parser;
 #ifdef SHIBSP_HAVE_GSSAPI
             if (m_gss != GSS_C_NO_CONTEXT) {
                 OM_uint32 minor;
@@ -164,19 +165,19 @@ namespace shibsp {
 const char* RemotedRequest::getParameter(const char* name) const
 {
     if (!m_parser)
-        m_parser=new CGIParser(*this);
+        m_parser.reset(new CGIParser(*this));
     
-    pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
+    pair<CGIParser::walker,CGIParser::walker> bounds = m_parser->getParameters(name);
     return (bounds.first==bounds.second) ? nullptr : bounds.first->second;
 }
 
 std::vector<const char*>::size_type RemotedRequest::getParameters(const char* name, std::vector<const char*>& values) const
 {
     if (!m_parser)
-        m_parser=new CGIParser(*this);
+        m_parser.reset(new CGIParser(*this));
 
-    pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
-    while (bounds.first!=bounds.second) {
+    pair<CGIParser::walker,CGIParser::walker> bounds = m_parser->getParameters(name);
+    while (bounds.first != bounds.second) {
         values.push_back(bounds.first->second);
         ++bounds.first;
     }
@@ -195,7 +196,8 @@ const std::vector<XSECCryptoX509*>& RemotedRequest::getClientCertificates() cons
                     x509->loadX509PEM(cert.string(), cert.strlen());
                 else
                     x509->loadX509Base64Bin(cert.string(), cert.strlen());
-                m_certs.push_back(x509.release());
+                m_certs.push_back(x509.get());
+                x509.release();
             }
             catch(XSECException& e) {
                 auto_ptr_char temp(e.getMsg());
@@ -243,8 +245,8 @@ long RemotedResponse::sendResponse(std::istream& in, long status)
     string msg;
     char buf[1024];
     while (in) {
-        in.read(buf,1024);
-        msg.append(buf,in.gcount());
+        in.read(buf, 1024);
+        msg.append(buf, in.gcount());
     }
     if (!m_output.isstruct())
         m_output.structure();
@@ -283,7 +285,7 @@ void RemotedHandler::setAddress(const char* address)
     if (!conf.isEnabled(SPConfig::InProcess)) {
         ListenerService* listener = conf.getServiceProvider()->getListenerService(false);
         if (listener)
-            listener->regListener(m_address.c_str(),this);
+            listener->regListener(m_address.c_str(), this);
         else
             Category::getInstance(SHIBSP_LOGCAT".Handler").info("no ListenerService available, handler remoting disabled");
     }
@@ -329,7 +331,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
         string hdr;
         DDF hin = in.addmember("headers").structure();
         if (headers) {
-            for (vector<string>::const_iterator h = headers->begin(); h!=headers->end(); ++h) {
+            for (vector<string>::const_iterator h = headers->begin(); h != headers->end(); ++h) {
                 hdr = request.getHeader(h->c_str());
                 if (!hdr.empty())
                     hin.addmember(h->c_str()).unsafe_string(hdr.c_str());
@@ -424,7 +426,7 @@ pair<bool,long> RemotedHandler::unwrap(SPRequest& request, DDF& out) const
         istringstream s(h["data"].string());
         return make_pair(true, request.sendResponse(s, h["status"].integer()));
     }
-    return make_pair(false,0L);
+    return make_pair(false, 0L);
 }
 
 HTTPRequest* RemotedHandler::getRequest(DDF& in) const

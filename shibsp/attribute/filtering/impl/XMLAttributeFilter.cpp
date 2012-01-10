@@ -35,6 +35,9 @@
 #include "attribute/filtering/MatchFunctor.h"
 #include "util/SPConstants.h"
 
+#include <boost/scoped_ptr.hpp>
+#include <boost/iterator/indirect_iterator.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/Threads.h>
@@ -46,6 +49,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -87,14 +91,14 @@ namespace shibsp {
         MatchFunctor* buildFunctor(
             const DOMElement* e, const FilterPolicyContext& functorMap, const char* logname, bool standalone
             );
-        pair< string,pair<const MatchFunctor*,const MatchFunctor*> > buildAttributeRule(
+        tuple<string,const MatchFunctor*,const MatchFunctor*> buildAttributeRule(
             const DOMElement* e, const FilterPolicyContext& permMap, const FilterPolicyContext& denyMap, bool standalone
             );
 
         Category& m_log;
         DOMDocument* m_document;
         vector<Policy> m_policies;
-        map< string,pair<string,pair<const MatchFunctor*,const MatchFunctor*> > > m_attrRules;
+        map< string,tuple<string,const MatchFunctor*,const MatchFunctor*> > m_attrRules;
         multimap<string,MatchFunctor*> m_policyReqRules;
         multimap<string,MatchFunctor*> m_permitValRules;
         multimap<string,MatchFunctor*> m_denyValRules;
@@ -103,12 +107,11 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL XMLFilter : public AttributeFilter, public ReloadableXMLFile
     {
     public:
-        XMLFilter(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeFilter")), m_impl(nullptr) {
+        XMLFilter(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeFilter")) {
             background_load();
         }
         ~XMLFilter() {
             shutdown();
-            delete m_impl;
         }
 
         void filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const {
@@ -119,7 +122,7 @@ namespace shibsp {
         pair<bool,DOMElement*> background_load();
 
     private:
-        XMLFilterImpl* m_impl;
+        scoped_ptr<XMLFilterImpl> m_impl;
     };
 
 #if defined (_MSC_VER)
@@ -192,18 +195,22 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
                 e = XMLHelper::getNextSiblingElement(e);
                 while (e) {
                     if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, AttributeRule)) {
-                        pair< string,pair<const MatchFunctor*,const MatchFunctor*> > rule = buildAttributeRule(e, permFunctors, denyFunctors, false);
-                        if (rule.second.first || rule.second.second)
-                            m_policies.back().m_rules.insert(Policy::rules_t::value_type(rule.first, rule.second));
+                        tuple<string,const MatchFunctor*,const MatchFunctor*> rule = buildAttributeRule(e, permFunctors, denyFunctors, false);
+                        if (rule.get<1>() || rule.get<2>())
+                            m_policies.back().m_rules.insert(Policy::rules_t::value_type(rule.get<0>(), make_pair(rule.get<1>(), rule.get<2>())));
                     }
                     else if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, AttributeRuleReference)) {
                         string ref(XMLHelper::getAttrString(e, nullptr, _ref));
                         if (!ref.empty()) {
-                            map< string,pair< string,pair< const MatchFunctor*,const MatchFunctor*> > >::const_iterator ar = m_attrRules.find(ref);
-                            if (ar != m_attrRules.end())
-                                m_policies.back().m_rules.insert(Policy::rules_t::value_type(ar->second.first, ar->second.second));
-                            else
+                            map< string,tuple<string,const MatchFunctor*,const MatchFunctor*> >::const_iterator ar = m_attrRules.find(ref);
+                            if (ar != m_attrRules.end()) {
+                                m_policies.back().m_rules.insert(
+                                    Policy::rules_t::value_type(ar->second.get<0>(), make_pair(ar->second.get<1>(), ar->second.get<2>()))
+                                    );
+                            }
+                            else {
                                 m_log.warn("skipping invalid AttributeRuleReference (%s)", ref.c_str());
+                            }
                         }
                     }
                     e = XMLHelper::getNextSiblingElement(e);
@@ -236,12 +243,12 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
             id.clear();
     }
 
-    auto_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
-    if (type.get()) {
+    scoped_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
+    if (type) {
         try {
-            MatchFunctor* func = SPConfig::getConfig().MatchFunctorManager.newPlugin(*type.get(), make_pair(&functorMap,e));
-            functorMap.getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func));
-            return func;
+            auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(&functorMap,e)));
+            functorMap.getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func.get()));
+            return func.release();
         }
         catch (exception& ex) {
             m_log.error("error building %s with type (%s): %s", logname, type->toString().c_str(), ex.what());
@@ -255,7 +262,7 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
     return nullptr;
 }
 
-pair< string,pair<const MatchFunctor*,const MatchFunctor*> > XMLFilterImpl::buildAttributeRule(
+tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(
     const DOMElement* e, const FilterPolicyContext& permMap, const FilterPolicyContext& denyMap, bool standalone
     )
 {
@@ -263,12 +270,12 @@ pair< string,pair<const MatchFunctor*,const MatchFunctor*> > XMLFilterImpl::buil
 
     if (standalone && id.empty()) {
         m_log.warn("skipping stand-alone AttributeRule with no id");
-        return make_pair(string(),pair<const MatchFunctor*,const MatchFunctor*>(nullptr,nullptr));
+        return tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
     }
     else if (!id.empty() && m_attrRules.count(id)) {
         if (standalone) {
             m_log.warn("skipping duplicate stand-alone AttributeRule with id (%s)", id.c_str());
-            return make_pair(string(),pair<const MatchFunctor*,const MatchFunctor*>(nullptr,nullptr));
+            return tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
         }
         else
             id.clear();
@@ -278,8 +285,8 @@ pair< string,pair<const MatchFunctor*,const MatchFunctor*> > XMLFilterImpl::buil
     if (attrID.empty())
         m_log.warn("skipping AttributeRule with no attributeID");
 
-    MatchFunctor* perm=nullptr;
-    MatchFunctor* deny=nullptr;
+    MatchFunctor* perm = nullptr;
+    MatchFunctor* deny = nullptr;
 
     e = XMLHelper::getFirstChildElement(e);
     if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, PermitValueRule)) {
@@ -308,12 +315,11 @@ pair< string,pair<const MatchFunctor*,const MatchFunctor*> > XMLFilterImpl::buil
 
     if (perm || deny) {
         if (!id.empty()) {
-            m_attrRules[id] =
-                pair< string,pair<const MatchFunctor*,const MatchFunctor*> >(attrID, pair<const MatchFunctor*,const MatchFunctor*>(perm,deny));
+            m_attrRules[id] = make_tuple(attrID, perm, deny);
             return m_attrRules[id];
         }
         else {
-            return pair< string,pair<const MatchFunctor*,const MatchFunctor*> >(attrID, pair<const MatchFunctor*,const MatchFunctor*>(perm,deny));
+            return make_tuple(attrID, perm, deny);
         }
     }
 
@@ -321,7 +327,7 @@ pair< string,pair<const MatchFunctor*,const MatchFunctor*> > XMLFilterImpl::buil
         m_log.warn("skipping AttributeRule (%s), permit and denial rule(s) invalid or missing", id.c_str());
     else
         m_log.warn("skipping AttributeRule, permit and denial rule(s) invalid or missing");
-    return pair< string,pair<const MatchFunctor*,const MatchFunctor*> >(string(),pair<const MatchFunctor*,const MatchFunctor*>(nullptr,nullptr));
+    return tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
 }
 
 void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const
@@ -341,7 +347,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
 
     // For efficiency, we build an array of the policies that apply in advance.
     vector<const Policy*> applicablePolicies;
-    for (vector<Policy>::const_iterator p=m_policies.begin(); p!=m_policies.end(); ++p) {
+    for (vector<Policy>::const_iterator p = m_policies.begin(); p != m_policies.end(); ++p) {
         if (p->m_applies->evaluatePolicyRequirement(context))
             applicablePolicies.push_back(&(*p));
     }
@@ -351,8 +357,9 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
     vector< pair<const MatchFunctor*,const MatchFunctor*> > wildcardRules;
 
     // Store off the wildcards ahead of time.
-    for (vector<const Policy*>::const_iterator pol=applicablePolicies.begin(); pol!=applicablePolicies.end(); ++pol) {
-        pair<Policy::rules_t::const_iterator,Policy::rules_t::const_iterator> rules = (*pol)->m_rules.equal_range("*");
+    for (indirect_iterator<vector<const Policy*>::const_iterator> pol = make_indirect_iterator(applicablePolicies.begin());
+            pol != make_indirect_iterator(applicablePolicies.end()); ++pol) {
+        pair<Policy::rules_t::const_iterator,Policy::rules_t::const_iterator> rules = pol->m_rules.equal_range("*");
         for (; rules.first!=rules.second; ++rules.first)
             wildcardRules.push_back(rules.first->second);
     }
@@ -364,21 +371,23 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
     map< Attribute*, vector<bool> > deletedPositions;
 
     // Loop over each attribute to filter them.
-    for (vector<Attribute*>::size_type a=0; a<attributes.size(); ++a) {
+    for (vector<Attribute*>::size_type a = 0; a < attributes.size(); ++a) {
         Attribute* attr = attributes[a];
 
         // Clear the rule store.
         applicableRules.clear();
 
         // Look for rules to run in each policy.
-        for (vector<const Policy*>::const_iterator pol=applicablePolicies.begin(); pol!=applicablePolicies.end(); ++pol) {
-            pair<Policy::rules_t::const_iterator,Policy::rules_t::const_iterator> rules = (*pol)->m_rules.equal_range(attr->getId());
+        for (indirect_iterator<vector<const Policy*>::const_iterator> pol = make_indirect_iterator(applicablePolicies.begin());
+                pol != make_indirect_iterator(applicablePolicies.end()); ++pol) {
+            pair<Policy::rules_t::const_iterator,Policy::rules_t::const_iterator> rules = pol->m_rules.equal_range(attr->getId());
             for (; rules.first!=rules.second; ++rules.first)
                 applicableRules.push_back(rules.first->second);
         }
 
         // If no rules found, apply wildcards.
-        const vector< pair<const MatchFunctor*,const MatchFunctor*> >& rulesToRun = applicableRules.empty() ? wildcardRules : applicableRules;
+        const vector< pair<const MatchFunctor*,const MatchFunctor*> >& rulesToRun =
+            applicableRules.empty() ? wildcardRules : applicableRules;
 
         // If no rules apply, remove the attribute entirely.
         if (rulesToRun.empty()) {
@@ -404,7 +413,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
             // Assume we're kicking it out.
             kickit=true;
 
-            for (vector< pair<const MatchFunctor*,const MatchFunctor*> >::const_iterator r=rulesToRun.begin(); r!=rulesToRun.end(); ++r) {
+            for (vector< pair<const MatchFunctor*,const MatchFunctor*> >::const_iterator r = rulesToRun.begin(); r != rulesToRun.end(); ++r) {
                 // If there's a permit rule that passes, don't kick it.
                 if (r->first && r->first->evaluatePermitValue(context, *attr, index))
                     kickit = false;
@@ -426,7 +435,7 @@ void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Att
 
     // Final step: go over the deletedPositions matrix and apply the actual changes. In order to delete
     // any attributes that end up with no values, we have to do it by looping over the originals.
-    for (vector<Attribute*>::size_type a=0; a<attributes.size();) {
+    for (vector<Attribute*>::size_type a = 0; a < attributes.size();) {
         Attribute* attr = attributes[a];
 
         if (deletedAttributes[a]) {
@@ -474,7 +483,7 @@ pair<bool,DOMElement*> XMLFilter::background_load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    XMLFilterImpl* impl = new XMLFilterImpl(raw.second, m_log);
+    scoped_ptr<XMLFilterImpl> impl(new XMLFilterImpl(raw.second, m_log));
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
@@ -483,8 +492,7 @@ pair<bool,DOMElement*> XMLFilter::background_load()
     if (m_lock)
         m_lock->wrlock();
     SharedLock locker(m_lock, false);
-    delete m_impl;
-    m_impl = impl;
+    m_impl.swap(impl);
 
     return make_pair(false,(DOMElement*)nullptr);
 }

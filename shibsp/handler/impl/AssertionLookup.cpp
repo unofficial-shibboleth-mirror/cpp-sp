@@ -35,6 +35,10 @@
 #include "util/IPRange.h"
 #include "util/SPConstants.h"
 
+#include <boost/bind.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/algorithm/string.hpp>
+
 #ifndef SHIBSP_LITE
 # include <saml/exceptions.h>
 # include <saml/Assertion.h>
@@ -45,6 +49,7 @@ using namespace opensaml;
 using namespace shibspconstants;
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -84,6 +89,14 @@ namespace shibsp {
 
     private:
         pair<bool,long> processMessage(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
+        void parseACL(const string& acl) {
+            try {
+                m_acl.push_back(IPRange::parseCIDRBlock(acl.c_str()));
+            }
+            catch (std::exception& ex) {
+                m_log.error("invalid CIDR block (%s): %s", acl.c_str(), ex.what());
+            }
+        }
 
         vector<IPRange> m_acl;
     };
@@ -106,25 +119,9 @@ AssertionLookup::AssertionLookup(const DOMElement* e, const char* appId)
         pair<bool,const char*> acl = getString("exportACL");
         if (acl.first) {
             string aclbuf=acl.second;
-            int j = 0;
-            for (unsigned int i=0;  i < aclbuf.length();  i++) {
-                if (aclbuf.at(i)==' ') {
-                    try {
-                        m_acl.push_back(IPRange::parseCIDRBlock(aclbuf.substr(j, i-j).c_str()));
-                    }
-                    catch (exception& ex) {
-                        m_log.error("invalid CIDR block (%s): %s", aclbuf.substr(j, i-j).c_str(), ex.what());
-                    }
-                    j = i+1;
-                }
-            }
-            try {
-                m_acl.push_back(IPRange::parseCIDRBlock(aclbuf.substr(j, aclbuf.length()-j).c_str()));
-            }
-            catch (exception& ex) {
-                m_log.error("invalid CIDR block (%s): %s", aclbuf.substr(j, aclbuf.length()-j).c_str(), ex.what());
-            }
-
+            vector<string> aclarray;
+            split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
+            for_each(aclarray.begin(), aclarray.end(), boost::bind(&AssertionLookup::parseACL, this, _1));
             if (m_acl.empty()) {
                 m_log.warn("invalid CIDR range(s) in acl property, allowing 127.0.0.1 as a fall back");
                 m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
@@ -142,11 +139,8 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
 {
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::InProcess) && !m_acl.empty()) {
-        bool found = false;
-        for (vector<IPRange>::const_iterator acl = m_acl.begin(); !found && acl != m_acl.end(); ++acl) {
-            found = acl->contains(request.getRemoteAddr().c_str());
-        }
-        if (!found) {
+        static bool (IPRange::* contains)(const char*) const = &IPRange::contains;
+        if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
             m_log.error("request for assertion lookup blocked from invalid address (%s)", request.getRemoteAddr().c_str());
             istringstream msg("Assertion Lookup Blocked");
             return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
@@ -167,10 +161,10 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
             return unwrap(request, out);
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
         istringstream msg("Assertion Lookup Failed");
-        return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
     }
 }
 
@@ -186,18 +180,18 @@ void AssertionLookup::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    auto_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(in));
     //m_log.debug("found %d client certificates", req->getClientCertificates().size());
 
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    auto_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(ret));
 
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    processMessage(*app, *req.get(), *resp.get());
+    processMessage(*app, *req, *resp);
     out << ret;
 }
 
