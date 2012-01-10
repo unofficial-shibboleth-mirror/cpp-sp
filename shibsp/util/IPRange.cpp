@@ -119,9 +119,9 @@ bool IPRange::contains(const struct sockaddr* address) const
         if (log.isDebugEnabled()) {
             log.debug(
                 "comparing address (%s) to network (%s) with mask (%s)",
-                rawbits.to_string().c_str(),
-                m_network4.to_string().c_str(),
-                m_mask4.to_string().c_str()
+                rawbits.to_string< char, char_traits<char>, allocator<char> >().c_str(),
+                m_network4.to_string< char, char_traits<char>, allocator<char> >().c_str(),
+                m_mask4.to_string< char, char_traits<char>, allocator<char> >().c_str()
                 );
         }
         rawbits &= m_mask4;
@@ -141,9 +141,9 @@ bool IPRange::contains(const struct sockaddr* address) const
         if (log.isDebugEnabled()) {
             log.debug(
                 "comparing address (%s) to network (%s) with mask (%s)",
-                rawbits.to_string().c_str(),
-                m_network6.to_string().c_str(),
-                m_mask6.to_string().c_str()
+                rawbits.to_string< char, char_traits<char>, allocator<char> >().c_str(),
+                m_network6.to_string< char, char_traits<char>, allocator<char> >().c_str(),
+                m_mask6.to_string< char, char_traits<char>, allocator<char> >().c_str()
                 );
         }
         rawbits &= m_mask6;
