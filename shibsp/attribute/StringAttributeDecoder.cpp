@@ -59,7 +59,6 @@ shibsp::Attribute* StringAttributeDecoder::decode(
     const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
-    char* val;
     auto_ptr<SimpleAttribute> simple(new SimpleAttribute(ids));
     vector<string>& dest = simple->getValues();
     vector<XMLObject*>::const_iterator v,stop;
@@ -102,12 +101,11 @@ shibsp::Attribute* StringAttributeDecoder::decode(
 
         for (; v!=stop; ++v) {
             if (!(*v)->hasChildren()) {
-                val = toUTF8((*v)->getTextContent());
-                if (val && *val)
-                    dest.push_back(val);
+                auto_arrayptr<char> val(toUTF8((*v)->getTextContent()));
+                if (val.get() && *val.get())
+                    dest.push_back(val.get());
                 else
                     log.warn("skipping empty AttributeValue");
-                delete[] val;
             }
             else {
                 log.warn("skipping complex AttributeValue");
@@ -123,7 +121,11 @@ shibsp::Attribute* StringAttributeDecoder::decode(
             auto_ptr_char f(saml2name->getFormat());
             log.debug("decoding SimpleAttribute (%s) from SAML 2 NameID with Format (%s)", ids.front().c_str(), f.get() ? f.get() : "unspecified");
         }
-        val = toUTF8(saml2name->getName());
+        auto_arrayptr<char> val(toUTF8(saml2name->getName()));
+        if (val.get() && *val.get())
+            dest.push_back(val.get());
+        else
+            log.warn("ignoring empty NameID");
     }
     else {
         const NameIdentifier* saml1name = dynamic_cast<const NameIdentifier*>(xmlObject);
@@ -135,7 +137,11 @@ shibsp::Attribute* StringAttributeDecoder::decode(
                     ids.front().c_str(), f.get() ? f.get() : "unspecified"
                     );
             }
-            val = toUTF8(saml1name->getName());
+            auto_arrayptr<char> val(toUTF8(saml1name->getName()));
+            if (val.get() && *val.get())
+                dest.push_back(val.get());
+            else
+                log.warn("ignoring empty NameIdentifier");
         }
         else {
             log.warn("XMLObject type not recognized by StringAttributeDecoder, no values returned");
@@ -143,10 +149,5 @@ shibsp::Attribute* StringAttributeDecoder::decode(
         }
     }
 
-    if (val && *val)
-        dest.push_back(val);
-    else
-        log.warn("ignoring empty NameID");
-    delete[] val;
     return dest.empty() ? nullptr : _decode(simple.release());
 }

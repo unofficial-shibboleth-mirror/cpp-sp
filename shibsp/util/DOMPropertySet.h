@@ -29,6 +29,7 @@
 
 #include <shibsp/util/PropertySet.h>
 
+#include <boost/shared_ptr.hpp>
 #include <xmltooling/logging.h>
 
 namespace shibsp {
@@ -84,7 +85,7 @@ namespace shibsp {
         const PropertySet* m_parent;
         const xercesc::DOMElement* m_root;
         std::map<std::string,std::pair<char*,const XMLCh*> > m_map;
-        std::map<std::string,DOMPropertySet*> m_nested;
+        std::map<std::string,boost::shared_ptr<DOMPropertySet>> m_nested;
         std::vector<xmltooling::xstring> m_injected;
     };
 

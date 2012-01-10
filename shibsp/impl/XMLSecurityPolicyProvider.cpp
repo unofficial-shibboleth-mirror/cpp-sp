@@ -33,6 +33,8 @@
 #include "util/SPConstants.h"
 
 #include <map>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <saml/SAMLConfig.h>
 #include <saml/binding/SecurityPolicyRule.h>
 #include <xmltooling/io/HTTPResponse.h>
@@ -48,6 +50,7 @@ using opensaml::SAMLConfig;
 using opensaml::SecurityPolicyRule;
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -62,10 +65,6 @@ namespace shibsp {
     public:
         XMLSecurityPolicyProviderImpl(const DOMElement* e, Category& log);
         ~XMLSecurityPolicyProviderImpl() {
-            for (map< string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::iterator i = m_policyMap.begin(); i != m_policyMap.end(); ++i) {
-                delete i->second.first;
-                for_each(i->second.second.begin(), i->second.second.end(), xmltooling::cleanup<SecurityPolicyRule>());
-            }
             if (m_document)
                 m_document->release();
         }
@@ -77,8 +76,10 @@ namespace shibsp {
     private:
         DOMDocument* m_document;
         vector<xstring> m_whitelist,m_blacklist;
-        map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > > m_policyMap;
-        map< string,pair< PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator m_defaultPolicy;
+        vector< boost::shared_ptr<SecurityPolicyRule> > m_ruleJanitor;   // need this to maintain vector type in API
+        typedef map< string,pair< boost::shared_ptr<PropertySet>,vector<const SecurityPolicyRule*> > > policymap_t;
+        policymap_t m_policyMap;
+        policymap_t::const_iterator m_defaultPolicy;
 
         friend class SHIBSP_DLLLOCAL XMLSecurityPolicyProvider;
     };
@@ -87,28 +88,27 @@ namespace shibsp {
     {
     public:
         XMLSecurityPolicyProvider(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".SecurityPolicyProvider.XML")), m_impl(nullptr) {
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".SecurityPolicyProvider.XML")) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 
         ~XMLSecurityPolicyProvider() {
             shutdown();
-            delete m_impl;
         }
 
         const PropertySet* getPolicySettings(const char* id=nullptr) const {
             if (!id || !*id)
-                return m_impl->m_defaultPolicy->second.first;
-            map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
+                return m_impl->m_defaultPolicy->second.first.get();
+            XMLSecurityPolicyProviderImpl::policymap_t::const_iterator i = m_impl->m_policyMap.find(id);
             if (i != m_impl->m_policyMap.end())
-                return i->second.first;
+                return i->second.first.get();
             throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
         }
 
         const vector<const SecurityPolicyRule*>& getPolicyRules(const char* id=nullptr) const {
             if (!id || !*id)
                 return m_impl->m_defaultPolicy->second.second;
-            map<string,pair<PropertySet*,vector<const SecurityPolicyRule*> > >::const_iterator i = m_impl->m_policyMap.find(id);
+            XMLSecurityPolicyProviderImpl::policymap_t::const_iterator i = m_impl->m_policyMap.find(id);
             if (i != m_impl->m_policyMap.end())
                 return i->second.second;
             throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
@@ -125,7 +125,7 @@ namespace shibsp {
         pair<bool,DOMElement*> background_load();
 
     private:
-        XMLSecurityPolicyProviderImpl* m_impl;
+        scoped_ptr<XMLSecurityPolicyProviderImpl> m_impl;
     };
 
 #if defined (_MSC_VER)
@@ -218,11 +218,10 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
     e = XMLHelper::getFirstChildElement(e, Policy);
     while (e) {
         string id(XMLHelper::getAttrString(e, nullptr, _id));
-        pair< PropertySet*,vector<const SecurityPolicyRule*> >& rules = m_policyMap[id];
-        rules.first = nullptr;
-        auto_ptr<DOMPropertySet> settings(new DOMPropertySet());
+        policymap_t::referent_type& rules = m_policyMap[id];
+        boost::shared_ptr<DOMPropertySet> settings(new DOMPropertySet());
         settings->load(e, nullptr, &filter);
-        rules.first = settings.release();
+        rules.first = settings;
 
         // Set default policy if not set, or id is "default".
         if (m_defaultPolicy == m_policyMap.end() || id == "default")
@@ -234,9 +233,11 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
             string t(XMLHelper::getAttrString(rule, nullptr, _type));
             if (!t.empty()) {
                 try {
-                    rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule));
+                    boost::shared_ptr<SecurityPolicyRule> ptr(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule));
+                    m_ruleJanitor.push_back(ptr);
+                    rules.second.push_back(ptr.get());
                 }
-                catch (exception& ex) {
+                catch (std::exception& ex) {
                     log.crit("error instantiating policy rule (%s) in policy (%s): %s", t.c_str(), id.c_str(), ex.what());
                 }
             }
@@ -245,15 +246,17 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
 
         if (rules.second.size() == 0) {
             // Process Rule elements.
-            log.warn("detected legacy Policy configuration, please convert to new PolicyRule syntax");
+            log.warn("detected deprecated Policy configuration, consider converting to new PolicyRule syntax");
             rule = XMLHelper::getFirstChildElement(e, Rule);
             while (rule) {
                 string t(XMLHelper::getAttrString(rule, nullptr, _type));
                 if (!t.empty()) {
                     try {
-                        rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule));
+                        boost::shared_ptr<SecurityPolicyRule> ptr(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule));
+                        m_ruleJanitor.push_back(ptr);
+                        rules.second.push_back(ptr.get());
                     }
-                    catch (exception& ex) {
+                    catch (std::exception& ex) {
                         log.crit("error instantiating policy rule (%s) in policy (%s): %s", t.c_str(), id.c_str(), ex.what());
                     }
                 }
@@ -262,7 +265,9 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
 
             // Manually add a basic Conditions rule.
             log.info("installing a default Conditions rule in policy (%s) for compatibility with legacy configuration", id.c_str());
-            rules.second.push_back(samlConf.SecurityPolicyRuleManager.newPlugin(CONDITIONS_POLICY_RULE, nullptr));
+            boost::shared_ptr<SecurityPolicyRule> cptr(samlConf.SecurityPolicyRuleManager.newPlugin(CONDITIONS_POLICY_RULE, nullptr));
+            m_ruleJanitor.push_back(cptr);
+            rules.second.push_back(cptr.get());
         }
 
         e = XMLHelper::getNextSiblingElement(e, Policy);
@@ -280,7 +285,7 @@ pair<bool,DOMElement*> XMLSecurityPolicyProvider::load(bool backup)
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    XMLSecurityPolicyProviderImpl* impl = new XMLSecurityPolicyProviderImpl(raw.second, m_log);
+    scoped_ptr<XMLSecurityPolicyProviderImpl> impl(new XMLSecurityPolicyProviderImpl(raw.second, m_log));
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
@@ -289,9 +294,7 @@ pair<bool,DOMElement*> XMLSecurityPolicyProvider::load(bool backup)
     if (m_lock)
         m_lock->wrlock();
     SharedLock locker(m_lock, false);
-    delete m_impl;
-    m_impl = impl;
-
+    m_impl.swap(impl);
 
     return make_pair(false,(DOMElement*)nullptr);
 }
@@ -308,7 +311,7 @@ pair<bool,DOMElement*> XMLSecurityPolicyProvider::background_load()
             return load(true);
         throw;
     }
-    catch (exception&) {
+    catch (std::exception&) {
         if (!m_loaded && !m_backing.empty())
             return load(true);
         throw;

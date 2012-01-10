@@ -44,6 +44,9 @@
 #include "util/SPConstants.h"
 
 #include <algorithm>
+#include <boost/bind.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <xmltooling/io/HTTPRequest.h>
 #include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/util/DateTime.h>
@@ -69,6 +72,7 @@ using namespace opensaml::saml2md;
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -210,26 +214,22 @@ namespace shibsp {
         string m_inboundHeader,m_outboundHeader;
 
         // inproc means we buffer sessions in memory
-        RWLock* m_lock;
+        scoped_ptr<RWLock> m_lock;
         map<string,StoredSession*> m_hashtable;
 
         // management of buffered sessions
-       void dormant(const char* key);
-       static void* cleanup_fn(void*);
+        void dormant(const char* key);
+        static void* cleanup_fn(void*);
 
         bool shutdown;
-        CondWait* shutdown_wait;
-        Thread* cleanup_thread;
+        scoped_ptr<CondWait> shutdown_wait;
+        scoped_ptr<Thread> cleanup_thread;
     };
 
     class StoredSession : public virtual Session
     {
     public:
-        StoredSession(SSCache* cache, DDF& obj) : m_obj(obj),
-#ifndef SHIBSP_LITE
-                m_nameid(nullptr),
-#endif
-                m_cache(cache), m_expires(0), m_lastAccess(time(nullptr)), m_lock(nullptr) {
+        StoredSession(SSCache* cache, DDF& obj) : m_obj(obj), m_cache(cache), m_expires(0), m_lastAccess(time(nullptr)) {
             auto_ptr_XMLCh exp(m_obj["expires"].string());
             if (exp.get()) {
                 DateTime iso(exp.get());
@@ -244,33 +244,27 @@ namespace shibsp {
                 istringstream instr(nameid);
                 DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr);
                 XercesJanitor<DOMDocument> janitor(doc);
-                auto_ptr<saml2::NameID> n(saml2::NameIDBuilder::buildNameID());
-                n->unmarshall(doc->getDocumentElement(), true);
+                m_nameid.reset(saml2::NameIDBuilder::buildNameID());
+                m_nameid->unmarshall(doc->getDocumentElement(), true);
                 janitor.release();
-                m_nameid = n.release();
             }
 #endif
             if (cache->inproc)
-                m_lock = Mutex::create();
+                m_lock.reset(Mutex::create());
         }
 
         ~StoredSession() {
-            delete m_lock;
             m_obj.destroy();
             for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-#ifndef SHIBSP_LITE
-            delete m_nameid;
-            for_each(m_tokens.begin(), m_tokens.end(), cleanup_pair<string,Assertion>());
-#endif
         }
 
         Lockable* lock() {
-            if (m_lock)
+            if (m_lock.get())
                 m_lock->lock();
             return this;
         }
         void unlock() {
-            if (m_lock)
+            if (m_lock.get())
                 m_lock->unlock();
             else
                 delete this;
@@ -296,7 +290,7 @@ namespace shibsp {
         }
 #ifndef SHIBSP_LITE
         const saml2::NameID* getNameID() const {
-            return m_nameid;
+            return m_nameid.get();
         }
 #endif
         const char* getSessionIndex() const {
@@ -353,8 +347,8 @@ namespace shibsp {
 
         DDF m_obj;
 #ifndef SHIBSP_LITE
-        saml2::NameID* m_nameid;
-        mutable map<string,Assertion*> m_tokens;
+        scoped_ptr<saml2::NameID> m_nameid;
+        mutable map<string,boost::shared_ptr<Assertion>> m_tokens;
 #endif
         mutable vector<Attribute*> m_attributes;
         mutable multimap<string,const Attribute*> m_attributeIndex;
@@ -362,7 +356,7 @@ namespace shibsp {
 
         SSCache* m_cache;
         time_t m_expires,m_lastAccess;
-        Mutex* m_lock;
+        scoped_ptr<Mutex> m_lock;
     };
 
     SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e)
@@ -501,7 +495,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         try {
             m_cache->m_storage->updateContext(getID(), now + cacheTimeout);
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
             m_cache->m_log.error("failed to update session expiration: %s", ex.what());
         }
 
@@ -559,7 +553,7 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
         try {
             ver = m_cache->m_storage->updateText(getID(), "session", record.c_str(), 0, m_obj["version"].integer()-1);
         }
-        catch (exception&) {
+        catch (std::exception&) {
             // Roll back modification to record.
             m_obj["version"].integer(m_obj["version"].integer()-1);
             vector<Attribute*>::size_type count = attributes.size();
@@ -614,9 +608,9 @@ const Assertion* StoredSession::getAssertion(const char* id) const
     if (!m_cache->m_storage)
         throw ConfigurationException("Assertion retrieval requires a StorageService.");
 
-    map<string,Assertion*>::const_iterator i = m_tokens.find(id);
-    if (i!=m_tokens.end())
-        return i->second;
+    map< string,boost::shared_ptr<Assertion> >::const_iterator i = m_tokens.find(id);
+    if (i != m_tokens.end())
+        return i->second.get();
 
     string tokenstr;
     if (!m_cache->m_storage->readText(getID(), id, &tokenstr, nullptr))
@@ -626,17 +620,15 @@ const Assertion* StoredSession::getAssertion(const char* id) const
     istringstream instr(tokenstr);
     DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr);
     XercesJanitor<DOMDocument> janitor(doc);
-    auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
+    boost::shared_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
     janitor.release();
-
-    Assertion* token = dynamic_cast<Assertion*>(xmlObject.get());
+    
+    boost::shared_ptr<Assertion> token = dynamic_pointer_cast<Assertion,XMLObject>(xmlObject);
     if (!token)
         throw FatalProfileException("Request for cached assertion returned an unknown object type.");
 
-    // Transfer ownership to us.
-    xmlObject.release();
-    m_tokens[id]=token;
-    return token;
+    m_tokens[id] = token;
+    return token.get();
 }
 
 void StoredSession::addAssertion(Assertion* assertion)
@@ -682,7 +674,7 @@ void StoredSession::addAssertion(Assertion* assertion)
         try {
             ver = m_cache->m_storage->updateText(getID(), "session", record.c_str(), 0, m_obj["version"].integer()-1);
         }
-        catch (exception&) {
+        catch (std::exception&) {
             token.destroy();
             m_obj["version"].integer(m_obj["version"].integer()-1);
             m_cache->m_storage->deleteText(getID(), id.get());
@@ -777,8 +769,7 @@ SSCache::SSCache(const DOMElement* e)
 #ifndef SHIBSP_LITE
       m_storage(nullptr), m_storage_lite(nullptr), m_cacheAssertions(true),
 #endif
-      m_root(e), m_inprocTimeout(900), m_cacheTimeout(0), m_cacheAllowance(0),
-      m_lock(nullptr), shutdown(false), shutdown_wait(nullptr), cleanup_thread(nullptr)
+      m_root(e), m_inprocTimeout(900), m_cacheTimeout(0), m_cacheAllowance(0), shutdown(false)
 {
     SPConfig& conf = SPConfig::getConfig();
     inproc = conf.isEnabled(SPConfig::InProcess);
@@ -840,9 +831,9 @@ SSCache::SSCache(const DOMElement* e)
     if (inproc) {
         if (!conf.isEnabled(SPConfig::OutOfProcess) && !listener)
             throw ConfigurationException("SessionCache requires a ListenerService, but none available.");
-        m_lock = RWLock::create();
-        shutdown_wait = CondWait::create();
-        cleanup_thread = Thread::create(&cleanup_fn, this);
+        m_lock.reset(RWLock::create());
+        shutdown_wait.reset(CondWait::create());
+        cleanup_thread.reset(Thread::create(&cleanup_fn, this));
     }
 #ifndef SHIBSP_LITE
     else {
@@ -863,14 +854,12 @@ SSCache::~SSCache()
     if (inproc) {
         // Shut down the cleanup thread and let it know...
         shutdown = true;
-        shutdown_wait->signal();
-        cleanup_thread->join(nullptr);
+        if (shutdown_wait.get())
+            shutdown_wait->signal();
+        if (cleanup_thread.get())
+            cleanup_thread->join(nullptr);
 
         for_each(m_hashtable.begin(),m_hashtable.end(),cleanup_pair<string,StoredSession>());
-        delete m_lock;
-
-        delete cleanup_thread;
-        delete shutdown_wait;
     }
 #ifndef SHIBSP_LITE
     else {
@@ -1085,7 +1074,7 @@ void SSCache::insert(
         if (nameid)
             insert(key.get(), expires, name.get(), index.get());
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
     }
 
@@ -1101,7 +1090,7 @@ void SSCache::insert(
                     throw IOException("Duplicate assertion ID ($1)", params(1, tokenid.get()));
             }
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
             m_log.error("error storing assertion along with session: %s", ex.what());
         }
     }
@@ -1154,7 +1143,7 @@ bool SSCache::matches(
             }
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("error while matching session: %s", ex.what());
     }
     return false;
@@ -1264,7 +1253,7 @@ vector<string>::size_type SSCache::logout(
                 try {
                     session = find(app, key.string());
                 }
-                catch (exception& ex) {
+                catch (std::exception& ex) {
                     m_log.error("error locating session (%s): %s", key.string(), ex.what());
                 }
 
@@ -1315,7 +1304,7 @@ vector<string>::size_type SSCache::logout(
                 m_log.warn("logout mapping record changed behind us, leaving it alone");
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("error updating logout mapping record: %s", ex.what());
     }
 
@@ -1373,7 +1362,7 @@ LogoutEvent* SSCache::newLogoutEvent(const Application& app) const
             m_log.warn("unable to audit event, log event object was of an incorrect type");
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.warn("exception auditing event: %s", ex.what());
     }
     return nullptr;
@@ -1470,7 +1459,7 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
 
             if (timeout && *timeout > 0 && now - lastAccess >= *timeout) {
                 m_log.info("session timed out (ID: %s)", key);
-                auto_ptr<LogoutEvent> logout_event(newLogoutEvent(app));
+                scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(app));
                 if (logout_event.get()) {
                     logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_INVALID;
                     logout_event->m_sessions.push_back(key);
@@ -1492,7 +1481,7 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
                 try {
                     m_storage->updateContext(key, now + cacheTimeout);
                 }
-                catch (exception& ex) {
+                catch (std::exception& ex) {
                     m_log.error("failed to update session expiration: %s", ex.what());
                 }
             }
@@ -1535,7 +1524,7 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
     }
     catch (...) {
 #ifndef SHIBSP_LITE
-        auto_ptr<LogoutEvent> logout_event(newLogoutEvent(app));
+        scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(app));
         if (logout_event.get()) {
             logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_INVALID;
             logout_event->m_session = session;
@@ -1570,7 +1559,7 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
             response->setCookie(shib_cookie.first.c_str(), exp.c_str());
         }
     }
-    catch (exception&) {
+    catch (std::exception&) {
         HTTPResponse* response = dynamic_cast<HTTPResponse*>(&request);
         if (response) {
             if (!m_outboundHeader.empty())
@@ -1686,7 +1675,7 @@ void* SSCache::cleanup_fn(void* p)
     Thread::mask_all_signals();
 #endif
 
-    auto_ptr<Mutex> mutex(Mutex::create());
+    scoped_ptr<Mutex> mutex(Mutex::create());
 
     // Load our configuration details...
     static const XMLCh cleanupInterval[] = UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
@@ -1721,7 +1710,7 @@ void* SSCache::cleanup_fn(void* p)
         pcache->m_log.debug("cleanup thread running");
 
         pcache->m_lock->rdlock();
-        for (map<string,StoredSession*>::const_iterator i=pcache->m_hashtable.begin(); i!=pcache->m_hashtable.end(); ++i) {
+        for (map<string,StoredSession*>::const_iterator i = pcache->m_hashtable.begin(); i != pcache->m_hashtable.end(); ++i) {
             // If the last access was BEFORE the stale timeout...
             i->second->lock();
             time_t last=i->second->getLastAccess();
@@ -1735,8 +1724,7 @@ void* SSCache::cleanup_fn(void* p)
             pcache->m_log.info("purging %d old sessions", stale_keys.size());
 
             // Pass 2: walk through the list of stale entries and remove them from the cache
-            for (vector<string>::const_iterator j = stale_keys.begin(); j != stale_keys.end(); ++j)
-                pcache->dormant(j->c_str());
+            for_each(stale_keys.begin(), stale_keys.end(), boost::bind(&SSCache::dormant, pcache, boost::bind(&string::c_str, _1)));
         }
 
         pcache->m_log.debug("cleanup thread completed");
@@ -1789,7 +1777,7 @@ void SSCache::receive(DDF& in, ostream& out)
 
             if (timeout > 0 && now - lastAccess >= timeout) {
                 m_log.info("session timed out (ID: %s)", key);
-                auto_ptr<LogoutEvent> logout_event(newLogoutEvent(*app));
+                scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(*app));
                 if (logout_event.get()) {
                     logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_INVALID;
                     logout_event->m_sessions.push_back(key);
@@ -1803,7 +1791,7 @@ void SSCache::receive(DDF& in, ostream& out)
             try {
                 m_storage->updateContext(key, now + cacheTimeout);
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_log.error("failed to update session expiration: %s", ex.what());
             }
         }
@@ -1849,7 +1837,7 @@ void SSCache::receive(DDF& in, ostream& out)
         try {
             m_storage->updateContext(key, now + cacheTimeout);
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
             m_log.error("failed to update session expiration: %s", ex.what());
         }
 

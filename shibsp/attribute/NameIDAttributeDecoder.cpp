@@ -193,31 +193,26 @@ void NameIDAttributeDecoder::extract(
         dest.push_back(NameIDAttribute::Value());
         NameIDAttribute::Value& val = dest.back();
         val.m_Name = name.get();
-        char* str = toUTF8(n->getFormat());
-        if (str) {
-            val.m_Format = str;
-            delete[] str;
-        }
 
-        str = toUTF8(n->getNameQualifier());
-        if (str && *str)
-            val.m_NameQualifier = str;
+        auto_arrayptr<char> format(toUTF8(n->getFormat()));
+        if (format.get())
+            val.m_Format = format.get();
+
+        auto_arrayptr<char> nameQualifier(toUTF8(n->getNameQualifier()));
+        if (nameQualifier.get() && *nameQualifier.get())
+            val.m_NameQualifier = nameQualifier.get();
         else if (m_defaultQualifiers && assertingParty)
             val.m_NameQualifier = assertingParty;
-        delete[] str;
 
-        str = toUTF8(n->getSPNameQualifier());
-        if (str && *str)
-            val.m_SPNameQualifier = str;
+        auto_arrayptr<char> spNameQualifier(toUTF8(n->getSPNameQualifier()));
+        if (spNameQualifier.get() && *spNameQualifier.get())
+            val.m_SPNameQualifier = spNameQualifier.get();
         else if (m_defaultQualifiers && relyingParty)
             val.m_SPNameQualifier = relyingParty;
-        delete[] str;
 
-        str = toUTF8(n->getSPProvidedID());
-        if (str) {
-            val.m_SPProvidedID = str;
-            delete[] str;
-        }
+        auto_arrayptr<char> spProvidedID(toUTF8(n->getSPProvidedID()));
+        if (spProvidedID.get())
+            val.m_SPProvidedID = spProvidedID.get();
     }
 }
 
@@ -230,18 +225,16 @@ void NameIDAttributeDecoder::extract(
         dest.push_back(NameIDAttribute::Value());
         NameIDAttribute::Value& val = dest.back();
         val.m_Name = name.get();
-        char* str = toUTF8(n->getFormat());
-        if (str) {
-            val.m_Format = str;
-            delete[] str;
-        }
 
-        str = toUTF8(n->getNameQualifier());
-        if (str && *str)
-            val.m_NameQualifier = str;
+        auto_arrayptr<char> format(toUTF8(n->getFormat()));
+        if (format.get())
+            val.m_Format = format.get();
+
+        auto_arrayptr<char> nameQualifier(toUTF8(n->getNameQualifier()));
+        if (nameQualifier.get() && *nameQualifier.get())
+            val.m_NameQualifier = nameQualifier.get();
         else if (m_defaultQualifiers && assertingParty)
             val.m_NameQualifier = assertingParty;
-        delete[] str;
 
         if (m_defaultQualifiers && relyingParty)
             val.m_SPNameQualifier = relyingParty;

@@ -117,7 +117,7 @@ namespace shibsp {
         DDF getmember(const char* path) const;
     
         // debugging
-        void dump(FILE* f=nullptr, int indent=0) const;
+        void dump(std::FILE* f=nullptr, int indent=0) const;
     
         // serialization functions need private access
         friend SHIBSP_API std::ostream& operator<<(std::ostream& os, const DDF& obj);

@@ -32,10 +32,12 @@
 #include "remoting/ListenerService.h"
 
 #include <algorithm>
+#include <boost/bind.hpp>
 #include <xmltooling/util/Threads.h>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 Application::Application(const ServiceProvider* sp) : m_sp(sp), m_lock(RWLock::create())
@@ -102,8 +104,15 @@ string Application::getSecureHeader(const SPRequest& request, const char* name) 
 void Application::clearAttributeHeaders(SPRequest& request) const
 {
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
-            request.clearHeader(i->first.c_str(), i->second.c_str());
+        for_each(
+            m_unsetHeaders.begin(), m_unsetHeaders.end(),
+            boost::bind(
+                &SPRequest::clearHeader,
+                boost::ref(request),
+                boost::bind(&string::c_str, boost::bind(&pair<string,string>::first, _1)),
+                boost::bind(&string::c_str, boost::bind(&pair<string,string>::first, _1))
+                )
+            );
         return;
     }
 
@@ -134,8 +143,15 @@ void Application::clearAttributeHeaders(SPRequest& request) const
 
     // Now holding read lock.
     SharedLock unsetLock(m_lock, false);
-    for (vector< pair<string,string> >::const_iterator i = m_unsetHeaders.begin(); i!=m_unsetHeaders.end(); ++i)
-        request.clearHeader(i->first.c_str(), i->second.c_str());
+    for_each(
+        m_unsetHeaders.begin(), m_unsetHeaders.end(),
+        boost::bind(
+            &SPRequest::clearHeader,
+            boost::ref(request),
+            boost::bind(&string::c_str, boost::bind(&pair<string,string>::first, _1)),
+            boost::bind(&string::c_str, boost::bind(&pair<string,string>::first, _1))
+            )
+        );
 }
 
 const Handler* Application::getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding) const

@@ -37,6 +37,13 @@
 #include "security/SecurityPolicy.h"
 #include "util/SPConstants.h"
 
+#include <boost/bind.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/iterator/indirect_iterator.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <saml/SAMLConfig.h>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/core/Assertions.h>
@@ -55,6 +62,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 using saml1::NameIdentifier;
 using saml2::NameID;
@@ -77,12 +85,6 @@ namespace shibsp {
                 for (decoded_t::iterator attrs = i->second.begin(); attrs!=i->second.end(); ++attrs)
                     for_each(attrs->second.begin(), attrs->second.end(), mem_fun_ref<DDF&,DDF>(&DDF::destroy));
             }
-            delete m_attrLock;
-            delete m_trust;
-            delete m_metadata;
-            delete m_filter;
-            for (attrmap_t::iterator j = m_attrMap.begin(); j!=m_attrMap.end(); ++j)
-                delete j->second.first;
             if (m_document)
                 m_document->release();
         }
@@ -94,11 +96,11 @@ namespace shibsp {
         void onEvent(const ObservableMetadataProvider& metadata) const {
             // Destroy attributes we cached from this provider.
             m_attrLock->wrlock();
+            SharedLock wrapper(m_attrLock, false);
             decoded_t& d = m_decodedMap[&metadata];
             for (decoded_t::iterator a = d.begin(); a!=d.end(); ++a)
                 for_each(a->second.begin(), a->second.end(), mem_fun_ref<DDF&,DDF>(&DDF::destroy));
             d.clear();
-            m_attrLock->unlock();
         }
 
         void extractAttributes(
@@ -106,42 +108,42 @@ namespace shibsp {
             const char* assertingParty,
             const char* relyingParty,
             const NameIdentifier& nameid,
-            vector<Attribute*>& attributes
+            ptr_vector<Attribute>& attributes
             ) const;
         void extractAttributes(
             const Application& application,
             const char* assertingParty,
             const char* relyingParty,
             const NameID& nameid,
-            vector<Attribute*>& attributes
+            ptr_vector<Attribute>& attributes
             ) const;
         void extractAttributes(
             const Application& application,
             const char* assertingParty,
             const char* relyingParty,
             const saml1::Attribute& attr,
-            vector<Attribute*>& attributes
+            ptr_vector<Attribute>& attributes
             ) const;
         void extractAttributes(
             const Application& application,
             const char* assertingParty,
             const char* relyingParty,
             const saml2::Attribute& attr,
-            vector<Attribute*>& attributes
+            ptr_vector<Attribute>& attributes
             ) const;
         void extractAttributes(
             const Application& application,
             const char* assertingParty,
             const char* relyingParty,
             const saml1::AttributeStatement& statement,
-            vector<Attribute*>& attributes
+            ptr_vector<Attribute>& attributes
             ) const;
         void extractAttributes(
             const Application& application,
             const char* assertingParty,
             const char* relyingParty,
             const saml2::AttributeStatement& statement,
-            vector<Attribute*>& attributes
+            ptr_vector<Attribute>& attributes
             ) const;
         void extractAttributes(
             const Application& application,
@@ -149,7 +151,7 @@ namespace shibsp {
             const XMLCh* entityID,
             const char* relyingParty,
             const Extensions& ext,
-            vector<Attribute*>& attributes
+            ptr_vector<Attribute>& attributes
             ) const;
 
         void getAttributeIds(vector<string>& attributes) const {
@@ -161,20 +163,20 @@ namespace shibsp {
     private:
         Category& m_log;
         DOMDocument* m_document;
-        typedef map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > > attrmap_t;
+        typedef map< pair<xstring,xstring>,pair< boost::shared_ptr<AttributeDecoder>,vector<string> > > attrmap_t;
         attrmap_t m_attrMap;
         vector<string> m_attributeIds;
-        vector< pair< pair<xstring,xstring>,bool > > m_requestedAttrs;
+        vector< tuple<xstring,xstring,bool> > m_requestedAttrs;
 
         // settings for embedded assertions in metadata
         string m_policyId;
-        MetadataProvider* m_metadata;
-        TrustEngine* m_trust;
-        AttributeFilter* m_filter;
+        scoped_ptr<AttributeFilter> m_filter;
+        scoped_ptr<MetadataProvider> m_metadata;
+        scoped_ptr<TrustEngine> m_trust;
         bool m_entityAssertions;
 
         // manages caching of decoded Attributes
-        mutable RWLock* m_attrLock;
+        scoped_ptr<RWLock> m_attrLock;
         typedef map< const EntityAttributes*,vector<DDF> > decoded_t;
         mutable map<const ObservableMetadataProvider*,decoded_t> m_decodedMap;
     };
@@ -182,12 +184,11 @@ namespace shibsp {
     class XMLExtractor : public AttributeExtractor, public ReloadableXMLFile
     {
     public:
-        XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.XML")), m_impl(nullptr) {
+        XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.XML")) {
             background_load();
         }
         ~XMLExtractor() {
             shutdown();
-            delete m_impl;
         }
 
         void extractAttributes(
@@ -208,7 +209,11 @@ namespace shibsp {
         pair<bool,DOMElement*> background_load();
 
     private:
-        XMLExtractorImpl* m_impl;
+        scoped_ptr<XMLExtractorImpl> m_impl;
+
+        void extractAttributes(
+            const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, ptr_vector<Attribute>& attributes
+            ) const;
     };
 
 #if defined (_MSC_VER)
@@ -238,11 +243,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     : m_log(log),
         m_document(nullptr),
         m_policyId(XMLHelper::getAttrString(e, nullptr, metadataPolicyId)),
-        m_metadata(nullptr),
-        m_trust(nullptr),
-        m_filter(nullptr),
-        m_entityAssertions(true),
-        m_attrLock(nullptr)
+        m_entityAssertions(true)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLExtractorImpl");
@@ -258,11 +259,11 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             if (t.empty())
                 throw ConfigurationException("MetadataProvider element missing type attribute.");
             m_log.info("building MetadataProvider of type %s...", t.c_str());
-            auto_ptr<MetadataProvider> mp(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(t.c_str(), child));
-            mp->init();
-            m_metadata = mp.release();
+            m_metadata.reset(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(t.c_str(), child));
+            m_metadata->init();
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
+            m_metadata.reset();
             m_entityAssertions = false;
             m_log.crit("error building/initializing dedicated MetadataProvider: %s", ex.what());
             m_log.crit("disabling support for Assertions in EntityAttributes extension");
@@ -277,9 +278,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                 if (t.empty())
                     throw ConfigurationException("TrustEngine element missing type attribute.");
                 m_log.info("building TrustEngine of type %s...", t.c_str());
-                m_trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child);
+                m_trust.reset(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child));
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_entityAssertions = false;
                 m_log.crit("error building/initializing dedicated TrustEngine: %s", ex.what());
                 m_log.crit("disabling support for Assertions in EntityAttributes extension");
@@ -295,9 +296,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                 if (t.empty())
                     throw ConfigurationException("AttributeFilter element missing type attribute.");
                 m_log.info("building AttributeFilter of type %s...", t.c_str());
-                m_filter = SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), child);
+                m_filter.reset(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), child));
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_entityAssertions = false;
                 m_log.crit("error building/initializing dedicated AttributeFilter: %s", ex.what());
                 m_log.crit("disabling support for Assertions in EntityAttributes extension");
@@ -327,18 +328,18 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             continue;
         }
 
-        AttributeDecoder* decoder=nullptr;
+        boost::shared_ptr<AttributeDecoder> decoder;
         try {
             DOMElement* dchild = XMLHelper::getFirstChildElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeDecoder);
             if (dchild) {
                 auto_ptr<xmltooling::QName> q(XMLHelper::getXSIType(dchild));
                 if (q.get())
-                    decoder = SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q.get(), dchild);
+                    decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q.get(), dchild));
             }
             if (!decoder)
-                decoder = SPConfig::getConfig().AttributeDecoderManager.newPlugin(StringAttributeDecoderType, nullptr);
+                decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(StringAttributeDecoderType, nullptr));
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
             m_log.error("skipping Attribute (%s), error building AttributeDecoder: %s", id.get(), ex.what());
         }
 
@@ -354,10 +355,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             format = &chNull;  // ignore default Format/Namespace values
 
         // Fetch/create the map entry and see if it's a duplicate rule.
-        pair< AttributeDecoder*,vector<string> >& decl = m_attrMap[pair<xstring,xstring>(name,format)];
+        pair< boost::shared_ptr<AttributeDecoder>,vector<string> >& decl = m_attrMap[pair<xstring,xstring>(name,format)];
         if (decl.first) {
             m_log.warn("skipping duplicate Attribute mapping (same name and nameFormat)");
-            delete decoder;
             child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
             continue;
         }
@@ -376,36 +376,26 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         bool requested = XMLHelper::getAttrBool(child, false, isRequested);
         bool required = XMLHelper::getAttrBool(child, false, RequestedAttribute::ISREQUIRED_ATTRIB_NAME);
         if (required || requested)
-            m_requestedAttrs.push_back(make_pair(pair<xstring,xstring>(name,format), required));
+            m_requestedAttrs.push_back(tuple<xstring,xstring,bool>(name,format,required));
 
         name = child->getAttributeNS(nullptr, _aliases);
         if (name && *name) {
             auto_ptr_char aliases(name);
-            char* pos;
-            char* start = const_cast<char*>(aliases.get());
-            while (start && *start) {
-                while (*start && isspace(*start))
-                    start++;
-                if (!*start)
-                    break;
-                pos = strchr(start,' ');
-                if (pos)
-                    *pos=0;
-                if (strcmp(start, "REMOTE_USER")) {
-                    decl.second.push_back(start);
-                    m_attributeIds.push_back(start);
-                }
-                else {
-                    m_log.warn("skipping alias, REMOTE_USER is a reserved name");
-                }
-                start = pos ? pos+1 : nullptr;
+            string dup(aliases.get());
+            set<string> new_aliases;
+            split(new_aliases, dup, is_space(), algorithm::token_compress_on);
+            set<string>::iterator ru = new_aliases.find("REMOTE_USER");
+            if (ru != new_aliases.end()) {
+                m_log.warn("skipping alias, REMOTE_USER is a reserved name");
+                new_aliases.erase(ru);
             }
+            m_attributeIds.insert(m_attributeIds.end(), new_aliases.begin(), new_aliases.end());
         }
 
         child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
     }
 
-    m_attrLock = RWLock::create();
+    m_attrLock.reset(RWLock::create());
 }
 
 void XMLExtractorImpl::generateMetadata(SPSSODescriptor& role) const
@@ -428,15 +418,15 @@ void XMLExtractorImpl::generateMetadata(SPSSODescriptor& role) const
     static const XMLCh english[] = UNICODE_LITERAL_2(e,n);
     sn->setLang(english);
 
-    for (vector< pair< pair<xstring,xstring>,bool > >::const_iterator i = m_requestedAttrs.begin(); i != m_requestedAttrs.end(); ++i) {
+    for (vector< tuple<xstring,xstring,bool> >::const_iterator i = m_requestedAttrs.begin(); i != m_requestedAttrs.end(); ++i) {
         RequestedAttribute* req = RequestedAttributeBuilder::buildRequestedAttribute();
         svc->getRequestedAttributes().push_back(req);
-        req->setName(i->first.first.c_str());
-        if (i->first.second.empty())
+        req->setName(i->get<0>().c_str());
+        if (i->get<1>().empty())
             req->setNameFormat(saml2::Attribute::URI_REFERENCE);
         else
-            req->setNameFormat(i->first.second.c_str());
-        if (i->second)
+            req->setNameFormat(i->get<1>().c_str());
+        if (i->get<2>())
             req->isRequired(true);
     }
 }
@@ -446,18 +436,18 @@ void XMLExtractorImpl::extractAttributes(
     const char* assertingParty,
     const char* relyingParty,
     const NameIdentifier& nameid,
-    vector<Attribute*>& attributes
+    ptr_vector<Attribute>& attributes
     ) const
 {
-    map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
-
     const XMLCh* format = nameid.getFormat();
     if (!format || !*format)
         format = NameIdentifier::UNSPECIFIED;
-    if ((rule=m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
-        Attribute* a = rule->second.first->decode(rule->second.second, &nameid, assertingParty, relyingParty);
-        if (a)
+    attrmap_t::const_iterator rule;
+    if ((rule = m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
+        auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &nameid, assertingParty, relyingParty));
+        if (a.get()) {
             attributes.push_back(a);
+        }
     }
     else if (m_log.isDebugEnabled()) {
         auto_ptr_char temp(format);
@@ -470,18 +460,18 @@ void XMLExtractorImpl::extractAttributes(
     const char* assertingParty,
     const char* relyingParty,
     const NameID& nameid,
-    vector<Attribute*>& attributes
+    ptr_vector<Attribute>& attributes
     ) const
 {
-    map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
-
     const XMLCh* format = nameid.getFormat();
     if (!format || !*format)
         format = NameID::UNSPECIFIED;
-    if ((rule=m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
-        Attribute* a = rule->second.first->decode(rule->second.second, &nameid, assertingParty, relyingParty);
-        if (a)
+    attrmap_t::const_iterator rule;
+    if ((rule = m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
+        auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &nameid, assertingParty, relyingParty));
+        if (a.get()) {
             attributes.push_back(a);
+        }
     }
     else if (m_log.isDebugEnabled()) {
         auto_ptr_char temp(format);
@@ -494,21 +484,21 @@ void XMLExtractorImpl::extractAttributes(
     const char* assertingParty,
     const char* relyingParty,
     const saml1::Attribute& attr,
-    vector<Attribute*>& attributes
+    ptr_vector<Attribute>& attributes
     ) const
 {
-    map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
-
     const XMLCh* name = attr.getAttributeName();
     const XMLCh* format = attr.getAttributeNamespace();
     if (!name || !*name)
         return;
     if (!format || XMLString::equals(format, shibspconstants::SHIB1_ATTRIBUTE_NAMESPACE_URI))
         format = &chNull;
-    if ((rule=m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
-        Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty);
-        if (a)
+    attrmap_t::const_iterator rule;
+    if ((rule = m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
+        auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty));
+        if (a.get()) {
             attributes.push_back(a);
+        }
     }
     else if (m_log.isInfoEnabled()) {
         auto_ptr_char temp1(name);
@@ -522,11 +512,9 @@ void XMLExtractorImpl::extractAttributes(
     const char* assertingParty,
     const char* relyingParty,
     const saml2::Attribute& attr,
-    vector<Attribute*>& attributes
+    ptr_vector<Attribute>& attributes
     ) const
 {
-    map< pair<xstring,xstring>,pair< AttributeDecoder*,vector<string> > >::const_iterator rule;
-
     const XMLCh* name = attr.getName();
     const XMLCh* format = attr.getNameFormat();
     if (!name || !*name)
@@ -535,20 +523,21 @@ void XMLExtractorImpl::extractAttributes(
         format = saml2::Attribute::UNSPECIFIED;
     else if (XMLString::equals(format, saml2::Attribute::URI_REFERENCE))
         format = &chNull;
-
-    if ((rule=m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
-        Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty);
-        if (a) {
+    attrmap_t::const_iterator rule;
+    if ((rule = m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
+        auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty));
+        if (a.get()) {
             attributes.push_back(a);
             return;
         }
     }
     else if (XMLString::equals(format, saml2::Attribute::UNSPECIFIED)) {
         // As a fallback, if the format is "unspecified", null out the value and re-map.
-        if ((rule=m_attrMap.find(pair<xstring,xstring>(name,xstring()))) != m_attrMap.end()) {
-            Attribute* a = rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty);
-            if (a) {
-                attributes.push_back(a);
+        if ((rule = m_attrMap.find(pair<xstring,xstring>(name,xstring()))) != m_attrMap.end()) {
+            auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty));
+            if (a.get()) {
+                attributes.push_back(a.get());
+                a.release();
                 return;
             }
         }
@@ -566,12 +555,16 @@ void XMLExtractorImpl::extractAttributes(
     const char* assertingParty,
     const char* relyingParty,
     const saml1::AttributeStatement& statement,
-    vector<Attribute*>& attributes
+    ptr_vector<Attribute>& attributes
     ) const
 {
-    const vector<saml1::Attribute*>& attrs = statement.getAttributes();
-    for (vector<saml1::Attribute*>::const_iterator a = attrs.begin(); a!=attrs.end(); ++a)
-        extractAttributes(application, assertingParty, relyingParty, *(*a), attributes);
+    static void (XMLExtractorImpl::* extract)(
+        const Application&, const char*, const char*, const saml1::Attribute&, ptr_vector<Attribute>&
+        ) const = &XMLExtractorImpl::extractAttributes;
+    for_each(
+        make_indirect_iterator(statement.getAttributes().begin()), make_indirect_iterator(statement.getAttributes().end()),
+        boost::bind(extract, this, boost::ref(application), assertingParty, relyingParty, _1, boost::ref(attributes))
+        );
 }
 
 void XMLExtractorImpl::extractAttributes(
@@ -579,12 +572,16 @@ void XMLExtractorImpl::extractAttributes(
     const char* assertingParty,
     const char* relyingParty,
     const saml2::AttributeStatement& statement,
-    vector<Attribute*>& attributes
+    ptr_vector<Attribute>& attributes
     ) const
 {
-    const vector<saml2::Attribute*>& attrs = statement.getAttributes();
-    for (vector<saml2::Attribute*>::const_iterator a = attrs.begin(); a!=attrs.end(); ++a)
-        extractAttributes(application, assertingParty, relyingParty, *(*a), attributes);
+    static void (XMLExtractorImpl::* extract)(
+        const Application&, const char*, const char*, const saml2::Attribute&, ptr_vector<Attribute>&
+        ) const = &XMLExtractorImpl::extractAttributes;
+    for_each(
+        make_indirect_iterator(statement.getAttributes().begin()), make_indirect_iterator(statement.getAttributes().end()),
+        boost::bind(extract, this, boost::ref(application), assertingParty, relyingParty, _1, boost::ref(attributes))
+        );
 }
 
 void XMLExtractorImpl::extractAttributes(
@@ -593,11 +590,11 @@ void XMLExtractorImpl::extractAttributes(
     const XMLCh* entityID,
     const char* relyingParty,
     const Extensions& ext,
-    vector<Attribute*>& attributes
+    ptr_vector<Attribute>& attributes
     ) const
 {
     const vector<XMLObject*>& exts = ext.getUnknownXMLObjects();
-    for (vector<XMLObject*>::const_iterator i = exts.begin(); i!=exts.end(); ++i) {
+    for (vector<XMLObject*>::const_iterator i = exts.begin(); i != exts.end(); ++i) {
         const EntityAttributes* container = dynamic_cast<const EntityAttributes*>(*i);
         if (!container)
             continue;
@@ -614,7 +611,8 @@ void XMLExtractorImpl::extractAttributes(
                 m_attrLock->unlock();
                 m_attrLock->wrlock();
                 cacheEntry = m_decodedMap.find(observable);
-                if (cacheEntry==m_decodedMap.end()) {
+                if (cacheEntry == m_decodedMap.end()) {
+                    SharedLock locker(m_attrLock, false);   // guard in case these throw
 
                     // It's still brand new, so hook it for cache activation.
                     observable->addObserver(this);
@@ -624,6 +622,7 @@ void XMLExtractorImpl::extractAttributes(
 
                     // Downgrade the lock.
                     // We don't have to recheck because we never erase the master map entry entirely, even on changes.
+                    locker.release();   // unguard for lock downgrade
                     m_attrLock->unlock();
                     m_attrLock->rdlock();
                 }
@@ -632,46 +631,46 @@ void XMLExtractorImpl::extractAttributes(
         }
 
         if (useCache) {
-            // We're holding a read lock, so check the cache.
+            // We're holding the lock, so check the cache.
             decoded_t::iterator d = cacheEntry->second.find(container);
             if (d != cacheEntry->second.end()) {
                 SharedLock locker(m_attrLock, false);   // pop the lock when we're done
                 for (vector<DDF>::iterator obj = d->second.begin(); obj != d->second.end(); ++obj) {
                     auto_ptr<Attribute> wrapper(Attribute::unmarshall(*obj));
                     m_log.debug("recovered cached metadata attribute (%s)", wrapper->getId());
-                    attributes.push_back(wrapper.release());
+                    attributes.push_back(wrapper);
                 }
                 break;
             }
         }
 
-        // Use a holding area to support caching.
-        vector<Attribute*> holding;
+        // Add a guard for the lock if we're caching.
+        SharedLock locker(useCache ? m_attrLock.get() : nullptr, false);
 
-        const vector<saml2::Attribute*>& attrs = container->getAttributes();
-        for (vector<saml2::Attribute*>::const_iterator attr = attrs.begin(); attr != attrs.end(); ++attr) {
-            try {
-                extractAttributes(application, nullptr, relyingParty, *(*attr), holding);
-            }
-            catch (...) {
-                if (useCache)
-                    m_attrLock->unlock();
-                for_each(holding.begin(), holding.end(), xmltooling::cleanup<Attribute>());
-                throw;
-            }
-        }
+        // Use a holding area to support caching.
+        ptr_vector<Attribute> holding;
+
+        // Extract attributes into holding area with no asserting party set.
+        static void (XMLExtractorImpl::* extractV2Attr)(
+            const Application&, const char*, const char*, const saml2::Attribute&, ptr_vector<Attribute>&
+            ) const = &XMLExtractorImpl::extractAttributes;
+        for_each(
+            make_indirect_iterator(container->getAttributes().begin()), make_indirect_iterator(container->getAttributes().end()),
+            boost::bind(extractV2Attr, this, boost::ref(application), nullptr, relyingParty, _1, boost::ref(holding))
+            );
 
         if (entityID && m_entityAssertions) {
             const vector<saml2::Assertion*>& asserts = container->getAssertions();
-            for (vector<saml2::Assertion*>::const_iterator assert = asserts.begin(); assert != asserts.end(); ++assert) {
-                if (!(*assert)->getSignature()) {
+            for (indirect_iterator<vector<saml2::Assertion*>::const_iterator> assert = make_indirect_iterator(asserts.begin());
+                    assert != make_indirect_iterator(asserts.end()); ++assert) {
+                if (!(assert->getSignature())) {
                     if (m_log.isDebugEnabled()) {
                         auto_ptr_char eid(entityID);
                         m_log.debug("skipping unsigned assertion in metadata extension for entity (%s)", eid.get());
                     }
                     continue;
                 }
-                else if ((*assert)->getAttributeStatements().empty()) {
+                else if (assert->getAttributeStatements().empty()) {
                     if (m_log.isDebugEnabled()) {
                         auto_ptr_char eid(entityID);
                         m_log.debug("skipping assertion with no AttributeStatement in metadata extension for entity (%s)", eid.get());
@@ -680,7 +679,7 @@ void XMLExtractorImpl::extractAttributes(
                 }
                 else {
                     // Check subject.
-                    const NameID* subject = (*assert)->getSubject() ? (*assert)->getSubject()->getNameID() : nullptr;
+                    const NameID* subject = assert->getSubject() ? assert->getSubject()->getNameID() : nullptr;
                     if (!subject ||
                             !XMLString::equals(subject->getFormat(), NameID::ENTITY) ||
                             !XMLString::equals(subject->getName(), entityID)) {
@@ -692,25 +691,22 @@ void XMLExtractorImpl::extractAttributes(
                     }
                 }
 
-                // Use a private holding area for filtering purposes.
-                vector<Attribute*> holding2;
-
                 try {
                     // Set up and evaluate a policy for an AA asserting attributes to us.
                     shibsp::SecurityPolicy policy(application, &AttributeAuthorityDescriptor::ELEMENT_QNAME, false, m_policyId.c_str());
-                    Locker locker(m_metadata);
+                    Locker locker(m_metadata.get());
                     if (m_metadata)
-                        policy.setMetadataProvider(m_metadata);
+                        policy.setMetadataProvider(m_metadata.get());
                     if (m_trust)
-                        policy.setTrustEngine(m_trust);
+                        policy.setTrustEngine(m_trust.get());
                     // Populate recipient as audience.
-                    const XMLCh* issuer = (*assert)->getIssuer() ? (*assert)->getIssuer()->getName() : nullptr;
+                    const XMLCh* issuer = assert->getIssuer() ? assert->getIssuer()->getName() : nullptr;
                     policy.getAudiences().push_back(application.getRelyingParty(issuer)->getXMLString("entityID").second);
 
                     // Extract assertion information for policy.
-                    policy.setMessageID((*assert)->getID());
-                    policy.setIssueInstant((*assert)->getIssueInstantEpoch());
-                    policy.setIssuer((*assert)->getIssuer());
+                    policy.setMessageID(assert->getID());
+                    policy.setIssueInstant(assert->getIssueInstantEpoch());
+                    policy.setIssuer(assert->getIssuer());
 
                     // Look up metadata for issuer.
                     if (policy.getIssuer() && policy.getMetadataProvider()) {
@@ -739,7 +735,7 @@ void XMLExtractorImpl::extractAttributes(
                     }
 
                     // Authenticate the assertion. We have to clone and marshall it to establish the signature for verification.
-                    auto_ptr<saml2::Assertion> tokencopy((*assert)->cloneAssertion());
+                    scoped_ptr<saml2::Assertion> tokencopy(assert->cloneAssertion());
                     tokencopy->marshall();
                     policy.evaluate(*tokencopy);
                     if (!policy.isAuthenticated()) {
@@ -758,37 +754,59 @@ void XMLExtractorImpl::extractAttributes(
                         policy.getIssuerMetadata() ? dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent()) : nullptr;
                     auto_ptr_char inlineAssertingParty(inlineEntity ? inlineEntity->getEntityID() : nullptr);
                     relyingParty = application.getRelyingParty(inlineEntity)->getString("entityID").second;
+
+                    // Use a private holding area for filtering purposes.
+                    ptr_vector<Attribute> holding2;
                     const vector<saml2::Attribute*>& attrs2 =
                         const_cast<const saml2::AttributeStatement*>(tokencopy->getAttributeStatements().front())->getAttributes();
-                    for (vector<saml2::Attribute*>::const_iterator a = attrs2.begin(); a!=attrs2.end(); ++a)
-                        extractAttributes(application, inlineAssertingParty.get(), relyingParty, *(*a), holding2);
+                    for_each(
+                        make_indirect_iterator(attrs2.begin()), make_indirect_iterator(attrs2.end()),
+                        boost::bind(extractV2Attr, this, boost::ref(application), inlineAssertingParty.get(), relyingParty, _1, boost::ref(holding2))
+                        );
 
                     // Now we locally filter the attributes so that the actual issuer can be properly set.
                     // If we relied on outside filtering, the attributes couldn't be distinguished from the
                     // ones that come from the user's IdP.
                     if (m_filter && !holding2.empty()) {
-                        BasicFilteringContext fc(application, holding2, policy.getIssuerMetadata());
-                        Locker filtlocker(m_filter);
+
+                        // The filter API uses an unsafe container, so we have to transfer everything into one and back.
+                        vector<Attribute*> unsafe_holding2;
+
+                        // Use a local exception context since the container is unsafe.
                         try {
-                            m_filter->filterAttributes(fc, holding2);
+                            while (!holding2.empty()) {
+                                ptr_vector<Attribute>::auto_type ptr = holding2.pop_back();
+                                unsafe_holding2.push_back(ptr.get());
+                                ptr.release();
+                            }
+                            BasicFilteringContext fc(application, unsafe_holding2, policy.getIssuerMetadata());
+                            Locker filtlocker(m_filter.get());
+                            m_filter->filterAttributes(fc, unsafe_holding2);
+
+                            // Transfer back to safe container
+                            while (!unsafe_holding2.empty()) {
+                                auto_ptr<Attribute> ptr(unsafe_holding2.back());
+                                unsafe_holding2.pop_back();
+                                holding2.push_back(ptr);
+                            }
                         }
-                        catch (exception& ex) {
+                        catch (std::exception& ex) {
                             m_log.error("caught exception filtering attributes: %s", ex.what());
                             m_log.error("dumping extracted attributes due to filtering exception");
-                            for_each(holding2.begin(), holding2.end(), xmltooling::cleanup<Attribute>());
-                            holding2.clear();
+                            for_each(unsafe_holding2.begin(), unsafe_holding2.end(), xmltooling::cleanup<Attribute>());
+                            holding2.clear();   // in case the exception was during transfer between containers
                         }
                     }
 
                     if (!holding2.empty()) {
-                        // Copy them over to the main holding tank.
-                        holding.insert(holding.end(), holding2.begin(), holding2.end());
+                        // Copy them over to the main holding tank, which transfers ownership.
+                        holding.transfer(holding.end(), holding2);
                     }
                 }
-                catch (exception& ex) {
+                catch (std::exception& ex) {
                     // Known exceptions are handled gracefully by skipping the assertion.
                     if (m_log.isDebugEnabled()) {
-                        auto_ptr_char tempid((*assert)->getID());
+                        auto_ptr_char tempid(assert->getID());
                         auto_ptr_char eid(entityID);
                         m_log.debug(
                             "exception authenticating assertion (%s) in metadata extension for entity (%s): %s",
@@ -797,35 +815,32 @@ void XMLExtractorImpl::extractAttributes(
                             ex.what()
                             );
                     }
-                    for_each(holding2.begin(), holding2.end(), xmltooling::cleanup<Attribute>());
                     continue;
-                }
-                catch (...) {
-                    // Unknown exceptions are fatal.
-                    if (useCache)
-                        m_attrLock->unlock();
-                    for_each(holding.begin(), holding.end(), xmltooling::cleanup<Attribute>());
-                    for_each(holding2.begin(), holding2.end(), xmltooling::cleanup<Attribute>());
-                    throw;
                 }
             }
         }
 
         if (!holding.empty()) {
             if (useCache) {
+                locker.release();   // unguard to upgrade lock
                 m_attrLock->unlock();
                 m_attrLock->wrlock();
-                SharedLock locker(m_attrLock, false);   // pop the lock when we're done
+                SharedLock locker2(m_attrLock, false);   // pop the lock when we're done
                 if (cacheEntry->second.count(container) == 0) {
-                    for (vector<Attribute*>::const_iterator held = holding.begin(); held != holding.end(); ++held)
-                        cacheEntry->second[container].push_back((*held)->marshall());
+                    static void (vector<DDF>::* push_back)(DDF const &) = &vector<DDF>::push_back;
+                    vector<DDF>& marshalled = cacheEntry->second[container];
+                    for_each(
+                        holding.begin(), holding.end(),
+                        boost::bind(push_back, boost::ref(marshalled), boost::bind(&Attribute::marshall, _1))
+                        );
                 }
             }
-            attributes.insert(attributes.end(), holding.begin(), holding.end());
+
+            // Copy them to the output parameter, which transfers ownership.
+            attributes.transfer(attributes.end(), holding);
         }
-        else if (useCache) {
-            m_attrLock->unlock();
-        }
+
+        // If the lock is held, it's guarded.
 
         break;  // only process a single extension element
     }
@@ -838,6 +853,30 @@ void XMLExtractor::extractAttributes(
     if (!m_impl)
         return;
 
+    ptr_vector<Attribute> holding;
+    extractAttributes(application, issuer, xmlObject, holding);
+
+    // Transfer ownership from the ptr_vector to the unsafe vector for API compatibility.
+    // Any throws should leave each container in a consistent state. The holding container
+    // is freed by us, and the result container by the caller.
+    while (!holding.empty()) {
+        ptr_vector<Attribute>::auto_type ptr = holding.pop_back();
+        attributes.push_back(ptr.get());
+        ptr.release();
+    }
+}
+
+void XMLExtractor::extractAttributes(
+    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, ptr_vector<Attribute>& attributes
+    ) const
+{
+    static void (XMLExtractor::* extractEncrypted)(
+        const Application&, const RoleDescriptor*, const XMLObject&, ptr_vector<Attribute>&
+        ) const = &XMLExtractor::extractAttributes;
+    static void (XMLExtractorImpl::* extractV1Statement)(
+        const Application&, const char*, const char*, const saml1::AttributeStatement&, ptr_vector<Attribute>&
+        ) const = &XMLExtractorImpl::extractAttributes;
+
     const EntityDescriptor* entity = issuer ? dynamic_cast<const EntityDescriptor*>(issuer->getParent()) : nullptr;
     const char* relyingParty = application.getRelyingParty(entity)->getString("entityID").second;
 
@@ -849,8 +888,10 @@ void XMLExtractor::extractAttributes(
             m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *statement2, attributes);
             // Handle EncryptedAttributes inline so we have access to the role descriptor.
             const vector<saml2::EncryptedAttribute*>& encattrs = statement2->getEncryptedAttributes();
-            for (vector<saml2::EncryptedAttribute*>::const_iterator ea = encattrs.begin(); ea!=encattrs.end(); ++ea)
-                extractAttributes(application, issuer, *(*ea), attributes);
+            for_each(
+                make_indirect_iterator(encattrs.begin()), make_indirect_iterator(encattrs.end()),
+                boost::bind(extractEncrypted, this, boost::ref(application), issuer, _1, boost::ref(attributes))
+                );
             return;
         }
 
@@ -870,12 +911,15 @@ void XMLExtractor::extractAttributes(
         if (token2) {
             auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
             const vector<saml2::AttributeStatement*>& statements = token2->getAttributeStatements();
-            for (vector<saml2::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s) {
-                m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *(*s), attributes);
+            for (indirect_iterator<vector<saml2::AttributeStatement*>::const_iterator> s = make_indirect_iterator(statements.begin());
+                    s != make_indirect_iterator(statements.end()); ++s) {
+                m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *s, attributes);
                 // Handle EncryptedAttributes inline so we have access to the role descriptor.
-                const vector<saml2::EncryptedAttribute*>& encattrs = const_cast<const saml2::AttributeStatement*>(*s)->getEncryptedAttributes();
-                for (vector<saml2::EncryptedAttribute*>::const_iterator ea = encattrs.begin(); ea!=encattrs.end(); ++ea)
-                    extractAttributes(application, issuer, *(*ea), attributes);
+                const vector<saml2::EncryptedAttribute*>& encattrs = const_cast<const saml2::AttributeStatement&>(*s).getEncryptedAttributes();
+                for_each(
+                    make_indirect_iterator(encattrs.begin()), make_indirect_iterator(encattrs.end()),
+                    boost::bind(extractEncrypted, this, boost::ref(application), issuer, _1, boost::ref(attributes))
+                    );
             }
             return;
         }
@@ -884,8 +928,9 @@ void XMLExtractor::extractAttributes(
         if (token1) {
             auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
             const vector<saml1::AttributeStatement*>& statements = token1->getAttributeStatements();
-            for (vector<saml1::AttributeStatement*>::const_iterator s = statements.begin(); s!=statements.end(); ++s)
-                m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *(*s), attributes);
+            for_each(make_indirect_iterator(statements.begin()), make_indirect_iterator(statements.end()),
+                boost::bind(extractV1Statement, m_impl.get(), boost::ref(application), assertingParty.get(), relyingParty, _1, boost::ref(attributes))
+                );
             return;
         }
 
@@ -955,19 +1000,19 @@ void XMLExtractor::extractAttributes(
                 Locker credlocker(cr);
                 if (issuer) {
                     MetadataCredentialCriteria mcc(*issuer);
-                    auto_ptr<XMLObject> decrypted(encattr->decrypt(*cr, recipient, &mcc));
+                    scoped_ptr<XMLObject> decrypted(encattr->decrypt(*cr, recipient, &mcc));
                     if (m_log.isDebugEnabled())
-                        m_log.debugStream() << "decrypted Attribute: " << *(decrypted.get()) << logging::eol;
-                    return extractAttributes(application, issuer, *(decrypted.get()), attributes);
+                        m_log.debugStream() << "decrypted Attribute: " << *decrypted << logging::eol;
+                    return extractAttributes(application, issuer, *decrypted, attributes);
                 }
                 else {
-                    auto_ptr<XMLObject> decrypted(encattr->decrypt(*cr, recipient));
+                    scoped_ptr<XMLObject> decrypted(encattr->decrypt(*cr, recipient));
                     if (m_log.isDebugEnabled())
-                        m_log.debugStream() << "decrypted Attribute: " << *(decrypted.get()) << logging::eol;
-                    return extractAttributes(application, issuer, *(decrypted.get()), attributes);
+                        m_log.debugStream() << "decrypted Attribute: " << *decrypted << logging::eol;
+                    return extractAttributes(application, issuer, *decrypted, attributes);
                 }
             }
-            catch (exception& ex) {
+            catch (std::exception& ex) {
                 m_log.error("caught exception decrypting Attribute: %s", ex.what());
                 return;
             }
@@ -998,7 +1043,7 @@ pair<bool,DOMElement*> XMLExtractor::background_load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    XMLExtractorImpl* impl = new XMLExtractorImpl(raw.second, m_log);
+    scoped_ptr<XMLExtractorImpl> impl(new XMLExtractorImpl(raw.second, m_log));
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
@@ -1007,8 +1052,7 @@ pair<bool,DOMElement*> XMLExtractor::background_load()
     if (m_lock)
         m_lock->wrlock();
     SharedLock locker(m_lock, false);
-    delete m_impl;
-    m_impl = impl;
+    m_impl.swap(impl);
 
     return make_pair(false,(DOMElement*)nullptr);
 }

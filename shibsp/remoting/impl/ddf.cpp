@@ -27,11 +27,8 @@
 #include "internal.h"
 #include "remoting/ddf.h"
 
-#ifdef WIN32
-# define snprintf _snprintf
-#endif
-
 #include <stdexcept>
+#include <boost/lexical_cast.hpp>
 #include <xercesc/dom/DOM.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
@@ -385,18 +382,14 @@ DDF& DDF::unsafe_string(const char* val)
 
 DDF& DDF::string(long val)
 {
-    char buf[20];
-
-    sprintf(buf,"%ld",val);
-    return string(buf);
+    std::string buf = boost::lexical_cast<std::string>(val);
+    return string(buf.c_str());
 }
 
 DDF& DDF::string(double val)
 {
-    char buf[40];
-
-    snprintf(buf,39,"%f",val);
-    return string(buf);
+    std::string buf = boost::lexical_cast<std::string>(val);
+    return string(buf.c_str());
 }
 
 DDF& DDF::integer(long val)

@@ -28,6 +28,7 @@
 #define __shibsp_abstreq_h__
 
 #include <shibsp/SPRequest.h>
+#include <boost/scoped_ptr.hpp>
 
 namespace shibsp {
     
@@ -87,7 +88,7 @@ namespace shibsp {
         mutable std::string m_url;
         void* m_log; // declared void* to avoid log4cpp header conflicts in Apache
         mutable std::string m_handlerURL;
-        mutable CGIParser* m_parser;
+        mutable boost::scoped_ptr<CGIParser> m_parser;
     };
 
 #if defined (_MSC_VER)

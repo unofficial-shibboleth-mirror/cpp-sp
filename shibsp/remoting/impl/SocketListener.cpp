@@ -68,7 +68,7 @@ namespace shibsp {
 
         Category& m_log;
         const SocketListener* m_listener;
-        auto_ptr<Mutex> m_lock;
+        boost::scoped_ptr<Mutex> m_lock;
         stack<SocketListener::ShibSocket> m_pool;
     };
 
@@ -160,23 +160,22 @@ SocketListener::ShibSocket SocketPool::get()
 
 void SocketPool::put(SocketListener::ShibSocket s)
 {
-    m_lock->lock();
+    Lock lock(m_lock);
     m_pool.push(s);
-    m_lock->unlock();
 }
 
 SocketListener::SocketListener(const DOMElement* e)
-    : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")), m_socketpool(nullptr),
-        m_shutdown(nullptr), m_child_lock(nullptr), m_child_wait(nullptr), m_stackSize(0), m_socket((ShibSocket)0)
+    : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")),
+        m_shutdown(nullptr), m_stackSize(0), m_socket((ShibSocket)0)
 {
     // Are we a client?
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
-        m_socketpool=new SocketPool(*log,this);
+        m_socketpool.reset(new SocketPool(*log,this));
     }
     // Are we a server?
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        m_child_lock = Mutex::create();
-        m_child_wait = CondWait::create();
+        m_child_lock.reset(Mutex::create());
+        m_child_wait.reset(CondWait::create());
 
         static const XMLCh stackSize[] = UNICODE_LITERAL_9(s,t,a,c,k,S,i,z,e);
         m_stackSize = XMLHelper::getAttrInt(e, 0, stackSize) * 1024;
@@ -185,9 +184,6 @@ SocketListener::SocketListener(const DOMElement* e)
 
 SocketListener::~SocketListener()
 {
-    delete m_socketpool;
-    delete m_child_wait;
-    delete m_child_lock;
 }
 
 bool SocketListener::init(bool force)
@@ -225,7 +221,7 @@ bool SocketListener::run(bool* shutdown)
     NDC ndc("run");
 #endif
     // Save flag to monitor for shutdown request.
-    m_shutdown=shutdown;
+    m_shutdown = shutdown;
     unsigned long count = 0;
 
     while (!*m_shutdown) {
@@ -261,7 +257,7 @@ bool SocketListener::run(bool* shutdown)
 
                 // We throw away the result because the children manage themselves...
                 try {
-                    new ServerThread(newsock,this,++count);
+                    new ServerThread(newsock, this, ++count);
                 }
                 catch (exception& ex) {
                     log->crit("exception starting new server thread to service incoming request: %s", ex.what());
@@ -279,7 +275,7 @@ bool SocketListener::run(bool* shutdown)
     // Wait for all children to exit.
     m_child_lock->lock();
     while (!m_children.empty())
-        m_child_wait->wait(m_child_lock);
+        m_child_wait->wait(m_child_lock.get());
     m_child_lock->unlock();
 
     return true;
@@ -383,7 +379,7 @@ DDF SocketListener::send(const DDF& in)
             throw ListenerException("Remote call failed with an unparsable exception.");
         }
 
-        auto_ptr<XMLToolingException> wrapper(except);
+        boost::scoped_ptr<XMLToolingException> wrapper(except);
         wrapper->raise();
     }
 
@@ -459,8 +455,8 @@ void ServerThread::run()
 
     // Before starting up, make sure we fully "own" this socket.
     m_listener->m_child_lock->lock();
-    while (m_listener->m_children.find(m_sock)!=m_listener->m_children.end())
-        m_listener->m_child_wait->wait(m_listener->m_child_lock);
+    while (m_listener->m_children.find(m_sock) != m_listener->m_children.end())
+        m_listener->m_child_wait->wait(m_listener->m_child_lock.get());
     m_listener->m_children[m_sock] = m_child;
     m_listener->m_child_lock->unlock();
 

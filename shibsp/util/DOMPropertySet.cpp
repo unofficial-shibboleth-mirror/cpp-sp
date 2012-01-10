@@ -50,9 +50,8 @@ DOMPropertySet::DOMPropertySet() : m_parent(nullptr), m_root(nullptr)
 
 DOMPropertySet::~DOMPropertySet()
 {
-    for (map<string,pair<char*,const XMLCh*> >::iterator i=m_map.begin(); i!=m_map.end(); i++)
+    for (map<string,pair<char*,const XMLCh*> >::iterator i = m_map.begin(); i != m_map.end(); ++i)
         XMLString::release(&(i->second.first));
-    for_each(m_nested.begin(),m_nested.end(),cleanup_pair<string,DOMPropertySet>());
 }
 
 const PropertySet* DOMPropertySet::getParent() const
@@ -120,41 +119,41 @@ void DOMPropertySet::load(
     }
     
     // Process non-excluded elements as nested sets.
-    DOMTreeWalker* walker=
+    DOMTreeWalker* walker =
         static_cast<DOMDocumentTraversal*>(
             m_root->getOwnerDocument())->createTreeWalker(const_cast<DOMElement*>(m_root),DOMNodeFilter::SHOW_ELEMENT,filter,false
             );
-    e=static_cast<DOMElement*>(walker->firstChild());
+    e = static_cast<DOMElement*>(walker->firstChild());
     while (e) {
         auto_ptr_char ns(e->getNamespaceURI());
         auto_ptr_char name(e->getLocalName());
         const char* realname=name.get();
         map<string,string>::const_iterator remap;
         if (remapper) {
-            remap=remapper->find(realname);
-            if (remap!=remapper->end()) {
-                log->warn("deprecation - remapping nested property set (%s) to (%s)",realname,remap->second.c_str());
-                realname=remap->second.c_str();
+            remap = remapper->find(realname);
+            if (remap != remapper->end()) {
+                log->warn("deprecation - remapping nested property set (%s) to (%s)", realname, remap->second.c_str());
+                realname = remap->second.c_str();
             }
         }
         string key;
         if (ns.get()) {
-            if (remapper && (remap=remapper->find(ns.get()))!=remapper->end())
-                key=string("{") + remap->second.c_str() + '}' + realname;
+            if (remapper && (remap = remapper->find(ns.get())) != remapper->end())
+                key = string("{") + remap->second.c_str() + '}' + realname;
             else
-                key=string("{") + ns.get() + '}' + realname;
+                key = string("{") + ns.get() + '}' + realname;
         }
         else
-            key=realname;
-        if (m_nested.find(key)!=m_nested.end())
-            log->warn("load() skipping duplicate property set: %s",key.c_str());
+            key = realname;
+        if (m_nested.find(key) != m_nested.end())
+            log->warn("load() skipping duplicate property set: %s", key.c_str());
         else {
-            DOMPropertySet* set=new DOMPropertySet();
-            set->load(e,log,filter,remapper);
-            m_nested[key]=set;
-            log->debug("added nested property set: %s",key.c_str());
+            boost::shared_ptr<DOMPropertySet> newset(new DOMPropertySet());
+            newset->load(e,log,filter,remapper);
+            m_nested[key] = newset;
+            log->debug("added nested property set: %s", key.c_str());
         }
-        e=static_cast<DOMElement*>(walker->nextSibling());
+        e = static_cast<DOMElement*>(walker->nextSibling());
     }
     walker->release();
 }
@@ -250,14 +249,14 @@ void DOMPropertySet::getAll(std::map<std::string,const char*>& properties) const
 
 const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* ns) const
 {
-    map<string,DOMPropertySet*>::const_iterator i;
+    map<string,boost::shared_ptr<DOMPropertySet>>::const_iterator i;
 
     if (ns)
-        i=m_nested.find(string("{") + ns + '}' + name);
+        i = m_nested.find(string("{") + ns + '}' + name);
     else
-        i=m_nested.find(name);
+        i = m_nested.find(name);
 
-    return (i!=m_nested.end()) ? i->second : (m_parent ? m_parent->getPropertySet(name,ns) : nullptr);
+    return (i != m_nested.end()) ? i->second.get() : (m_parent ? m_parent->getPropertySet(name,ns) : nullptr);
 }
 
 bool DOMPropertySet::setProperty(const char* name, const char* val, const char* ns)

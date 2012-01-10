@@ -31,12 +31,14 @@
 #include "SPRequest.h"
 
 #include <algorithm>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <xmltooling/unicode.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -46,23 +48,21 @@ namespace shibsp {
     public:
         ChainingAccessControl(const DOMElement* e);
 
-        ~ChainingAccessControl() {
-            for_each(m_ac.begin(), m_ac.end(), xmltooling::cleanup<AccessControl>());
-        }
+        ~ChainingAccessControl() {}
 
         Lockable* lock() {
-            for_each(m_ac.begin(), m_ac.end(), mem_fun<Lockable*,Lockable>(&Lockable::lock));
+            for_each(m_ac.begin(), m_ac.end(), mem_fun_ref<Lockable*,Lockable>(&Lockable::lock));
             return this;
         }
         void unlock() {
-            for_each(m_ac.begin(), m_ac.end(), mem_fun<void,Lockable>(&Lockable::unlock));
+            for_each(m_ac.begin(), m_ac.end(), mem_fun_ref<void,Lockable>(&Lockable::unlock));
         }
 
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
     private:
         enum operator_t { OP_AND, OP_OR } m_op;
-        vector<AccessControl*> m_ac;
+        ptr_vector<AccessControl> m_ac;
     };
 
     AccessControl* SHIBSP_DLLLOCAL ChainingAccessControlFactory(const DOMElement* const & e)
@@ -99,26 +99,20 @@ ChainingAccessControl::ChainingAccessControl(const DOMElement* e)
 {
     const XMLCh* op = e ? e->getAttributeNS(nullptr, _operator) : nullptr;
     if (XMLString::equals(op, AND))
-        m_op=OP_AND;
+        m_op = OP_AND;
     else if (XMLString::equals(op, OR))
-        m_op=OP_OR;
+        m_op = OP_OR;
     else
         throw ConfigurationException("Missing or unrecognized operator in Chaining AccessControl configuration.");
 
-    try {
-        e = XMLHelper::getFirstChildElement(e, _AccessControl);
-        while (e) {
-            string t(XMLHelper::getAttrString(e, nullptr, _type));
-            if (!t.empty()) {
-                Category::getInstance(SHIBSP_LOGCAT".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", t.c_str());
-                m_ac.push_back(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e));
-            }
-            e = XMLHelper::getNextSiblingElement(e, _AccessControl);
+    e = XMLHelper::getFirstChildElement(e, _AccessControl);
+    while (e) {
+        string t(XMLHelper::getAttrString(e, nullptr, _type));
+        if (!t.empty()) {
+            Category::getInstance(SHIBSP_LOGCAT".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", t.c_str());
+            m_ac.push_back(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e));
         }
-    }
-    catch (exception&) {
-        for_each(m_ac.begin(), m_ac.end(), xmltooling::cleanup<AccessControl>());
-        throw;
+        e = XMLHelper::getNextSiblingElement(e, _AccessControl);
     }
     if (m_ac.empty())
         throw ConfigurationException("Chaining AccessControl plugin requires at least one child plugin.");
@@ -129,8 +123,8 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
     switch (m_op) {
         case OP_AND:
         {
-            for (vector<AccessControl*>::const_iterator i=m_ac.begin(); i!=m_ac.end(); ++i) {
-                if ((*i)->authorized(request, session) != shib_acl_true) {
+            for (ptr_vector<AccessControl>::const_iterator i = m_ac.begin(); i != m_ac.end(); ++i) {
+                if (i->authorized(request, session) != shib_acl_true) {
                     request.log(SPRequest::SPDebug, "embedded AccessControl plugin unsuccessful, denying access");
                     return shib_acl_false;
                 }
@@ -140,8 +134,8 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
 
         case OP_OR:
         {
-            for (vector<AccessControl*>::const_iterator i=m_ac.begin(); i!=m_ac.end(); ++i) {
-                if ((*i)->authorized(request,session) == shib_acl_true)
+            for (ptr_vector<AccessControl>::const_iterator i = m_ac.begin(); i != m_ac.end(); ++i) {
+                if (i->authorized(request,session) == shib_acl_true)
                     return shib_acl_true;
             }
             request.log(SPRequest::SPDebug, "all embedded AccessControl plugins unsuccessful, denying access");

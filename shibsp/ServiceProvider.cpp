@@ -37,6 +37,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <boost/algorithm/string.hpp>
 #ifndef SHIBSP_LITE
 # include <saml/exceptions.h>
 # include <saml/saml2/metadata/MetadataProvider.h>
@@ -185,21 +186,21 @@ SecurityPolicyProvider* ServiceProvider::getSecurityPolicyProvider(bool required
 
 Remoted* ServiceProvider::regListener(const char* address, Remoted* listener)
 {
-    Remoted* ret=nullptr;
-    map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
-    if (i!=m_listenerMap.end())
-        ret=i->second;
-    m_listenerMap[address]=listener;
+    Remoted* ret = nullptr;
+    map<string,Remoted*>::const_iterator i = m_listenerMap.find(address);
+    if (i != m_listenerMap.end())
+        ret = i->second;
+    m_listenerMap[address] = listener;
     Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").info("registered remoted message endpoint (%s)",address);
     return ret;
 }
 
 bool ServiceProvider::unregListener(const char* address, Remoted* current, Remoted* restore)
 {
-    map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
-    if (i!=m_listenerMap.end() && i->second==current) {
+    map<string,Remoted*>::const_iterator i = m_listenerMap.find(address);
+    if (i != m_listenerMap.end() && i->second == current) {
         if (restore)
-            m_listenerMap[address]=restore;
+            m_listenerMap[address] = restore;
         else
             m_listenerMap.erase(address);
         Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").info("unregistered remoted message endpoint (%s)",address);
@@ -210,8 +211,8 @@ bool ServiceProvider::unregListener(const char* address, Remoted* current, Remot
 
 Remoted* ServiceProvider::lookupListener(const char *address) const
 {
-    map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
-    return (i==m_listenerMap.end()) ? nullptr : i->second;
+    map<string,Remoted*>::const_iterator i = m_listenerMap.find(address);
+    return (i == m_listenerMap.end()) ? nullptr : i->second;
 }
 
 pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handler) const
@@ -221,7 +222,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 #endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
-    const Application* app=nullptr;
+    const Application* app = nullptr;
     string targetURL = request.getRequestURL();
 
     try {
@@ -248,7 +249,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 else {
                     TemplateParameters tp;
                     tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-                    return make_pair(true,sendError(log, request, app, "ssl", tp, false));
+                    return make_pair(true, sendError(log, request, app, "ssl", tp, false));
                 }
             }
         }
@@ -259,7 +260,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 
         // If the request URL contains the handler base URL for this application, either dispatch
         // directly (mainly Apache 2.0) or just pass back control.
-        if (strstr(targetURL.c_str(),handlerURL)) {
+        if (boost::contains(targetURL, handlerURL)) {
             if (handler)
                 return doHandler(request);
             else
@@ -271,17 +272,11 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         pair<bool,bool> requireSession = settings.first->getBool("requireSession");
         pair<bool,const char*> requireSessionWith = settings.first->getString("requireSessionWith");
 
-        string lcAuthType;
-        if (authType.first) {
-            while (*authType.second)
-                lcAuthType += tolower(*authType.second++);
-        }
-
         // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
         // ShibBasicHijack is on, but that's up to it.
         if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first &&
-                (!authType.first || m_authTypes.find(lcAuthType) == m_authTypes.end()))
+                (!authType.first || m_authTypes.find(boost::to_lower_copy(string(authType.second))) == m_authTypes.end()))
             return make_pair(true, request.returnDecline());
 
         // Fix for secadv 20050901
@@ -294,14 +289,14 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         catch (exception& e) {
             log.warn("error during session lookup: %s", e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
-            if (dynamic_cast<opensaml::RetryableProfileException*>(&e)==nullptr)
+            if (dynamic_cast<opensaml::RetryableProfileException*>(&e) == nullptr)
                 throw;
         }
 
         if (!session) {
             // No session.  Maybe that's acceptable?
             if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
-                return make_pair(true,request.returnOK());
+                return make_pair(true, request.returnOK());
 
             // No session, but we require one. Initiate a new session using the indicated method.
             const SessionInitiator* initiator=nullptr;
@@ -319,10 +314,10 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                     throw ConfigurationException("No default session initiator found, check configuration.");
             }
 
-            return initiator->run(request,false);
+            return initiator->run(request, false);
         }
 
-        request.setAuthType(lcAuthType.c_str());
+        request.setAuthType(authType.second);
 
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
@@ -344,7 +339,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 #endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
-    const Application* app=nullptr;
+    const Application* app = nullptr;
     const Session* session = nullptr;
     string targetURL = request.getRequestURL();
 
@@ -357,17 +352,11 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         pair<bool,bool> requireSession = settings.first->getBool("requireSession");
         pair<bool,const char*> requireSessionWith = settings.first->getString("requireSessionWith");
 
-        string lcAuthType;
-        if (authType.first) {
-            while (*authType.second)
-                lcAuthType += tolower(*authType.second++);
-        }
-
         // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
         // ShibBasicHijack is on, but that's up to it.
         if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first &&
-                (!authType.first || m_authTypes.find(lcAuthType) == m_authTypes.end()))
+                (!authType.first || m_authTypes.find(boost::to_lower_copy(string(authType.second))) == m_authTypes.end()))
             return make_pair(true, request.returnDecline());
 
         // Do we have an access control plugin?
@@ -380,26 +369,26 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
             }
 
             Locker acllock(settings.second);
-            switch (settings.second->authorized(request,session)) {
+            switch (settings.second->authorized(request, session)) {
                 case AccessControl::shib_acl_true:
                     log.debug("access control provider granted access");
-                    return make_pair(true,request.returnOK());
+                    return make_pair(true, request.returnOK());
 
                 case AccessControl::shib_acl_false:
                 {
                     log.warn("access control provider denied access");
                     TemplateParameters tp(nullptr, nullptr, session);
                     tp.m_map["requestURL"] = targetURL;
-                    return make_pair(true,sendError(log, request, app, "access", tp, false));
+                    return make_pair(true, sendError(log, request, app, "access", tp, false));
                 }
 
                 default:
                     // Use the "DECLINE" interface to signal we don't know what to do.
-                    return make_pair(true,request.returnDecline());
+                    return make_pair(true, request.returnDecline());
             }
         }
         else {
-            return make_pair(true,request.returnDecline());
+            return make_pair(true, request.returnDecline());
         }
     }
     catch (exception& e) {
@@ -417,7 +406,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 #endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
-    const Application* app=nullptr;
+    const Application* app = nullptr;
     const Session* session = nullptr;
     string targetURL = request.getRequestURL();
 
@@ -440,7 +429,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         	if (requireSession)
                 throw opensaml::RetryableProfileException("Unable to obtain session to export to request.");
         	else
-        		return make_pair(false,0L);	// just bail silently
+        		return make_pair(false, 0L);	// just bail silently
         }
 
 		pair<bool,const char*> enc = settings.first->getString("encoding");
@@ -477,9 +466,9 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         }
 
         // Maybe export the assertion keys.
-        pair<bool,bool> exp=settings.first->getBool("exportAssertion");
+        pair<bool,bool> exp = settings.first->getBool("exportAssertion");
         if (exp.first && exp.second) {
-            const PropertySet* sessions=app->getPropertySet("Sessions");
+            const PropertySet* sessions = app->getPropertySet("Sessions");
             pair<bool,const char*> exportLocation = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,nullptr);
             if (!exportLocation.first)
                 log.warn("can't export assertions without an exportLocation Sessions property");
@@ -506,12 +495,12 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
         // Export the attributes.
         const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
-        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a!=attributes.end(); ++a) {
+        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
             if (a->second->isInternal())
                 continue;
             string header(app->getSecureHeader(request, a->first.c_str()));
             const vector<string>& vals = a->second->getSerializedValues();
-            for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
+            for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
                 if (!header.empty())
                     header += ";";
 				if (enc.first) {
@@ -519,10 +508,10 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 					header += encoder->encode(v->c_str());
 				}
 				else {
-					string::size_type pos = v->find_first_of(';',string::size_type(0));
-					if (pos!=string::npos) {
+					string::size_type pos = v->find_first_of(';', string::size_type(0));
+					if (pos != string::npos) {
 						string value(*v);
-						for (; pos != string::npos; pos = value.find_first_of(';',pos)) {
+						for (; pos != string::npos; pos = value.find_first_of(';', pos)) {
 							value.insert(pos, "\\");
 							pos += 2;
 						}
@@ -572,7 +561,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 #endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
-    const Application* app=nullptr;
+    const Application* app = nullptr;
     string targetURL = request.getRequestURL();
 
     try {
@@ -604,20 +593,20 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
             }
         }
 
-        const char* handlerURL=request.getHandlerURL(targetURL.c_str());
+        const char* handlerURL = request.getHandlerURL(targetURL.c_str());
         if (!handlerURL)
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
 
         // Make sure we only process handler requests.
-        if (!strstr(targetURL.c_str(),handlerURL))
+        if (!boost::contains(targetURL, handlerURL))
             return make_pair(true, request.returnDecline());
 
-        const PropertySet* sessionProps=app->getPropertySet("Sessions");
+        const PropertySet* sessionProps = app->getPropertySet("Sessions");
         if (!sessionProps)
             throw ConfigurationException("Unable to map request to application session settings, check configuration.");
 
         // Process incoming request.
-        pair<bool,bool> handlerSSL=sessionProps->getBool("handlerSSL");
+        pair<bool,bool> handlerSSL = sessionProps->getBool("handlerSSL");
 
         // Make sure this is SSL, if it should be
         if ((!handlerSSL.first || handlerSSL.second) && !request.isSecure())
@@ -625,11 +614,11 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
-        const Handler* handler=app->getHandler(targetURL.c_str() + strlen(handlerURL));
+        const Handler* handler = app->getHandler(targetURL.c_str() + strlen(handlerURL));
         if (!handler)
             throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
 
-        pair<bool,long> hret=handler->run(request);
+        pair<bool,long> hret = handler->run(request);
 
         // Did the handler run successfully?
         if (hret.first)
@@ -643,11 +632,11 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         try {
             session = request.getSession(false, true);
         }
-        catch (exception& e2) {
+        catch (exception&) {
         }
         TemplateParameters tp(&e, nullptr, session);
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
+        tp.m_map["requestURL"] = targetURL.substr(0, targetURL.find('?'));
         tp.m_request = &request;
-        return make_pair(true,sendError(log, request, app, "session", tp));
+        return make_pair(true, sendError(log, request, app, "session", tp));
     }
 }

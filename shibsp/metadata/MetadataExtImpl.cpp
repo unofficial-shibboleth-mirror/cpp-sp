@@ -30,7 +30,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/lambda/bind.hpp>
-#include <boost/lambda/casts.hpp>
 #include <boost/lambda/if.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <xmltooling/AbstractComplexElement.h>

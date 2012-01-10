@@ -33,6 +33,8 @@
 #include "SessionCache.h"
 #include "util/CGIParser.h"
 
+#include <boost/lexical_cast.hpp>
+
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
@@ -66,10 +68,10 @@ GSSRequest::~GSSRequest()
 #endif
 
 AbstractSPRequest::AbstractSPRequest(const char* category)
-    : m_sp(nullptr), m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr),
-        m_log(&Category::getInstance(category)), m_parser(nullptr)
+    : m_sp(SPConfig::getConfig().getServiceProvider()),
+        m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr),
+        m_log(&Category::getInstance(category))
 {
-    m_sp=SPConfig::getConfig().getServiceProvider();
     m_sp->lock();
 }
 
@@ -81,7 +83,6 @@ AbstractSPRequest::~AbstractSPRequest()
         m_mapper->unlock();
     if (m_sp)
         m_sp->unlock();
-    delete m_parser;
 }
 
 const ServiceProvider& AbstractSPRequest::getServiceProvider() const
@@ -93,7 +94,7 @@ RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
 {
     if (!m_mapper) {
         // Map request to application and content settings.
-        m_mapper=m_sp->getRequestMapper();
+        m_mapper = m_sp->getRequestMapper();
         m_mapper->lock();
         m_settings = m_mapper->getSettings(*this);
 
@@ -110,7 +111,7 @@ const Application& AbstractSPRequest::getApplication() const
 {
     if (!m_app) {
         // Now find the application from the URL settings
-        m_app=m_sp->getApplication(getRequestSettings().first->getString("applicationId").second);
+        m_app = m_sp->getApplication(getRequestSettings().first->getString("applicationId").second);
         if (!m_app)
             throw ConfigurationException("Unable to map non-default applicationId to an ApplicationOverride, check configuration.");
     }
@@ -126,16 +127,16 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
         m_sessionTried = true;
 
     // Need address checking and timeout settings.
-    time_t timeout=3600;
+    time_t timeout = 3600;
     if (checkTimeout || !ignoreAddress) {
-        const PropertySet* props=getApplication().getPropertySet("Sessions");
+        const PropertySet* props = getApplication().getPropertySet("Sessions");
         if (props) {
             if (checkTimeout) {
-                pair<bool,unsigned int> p=props->getUnsignedInt("timeout");
+                pair<bool,unsigned int> p = props->getUnsignedInt("timeout");
                 if (p.first)
                     timeout = p.second;
             }
-            pair<bool,bool> pcheck=props->getBool("consistentAddress");
+            pair<bool,bool> pcheck = props->getBool("consistentAddress");
             if (pcheck.first)
                 ignoreAddress = !pcheck.second;
         }
@@ -143,7 +144,7 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
 
     // The cache will either silently pass a session or nullptr back, or throw an exception out.
     Session* session = getServiceProvider().getSessionCache()->find(
-        getApplication(), *this, ignoreAddress ? nullptr : getRemoteAddr().c_str(), checkTimeout ? &timeout : nullptr
+        getApplication(), *this, (ignoreAddress ? nullptr : getRemoteAddr().c_str()), (checkTimeout ? &timeout : nullptr)
         );
     if (cache)
         m_session = session;
@@ -198,10 +199,8 @@ const char* AbstractSPRequest::getRequestURL() const
         int port = getPort();
         const char* scheme = getScheme();
         m_url = string(scheme) + "://" + getHostname();
-        if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
-            ostringstream portstr;
-            portstr << port;
-            m_url += ":" + portstr.str();
+        if ((!strcmp(scheme,"http") && port != 80) || (!strcmp(scheme,"https") && port != 443)) {
+            m_url += ":" + boost::lexical_cast<string>(port);
         }
         m_url += m_uri;
     }
@@ -216,20 +215,20 @@ string AbstractSPRequest::getRemoteAddr() const
 
 const char* AbstractSPRequest::getParameter(const char* name) const
 {
-    if (!m_parser)
-        m_parser=new CGIParser(*this);
+    if (!m_parser.get())
+        m_parser.reset(new CGIParser(*this));
 
-    pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
+    pair<CGIParser::walker,CGIParser::walker> bounds = m_parser->getParameters(name);
     return (bounds.first==bounds.second) ? nullptr : bounds.first->second;
 }
 
 vector<const char*>::size_type AbstractSPRequest::getParameters(const char* name, vector<const char*>& values) const
 {
-    if (!m_parser)
-        m_parser=new CGIParser(*this);
+    if (!m_parser.get())
+        m_parser.reset(new CGIParser(*this));
 
-    pair<CGIParser::walker,CGIParser::walker> bounds=m_parser->getParameters(name);
-    while (bounds.first!=bounds.second) {
+    pair<CGIParser::walker,CGIParser::walker> bounds = m_parser->getParameters(name);
+    while (bounds.first != bounds.second) {
         values.push_back(bounds.first->second);
         ++bounds.first;
     }
@@ -241,19 +240,18 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     if (!resource)
         resource = getRequestURL();
 
-    if (!m_handlerURL.empty() && resource && !strcmp(getRequestURL(),resource))
+    if (!m_handlerURL.empty() && resource && !strcmp(getRequestURL(), resource))
         return m_handlerURL.c_str();
 
+    // Check for relative URL.
     string stackresource;
     if (resource && *resource == '/') {
         // Compute a URL to the root of the site and point resource at constructed string.
         int port = getPort();
         const char* scheme = getScheme();
         stackresource = string(scheme) + "://" + getHostname();
-        if ((!strcmp(scheme,"http") && port!=80) || (!strcmp(scheme,"https") && port!=443)) {
-            ostringstream portstr;
-            portstr << port;
-            stackresource += ":" + portstr.str();
+        if ((!strcmp(scheme,"http") && port != 80) || (!strcmp(scheme,"https") && port != 443)) {
+            stackresource += ":" + boost::lexical_cast<string>(port);
         }
         stackresource += resource;
         resource = stackresource.c_str();
@@ -266,16 +264,16 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 #endif
         throw ConfigurationException("Target resource was not an absolute URL.");
 
-    bool ssl_only=true;
-    const char* handler=nullptr;
-    const PropertySet* props=getApplication().getPropertySet("Sessions");
+    bool ssl_only = true;
+    const char* handler = nullptr;
+    const PropertySet* props = getApplication().getPropertySet("Sessions");
     if (props) {
-        pair<bool,bool> p=props->getBool("handlerSSL");
+        pair<bool,bool> p = props->getBool("handlerSSL");
         if (p.first)
-            ssl_only=p.second;
-        pair<bool,const char*> p2=props->getString("handlerURL");
+            ssl_only = p.second;
+        pair<bool,const char*> p2 = props->getString("handlerURL");
         if (p2.first)
-            handler=p2.second;
+            handler = p2.second;
     }
 
     if (!handler) {
@@ -314,9 +312,9 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     }
 
     // break apart the "protocol" string into protocol, host, and "the rest"
-    const char* colon=strchr(prot,':');
+    const char* colon = strchr(prot, ':');
     colon += 3;
-    const char* slash=strchr(colon,'/');
+    const char* slash = strchr(colon, '/');
     if (!path)
         path = slash;
 

@@ -28,6 +28,8 @@
 #include "metadata/MetadataExt.h"
 #include "security/PKIXTrustEngine.h"
 
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 #include <saml/saml2/metadata/ObservableMetadataProvider.h>
@@ -41,6 +43,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace xmlsignature;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -53,10 +56,7 @@ namespace shibsp {
         virtual ~PKIXTrustEngine() {
             for (map<const ObservableMetadataProvider*,credmap_t>::iterator i=m_credentialMap.begin(); i!=m_credentialMap.end(); ++i) {
                 i->first->removeObserver(this);
-                for (credmap_t::iterator creds = i->second.begin(); creds!=i->second.end(); ++creds)
-                    for_each(creds->second.begin(), creds->second.end(), xmltooling::cleanup<X509Credential>());
             }
-            delete m_credLock;
         }
         
         AbstractPKIXTrustEngine::PKIXValidationInfoIterator* getPKIXValidationInfoIterator(
@@ -66,11 +66,8 @@ namespace shibsp {
         void onEvent(const ObservableMetadataProvider& metadata) const {
             // Destroy credentials we cached from this provider.
             m_credLock->wrlock();
-            credmap_t& cmap = m_credentialMap[&metadata];
-            for (credmap_t::iterator creds = cmap.begin(); creds!=cmap.end(); ++creds)
-                for_each(creds->second.begin(), creds->second.end(), xmltooling::cleanup<X509Credential>());
-            cmap.clear();
-            m_credLock->unlock();
+            SharedLock locker(m_credLock, false);
+            m_credentialMap[&metadata].clear();
         }
 
         const KeyInfoResolver* getKeyInfoResolver() const {
@@ -79,8 +76,8 @@ namespace shibsp {
 
     private:
         friend class SHIBSP_DLLLOCAL MetadataPKIXIterator;
-        mutable RWLock* m_credLock;
-        typedef map< const KeyAuthority*,vector<X509Credential*> > credmap_t;
+        scoped_ptr<RWLock> m_credLock;
+        typedef map< const KeyAuthority*,vector< boost::shared_ptr<X509Credential> > > credmap_t;
         mutable map<const ObservableMetadataProvider*,credmap_t> m_credentialMap;
     };
     
@@ -99,7 +96,6 @@ namespace shibsp {
         virtual ~MetadataPKIXIterator() {
             if (m_caching)
                 m_engine.m_credLock->unlock();
-            for_each(m_ownedCreds.begin(), m_ownedCreds.end(), xmltooling::cleanup<Credential>());
         }
 
         bool next();
@@ -128,7 +124,7 @@ namespace shibsp {
         vector<XMLObject*>::const_iterator m_iter;
         vector<XSECCryptoX509*> m_certs;
         vector<XSECCryptoX509CRL*> m_crls;
-        vector<X509Credential*> m_ownedCreds;
+        vector< boost::shared_ptr<X509Credential> > m_ownedCreds;
     };
 };
 
@@ -162,19 +158,25 @@ MetadataPKIXIterator::MetadataPKIXIterator(
     // While holding read lock, see if this metadata plugin has been seen before.
     m_engine.m_credLock->rdlock();
     m_credCache = m_engine.m_credentialMap.find(observable);
-    if (m_credCache==m_engine.m_credentialMap.end()) {
+    if (m_credCache == m_engine.m_credentialMap.end()) {
 
         // We need to elevate the lock and retry.
         m_engine.m_credLock->unlock();
         m_engine.m_credLock->wrlock();
         m_credCache = m_engine.m_credentialMap.find(observable);
-        if (m_credCache==m_engine.m_credentialMap.end()) {
+        if (m_credCache == m_engine.m_credentialMap.end()) {
+            try {
+                // It's still brand new, so hook it for cache activation.
+                observable->addObserver(&m_engine);
 
-            // It's still brand new, so hook it for cache activation.
-            observable->addObserver(&m_engine);
-
-            // Prime the map reference with an empty credential map.
-            m_credCache = m_engine.m_credentialMap.insert(make_pair(observable,PKIXTrustEngine::credmap_t())).first;
+                // Prime the map reference with an empty credential map.
+                m_credCache = m_engine.m_credentialMap.insert(make_pair(observable,PKIXTrustEngine::credmap_t())).first;
+            }
+            catch (std::exception&) {
+                // The destructor won't run if we throw here, so we need to unlock.
+                m_engine.m_credLock->unlock();
+                throw;
+            }
             
             // Downgrade the lock.
             // We don't have to recheck because we never erase the master map entry entirely, even on changes.
@@ -239,14 +241,14 @@ void MetadataPKIXIterator::populate()
     // Dump anything old.
     m_certs.clear();
     m_crls.clear();
-    for_each(m_ownedCreds.begin(), m_ownedCreds.end(), xmltooling::cleanup<Credential>());
+    m_ownedCreds.clear();
 
     if (m_caching) {
         // We're holding a read lock. Search for "resolved" creds.
         PKIXTrustEngine::credmap_t::iterator cached = m_credCache->second.find(m_current);
-        if (cached!=m_credCache->second.end()) {
+        if (cached != m_credCache->second.end()) {
             // Copy over the information.
-            for (vector<X509Credential*>::const_iterator c=cached->second.begin(); c!=cached->second.end(); ++c) {
+            for (vector< boost::shared_ptr<X509Credential> >::const_iterator c = cached->second.begin(); c != cached->second.end(); ++c) {
                 m_certs.insert(m_certs.end(), (*c)->getEntityCertificateChain().begin(), (*c)->getEntityCertificateChain().end());
                 if ((*c)->getCRL())
                     m_crls.push_back((*c)->getCRL());
@@ -257,17 +259,15 @@ void MetadataPKIXIterator::populate()
 
     // We're either not caching or didn't find the results we need, so we have to resolve them.
     const vector<KeyInfo*>& keyInfos = m_current->getKeyInfos();
-    for (vector<KeyInfo*>::const_iterator k = keyInfos.begin(); k!=keyInfos.end(); ++k) {
-        auto_ptr<Credential> cred (m_engine.getKeyInfoResolver()->resolve(*k, X509Credential::RESOLVE_CERTS | X509Credential::RESOLVE_CRLS));
-        X509Credential* xcred = dynamic_cast<X509Credential*>(cred.get());
-        if (xcred) {
+    for (vector<KeyInfo*>::const_iterator k = keyInfos.begin(); k != keyInfos.end(); ++k) {
+        boost::shared_ptr<Credential> cred(m_engine.getKeyInfoResolver()->resolve(*k, X509Credential::RESOLVE_CERTS | X509Credential::RESOLVE_CRLS));
+        boost::shared_ptr<X509Credential> xcred = boost::dynamic_pointer_cast<X509Credential>(cred);
+        if (xcred)
             m_ownedCreds.push_back(xcred);
-            cred.release();
-        }
     }
 
     // Copy over the new information.
-    for (vector<X509Credential*>::const_iterator c=m_ownedCreds.begin(); c!=m_ownedCreds.end(); ++c) {
+    for (vector< boost::shared_ptr<X509Credential> >::const_iterator c = m_ownedCreds.begin(); c != m_ownedCreds.end(); ++c) {
         m_certs.insert(m_certs.end(), (*c)->getEntityCertificateChain().begin(), (*c)->getEntityCertificateChain().end());
         if ((*c)->getCRL())
             m_crls.push_back((*c)->getCRL());
@@ -277,7 +277,7 @@ void MetadataPKIXIterator::populate()
     if (m_caching) {
         m_engine.m_credLock->unlock();
         m_engine.m_credLock->wrlock();
-        if (m_credCache->second.count(m_current)==0) {
+        if (m_credCache->second.count(m_current) == 0) {
             // Transfer objects into cache.
             m_credCache->second[m_current] = m_ownedCreds;
             m_ownedCreds.clear();

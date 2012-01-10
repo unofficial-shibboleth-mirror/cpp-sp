@@ -30,6 +30,8 @@
 #include "ServiceProvider.h"
 #include "metadata/MetadataProviderCriteria.h"
 
+#include <boost/scoped_ptr.hpp>
+#include <boost/algorithm/string.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
@@ -58,29 +60,12 @@ using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    class SAML_DLLLOCAL DummyCredentialResolver : public CredentialResolver
-    {
-    public:
-        DummyCredentialResolver() {}
-        ~DummyCredentialResolver() {}
-
-        Lockable* lock() {return this;}
-        void unlock() {}
-
-        const Credential* resolve(const CredentialCriteria* criteria=nullptr) const {return nullptr;}
-        vector<const Credential*>::size_type resolve(
-            vector<const Credential*>& results, const CredentialCriteria* criteria=nullptr
-            ) const {return 0;}
-    };
-
     class SHIBSP_DLLLOCAL DynamicMetadataProvider : public saml2md::DynamicMetadataProvider
     {
     public:
         DynamicMetadataProvider(const xercesc::DOMElement* e=nullptr);
 
-        virtual ~DynamicMetadataProvider() {
-            delete m_trust;
-        }
+        virtual ~DynamicMetadataProvider() {}
 
     protected:
         saml2md::EntityDescriptor* resolve(const saml2md::MetadataProvider::Criteria& criteria) const;
@@ -88,9 +73,9 @@ namespace shibsp {
     private:
         bool m_verifyHost,m_ignoreTransport,m_encoded;
         string m_subst, m_match, m_regex;
-        X509TrustEngine* m_trust;
+        boost::scoped_ptr<X509TrustEngine> m_trust;
+        boost::scoped_ptr<CredentialResolver> m_dummyCR;
     };
-
 
     saml2md::MetadataProvider* SHIBSP_DLLLOCAL DynamicMetadataProviderFactory(const DOMElement* const & e)
     {
@@ -103,7 +88,7 @@ namespace shibsp {
     static const XMLCh Regex[] =            UNICODE_LITERAL_5(R,e,g,e,x);
     static const XMLCh Subst[] =            UNICODE_LITERAL_5(S,u,b,s,t);
     static const XMLCh _TrustEngine[] =     UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
-    static const XMLCh type[] =             UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh _type[] =            UNICODE_LITERAL_4(t,y,p,e);
     static const XMLCh verifyHost[] =       UNICODE_LITERAL_10(v,e,r,i,f,y,H,o,s,t);
 };
 
@@ -134,16 +119,18 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
 
     if (!m_ignoreTransport) {
         child = XMLHelper::getFirstChildElement(e, _TrustEngine);
-        string t = XMLHelper::getAttrString(child, nullptr, type);
+        string t = XMLHelper::getAttrString(child, nullptr, _type);
         if (!t.empty()) {
             TrustEngine* trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child);
-            if (!(m_trust = dynamic_cast<X509TrustEngine*>(trust))) {
+            if (!dynamic_cast<X509TrustEngine*>(trust)) {
                 delete trust;
                 throw ConfigurationException("DynamicMetadataProvider requires an X509TrustEngine plugin.");
             }
+            m_trust.reset(dynamic_cast<X509TrustEngine*>(trust));
+            m_dummyCR.reset(XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(DUMMY_CREDENTIAL_RESOLVER, nullptr));
         }
 
-        if (!m_trust)
+        if (!m_trust.get() || !m_dummyCR.get())
             throw ConfigurationException("DynamicMetadataProvider requires an X509TrustEngine plugin unless ignoreTransport is true.");
     }
 }
@@ -171,13 +158,10 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
 
     // Possibly transform the input into a different URL to use.
     if (!m_subst.empty()) {
-        string::size_type pos = m_subst.find("$entityID");
-        if (pos != string::npos) {
-            string name2 = m_subst;
-            name2.replace(pos, 9, m_encoded ? XMLToolingConfig::getConfig().getURLEncoder()->encode(name.c_str()) : name);
-            log.info("transformed location from (%s) to (%s)", name.c_str(), name2.c_str());
-            name = name2;
-        }
+        string name2 = boost::replace_first_copy(m_subst, "$entityID",
+            m_encoded ? XMLToolingConfig::getConfig().getURLEncoder()->encode(name.c_str()) : name);
+        log.info("transformed location from (%s) to (%s)", name.c_str(), name2.c_str());
+        name = name2;
     }
     else if (!m_match.empty() && !m_regex.empty()) {
         try {
@@ -220,21 +204,19 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
     if (!pch)
         throw IOException("location was not a URL.");
     string scheme(addr.m_endpoint, pch-addr.m_endpoint);
-    SOAPTransport* transport=nullptr;
+    boost::scoped_ptr<SOAPTransport> transport;
     try {
-        transport = XMLToolingConfig::getConfig().SOAPTransportManager.newPlugin(scheme.c_str(), addr);
+        transport.reset(XMLToolingConfig::getConfig().SOAPTransportManager.newPlugin(scheme.c_str(), addr));
     }
     catch (exception& ex) {
         log.error("exception while building transport object to resolve URL: %s", ex.what());
         throw IOException("Unable to resolve entityID with a known transport protocol.");
     }
-    auto_ptr<SOAPTransport> transportwrapper(transport);
 
     // Apply properties as directed.
     transport->setVerifyHost(m_verifyHost);
-    DummyCredentialResolver dcr;
-    if (m_trust && !transport->setTrustEngine(m_trust, &dcr))
-        throw IOException("Unable to install X509TrustEngine into metadata resolver.");
+    if (m_trust.get() && m_dummyCR.get() && !transport->setTrustEngine(m_trust.get(), m_dummyCR.get()))
+        throw IOException("Unable to install X509TrustEngine into transport object.");
 
     Locker credlocker(nullptr, false);
     CredentialResolver* credResolver = nullptr;
@@ -293,14 +275,13 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
     transport->setTimeout(timeout.first ? timeout.second : 20);
     mpc->application.getServiceProvider().setTransportOptions(*transport);
 
-    HTTPSOAPTransport* http = dynamic_cast<HTTPSOAPTransport*>(transport);
+    HTTPSOAPTransport* http = dynamic_cast<HTTPSOAPTransport*>(transport.get());
     if (http) {
         pair<bool,bool> flag = relyingParty->getBool("chunkedEncoding");
         http->useChunkedEncoding(flag.first && flag.second);
         http->setRequestHeader("Xerces-C", XERCES_FULLVERSIONDOT);
         http->setRequestHeader("XML-Security-C", XSEC_FULLVERSIONDOT);
-        http->setRequestHeader("OpenSAML-C", OPENSAML_FULLVERSIONDOT);
-        http->setRequestHeader("User-Agent", PACKAGE_NAME);
+        http->setRequestHeader("OpenSAML-C", gOpenSAMLDotVersionStr);
         http->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION);
     }
 

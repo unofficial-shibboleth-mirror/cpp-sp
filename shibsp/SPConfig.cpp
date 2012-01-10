@@ -66,6 +66,7 @@
 #endif
 
 #include <ctime>
+#include <boost/scoped_ptr.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/version.h>
 #include <xmltooling/XMLToolingConfig.h>
@@ -79,6 +80,7 @@
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
@@ -101,15 +103,15 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SPInternalConfig : public SPConfig
     {
     public:
-        SPInternalConfig();
-        ~SPInternalConfig();
+        SPInternalConfig() : m_initCount(0), m_lock(Mutex::create()) {}
+        ~SPInternalConfig() {}
 
         bool init(const char* catalog_path=nullptr, const char* inst_prefix=nullptr);
         void term();
 
     private:
         int m_initCount;
-        Mutex* m_lock;
+        scoped_ptr<Mutex> m_lock;
     };
     
     SPInternalConfig g_config;
@@ -441,15 +443,6 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
         Category::getInstance(SHIBSP_LOGCAT".Config").fatal("caught exception while loading configuration: %s", ex.what());
     }
     return false;
-}
-
-SPInternalConfig::SPInternalConfig() : m_initCount(0), m_lock(Mutex::create())
-{
-}
-
-SPInternalConfig::~SPInternalConfig()
-{
-    delete m_lock;
 }
 
 bool SPInternalConfig::init(const char* catalog_path, const char* inst_prefix)

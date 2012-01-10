@@ -107,7 +107,7 @@ string TemplateParameters::toQueryString() const
     string q;
 
     const URLEncoder* enc = XMLToolingConfig::getConfig().getURLEncoder();
-    for (map<string,string>::const_iterator i=m_map.begin(); i!=m_map.end(); i++)
+    for (map<string,string>::const_iterator i = m_map.begin(); i != m_map.end(); ++i)
         q = q + '&' + i->first + '=' + enc->encode(i->second.c_str());
 
     // Add in the exception content.

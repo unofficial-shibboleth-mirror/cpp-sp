@@ -31,6 +31,8 @@
 #include "util/SPConstants.h"
 
 #include <map>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
@@ -41,10 +43,10 @@
 using shibspconstants::SHIB2SPPROTOCOLS_NS;
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
-
     static const XMLCh _id[] =          UNICODE_LITERAL_2(i,d);
     static const XMLCh Binding[] =      UNICODE_LITERAL_7(B,i,n,d,i,n,g);
     static const XMLCh Initiator[] =    UNICODE_LITERAL_9(I,n,i,t,i,a,t,o,r);
@@ -62,10 +64,6 @@ namespace shibsp {
     public:
         XMLProtocolProviderImpl(const DOMElement* e, Category& log);
         ~XMLProtocolProviderImpl() {
-            for (protmap_t::iterator i = m_map.begin(); i != m_map.end(); ++i) {
-                delete i->second.first;
-                for_each(i->second.second.begin(), i->second.second.end(), xmltooling::cleanup<PropertySet>());
-            }
             if (m_document)
                 m_document->release();
         }
@@ -86,8 +84,9 @@ namespace shibsp {
     private:
         DOMDocument* m_document;
         // Map of protocol/service pair to an Initiator propset plus an array of Binding propsets.
-        typedef map< pair<string,string>, pair< PropertySet*,vector<const PropertySet*> > > protmap_t;
+        typedef map< pair<string,string>, pair< const PropertySet*,vector<const PropertySet*> > > protmap_t;
         protmap_t m_map;
+        vector< boost::shared_ptr<PropertySet> > m_propsetJanitor;  // needed to maintain vector API
 
         friend class SHIBSP_DLLLOCAL XMLProtocolProvider;
     };
@@ -96,13 +95,12 @@ namespace shibsp {
     {
     public:
         XMLProtocolProvider(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".ProtocolProvider.XML")), m_impl(nullptr) {
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".ProtocolProvider.XML")) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 
         ~XMLProtocolProvider() {
             shutdown();
-            delete m_impl;
         }
 
         const PropertySet* getInitiator(const char* protocol, const char* service) const {
@@ -121,7 +119,7 @@ namespace shibsp {
 
     private:
         static vector<const PropertySet*> m_noBindings;
-        XMLProtocolProviderImpl* m_impl;
+        scoped_ptr<XMLProtocolProviderImpl> m_impl;
     };
 
 #if defined (_MSC_VER)
@@ -154,8 +152,6 @@ XMLProtocolProviderImpl::XMLProtocolProviderImpl(const DOMElement* e, Category& 
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLProtocolProviderImpl");
 #endif
-    //typedef map< pair<string,string>, pair< PropertySet*,vector<const PropertySet*> > > protmap_t;
-
     if (!XMLHelper::isNodeNamed(e, SHIB2SPPROTOCOLS_NS, Protocols))
         throw ConfigurationException("XML ProtocolProvider requires prot:Protocols at root of configuration.");
 
@@ -167,13 +163,14 @@ XMLProtocolProviderImpl::XMLProtocolProviderImpl(const DOMElement* e, Category& 
             while (svc) {
                 string svcid = XMLHelper::getAttrString(svc, nullptr, _id);
                 if (!svcid.empty() && m_map.count(make_pair(id,svcid)) == 0) {
-                    pair< PropertySet*,vector<const PropertySet*> >& entry = m_map[make_pair(id,svcid)];
+                    pair< const PropertySet*,vector<const PropertySet*> >& entry = m_map[make_pair(id,svcid)];
                     // Wrap the Initiator in a propset, if any.
                     const DOMElement* child = XMLHelper::getFirstChildElement(svc, SHIB2SPPROTOCOLS_NS, Initiator);
                     if (child) {
-                        DOMPropertySet* initprop = new DOMPropertySet();
-                        entry.first = initprop;
+                        boost::shared_ptr<DOMPropertySet> initprop(new DOMPropertySet());
                         initprop->load(child, nullptr, this);
+                        m_propsetJanitor.push_back(initprop);
+                        entry.first = initprop.get();
                     }
                     else {
                         entry.first = nullptr;
@@ -182,9 +179,10 @@ XMLProtocolProviderImpl::XMLProtocolProviderImpl(const DOMElement* e, Category& 
                     // Walk the Bindings.
                     child = XMLHelper::getFirstChildElement(svc, SHIB2SPPROTOCOLS_NS, Binding);
                     while (child) {
-                        DOMPropertySet* bindprop = new DOMPropertySet();
-                        entry.second.push_back(bindprop);
+                        boost::shared_ptr<DOMPropertySet> bindprop(new DOMPropertySet());
                         bindprop->load(child, nullptr, this);
+                        m_propsetJanitor.push_back(bindprop);
+                        entry.second.push_back(bindprop.get());
                         child = XMLHelper::getNextSiblingElement(child, SHIB2SPPROTOCOLS_NS, Binding);
                     }
                 }
@@ -204,7 +202,7 @@ pair<bool,DOMElement*> XMLProtocolProvider::load(bool backup)
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    XMLProtocolProviderImpl* impl = new XMLProtocolProviderImpl(raw.second, m_log);
+    scoped_ptr<XMLProtocolProviderImpl> impl(new XMLProtocolProviderImpl(raw.second, m_log));
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
@@ -213,8 +211,7 @@ pair<bool,DOMElement*> XMLProtocolProvider::load(bool backup)
     if (m_lock)
         m_lock->wrlock();
     SharedLock locker(m_lock, false);
-    delete m_impl;
-    m_impl = impl;
+    m_impl.swap(impl);
 
 
     return make_pair(false,(DOMElement*)nullptr);
@@ -232,7 +229,7 @@ pair<bool,DOMElement*> XMLProtocolProvider::background_load()
             return load(true);
         throw;
     }
-    catch (exception&) {
+    catch (std::exception&) {
         if (!m_loaded && !m_backing.empty())
             return load(true);
         throw;

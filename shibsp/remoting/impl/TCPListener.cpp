@@ -29,6 +29,8 @@
 #include "remoting/impl/SocketListener.h"
 #include "util/IPRange.h"
 
+#include <boost/bind.hpp>
+#include <boost/algorithm/string.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/unicode.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -56,6 +58,7 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace xercesc;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -118,24 +121,16 @@ TCPListener::TCPListener(const DOMElement* e)
             m_port = 1600;
     }
 
-    int j = 0;
+    vector<string> rawacls;
     string aclbuf = XMLHelper::getAttrString(e, "127.0.0.1", acl);
-    for (unsigned int i = 0;  i < aclbuf.length();  ++i) {
-        if (aclbuf.at(i) == ' ') {
-            try {
-                m_acl.push_back(IPRange::parseCIDRBlock(aclbuf.substr(j, i-j).c_str()));
-            }
-            catch (exception& ex) {
-                log->error("invalid CIDR block (%s): %s", aclbuf.substr(j, i-j).c_str(), ex.what());
-            }
-            j = i + 1;
+    boost::split(rawacls, aclbuf, boost::is_space(), algorithm::token_compress_on);
+    for (vector<string>::const_iterator i = rawacls.begin();  i < rawacls.end();  ++i) {
+        try {
+            m_acl.push_back(IPRange::parseCIDRBlock(i->c_str()));
         }
-    }
-    try {
-        m_acl.push_back(IPRange::parseCIDRBlock(aclbuf.substr(j, aclbuf.length()-j).c_str()));
-    }
-    catch (exception& ex) {
-        log->error("invalid CIDR block (%s): %s", aclbuf.substr(j, aclbuf.length()-j).c_str(), ex.what());
+        catch (std::exception& ex) {
+            log->error("invalid CIDR block (%s): %s", i->c_str(), ex.what());
+        }
     }
 
     if (m_acl.empty()) {
@@ -262,11 +257,9 @@ bool TCPListener::accept(ShibSocket& listener, ShibSocket& s) const
     if (s < 0)
 #endif
         return log_error("accept");
-    bool found = false;
-    for (vector<IPRange>::const_iterator acl = m_acl.begin(); !found && acl != m_acl.end(); ++acl) {
-        found = acl->contains((const struct sockaddr*)&addr);
-    }
-    if (!found) {
+
+    static bool (IPRange::* contains)(const struct sockaddr*) const = &IPRange::contains;
+    if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, (const struct sockaddr*)&addr)) == m_acl.end()) {
         close(s);
         s = -1;
         log->error("accept() rejected client with invalid address");
