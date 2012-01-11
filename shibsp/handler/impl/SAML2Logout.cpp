@@ -41,9 +41,6 @@
 # include <fstream>
 # include <boost/algorithm/string.hpp>
 # include <boost/iterator/indirect_iterator.hpp>
-# include <boost/lambda/bind.hpp>
-# include <boost/lambda/if.hpp>
-# include <boost/lambda/lambda.hpp>
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml2/core/Protocols.h>
@@ -55,7 +52,6 @@ using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
 using namespace opensaml;
-using namespace boost::lambda;
 #else
 # include "lite/SAMLConstants.h"
 #endif
@@ -489,10 +485,9 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
 
                 // Now we actually terminate everything except for the active session,
                 // if this is front-channel, for notification purposes.
-                for_each(
-                    sessions.begin(), sessions.end(),
-                    if_(_1 != session_id)[lambda::bind(&SessionCacheEx::remove, cacheex, boost::ref(application), lambda::bind(&string::c_str, _1))]
-                    );
+                for (vector<string>::const_iterator sit = sessions.begin(); sit != sessions.end(); ++sit)
+                    if (*sit != session_id)
+                        cacheex->remove(application, sit->c_str()); // using the ID-based removal operation
             }
             else {
                 m_log.warn("session cache does not support extended API, can't implement indirect logout of sessions");
