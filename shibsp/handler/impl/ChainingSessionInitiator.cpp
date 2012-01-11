@@ -108,7 +108,8 @@ ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const ch
         if (!t.empty()) {
             try {
                 auto_ptr<SessionInitiator> np(conf.SessionInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId)));
-                m_handlers.push_back(np);
+                m_handlers.push_back(np.get());
+                np.release();
                 m_handlers.back().setParent(this);
             }
             catch (std::exception& ex) {

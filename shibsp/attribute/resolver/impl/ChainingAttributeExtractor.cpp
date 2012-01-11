@@ -132,7 +132,8 @@ ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
                     "building AttributeExtractor of type (%s)...", t.c_str()
                     );
                 auto_ptr<AttributeExtractor> np(conf.AttributeExtractorManager.newPlugin(t.c_str(), e));
-                m_extractors.push_back(np);
+                m_extractors.push_back(np.get());
+                np.release();
             }
             catch (exception& ex) {
                 Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.Chaining").error(

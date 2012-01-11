@@ -185,7 +185,8 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
                     "building AttributeResolver of type (%s)...", t.c_str()
                     );
                 auto_ptr<AttributeResolver> np(conf.AttributeResolverManager.newPlugin(t.c_str(), e));
-                m_resolvers.push_back(np);
+                m_resolvers.push_back(np.get());
+                np.release();
             }
             catch (exception& ex) {
                 Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Chaining").error(

@@ -110,7 +110,9 @@ ChainingAccessControl::ChainingAccessControl(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             Category::getInstance(SHIBSP_LOGCAT".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", t.c_str());
-            m_ac.push_back(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e));
+            auto_ptr<AccessControl> np(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e));
+            m_ac.push_back(np.get());
+            np.release();
         }
         e = XMLHelper::getNextSiblingElement(e, _AccessControl);
     }

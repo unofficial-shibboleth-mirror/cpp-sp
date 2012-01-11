@@ -107,7 +107,8 @@ ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char
         if (!t.empty()) {
             try {
                 auto_ptr<Handler> np(conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId)));
-                m_handlers.push_back(np);
+                m_handlers.push_back(np.get());
+                np.release();
                 m_handlers.back().setParent(this);
             }
             catch (std::exception& ex) {
