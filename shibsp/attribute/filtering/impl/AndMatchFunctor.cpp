@@ -30,15 +30,13 @@
 #include "attribute/filtering/MatchFunctor.h"
 #include "util/SPConstants.h"
 
+#include <boost/bind.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace boost::lambda;
 using namespace boost;
 using namespace std;
 
@@ -57,7 +55,7 @@ namespace shibsp {
                 return false;
             vector<const MatchFunctor*>::const_iterator i = find_if(
                 m_functors.begin(), m_functors.end(),
-                lambda::bind(&MatchFunctor::evaluatePolicyRequirement, _1, boost::ref(filterContext)) == false
+                boost::bind(&MatchFunctor::evaluatePolicyRequirement, _1, boost::cref(filterContext)) == false
                 );
             return (i == m_functors.end());
         }
@@ -67,7 +65,7 @@ namespace shibsp {
                 return false;
             vector<const MatchFunctor*>::const_iterator i = find_if(
                 m_functors.begin(), m_functors.end(),
-                lambda::bind(&MatchFunctor::evaluatePermitValue, _1, boost::ref(filterContext), boost::ref(attribute), index) == false
+                boost::bind(&MatchFunctor::evaluatePermitValue, _1, boost::cref(filterContext), boost::cref(attribute), index) == false
                 );
             return (i == m_functors.end());
         }

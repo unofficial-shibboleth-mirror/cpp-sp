@@ -218,7 +218,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
     e = XMLHelper::getFirstChildElement(e, Policy);
     while (e) {
         string id(XMLHelper::getAttrString(e, nullptr, _id));
-        policymap_t::referent_type& rules = m_policyMap[id];
+        policymap_t::mapped_type& rules = m_policyMap[id];
         boost::shared_ptr<DOMPropertySet> settings(new DOMPropertySet());
         settings->load(e, nullptr, &filter);
         rules.first = settings;

@@ -33,9 +33,8 @@
 
 #include <algorithm>
 #include <boost/scoped_ptr.hpp>
+#include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <xmltooling/unicode.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
@@ -50,7 +49,6 @@
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace boost::lambda;
 using namespace boost;
 using namespace std;
 
@@ -373,9 +371,15 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
         case OP_AND:
         {
             // Look for a rule that returns non-true.
+            for (ptr_vector<AccessControl>::const_iterator i = m_operands.begin(); i != m_operands.end(); ++i) {
+                if (i->authorized(request,session) != shib_acl_true)
+                    return shib_acl_false;
+            }
+            return shib_acl_true;
+
             ptr_vector<AccessControl>::const_iterator i = find_if(
                 m_operands.begin(), m_operands.end(),
-                lambda::bind(&AccessControl::authorized, _1, boost::ref(request), session) != shib_acl_true
+                boost::bind(&AccessControl::authorized, _1, boost::cref(request), session) != shib_acl_true
                 );
             return (i != m_operands.end()) ? shib_acl_false : shib_acl_true;
         }
@@ -385,7 +389,7 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
             // Look for a rule that returns true.
             ptr_vector<AccessControl>::const_iterator i = find_if(
                 m_operands.begin(), m_operands.end(),
-                lambda::bind(&AccessControl::authorized, _1, boost::ref(request), session) == shib_acl_true
+                boost::bind(&AccessControl::authorized, _1, boost::cref(request), session) == shib_acl_true
                 );
             return (i != m_operands.end()) ? shib_acl_true : shib_acl_false;
         }
