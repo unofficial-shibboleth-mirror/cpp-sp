@@ -109,8 +109,8 @@ CGIParser::CGIParser(const HTTPRequest& request, bool queryOnly)
 
 CGIParser::~CGIParser()
 {
-    for_each(kvp_map.begin(), kvp_map.end(), boost::bind<void>(&free, boost::bind(&multimap<string,char*>::value_type::second, _1)));
-}
+    static void (*fn)(void*) = &free;
+    for_each(kvp_map.begin(), kvp_map.end(), boost::bind(fn, boost::bind(&multimap<string,char*>::value_type::second, _1)));}
 
 void CGIParser::parse(const char* pch)
 {

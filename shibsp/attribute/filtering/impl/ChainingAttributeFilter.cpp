@@ -81,7 +81,8 @@ ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
         if (!t.empty()) {
             Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").info("building AttributeFilter of type (%s)...", t.c_str());
             auto_ptr<AttributeFilter> np(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), e));
-            m_filters.push_back(np);
+            m_filters.push_back(np.get());
+            np.release();
         }
         e = XMLHelper::getNextSiblingElement(e, _AttributeFilter);
     }

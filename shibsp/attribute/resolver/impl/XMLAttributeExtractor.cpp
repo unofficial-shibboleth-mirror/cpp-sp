@@ -446,7 +446,8 @@ void XMLExtractorImpl::extractAttributes(
     if ((rule = m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
         auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &nameid, assertingParty, relyingParty));
         if (a.get()) {
-            attributes.push_back(a);
+            attributes.push_back(a.get());
+            a.release();
         }
     }
     else if (m_log.isDebugEnabled()) {
@@ -470,7 +471,8 @@ void XMLExtractorImpl::extractAttributes(
     if ((rule = m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
         auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &nameid, assertingParty, relyingParty));
         if (a.get()) {
-            attributes.push_back(a);
+            attributes.push_back(a.get());
+            a.release();
         }
     }
     else if (m_log.isDebugEnabled()) {
@@ -497,7 +499,8 @@ void XMLExtractorImpl::extractAttributes(
     if ((rule = m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
         auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty));
         if (a.get()) {
-            attributes.push_back(a);
+            attributes.push_back(a.get());
+            a.release();
         }
     }
     else if (m_log.isInfoEnabled()) {
@@ -527,7 +530,8 @@ void XMLExtractorImpl::extractAttributes(
     if ((rule = m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
         auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty));
         if (a.get()) {
-            attributes.push_back(a);
+            attributes.push_back(a.get());
+            a.release();
             return;
         }
     }
@@ -563,7 +567,7 @@ void XMLExtractorImpl::extractAttributes(
         ) const = &XMLExtractorImpl::extractAttributes;
     for_each(
         make_indirect_iterator(statement.getAttributes().begin()), make_indirect_iterator(statement.getAttributes().end()),
-        boost::bind(extract, this, boost::ref(application), assertingParty, relyingParty, _1, boost::ref(attributes))
+        boost::bind(extract, this, boost::cref(application), assertingParty, relyingParty, _1, boost::ref(attributes))
         );
 }
 
@@ -580,7 +584,7 @@ void XMLExtractorImpl::extractAttributes(
         ) const = &XMLExtractorImpl::extractAttributes;
     for_each(
         make_indirect_iterator(statement.getAttributes().begin()), make_indirect_iterator(statement.getAttributes().end()),
-        boost::bind(extract, this, boost::ref(application), assertingParty, relyingParty, _1, boost::ref(attributes))
+        boost::bind(extract, this, boost::cref(application), assertingParty, relyingParty, _1, boost::ref(attributes))
         );
 }
 
@@ -638,7 +642,8 @@ void XMLExtractorImpl::extractAttributes(
                 for (vector<DDF>::iterator obj = d->second.begin(); obj != d->second.end(); ++obj) {
                     auto_ptr<Attribute> wrapper(Attribute::unmarshall(*obj));
                     m_log.debug("recovered cached metadata attribute (%s)", wrapper->getId());
-                    attributes.push_back(wrapper);
+                    attributes.push_back(wrapper.get());
+                    wrapper.release();
                 }
                 break;
             }
@@ -787,7 +792,8 @@ void XMLExtractorImpl::extractAttributes(
                             while (!unsafe_holding2.empty()) {
                                 auto_ptr<Attribute> ptr(unsafe_holding2.back());
                                 unsafe_holding2.pop_back();
-                                holding2.push_back(ptr);
+                                holding2.push_back(ptr.get());
+                                ptr.release();
                             }
                         }
                         catch (std::exception& ex) {
