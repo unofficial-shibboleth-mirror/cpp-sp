@@ -60,6 +60,13 @@
 
 #undef _XPG4_2
 
+#include <set>
+#include <memory>
+#include <fstream>
+#include <stdexcept>
+#include <boost/lexical_cast.hpp>
+#include <boost/scoped_ptr.hpp>
+
 // Apache specific header files
 #include <httpd.h>
 #include <http_config.h>
@@ -76,12 +83,6 @@
 #include <apr_pools.h>
 #endif
 
-#include <set>
-#include <memory>
-#include <fstream>
-#include <sstream>
-#include <stdexcept>
-
 #include <cstddef>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>		// for getpid()
@@ -89,6 +90,7 @@
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 using xercesc::RegularExpression;
 using xercesc::XMLException;
@@ -632,9 +634,9 @@ extern "C" int shib_check_user(request_rec* r)
 
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
 
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_check_user" << '\0';
-  xmltooling::NDC ndc(threadid.str().c_str());
+  string threadid("[");
+  threadid += lexical_cast<string>(getpid()) + "] shib_check_user";
+  xmltooling::NDC ndc(threadid.c_str());
 
   try {
     ShibTargetApache sta(r,false,true);
@@ -654,7 +656,7 @@ extern "C" int shib_check_user(request_rec* r)
     // export happened successfully..  this user is ok.
     return OK;
   }
-  catch (exception& e) {
+  catch (std::exception& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -672,9 +674,9 @@ extern "C" int shib_handler(request_rec* r)
   if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
     return DECLINED;
 
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_handler" << '\0';
-  xmltooling::NDC ndc(threadid.str().c_str());
+  string threadid("[");
+  threadid += lexical_cast<string>(getpid()) + "] shib_handler";
+  xmltooling::NDC ndc(threadid.c_str());
 
 #ifndef SHIB_APACHE_13
   // With 2.x, this handler always runs, though last.
@@ -699,7 +701,7 @@ extern "C" int shib_handler(request_rec* r)
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
     return SERVER_ERROR;
   }
-  catch (exception& e) {
+  catch (std::exception& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -723,9 +725,9 @@ extern "C" int shib_auth_checker(request_rec* r)
 
   ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
 
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_auth_checker" << '\0';
-  xmltooling::NDC ndc(threadid.str().c_str());
+  string threadid("[");
+  threadid += lexical_cast<string>(getpid()) + "] shib_auth_checker";
+  xmltooling::NDC ndc(threadid.c_str());
 
   try {
     ShibTargetApache sta(r,false,false);
@@ -737,7 +739,7 @@ extern "C" int shib_auth_checker(request_rec* r)
     // Just let Apache (or some other module) decide what to do.
     return DECLINED;
   }
-  catch (exception& e) {
+  catch (std::exception& e) {
     ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
     return SERVER_ERROR;
   }
@@ -771,7 +773,7 @@ class ApacheRequestMapper : public virtual RequestMapper, public virtual Propert
 {
 public:
     ApacheRequestMapper(const xercesc::DOMElement* e);
-    ~ApacheRequestMapper() { delete m_mapper; delete m_htaccess; delete m_staKey; delete m_propsKey; }
+    ~ApacheRequestMapper() {}
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_staKey->setData(nullptr); m_propsKey->setData(nullptr); m_mapper->unlock(); }
     Settings getSettings(const HTTPRequest& request) const;
@@ -788,10 +790,9 @@ public:
     const xercesc::DOMElement* getElement() const;
 
 private:
-    RequestMapper* m_mapper;
-    ThreadKey* m_staKey;
-    ThreadKey* m_propsKey;
-    AccessControl* m_htaccess;
+    scoped_ptr<RequestMapper> m_mapper;
+    scoped_ptr<ThreadKey> m_staKey,m_propsKey;
+    mutable htAccessControl m_htaccess;
 };
 
 RequestMapper* ApacheRequestMapFactory(const xercesc::DOMElement* const & e)
@@ -799,20 +800,18 @@ RequestMapper* ApacheRequestMapFactory(const xercesc::DOMElement* const & e)
     return new ApacheRequestMapper(e);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e) : m_mapper(nullptr), m_staKey(nullptr), m_propsKey(nullptr), m_htaccess(nullptr)
+ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e)
+    : m_mapper(SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e)),
+        m_staKey(ThreadKey::create(nullptr)), m_propsKey(ThreadKey::create(nullptr))
 {
-    m_mapper=SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e);
-    m_htaccess=new htAccessControl();
-    m_staKey=ThreadKey::create(nullptr);
-    m_propsKey=ThreadKey::create(nullptr);
 }
 
 RequestMapper::Settings ApacheRequestMapper::getSettings(const HTTPRequest& request) const
 {
-    Settings s=m_mapper->getSettings(request);
+    Settings s = m_mapper->getSettings(request);
     m_staKey->setData((void*)dynamic_cast<const ShibTargetApache*>(&request));
     m_propsKey->setData((void*)s.first);
-    return pair<const PropertySet*,AccessControl*>(this,s.second ? s.second : m_htaccess);
+    return pair<const PropertySet*,AccessControl*>(this, s.second ? s.second : &m_htaccess);
 }
 
 pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) const
@@ -1007,7 +1006,7 @@ bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* 
 {
     bool caseSensitive = attr->isCaseSensitive();
     const vector<string>& vals = attr->getSerializedValues();
-    for (vector<string>::const_iterator v=vals.begin(); v!=vals.end(); ++v) {
+    for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
         if (re) {
             auto_arrayptr<XMLCh> trans(fromUTF8(v->c_str()));
             if (re->matches(trans.get())) {
@@ -1054,11 +1053,11 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
             string t(XMLHelper::getAttrString(acldoc ? acldoc->getDocumentElement() : nullptr, nullptr, _type));
             if (t.empty())
                 throw ConfigurationException("Missing type attribute in AccessControl plugin configuration.");
-            auto_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement()));
+            scoped_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement()));
 			Locker acllock(aclplugin.get());
 			result = aclplugin->authorized(request, session);
 		}
-		catch (exception& ex) {
+		catch (std::exception& ex) {
 			request.log(SPRequest::SPError, ex.what());
 		}
 
@@ -1254,12 +1253,10 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                 }
 
                 try {
-                    auto_ptr<RegularExpression> re;
+                    scoped_ptr<RegularExpression> re;
                     if (regexp) {
-                        delete re.release();
                         auto_arrayptr<XMLCh> trans(fromUTF8(w));
-                        auto_ptr<xercesc::RegularExpression> temp(new xercesc::RegularExpression(trans.get()));
-                        re=temp;
+                        re.reset(new xercesc::RegularExpression(trans.get()));
                     }
                     
                     pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs2(attrs);
@@ -1420,7 +1417,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         if (!g_Config->instantiate(g_szSHIBConfig, true))
             throw runtime_error("unknown error");
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"%s",ex.what());
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
         exit(1);

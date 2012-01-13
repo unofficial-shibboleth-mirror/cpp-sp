@@ -47,6 +47,8 @@
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/Base64.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/algorithm/string.hpp>
 
 #ifdef SHIBSP_HAVE_GSSGNU
 # include <gss.h>
@@ -62,6 +64,7 @@ using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
 using namespace xercesc;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -109,7 +112,7 @@ namespace shibsp {
     {
     public:
         GSSAPIExtractor(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.GSSAPI")), m_impl(nullptr) {
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.GSSAPI")) {
             background_load();
         }
         ~GSSAPIExtractor() {
@@ -133,7 +136,7 @@ namespace shibsp {
         pair<bool,DOMElement*> background_load();
 
     private:
-        GSSAPIExtractorImpl* m_impl;
+        scoped_ptr<GSSAPIExtractorImpl> m_impl;
     };
 
 #if defined (_MSC_VER)
@@ -204,25 +207,15 @@ GSSAPIExtractorImpl::GSSAPIExtractorImpl(const DOMElement* e, Category& log)
         name = child->getAttributeNS(nullptr, _aliases);
         if (name && *name) {
             auto_ptr_char aliases(name);
-            char* pos;
-            char* start = const_cast<char*>(aliases.get());
-            while (start && *start) {
-                while (*start && isspace(*start))
-                    start++;
-                if (!*start)
-                    break;
-                pos = strchr(start,' ');
-                if (pos)
-                    *pos=0;
-                if (strcmp(start, "REMOTE_USER")) {
-                    decl.ids.push_back(start);
-                    m_attributeIds.push_back(start);
-                }
-                else {
-                    m_log.warn("skipping alias, REMOTE_USER is a reserved name");
-                }
-                start = pos ? pos+1 : nullptr;
+            string dup(aliases.get());
+            set<string> new_aliases;
+            split(new_aliases, dup, is_space(), algorithm::token_compress_on);
+            set<string>::iterator ru = new_aliases.find("REMOTE_USER");
+            if (ru != new_aliases.end()) {
+                m_log.warn("skipping alias, REMOTE_USER is a reserved name");
+                new_aliases.erase(ru);
             }
+            m_attributeIds.insert(m_attributeIds.end(), new_aliases.begin(), new_aliases.end());
         }
 
         decl.authenticated = XMLHelper::getAttrBool(child, true, _authenticated);
@@ -307,18 +300,22 @@ void GSSAPIExtractorImpl::extractAttributes(
                 m_log.warn("ignoring unscoped value");
             }
         }
-        if (!scoped->getValues().empty())
-            attributes.push_back(scoped.release());
+        if (!scoped->getValues().empty()) {
+            attributes.push_back(scoped.get());
+            scoped.release();
+        }
     }
     else if (rule->second.binary) {
         auto_ptr<BinaryAttribute> binary(new BinaryAttribute(rule->second.ids));
         binary->getValues() = values;
-        attributes.push_back(binary.release());
+        attributes.push_back(binary.get());
+        binary.release();
     }
     else {
         auto_ptr<SimpleAttribute> simple(new SimpleAttribute(rule->second.ids));
         simple->getValues() = values;
-        attributes.push_back(simple.release());
+        attributes.push_back(simple.get());
+        simple.release();
     }
 }
 
@@ -414,7 +411,7 @@ pair<bool,DOMElement*> GSSAPIExtractor::background_load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    GSSAPIExtractorImpl* impl = new GSSAPIExtractorImpl(raw.second, m_log);
+    scoped_ptr<GSSAPIExtractorImpl> impl(new GSSAPIExtractorImpl(raw.second, m_log));
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());
@@ -423,8 +420,7 @@ pair<bool,DOMElement*> GSSAPIExtractor::background_load()
     if (m_lock)
         m_lock->wrlock();
     SharedLock locker(m_lock, false);
-    delete m_impl;
-    m_impl = impl;
+    m_impl.swap(impl);
 
     return make_pair(false,(DOMElement*)nullptr);
 }

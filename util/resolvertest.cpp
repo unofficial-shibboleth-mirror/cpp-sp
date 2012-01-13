@@ -49,10 +49,12 @@
 #include <saml/saml2/core/Assertions.h>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
-#include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/XMLHelper.h>
+#include <xercesc/util/XMLUniDefs.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/iterator/indirect_iterator.hpp>
 
 using namespace shibsp;
 using namespace opensaml::saml2md;
@@ -60,6 +62,7 @@ using namespace opensaml;
 using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace xercesc;
+using namespace boost;
 using namespace std;
 
 #if defined (_MSC_VER)
@@ -190,46 +193,40 @@ int main(int argc,char* argv[])
     }
 
     try {
-        ResolutionContext* ctx;
+        scoped_ptr<ResolutionContext> ctx;
 
         if (n_param) {
             auto_ptr_XMLCh issuer(i_param);
             auto_ptr_XMLCh name(n_param);
             auto_ptr_XMLCh format(f_param);
 
-            MetadataProvider* m=app->getMetadataProvider();
-            xmltooling::Locker mlocker(m);
+            MetadataProvider* m = app->getMetadataProvider();
+            Locker mlocker(m);
             MetadataProviderCriteria mc(*app, i_param, &IDPSSODescriptor::ELEMENT_QNAME, protocol);
-            pair<const EntityDescriptor*,const RoleDescriptor*> site=m->getEntityDescriptor(mc);
+            pair<const EntityDescriptor*,const RoleDescriptor*> site = m->getEntityDescriptor(mc);
             if (!site.first)
                 throw MetadataException("Unable to locate metadata for IdP ($1).", params(1,i_param));
 
             // Build NameID(s).
-            auto_ptr<saml2::NameID> v2name(saml2::NameIDBuilder::buildNameID());
+            scoped_ptr<saml1::NameIdentifier> v1name;
+            scoped_ptr<saml2::NameID> v2name(saml2::NameIDBuilder::buildNameID());
             v2name->setName(name.get());
             v2name->setFormat(format.get());
-            saml1::NameIdentifier* v1name = nullptr;
             if (!XMLString::equals(protocol, samlconstants::SAML20P_NS)) {
-                v1name = saml1::NameIdentifierBuilder::buildNameIdentifier();
+                v1name.reset(saml1::NameIdentifierBuilder::buildNameIdentifier());
                 v1name->setName(name.get());
                 v1name->setFormat(format.get());
                 v1name->setNameQualifier(issuer.get());
             }
 
             ResolverTest rt(nullptr, a_param);
-            try {
-                ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name.get(), nullptr, nullptr, nullptr);
-            }
-            catch (...) {
-                delete v1name;
-                throw;
-            }
+            ctx.reset(rt.resolveAttributes(*app, site.second, protocol, v1name.get(), v2name.get(), nullptr, nullptr, nullptr));
         }
         else {
             // Try and load assertion from stdin.
             DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(cin);
             XercesJanitor<DOMDocument> docjan(doc);
-            auto_ptr<XMLObject> token(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
+            scoped_ptr<XMLObject> token(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
             docjan.release();
 
             // Get the issuer and protocol and NameIDs.
@@ -267,15 +264,15 @@ int main(int argc,char* argv[])
                 throw FatalProfileException("Unknown assertion type.");
             }
 
-            auto_ptr<saml2::NameID> nameidwrapper(v1name ? v2name : nullptr);
+            scoped_ptr<saml2::NameID> nameidwrapper(v1name ? v2name : nullptr);
 
             if (!issuer)
                 throw FatalProfileException("Unable to determine issuer.");
 
-            MetadataProvider* m=app->getMetadataProvider();
-            xmltooling::Locker mlocker(m);
+            MetadataProvider* m = app->getMetadataProvider();
+            Locker mlocker(m);
             MetadataProviderCriteria mc(*app, issuer, &IDPSSODescriptor::ELEMENT_QNAME, protocol);
-            pair<const EntityDescriptor*,const RoleDescriptor*> site=m->getEntityDescriptor(mc);
+            pair<const EntityDescriptor*,const RoleDescriptor*> site = m->getEntityDescriptor(mc);
             if (!site.first) {
                 auto_ptr_char temp(issuer);
                 throw MetadataException("Unable to locate metadata for IdP ($1).", params(1,temp.get()));
@@ -283,15 +280,15 @@ int main(int argc,char* argv[])
             
             vector<const Assertion*> tokens(1, dynamic_cast<Assertion*>(token.get()));
             ResolverTest rt(nullptr, a_param);
-            ctx = rt.resolveAttributes(*app, site.second, protocol, v1name, v2name, nullptr, nullptr, &tokens);
+            ctx.reset(rt.resolveAttributes(*app, site.second, protocol, v1name, v2name, nullptr, nullptr, &tokens));
         }
 
-        auto_ptr<ResolutionContext> wrapper(ctx);
-        for (vector<Attribute*>::const_iterator a = ctx->getResolvedAttributes().begin(); a != ctx->getResolvedAttributes().end(); ++a) {
-            for (vector<string>::const_iterator s = (*a)->getAliases().begin(); s != (*a)->getAliases().end(); ++s) {
+        for (indirect_iterator<vector<Attribute*>::const_iterator> a = make_indirect_iterator(ctx->getResolvedAttributes().begin());
+                a != make_indirect_iterator(ctx->getResolvedAttributes().end()); ++a) {
+            for (vector<string>::const_iterator s = a->getAliases().begin(); s != a->getAliases().end(); ++s) {
                 cout << *s << ": ";
-                for (vector<string>::const_iterator v = (*a)->getSerializedValues().begin(); v != (*a)->getSerializedValues().end(); ++v) {
-                    if (v != (*a)->getSerializedValues().begin())
+                for (vector<string>::const_iterator v = a->getSerializedValues().begin(); v != a->getSerializedValues().end(); ++v) {
+                    if (v != a->getSerializedValues().begin())
                         cout << ';';
                     cout << *v;
                 }
@@ -300,7 +297,7 @@ int main(int argc,char* argv[])
         }
         cout << endl;
     }
-    catch(exception& ex) {
+    catch (std::exception& ex) {
         log.error(ex.what());
         sp->unlock();
         conf.term();

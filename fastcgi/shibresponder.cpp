@@ -343,8 +343,9 @@ int main(void)
         // Although FastCGI supports writing before reading,
         // many http clients (browsers) don't support it (so
         // the connection deadlocks until a timeout expires!).
-        char* content;
+        char* content = nullptr;
         gstdin(&request, &content);
+        auto_arrayptr<char> wrapper(content);
 
         try {
             xmltooling::NDC ndc("FastCGI shibresponder");
@@ -383,8 +384,6 @@ int main(void)
             cerr << "shib: FastCGI responder caught an exception: " << e.what() << endl;
             print_error("<html><body>FastCGI Shibboleth responder caught an exception, check log for details.</body></html>");
         }
-
-        delete[] content;
 
         // If the output streambufs had non-zero bufsizes and
         // were constructed outside of the accept loop (i.e.

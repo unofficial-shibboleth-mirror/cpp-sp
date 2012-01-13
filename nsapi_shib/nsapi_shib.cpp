@@ -47,8 +47,9 @@
 #include <set>
 #include <memory>
 #include <fstream>
-#include <sstream>
 #include <stdexcept>
+#include <boost/lexical_cast.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
@@ -73,6 +74,7 @@ extern "C"
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 // macros to output text to client
@@ -159,7 +161,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         if (!g_Config->instantiate(pblock_findval("shib-config",pb), true))
             throw runtime_error("unknown error");
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         pblock_nvinsert("error",ex.what(),pb);
         g_Config->term();
         g_Config=nullptr;
@@ -190,9 +192,8 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
                 unsigned int randkey=0,randkey2=0,randkey3=0,randkey4=0;
                 if (rand_s(&randkey) == 0 && rand_s(&randkey2) == 0 && rand_s(&randkey3) == 0 && rand_s(&randkey4) == 0) {
                     _set_invalid_parameter_handler(old);
-                    ostringstream keystr;
-                    keystr << randkey << randkey2 << randkey3 << randkey4;
-                    g_spoofKey = keystr.str();
+                    g_spoofKey = lexical_cast<string>(randkey) + lexical_cast<string>(randkey2) +
+                        lexical_cast<string>(randkey3) + lexical_cast<string>(randkey4);
                 }
                 else {
                     _set_invalid_parameter_handler(old);
@@ -481,9 +482,9 @@ int WriteClientError(::Session* sn, Request* rq, char* func, char* msg)
 #define FUNC "shibboleth"
 extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
 {
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] nsapi_shib" << '\0';
-  xmltooling::NDC ndc(threadid.str().c_str());
+  string threadid("[");
+  threadid += lexical_cast<string>(getpid()) + "] nsapi_shib";
+  xmltooling::NDC ndc(threadid.c_str());
 
   try {
     ShibTargetNSAPI stn(pb, sn, rq);
@@ -510,7 +511,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
     // this user is ok.
     return REQ_PROCEED;
   }
-  catch (exception& e) {
+  catch (std::exception& e) {
     log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
     return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an exception, see web server log for error.");
   }
@@ -527,9 +528,9 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
 #define FUNC "shib_handler"
 extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
 {
-  ostringstream threadid;
-  threadid << "[" << getpid() << "] shib_handler" << '\0';
-  xmltooling::NDC ndc(threadid.str().c_str());
+  string threadid("[");
+  threadid += lexical_cast<string>(getpid()) + "] shib_handler";
+  xmltooling::NDC ndc(threadid.c_str());
 
   try {
     ShibTargetNSAPI stn(pb, sn, rq);
@@ -539,7 +540,7 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
 
     return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");
   }
-  catch (exception& e) {
+  catch (std::exception& e) {
     log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
     return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an exception, see web server log for error.");
   }
@@ -556,7 +557,7 @@ class SunRequestMapper : public virtual RequestMapper, public virtual PropertySe
 {
 public:
     SunRequestMapper(const xercesc::DOMElement* e);
-    ~SunRequestMapper() { delete m_mapper; delete m_stKey; delete m_propsKey; }
+    ~SunRequestMapper() {}
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_stKey->setData(nullptr); m_propsKey->setData(nullptr); m_mapper->unlock(); }
     Settings getSettings(const HTTPRequest& request) const;
@@ -573,9 +574,8 @@ public:
     const xercesc::DOMElement* getElement() const;
 
 private:
-    RequestMapper* m_mapper;
-    ThreadKey* m_stKey;
-    ThreadKey* m_propsKey;
+    scoped_ptr<RequestMapper> m_mapper;
+    scoped_ptr<ThreadKey> m_stKey, m_propsKey;
 };
 
 RequestMapper* SunRequestMapFactory(const xercesc::DOMElement* const & e)
@@ -583,11 +583,11 @@ RequestMapper* SunRequestMapFactory(const xercesc::DOMElement* const & e)
     return new SunRequestMapper(e);
 }
 
-SunRequestMapper::SunRequestMapper(const xercesc::DOMElement* e) : m_mapper(nullptr), m_stKey(nullptr), m_propsKey(nullptr)
+SunRequestMapper::SunRequestMapper(const xercesc::DOMElement* e)
+    : m_mapper(SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e)),
+        m_stKey(ThreadKey::create(nullptr)),
+        m_propsKey(ThreadKey::create(nullptr))
 {
-    m_mapper = SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e);
-    m_stKey=ThreadKey::create(nullptr);
-    m_propsKey=ThreadKey::create(nullptr);
 }
 
 RequestMapper::Settings SunRequestMapper::getSettings(const HTTPRequest& request) const
@@ -641,8 +641,14 @@ pair<bool,unsigned int> SunRequestMapper::getUnsignedInt(const char* name, const
     if (stn && !ns && name) {
         // Override int properties.
         const char* param=pblock_findval(name,stn->m_pb);
-        if (param)
-            return pair<bool,unsigned int>(true,strtol(param,nullptr,10));
+        if (param) {
+            try {
+                return pair<bool,unsigned int>(true,lexical_cast<unsigned int>(param));
+            }
+            catch (bad_lexical_cast&) {
+                return pair<bool,unsigned int>(false,0);
+            }
+        }
     }
     return s ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
 }

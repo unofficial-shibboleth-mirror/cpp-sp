@@ -49,6 +49,7 @@
 #include <shibsp/handler/AssertionConsumerService.h>
 #include <shibsp/handler/LogoutInitiator.h>
 #include <shibsp/handler/SessionInitiator.h>
+#include <boost/scoped_ptr.hpp>
 #include <xmltooling/logging.h>
 #include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/NDC.h>
@@ -80,6 +81,7 @@ using namespace opensaml;
 using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace xercesc;
+using namespace boost;
 using namespace std;
 
 #define WSFED_NS "http://schemas.xmlsoap.org/ws/2003/07/secext"
@@ -336,13 +338,13 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
 {
     // We have to know the IdP to function.
     if (entityID.empty() || !checkCompatibility(request, isHandler))
-        return make_pair(false,0L);
+        return make_pair(false, 0L);
 
     string target;
     pair<bool,const char*> prop;
     pair<bool,const char*> acClass;
-    const Handler* ACS=nullptr;
-    const Application& app=request.getApplication();
+    const Handler* ACS = nullptr;
+    const Application& app = request.getApplication();
 
     if (isHandler) {
         prop.second = request.getParameter("acsIndex");
@@ -390,7 +392,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
 
     // Since we're not passing by index, we need to fully compute the return URL.
     // Compute the ACS URL. We add the ACS location to the base handlerURL.
-    string ACSloc=request.getHandlerURL(target.c_str());
+    string ACSloc = request.getHandlerURL(target.c_str());
     prop = ACS->getString("Location");
     if (prop.first)
         ACSloc += prop.second;
@@ -442,8 +444,8 @@ pair<bool,long> ADFSSessionInitiator::unwrap(SPRequest& request, DDF& out) const
 void ADFSSessionInitiator::receive(DDF& in, ostream& out)
 {
     // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
+    const char* aid = in["application_id"].string();
+    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) to generate ADFS request", aid ? aid : "(missing)");
@@ -459,14 +461,14 @@ void ADFSSessionInitiator::receive(DDF& in, ostream& out)
     DDFJanitor jout(ret);
 
     // Wrap the outgoing object with a Response facade.
-    auto_ptr<HTTPResponse> http(getResponse(ret));
+    scoped_ptr<HTTPResponse> http(getResponse(ret));
 
     string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
 
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    doRequest(*app, nullptr, *http.get(), entityID, acsLocation, in["authnContextClassRef"].string(), relayState);
+    doRequest(*app, nullptr, *http, entityID, acsLocation, in["authnContextClassRef"].string(), relayState);
     if (!ret.isstruct())
         ret.structure();
     ret.addmember("RelayState").unsafe_string(relayState.c_str());
@@ -485,10 +487,10 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
 {
 #ifndef SHIBSP_LITE
     // Use metadata to invoke the SSO service directly.
-    MetadataProvider* m=app.getMetadataProvider();
+    MetadataProvider* m = app.getMetadataProvider();
     Locker locker(m);
     MetadataProviderCriteria mc(app, entityID, &IDPSSODescriptor::ELEMENT_QNAME, m_binding.get());
-    pair<const EntityDescriptor*,const RoleDescriptor*> entity=m->getEntityDescriptor(mc);
+    pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
     if (!entity.first) {
         m_log.warn("unable to locate metadata for provider (%s)", entityID);
         throw MetadataException("Unable to locate metadata for identity provider ($entityID)", namedparams(1, "entityID", entityID));
@@ -496,7 +498,7 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     else if (!entity.second) {
         m_log.log(getParent() ? Priority::INFO : Priority::WARN, "unable to locate ADFS-aware identity provider role for provider (%s)", entityID);
         if (getParent())
-            return make_pair(false,0L);
+            return make_pair(false, 0L);
         throw MetadataException("Unable to locate ADFS-aware identity provider role for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     const EndpointType* ep = EndpointManager<SingleSignOnService>(
@@ -505,13 +507,13 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     if (!ep) {
         m_log.warn("unable to locate compatible SSO service for provider (%s)", entityID);
         if (getParent())
-            return make_pair(false,0L);
+            return make_pair(false, 0L);
         throw MetadataException("Unable to locate compatible SSO service for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
 
     preserveRelayState(app, httpResponse, relayState);
 
-    auto_ptr<AuthnRequestEvent> ar_event(newAuthnRequestEvent(app, httpRequest));
+    scoped_ptr<AuthnRequestEvent> ar_event(newAuthnRequestEvent(app, httpRequest));
     if (ar_event.get()) {
         ar_event->m_binding = WSFED_NS;
         ar_event->m_protocol = WSFED_NS;
@@ -547,7 +549,7 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
 
     return make_pair(true, httpResponse.sendRedirect(req.c_str()));
 #else
-    return make_pair(false,0L);
+    return make_pair(false, 0L);
 #endif
 }
 
@@ -650,7 +652,7 @@ void ADFSConsumer::implementProtocol(
 
     const saml1::NameIdentifier* saml1name=nullptr;
     const saml1::AuthenticationStatement* saml1statement=nullptr;
-    saml2::NameID* saml2name=nullptr;
+    const saml2::NameID* saml2name=nullptr;
     const saml2::AuthnStatement* saml2statement=nullptr;
     const XMLCh* authMethod=nullptr;
     const XMLCh* authInstant=nullptr;
@@ -749,7 +751,7 @@ void ADFSConsumer::implementProtocol(
     // To complete processing, we need to extract and resolve attributes and then create the session.
 
     // Normalize a SAML 1.x NameIdentifier...
-    auto_ptr<saml2::NameID> nameid(saml1name ? saml2::NameIDBuilder::buildNameID() : nullptr);
+    scoped_ptr<saml2::NameID> nameid(saml1name ? saml2::NameIDBuilder::buildNameID() : nullptr);
     if (saml1name) {
         nameid->setName(saml1name->getName());
         nameid->setFormat(saml1name->getFormat());
@@ -758,7 +760,7 @@ void ADFSConsumer::implementProtocol(
 
     // The context will handle deleting attributes and new tokens.
     vector<const Assertion*> tokens(1,token);
-    auto_ptr<ResolutionContext> ctx(
+    scoped_ptr<ResolutionContext> ctx(
         resolveAttributes(
             application,
             policy.getIssuerMetadata(),
@@ -793,11 +795,11 @@ void ADFSConsumer::implementProtocol(
         authMethod,
         nullptr,
         &tokens,
-        ctx.get() ? &ctx->getResolvedAttributes() : nullptr
+        ctx ? &ctx->getResolvedAttributes() : nullptr
         );
 
-    auto_ptr<LoginEvent> login_event(newLoginEvent(application, httpRequest));
-    if (login_event.get()) {
+    scoped_ptr<LoginEvent> login_event(newLoginEvent(application, httpRequest));
+    if (login_event) {
         login_event->m_sessionID = session_id.c_str();
         login_event->m_peer = entity;
         login_event->m_protocol = WSFED_NS;
@@ -805,7 +807,7 @@ void ADFSConsumer::implementProtocol(
         login_event->m_saml1AuthnStatement = saml1statement;
         login_event->m_nameID = (saml1name ? nameid.get() : saml2name);
         login_event->m_saml2AuthnStatement = saml2statement;
-        if (ctx.get())
+        if (ctx)
             login_event->m_attributes = &ctx->getResolvedAttributes();
         application.getServiceProvider().getTransactionLog()->write(*login_event);
     }
@@ -825,20 +827,18 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
     try {
         session = request.getSession(false, true, false);  // don't cache it and ignore all checks
         if (!session)
-            return make_pair(false,0L);
+            return make_pair(false, 0L);
 
         // We only handle ADFS sessions.
         if (!XMLString::equals(session->getProtocol(), WSFED_NS) || !session->getEntityID()) {
             session->unlock();
-            return make_pair(false,0L);
+            return make_pair(false, 0L);
         }
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
         return make_pair(false,0L);
     }
-
-    session->unlock();
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
@@ -849,7 +849,7 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
         session->unlock();
         vector<string> headers(1,"Cookie");
         headers.push_back("User-Agent");
-        DDF out,in = wrap(request,&headers);
+        DDF out,in = wrap(request, &headers);
         DDFJanitor jin(in), jout(out);
         out=request.getServiceProvider().getListenerService()->send(in);
         return unwrap(request, out);
@@ -864,8 +864,8 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
         return LogoutHandler::receive(in, out);
 
     // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
+    const char* aid = in["application_id"].string();
+    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
@@ -873,18 +873,18 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    auto_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(in));
 
     // Set up a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    auto_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(ret));
 
     Session* session = nullptr;
     try {
-         session = app->getServiceProvider().getSessionCache()->find(*app, *req.get(), nullptr, nullptr);
+         session = app->getServiceProvider().getSessionCache()->find(*app, *req, nullptr, nullptr);
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
     }
 
@@ -894,12 +894,12 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
             // Since we're remoted, the result should either be a throw, which we pass on,
             // a false/0 return, which we just return as an empty structure, or a response/redirect,
             // which we capture in the facade and send back.
-            doRequest(*app, *req.get(), *resp.get(), session);
+            doRequest(*app, *req, *resp, session);
         }
         else {
             m_log.error("no issuing entityID found in session");
             session->unlock();
-            app->getServiceProvider().getSessionCache()->remove(*app, *req.get(), resp.get());
+            app->getServiceProvider().getSessionCache()->remove(*app, *req, resp.get());
         }
     }
     out << ret;
@@ -912,27 +912,30 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
     const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, Session* session
     ) const
 {
+    Locker sessionLocker(session, false);
+
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
 #ifndef SHIBSP_LITE
-        auto_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
-        if (logout_event.get()) {
+        scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
+        if (logout_event) {
             logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
             application.getServiceProvider().getTransactionLog()->write(*logout_event);
         }
 #endif
-        session->unlock();
+        sessionLocker.assign();
+        session = nullptr;
         application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
         return sendLogoutPage(application, httpRequest, httpResponse, "partial");
     }
 
 #ifndef SHIBSP_LITE
-    pair<bool,long> ret = make_pair(false,0L);
+    pair<bool,long> ret = make_pair(false, 0L);
 
     try {
         // With a session in hand, we can create a request message, if we can find a compatible endpoint.
-        MetadataProvider* m=application.getMetadataProvider();
+        MetadataProvider* m = application.getMetadataProvider();
         Locker metadataLocker(m);
         MetadataProviderCriteria mc(application, session->getEntityID(), &IDPSSODescriptor::ELEMENT_QNAME, m_binding.get());
         pair<const EntityDescriptor*,const RoleDescriptor*> entity=m->getEntityDescriptor(mc);
@@ -958,8 +961,8 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
         }
 
         // Log the request.
-        auto_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
-        if (logout_event.get()) {
+        scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
+        if (logout_event) {
             logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_UNKNOWN;
             application.getServiceProvider().getTransactionLog()->write(*logout_event);
         }
@@ -974,7 +977,7 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
         ret.first = true;
 
         if (session) {
-            session->unlock();
+            sessionLocker.assign();
             session = nullptr;
             application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
         }
@@ -983,12 +986,9 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
         // Less noise for IdPs that don't support logout
         m_log.info("unable to issue ADFS logout request: %s", mex.what());
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         m_log.error("error issuing ADFS logout request: %s", ex.what());
     }
-
-    if (session)
-        session->unlock();
 
     return ret;
 #else
@@ -1039,7 +1039,7 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
         try {
             app.getServiceProvider().getSessionCache()->remove(app, request, &request);
         }
-        catch (exception& ex) {
+        catch (std::exception& ex) {
             m_log.error("error removing session (%s): %s", session_id.c_str(), ex.what());
         }
     }

@@ -28,12 +28,14 @@
 #include "util/DOMPropertySet.h"
 
 #include <algorithm>
+#include <boost/lexical_cast.hpp>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
 
 using namespace shibsp;
 using namespace xmltooling;
 using namespace xercesc;
+using namespace boost;
 using namespace std;
 
 PropertySet::PropertySet()
@@ -209,15 +211,21 @@ pair<bool,const XMLCh*> DOMPropertySet::getXMLString(const char* name, const cha
 
 pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const char* ns) const
 {
-    map<string,pair<char*,const XMLCh*> >::const_iterator i;
+    map< string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)
         i=m_map.find(string("{") + ns + '}' + name);
     else
         i=m_map.find(name);
 
-    if (i!=m_map.end())
-        return pair<bool,unsigned int>(true,strtol(i->second.first,nullptr,10));
+    if (i!=m_map.end()) {
+        try {
+            return pair<bool,unsigned int>(true,lexical_cast<unsigned int>(i->second.first));
+        }
+        catch (bad_lexical_cast&) {
+            return pair<bool,unsigned int>(false,0);
+        }
+    }
     else if (m_parent)
         return m_parent->getUnsignedInt(name,ns);
     return pair<bool,unsigned int>(false,0);
