@@ -60,9 +60,20 @@ namespace shibsp {
             const XMLObject& xmlObject,
             vector<Attribute*>& attributes
             ) const {
+            // Make sure new version gets run.
+            extractAttributes(application, nullptr, issuer, xmlObject, attributes);
+        }
+
+        void extractAttributes(
+            const Application& application,
+            const GenericRequest* request,
+            const RoleDescriptor* issuer,
+            const XMLObject& xmlObject,
+            vector<Attribute*>& attributes
+            ) const {
             for (ptr_vector<AttributeExtractor>::iterator i = m_extractors.begin(); i != m_extractors.end(); ++i) {
                 Locker locker(&(*i));
-                i->extractAttributes(application, issuer, xmlObject, attributes);
+                i->extractAttributes(application, request, issuer, xmlObject, attributes);
             }
         }
 
@@ -88,6 +99,7 @@ namespace shibsp {
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory AssertionAttributeExtractorFactory;
+    SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory MetadataAttributeExtractorFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory DelegationAttributeExtractorFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory KeyDescriptorAttributeExtractorFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory XMLAttributeExtractorFactory;
@@ -100,6 +112,7 @@ namespace shibsp {
 void SHIBSP_API shibsp::registerAttributeExtractors()
 {
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(ASSERTION_ATTRIBUTE_EXTRACTOR, AssertionAttributeExtractorFactory);
+    SPConfig::getConfig().AttributeExtractorManager.registerFactory(METADATA_ATTRIBUTE_EXTRACTOR, MetadataAttributeExtractorFactory);
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(DELEGATION_ATTRIBUTE_EXTRACTOR, DelegationAttributeExtractorFactory);
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(KEYDESCRIPTOR_ATTRIBUTE_EXTRACTOR, KeyDescriptorAttributeExtractorFactory);
     SPConfig::getConfig().AttributeExtractorManager.registerFactory(XML_ATTRIBUTE_EXTRACTOR, XMLAttributeExtractorFactory);
@@ -116,6 +129,28 @@ AttributeExtractor::~AttributeExtractor()
 
 void AttributeExtractor::generateMetadata(SPSSODescriptor& role) const
 {
+}
+
+void AttributeExtractor::extractAttributes(
+    const Application& application,
+    const GenericRequest* request,
+    const RoleDescriptor* issuer,
+    const XMLObject& xmlObject,
+    vector<Attribute*>& attributes
+    ) const
+{
+    // Default call into deprecated method.
+    extractAttributes(application, issuer, xmlObject, attributes);
+}
+
+void AttributeExtractor::extractAttributes(
+    const Application& application,
+    const RoleDescriptor* issuer,
+    const XMLObject& xmlObject,
+    vector<Attribute*>& attributes
+    ) const
+{
+    // Empty default for deprecated method.
 }
 
 ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)

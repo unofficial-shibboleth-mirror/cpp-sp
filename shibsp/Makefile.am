@@ -211,6 +211,7 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/ChainingAttributeExtractor.cpp \
 	attribute/resolver/impl/DelegationAttributeExtractor.cpp \
 	attribute/resolver/impl/KeyDescriptorAttributeExtractor.cpp \
+    attribute/resolver/impl/MetadataAttributeExtractor.cpp \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \

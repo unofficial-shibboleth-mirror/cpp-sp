@@ -180,6 +180,7 @@
     <ClCompile Include="attribute\filtering\impl\DummyAttributeFilter.cpp" />
     <ClCompile Include="attribute\filtering\impl\NameIDQualifierStringFunctor.cpp" />
     <ClCompile Include="attribute\resolver\impl\AssertionAttributeExtractor.cpp" />
+    <ClCompile Include="attribute\resolver\impl\MetadataAttributeExtractor.cpp" />
     <ClCompile Include="binding\impl\XMLProtocolProvider.cpp" />
     <ClCompile Include="handler\impl\DiscoveryFeed.cpp" />
     <ClCompile Include="handler\impl\LogoutInitiator.cpp" />

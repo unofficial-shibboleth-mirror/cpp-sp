@@ -190,6 +190,7 @@ namespace shibsp {
          * <p>The caller must free the returned context handle.
          * 
          * @param application           reference to application receiving message
+         * @param request               request delivering message, if any
          * @param issuer                source of SSO tokens
          * @param protocol              SSO protocol used
          * @param v1nameid              identifier of principal in SAML 1.x form, if any
@@ -202,6 +203,7 @@ namespace shibsp {
          */
         ResolutionContext* resolveAttributes(
             const Application& application,
+            const xmltooling::GenericRequest* request=nullptr,
             const opensaml::saml2md::RoleDescriptor* issuer=nullptr,
             const XMLCh* protocol=nullptr,
             const opensaml::saml1::NameIdentifier* v1nameid=nullptr,

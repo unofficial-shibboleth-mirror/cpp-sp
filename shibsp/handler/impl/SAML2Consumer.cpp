@@ -414,6 +414,7 @@ void SAML2Consumer::implementProtocol(
     scoped_ptr<ResolutionContext> ctx(
         resolveAttributes(
             application,
+            &httpRequest,
             policy.getIssuerMetadata(),
             samlconstants::SAML20P_NS,
             nullptr,

@@ -1883,6 +1883,11 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             split(HTTPResponse::getAllowedSchemes(), schemes, is_space(), algorithm::token_compress_on);
         }
 
+        // Default language handling.
+        pair<bool,bool> langFromClient = getBool("langFromClient");
+        pair<bool,const XMLCh*> langPriority = getXMLString("langPriority");
+        GenericRequest::setLangDefaults(!langFromClient.first || langFromClient.second, langPriority.second);
+
         // Extensions
         doExtensions(e, "global", log);
         if (conf.isEnabled(SPConfig::OutOfProcess))

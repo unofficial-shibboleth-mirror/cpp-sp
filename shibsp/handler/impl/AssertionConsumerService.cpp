@@ -106,6 +106,7 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
         // When not out of process, we remote all the message processing.
         vector<string> headers(1, "Cookie");
         headers.push_back("User-Agent");
+        headers.push_back("Accept-Language");
         DDF out,in = wrap(request, &headers);
         DDFJanitor jin(in), jout(out);
         out=request.getServiceProvider().getListenerService()->send(in);
@@ -345,6 +346,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
 {
     return resolveAttributes(
         application,
+        nullptr,
         issuer,
         protocol,
         v1nameid,
@@ -359,6 +361,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
 
 ResolutionContext* AssertionConsumerService::resolveAttributes(
     const Application& application,
+    const GenericRequest* request,
     const saml2md::RoleDescriptor* issuer,
     const XMLCh* protocol,
     const saml1::NameIdentifier* v1nameid,
@@ -381,7 +384,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                 m_log.debug("extracting metadata-derived attributes...");
                 try {
                     // We pass nullptr for "issuer" because the IdP isn't the one asserting metadata-based attributes.
-                    extractor->extractAttributes(application, nullptr, *issuer, resolvedAttributes);
+                    extractor->extractAttributes(application, request, nullptr, *issuer, resolvedAttributes);
                     for (indirect_iterator<vector<Attribute*>::iterator> a = make_indirect_iterator(resolvedAttributes.begin());
                             a != make_indirect_iterator(resolvedAttributes.end()); ++a) {
                         vector<string>& ids = a->getAliases();
@@ -400,9 +403,9 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
         if (v1nameid || nameid) {
             try {
                 if (v1nameid)
-                    extractor->extractAttributes(application, issuer, *v1nameid, resolvedAttributes);
+                    extractor->extractAttributes(application, request, issuer, *v1nameid, resolvedAttributes);
                 else
-                    extractor->extractAttributes(application, issuer, *nameid, resolvedAttributes);
+                    extractor->extractAttributes(application, request, issuer, *nameid, resolvedAttributes);
             }
             catch (std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
@@ -412,9 +415,9 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
         if (v1statement || statement) {
             try {
                 if (v1statement)
-                    extractor->extractAttributes(application, issuer, *v1statement, resolvedAttributes);
+                    extractor->extractAttributes(application, request, issuer, *v1statement, resolvedAttributes);
                 else
-                    extractor->extractAttributes(application, issuer, *statement, resolvedAttributes);
+                    extractor->extractAttributes(application, request, issuer, *statement, resolvedAttributes);
             }
             catch (std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
@@ -425,7 +428,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             for (indirect_iterator<vector<const Assertion*>::const_iterator> t = make_indirect_iterator(tokens->begin());
                     t != make_indirect_iterator(tokens->end()); ++t) {
                 try {
-                    extractor->extractAttributes(application, issuer, *t, resolvedAttributes);
+                    extractor->extractAttributes(application, request, issuer, *t, resolvedAttributes);
                 }
                 catch (std::exception& ex) {
                     m_log.error("caught exception extracting attributes: %s", ex.what());

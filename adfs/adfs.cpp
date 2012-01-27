@@ -763,6 +763,7 @@ void ADFSConsumer::implementProtocol(
     scoped_ptr<ResolutionContext> ctx(
         resolveAttributes(
             application,
+            &httpRequest,
             policy.getIssuerMetadata(),
             m_protocol.get(),
             saml1name,

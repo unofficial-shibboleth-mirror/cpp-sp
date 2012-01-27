@@ -402,6 +402,9 @@
     <ClCompile Include="attribute\resolver\impl\AssertionAttributeExtractor.cpp">
       <Filter>Source Files\attribute\resolver\impl</Filter>
     </ClCompile>
+    <ClCompile Include="attribute\resolver\impl\MetadataAttributeExtractor.cpp">
+      <Filter>Source Files\attribute\resolver\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">

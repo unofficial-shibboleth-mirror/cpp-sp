@@ -28,16 +28,23 @@
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "attribute/SimpleAttribute.h"
+#include "attribute/AttributeDecoder.h"
 #include "attribute/resolver/AttributeExtractor.h"
 
+#include <boost/bind.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/iterator/indirect_iterator.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <saml/saml2/metadata/Metadata.h>
 #include <xmltooling/util/XMLHelper.h>
+#include <xercesc/util/XMLStringTokenizer.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmltooling;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -60,8 +67,19 @@ namespace shibsp {
         void unlock() {
         }
 
+        // deprecated
         void extractAttributes(
             const Application& application,
+            const RoleDescriptor* issuer,
+            const XMLObject& xmlObject,
+            vector<shibsp::Attribute*>& attributes
+            ) const {
+            extractAttributes(application, nullptr, issuer, xmlObject, attributes);
+        }
+
+        void extractAttributes(
+            const Application& application,
+            const GenericRequest* request,
             const RoleDescriptor* issuer,
             const XMLObject& xmlObject,
             vector<shibsp::Attribute*>& attributes
@@ -69,7 +87,6 @@ namespace shibsp {
         void getAttributeIds(vector<string>& attributes) const;
 
     private:
-        bool m_langFromClient;
         string m_attributeProfiles,
             m_errorURL,
             m_displayName,
@@ -78,27 +95,12 @@ namespace shibsp {
             m_privacyURL,
             m_orgName,
             m_orgDisplayName,
-            m_orgURL,
-            m_techContactName,
-            m_techContactCompany,
-            m_techContactEmail,
-            m_techContactPhone,
-            m_supportContactName,
-            m_supportContactCompany,
-            m_supportContactEmail,
-            m_supportContactPhone,
-            m_adminContactName,
-            m_adminContactCompany,
-            m_adminContactEmail,
-            m_adminContactPhone,
-            m_billContactName,
-            m_billContactCompany,
-            m_billContactEmail,
-            m_billContactPhone,
-            m_otherContactName,
-            m_otherContactCompany,
-            m_otherContactEmail,
-            m_otherContactPhone;
+            m_orgURL;
+        typedef tuple< string,xstring,boost::shared_ptr<AttributeDecoder> > contact_tuple_t;
+        vector<contact_tuple_t> m_contacts;  // tuple is attributeID, contact type, decoder
+
+        template <class T> void doLangSensitive(const GenericRequest*, const vector<T*>&, const string&, vector<shibsp::Attribute*>&) const;
+        void doContactPerson(const RoleDescriptor*, const contact_tuple_t&, vector<shibsp::Attribute*>&) const;
     };
 
 #if defined (_MSC_VER)
@@ -110,240 +112,190 @@ namespace shibsp {
         return new MetadataExtractor(e);
     }
 
+    static const XMLCh _id[] = UNICODE_LITERAL_2(i,d);
+    static const XMLCh _formatter[] = UNICODE_LITERAL_9(f,o,r,m,a,t,t,e,r);
 };
 
 MetadataExtractor::MetadataExtractor(const DOMElement* e)
-    : m_authnAuthority(XMLHelper::getAttrString(e, nullptr, AuthenticatingAuthority::LOCAL_NAME)),
-        m_authnClass(XMLHelper::getAttrString(e, nullptr, AuthnContextClassRef::LOCAL_NAME)),
-        m_authnDecl(XMLHelper::getAttrString(e, nullptr, AuthnContextDeclRef::LOCAL_NAME)),
-        m_authnInstant(XMLHelper::getAttrString(e, nullptr, AuthnStatement::AUTHNINSTANT_ATTRIB_NAME)),
-        m_issuer(XMLHelper::getAttrString(e, nullptr, Issuer::LOCAL_NAME)),
-        m_notOnOrAfter(XMLHelper::getAttrString(e, nullptr, saml2::Conditions::NOTONORAFTER_ATTRIB_NAME)),
-        m_sessionIndex(XMLHelper::getAttrString(e, nullptr, AuthnStatement::SESSIONINDEX_ATTRIB_NAME)),
-        m_sessionNotOnOrAfter(XMLHelper::getAttrString(e, nullptr, AuthnStatement::SESSIONNOTONORAFTER_ATTRIB_NAME)),
-        m_subjectAddress(XMLHelper::getAttrString(e, nullptr, saml2::SubjectLocality::ADDRESS_ATTRIB_NAME)),
-        m_subjectDNS(XMLHelper::getAttrString(e, nullptr, saml2::SubjectLocality::DNSNAME_ATTRIB_NAME))
+    : m_attributeProfiles(XMLHelper::getAttrString(e, nullptr, AttributeProfile::LOCAL_NAME)),
+        m_errorURL(XMLHelper::getAttrString(e, nullptr, RoleDescriptor::ERRORURL_ATTRIB_NAME)),
+        m_displayName(XMLHelper::getAttrString(e, nullptr, DisplayName::LOCAL_NAME)),
+        m_description(XMLHelper::getAttrString(e, nullptr, Description::LOCAL_NAME)),
+        m_informationURL(XMLHelper::getAttrString(e, nullptr, InformationURL::LOCAL_NAME)),
+        m_privacyURL(XMLHelper::getAttrString(e, nullptr, PrivacyStatementURL::LOCAL_NAME)),
+        m_orgName(XMLHelper::getAttrString(e, nullptr, OrganizationName::LOCAL_NAME)),
+        m_orgDisplayName(XMLHelper::getAttrString(e, nullptr, OrganizationDisplayName::LOCAL_NAME)),
+        m_orgURL(XMLHelper::getAttrString(e, nullptr, OrganizationURL::LOCAL_NAME))
 {
-}
-
-void MetadataExtractor::extractAttributes(
-    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<shibsp::Attribute*>& attributes
-    ) const
-{
-    const saml2::Assertion* saml2assertion = dynamic_cast<const saml2::Assertion*>(&xmlObject);
-    if (saml2assertion) {
-        // Issuer
-        if (!m_issuer.empty()) {
-            const Issuer* i = saml2assertion->getIssuer();
-            if (i && (!i->getFormat() || !*(i->getFormat()) || XMLString::equals(i->getFormat(), NameIDType::ENTITY))) {
-                auto_ptr<SimpleAttribute> issuer(new SimpleAttribute(vector<string>(1, m_issuer)));
-                auto_ptr_char temp(i->getName());
-                if (temp.get()) {
-                    issuer->getValues().push_back(temp.get());
-                    attributes.push_back(issuer.release());
-                }
-            }
+    e = e ? XMLHelper::getFirstChildElement(e, ContactPerson::LOCAL_NAME) : nullptr;
+    while (e) {
+        string id(XMLHelper::getAttrString(e, nullptr, _id));
+        const XMLCh* type = e->getAttributeNS(nullptr, ContactPerson::CONTACTTYPE_ATTRIB_NAME);
+        if (!id.empty() && type && *type) {
+            boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, e));
+            m_contacts.push_back(contact_tuple_t(id, type, decoder));
         }
-
-        // NotOnOrAfter
-        if (!m_notOnOrAfter.empty() && saml2assertion->getConditions() && saml2assertion->getConditions()->getNotOnOrAfter()) {
-            auto_ptr<SimpleAttribute> notonorafter(new SimpleAttribute(vector<string>(1, m_notOnOrAfter)));
-            auto_ptr_char temp(saml2assertion->getConditions()->getNotOnOrAfter()->getRawData());
-            if (temp.get()) {
-                notonorafter->getValues().push_back(temp.get());
-                attributes.push_back(notonorafter.release());
-            }
-        }
-    }
-    else {
-        const AuthnStatement* saml2statement = dynamic_cast<const AuthnStatement*>(&xmlObject);
-        if (saml2statement) {
-            // AuthnInstant
-            if (!m_authnInstant.empty() && saml2statement->getAuthnInstant()) {
-                auto_ptr<SimpleAttribute> authninstant(new SimpleAttribute(vector<string>(1, m_authnInstant)));
-                auto_ptr_char temp(saml2statement->getAuthnInstant()->getRawData());
-                if (temp.get()) {
-                    authninstant->getValues().push_back(temp.get());
-                    attributes.push_back(authninstant.release());
-                }
-            }
-
-            // SessionIndex
-            if (!m_sessionIndex.empty() && saml2statement->getSessionIndex() && *(saml2statement->getSessionIndex())) {
-                auto_ptr<SimpleAttribute> sessionindex(new SimpleAttribute(vector<string>(1, m_sessionIndex)));
-                auto_ptr_char temp(saml2statement->getSessionIndex());
-                if (temp.get()) {
-                    sessionindex->getValues().push_back(temp.get());
-                    attributes.push_back(sessionindex.release());
-                }
-            }
-
-            // SessionNotOnOrAfter
-            if (!m_sessionNotOnOrAfter.empty() && saml2statement->getSessionNotOnOrAfter()) {
-                auto_ptr<SimpleAttribute> sessionnotonorafter(new SimpleAttribute(vector<string>(1, m_sessionNotOnOrAfter)));
-                auto_ptr_char temp(saml2statement->getSessionNotOnOrAfter()->getRawData());
-                if (temp.get()) {
-                    sessionnotonorafter->getValues().push_back(temp.get());
-                    attributes.push_back(sessionnotonorafter.release());
-                }
-            }
-
-            if (saml2statement->getSubjectLocality()) {
-                const saml2::SubjectLocality* locality = saml2statement->getSubjectLocality();
-                // Address
-                if (!m_subjectAddress.empty() && locality->getAddress() && *(locality->getAddress())) {
-                    auto_ptr<SimpleAttribute> address(new SimpleAttribute(vector<string>(1, m_subjectAddress)));
-                    auto_ptr_char temp(locality->getAddress());
-                    if (temp.get()) {
-                        address->getValues().push_back(temp.get());
-                        attributes.push_back(address.release());
-                    }
-                }
-
-                // DNSName
-                if (!m_subjectDNS.empty() && locality->getDNSName() && *(locality->getDNSName())) {
-                    auto_ptr<SimpleAttribute> dns(new SimpleAttribute(vector<string>(1, m_subjectDNS)));
-                    auto_ptr_char temp(locality->getDNSName());
-                    if (temp.get()) {
-                        dns->getValues().push_back(temp.get());
-                        attributes.push_back(dns.release());
-                    }
-                }
-            }
-
-            if (saml2statement->getAuthnContext()) {
-                const AuthnContext* ac = saml2statement->getAuthnContext();
-                // AuthnContextClassRef
-                if (!m_authnClass.empty() && ac->getAuthnContextClassRef() && ac->getAuthnContextClassRef()->getReference()) {
-                    auto_ptr<SimpleAttribute> classref(new SimpleAttribute(vector<string>(1, m_authnClass)));
-                    auto_ptr_char temp(ac->getAuthnContextClassRef()->getReference());
-                    if (temp.get()) {
-                        classref->getValues().push_back(temp.get());
-                        attributes.push_back(classref.release());
-                    }
-                }
-
-                // AuthnContextDeclRef
-                if (!m_authnDecl.empty() && ac->getAuthnContextDeclRef() && ac->getAuthnContextDeclRef()->getReference()) {
-                    auto_ptr<SimpleAttribute> declref(new SimpleAttribute(vector<string>(1, m_authnDecl)));
-                    auto_ptr_char temp(ac->getAuthnContextDeclRef()->getReference());
-                    if (temp.get()) {
-                        declref->getValues().push_back(temp.get());
-                        attributes.push_back(declref.release());
-                    }
-                }
-
-                // AuthenticatingAuthority
-                if (!m_authnAuthority.empty() && !ac->getAuthenticatingAuthoritys().empty()) {
-                    auto_ptr<SimpleAttribute> attr(new SimpleAttribute(vector<string>(1, m_authnAuthority)));
-                    const vector<AuthenticatingAuthority*>& authorities = ac->getAuthenticatingAuthoritys();
-                    for (vector<AuthenticatingAuthority*>::const_iterator a = authorities.begin(); a != authorities.end(); ++a) {
-                        auto_ptr_char temp((*a)->getID());
-                        if (temp.get())
-                            attr->getValues().push_back(temp.get());
-                    }
-                    if (attr->valueCount() > 0) {
-                        attributes.push_back(attr.release());
-                    }
-                }
-            }
-        }
-        else {
-            const saml1::Assertion* saml1assertion = dynamic_cast<const saml1::Assertion*>(&xmlObject);
-            if (saml1assertion) {
-                // Issuer
-                if (!m_issuer.empty()) {
-                    if (saml1assertion->getIssuer() && *(saml1assertion->getIssuer())) {
-                        auto_ptr<SimpleAttribute> issuer(new SimpleAttribute(vector<string>(1, m_issuer)));
-                        auto_ptr_char temp(saml1assertion->getIssuer());
-                        if (temp.get()) {
-                            issuer->getValues().push_back(temp.get());
-                            attributes.push_back(issuer.release());
-                        }
-                    }
-                }
-
-                // NotOnOrAfter
-                if (!m_notOnOrAfter.empty() && saml1assertion->getConditions() && saml1assertion->getConditions()->getNotOnOrAfter()) {
-                    auto_ptr<SimpleAttribute> notonorafter(new SimpleAttribute(vector<string>(1, m_notOnOrAfter)));
-                    auto_ptr_char temp(saml1assertion->getConditions()->getNotOnOrAfter()->getRawData());
-                    if (temp.get()) {
-                        notonorafter->getValues().push_back(temp.get());
-                        attributes.push_back(notonorafter.release());
-                    }
-                }
-            }
-            else {
-                const AuthenticationStatement* saml1statement = dynamic_cast<const AuthenticationStatement*>(&xmlObject);
-                if (saml1statement) {
-                    // AuthnInstant
-                    if (!m_authnInstant.empty() && saml1statement->getAuthenticationInstant()) {
-                        auto_ptr<SimpleAttribute> authninstant(new SimpleAttribute(vector<string>(1, m_authnInstant)));
-                        auto_ptr_char temp(saml1statement->getAuthenticationInstant()->getRawData());
-                        if (temp.get()) {
-                            authninstant->getValues().push_back(temp.get());
-                            attributes.push_back(authninstant.release());
-                        }
-                    }
-
-                    // AuthenticationMethod
-                    if (!m_authnClass.empty() && saml1statement->getAuthenticationMethod() && *(saml1statement->getAuthenticationMethod())) {
-                        auto_ptr<SimpleAttribute> authnmethod(new SimpleAttribute(vector<string>(1, m_authnClass)));
-                        auto_ptr_char temp(saml1statement->getAuthenticationMethod());
-                        if (temp.get()) {
-                            authnmethod->getValues().push_back(temp.get());
-                            attributes.push_back(authnmethod.release());
-                        }
-                    }
-
-                    if (saml1statement->getSubjectLocality()) {
-                        const saml1::SubjectLocality* locality = saml1statement->getSubjectLocality();
-                        // IPAddress
-                        if (!m_subjectAddress.empty() && locality->getIPAddress() && *(locality->getIPAddress())) {
-                            auto_ptr<SimpleAttribute> address(new SimpleAttribute(vector<string>(1, m_subjectAddress)));
-                            auto_ptr_char temp(locality->getIPAddress());
-                            if (temp.get()) {
-                                address->getValues().push_back(temp.get());
-                                attributes.push_back(address.release());
-                            }
-                        }
-
-                        // DNSAddress
-                        if (!m_subjectDNS.empty() && locality->getDNSAddress() && *(locality->getDNSAddress())) {
-                            auto_ptr<SimpleAttribute> dns(new SimpleAttribute(vector<string>(1, m_subjectDNS)));
-                            auto_ptr_char temp(locality->getDNSAddress());
-                            if (temp.get()) {
-                                dns->getValues().push_back(temp.get());
-                                attributes.push_back(dns.release());
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        e = XMLHelper::getNextSiblingElement(e, ContactPerson::LOCAL_NAME);
     }
 }
 
 void MetadataExtractor::getAttributeIds(vector<string>& attributes) const
 {
-    if (!m_authnAuthority.empty())
-        attributes.push_back(m_authnAuthority);
-    if (!m_authnClass.empty())
-        attributes.push_back(m_authnClass);
-    if (!m_authnDecl.empty())
-        attributes.push_back(m_authnDecl);
-    if (!m_authnInstant.empty())
-        attributes.push_back(m_authnInstant);
-    if (!m_issuer.empty())
-        attributes.push_back(m_issuer);
-    if (!m_notOnOrAfter.empty())
-        attributes.push_back(m_notOnOrAfter);
-    if (!m_sessionIndex.empty())
-        attributes.push_back(m_sessionIndex);
-    if (!m_sessionNotOnOrAfter.empty())
-        attributes.push_back(m_sessionNotOnOrAfter);
-    if (!m_subjectAddress.empty())
-        attributes.push_back(m_subjectAddress);
-    if (!m_subjectDNS.empty())
-        attributes.push_back(m_subjectDNS);
+    if (!m_attributeProfiles.empty())
+        attributes.push_back(m_attributeProfiles);
+    if (!m_errorURL.empty())
+        attributes.push_back(m_errorURL);
+    if (!m_displayName.empty())
+        attributes.push_back(m_displayName);
+    if (!m_description.empty())
+        attributes.push_back(m_description);
+    if (!m_informationURL.empty())
+        attributes.push_back(m_informationURL);
+    if (!m_privacyURL.empty())
+        attributes.push_back(m_privacyURL);
+    if (!m_orgName.empty())
+        attributes.push_back(m_orgName);
+    if (!m_orgDisplayName.empty())
+        attributes.push_back(m_orgDisplayName);
+    if (!m_orgURL.empty())
+        attributes.push_back(m_orgURL);
+    static void (vector<string>::* push_back)(const string&) = &vector<string>::push_back;
+    static const string& (contact_tuple_t::* tget)() const = &contact_tuple_t::get<0>;
+    for_each(m_contacts.begin(), m_contacts.end(), boost::bind(push_back, boost::ref(attributes), boost::bind(tget, _1)));
+}
+
+void MetadataExtractor::extractAttributes(
+    const Application& application,
+    const GenericRequest* request,
+    const RoleDescriptor* issuer,
+    const XMLObject& xmlObject,
+    vector<shibsp::Attribute*>& attributes
+    ) const
+{
+    const RoleDescriptor* roleToExtract = dynamic_cast<const RoleDescriptor*>(&xmlObject);
+    if (!roleToExtract)
+        return;
+
+    if (!m_attributeProfiles.empty()) {
+        const vector<AttributeProfile*>* profiles = nullptr;
+        const IDPSSODescriptor* idpRole = dynamic_cast<const IDPSSODescriptor*>(roleToExtract);
+        if (idpRole) {
+            profiles = &(idpRole->getAttributeProfiles());
+        }
+        else {
+            const AttributeAuthorityDescriptor* aaRole = dynamic_cast<const AttributeAuthorityDescriptor*>(roleToExtract);
+            if (aaRole) {
+                profiles = &(aaRole->getAttributeProfiles());
+            }
+        }
+        if (profiles && !profiles->empty()) {
+            auto_ptr<SimpleAttribute> attr(new SimpleAttribute(vector<string>(1, m_attributeProfiles)));
+            for (indirect_iterator<vector<AttributeProfile*>::const_iterator> i = make_indirect_iterator(profiles->begin());
+                    i != make_indirect_iterator(profiles->end()); ++i) {
+                auto_ptr_char temp(i->getProfileURI());
+                if (temp.get())
+                    attr->getValues().push_back(temp.get());
+            }
+            if (attr->valueCount() > 0) {
+                attributes.push_back(attr.get());
+                attr.release();
+            }
+        }
+    }
+
+    if (!m_errorURL.empty() && roleToExtract->getErrorURL()) {
+        auto_ptr_char temp(roleToExtract->getErrorURL());
+        if (temp.get() && *temp.get()) {
+            auto_ptr<SimpleAttribute> attr(new SimpleAttribute(vector<string>(1, m_errorURL)));
+            attr->getValues().push_back(temp.get());
+            attributes.push_back(attr.get());
+            attr.release();
+        }
+    }
+
+    if (!m_displayName.empty() || !m_description.empty() || !m_informationURL.empty() || !m_privacyURL.empty()) {
+        const Extensions* exts = roleToExtract->getExtensions();
+        if (exts) {
+            const UIInfo* ui;
+            for (vector<XMLObject*>::const_iterator ext = exts->getUnknownXMLObjects().begin(); ext != exts->getUnknownXMLObjects().end(); ++ext) {
+                ui = dynamic_cast<const UIInfo*>(*ext);
+                if (ui) {
+                    doLangSensitive(request, ui->getDisplayNames(), m_displayName, attributes);
+                    doLangSensitive(request, ui->getDescriptions(), m_description, attributes);
+                    doLangSensitive(request, ui->getInformationURLs(), m_informationURL, attributes);
+                    doLangSensitive(request, ui->getPrivacyStatementURLs(), m_privacyURL, attributes);
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!m_orgName.empty() || !m_orgDisplayName.empty() || !m_orgURL.empty()) {
+        const Organization* org = roleToExtract->getOrganization();
+        if (!org)
+            org = dynamic_cast<EntityDescriptor*>(roleToExtract->getParent())->getOrganization();
+        if (org) {
+            doLangSensitive(request, org->getOrganizationNames(), m_orgName, attributes);
+            doLangSensitive(request, org->getOrganizationDisplayNames(), m_orgDisplayName, attributes);
+            doLangSensitive(request, org->getOrganizationURLs(), m_orgURL, attributes);
+        }
+    }
+
+    for_each(
+        m_contacts.begin(), m_contacts.end(),
+        boost::bind(&MetadataExtractor::doContactPerson, this, roleToExtract, _1, boost::ref(attributes))
+        );
+}
+
+template <class T> void MetadataExtractor::doLangSensitive(
+    const GenericRequest* request, const vector<T*>& objects, const string& id, vector<shibsp::Attribute*>& attributes
+    ) const
+{
+    if (objects.empty() || id.empty())
+        return;
+
+    T* match = nullptr;
+    if (request && request->startLangMatching()) {
+        do {
+            for (vector<T*>::const_iterator i = objects.begin(); !match && i != objects.end(); ++i) {
+                if (request->matchLang((*i)->getLang()))
+                    match = *i;
+            }
+        } while (!match && request->continueLangMatching());
+    }
+    if (!match)
+        match = objects.front();
+
+    auto_ptr_char temp(match->getTextContent());
+    if (temp.get() && *temp.get()) {
+        auto_ptr<SimpleAttribute> attr(new SimpleAttribute(vector<string>(1, id)));
+        attr->getValues().push_back(temp.get());
+        attributes.push_back(attr.get());
+        attr.release();
+    }
+}
+
+void MetadataExtractor::doContactPerson(
+    const RoleDescriptor* role, const contact_tuple_t& params, vector<shibsp::Attribute*>& attributes
+    ) const
+{
+    const XMLCh* ctype = params.get<1>().c_str();
+    static bool (*eq)(const XMLCh*, const XMLCh*) = &XMLString::equals;
+    const ContactPerson* cp = find_if(role->getContactPersons(),boost::bind(eq, ctype, boost::bind(&ContactPerson::getContactType, _1)));
+    if (!cp) {
+        cp = find_if(dynamic_cast<EntityDescriptor*>(role->getParent())->getContactPersons(),
+                boost::bind(eq, ctype, boost::bind(&ContactPerson::getContactType, _1)));
+    }
+
+    if (cp) {
+        if (!cp->getDOM()) {
+            cp->marshall();
+        }
+        vector<string> ids(1, params.get<0>());
+        auto_ptr<Attribute> attr(params.get<2>()->decode(ids, cp));
+        if (attr.get()) {
+            attributes.push_back(attr.get());
+            attr.release();
+        }
+    }
 }

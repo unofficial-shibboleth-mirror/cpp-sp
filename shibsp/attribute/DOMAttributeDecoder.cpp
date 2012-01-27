@@ -96,13 +96,12 @@ Attribute* DOMAttributeDecoder::decode(
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.DOM");
 
-    if (!xmlObject || !XMLString::equals(saml1::Attribute::LOCAL_NAME, xmlObject->getElementQName().getLocalPart())) {
-        log.warn("XMLObject type not recognized by DOMAttributeDecoder, no values returned");
+    if (!xmlObject)
         return nullptr;
-    }
 
     auto_ptr<ExtensibleAttribute> attr(new ExtensibleAttribute(ids, m_formatter.c_str()));
     DDF dest = attr->getValues();
+    vector<XMLObject*> genericObjectWrapper;    // used to support stand-alone object decoding
     vector<XMLObject*>::const_iterator v,stop;
 
     const saml2::Attribute* saml2attr = dynamic_cast<const saml2::Attribute*>(xmlObject);
@@ -133,8 +132,10 @@ Attribute* DOMAttributeDecoder::decode(
             }
         }
         else {
-            log.warn("XMLObject type not recognized by DOMAttributeDecoder, no values returned");
-            return nullptr;
+            log.debug("decoding arbitrary XMLObject type (%s)", xmlObject->getElementQName().toString().c_str());
+            genericObjectWrapper.push_back(const_cast<XMLObject*>(xmlObject));
+            v = genericObjectWrapper.begin();
+            stop = genericObjectWrapper.end();
         }
     }
 
@@ -146,7 +147,7 @@ Attribute* DOMAttributeDecoder::decode(
                 dest.add(converted);
         }
         else
-            log.warn("skipping AttributeValue without a backing DOM");
+            log.warn("skipping XMLObject without a backing DOM");
     }
 
     return dest.integer() ? _decode(attr.release()) : nullptr;
@@ -194,7 +195,7 @@ DDF DOMAttributeDecoder::convert(DOMElement* e, bool nameit) const
     DOMElement* child = XMLHelper::getFirstChildElement(e);
     if (!child && e->hasChildNodes() && e->getFirstChild()->getNodeType() == DOMNode::TEXT_NODE) {
         // Attach a _text member if a text node is present.
-        obj.addmember("_string").string(toUTF8(e->getFirstChild()->getNodeValue(), true), false);
+        obj.addmember("_string").string(toUTF8(e->getFirstChild()->getTextContent(), true), false);
     }
     else {
         while (child) {
