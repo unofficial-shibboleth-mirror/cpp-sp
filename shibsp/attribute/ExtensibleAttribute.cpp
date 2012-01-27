@@ -139,9 +139,14 @@ const vector<string>& ExtensibleAttribute::getSerializedValues() const
 
 DDF ExtensibleAttribute::marshall() const
 {
-    if (!isCaseSensitive())
-        m_obj.addmember("case_insensitive");
-    if (isInternal())
-        m_obj.addmember("internal");
-    return m_obj.copy();
+    DDF ddf = Attribute::marshall();
+    ddf.name("Extensible");
+    ddf.addmember("_formatter").string(m_obj["_formatter"].string());
+    DDF val = m_obj.first().first();
+    while (!val.isnull()) {
+        DDF dup = val.copy();
+        ddf.first().add(dup);
+        val = m_obj.first().next();
+    }
+    return ddf;
 }
