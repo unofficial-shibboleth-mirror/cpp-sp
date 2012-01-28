@@ -257,7 +257,7 @@ template <class T> void MetadataExtractor::doLangSensitive(
     T* match = nullptr;
     if (request && request->startLangMatching()) {
         do {
-            for (vector<T*>::const_iterator i = objects.begin(); !match && i != objects.end(); ++i) {
+            for (typename vector<T*>::const_iterator i = objects.begin(); !match && i != objects.end(); ++i) {
                 if (request->matchLang((*i)->getLang()))
                     match = *i;
             }
