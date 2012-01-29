@@ -321,18 +321,15 @@ void MetadataExtractor::doLogo(
                         dim = (*i)->getWidth();
                         sizediff += abs(w - dim.second);
                     }
-                    if (sizediff > 0) {
-                        if (sizediff < bestdiff)
-                            match = *i;
-                    }
-                    else {
+                    if (sizediff < bestdiff) {
                         match = *i;
+                        bestdiff = sizediff;
                     }
                 }
-                if (match && h == 0 && w == 0)
+                if (match && bestdiff == 0)
                     break;
             }
-            if (match && h == 0 && w == 0)
+            if (match && bestdiff == 0)
                 break;
         } while (request->continueLangMatching());
     }
@@ -347,18 +344,17 @@ void MetadataExtractor::doLogo(
                 dim = (*i)->getWidth();
                 sizediff += abs(w - dim.second);
             }
-            if (sizediff > 0) {
-                if (sizediff < bestdiff)
-                    match = *i;
-            }
-            else {
+            if (sizediff < bestdiff) {
                 match = *i;
+                bestdiff = sizediff;
             }
+            if (match && bestdiff == 0)
+                break;
         }
     }
-    else {
+
+    if (!match)
         match = logos.front();
-    }
 
     if (!match->getDOM()) {
         match->marshall();
