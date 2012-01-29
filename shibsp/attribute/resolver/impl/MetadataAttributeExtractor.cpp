@@ -97,10 +97,13 @@ namespace shibsp {
             m_orgDisplayName,
             m_orgURL;
         typedef tuple< string,xstring,boost::shared_ptr<AttributeDecoder> > contact_tuple_t;
-        vector<contact_tuple_t> m_contacts;  // tuple is attributeID, contact type, decoder
+        typedef tuple< string,int,int,boost::shared_ptr<AttributeDecoder> > logo_tuple_t;
+        vector<contact_tuple_t> m_contacts; // tuple is attributeID, contact type, decoder
+        vector<logo_tuple_t> m_logos;       // tuple is attributeID, height, width, decoder
 
         template <class T> void doLangSensitive(const GenericRequest*, const vector<T*>&, const string&, vector<shibsp::Attribute*>&) const;
         void doContactPerson(const RoleDescriptor*, const contact_tuple_t&, vector<shibsp::Attribute*>&) const;
+        void doLogo(const GenericRequest*, const vector<Logo*>&,const logo_tuple_t&, vector<shibsp::Attribute*>&) const;
     };
 
 #if defined (_MSC_VER)
@@ -127,15 +130,26 @@ MetadataExtractor::MetadataExtractor(const DOMElement* e)
         m_orgDisplayName(XMLHelper::getAttrString(e, nullptr, OrganizationDisplayName::LOCAL_NAME)),
         m_orgURL(XMLHelper::getAttrString(e, nullptr, OrganizationURL::LOCAL_NAME))
 {
-    e = e ? XMLHelper::getFirstChildElement(e, ContactPerson::LOCAL_NAME) : nullptr;
+    e = e ? XMLHelper::getFirstChildElement(e) : nullptr;
     while (e) {
-        string id(XMLHelper::getAttrString(e, nullptr, _id));
-        const XMLCh* type = e->getAttributeNS(nullptr, ContactPerson::CONTACTTYPE_ATTRIB_NAME);
-        if (!id.empty() && type && *type) {
-            boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, e));
-            m_contacts.push_back(contact_tuple_t(id, type, decoder));
+        if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2SPCONFIG_NS, ContactPerson::LOCAL_NAME)) {
+            string id(XMLHelper::getAttrString(e, nullptr, _id));
+            const XMLCh* type = e->getAttributeNS(nullptr, ContactPerson::CONTACTTYPE_ATTRIB_NAME);
+            if (!id.empty() && type && *type) {
+                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, e));
+                m_contacts.push_back(contact_tuple_t(id, type, decoder));
+            }
         }
-        e = XMLHelper::getNextSiblingElement(e, ContactPerson::LOCAL_NAME);
+        else if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2SPCONFIG_NS, Logo::LOCAL_NAME)) {
+            string id(XMLHelper::getAttrString(e, nullptr, _id));
+            int h(XMLHelper::getAttrInt(e, 0, Logo::HEIGHT_ATTRIB_NAME));
+            int w(XMLHelper::getAttrInt(e, 0, Logo::WIDTH_ATTRIB_NAME));
+            if (!id.empty()) {
+                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, e));
+                m_logos.push_back(logo_tuple_t(id, h, w, decoder));
+            }
+        }
+        e = XMLHelper::getNextSiblingElement(e);
     }
 }
 
@@ -161,7 +175,9 @@ void MetadataExtractor::getAttributeIds(vector<string>& attributes) const
         attributes.push_back(m_orgURL);
     static void (vector<string>::* push_back)(const string&) = &vector<string>::push_back;
     static const string& (contact_tuple_t::* tget)() const = &contact_tuple_t::get<0>;
+    static const string& (logo_tuple_t::* tget2)() const = &logo_tuple_t::get<0>;
     for_each(m_contacts.begin(), m_contacts.end(), boost::bind(push_back, boost::ref(attributes), boost::bind(tget, _1)));
+    for_each(m_logos.begin(), m_logos.end(), boost::bind(push_back, boost::ref(attributes), boost::bind(tget2, _1)));
 }
 
 void MetadataExtractor::extractAttributes(
@@ -224,6 +240,13 @@ void MetadataExtractor::extractAttributes(
                     doLangSensitive(request, ui->getDescriptions(), m_description, attributes);
                     doLangSensitive(request, ui->getInformationURLs(), m_informationURL, attributes);
                     doLangSensitive(request, ui->getPrivacyStatementURLs(), m_privacyURL, attributes);
+                    const vector<Logo*>& logos = ui->getLogos();
+                    if (!logos.empty()) {
+                        for_each(
+                            m_logos.begin(), m_logos.end(),
+                            boost::bind(&MetadataExtractor::doLogo, this, request, boost::ref(logos), _1, boost::ref(attributes))
+                            );
+                    }
                     break;
                 }
             }
@@ -270,6 +293,79 @@ template <class T> void MetadataExtractor::doLangSensitive(
     if (temp.get() && *temp.get()) {
         auto_ptr<SimpleAttribute> attr(new SimpleAttribute(vector<string>(1, id)));
         attr->getValues().push_back(temp.get());
+        attributes.push_back(attr.get());
+        attr.release();
+    }
+}
+
+void MetadataExtractor::doLogo(
+    const GenericRequest* request, const vector<Logo*>& logos, const logo_tuple_t& params, vector<shibsp::Attribute*>& attributes
+    ) const
+{
+    if (logos.empty())
+        return;
+
+    pair<bool,int> dim;
+    Logo* match = nullptr;
+    int h = params.get<1>(), w = params.get<2>(), sizediff, bestdiff = INT_MAX;
+    if (request && request->startLangMatching()) {
+        do {
+            for (vector<Logo*>::const_iterator i = logos.begin(); i != logos.end(); ++i) {
+                if (request->matchLang((*i)->getLang())) {
+                    sizediff = 0;
+                    if (h > 0) {
+                        dim = (*i)->getHeight();
+                        sizediff = abs(h - dim.second);
+                    }
+                    if (w > 0) {
+                        dim = (*i)->getWidth();
+                        sizediff += abs(w - dim.second);
+                    }
+                    if (sizediff > 0) {
+                        if (sizediff < bestdiff)
+                            match = *i;
+                    }
+                    else {
+                        match = *i;
+                    }
+                }
+                if (match && h == 0 && w == 0)
+                    break;
+            }
+            if (match && h == 0 && w == 0)
+                break;
+        } while (request->continueLangMatching());
+    }
+    else if (h > 0 || w > 0) {
+        for (vector<Logo*>::const_iterator i = logos.begin(); i != logos.end(); ++i) {
+            sizediff = 0;
+            if (h > 0) {
+                dim = (*i)->getHeight();
+                sizediff = abs(h - dim.second);
+            }
+            if (w > 0) {
+                dim = (*i)->getWidth();
+                sizediff += abs(w - dim.second);
+            }
+            if (sizediff > 0) {
+                if (sizediff < bestdiff)
+                    match = *i;
+            }
+            else {
+                match = *i;
+            }
+        }
+    }
+    else {
+        match = logos.front();
+    }
+
+    if (!match->getDOM()) {
+        match->marshall();
+    }
+    vector<string> ids(1, params.get<0>());
+    auto_ptr<Attribute> attr(params.get<3>()->decode(ids, match));
+    if (attr.get()) {
         attributes.push_back(attr.get());
         attr.release();
     }
