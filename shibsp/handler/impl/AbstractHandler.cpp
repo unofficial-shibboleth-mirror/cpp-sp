@@ -475,18 +475,7 @@ void AbstractHandler::checkError(const XMLObject* response, const saml2md::RoleD
             const xmltooling::QName* code = sc ? sc->getValue() : nullptr;
             if (code && *code != saml1p::StatusCode::SUCCESS) {
                 FatalProfileException ex("SAML response contained an error.");
-                ex.addProperty("statusCode", code->toString().c_str());
-                if (sc->getStatusCode()) {
-                    code = sc->getStatusCode()->getValue();
-                    if (code)
-                        ex.addProperty("statusCode2", code->toString().c_str());
-                }
-                if (status->getStatusMessage()) {
-                    auto_ptr_char msg(status->getStatusMessage()->getMessage());
-                    if (msg.get() && *msg.get())
-                        ex.addProperty("statusMessage", msg.get());
-                }
-                ex.raise();
+                annotateException(&ex, role, status);   // throws it
             }
         }
     }

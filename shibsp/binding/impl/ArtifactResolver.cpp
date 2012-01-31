@@ -102,8 +102,9 @@ saml1p::Response* ArtifactResolver::resolve(
         throw BindingException("Unable to resolve artifact(s) into a SAML response.");
     const xmltooling::QName* code = (response->getStatus() && response->getStatus()->getStatusCode()) ? response->getStatus()->getStatusCode()->getValue() : nullptr;
     if (!code || *code != saml1p::StatusCode::SUCCESS) {
-        delete response;
-        throw BindingException("Identity provider returned a SAML error in response to artifact(s).");
+        auto_ptr<saml1p::Response> wrapper(response);
+        BindingException ex("Identity provider returned a SAML error in response to artifact.");
+        annotateException(&ex, &idpDescriptor, response->getStatus());  // rethrow
     }
 
     // The SOAP client handles policy evaluation against the SOAP and Response layer,
