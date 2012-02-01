@@ -1888,6 +1888,12 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         pair<bool,const XMLCh*> langPriority = getXMLString("langPriority");
         GenericRequest::setLangDefaults(!langFromClient.first || langFromClient.second, langPriority.second);
 
+#ifndef SHIBSP_LITE
+        langPriority = getXMLString("contactPriority");
+        if (langPriority.first)
+            SAMLConfig::getConfig().setContactPriority(langPriority.second);
+#endif
+
         // Extensions
         doExtensions(e, "global", log);
         if (conf.isEnabled(SPConfig::OutOfProcess))

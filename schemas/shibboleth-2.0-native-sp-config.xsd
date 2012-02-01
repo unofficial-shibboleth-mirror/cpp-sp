@@ -762,6 +762,9 @@
       <attribute name="clockSkew" type="unsignedInt"/>
       <attribute name="unsafeChars" type="conf:string"/>
       <attribute name="allowedSchemes" type="conf:listOfStrings"/>
+      <attribute name="langFromClient" type="boolean"/>
+      <attribute name="langPriority" type="conf:listOfStrings"/>
+      <attribute name="contactPriority" type="conf:listOfStrings"/>
       <anyAttribute namespace="##other" processContents="lax"/>
     </complexType>
   </element>
