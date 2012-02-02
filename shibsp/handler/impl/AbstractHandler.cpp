@@ -87,21 +87,6 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory StatusHandlerFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SessionHandlerFactory;
 
-    void SHIBSP_DLLLOCAL absolutize(const HTTPRequest& request, string& url) {
-        if (url.empty())
-            url = '/';
-        if (url[0] == '/') {
-            // Compute a URL to the root of the site.
-            int port = request.getPort();
-            const char* scheme = request.getScheme();
-            string root = string(scheme) + "://" + request.getHostname();
-            if ((!strcmp(scheme, "http") && port != 80) || (!strcmp(scheme, "https") && port != 443)) {
-                root += ":" + lexical_cast<string>(port);
-            }
-            url = root + url;
-        }
-    }
-
     void SHIBSP_DLLLOCAL generateRandomHex(std::string& buf, unsigned int len) {
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         int r;
@@ -342,13 +327,13 @@ void Handler::recoverRelayState(
                         if (storage->readString("RelayState",ssid.c_str(),&relayState) > 0) {
                             if (clear)
                                 storage->deleteString("RelayState",ssid.c_str());
-                            absolutize(request, relayState);
+                            request.absolutize(relayState);
                             return;
                         }
                         else if (storage->readText("RelayState",ssid.c_str(),&relayState) > 0) {
                             if (clear)
                                 storage->deleteText("RelayState",ssid.c_str());
-                            absolutize(request, relayState);
+                            request.absolutize(relayState);
                             return;
                         }
                         else {
@@ -376,7 +361,7 @@ void Handler::recoverRelayState(
                     }
                     else {
                         relayState = out.string();
-                        absolutize(request, relayState);
+                        request.absolutize(relayState);
                         return;
                     }
                 }
@@ -404,7 +389,7 @@ void Handler::recoverRelayState(
                     exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
                     response.setCookie(relay_cookie.first.c_str(), exp.c_str());
                 }
-                absolutize(request, relayState);
+                request.absolutize(relayState);
                 return;
             }
         }
@@ -421,7 +406,7 @@ void Handler::recoverRelayState(
             relayState = '/';
     }
 
-    absolutize(request, relayState);
+    request.absolutize(relayState);
 }
 
 AbstractHandler::AbstractHandler(
