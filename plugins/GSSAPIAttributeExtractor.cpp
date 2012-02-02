@@ -117,7 +117,6 @@ namespace shibsp {
         }
         ~GSSAPIExtractor() {
             shutdown();
-            delete m_impl;
         }
 
         void extractAttributes(
