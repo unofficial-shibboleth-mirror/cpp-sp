@@ -199,9 +199,8 @@ const char* AbstractSPRequest::getRequestURL() const
         int port = getPort();
         const char* scheme = getScheme();
         m_url = string(scheme) + "://" + getHostname();
-        if ((!strcmp(scheme,"http") && port != 80) || (!strcmp(scheme,"https") && port != 443)) {
+        if (!isDefaultPort())
             m_url += ":" + boost::lexical_cast<string>(port);
-        }
         m_url += m_uri;
     }
     return m_url.c_str();
@@ -250,9 +249,8 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
         int port = getPort();
         const char* scheme = getScheme();
         stackresource = string(scheme) + "://" + getHostname();
-        if ((!strcmp(scheme,"http") && port != 80) || (!strcmp(scheme,"https") && port != 443)) {
+        if (!isDefaultPort())
             stackresource += ":" + boost::lexical_cast<string>(port);
-        }
         stackresource += resource;
         resource = stackresource.c_str();
     }

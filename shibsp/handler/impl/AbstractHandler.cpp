@@ -87,6 +87,7 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory StatusHandlerFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SessionHandlerFactory;
 
+
     void SHIBSP_DLLLOCAL generateRandomHex(std::string& buf, unsigned int len) {
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
         int r;
@@ -113,11 +114,8 @@ namespace shibsp {
                 vector<string> whitelist;
                 if (!strcmp(relayStateLimit.second, "exact")) {
                     // Scheme and hostname have to match.
-                    if (!strcmp(httpRequest.getScheme(), "https") && httpRequest.getPort() == 443) {
-                        whitelist.push_back(string("https://") + httpRequest.getHostname() + '/');
-                    }
-                    else if (!strcmp(httpRequest.getScheme(), "http") && httpRequest.getPort() == 80) {
-                        whitelist.push_back(string("http://") + httpRequest.getHostname() + '/');
+                    if (httpRequest.isDefaultPort()) {
+                        whitelist.push_back(string(httpRequest.getScheme()) + httpRequest.getHostname() + '/');
                     }
                     whitelist.push_back(
                         string(httpRequest.getScheme()) + "://" + httpRequest.getHostname() + ':' + lexical_cast<string>(httpRequest.getPort()) + '/'
