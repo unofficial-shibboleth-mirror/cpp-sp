@@ -146,7 +146,7 @@ void SAML1Consumer::implementProtocol(
     m_log.debug("processing message against SAML 1.x SSO profile");
 
     // Check for errors...this will throw if it's not a successful message.
-    checkError(&xmlObject);
+    checkError(&xmlObject, policy.getIssuerMetadata());
 
     // With the binding aspects now moved out to the MessageDecoder,
     // the focus here is on the assertion content. For SAML 1.x POST,

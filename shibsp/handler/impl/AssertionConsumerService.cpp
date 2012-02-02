@@ -159,7 +159,6 @@ pair<bool,long> AssertionConsumerService::processMessage(
         );
 
     string relayState;
-    bool relayStateOK = true;
     scoped_ptr<XMLObject> msg;
     try {
         // Decode the message and process it in a protocol-specific way.
@@ -190,15 +189,13 @@ pair<bool,long> AssertionConsumerService::processMessage(
         }
     }
     catch (XMLToolingException& ex) {
-        if (relayStateOK) {
-            // Check for isPassive error condition.
-            const char* sc2 = ex.getProperty("statusCode2");
-            if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
-                pair<bool,bool> ignore = getBool("ignoreNoPassive", m_configNS.get());  // namespace-qualified if inside handler element
-                if (ignore.first && ignore.second && !relayState.empty()) {
-                    m_log.debug("ignoring SAML status of NoPassive and redirecting to resource...");
-                    return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
-                }
+        // Check for isPassive error condition.
+        const char* sc2 = ex.getProperty("statusCode2");
+        if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
+            pair<bool,bool> ignore = getBool("ignoreNoPassive", m_configNS.get());  // namespace-qualified if inside handler element
+            if (ignore.first && ignore.second && !relayState.empty()) {
+                m_log.debug("ignoring SAML status of NoPassive and redirecting to resource...");
+                return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
             }
         }
         if (!relayState.empty())
@@ -226,8 +223,13 @@ pair<bool,long> AssertionConsumerService::processMessage(
                 m_log.warn("unable to audit event, log event object was of an incorrect type");
             }
         }
-        catch (std::exception& ex) {
-            m_log.warn("exception auditing event: %s", ex.what());
+        catch (std::exception& ex2) {
+            m_log.warn("exception auditing event: %s", ex2.what());
+        }
+
+        // If no sign of annotation, try to annotate it now.
+        if (!ex.getProperty("statusCode")) {
+            annotateException(&ex, policy->getIssuerMetadata(), nullptr, false);    // wait to throw it
         }
 
         throw;
