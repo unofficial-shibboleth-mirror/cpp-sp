@@ -50,6 +50,7 @@
 #endif
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string.hpp>
@@ -70,8 +71,9 @@
 # include "attribute/resolver/AttributeResolver.h"
 # include "security/PKIXTrustEngine.h"
 # include "security/SecurityPolicyProvider.h"
-# include <saml/SAMLConfig.h>
+# include <saml/exceptions.h>
 # include <saml/version.h>
+# include <saml/SAMLConfig.h>
 # include <saml/binding/ArtifactMap.h>
 # include <saml/binding/SAMLArtifact.h>
 # include <saml/saml1/core/Assertions.h>
@@ -184,6 +186,7 @@ namespace {
         const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
         const Handler* getHandler(const char* path) const;
         void getHandlers(vector<const Handler*>& handlers) const;
+        void limitRedirect(const GenericRequest& request, const char* url) const;
 
         void receive(DDF& in, ostream& out) {
             // Only current function is to return the headers to clear.
@@ -272,6 +275,17 @@ namespace {
             if (m_artifactResolutionDefault) return m_artifactResolutionDefault->getInt("index");
             return m_base ? m_base->getArtifactEndpointIndex() : make_pair(false,0);
         }
+
+        enum {
+            REDIRECT_LIMIT_INHERIT,
+            REDIRECT_LIMIT_NONE,
+            REDIRECT_LIMIT_EXACT,
+            REDIRECT_LIMIT_HOST,
+            REDIRECT_LIMIT_WHITELIST,
+            REDIRECT_LIMIT_EXACT_WHITELIST,
+            REDIRECT_LIMIT_HOST_WHITELIST
+        } m_redirectLimit;
+        vector<string> m_redirectWhitelist;
     };
 
     // Top-level configuration implementation
@@ -527,10 +541,51 @@ XMLApplication::XMLApplication(
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".Application");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT".Application");
 
     // First load any property sets.
-    load(e, nullptr, this);
+    map<string,string> remapper;
+    remapper["relayStateLimit"] = "redirectLimit";
+    remapper["relayStateWhitelist"] = "redirectWhitelist";
+    load(e, nullptr, this, &remapper);
+
+    // Process redirect limit policy. Do this before assigning the parent pointer
+    // to ensure we get only our Sessions element.
+    const PropertySet* sessionProps = getPropertySet("Sessions");
+    if (sessionProps) {
+        pair<bool,const char*> redirectLimit = sessionProps->getString("redirectLimit");
+        if (redirectLimit.first) {
+            if (!strcmp(redirectLimit.second, "none"))
+                m_redirectLimit = REDIRECT_LIMIT_NONE;
+            else if (!strcmp(redirectLimit.second, "exact"))
+                m_redirectLimit = REDIRECT_LIMIT_EXACT;
+            else if (!strcmp(redirectLimit.second, "host"))
+                m_redirectLimit = REDIRECT_LIMIT_HOST;
+            else {
+                if (!strcmp(redirectLimit.second, "exact+whitelist"))
+                    m_redirectLimit = REDIRECT_LIMIT_EXACT_WHITELIST;
+                else if (!strcmp(redirectLimit.second, "exact+host"))
+                    m_redirectLimit = REDIRECT_LIMIT_HOST_WHITELIST;
+                else if (!strcmp(redirectLimit.second, "exact+host"))
+                    m_redirectLimit = REDIRECT_LIMIT_WHITELIST;
+                else
+                    throw ConfigurationException("Unrecognized redirectLimit setting ($1)", params(1, redirectLimit.second));
+                redirectLimit = sessionProps->getString("redirectWhitelist");
+                if (redirectLimit.first) {
+                    string dup(redirectLimit.second);
+                    split(m_redirectWhitelist, dup, is_space(), algorithm::token_compress_on);
+                }
+            }
+        }
+        else {
+            m_redirectLimit = base ? REDIRECT_LIMIT_INHERIT : REDIRECT_LIMIT_NONE;
+        }
+    }
+    else {
+        m_redirectLimit = base ? REDIRECT_LIMIT_INHERIT : REDIRECT_LIMIT_NONE;
+    }
+
+    // Assign parent.
     if (base)
         setParent(base);
 
@@ -1600,6 +1655,43 @@ void XMLApplication::getHandlers(vector<const Handler*>& handlers) const
             if (m_handlerMap.count(h->first) == 0)
                 handlers.push_back(h->second);
         }
+    }
+}
+
+void XMLApplication::limitRedirect(const GenericRequest& request, const char* url) const
+{
+    if (!url || *url == '/')
+        return;
+    if (m_redirectLimit == REDIRECT_LIMIT_INHERIT)
+        return m_base->limitRedirect(request, url);
+    if (m_redirectLimit != REDIRECT_LIMIT_NONE) {
+        vector<string> whitelist;
+        if (m_redirectLimit == REDIRECT_LIMIT_EXACT || m_redirectLimit == REDIRECT_LIMIT_EXACT_WHITELIST) {
+            // Scheme and hostname have to match.
+            if (request.isDefaultPort()) {
+                whitelist.push_back(string(request.getScheme()) + "://" + request.getHostname() + '/');
+            }
+            whitelist.push_back(string(request.getScheme()) + "://" + request.getHostname() + ':' + lexical_cast<string>(request.getPort()) + '/');
+        }
+        else if (m_redirectLimit == REDIRECT_LIMIT_HOST || m_redirectLimit == REDIRECT_LIMIT_HOST_WHITELIST) {
+            // Allow any scheme or port.
+            whitelist.push_back(string("https://") + request.getHostname() + '/');
+            whitelist.push_back(string("http://") + request.getHostname() + '/');
+            whitelist.push_back(string("https://") + request.getHostname() + ':');
+            whitelist.push_back(string("http://") + request.getHostname() + ':');
+        }
+
+        static bool (*startsWithI)(const char*,const char*) = XMLString::startsWithI;
+        if (!whitelist.empty() && find_if(whitelist.begin(), whitelist.end(),
+                boost::bind(startsWithI, url, boost::bind(&string::c_str, _1))) != whitelist.end()) {
+            return;
+        }
+        else if (!m_redirectWhitelist.empty() && find_if(m_redirectWhitelist.begin(), m_redirectWhitelist.end(),
+                boost::bind(startsWithI, url, boost::bind(&string::c_str, _1))) != m_redirectWhitelist.end()) {
+            return;
+        }
+        Category::getInstance(SHIBSP_LOGCAT".Application").warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
+        throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
     }
 }
 

@@ -168,7 +168,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
         DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
         DDFJanitor postjan(postData);
         recoverRelayState(application, httpRequest, httpResponse, relayState);
-        limitRelayState(m_log, application, httpRequest, relayState.c_str());
+        application.limitRedirect(httpRequest, relayState.c_str());
         implementProtocol(application, httpRequest, httpResponse, *policy, nullptr, *msg);
 
         auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : nullptr);

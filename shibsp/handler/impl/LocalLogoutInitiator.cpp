@@ -197,7 +197,13 @@ pair<bool,long> LocalLogoutInitiator::doRequest(
     // Route back to return location specified, or use the local template.
     const char* dest = httpRequest.getParameter("return");
     if (dest) {
-        limitRelayState(m_log, application, httpRequest, dest);
+        // Relative URLs get promoted, absolutes get validated.
+        if (*dest == '/') {
+            string d(dest);
+            httpRequest.absolutize(d);
+            return make_pair(true, httpResponse.sendRedirect(d.c_str()));
+        }
+        application.limitRedirect(httpRequest, dest);
         return make_pair(true, httpResponse.sendRedirect(dest));
     }
     return sendLogoutPage(application, httpRequest, httpResponse, "local");

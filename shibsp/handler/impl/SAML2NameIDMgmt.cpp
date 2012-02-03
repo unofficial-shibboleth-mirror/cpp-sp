@@ -447,9 +447,7 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(const Application& application, const
     */
 
     FatalProfileException ex("Incoming message was not a samlp:ManageNameIDRequest.");
-    if (policy->getIssuerMetadata())
-        annotateException(&ex, policy->getIssuerMetadata()); // throws it
-    ex.raise();
+    annotateException(&ex, policy->getIssuerMetadata()); // throws it
     return make_pair(false, 0L);  // never happen, satisfies compiler
 #else
     throw ConfigurationException("Cannot process NameID mgmt message using lite version of shibsp library.");

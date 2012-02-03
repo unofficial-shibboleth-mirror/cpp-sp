@@ -116,7 +116,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         // Since we're passing the ACS by value, we need to compute the return URL,
         // so we'll need the target resource for real.
         recoverRelayState(request.getApplication(), request, request, target, false);
-        limitRelayState(m_log, request.getApplication(), request, target.c_str());
+        request.getApplication().limitRedirect(request, target.c_str());
 
         prop.second = request.getParameter("discoveryURL");
         if (prop.second && *prop.second)

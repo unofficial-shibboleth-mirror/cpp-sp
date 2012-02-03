@@ -55,13 +55,4 @@
 using namespace xmltooling::logging;
 using namespace xercesc;
 
-namespace shibsp {
-    void SHIBSP_DLLLOCAL limitRelayState(
-        xmltooling::logging::Category& log,
-        const Application& application,
-        const xmltooling::HTTPRequest& httpRequest,
-        const char* relayState
-        );
-};
-
 #endif /* __shibsp_internal_h__ */

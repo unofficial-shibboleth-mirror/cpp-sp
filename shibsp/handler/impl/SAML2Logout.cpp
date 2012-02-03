@@ -568,9 +568,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
     if (logoutResponse) {
         if (!policy->isAuthenticated()) {
             SecurityPolicyException ex("Security of LogoutResponse not established.");
-            if (policy->getIssuerMetadata())
-                annotateException(&ex, policy->getIssuerMetadata()); // throws it
-            ex.raise();
+            annotateException(&ex, policy->getIssuerMetadata()); // throws it
         }
  
         if (logout_event) {
@@ -610,7 +608,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         }
 
         if (!relayState.empty()) {
-            limitRelayState(m_log, application, request, relayState.c_str());
+            application.limitRedirect(request, relayState.c_str());
             return make_pair(true, response.sendRedirect(relayState.c_str()));
         }
 

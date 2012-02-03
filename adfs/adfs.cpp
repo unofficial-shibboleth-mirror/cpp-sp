@@ -361,6 +361,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
         // Since we're passing the ACS by value, we need to compute the return URL,
         // so we'll need the target resource for real.
         recoverRelayState(app, request, request, target, false);
+        app.limitRedirect(request, target.c_str());
 
         acClass = getString("authnContextClassRef", request);
     }
@@ -961,6 +962,10 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
                 );
         }
 
+        const char* returnloc = httpRequest.getParameter("return");
+        if (returnloc)
+            application.limitRedirect(httpRequest, returnloc);
+
         // Log the request.
         scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
         if (logout_event) {
@@ -968,12 +973,19 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
             application.getServiceProvider().getTransactionLog()->write(*logout_event);
         }
 
-        const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-        const char* returnloc = httpRequest.getParameter("return");
         auto_ptr_char dest(ep->getLocation());
         string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "wa=wsignout1.0";
-        if (returnloc)
-            req += "&wreply=" + urlenc->encode(returnloc);
+        if (returnloc) {
+            req += "&wreply=";
+            if (*returnloc == '/') {
+                string s(returnloc);
+                httpRequest.absolutize(s);
+                req += XMLToolingConfig::getConfig().getURLEncoder()->encode(s.c_str());
+            }
+            else {
+                req += XMLToolingConfig::getConfig().getURLEncoder()->encode(returnloc);
+            }
+        }
         ret.second = httpResponse.sendRedirect(req.c_str());
         ret.first = true;
 
@@ -1045,7 +1057,16 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
         }
     }
 
-    if (param)
-        return make_pair(true, request.sendRedirect(param));
+    if (param) {
+        if (*param == '/') {
+            string p(param);
+            request.absolutize(p);
+            return make_pair(true, request.sendRedirect(p.c_str()));
+        }
+        else {
+            app.limitRedirect(request, param);
+            return make_pair(true, request.sendRedirect(param));
+        }
+    }
     return sendLogoutPage(app, request, request, "global");
 }

@@ -160,3 +160,7 @@ const Handler* Application::getAssertionConsumerServiceByProtocol(const XMLCh* p
     const vector<const Handler*>& handlers = getAssertionConsumerServicesByBinding(b.get());
     return handlers.empty() ? nullptr : handlers.front();
 }
+
+void Application::limitRedirect(const GenericRequest& request, const char* url) const
+{
+}

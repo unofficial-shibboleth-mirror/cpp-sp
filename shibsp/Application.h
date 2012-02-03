@@ -37,6 +37,7 @@
 
 namespace xmltooling {
     class XMLTOOL_API CredentialResolver;
+    class XMLTOOL_API GenericRequest;
     class XMLTOOL_API RWLock;
     class XMLTOOL_API SOAPTransport;
     class XMLTOOL_API StorageService;
@@ -320,6 +321,16 @@ namespace shibsp {
          * @param handlers  array to populate
          */
         virtual void getHandlers(std::vector<const Handler*>& handlers) const=0;
+
+        /**
+         * Checks a proposed redirect URL against application-specific settings for legal redirects,
+         * such as same-host restrictions or whitelisted domains, and raises a SecurityPolicyException
+         * in the event of a violation.
+         *
+         * @param request   the request leading to the redirect
+         * @param url       an absolute URL to validate
+         */
+        virtual void limitRedirect(const xmltooling::GenericRequest& request, const char* url) const;
     };
 
 #if defined (_MSC_VER)

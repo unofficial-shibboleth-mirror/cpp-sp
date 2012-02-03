@@ -146,7 +146,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
         // Since we're passing the ACS by value, we need to compute the return URL,
         // so we'll need the target resource for real.
         recoverRelayState(app, request, request, target, false);
-        limitRelayState(m_log, app, request, target.c_str());
+        app.limitRedirect(request, target.c_str());
     }
     else {
         // Check for a hardwired target value in the map or handler.

@@ -263,7 +263,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
         // Always need to recover target URL to compute handler below.
         recoverRelayState(app, request, request, target, false);
-        limitRelayState(m_log, app, request, target.c_str());
+        app.limitRedirect(request, target.c_str());
 
         pair<bool,bool> flag = getBool("isPassive", request);
         isPassive = (flag.first && flag.second);

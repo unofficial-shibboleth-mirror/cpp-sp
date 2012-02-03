@@ -410,11 +410,21 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                 else {
                     const char* returnloc = httpRequest.getParameter("return");
                     if (returnloc) {
-                        limitRelayState(m_log, application, httpRequest, returnloc);
-                        ret.second = httpResponse.sendRedirect(returnloc);
+                        // Relative URLs get promoted, absolutes get validated.
+                        if (*returnloc == '/') {
+                            string loc(returnloc);
+                            httpRequest.absolutize(loc);
+                            ret.second = httpResponse.sendRedirect(loc.c_str());
+                        }
+                        else {
+                            application.limitRedirect(httpRequest, returnloc);
+                            ret.second = httpResponse.sendRedirect(returnloc);
+                        }
                         ret.first = true;
                     }
-                    ret = sendLogoutPage(application, httpRequest, httpResponse, "global");
+                    else {
+                        ret = sendLogoutPage(application, httpRequest, httpResponse, "global");
+                    }
                 }
             }
 
@@ -431,8 +441,9 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         string relayState;
         const char* returnloc = httpRequest.getParameter("return");
         if (returnloc) {
-            limitRelayState(m_log, application, httpRequest, returnloc);
+            application.limitRedirect(httpRequest, returnloc);
             relayState = returnloc;
+            httpRequest.absolutize(relayState);
             preserveRelayState(application, httpResponse, relayState);
         }
 

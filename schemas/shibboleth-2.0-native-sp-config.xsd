@@ -46,12 +46,14 @@
     </restriction>
   </simpleType>
 
-  <simpleType name="relayStateLimitType">
+  <simpleType name="redirectLimitType">
     <restriction base="string">
       <enumeration value="none"/>
       <enumeration value="exact"/>
       <enumeration value="host"/>
       <enumeration value="whitelist"/>
+      <enumeration value="exact+whitelist"/>
+      <enumeration value="host+whitelist"/>
     </restriction>
   </simpleType>
 
@@ -524,8 +526,10 @@
     <attribute name="postTemplate" type="conf:string"/>
     <attribute name="postExpire" type="boolean"/>
     <attribute name="relayState" type="conf:string"/>
-    <attribute name="relayStateLimit" type="conf:relayStateLimitType"/>
+    <attribute name="relayStateLimit" type="conf:redirectLimitType"/>
     <attribute name="relayStateWhitelist" type="conf:listOfURIs"/>
+    <attribute name="redirectLimit" type="conf:redirectLimitType"/>
+    <attribute name="redirectWhitelist" type="conf:listOfURIs"/>
     <anyAttribute namespace="##other" processContents="lax"/>
   </complexType>
 

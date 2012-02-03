@@ -75,7 +75,6 @@ using namespace boost;
 using namespace std;
 
 namespace shibsp {
-
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML1ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2ArtifactResolutionFactory;
@@ -101,53 +100,6 @@ namespace shibsp {
             buf += (DIGITS[0x0F & b1]);
             buf += (DIGITS[(0xF0 & b2) >> 4 ]);
             buf += (DIGITS[0x0F & b2]);
-        }
-    }
-
-    void SHIBSP_DLLLOCAL limitRelayState(
-        Category& log, const Application& application, const HTTPRequest& httpRequest, const char* relayState
-        ) {
-        const PropertySet* sessionProps = application.getPropertySet("Sessions");
-        if (sessionProps) {
-            pair<bool,const char*> relayStateLimit = sessionProps->getString("relayStateLimit");
-            if (relayStateLimit.first && strcmp(relayStateLimit.second, "none")) {
-                vector<string> whitelist;
-                if (!strcmp(relayStateLimit.second, "exact")) {
-                    // Scheme and hostname have to match.
-                    if (httpRequest.isDefaultPort()) {
-                        whitelist.push_back(string(httpRequest.getScheme()) + httpRequest.getHostname() + '/');
-                    }
-                    whitelist.push_back(
-                        string(httpRequest.getScheme()) + "://" + httpRequest.getHostname() + ':' + lexical_cast<string>(httpRequest.getPort()) + '/'
-                        );
-                }
-                else if (!strcmp(relayStateLimit.second, "host")) {
-                    // Allow any scheme or port.
-                    whitelist.push_back(string("https://") + httpRequest.getHostname() + '/');
-                    whitelist.push_back(string("http://") + httpRequest.getHostname() + '/');
-                    whitelist.push_back(string("https://") + httpRequest.getHostname() + ':');
-                    whitelist.push_back(string("http://") + httpRequest.getHostname() + ':');
-                }
-                else if (!strcmp(relayStateLimit.second, "whitelist")) {
-                    // Literal set of comparisons to use.
-                    pair<bool,const char*> whitelistval = sessionProps->getString("relayStateWhitelist");
-                    if (whitelistval.first) {
-                        string dup(whitelistval.second);
-                        split(whitelist, dup, is_space(), algorithm::token_compress_on);
-                    }
-                }
-                else {
-                    log.warn("unrecognized relayStateLimit policy (%s), blocked redirect to (%s)", relayStateLimit.second, relayState);
-                    throw opensaml::SecurityPolicyException("Unrecognized relayStateLimit setting.");
-                }
-
-                static bool (*startsWithI)(const char*,const char*) = XMLString::startsWithI;
-                if (find_if(whitelist.begin(), whitelist.end(),
-                        boost::bind(startsWithI, relayState, boost::bind(&string::c_str, _1))) == whitelist.end()) {
-                    log.warn("relayStateLimit policy (%s), blocked redirect to (%s)", relayStateLimit.second, relayState);
-                    throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
-                }
-            }
         }
     }
 };
