@@ -29,11 +29,25 @@ h2 {
 	font-weight: bold;
 }
 
+img {
+	margin-bottom: 15px;
+}
+
 .error {
 	font-size: 10pt;
 	font-weight: bold;
 }
 
-img {
-	margin-bottom: 15px;
+.boxed-content {
+    margin-top: 2ex;
+    margin-right: 3em;
+    margin-bottom: 2ex;
+    margin-left: 3em;
+    padding-top: 0.5ex;
+    padding-right: 1em;
+    padding-bottom: 0.5ex;
+    padding-left: 1em;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #999999;
 }

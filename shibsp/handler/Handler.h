@@ -158,6 +158,9 @@ namespace shibsp {
     /** Handler for SAML 2.0 Artifact Resolution. */
     #define SAML20_ARTIFACT_RESOLUTION_SERVICE "SAML2"
 
+    /** Handler for hooking new sessions with attribute checking. */
+    #define ATTR_CHECKER_HANDLER "AttributeChecker"
+
     /** Handler for metadata generation. */
     #define DISCOVERY_FEED_HANDLER "DiscoveryFeed"
 

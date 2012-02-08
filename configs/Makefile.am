@@ -42,6 +42,7 @@ CONFIGFILES = \
 	console.logger \
 	syslog.logger \
 	accessError.html \
+    attrChecker.html \
 	sessionError.html \
 	metadataError.html \
 	bindingTemplate.html \

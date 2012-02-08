@@ -124,6 +124,7 @@ common_sources = \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/AssertionLookup.cpp \
+    handler/impl/AttributeCheckerHandler.cpp \
 	handler/impl/ChainingLogoutInitiator.cpp \
 	handler/impl/ChainingSessionInitiator.cpp \
 	handler/impl/CookieSessionInitiator.cpp \

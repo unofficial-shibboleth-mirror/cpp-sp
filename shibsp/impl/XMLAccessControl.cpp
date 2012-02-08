@@ -139,6 +139,7 @@ namespace shibsp {
     }
 
     static const XMLCh _AccessControl[] =   UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
+    static const XMLCh _Handler[] =         UNICODE_LITERAL_7(H,a,n,d,l,e,r);
     static const XMLCh ignoreCase[] =       UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
     static const XMLCh ignoreOption[] =     UNICODE_LITERAL_1(i);
     static const XMLCh _list[] =            UNICODE_LITERAL_4(l,i,s,t);
@@ -154,20 +155,23 @@ Rule::Rule(const DOMElement* e) : m_alias(XMLHelper::getAttrString(e, nullptr, r
 {
     if (m_alias.empty())
         throw ConfigurationException("Access control rule missing require attribute");
+    if (!e->hasChildNodes())
+        return; // empty rule
 
-    auto_arrayptr<char> vals(toUTF8(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : nullptr));
-    if (!vals.get())
-        return;
+    auto_arrayptr<char> vals(toUTF8(e->getTextContent()));
+    if (!vals.get() || !*vals.get())
+        throw ConfigurationException("Unable to convert Rule content into UTF-8.");
 
     bool listflag = XMLHelper::getAttrBool(e, true, _list);
     if (!listflag) {
-        if (*vals.get())
-            m_vals.insert(vals.get());
+        m_vals.insert(vals.get());
         return;
     }
 
     string temp(vals.get());
     split(m_vals, temp, boost::is_space(), algorithm::token_compress_on);
+    if (m_vals.empty())
+        throw ConfigurationException("Rule did not contain any usable values.");
 }
 
 AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Session* session) const
@@ -218,6 +222,10 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     if (attrs.first == attrs.second) {
         request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
         return shib_acl_false;
+    }
+    else if (m_vals.empty()) {
+        request.log(SPRequest::SPDebug, string("AccessControl plugin requires presence of attribute (") + m_alias + "), authz granted");
+        return shib_acl_true;
     }
 
     for (; attrs.first != attrs.second; ++attrs.first) {
@@ -407,8 +415,16 @@ pair<bool,DOMElement*> XMLAccessControl::background_load()
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
     // Check for AccessControl wrapper and drop a level.
-    if (XMLString::equals(raw.second->getLocalName(),_AccessControl))
+    if (XMLString::equals(raw.second->getLocalName(),_AccessControl)) {
         raw.second = XMLHelper::getFirstChildElement(raw.second);
+        if (!raw.second)
+            throw ConfigurationException("No child element found in AccessControl parent element.");
+    }
+    else if (XMLString::equals(raw.second->getLocalName(),_Handler)) {
+        raw.second = XMLHelper::getFirstChildElement(raw.second);
+        if (!raw.second)
+            throw ConfigurationException("No child element found in Handler parent element.");
+    }
 
     scoped_ptr<AccessControl> authz;
     if (XMLString::equals(raw.second->getLocalName(),_Rule))

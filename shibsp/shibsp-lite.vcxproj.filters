@@ -231,6 +231,9 @@
     <ClCompile Include="attribute\BinaryAttribute.cpp">
       <Filter>Source Files\attribute</Filter>
     </ClCompile>
+    <ClCompile Include="handler\impl\AttributeCheckerHandler.cpp">
+      <Filter>Source Files\handler\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">

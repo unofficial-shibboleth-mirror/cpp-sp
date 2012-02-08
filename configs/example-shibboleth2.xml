@@ -93,6 +93,8 @@
     -->
     <ApplicationDefaults entityID="https://sp.example.org/shibboleth"
                          REMOTE_USER="eppn persistent-id targeted-id"
+                         metadataAttributePrefix="Meta-"
+                         sessionHook="/Shibboleth.sso/AttrChecker"
                          signing="false" encryption="false">
 
         <!--
@@ -199,6 +201,10 @@
 
             <!-- JSON feed of discovery information. -->
             <Handler type="DiscoveryFeed" Location="/DiscoFeed"/>
+
+            <!-- Checks for required attribute(s) before login completes. -->
+            <Handler type="AttributeChecker" Location="/AttrChecker" template="attrChecker.html"
+                attributes="eppn" flushSession="true"/>
         </Sessions>
 
         <!--
@@ -206,6 +212,7 @@
         also add attributes with values that can be plugged into the templates.
         -->
         <Errors supportContact="root@localhost"
+            helpLocation="/about.html"
             logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
         
@@ -237,7 +244,10 @@
 
         <!-- Map to extract attributes from SAML assertions. -->
         <AttributeExtractor type="XML" validate="true" path="attribute-map.xml"/>
-        
+
+        <!-- Extracts support information for IdP from its metadata. -->
+        <AttributeExtractor type="Metadata" errorURL="errorURL" DisplayName="displayName"/>
+
         <!-- Use a SAML query if no attributes are supplied during SSO. -->
         <AttributeResolver type="Query" subjectMatch="true"/>
 

@@ -649,6 +649,7 @@
     <attribute name="partialLogout" type="anyURI"/>
     <attribute name="supportContact" type="conf:string"/>
     <attribute name="logoLocation" type="anyURI"/>
+    <attribute name="helpLocation" type="anyURI"/>
     <attribute name="styleSheet" type="anyURI"/>
     <anyAttribute namespace="##any" processContents="lax"/>
   </complexType>

@@ -109,6 +109,7 @@
         also add attributes with values that can be plugged into the templates.
         -->
         <Errors supportContact="root@localhost"
+            helpLocation="/about.html"
             logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
         
