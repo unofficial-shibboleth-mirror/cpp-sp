@@ -459,6 +459,7 @@
     <attribute name="requireConfidentiality" type="boolean"/>
     <attribute name="requireTransportAuth" type="boolean"/>
     <attribute name="requireSignedAssertions" type="boolean"/>
+    <attribute name="sessionHook" type="anyURI"/>
   </attributeGroup>
     
   <complexType name="SessionsType">

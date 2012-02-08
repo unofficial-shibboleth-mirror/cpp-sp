@@ -98,7 +98,23 @@ namespace shibsp {
          * @param issuedTo      address for which security assertion was issued
          */
         void checkAddress(const Application& application, const xmltooling::HTTPRequest& httpRequest, const char* issuedTo) const;
-        
+
+
+        /**
+         * Complete the client's transition back to the expected resource.
+         * 
+         * @param application   reference to application receiving message
+         * @param httpRequest   client request that included message
+         * @param httpResponse  response to client
+         * @param relayState    relay state token
+         */
+        virtual std::pair<bool,long> finalizeResponse(
+            const Application& application,
+            const xmltooling::HTTPRequest& httpRequest,
+            xmltooling::HTTPResponse& httpResponse,
+            std::string& relayState
+            ) const;
+
 #ifndef SHIBSP_LITE
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
         

@@ -30,6 +30,7 @@
 #include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AssertionConsumerService.h"
+#include "util/CGIParser.h"
 #include "util/SPConstants.h"
 
 # include <ctime>
@@ -60,6 +61,9 @@ using opensaml::saml2md::SPSSODescriptor;
 #else
 # include "lite/CommonDomainCookie.h"
 #endif
+
+#include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/util/URLEncoder.h>
 
 using namespace shibspconstants;
 using namespace shibsp;
@@ -95,10 +99,21 @@ AssertionConsumerService::~AssertionConsumerService()
 
 pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler) const
 {
-    string relayState;
-    SPConfig& conf = SPConfig::getConfig();
+    // Check for a message back to the ACS from a post-session hook.
+    if (request.getQueryString() && strstr(request.getQueryString(), "hook=1")) {
+        // Parse the query string only to preserve any POST data.
+        CGIParser cgi(request, true);
+        pair<CGIParser::walker,CGIParser::walker> param = cgi.getParameters("hook");
+        if (param.first != param.second && param.first->second && !strcmp(param.first->second, "1")) {
+            string target;
+            param = cgi.getParameters("target");
+            if (param.first != param.second && param.first->second)
+                target = param.first->second;
+            return finalizeResponse(request.getApplication(), request, request, target);
+        }
+    }
 
-    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively and directly process the message.
         return processMessage(request.getApplication(), request, request);
     }
@@ -109,7 +124,7 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
         headers.push_back("Accept-Language");
         DDF out,in = wrap(request, &headers);
         DDFJanitor jin(in), jout(out);
-        out=request.getServiceProvider().getListenerService()->send(in);
+        out = request.getServiceProvider().getListenerService()->send(in);
         return unwrap(request, out);
     }
 }
@@ -117,8 +132,8 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
 void AssertionConsumerService::receive(DDF& in, ostream& out)
 {
     // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
+    const char* aid = in["application_id"].string();
+    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for new session", aid ? aid : "(missing)");
@@ -146,16 +161,18 @@ pair<bool,long> AssertionConsumerService::processMessage(
 {
 #ifndef SHIBSP_LITE
     // Locate policy key.
-    pair<bool,const char*> policyId = getString("policyId", m_configNS.get());  // namespace-qualified if inside handler element
-    if (!policyId.first)
-        policyId = application.getString("policyId");   // unqualified in Application(s) element
+    pair<bool,const char*> prop = getString("policyId", m_configNS.get());  // namespace-qualified if inside handler element
+    if (!prop.first)
+        prop = application.getString("policyId");   // unqualified in Application(s) element
 
     // Lock metadata for use by policy.
     Locker metadataLocker(application.getMetadataProvider());
 
     // Create the policy.
     scoped_ptr<opensaml::SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second)
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(
+            application, &IDPSSODescriptor::ELEMENT_QNAME, prop.second
+            )
         );
 
     string relayState;
@@ -165,28 +182,48 @@ pair<bool,long> AssertionConsumerService::processMessage(
         msg.reset(m_decoder->decode(relayState, httpRequest, *(policy.get())));
         if (!msg)
             throw BindingException("Failed to decode an SSO protocol response.");
-        DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
-        DDFJanitor postjan(postData);
-        recoverRelayState(application, httpRequest, httpResponse, relayState);
-        application.limitRedirect(httpRequest, relayState.c_str());
         implementProtocol(application, httpRequest, httpResponse, *policy, nullptr, *msg);
 
-        auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : nullptr);
-
         // History cookie.
+        auto_ptr_char issuer(policy->getIssuer() ? policy->getIssuer()->getName() : nullptr);
         if (issuer.get() && *issuer.get())
             maintainHistory(application, httpRequest, httpResponse, issuer.get());
 
-        // Now redirect to the state value. By now, it should be set to *something* usable.
-        // First check for POST data.
-        if (!postData.islist()) {
-            m_log.debug("ACS returning via redirect to: %s", relayState.c_str());
-            return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+        const EntityDescriptor* entity =
+            dynamic_cast<const EntityDescriptor*>(policy->getIssuerMetadata() ? policy->getIssuerMetadata()->getParent() : nullptr);
+        prop = application.getRelyingParty(entity)->getString("sessionHook");
+        if (prop.first) {
+            string hook(prop.second);
+            httpRequest.absolutize(hook);
+
+            // Compute the return URL. We use a self-referential link plus a hook indicator to break the cycle
+            // and the relay state.
+            const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
+            string returnURL = httpRequest.getRequestURL();
+            returnURL = returnURL.substr(0, returnURL.find('?')) + "?hook=1";
+            if (!relayState.empty())
+                returnURL += "&target=" + encoder->encode(relayState.c_str());
+            if (hook.find('?') == string::npos)
+                hook += '?';
+            else
+                hook += '&';
+            hook += "return=" + encoder->encode(returnURL.c_str());
+
+            // Add the translated target resource in case it's of interest.
+            if (!relayState.empty()) {
+                try {
+                    recoverRelayState(application, httpRequest, httpResponse, relayState, false);
+                    hook += "&target=" + encoder->encode(relayState.c_str());
+                }
+                catch (std::exception& ex) {
+                    m_log.warn("error recovering relay state: %s", ex.what());
+                }
+            }
+
+            return make_pair(true, httpResponse.sendRedirect(hook.c_str()));
         }
-        else {
-            m_log.debug("ACS returning via POST to: %s", relayState.c_str());
-            return make_pair(true, sendPostResponse(application, httpResponse, relayState.c_str(), postData));
-        }
+
+        return finalizeResponse(application, httpRequest, httpResponse, relayState);
     }
     catch (XMLToolingException& ex) {
         // Check for isPassive error condition.
@@ -198,8 +235,15 @@ pair<bool,long> AssertionConsumerService::processMessage(
                 return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
             }
         }
-        if (!relayState.empty())
+        if (!relayState.empty()) {
+            try {
+                recoverRelayState(application, httpRequest, httpResponse, relayState, false);
+            }
+            catch (std::exception& rsex) {
+                m_log.warn("error recovering relay state: %s", rsex.what());
+            }
             ex.addProperty("RelayState", relayState.c_str());
+        }
 
         // Log the error.
         try {
@@ -237,6 +281,27 @@ pair<bool,long> AssertionConsumerService::processMessage(
 #else
     throw ConfigurationException("Cannot process message using lite version of shibsp library.");
 #endif
+}
+
+pair<bool,long> AssertionConsumerService::finalizeResponse(
+    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, string& relayState
+    ) const
+{
+    DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
+    DDFJanitor postjan(postData);
+    recoverRelayState(application, httpRequest, httpResponse, relayState);
+    application.limitRedirect(httpRequest, relayState.c_str());
+
+    // Now redirect to the state value. By now, it should be set to *something* usable.
+    // First check for POST data.
+    if (!postData.islist()) {
+        m_log.debug("ACS returning via redirect to: %s", relayState.c_str());
+        return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+    }
+    else {
+        m_log.debug("ACS returning via POST to: %s", relayState.c_str());
+        return make_pair(true, sendPostResponse(application, httpResponse, relayState.c_str(), postData));
+    }
 }
 
 void AssertionConsumerService::checkAddress(const Application& application, const HTTPRequest& httpRequest, const char* issuedTo) const
