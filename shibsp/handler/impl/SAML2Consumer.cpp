@@ -417,6 +417,7 @@ void SAML2Consumer::implementProtocol(
             &httpRequest,
             policy.getIssuerMetadata(),
             samlconstants::SAML20P_NS,
+            response,
             nullptr,
             nullptr,
             ssoName,

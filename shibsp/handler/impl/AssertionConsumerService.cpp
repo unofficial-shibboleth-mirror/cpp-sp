@@ -416,6 +416,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
         nullptr,
         issuer,
         protocol,
+        nullptr,
         v1nameid,
         nullptr,
         nameid,
@@ -431,6 +432,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
     const GenericRequest* request,
     const saml2md::RoleDescriptor* issuer,
     const XMLCh* protocol,
+    const xmltooling::XMLObject* protmsg,
     const saml1::NameIdentifier* v1nameid,
     const saml1::AuthenticationStatement* v1statement,
     const saml2::NameID* nameid,
@@ -466,6 +468,15 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
         }
 
         m_log.debug("extracting pushed attributes...");
+
+        if (protmsg) {
+            try {
+                extractor->extractAttributes(application, request, issuer, *protmsg, resolvedAttributes);
+            }
+            catch (std::exception& ex) {
+                m_log.error("caught exception extracting attributes: %s", ex.what());
+            }
+        }
 
         if (v1nameid || nameid) {
             try {

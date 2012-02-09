@@ -185,7 +185,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
     request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
 
-    ifstream infile(m_template);
+    ifstream infile(m_template.c_str());
     if (infile) {
         TemplateParameters tp(nullptr, request.getApplication().getPropertySet("Errors"), session);
         tp.m_request = &request;

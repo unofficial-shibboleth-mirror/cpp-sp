@@ -242,16 +242,16 @@ xmldir = $(datadir)/xml
 paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
 	sed < ${srcdir}/$@.in > $@.tmp \
-	    -e 's:@-PREFIX-@:${prefix}:g' \
-        -e 's:@-LIBDIR-@:${libdir}:g' \
-        -e 's:@-SYSCONFDIR-@:${sysconfdir}:g' \
-        -e 's:@-LOGDIR-@:${logdir}:g' \
-        -e 's:@-RUNDIR-@:${rundir}:g' \
-        -e 's:@-XMLDIR-@:${xmldir}:g' \
-	    -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
-	    -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
-	    -e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g' \
-	    -e 's:@-OPENSAMLXMLDIR-@:${OPENSAMLXMLDIR}:g'
+		-e 's:@-PREFIX-@:${prefix}:g' \
+		-e 's:@-LIBDIR-@:${libdir}:g' \
+		-e 's:@-SYSCONFDIR-@:${sysconfdir}:g' \
+		-e 's:@-LOGDIR-@:${logdir}:g' \
+		-e 's:@-RUNDIR-@:${rundir}:g' \
+		-e 's:@-XMLDIR-@:${xmldir}:g' \
+		-e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
+		-e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
+		-e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g' \
+		-e 's:@-OPENSAMLXMLDIR-@:${OPENSAMLXMLDIR}:g'
 	cmp -s $@ $@.tmp || mv $@.tmp $@
 	rm -f $@.tmp
 
@@ -264,7 +264,7 @@ EXTRA_DIST = \
 	shibsp.vcxproj.filters \
 	shibsp-lite.vcxproj.filters \
 	config_pub.h.in \
-    config_pub_win32.h\
+	config_pub_win32.h\
 	paths.h.in \
 	resource.h \
 	shibsp.rc

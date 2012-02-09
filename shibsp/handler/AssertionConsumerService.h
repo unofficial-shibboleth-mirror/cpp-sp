@@ -209,6 +209,7 @@ namespace shibsp {
          * @param request               request delivering message, if any
          * @param issuer                source of SSO tokens
          * @param protocol              SSO protocol used
+         * @param protmsg               SSO protocol message, if any
          * @param v1nameid              identifier of principal in SAML 1.x form, if any
          * @param v1statement           SAML 1.x authentication statement, if any
          * @param nameid                identifier of principal in SAML 2.0 form
@@ -222,6 +223,7 @@ namespace shibsp {
             const xmltooling::GenericRequest* request=nullptr,
             const opensaml::saml2md::RoleDescriptor* issuer=nullptr,
             const XMLCh* protocol=nullptr,
+            const xmltooling::XMLObject* protmsg=nullptr,
             const opensaml::saml1::NameIdentifier* v1nameid=nullptr,
             const opensaml::saml1::AuthenticationStatement* v1statement=nullptr,
             const opensaml::saml2::NameID* nameid=nullptr,

@@ -767,6 +767,7 @@ void ADFSConsumer::implementProtocol(
             &httpRequest,
             policy.getIssuerMetadata(),
             m_protocol.get(),
+            nullptr,
             saml1name,
             saml1statement,
             (saml1name ? nameid.get() : saml2name),

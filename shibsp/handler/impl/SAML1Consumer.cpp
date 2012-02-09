@@ -300,6 +300,7 @@ void SAML1Consumer::implementProtocol(
             policy.getIssuerMetadata(),
             (!response->getMinorVersion().first || response->getMinorVersion().second==1) ?
                 samlconstants::SAML11_PROTOCOL_ENUM : samlconstants::SAML10_PROTOCOL_ENUM,
+            response,
             n,
             ssoStatement,
             nameid.get(),
