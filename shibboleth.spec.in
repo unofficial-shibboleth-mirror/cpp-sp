@@ -23,12 +23,15 @@ BuildRequires:	libsaml-devel >= 2.5
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
 Requires:		libcurl-openssl >= 7.21.7
-BuildRequires:	chrpath, libmemcached-devel
+BuildRequires:	chrpath
 %endif
 BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
 %{!?_without_doxygen:BuildRequires: doxygen}
 %{!?_without_odbc:BuildRequires:unixODBC-devel}
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
+%if 0%{?centos_version} >= 600
+BuildRequires:	libmemcached-devel
+%endif
 %{?_with_memcached:BuildRequires: libmemcached-devel}
 %if "%{_vendor}" == "redhat"
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
@@ -83,7 +86,7 @@ This package includes files needed for development with Shibboleth.
 %setup -q
 
 %build
-%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+%if 0%{?centos_version} >= 600
 	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_memcached:--with-memcached} %{?shib_options}
 %else
 	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{?_with_memcached} %{?shib_options}
