@@ -511,6 +511,9 @@ if test "$WANT_MEMCACHED" != "no"; then
     fi
     AC_CHECK_HEADER([libmemcached/memcached.h],,
         AC_MSG_ERROR([unable to find Memcached header files]))
+    AC_CHECK_DECL([memcached_last_error_message],
+        [AC_DEFINE([HAVE_MEMCACHED_LAST_ERROR_MESSAGE],[1],[Define to 1 if libmemcached supports error handling function.])],,
+        [#include <libmemcached/memcached.h>])
     MEMCACHED_LIBS="-lmemcached"
 fi
 

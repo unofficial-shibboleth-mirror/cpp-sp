@@ -23,12 +23,13 @@ BuildRequires:	libsaml-devel >= 2.5
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
 Requires:		libcurl-openssl >= 7.21.7
-BuildRequires:	chrpath
+BuildRequires:	chrpath, libmemcached-devel
 %endif
 BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
 %{!?_without_doxygen:BuildRequires: doxygen}
 %{!?_without_odbc:BuildRequires:unixODBC-devel}
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
+%{?_with_memcached:BuildRequires: libmemcached-devel}
 %if "%{_vendor}" == "redhat"
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
 BuildRequires: redhat-rpm-config
@@ -82,7 +83,11 @@ This package includes files needed for development with Shibboleth.
 %setup -q
 
 %build
-%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{?_with_memcached} %{?shib_options}
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_memcached:--with-memcached} %{?shib_options}
+%else
+	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{?_with_memcached} %{?shib_options}
+%endif
 %{__make} pkgdocdir=%{pkgdocdir}
 
 %install
@@ -323,7 +328,7 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
-* Wed Dec 14 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.5-1
+* Fri Feb 10 2012  Scott Cantor  <cantor.2@osu.edu>  - 2.5-1
 - Move logo and stylesheet to version-independent tree
 - Make shib.conf noreplace
 - Post-fixup of Alias commands in older shib.conf
@@ -331,6 +336,7 @@ fi
 - Move init customizations to /etc/sysconfig/shibd
 - Copy shibd restart for Red Hat to postun
 - Add boost-devel dependency
+- Build memcache plugin on RH6
 
 * Sun Jun 26 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
 - Log files shouldn't be world readable.
