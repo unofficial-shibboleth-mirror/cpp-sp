@@ -244,6 +244,7 @@
     <attribute name="redirectToSSL" type="unsignedInt"/>
     <attribute name="entityID" type="anyURI"/>
     <attribute name="discoveryURL" type="anyURI"/>
+    <attribute name="discoveryPolicy" type="conf:string"/>
     <attribute name="isPassive" type="boolean"/>
     <attribute name="returnOnError" type="boolean"/>
     <attribute name="forceAuthn" type="boolean"/>
@@ -561,6 +562,7 @@
     <attribute name="SPNameQualifier" type="conf:string"/>
     <attribute name="requestDelegation" type="boolean"/>
     <attribute name="target" type="anyURI"/>
+    <attribute name="discoveryPolicy" type="conf:string"/>
     <anyAttribute namespace="##any" processContents="lax"/>
   </attributeGroup>
 

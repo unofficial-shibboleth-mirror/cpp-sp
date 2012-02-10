@@ -277,6 +277,9 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         req = req + "&returnIDParam=" + m_returnParam;
     if (isPassive)
         req += "&isPassive=true";
+    prop = getString("discoveryPolicy");
+    if (prop.first)
+        req += "&policy=" + urlenc->encode(prop.second);
 
     return make_pair(true, request.sendRedirect(req.c_str()));
 }
