@@ -113,7 +113,6 @@ TransactionLog::TransactionLog(const char* fmt, const char* absent)
 
 TransactionLog::~TransactionLog()
 {
-    delete m_lock;
 }
 
 Lockable* TransactionLog::lock()

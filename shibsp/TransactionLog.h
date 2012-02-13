@@ -35,6 +35,7 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <boost/scoped_ptr.hpp>
 
 namespace xmltooling {
     class XMLTOOL_API Mutex;
@@ -169,7 +170,7 @@ namespace shibsp {
         virtual void write(const Event& e);
 
     private:
-        xmltooling::Mutex* m_lock;
+        boost::scoped_ptr<xmltooling::Mutex> m_lock;
         std::string m_absent;
         std::vector<std::string> m_formatting;
     };
