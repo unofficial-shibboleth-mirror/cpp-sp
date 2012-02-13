@@ -42,7 +42,6 @@
 
 #include <list>
 #include <iostream> 
-#include <boost/scoped_ptr.hpp>
 #include <libmemcached/memcached.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 

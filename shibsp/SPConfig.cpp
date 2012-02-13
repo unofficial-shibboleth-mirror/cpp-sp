@@ -66,7 +66,6 @@
 #endif
 
 #include <ctime>
-#include <boost/scoped_ptr.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/version.h>
 #include <xmltooling/XMLToolingConfig.h>

@@ -49,7 +49,6 @@
 #include <fstream>
 #include <stdexcept>
 #include <boost/lexical_cast.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>

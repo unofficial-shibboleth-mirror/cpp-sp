@@ -30,7 +30,6 @@
 #include "ServiceProvider.h"
 #include "metadata/MetadataProviderCriteria.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 #include <xercesc/framework/Wrapper4InputSource.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>

@@ -53,7 +53,6 @@
 #include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 
 using namespace shibsp;

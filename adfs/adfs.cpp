@@ -49,7 +49,6 @@
 #include <shibsp/handler/AssertionConsumerService.h>
 #include <shibsp/handler/LogoutInitiator.h>
 #include <shibsp/handler/SessionInitiator.h>
-#include <boost/scoped_ptr.hpp>
 #include <xmltooling/logging.h>
 #include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/NDC.h>

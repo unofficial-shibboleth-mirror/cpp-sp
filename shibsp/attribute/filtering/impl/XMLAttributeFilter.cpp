@@ -35,7 +35,6 @@
 #include "attribute/filtering/MatchFunctor.h"
 #include "util/SPConstants.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <xmltooling/util/NDC.h>

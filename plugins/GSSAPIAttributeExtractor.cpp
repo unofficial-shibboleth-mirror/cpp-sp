@@ -47,7 +47,6 @@
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/Base64.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 
 #ifdef SHIBSP_HAVE_GSSGNU

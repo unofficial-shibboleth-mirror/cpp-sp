@@ -42,7 +42,6 @@
 #include "security/SecurityPolicyProvider.h"
 #include "util/SPConstants.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>

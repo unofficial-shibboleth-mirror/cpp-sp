@@ -33,7 +33,6 @@
 # include "SessionCache.h"
 # include "TransactionLog.h"
 # include "attribute/resolver/ResolutionContext.h"
-# include <boost/scoped_ptr.hpp>
 # include <boost/iterator/indirect_iterator.hpp>
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>

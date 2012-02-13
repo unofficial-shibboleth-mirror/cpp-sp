@@ -31,7 +31,6 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
 namespace shibsp {

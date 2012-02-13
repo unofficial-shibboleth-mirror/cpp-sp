@@ -28,7 +28,6 @@
 #include "metadata/MetadataExt.h"
 #include "security/PKIXTrustEngine.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataCredentialCriteria.h>

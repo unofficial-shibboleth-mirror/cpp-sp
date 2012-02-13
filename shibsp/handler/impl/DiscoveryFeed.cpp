@@ -40,7 +40,6 @@
 
 #ifndef SHIBSP_LITE
 # include <queue>
-# include <boost/scoped_ptr.hpp>
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml2/metadata/DiscoverableMetadataProvider.h>

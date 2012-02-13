@@ -32,7 +32,6 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/regx/RegularExpression.hpp>
 

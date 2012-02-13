@@ -54,7 +54,6 @@
 #include <sqlext.h>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 
 using namespace xmltooling::logging;

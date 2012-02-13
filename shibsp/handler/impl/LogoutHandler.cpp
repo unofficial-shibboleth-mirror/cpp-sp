@@ -34,10 +34,6 @@
 #include "handler/LogoutHandler.h"
 #include "util/TemplateParameters.h"
 
-#ifndef SHIBSP_LITE
-# include <boost/scoped_ptr.hpp>
-#endif
-
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 #include <xmltooling/XMLToolingConfig.h>

@@ -28,7 +28,6 @@
 #include "attribute/AttributeDecoder.h"
 #include "attribute/SimpleAttribute.h"
 
-#include <boost/scoped_ptr.hpp>
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/core/Assertions.h>
 #include <xmltooling/XMLToolingConfig.h>

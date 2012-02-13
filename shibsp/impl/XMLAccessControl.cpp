@@ -32,7 +32,6 @@
 #include "attribute/Attribute.h"
 
 #include <algorithm>
-#include <boost/scoped_ptr.hpp>
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>

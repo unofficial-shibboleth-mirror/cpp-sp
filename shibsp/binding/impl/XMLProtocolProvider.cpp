@@ -31,7 +31,6 @@
 #include "util/SPConstants.h"
 
 #include <map>
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/util/NDC.h>

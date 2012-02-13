@@ -46,7 +46,6 @@
 #include <algorithm>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <xmltooling/io/HTTPRequest.h>
 #include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/util/DateTime.h>

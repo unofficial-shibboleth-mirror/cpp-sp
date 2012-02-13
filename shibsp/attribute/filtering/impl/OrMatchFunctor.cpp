@@ -31,7 +31,6 @@
 #include "util/SPConstants.h"
 
 #include <boost/bind.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>
 

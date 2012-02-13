@@ -65,7 +65,6 @@
 #include <fstream>
 #include <stdexcept>
 #include <boost/lexical_cast.hpp>
-#include <boost/scoped_ptr.hpp>
 
 // Apache specific header files
 #include <httpd.h>

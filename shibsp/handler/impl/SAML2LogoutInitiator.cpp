@@ -53,8 +53,6 @@ using namespace opensaml;
 # include "lite/SAMLConstants.h"
 #endif
 
-#include <boost/scoped_ptr.hpp>
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;

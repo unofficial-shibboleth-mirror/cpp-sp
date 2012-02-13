@@ -33,7 +33,6 @@
 #include "util/SPConstants.h"
 
 #include <map>
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <saml/SAMLConfig.h>
 #include <saml/binding/SecurityPolicyRule.h>

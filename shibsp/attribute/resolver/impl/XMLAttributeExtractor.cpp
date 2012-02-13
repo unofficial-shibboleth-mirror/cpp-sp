@@ -38,7 +38,6 @@
 #include "util/SPConstants.h"
 
 #include <boost/bind.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/iterator/indirect_iterator.hpp>

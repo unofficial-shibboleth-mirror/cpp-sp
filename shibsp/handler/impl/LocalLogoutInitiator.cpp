@@ -34,7 +34,6 @@
 #include "handler/LogoutInitiator.h"
 
 #ifndef SHIBSP_LITE
-# include <boost/scoped_ptr.hpp>
 using namespace boost;
 #endif
 
