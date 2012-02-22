@@ -318,6 +318,30 @@ extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, con
     return nullptr;
 }
 
+extern "C" const char* shib_set_acl_slot(cmd_parms* params, shib_dir_config* dc, char* arg)
+{
+    bool absolute;
+    switch (*arg) {
+        case 0:
+            absolute = false;
+            break;
+        case '/':
+        case '\\':
+            absolute = true;
+            break;
+        case '.':
+            absolute = (*(arg+1) == '.' || *(arg+1) == '/' || *(arg+1) == '\\');
+            break;
+        default:
+            absolute = *(arg+1) == ':';
+    }
+
+    if (absolute || !params->path)
+        dc->szAccessControl = ap_pstrdup(params->pool, arg);
+    else
+        dc->szAccessControl = ap_pstrcat(params->pool, params->path, arg);
+    return nullptr;
+}
 
 class ShibTargetApache : public AbstractSPRequest
 #if defined(SHIBSP_HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
@@ -1046,6 +1070,8 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
 		aclresult_t result = shib_acl_false;
 		try {
             ifstream aclfile(sta->m_dc->szAccessControl);
+            if (!aclfile)
+                throw ConfigurationException("Unable to open access control file ($1).", params(1, sta->m_dc->szAccessControl));
             xercesc::DOMDocument* acldoc = XMLToolingConfig::getConfig().getParser().parse(aclfile);
 		    XercesJanitor<xercesc::DOMDocument> docjanitor(acldoc);
 		    static XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
@@ -1524,8 +1550,7 @@ static command_rec shire_cmds[] = {
   {"ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
    OR_AUTHCFG, TAKE2, "Set arbitrary Shibboleth request property for content"},
 
-  {"ShibAccessControl", (config_fn_t)ap_set_string_slot,
-   (void *) XtOffsetOf (shib_dir_config, szAccessControl),
+  {"ShibAccessControl", (config_fn_t)shib_set_acl_slot, nullptr,
    OR_AUTHCFG, TAKE1, "Set arbitrary Shibboleth access control plugin for content"},
 
   {"ShibDisable", (config_fn_t)ap_set_flag_slot,
@@ -1646,8 +1671,7 @@ static command_rec shib_cmds[] = {
     AP_INIT_TAKE2("ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
         OR_AUTHCFG, "Set arbitrary Shibboleth request property for content"),
 
-    AP_INIT_TAKE1("ShibAccessControl", (config_fn_t)ap_set_string_slot,
-        (void *) offsetof (shib_dir_config, szAccessControl),
+    AP_INIT_TAKE1("ShibAccessControl", (config_fn_t)shib_set_acl_slot, nullptr,
         OR_AUTHCFG, "Set arbitrary Shibboleth access control plugin for content"),
 
     AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
