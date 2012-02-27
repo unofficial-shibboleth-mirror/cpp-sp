@@ -78,6 +78,7 @@
 # include <saml/saml1/core/Assertions.h>
 # include <saml/saml2/core/Assertions.h>
 # include <saml/saml2/binding/SAML2ArtifactType0004.h>
+# include <saml/saml2/metadata/EntityMatcher.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataProvider.h>
 # include <saml/util/SAMLConstants.h>
@@ -163,6 +164,7 @@ namespace {
         }
         const PropertySet* getRelyingParty(const EntityDescriptor* provider) const;
         const PropertySet* getRelyingParty(const XMLCh* entityID) const;
+
         const vector<const XMLCh*>* getAudiences() const {
             return (m_audiences.empty() && m_base) ? m_base->getAudiences() : &m_audiences;
         }
@@ -237,7 +239,8 @@ namespace {
         vector<const XMLCh*> m_audiences;
 
         // RelyingParty properties
-        map< xstring,boost::shared_ptr<PropertySet> > m_partyMap;
+        map< xstring,boost::shared_ptr<PropertySet> > m_partyMap;   // name-based matching
+        vector< pair< boost::shared_ptr<EntityMatcher>,boost::shared_ptr<PropertySet> > > m_partyVec;  // plugin-based matching
 #endif
         vector<string> m_remoteUsers,m_frontLogout,m_backLogout;
 
@@ -683,9 +686,17 @@ XMLApplication::XMLApplication(
             rp->setParent(this);
             m_partyMap[child->getAttributeNS(nullptr, saml2::Attribute::NAME_ATTRIB_NAME)] = rp;
         }
+        else if (child->hasAttributeNS(nullptr, _type)) {
+            string emtype(XMLHelper::getAttrString(child, nullptr, _type));
+            boost::shared_ptr<EntityMatcher> em(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(emtype, child));
+            boost::shared_ptr<DOMPropertySet> rp(new DOMPropertySet());
+            rp->load(child, nullptr, this);
+            rp->setParent(this);
+            m_partyVec.push_back(make_pair(em, rp));
+        }
         child = XMLHelper::getNextSiblingElement(child, RelyingParty);
     }
-    if (base && m_partyMap.empty() && !base->m_partyMap.empty()) {
+    if (base && m_partyMap.empty() && m_partyVec.empty() && (!base->m_partyMap.empty() || !base->m_partyVec.empty())) {
         // For inheritance of RPs to work, we have to pull them in to the override by cloning the DOM.
         child = XMLHelper::getFirstChildElement(base->getElement(), RelyingParty);
         while (child) {
@@ -695,6 +706,15 @@ XMLApplication::XMLApplication(
                 rp->load(rpclone, nullptr, this);
                 rp->setParent(this);
                 m_partyMap[rpclone->getAttributeNS(nullptr, saml2::Attribute::NAME_ATTRIB_NAME)] = rp;
+            }
+            else if (child->hasAttributeNS(nullptr, _type)) {
+                DOMElement* rpclone = static_cast<DOMElement*>(child->cloneNode(true));
+                string emtype(XMLHelper::getAttrString(rpclone, nullptr, _type));
+                boost::shared_ptr<EntityMatcher> em(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(emtype, rpclone));
+                boost::shared_ptr<DOMPropertySet> rp(new DOMPropertySet());
+                rp->load(rpclone, nullptr, this);
+                rp->setParent(this);
+                m_partyVec.push_back(make_pair(em, rp));
             }
             child = XMLHelper::getNextSiblingElement(child, RelyingParty);
         }
@@ -1447,9 +1467,19 @@ const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provi
     if (!provider)
         return this;
 
+    // Check for exact match on name.
     map< xstring,boost::shared_ptr<PropertySet> >::const_iterator i = m_partyMap.find(provider->getEntityID());
     if (i != m_partyMap.end())
         return i->second.get();
+
+    // Check for extensible matching.
+    vector < pair< boost::shared_ptr<EntityMatcher>,boost::shared_ptr<PropertySet> > >::const_iterator j;
+    for (j = m_partyVec.begin(); j != m_partyVec.end(); ++j) {
+        if (j->first->matches(*provider))
+            return j->second.get();
+    }
+
+    // Check for group match.
     const EntitiesDescriptor* group = dynamic_cast<const EntitiesDescriptor*>(provider->getParent());
     while (group) {
         if (group->getName()) {

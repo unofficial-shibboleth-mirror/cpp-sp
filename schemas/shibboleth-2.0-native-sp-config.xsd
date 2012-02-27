@@ -660,11 +660,14 @@
     <annotation>
       <documentation>Container for specifying settings to use with particular peers</documentation>
     </annotation>
-    <sequence/>
-    <attribute name="Name" type="conf:string" use="required"/>
+    <sequence>
+      <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+    <attribute name="Name" type="conf:string"/>
+    <attribute name="type" type="conf:string"/>
     <attributeGroup ref="conf:RelyingPartyGroup"/>
     <attribute name="entityID" type="anyURI"/>
-    <anyAttribute namespace="##other" processContents="lax"/>
+    <anyAttribute namespace="##any" processContents="lax"/>
   </complexType>
 
   <complexType name="NotifyType">
