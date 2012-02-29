@@ -177,6 +177,10 @@
     <ClCompile Include="AbstractSPRequest.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="attribute\Base64AttributeDecoder.cpp" />
+    <ClCompile Include="attribute\filtering\impl\AttributeIssuerEntityAttributeFunctor.cpp" />
+    <ClCompile Include="attribute\filtering\impl\AttributeIssuerEntityMatcherFunctor.cpp" />
+    <ClCompile Include="attribute\filtering\impl\AttributeRequesterEntityAttributeFunctor.cpp" />
+    <ClCompile Include="attribute\filtering\impl\AttributeRequesterEntityMatcherFunctor.cpp" />
     <ClCompile Include="attribute\filtering\impl\DummyAttributeFilter.cpp" />
     <ClCompile Include="attribute\filtering\impl\NameIDQualifierStringFunctor.cpp" />
     <ClCompile Include="attribute\resolver\impl\AssertionAttributeExtractor.cpp" />

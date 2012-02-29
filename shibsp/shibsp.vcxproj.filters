@@ -408,6 +408,18 @@
     <ClCompile Include="handler\impl\AttributeCheckerHandler.cpp">
       <Filter>Source Files\handler\impl</Filter>
     </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeIssuerEntityAttributeFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeRequesterEntityAttributeFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeIssuerEntityMatcherFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="attribute\filtering\impl\AttributeRequesterEntityMatcherFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="remoting\impl\SocketListener.h">

@@ -119,6 +119,24 @@ namespace shibsp {
     /** Matches based on metadata groups of requester. */
     extern SHIBSP_API xmltooling::QName AttributeRequesterInEntityGroupType;
 
+    /** Matches based on entity attributes of issuer. */
+    extern SHIBSP_API xmltooling::QName AttributeIssuerEntityAttributeExactMatchType;
+
+    /** Matches based on entity attributes of requester. */
+    extern SHIBSP_API xmltooling::QName AttributeRequesterEntityAttributeExactMatchType;
+
+    /** Matches based on entity attributes of issuer and a regex. */
+    extern SHIBSP_API xmltooling::QName AttributeIssuerEntityAttributeRegexMatchType;
+
+    /** Matches based on entity attributes of requester and a regex. */
+    extern SHIBSP_API xmltooling::QName AttributeRequesterEntityAttributeRegexMatchType;
+
+    /** Matches based on issuer and pluggable criteria. */
+    extern SHIBSP_API xmltooling::QName AttributeIssuerEntityMatcherType;
+
+    /** Matches based on requester and pluggable criteria. */
+    extern SHIBSP_API xmltooling::QName AttributeRequesterEntityMatcherType;
+
     /** Matches based on metadata Scope extensions. */
     extern SHIBSP_API xmltooling::QName AttributeScopeMatchesShibMDScopeType;
 

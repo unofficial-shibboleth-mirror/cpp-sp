@@ -204,6 +204,10 @@ libshibsp_la_SOURCES = \
 	attribute/filtering/impl/NumberOfAttributeValuesFunctor.cpp \
 	attribute/filtering/impl/AttributeIssuerInEntityGroupFunctor.cpp \
 	attribute/filtering/impl/AttributeRequesterInEntityGroupFunctor.cpp \
+	attribute/filtering/impl/AttributeIssuerEntityAttributeFunctor.cpp \
+	attribute/filtering/impl/AttributeRequesterEntityAttributeFunctor.cpp \
+	attribute/filtering/impl/AttributeIssuerEntityMatcherFunctor.cpp \
+	attribute/filtering/impl/AttributeRequesterEntityMatcherFunctor.cpp \
 	attribute/filtering/impl/AttributeScopeMatchesShibMDScopeFunctor.cpp \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
