@@ -243,7 +243,7 @@
         <TrustEngine type="PKIX"/>
 
         <!-- Map to extract attributes from SAML assertions. -->
-        <AttributeExtractor type="XML" validate="true" path="attribute-map.xml"/>
+        <AttributeExtractor type="XML" validate="true" reloadChanges="false" path="attribute-map.xml"/>
 
         <!-- Extracts support information for IdP from its metadata. -->
         <AttributeExtractor type="Metadata" errorURL="errorURL" DisplayName="displayName"/>
