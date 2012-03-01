@@ -8,6 +8,7 @@ shirelogdir = ${localstatedir}/log/httpd
 pkgxmldir = $(datadir)/xml/@PACKAGE@
 pkgwebdir = $(datadir)/@PACKAGE@
 pkgrundir = $(localstatedir)/run/@PACKAGE@
+pkgcachedir = $(localstatedir)/cache/@PACKAGE@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE@
 pkgsysconf_DATA = \
 	shibd-redhat \
@@ -103,6 +104,7 @@ install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(pkglogdir)
 	$(mkinstalldirs) $(DESTDIR)$(shirelogdir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgrundir)
+    $(mkinstalldirs) $(DESTDIR)$(pkgcachedir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgxmldir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
 	for f in $(BUILTCONFIGFILES); do \

@@ -51,8 +51,11 @@ rc_reset
  
 case "$1" in
     start)
+        # Make sure package run directory exists.
+        [ -d @-PKGRUNDIR-@ ] || mkdir @-PKGRUNDIR-@
+
         # Handle transition from root to non-root packages.
-        chown $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@/* 2>/dev/null || :
+        chown -R $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@ 2>/dev/null || :
 		
         echo -n "Starting $DESC ($NAME)"
         ## Start daemon with startproc(8). If this fails

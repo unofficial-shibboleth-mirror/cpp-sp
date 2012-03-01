@@ -127,7 +127,7 @@ DiscoveryFeed::DiscoveryFeed(const DOMElement* e, const char* appId)
         prop = getString("dir");
         if (prop.first)
             m_dir = prop.second;
-        XMLToolingConfig::getConfig().getPathResolver()->resolve(m_dir, PathResolver::XMLTOOLING_RUN_FILE);
+        XMLToolingConfig::getConfig().getPathResolver()->resolve(m_dir, PathResolver::XMLTOOLING_CACHE_FILE);
         m_log.info("feed files will be cached in %s", m_dir.c_str());
 #ifndef SHIBSP_LITE
         m_feedLock.reset(Mutex::create());

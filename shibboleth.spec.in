@@ -300,6 +300,7 @@ fi
 %exclude %{_libdir}/%{name}/*.la
 %attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/%{name}
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/%{name}
+%attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/cache/%{name}
 %dir %{_datadir}/xml/%{name}
 %{_datadir}/xml/%{name}/*
 %dir %{_datadir}/%{name}
@@ -331,7 +332,7 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
-* Fri Feb 10 2012  Scott Cantor  <cantor.2@osu.edu>  - 2.5-1
+* Thu Mar 1 2012  Scott Cantor  <cantor.2@osu.edu>  - 2.5-1
 - Move logo and stylesheet to version-independent tree
 - Make shib.conf noreplace
 - Post-fixup of Alias commands in older shib.conf
@@ -340,6 +341,7 @@ fi
 - Copy shibd restart for Red Hat to postun
 - Add boost-devel dependency
 - Build memcache plugin on RH6
+- Add cachedir to install
 
 * Sun Jun 26 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
 - Log files shouldn't be world readable.
