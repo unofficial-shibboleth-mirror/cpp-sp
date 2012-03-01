@@ -95,6 +95,7 @@ namespace shibsp {
                 redirectErrors = props->getString("redirectErrors");
             if (redirectErrors.first) {
                 string loc(redirectErrors.second);
+                request.absolutize(loc);
                 loc = loc + '?' + tp.toQueryString();
                 return request.sendRedirect(loc.c_str());
             }
