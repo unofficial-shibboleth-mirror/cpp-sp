@@ -1,15 +1,28 @@
 #!/bin/bash
 #
-# Startup script for the Shibboleth Service Provider Daemon
+# shibd Shibboleth Service Provider Daemon
 #
-# chkconfig: - 98 02
+# chkconfig: - 80 20
 # description: Shibboleth 2 Service Provider Daemon
 # processname: shibd
 # pidfile: @-PKGRUNDIR-@/shibd.pid
 # config: @-PKGSYSCONFDIR-@/shibboleth2.xml
 
+### BEGIN INIT INFO
+# Provides: shibd
+# Required-Start: $local_fs $remote_fs $network
+# Should-Start: $time
+# Should-Stop: $time
+# Required-Stop: $local_fs $remote_fs $network
+# Default-Start: 3 5
+# Default-Stop: 0 1 2 6 
+# Short-Description: Shibboleth 2 Service Provider Daemon
+# Description: Starts the separate daemon used by the Shibboleth Apache module to manage state and SAML interactions.
+### END INIT INFO
+
 # Source function library.
 . /etc/rc.d/init.d/functions
+
 shibd="@-PREFIX-@/sbin/shibd"
 SHIBD_USER=root
 prog=shibd
