@@ -168,12 +168,19 @@ void SAML2Consumer::implementProtocol(
     // And also track "owned" tokens that we decrypt here.
     vector< boost::shared_ptr<saml2::Assertion> > ownedtokens;
 
+    // With this flag on, we block unauthenticated ciphertext when decrypting,
+    // unless the protocol was authenticated.
+    pair<bool,bool> requireAuthenticatedCipher = application.getBool("requireAuthenticatedCipher");
+    if (alreadySecured)
+        requireAuthenticatedCipher.second = false;
+
     // With this flag on, we ignore any unsigned assertions.
     const EntityDescriptor* entity = nullptr;
-    pair<bool,bool> flag = make_pair(false,false);
+    pair<bool,bool> requireSignedAssertions = make_pair(false,false);
     if (alreadySecured && policy.getIssuerMetadata()) {
         entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
-        flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
+        const PropertySet* rp = application.getRelyingParty(entity);
+        requireSignedAssertions = rp->getBool("requireSignedAssertions");
     }
 
     // authnskew allows rejection of SSO if AuthnInstant is too old.
@@ -195,7 +202,7 @@ void SAML2Consumer::implementProtocol(
             a != make_indirect_iterator(assertions.end()); ++a) {
         try {
             // Skip unsigned assertion?
-            if (!a->getSignature() && flag.first && flag.second)
+            if (!a->getSignature() && requireSignedAssertions.first && requireSignedAssertions.second)
                 throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
 
             // We clear the security flag, so we can tell whether the token was secured on its own.
@@ -217,8 +224,8 @@ void SAML2Consumer::implementProtocol(
             // If we hadn't established Issuer yet, redo the signedAssertions check.
             if (!entity && policy.getIssuerMetadata()) {
                 entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
-                flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
-                if (!a->getSignature() && flag.first && flag.second)
+                requireSignedAssertions = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
+                if (!a->getSignature() && requireSignedAssertions.first && requireSignedAssertions.second)
                     throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
             }
 
@@ -266,7 +273,7 @@ void SAML2Consumer::implementProtocol(
     }
 
     // In case we need decryption...
-    CredentialResolver* cr=application.getCredentialResolver();
+    CredentialResolver* cr = application.getCredentialResolver();
     if (!cr && !encassertions.empty())
         m_log.warn("found encrypted assertions, but no CredentialResolver was available");
 
@@ -279,7 +286,14 @@ void SAML2Consumer::implementProtocol(
             scoped_ptr<MetadataCredentialCriteria> mcc(
                 policy.getIssuerMetadata() ? new MetadataCredentialCriteria(*policy.getIssuerMetadata()) : nullptr
                 );
-            boost::shared_ptr<XMLObject> wrapper(ea->decrypt(*cr, application.getRelyingParty(entity)->getXMLString("entityID").second, mcc.get()));
+            boost::shared_ptr<XMLObject> wrapper(
+                ea->decrypt(
+                    *cr,
+                    application.getRelyingParty(entity)->getXMLString("entityID").second,
+                    mcc.get(),
+                    requireAuthenticatedCipher.first && requireAuthenticatedCipher.second
+                    )
+                );
             decrypted = dynamic_pointer_cast<saml2::Assertion>(wrapper);
             if (decrypted) {
                 ownedtokens.push_back(decrypted);
@@ -294,6 +308,10 @@ void SAML2Consumer::implementProtocol(
             continue;
 
         try {
+            // Skip unsigned assertion?
+            if (!decrypted->getSignature() && requireSignedAssertions.first && requireSignedAssertions.second)
+                throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
+
             // We clear the security flag, so we can tell whether the token was secured on its own.
             policy.setAuthenticated(false);
             policy.reset(true);
@@ -316,8 +334,8 @@ void SAML2Consumer::implementProtocol(
             // If we hadn't established Issuer yet, redo the signedAssertions check.
             if (!entity && policy.getIssuerMetadata()) {
                 entity = dynamic_cast<const EntityDescriptor*>(policy.getIssuerMetadata()->getParent());
-                flag = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
-                if (!decrypted->getSignature() && flag.first && flag.second)
+                requireSignedAssertions = application.getRelyingParty(entity)->getBool("requireSignedAssertions");
+                if (!decrypted->getSignature() && requireSignedAssertions.first && requireSignedAssertions.second)
                     throw SecurityPolicyException("The decrypted assertion was unsigned, violating local security policy.");
             }
 

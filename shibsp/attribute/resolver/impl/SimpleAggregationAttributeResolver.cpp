@@ -418,10 +418,20 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
             throw FatalProfileException("Assertion was encrypted, but no decryption credentials are available.");
         }
 
+        // With this flag on, we block unauthenticated ciphertext when decrypting,
+        // unless the protocol was authenticated.
+        pair<bool,bool> authenticatedCipher = application.getBool("requireAuthenticatedCipher");
+        if (policy->isAuthenticated())
+            authenticatedCipher.second = false;
+
         // Attempt to decrypt it.
         try {
             Locker credlocker(cr);
-            auto_ptr<XMLObject> tokenwrapper(encassertions.front()->decrypt(*cr, relyingParty->getXMLString("entityID").second, &mcc));
+            auto_ptr<XMLObject> tokenwrapper(
+                encassertions.front()->decrypt(
+                    *cr, relyingParty->getXMLString("entityID").second, &mcc, authenticatedCipher.first && authenticatedCipher.second
+                    )
+                );
             newtoken = dynamic_cast<saml2::Assertion*>(tokenwrapper.get());
             if (newtoken) {
                 tokenwrapper.release();

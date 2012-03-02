@@ -402,7 +402,6 @@
     </sequence>
     <attribute name="id" type="conf:string" fixed="default"/>
     <attribute name="entityID" type="anyURI" use="required"/>
-    <attribute name="policyId" type="conf:string"/>
     <attributeGroup ref="conf:ApplicationGroup"/>
     <attributeGroup ref="conf:RelyingPartyGroup"/>
     <anyAttribute namespace="##other" processContents="lax"/>
@@ -429,7 +428,6 @@
     </sequence>
     <attribute name="id" type="conf:string" use="required"/>
     <attribute name="entityID" type="anyURI"/>
-    <attribute name="policyId" type="conf:string"/>
     <attributeGroup ref="conf:ApplicationGroup"/>
     <attributeGroup ref="conf:RelyingPartyGroup"/>
     <anyAttribute namespace="##other" processContents="lax"/>
@@ -437,10 +435,12 @@
 
   <attributeGroup name="ApplicationGroup">
     <attribute name="homeURL" type="anyURI"/>
+    <attribute name="policyId" type="conf:string"/>
     <attribute name="REMOTE_USER" type="conf:listOfStrings"/>
     <attribute name="unsetHeaders" type="conf:listOfStrings"/>
     <attribute name="metadataAttributePrefix" type="conf:string"/>
     <attribute name="attributePrefix" type="conf:string"/>
+    <attribute name="requireAuthenticatedCipher" type="boolean"/>
   </attributeGroup>
 
   <attributeGroup name="RelyingPartyGroup">
