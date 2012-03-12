@@ -43,7 +43,7 @@ CONFIGFILES = \
 	console.logger \
 	syslog.logger \
 	accessError.html \
-    attrChecker.html \
+	attrChecker.html \
 	sessionError.html \
 	metadataError.html \
 	bindingTemplate.html \
@@ -60,14 +60,14 @@ CONFIGFILES = \
 do-build-file:
 	rm -f ${FILE}.tmp
 	sed < ${srcdir}/${FILE}.in > ${FILE}.tmp \
-        -e 's:@-PREFIX-@:${prefix}:g' \
-        -e 's:@-PKGLIBDIR-@:${pkglibdir}:g' \
-        -e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
-        -e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
-        -e 's:@-PKGWEBDIR-@:${pkgwebdir}:g' \
-        -e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
-        -e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
-        -e 's:@-PKGRUNDIR-@:${pkgrundir}:g'
+		-e 's:@-PREFIX-@:${prefix}:g' \
+		-e 's:@-PKGLIBDIR-@:${pkglibdir}:g' \
+		-e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
+		-e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
+		-e 's:@-PKGWEBDIR-@:${pkgwebdir}:g' \
+		-e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
+		-e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
+		-e 's:@-PKGRUNDIR-@:${pkgrundir}:g'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
 
@@ -104,7 +104,7 @@ install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(pkglogdir)
 	$(mkinstalldirs) $(DESTDIR)$(shirelogdir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgrundir)
-    $(mkinstalldirs) $(DESTDIR)$(pkgcachedir)
+	$(mkinstalldirs) $(DESTDIR)$(pkgcachedir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgxmldir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
 	for f in $(BUILTCONFIGFILES); do \
