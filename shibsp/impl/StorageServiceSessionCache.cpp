@@ -1274,9 +1274,11 @@ vector<string>::size_type SSCache::logout(
                     }
                 }
                 else {
-                    // Session's gone, so...
-                    sessionsKilled.push_back(key.string());
-                    key.destroy();
+                    // Session may already be gone, or it may be associated with a different application.
+                    // To be conservative, we'll leave it alone. This isn't really increasing our security
+                    // risk, because if we can't lookup the session, it's unlikely the calling logout code
+                    // can either, so there's no chance of removing the session anyway.
+                    m_log.warn("session (%s) not accessible for logout, may be gone, or associated with a different application", key.string());
                 }
                 key = sessions.next();
             }
@@ -1512,7 +1514,7 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
     }
 
     if (!XMLString::equals(session->getApplicationID(), app.getId())) {
-        m_log.error("an application (%s) tried to access another application's session", app.getId());
+        m_log.warn("an application (%s) tried to access another application's session", app.getId());
         session->unlock();
         return nullptr;
     }
