@@ -181,7 +181,8 @@ namespace shibsp {
         void resolveAttributes(ResolutionContext& ctx) const;
 
         void getAttributeIds(vector<string>& attributes) const {
-            // Nothing to do, only the extractor would actually generate them.
+            if (m_extractor)
+                m_extractor->getAttributeIds(attributes);
         }
 
     private:
@@ -194,6 +195,8 @@ namespace shibsp {
         xstring m_format;
         scoped_ptr<MetadataProvider> m_metadata;
         scoped_ptr<TrustEngine> m_trust;
+        scoped_ptr<AttributeExtractor> m_extractor;
+        scoped_ptr<AttributeFilter> m_filter;
         ptr_vector<saml2::Attribute> m_designators;
         vector< pair<string,bool> > m_sources;
         vector<string> m_exceptionId;
@@ -204,6 +207,8 @@ namespace shibsp {
         return new SimpleAggregationResolver(e);
     }
 
+    static const XMLCh _AttributeExtractor[] =  UNICODE_LITERAL_18(A,t,t,r,i,b,u,t,e,E,x,t,r,a,c,t,o,r);
+    static const XMLCh _AttributeFilter[] =     UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
     static const XMLCh attributeId[] =          UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,d);
     static const XMLCh Entity[] =               UNICODE_LITERAL_6(E,n,t,i,t,y);
     static const XMLCh EntityReference[] =      UNICODE_LITERAL_15(E,n,t,i,t,y,R,e,f,e,r,e,n,c,e);
@@ -257,6 +262,24 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
             throw ConfigurationException("TrustEngine element missing type attribute.");
         m_log.info("building TrustEngine of type %s...", t.c_str());
         m_trust.reset(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child));
+    }
+
+    child = XMLHelper::getFirstChildElement(e,  _AttributeExtractor);
+    if (child) {
+        string t(XMLHelper::getAttrString(child, nullptr, _type));
+        if (t.empty())
+            throw ConfigurationException("AttributeExtractor element missing type attribute.");
+        m_log.info("building AttributeExtractor of type %s...", t.c_str());
+        m_extractor.reset(SPConfig::getConfig().AttributeExtractorManager.newPlugin(t.c_str(), child));
+    }
+
+    child = XMLHelper::getFirstChildElement(e,  _AttributeFilter);
+    if (child) {
+        string t(XMLHelper::getAttrString(child, nullptr, _type));
+        if (t.empty())
+            throw ConfigurationException("AttributeFilter element missing type attribute.");
+        m_log.info("building AttributeFilter of type %s...", t.c_str());
+        m_filter.reset(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), child));
     }
 
     child = XMLHelper::getFirstChildElement(e);
@@ -523,13 +546,13 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
 
     // Finally, extract and filter the result.
     try {
-        AttributeExtractor* extractor = application.getAttributeExtractor();
+        AttributeExtractor* extractor = m_extractor ? m_extractor.get() : application.getAttributeExtractor();
         if (extractor) {
             Locker extlocker(extractor);
             extractor->extractAttributes(application, AA, *newtoken, ctx.getResolvedAttributes());
         }
 
-        AttributeFilter* filter = application.getAttributeFilter();
+        AttributeFilter* filter = m_filter ? m_filter.get() : application.getAttributeFilter();
         if (filter) {
             BasicFilteringContext fc(application, ctx.getResolvedAttributes(), AA, ctx.getClassRef(), ctx.getDeclRef());
             Locker filtlocker(filter);
