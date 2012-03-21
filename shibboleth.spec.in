@@ -113,6 +113,9 @@ fi
 if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_22.so ] ; then
 	APACHE_CONFIG="apache22.config"
 fi
+if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_24.so ] ; then
+	APACHE_CONFIG="apache24.config"
+fi
 %{?_without_builtinapache:APACHE_CONFIG="no"}
 if [ "$APACHE_CONFIG" != "no" ] ; then
 	APACHE_CONFD="no"
@@ -342,6 +345,7 @@ fi
 - Add boost-devel dependency
 - Build memcache plugin on RH6
 - Add cachedir to install
+- Add Apache 2.4 to install
 
 * Sun Jun 26 2011  Scott Cantor  <cantor.2@osu.edu>  - 2.4.3-1
 - Log files shouldn't be world readable.

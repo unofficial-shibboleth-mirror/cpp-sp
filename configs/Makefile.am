@@ -80,6 +80,9 @@ apache2.config: ${srcdir}/apache2.config.in Makefile ${top_builddir}/config.stat
 apache22.config: ${srcdir}/apache22.config.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
+apache24.config: ${srcdir}/apache24.config.in Makefile ${top_builddir}/config.status
+	$(MAKE) do-build-file FILE=$@
+
 shibd-redhat: ${srcdir}/shibd-redhat.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
@@ -132,6 +135,7 @@ CLEANFILES = \
 	apache.config \
 	apache2.config \
 	apache22.config \
+	apache24.config \
 	shibd-redhat \
 	shibd-suse \
 	shibd-debian \
@@ -145,6 +149,7 @@ EXTRA_DIST = \
 	apache.config.in \
 	apache2.config.in \
 	apache22.config.in \
+	apache24.config.in \
 	shibd-redhat.in \
 	shibd-suse.in \
 	shibd-debian.in \

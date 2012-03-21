@@ -55,7 +55,8 @@
 #include <xmltooling/util/XMLHelper.h>
 
 #ifdef WIN32
-# include <winsock.h>
+# include <winsock2.h>
+# include <ws2tcpip.h>
 #endif
 
 #undef _XPG4_2
@@ -82,6 +83,10 @@
 #include <apr_pools.h>
 #endif
 
+#ifdef SHIB_APACHE_24
+#include <mod_auth.h>
+#endif
+
 #include <cstddef>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>		// for getpid()
@@ -94,7 +99,12 @@ using namespace std;
 using xercesc::RegularExpression;
 using xercesc::XMLException;
 
-extern "C" module MODULE_VAR_EXPORT mod_shib;
+#ifdef APLOG_USE_MODULE
+    extern "C" module AP_MODULE_DECLARE_DATA mod_shib;
+    static int* const aplog_module_index = &(mod_shib.module_index);
+#else
+    extern "C" module MODULE_VAR_EXPORT mod_shib;
+#endif
 
 namespace {
     char* g_szSHIBConfig = nullptr;
@@ -114,7 +124,7 @@ namespace {
    Apache 2.0.49+ supports the filter method.
    Apache 1.3.x and lesser 2.0.x must write the headers directly. */
 
-#if (defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22)) && AP_MODULE_MAGIC_AT_LEAST(20020903,6)
+#if (defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22) || defined(SHIB_APACHE_24)) && AP_MODULE_MAGIC_AT_LEAST(20020903,6)
 #define SHIB_DEFERRED_HEADERS
 #endif
 
@@ -159,15 +169,20 @@ struct shib_dir_config
     SH_AP_TABLE* tSettings; // generic table of extensible settings
 
     // RM Configuration
+#ifdef SHIB_APACHE_24
+    int bRequestMapperAuthz;// support RequestMapper AccessControl plugins
+#else
     char* szAuthGrpFile;    // Auth GroupFile name
+	char* szAccessControl;	// path to "external" AccessControl plugin file
     int bRequireAll;        // all "known" require directives must match, otherwise OR logic
     int bAuthoritative;     // allow htaccess plugin to DECLINE when authz fails
+    int bCompatWith24;      // support 2.4-reserved require logic for compatibility
+#endif
 
     // Content Configuration
     char* szApplicationId;  // Shib applicationId value
     char* szRequireWith;    // require a session using a specific initiator?
     char* szRedirectToSSL;  // redirect non-SSL requests to SSL port
-	char* szAccessControl;	// path to "external" AccessControl plugin file
     int bOff;               // flat-out disable all Shib processing
     int bBasicHijack;       // activate for AuthType Basic?
     int bRequireSession;    // require a session?
@@ -182,13 +197,18 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
     dc->tSettings = nullptr;
+#ifdef SHIB_APACHE_24
+    dc->bRequestMapperAuthz = -1;
+#else
     dc->szAuthGrpFile = nullptr;
+	dc->szAccessControl = nullptr;
     dc->bRequireAll = -1;
     dc->bAuthoritative = -1;
+    dc->bCompatWith24 = -1;
+#endif
     dc->szApplicationId = nullptr;
     dc->szRequireWith = nullptr;
     dc->szRedirectToSSL = nullptr;
-	dc->szAccessControl = nullptr;
     dc->bOff = -1;
     dc->bBasicHijack = -1;
     dc->bRequireSession = -1;
@@ -217,12 +237,23 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
             dc->tSettings = ap_copy_table(p, child->tSettings);
     }
 
+#ifdef SHIB_APACHE_24
+    dc->bRequestMapperAuthz = ((child->bRequestMapperAuthz==-1) ? parent->bRequestMapperAuthz : child->bRequestMapperAuthz);
+#else
     if (child->szAuthGrpFile)
         dc->szAuthGrpFile=ap_pstrdup(p,child->szAuthGrpFile);
     else if (parent->szAuthGrpFile)
         dc->szAuthGrpFile=ap_pstrdup(p,parent->szAuthGrpFile);
     else
         dc->szAuthGrpFile=nullptr;
+
+	if (child->szAccessControl)
+        dc->szAccessControl=ap_pstrdup(p,child->szAccessControl);
+    else if (parent->szAccessControl)
+        dc->szAccessControl=ap_pstrdup(p,parent->szAccessControl);
+    else
+        dc->szAccessControl=nullptr;
+#endif
 
     if (child->szApplicationId)
         dc->szApplicationId=ap_pstrdup(p,child->szApplicationId);
@@ -245,102 +276,43 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     else
         dc->szRedirectToSSL=nullptr;
 
-	if (child->szAccessControl)
-        dc->szAccessControl=ap_pstrdup(p,child->szAccessControl);
-    else if (parent->szAccessControl)
-        dc->szAccessControl=ap_pstrdup(p,parent->szAccessControl);
-    else
-        dc->szAccessControl=nullptr;
-
-    dc->bOff=((child->bOff==-1) ? parent->bOff : child->bOff);
-    dc->bBasicHijack=((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
-    dc->bRequireSession=((child->bRequireSession==-1) ? parent->bRequireSession : child->bRequireSession);
-    dc->bExportAssertion=((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
-    dc->bRequireAll=((child->bRequireAll==-1) ? parent->bRequireAll : child->bRequireAll);
-    dc->bAuthoritative=((child->bAuthoritative==-1) ? parent->bAuthoritative : child->bAuthoritative);
-    dc->bUseEnvVars=((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
-    dc->bUseHeaders=((child->bUseHeaders==-1) ? parent->bUseHeaders : child->bUseHeaders);
-    dc->bExpireRedirects=((child->bExpireRedirects==-1) ? parent->bExpireRedirects : child->bExpireRedirects);
+    dc->bOff = ((child->bOff==-1) ? parent->bOff : child->bOff);
+    dc->bBasicHijack = ((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
+    dc->bRequireSession = ((child->bRequireSession==-1) ? parent->bRequireSession : child->bRequireSession);
+    dc->bExportAssertion = ((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
+#ifndef SHIB_APACHE_24
+    dc->bRequireAll = ((child->bRequireAll==-1) ? parent->bRequireAll : child->bRequireAll);
+    dc->bAuthoritative = ((child->bAuthoritative==-1) ? parent->bAuthoritative : child->bAuthoritative);
+    dc->bCompatWith24 = ((child->bCompatWith24==-1) ? parent->bCompatWith24 : child->bCompatWith24);
+#endif
+    dc->bUseEnvVars = ((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
+    dc->bUseHeaders = ((child->bUseHeaders==-1) ? parent->bUseHeaders : child->bUseHeaders);
+    dc->bExpireRedirects = ((child->bExpireRedirects==-1) ? parent->bExpireRedirects : child->bExpireRedirects);
     return dc;
 }
+
+class ShibTargetApache; // forward decl
 
 // per-request module structure
 struct shib_request_config
 {
-    SH_AP_TABLE *env;        // environment vars
+    SH_AP_TABLE* env;        // environment vars
 #ifdef SHIB_DEFERRED_HEADERS
-    SH_AP_TABLE *hdr_out;    // headers to browser
+    SH_AP_TABLE* hdr_out;    // headers to browser
+#endif
+#ifndef SHIB_APACHE_13
+    ShibTargetApache* sta;  // SP per-request structure wrapped around Apache's request
 #endif
 };
 
 // create a request record
-static shib_request_config *init_request_config(request_rec *r)
+static shib_request_config* init_request_config(request_rec *r)
 {
-    shib_request_config* rc=(shib_request_config*)ap_pcalloc(r->pool,sizeof(shib_request_config));
-    ap_set_module_config (r->request_config, &mod_shib, rc);
+    shib_request_config* rc = (shib_request_config*)ap_pcalloc(r->pool,sizeof(shib_request_config));
     memset(rc, 0, sizeof(shib_request_config));
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_init_rc");
+    ap_set_module_config(r->request_config, &mod_shib, rc);
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_init_rc");
     return rc;
-}
-
-// generic global slot handlers
-extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const char* arg)
-{
-    *((char**)(parms->info))=ap_pstrdup(parms->pool,arg);
-    return nullptr;
-}
-
-extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
-{
-    char* base=(char*)ap_get_module_config(parms->server->module_config,&mod_shib);
-    size_t offset=(size_t)parms->info;
-    *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
-    return nullptr;
-}
-
-extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
-#ifdef SHIB_APACHE_13
-					     char* arg1, char* arg2
-#else
-					     void* arg1, const char* arg2
-#endif
-					     )
-{
-  ap_set_file_slot(parms, arg1, arg2);
-  return DECLINE_CMD;
-}
-
-extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, const char* arg1, const char* arg2)
-{
-    if (!dc->tSettings)
-        dc->tSettings = ap_make_table(parms->pool, 4);
-    ap_table_set(dc->tSettings, arg1, arg2);
-    return nullptr;
-}
-
-extern "C" const char* shib_set_acl_slot(cmd_parms* params, shib_dir_config* dc, char* arg)
-{
-    bool absolute;
-    switch (*arg) {
-        case 0:
-            absolute = false;
-            break;
-        case '/':
-        case '\\':
-            absolute = true;
-            break;
-        case '.':
-            absolute = (*(arg+1) == '.' || *(arg+1) == '/' || *(arg+1) == '\\');
-            break;
-        default:
-            absolute = *(arg+1) == ':';
-    }
-
-    if (absolute || !params->path)
-        dc->szAccessControl = ap_pstrdup(params->pool, arg);
-    else
-        dc->szAccessControl = ap_pstrcat(params->pool, params->path, arg);
-    return nullptr;
 }
 
 class ShibTargetApache : public AbstractSPRequest
@@ -348,28 +320,38 @@ class ShibTargetApache : public AbstractSPRequest
     , public GSSRequest
 #endif
 {
-  bool m_handler;
   mutable string m_body;
   mutable bool m_gotBody,m_firsttime;
   mutable vector<string> m_certs;
   set<string> m_allhttp;
 
 public:
+  bool m_handler;
   request_rec* m_req;
   shib_dir_config* m_dc;
   shib_server_config* m_sc;
   shib_request_config* m_rc;
 
-  ShibTargetApache(request_rec* req, bool handler, bool shib_check_user)
-      : AbstractSPRequest(SHIBSP_LOGCAT".Apache"), m_handler(handler), m_gotBody(false),m_firsttime(true) {
-    m_sc = (shib_server_config*)ap_get_module_config(req->server->module_config, &mod_shib);
-    m_dc = (shib_dir_config*)ap_get_module_config(req->per_dir_config, &mod_shib);
-    m_rc = (shib_request_config*)ap_get_module_config(req->request_config, &mod_shib);
-    m_req = req;
+  ShibTargetApache(request_rec* req) : AbstractSPRequest(SHIBSP_LOGCAT".Apache"),
+        m_gotBody(false),m_firsttime(true), m_handler(false), m_req(req), m_dc(nullptr), m_sc(nullptr), m_rc(nullptr) {
+  }
+  virtual ~ShibTargetApache() {}
+
+  bool isInitialized() const {
+      return (m_sc != nullptr);
+  }
+
+  bool init(bool handler, bool check_user) {
+    m_handler = handler;
+    if (m_sc)
+        return !check_user; // only initialize once
+    m_sc = (shib_server_config*)ap_get_module_config(m_req->server->module_config, &mod_shib);
+    m_dc = (shib_dir_config*)ap_get_module_config(m_req->per_dir_config, &mod_shib);
+    m_rc = (shib_request_config*)ap_get_module_config(m_req->request_config, &mod_shib);
 
     setRequestURI(m_req->unparsed_uri);
 
-    if (shib_check_user && m_dc->bUseHeaders == 1) {
+    if (check_user && m_dc->bUseHeaders == 1) {
         // Try and see if this request was already processed, to skip spoof checking.
         if (!ap_is_initial_req(m_req)) {
             m_firsttime = false;
@@ -377,14 +359,13 @@ public:
         else if (!g_spoofKey.empty()) {
             const char* hdr = ap_table_get(m_req->headers_in, "Shib-Spoof-Check");
             if (hdr && g_spoofKey == hdr)
-                m_firsttime=false;
+                m_firsttime = false;
         }
-
         if (!m_firsttime)
             log(SPDebug, "shib_check_user running more than once");
     }
+    return true;
   }
-  virtual ~ShibTargetApache() {}
 
   const char* getScheme() const {
     return m_sc->szScheme ? m_sc->szScheme : ap_http_method(m_req);
@@ -410,7 +391,13 @@ public:
   }
   string getRemoteAddr() const {
     string ret = AbstractSPRequest::getRemoteAddr();
-    return ret.empty() ? m_req->connection->remote_ip : ret;
+    if (!ret.empty())
+        return ret;
+#ifdef SHIB_APACHE_24
+    return m_req->useragent_ip;
+#else
+    return m_req->connection->remote_ip;
+#endif
   }
   void log(SPLogLevel level, const string& msg) const {
     AbstractSPRequest::log(level,msg);
@@ -606,7 +593,7 @@ public:
         in.read(buf,1024);
         ap_rwrite(buf,in.gcount(),m_req);
     }
-#if (defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22))
+#if (defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22) || defined(SHIB_APACHE_24))
     if (status != XMLTOOLING_HTTP_STATUS_OK && status != XMLTOOLING_HTTP_STATUS_ERROR)
         return status;
 #endif
@@ -647,134 +634,252 @@ public:
 };
 
 /********************************************************************************/
-// Apache handlers
-
-extern "C" int shib_check_user(request_rec* r)
-{
-  // Short-circuit entirely?
-  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
-    return DECLINED;
-
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
-
-  string threadid("[");
-  threadid += lexical_cast<string>(getpid()) + "] shib_check_user";
-  xmltooling::NDC ndc(threadid.c_str());
-
-  try {
-    ShibTargetApache sta(r,false,true);
-
-    // Check user authentication and export information, then set the handler bypass
-    pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta,true);
-    apr_pool_userdata_setn((const void*)42,g_UserDataKey,nullptr,r->pool);
-    // If directed, install a spoof key to recognize when we've already cleared headers.
-    if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bUseHeaders==1))
-        ap_table_set(r->headers_in, "Shib-Spoof-Check", g_spoofKey.c_str());
-    if (res.first) return res.second;
-
-    // user auth was okay -- export the assertions now
-    res = sta.getServiceProvider().doExport(sta);
-    if (res.first) return res.second;
-
-    // export happened successfully..  this user is ok.
-    return OK;
-  }
-  catch (std::exception& e) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
-    return SERVER_ERROR;
-  }
-  catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an unknown exception!");
-    if (g_catchAll)
-      return SERVER_ERROR;
-    throw;
-  }
-}
-
-extern "C" int shib_handler(request_rec* r)
-{
-  // Short-circuit entirely?
-  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
-    return DECLINED;
-
-  string threadid("[");
-  threadid += lexical_cast<string>(getpid()) + "] shib_handler";
-  xmltooling::NDC ndc(threadid.c_str());
+// Apache hooks
 
 #ifndef SHIB_APACHE_13
-  // With 2.x, this handler always runs, though last.
-  // We check if shib_check_user ran, because it will detect a handler request
-  // and dispatch it directly.
-  void* data;
-  apr_pool_userdata_get(&data,g_UserDataKey,r->pool);
-  if (data==(const void*)42) {
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler skipped since check_user ran");
-    return DECLINED;
-  }
+extern "C" apr_status_t shib_request_cleanup(void* r)
+{
+    if (r)
+        delete reinterpret_cast<ShibTargetApache*>(r);
+    return APR_SUCCESS;
+}
 #endif
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
-
-  try {
-    ShibTargetApache sta(r,true,false);
-
-    pair<bool,long> res = sta.getServiceProvider().doHandler(sta);
-    if (res.first) return res.second;
-
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
-    return SERVER_ERROR;
-  }
-  catch (std::exception& e) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
-    return SERVER_ERROR;
-  }
-  catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an unknown exception!");
-    if (g_catchAll)
-      return SERVER_ERROR;
-    throw;
-  }
+// Initial look at a request - create the per-request structure
+static int shib_post_read(request_rec *r)
+{
+    shib_request_config* rc = init_request_config(r);
+#ifdef SHIB_APACHE_24
+    rc->sta = new ShibTargetApache(r);
+    apr_pool_cleanup_register(r->pool, rc->sta, shib_request_cleanup, apr_pool_cleanup_null);
+#endif
+    return DECLINED;
 }
 
-/*
- * shib_auth_checker() -- a simple resource manager to
- * process the .htaccess settings
- */
+// Performs authentication and enforce session requirements.
+// Also does header/env export from session, and will dispatch
+// SP handler requests if it detects a handler URL.
+extern "C" int shib_check_user(request_rec* r)
+{
+    // Short-circuit entirely?
+    if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff == 1)
+        return DECLINED;
+
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
+
+    string threadid("[");
+    threadid += lexical_cast<string>(getpid()) + "] shib_check_user";
+    xmltooling::NDC ndc(threadid.c_str());
+
+    try {
+#ifndef SHIB_APACHE_24
+        ShibTargetApache sta(r);
+        ShibTargetApache* psta = &sta;
+#else
+        shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
+        if (!rc || !rc->sta) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user found no per-request structure");
+            return SERVER_ERROR;
+        }
+        ShibTargetApache* psta = rc->sta;
+#endif
+        if (!psta->init(false, true)) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user unable to initialize SP request object");
+            return SERVER_ERROR;
+        }
+
+        // Check user authentication and export information, then set the handler bypass
+        pair<bool,long> res = psta->getServiceProvider().doAuthentication(*psta, true);
+        apr_pool_userdata_setn((const void*)42,g_UserDataKey,nullptr,r->pool);
+        // If directed, install a spoof key to recognize when we've already cleared headers.
+        if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bUseHeaders==1))
+            ap_table_set(r->headers_in, "Shib-Spoof-Check", g_spoofKey.c_str());
+        if (res.first) {
+#ifdef SHIB_APACHE_24
+            // This is insane, but Apache's internal request.c logic insists that an auth module
+            // returning OK MUST set r->user to avoid a failure. But they check for NULL and not
+            // for an empty string. If this turns out to cause trouble, there's no solution except
+            // to set a dummy ID any time it's not set.
+            if (res.second == OK && !r->user)
+                r->user = "";
+#endif
+            return res.second;
+        }
+
+        // user auth was okay -- export the session data now
+        res = psta->getServiceProvider().doExport(*psta);
+        if (res.first) {
+#ifdef SHIB_APACHE_24
+            // See above for explanation of this hack.
+            if (res.second == OK && !r->user)
+                r->user = "";
+#endif
+            return res.second;
+        }
+
+#ifdef SHIB_APACHE_24
+        // See above for explanation of this hack.
+        if (!r->user)
+            r->user = "";
+#endif
+        return OK;
+    }
+    catch (std::exception& e) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an exception: %s", e.what());
+        return SERVER_ERROR;
+    }
+    catch (...) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user threw an unknown exception!");
+        if (g_catchAll)
+            return SERVER_ERROR;
+        throw;
+    }
+}
+
+// Runs SP handler requests when invoked directly.
+extern "C" int shib_handler(request_rec* r)
+{
+    // Short-circuit entirely?
+    if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff == 1)
+        return DECLINED;
+
+    string threadid("[");
+    threadid += lexical_cast<string>(getpid()) + "] shib_handler";
+    xmltooling::NDC ndc(threadid.c_str());
+
+#ifndef SHIB_APACHE_13
+    // With 2.x, this handler always runs, though last.
+    // We check if shib_check_user ran, because it will detect a handler request
+    // and dispatch it directly.
+    void* data;
+    apr_pool_userdata_get(&data,g_UserDataKey,r->pool);
+    if (data==(const void*)42) {
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler skipped since check_user ran");
+        return DECLINED;
+    }
+#endif
+
+    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
+
+    try {
+#ifndef SHIB_APACHE_24
+        ShibTargetApache sta(r);
+        ShibTargetApache* psta = &sta;
+#else
+        shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
+        if (!rc || !rc->sta) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler found no per-request structure");
+            return SERVER_ERROR;
+        }
+        ShibTargetApache* psta = rc->sta;
+#endif
+        if (!psta->init(true, false)) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler unable to initialize SP request object");
+            return SERVER_ERROR;
+        }
+
+        pair<bool,long> res = psta->getServiceProvider().doHandler(*psta);
+        if (res.first) return res.second;
+
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
+        return SERVER_ERROR;
+    }
+    catch (std::exception& e) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an exception: %s", e.what());
+        return SERVER_ERROR;
+    }
+    catch (...) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler threw an unknown exception!");
+        if (g_catchAll)
+          return SERVER_ERROR;
+        throw;
+    }
+}
+
+// This performs authorization functions to limit access.
+// On all versions, this runs any RequestMap-attached plugins.
+// For pre-2.4 versions, the RequestMap will always find an htAccess plugin
+// that runs code to parse and enforce Apache Require rules.
+// On 2.4, we have to short-circuit that and let Apache run callbacks
+// for each Require rule we handle.
 extern "C" int shib_auth_checker(request_rec* r)
 {
-  // Short-circuit entirely?
-  if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff==1)
-    return DECLINED;
+    // Short-circuit entirely?
+    shib_dir_config* dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib);
+    if (dc->bOff == 1
+#ifdef SHIB_APACHE_24
+        || dc->bRequestMapperAuthz == 0     // this allows for bypass of the full auth_checker hook if only htaccess is used
+#endif
+        ) {
+        return DECLINED;
+    }
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
 
-  string threadid("[");
-  threadid += lexical_cast<string>(getpid()) + "] shib_auth_checker";
-  xmltooling::NDC ndc(threadid.c_str());
+    string threadid("[");
+    threadid += lexical_cast<string>(getpid()) + "] shib_auth_checker";
+    xmltooling::NDC ndc(threadid.c_str());
 
-  try {
-    ShibTargetApache sta(r,false,false);
+    try {
+#ifndef SHIB_APACHE_24
+        ShibTargetApache sta(r);
+        ShibTargetApache* psta = &sta;
+#else
+        shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
+        if (!rc || !rc->sta) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker found no per-request structure");
+            return SERVER_ERROR;
+        }
+        ShibTargetApache* psta = rc->sta;
+#endif
+        if (!psta->init(false, false)) {
+            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker unable to initialize SP request object");
+            return SERVER_ERROR;
+        }
 
-    pair<bool,long> res = sta.getServiceProvider().doAuthorization(sta);
-    if (res.first) return res.second;
+        pair<bool,long> res = psta->getServiceProvider().doAuthorization(*psta);
+        if (res.first) return res.second;
 
-    // The SP method should always return true, so if we get this far, something unusual happened.
-    // Just let Apache (or some other module) decide what to do.
-    return DECLINED;
-  }
-  catch (std::exception& e) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
-    return SERVER_ERROR;
-  }
-  catch (...) {
-    ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an unknown exception!");
-    if (g_catchAll)
-      return SERVER_ERROR;
-    throw;
-  }
+        // The SP method should always return true, so if we get this far, something unusual happened.
+        // Just let Apache (or some other module) decide what to do.
+        return DECLINED;
+    }
+    catch (std::exception& e) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an exception: %s", e.what());
+        return SERVER_ERROR;
+    }
+    catch (...) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker threw an unknown exception!");
+        if (g_catchAll)
+          return SERVER_ERROR;
+        throw;
+    }
 }
 
-// Access control plugin that enforces htaccess rules
+// Overlays environment variables on top of subprocess table.
+extern "C" int shib_fixups(request_rec* r)
+{
+  shib_dir_config *dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib);
+  if (dc->bOff==1 || dc->bUseEnvVars==0)
+    return DECLINED;
+
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
+
+  shib_request_config *rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
+  if (rc==nullptr || rc->env==nullptr || ap_is_empty_table(rc->env))
+        return DECLINED;
+
+  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars", ap_table_elts(rc->env)->nelts);
+  r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, rc->env);
+
+  return OK;
+}
+
+
+// Access control plugin that enforces pre-2.4 htaccess rules.
+// Post-2.4, we have to register individual methods to respond
+// to each require rule we want to handle, and have those call
+// into these methods directly.
 class htAccessControl : virtual public AccessControl
 {
 public:
@@ -783,6 +888,15 @@ public:
     Lockable* lock() {return this;}
     void unlock() {}
     aclresult_t authorized(const SPRequest& request, const Session* session) const;
+
+    aclresult_t doAccessControl(const ShibTargetApache& sta, const Session* session, const char* plugin) const;
+    aclresult_t doUser(const ShibTargetApache& sta, const char* params) const;
+#ifndef SHIB_APACHE_24
+    aclresult_t doGroup(const ShibTargetApache& sta, const char* params) const;
+#endif
+    aclresult_t doAuthnContext(const ShibTargetApache& sta, const char* acRef, const char* params) const;
+    aclresult_t doShibAttr(const ShibTargetApache& sta, const Session* session, const char* rule, const char* params) const;
+
 private:
     bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const;
 };
@@ -790,6 +904,416 @@ private:
 AccessControl* htAccessFactory(const xercesc::DOMElement* const & e)
 {
     return new htAccessControl();
+}
+
+AccessControl::aclresult_t htAccessControl::doAccessControl(const ShibTargetApache& sta, const Session* session, const char* plugin) const
+{
+	aclresult_t result = shib_acl_false;
+	try {
+        ifstream aclfile(plugin);
+        if (!aclfile)
+            throw ConfigurationException("Unable to open access control file ($1).", params(1, plugin));
+        xercesc::DOMDocument* acldoc = XMLToolingConfig::getConfig().getParser().parse(aclfile);
+		XercesJanitor<xercesc::DOMDocument> docjanitor(acldoc);
+		static XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
+        string t(XMLHelper::getAttrString(acldoc ? acldoc->getDocumentElement() : nullptr, nullptr, _type));
+        if (t.empty())
+            throw ConfigurationException("Missing type attribute in AccessControl plugin configuration.");
+        scoped_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement()));
+		Locker acllock(aclplugin.get());
+		result = aclplugin->authorized(sta, session);
+	}
+	catch (std::exception& ex) {
+		sta.log(SPRequest::SPError, ex.what());
+	}
+    return result;
+}
+
+AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, const char* params) const
+{
+    bool regexp = false;
+    bool negated = false;
+    while (*params) {
+        const char* w = ap_getword_conf(sta.m_req->pool, &params);
+        if (*w == '~') {
+            regexp = true;
+            continue;
+        }
+        else if (*w == '!') {
+            // A negated rule presumes success unless a match is found.
+            negated = true;
+            if (*(w+1) == '~')
+                regexp = true;
+            continue;
+        }
+
+        // Figure out if there's a match.
+        bool match = false;
+        if (regexp) {
+            try {
+                // To do regex matching, we have to convert from UTF-8.
+                auto_arrayptr<XMLCh> trans(fromUTF8(w));
+                RegularExpression re(trans.get());
+                auto_arrayptr<XMLCh> trans2(fromUTF8(sta.getRemoteUser().c_str()));
+                match = re.matches(trans2.get());
+            }
+            catch (XMLException& ex) {
+                auto_ptr_char tmp(ex.getMessage());
+                sta.log(SPRequest::SPError,
+                    string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+            }
+        }
+        else if (sta.getRemoteUser() == w) {
+            match = true;
+        }
+
+        if (match) {
+            if (sta.isPriorityEnabled(SPRequest::SPDebug))
+                sta.log(SPRequest::SPDebug,
+                    string("htaccess: require user ") + (negated ? "rejecting (" : "accepting (") + sta.getRemoteUser() + ")");
+            return (negated ? shib_acl_false : shib_acl_true);
+        }
+    }
+    return (negated ? shib_acl_true : shib_acl_false);
+}
+
+#ifndef SHIB_APACHE_24
+static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpfile)
+{
+    SH_AP_CONFIGFILE* f;
+    SH_AP_TABLE* grps=ap_make_table(r->pool,15);
+    char l[MAX_STRING_LEN];
+    const char *group_name, *ll, *w;
+
+#ifdef SHIB_APACHE_13
+    if (!(f=ap_pcfg_openfile(r->pool,grpfile))) {
+#else
+    if (ap_pcfg_openfile(&f,r->pool,grpfile) != APR_SUCCESS) {
+#endif
+        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,SH_AP_R(r),"groups_for_user() could not open group file: %s\n",grpfile);
+        return nullptr;
+    }
+
+    SH_AP_POOL* sp;
+#ifdef SHIB_APACHE_13
+    sp=ap_make_sub_pool(r->pool);
+#else
+    if (apr_pool_create(&sp,r->pool) != APR_SUCCESS) {
+        ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
+            "groups_for_user() could not create a subpool");
+        return nullptr;
+    }
+#endif
+
+    while (!(ap_cfg_getline(l,MAX_STRING_LEN,f))) {
+        if ((*l=='#') || (!*l))
+            continue;
+        ll = l;
+        ap_clear_pool(sp);
+        group_name = ap_getword(sp,&ll,':');
+        while (*ll) {
+            w=ap_getword_conf(sp,&ll);
+            if (!strcmp(w,user)) {
+                ap_table_setn(grps,ap_pstrdup(r->pool,group_name),"in");
+                break;
+            }
+        }
+    }
+    ap_cfg_closefile(f);
+    ap_destroy_pool(sp);
+    return grps;
+}
+
+AccessControl::aclresult_t htAccessControl::doGroup(const ShibTargetApache& sta, const char* params) const
+{
+    SH_AP_TABLE* grpstatus = nullptr;
+    if (sta.m_dc->szAuthGrpFile) {
+        if (sta.isPriorityEnabled(SPRequest::SPDebug))
+            sta.log(SPRequest::SPDebug, string("htaccess plugin using groups file: ") + sta.m_dc->szAuthGrpFile);
+        grpstatus = groups_for_user(sta.m_req, sta.getRemoteUser().c_str(), sta.m_dc->szAuthGrpFile);
+    }
+
+    bool negated = false;
+    while (*params) {
+        const char* w = ap_getword_conf(sta.m_req->pool, &params);
+        if (*w == '!') {
+            // A negated rule presumes success unless a match is found.
+            negated = true;
+            continue;
+        }
+
+        if (grpstatus && ap_table_get(grpstatus, w)) {
+            // If we matched, then we're done with this rule either way and we flip status to reflect the outcome.
+            sta.log(SPRequest::SPDebug, string("htaccess: require group ") + (negated ? "rejecting (" : "accepting (") + w + ")");
+            return (negated ? shib_acl_false : shib_acl_true);
+        }
+    }
+
+    return (negated ? shib_acl_true : shib_acl_false);
+}
+#endif
+
+AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApache& sta, const char* ref, const char* params) const
+{
+    if (ref && *ref) {
+        bool regexp = false;
+        bool negated = false;
+        while (ref && *params) {
+            const char* w = ap_getword_conf(sta.m_req->pool, &params);
+            if (*w == '~') {
+                regexp = true;
+                continue;
+            }
+            else if (*w == '!') {
+                // A negated rule presumes success unless a match is found.
+                negated = true;
+                if (*(w+1) == '~')
+                    regexp = true;
+                continue;
+            }
+
+            // Figure out if there's a match.
+            bool match = false;
+            if (regexp) {
+                try {
+                    RegularExpression re(w);
+                    match = re.matches(ref);
+                }
+                catch (XMLException& ex) {
+                    auto_ptr_char tmp(ex.getMessage());
+                    sta.log(SPRequest::SPError,
+                        string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+                }
+            }
+            else if (!strcmp(w, ref)) {
+                match = true;
+            }
+
+            if (match) {
+                if (sta.isPriorityEnabled(SPRequest::SPDebug))
+                    sta.log(SPRequest::SPDebug,
+                        string("htaccess: require authnContext ") + (negated ? "rejecting (" : "accepting (") + ref + ")");
+                return (negated ? shib_acl_false : shib_acl_true);
+            }
+        }
+        return (negated ? shib_acl_true : shib_acl_false);
+    }
+
+    if (sta.isPriorityEnabled(SPRequest::SPDebug))
+        sta.log(SPRequest::SPDebug, "htaccess: require authnContext rejecting session with no context associated");
+    return shib_acl_false;
+}
+
+bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const
+{
+    bool caseSensitive = attr->isCaseSensitive();
+    const vector<string>& vals = attr->getSerializedValues();
+    for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
+        if (re) {
+            auto_arrayptr<XMLCh> trans(fromUTF8(v->c_str()));
+            if (re->matches(trans.get())) {
+                if (request.isPriorityEnabled(SPRequest::SPDebug))
+                    request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": acccepted");
+                return true;
+            }
+        }
+        else if ((caseSensitive && *v == toMatch) || (!caseSensitive && !strcasecmp(v->c_str(), toMatch))) {
+            if (request.isPriorityEnabled(SPRequest::SPDebug))
+                request.log(SPRequest::SPDebug, string("htaccess: expecting ") + toMatch + ", got " + *v + ": accepted");
+            return true;
+        }
+        else if (request.isPriorityEnabled(SPRequest::SPDebug)) {
+            request.log(SPRequest::SPDebug, string("htaccess: expecting ") + toMatch + ", got " + *v + ": rejected");
+        }
+    }
+    return false;
+}
+
+AccessControl::aclresult_t htAccessControl::doShibAttr(const ShibTargetApache& sta, const Session* session, const char* rule, const char* params) const
+{
+#ifndef SHIB_APACHE_24
+    // Look for the new shib-attr placeholder and move past it.
+    if (sta.m_dc->bCompatWith24 == 1 && rule && !strcmp(rule, "shib-attr")) {
+        if (*params)
+            rule = ap_getword_conf(sta.m_req->pool, &params);
+    }
+#endif
+
+    // Find the attribute(s) matching the require rule.
+    pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs =
+        session->getIndexedAttributes().equal_range(rule ? rule : "");
+
+    bool regexp = false;
+    while (attrs.first != attrs.second && *params) {
+        const char* w = ap_getword_conf(sta.m_req->pool, &params);
+        if (*w == '~') {
+            regexp = true;
+            continue;
+        }
+
+        try {
+            scoped_ptr<RegularExpression> re;
+            if (regexp) {
+                auto_arrayptr<XMLCh> trans(fromUTF8(w));
+                re.reset(new xercesc::RegularExpression(trans.get()));
+            }
+                    
+            pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs2(attrs);
+            for (; attrs2.first != attrs2.second; ++attrs2.first) {
+                if (checkAttribute(sta, attrs2.first->second, w, regexp ? re.get() : nullptr)) {
+                    return shib_acl_true;
+                }
+            }
+        }
+        catch (XMLException& ex) {
+            auto_ptr_char tmp(ex.getMessage());
+            sta.log(SPRequest::SPError, string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+        }
+    }
+    return shib_acl_false;
+}
+
+AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request, const Session* session) const
+{
+#ifdef SHIB_APACHE_24
+    // We should never be invoked in 2.4 as an SP plugin.
+    throw ConfigurationException("Save my walrus!");
+#else
+    // Make sure the object is our type.
+    const ShibTargetApache* sta=dynamic_cast<const ShibTargetApache*>(&request);
+    if (!sta)
+        throw ConfigurationException("Request wrapper object was not of correct type.");
+
+    int m = sta->m_req->method_number;
+    bool method_restricted = false;
+    const char *t, *w;
+
+    const array_header* reqs_arr = ap_requires(sta->m_req);
+    if (!reqs_arr)
+        return shib_acl_indeterminate;  // should never happen
+
+	// Check for an "embedded" AccessControl plugin.
+	if (sta->m_dc->szAccessControl) {
+        aclresult_t result = doAccessControl(*sta, session, sta->m_dc->szAccessControl);
+        if (result == shib_acl_true && sta->m_dc->bRequireAll != 1) {
+            // If we're not insisting that all rules be met, then we're done.
+            request.log(SPRequest::SPDebug, "htaccess: embedded AccessControl plugin was successful, granting access");
+            return shib_acl_true;
+        }
+        else if (result != shib_acl_true && sta->m_dc->bRequireAll == 1) {
+            // If we're insisting that all rules be met, which is not something Apache really handles well,
+            // then we either return false or indeterminate based on the authoritative option, which defaults on.
+            if (sta->m_dc->bAuthoritative != 0) {
+                request.log(SPRequest::SPDebug, "htaccess: embedded AccessControl plugin was unsuccessful, denying access");
+                return shib_acl_false;
+            }
+
+            request.log(SPRequest::SPDebug, "htaccess: embedded AccessControl plugin was unsuccessful but not authoritative, leaving it up to Apache");
+            return shib_acl_indeterminate;
+        }
+    }
+
+    require_line* reqs = (require_line*)reqs_arr->elts;
+
+    for (int x = 0; x < reqs_arr->nelts; ++x) {
+        // This rule should be completely ignored, the method doesn't fit.
+        // The rule just doesn't exist for our purposes.
+        if (!(reqs[x].method_mask & (1 << m)))
+            continue;
+
+        method_restricted = true; // this lets us know at the end that at least one rule was potentially enforcable.
+
+        // Tracks status of this rule's evaluation.
+        bool status = false;
+
+        string remote_user = request.getRemoteUser();
+
+        t = reqs[x].requirement;
+        w = ap_getword_white(sta->m_req->pool, &t);
+
+        if (!strcasecmp(w,"shibboleth")) {
+            // This is a dummy rule needed because Apache conflates authn and authz.
+            // Without some require rule, AuthType is ignored and no check_user hooks run.
+
+            // We evaluate to false if ShibAccessControl is used and ShibRequireAll is off.
+            // This allows actual rules to dictate the result, since ShibAccessControl returned
+            // non-true, and if nothing else is used, access will be denied.
+            if (!sta->m_dc->szAccessControl || sta->m_dc->bRequireAll == 1) {
+                // We evaluate to true, because ShibRequireAll is enabled (so a true is just a no-op)
+                // or because there was no other AccessControl rule in place, so this may be the only
+                // rule in effect.
+                status = true;
+            }
+        }
+        else if (!strcmp(w,"valid-user") && session) {
+            request.log(SPRequest::SPDebug, "htaccess: accepting valid-user based on active session");
+            status = true;
+        }
+        else if (!strcmp(w,"user") && !remote_user.empty()) {
+            status = (doUser(*sta, t) == shib_acl_true);
+        }
+        else if (!strcmp(w,"group")  && !remote_user.empty()) {
+            status = (doGroup(*sta, t) == shib_acl_true);
+        }
+        else if (!strcmp(w,"authnContextClassRef") || !strcmp(w,"authnContextDeclRef")) {
+            const char* ref = !strcmp(w, "authnContextClassRef") ? session->getAuthnContextClassRef() : session->getAuthnContextDeclRef();
+            status = (doAuthnContext(*sta, ref, t) == shib_acl_true);
+        }
+        else if (!session) {
+            request.log(SPRequest::SPError, string("htaccess: require ") + w + " not given a valid session, are you using lazy sessions?");
+        }
+        else if (sta->m_dc->bCompatWith24 == 1 && !strcmp(w,"shib-plugin")) {
+            w = ap_getword_conf(sta->m_req->pool, &t);
+            if (w) {
+                status = (doAccessControl(*sta, session, w) == shib_acl_true);
+            }
+        }
+        else {
+            status = (doShibAttr(*sta, session, w, t) == shib_acl_true);
+        }
+
+        // If status is false, we found a rule we couldn't satisfy.
+        // Could be an unknown rule to us, or it just didn't match.
+
+        if (status && sta->m_dc->bRequireAll != 1) {
+            // If we're not insisting that all rules be met, then we're done.
+            request.log(SPRequest::SPDebug, "htaccess: a rule was successful, granting access");
+            return shib_acl_true;
+        }
+        else if (!status && sta->m_dc->bRequireAll == 1) {
+            // If we're insisting that all rules be met, which is not something Apache really handles well,
+            // then we either return false or indeterminate based on the authoritative option, which defaults on.
+            if (sta->m_dc->bAuthoritative != 0) {
+                request.log(SPRequest::SPDebug, "htaccess: a rule was unsuccessful, denying access");
+                return shib_acl_false;
+            }
+
+            request.log(SPRequest::SPDebug, "htaccess: a rule was unsuccessful but not authoritative, leaving it up to Apache");
+            return shib_acl_indeterminate;
+        }
+
+        // Otherwise, we keep going. If we're requring all, then we have to check every rule.
+        // If not we just didn't find a successful rule yet, so we keep going anyway.
+    }
+
+    // If we get here, we either "failed" or we're in require all mode (but not both).
+    // If no rules possibly apply or we insisted that all rules check out, then we're good.
+    if (!method_restricted) {
+        request.log(SPRequest::SPDebug, "htaccess: no rules applied to this request method, granting access");
+        return shib_acl_true;
+    }
+    else if (sta->m_dc->bRequireAll == 1) {
+        request.log(SPRequest::SPDebug, "htaccess: all rules successful, granting access");
+        return shib_acl_true;
+    }
+    else if (sta->m_dc->bAuthoritative != 0) {
+        request.log(SPRequest::SPDebug, "htaccess: no rules were successful, denying access");
+        return shib_acl_false;
+    }
+
+    request.log(SPRequest::SPDebug, "htaccess: no rules were successful but not authoritative, leaving it up to Apache");
+    return shib_acl_indeterminate;
+#endif
 }
 
 class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet
@@ -811,6 +1335,8 @@ public:
     void getAll(map<string,const char*>& properties) const;
     const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const;
     const xercesc::DOMElement* getElement() const;
+
+    const htAccessControl& getHTAccessControl() const { return m_htaccess; }
 
 private:
     scoped_ptr<RequestMapper> m_mapper;
@@ -834,7 +1360,12 @@ RequestMapper::Settings ApacheRequestMapper::getSettings(const HTTPRequest& requ
     Settings s = m_mapper->getSettings(request);
     m_staKey->setData((void*)dynamic_cast<const ShibTargetApache*>(&request));
     m_propsKey->setData((void*)s.first);
+    // Only return the htAccess plugin for pre-2.4 servers.
+#ifdef SHIB_APACHE_24
+    return pair<const PropertySet*,AccessControl*>(this, s.second);
+#else
     return pair<const PropertySet*,AccessControl*>(this, s.second ? s.second : &m_htaccess);
+#endif
 }
 
 pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) const
@@ -863,12 +1394,12 @@ pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const ch
     if (sta && !ns) {
         // Override Apache-settable string properties.
         if (name && !strcmp(name,"authType")) {
-            const char *auth_type=ap_auth_type(sta->m_req);
+            const char* auth_type = ap_auth_type(sta->m_req);
             if (auth_type) {
                 // Check for Basic Hijack
                 if (!strcasecmp(auth_type, "basic") && sta->m_dc->bBasicHijack == 1)
                     auth_type = "shibboleth";
-                return make_pair(true,auth_type);
+                return make_pair(true, auth_type);
             }
         }
         else if (name && !strcmp(name,"applicationId") && sta->m_dc->szApplicationId)
@@ -977,400 +1508,217 @@ const xercesc::DOMElement* ApacheRequestMapper::getElement() const
     return s ? s->getElement() : nullptr;
 }
 
-static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpfile)
+// Authz callbacks for Apache 2.4
+#ifdef SHIB_APACHE_24
+pair<ShibTargetApache*,authz_status> shib_base_check_authz(request_rec* r)
 {
-    SH_AP_CONFIGFILE* f;
-    SH_AP_TABLE* grps=ap_make_table(r->pool,15);
-    char l[MAX_STRING_LEN];
-    const char *group_name, *ll, *w;
+    shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
+    if (!rc || !rc->sta) {
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_base_check_authz found no per-request structure");
+        return make_pair(nullptr, AUTHZ_GENERAL_ERROR);
+    }
+    else if (!rc->sta->isInitialized()) {
+        return make_pair(nullptr, AUTHZ_DENIED_NO_USER);
+    }
+    return make_pair(rc->sta, AUTHZ_GRANTED);
+}
 
-#ifdef SHIB_APACHE_13
-    if (!(f=ap_pcfg_openfile(r->pool,grpfile))) {
-#else
-    if (ap_pcfg_openfile(&f,r->pool,grpfile) != APR_SUCCESS) {
+extern "C" static authz_status shib_shibboleth_check_authz(request_rec* r, const char* require_line, const void*)
+{
+    pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
+    if (!sta.first)
+        return sta.second;
+    return AUTHZ_GRANTED;
+}
+
+extern "C" static authz_status shib_validuser_check_authz(request_rec* r, const char* require_line, const void*)
+{
+    pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
+    if (!sta.first)
+        return sta.second;
+
+    try {
+        const Session* session = sta.first->getSession(false);
+        if (session) {
+            sta.first->log(SPRequest::SPDebug, "htaccess: accepting valid-user based on active session");
+            return AUTHZ_GRANTED;
+        }
+    }
+    catch (std::exception& e) {
+        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+    }
+
+    return AUTHZ_DENIED_NO_USER;
+}
+
+extern "C" static authz_status shib_user_check_authz(request_rec* r, const char* require_line, const void*)
+{
+    if (!r->user)
+        return AUTHZ_DENIED_NO_USER;
+    pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
+    if (!sta.first)
+        return sta.second;
+
+    const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
+    if (hta.doUser(*sta.first, require_line) == AccessControl::shib_acl_true)
+        return AUTHZ_GRANTED;
+    return AUTHZ_DENIED;
+}
+
+extern "C" static authz_status shib_acclass_check_authz(request_rec* r, const char* require_line, const void*)
+{
+    pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
+    if (!sta.first)
+        return sta.second;
+
+    const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
+
+    try {
+        const Session* session = sta.first->getSession(false);
+        if (session && hta.doAuthnContext(*sta.first, session->getAuthnContextClassRef(), require_line) == AccessControl::shib_acl_true)
+            return AUTHZ_GRANTED;
+        return AUTHZ_DENIED;
+    }
+    catch (std::exception& e) {
+        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+    }
+
+    return AUTHZ_GENERAL_ERROR;
+}
+
+extern "C" static authz_status shib_acdecl_check_authz(request_rec* r, const char* require_line, const void*)
+{
+    pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
+    if (!sta.first)
+        return sta.second;
+
+    const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
+
+    try {
+        const Session* session = sta.first->getSession(false);
+        if (session && hta.doAuthnContext(*sta.first, session->getAuthnContextDeclRef(), require_line) == AccessControl::shib_acl_true)
+            return AUTHZ_GRANTED;
+        return AUTHZ_DENIED;
+    }
+    catch (std::exception& e) {
+        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+    }
+
+    return AUTHZ_GENERAL_ERROR;
+}
+
+extern "C" static authz_status shib_attr_check_authz(request_rec* r, const char* require_line, const void*)
+{
+    pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
+    if (!sta.first)
+        return sta.second;
+
+    const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
+
+    try {
+        const Session* session = sta.first->getSession(false);
+        if (session) {
+            const char* rule = ap_getword_conf(r->pool, &require_line);
+            if (rule && hta.doShibAttr(*sta.first, session, rule, require_line) == AccessControl::shib_acl_true)
+                return AUTHZ_GRANTED;
+        }
+        return AUTHZ_DENIED;
+    }
+    catch (std::exception& e) {
+        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+    }
+
+    return AUTHZ_GENERAL_ERROR;
+}
+
+extern "C" static authz_status shib_plugin_check_authz(request_rec* r, const char* require_line, const void*)
+{
+    pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
+    if (!sta.first)
+        return sta.second;
+
+    const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
+
+    try {
+        const Session* session = sta.first->getSession(false);
+        if (session) {
+            const char* config = ap_getword_conf(r->pool, &require_line);
+            if (config && hta.doAccessControl(*sta.first, session, config) == AccessControl::shib_acl_true)
+                return AUTHZ_GRANTED;
+        }
+        return AUTHZ_DENIED;
+    }
+    catch (std::exception& e) {
+        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+    }
+
+    return AUTHZ_GENERAL_ERROR;
+}
 #endif
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,SH_AP_R(r),"groups_for_user() could not open group file: %s\n",grpfile);
-        return nullptr;
+
+// Command manipulation functions
+
+extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const char* arg)
+{
+    *((char**)(parms->info))=ap_pstrdup(parms->pool,arg);
+    return nullptr;
+}
+
+extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
+{
+    char* base=(char*)ap_get_module_config(parms->server->module_config,&mod_shib);
+    size_t offset=(size_t)parms->info;
+    *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
+    return nullptr;
+}
+
+extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
+#ifdef SHIB_APACHE_13
+					     char* arg1, char* arg2
+#else
+					     void* arg1, const char* arg2
+#endif
+					     )
+{
+  ap_set_file_slot(parms, arg1, arg2);
+  return DECLINE_CMD;
+}
+
+extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, const char* arg1, const char* arg2)
+{
+    if (!dc->tSettings)
+        dc->tSettings = ap_make_table(parms->pool, 4);
+    ap_table_set(dc->tSettings, arg1, arg2);
+    return nullptr;
+}
+
+#ifndef SHIB_APACHE_24
+extern "C" const char* shib_set_acl_slot(cmd_parms* params, shib_dir_config* dc, char* arg)
+{
+    bool absolute;
+    switch (*arg) {
+        case 0:
+            absolute = false;
+            break;
+        case '/':
+        case '\\':
+            absolute = true;
+            break;
+        case '.':
+            absolute = (*(arg+1) == '.' || *(arg+1) == '/' || *(arg+1) == '\\');
+            break;
+        default:
+            absolute = *(arg+1) == ':';
     }
 
-    SH_AP_POOL* sp;
-#ifdef SHIB_APACHE_13
-    sp=ap_make_sub_pool(r->pool);
-#else
-    if (apr_pool_create(&sp,r->pool) != APR_SUCCESS) {
-        ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
-            "groups_for_user() could not create a subpool");
-        return nullptr;
-    }
+    if (absolute || !params->path)
+        dc->szAccessControl = ap_pstrdup(params->pool, arg);
+    else
+        dc->szAccessControl = ap_pstrcat(params->pool, params->path, arg);
+    return nullptr;
+}
 #endif
 
-    while (!(ap_cfg_getline(l,MAX_STRING_LEN,f))) {
-        if ((*l=='#') || (!*l))
-            continue;
-        ll = l;
-        ap_clear_pool(sp);
-
-        group_name=ap_getword(sp,&ll,':');
-
-        while (*ll) {
-            w=ap_getword_conf(sp,&ll);
-            if (!strcmp(w,user)) {
-                ap_table_setn(grps,ap_pstrdup(r->pool,group_name),"in");
-                break;
-            }
-        }
-    }
-    ap_cfg_closefile(f);
-    ap_destroy_pool(sp);
-    return grps;
-}
-
-bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const
-{
-    bool caseSensitive = attr->isCaseSensitive();
-    const vector<string>& vals = attr->getSerializedValues();
-    for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
-        if (re) {
-            auto_arrayptr<XMLCh> trans(fromUTF8(v->c_str()));
-            if (re->matches(trans.get())) {
-                if (request.isPriorityEnabled(SPRequest::SPDebug))
-                    request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": acccepted");
-                return true;
-            }
-        }
-        else if ((caseSensitive && *v == toMatch) || (!caseSensitive && !strcasecmp(v->c_str(), toMatch))) {
-            if (request.isPriorityEnabled(SPRequest::SPDebug))
-                request.log(SPRequest::SPDebug, string("htaccess: expecting ") + toMatch + ", got " + *v + ": accepted");
-            return true;
-        }
-        else if (request.isPriorityEnabled(SPRequest::SPDebug)) {
-            request.log(SPRequest::SPDebug, string("htaccess: expecting ") + toMatch + ", got " + *v + ": rejected");
-        }
-    }
-    return false;
-}
-
-AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request, const Session* session) const
-{
-    // Make sure the object is our type.
-    const ShibTargetApache* sta=dynamic_cast<const ShibTargetApache*>(&request);
-    if (!sta)
-        throw ConfigurationException("Request wrapper object was not of correct type.");
-
-    int m=sta->m_req->method_number;
-    bool method_restricted=false;
-    const char *t, *w;
-
-    const array_header* reqs_arr=ap_requires(sta->m_req);
-    if (!reqs_arr)
-        return shib_acl_indeterminate;  // should never happen
-
-	// Check for an "embedded" AccessControl plugin.
-	if (sta->m_dc->szAccessControl) {
-		aclresult_t result = shib_acl_false;
-		try {
-            ifstream aclfile(sta->m_dc->szAccessControl);
-            if (!aclfile)
-                throw ConfigurationException("Unable to open access control file ($1).", params(1, sta->m_dc->szAccessControl));
-            xercesc::DOMDocument* acldoc = XMLToolingConfig::getConfig().getParser().parse(aclfile);
-		    XercesJanitor<xercesc::DOMDocument> docjanitor(acldoc);
-		    static XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
-            string t(XMLHelper::getAttrString(acldoc ? acldoc->getDocumentElement() : nullptr, nullptr, _type));
-            if (t.empty())
-                throw ConfigurationException("Missing type attribute in AccessControl plugin configuration.");
-            scoped_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement()));
-			Locker acllock(aclplugin.get());
-			result = aclplugin->authorized(request, session);
-		}
-		catch (std::exception& ex) {
-			request.log(SPRequest::SPError, ex.what());
-		}
-
-        if (result == shib_acl_true && sta->m_dc->bRequireAll != 1) {
-            // If we're not insisting that all rules be met, then we're done.
-            request.log(SPRequest::SPDebug, "htaccess: embedded AccessControl plugin was successful, granting access");
-            return shib_acl_true;
-        }
-        else if (result != shib_acl_true && sta->m_dc->bRequireAll == 1) {
-            // If we're insisting that all rules be met, which is not something Apache really handles well,
-            // then we either return false or indeterminate based on the authoritative option, which defaults on.
-            if (sta->m_dc->bAuthoritative != 0) {
-                request.log(SPRequest::SPDebug, "htaccess: embedded AccessControl plugin was unsuccessful, denying access");
-                return shib_acl_false;
-            }
-
-            request.log(SPRequest::SPDebug, "htaccess: embedded AccessControl plugin was unsuccessful but not authoritative, leaving it up to Apache");
-            return shib_acl_indeterminate;
-        }
-    }
-
-
-    require_line* reqs=(require_line*)reqs_arr->elts;
-
-    for (int x=0; x<reqs_arr->nelts; x++) {
-        // This rule should be completely ignored, the method doesn't fit.
-        // The rule just doesn't exist for our purposes.
-        if (!(reqs[x].method_mask & (1 << m)))
-            continue;
-
-        method_restricted=true; // this lets us know at the end that at least one rule was potentially enforcable.
-
-        // Tracks status of this rule's evaluation.
-        bool status = false;
-
-        string remote_user = request.getRemoteUser();
-
-        t = reqs[x].requirement;
-        w = ap_getword_white(sta->m_req->pool, &t);
-
-        if (!strcasecmp(w,"shibboleth")) {
-            // This is a dummy rule needed because Apache conflates authn and authz.
-            // Without some require rule, AuthType is ignored and no check_user hooks run.
-
-            // We evaluate to false if ShibAccessControl is used and ShibRequireAll is off.
-            // This allows actual rules to dictate the result, since ShibAccessControl returned
-            // non-true, and if nothing else is used, access will be denied.
-            if (!sta->m_dc->szAccessControl || sta->m_dc->bRequireAll == 1) {
-                // We evaluate to true, because ShibRequireAll is enabled (so a true is just a no-op)
-                // or because there was no other AccessControl rule in place, so this may be the only
-                // rule in effect.
-                status = true;
-            }
-        }
-        else if (!strcmp(w,"valid-user") && session) {
-            request.log(SPRequest::SPDebug, "htaccess: accepting valid-user based on active session");
-            status = true;
-        }
-        else if (!strcmp(w,"user") && !remote_user.empty()) {
-            bool regexp = false;
-            while (*t) {
-                w = ap_getword_conf(sta->m_req->pool,&t);
-                if (*w == '~') {
-                    regexp = true;
-                    continue;
-                }
-                else if (*w == '!') {
-                    // A negated rule presumes success unless a match is found.
-                    status = true;
-                    if (*(w+1) == '~')
-                        regexp = true;
-                    continue;
-                }
-
-                // Figure out if there's a match.
-                bool match = false;
-                if (regexp) {
-                    try {
-                        // To do regex matching, we have to convert from UTF-8.
-                        auto_arrayptr<XMLCh> trans(fromUTF8(w));
-                        RegularExpression re(trans.get());
-                        auto_arrayptr<XMLCh> trans2(fromUTF8(remote_user.c_str()));
-                        match = re.matches(trans2.get());
-                    }
-                    catch (XMLException& ex) {
-                        auto_ptr_char tmp(ex.getMessage());
-                        request.log(SPRequest::SPError,
-                            string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
-                    }
-                }
-                else if (remote_user == w) {
-                    match = true;
-                }
-
-                if (match) {
-                    // If we matched, then we're done with this rule either way and we flip status to reflect the outcome.
-                    status = !status;
-                    if (request.isPriorityEnabled(SPRequest::SPDebug))
-                        request.log(SPRequest::SPDebug,
-                            string("htaccess: require user ") + (!status ? "rejecting (" : "accepting (") + remote_user + ")");
-                    break;
-                }
-            }
-        }
-        else if (!strcmp(w,"group")  && !remote_user.empty()) {
-            SH_AP_TABLE* grpstatus = nullptr;
-            if (sta->m_dc->szAuthGrpFile) {
-                if (request.isPriorityEnabled(SPRequest::SPDebug))
-                    request.log(SPRequest::SPDebug,string("htaccess plugin using groups file: ") + sta->m_dc->szAuthGrpFile);
-                grpstatus = groups_for_user(sta->m_req,remote_user.c_str(),sta->m_dc->szAuthGrpFile);
-            }
-
-            while (*t) {
-                w = ap_getword_conf(sta->m_req->pool,&t);
-                if (*w == '!') {
-                    // A negated rule presumes success unless a match is found.
-                    status = true;
-                    continue;
-                }
-
-                if (grpstatus && ap_table_get(grpstatus,w)) {
-                    // If we matched, then we're done with this rule either way and we flip status to reflect the outcome.
-                    status = !status;
-                    request.log(SPRequest::SPDebug, string("htaccess: require group ") + (!status ? "rejecting (" : "accepting (") + w + ")");
-                    break;
-                }
-            }
-        }
-        else if (!strcmp(w,"authnContextClassRef") || !strcmp(w,"authnContextDeclRef")) {
-            const char* ref = !strcmp(w,"authnContextClassRef") ? session->getAuthnContextClassRef() : session->getAuthnContextDeclRef();
-            if (ref && *ref) {
-                bool regexp = false;
-                while (ref && *t) {
-                    w = ap_getword_conf(sta->m_req->pool,&t);
-                    if (*w == '~') {
-                        regexp=true;
-                        continue;
-                    }
-                    else if (*w == '!') {
-                        // A negated rule presumes success unless a match is found.
-                        status = true;
-                        if (*(w+1)=='~')
-                            regexp = true;
-                        continue;
-                    }
-
-                    // Figure out if there's a match.
-                    bool match = false;
-                    if (regexp) {
-                        try {
-                            // To do regex matching, we have to convert from UTF-8.
-                            RegularExpression re(w);
-                            match = re.matches(ref);
-                        }
-                        catch (XMLException& ex) {
-                            auto_ptr_char tmp(ex.getMessage());
-                            request.log(SPRequest::SPError,
-                                string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
-                        }
-                    }
-                    else if (!strcmp(w,ref)) {
-                        match = true;
-                    }
-
-                    if (match) {
-                        // If we matched, then we're done with this rule either way and we flip status to reflect the outcome.
-                        status = !status;
-                        if (request.isPriorityEnabled(SPRequest::SPDebug))
-                            request.log(SPRequest::SPDebug,
-                                string("htaccess: require authnContext ") + (!status ? "rejecting (" : "accepting (") + ref + ")");
-                        break;
-                    }
-                }
-            }
-            else if (request.isPriorityEnabled(SPRequest::SPDebug)) {
-                request.log(SPRequest::SPDebug, "htaccess: require authnContext rejecting session with no context associated");
-            }
-        }
-        else if (!session) {
-            request.log(SPRequest::SPError, string("htaccess: require ") + w + " not given a valid session, are you using lazy sessions?");
-        }
-        else {
-            // Find the attribute(s) matching the require rule.
-            pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs =
-                session->getIndexedAttributes().equal_range(w);
-
-            bool regexp=false;
-            while (!status && attrs.first!=attrs.second && *t) {
-                w=ap_getword_conf(sta->m_req->pool,&t);
-                if (*w=='~') {
-                    regexp=true;
-                    continue;
-                }
-
-                try {
-                    scoped_ptr<RegularExpression> re;
-                    if (regexp) {
-                        auto_arrayptr<XMLCh> trans(fromUTF8(w));
-                        re.reset(new xercesc::RegularExpression(trans.get()));
-                    }
-                    
-                    pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs2(attrs);
-                    for (; !status && attrs2.first!=attrs2.second; ++attrs2.first) {
-                        if (checkAttribute(request, attrs2.first->second, w, regexp ? re.get() : nullptr)) {
-                            status = true;
-                        }
-                    }
-                }
-                catch (XMLException& ex) {
-                    auto_ptr_char tmp(ex.getMessage());
-                    request.log(SPRequest::SPError,
-                        string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get()
-                        );
-                }
-            }
-        }
-
-        // If status is false, we found a rule we couldn't satisfy.
-        // Could be an unknown rule to us, or it just didn't match.
-
-        if (status && sta->m_dc->bRequireAll != 1) {
-            // If we're not insisting that all rules be met, then we're done.
-            request.log(SPRequest::SPDebug, "htaccess: a rule was successful, granting access");
-            return shib_acl_true;
-        }
-        else if (!status && sta->m_dc->bRequireAll == 1) {
-            // If we're insisting that all rules be met, which is not something Apache really handles well,
-            // then we either return false or indeterminate based on the authoritative option, which defaults on.
-            if (sta->m_dc->bAuthoritative != 0) {
-                request.log(SPRequest::SPDebug, "htaccess: a rule was unsuccessful, denying access");
-                return shib_acl_false;
-            }
-
-            request.log(SPRequest::SPDebug, "htaccess: a rule was unsuccessful but not authoritative, leaving it up to Apache");
-            return shib_acl_indeterminate;
-        }
-
-        // Otherwise, we keep going. If we're requring all, then we have to check every rule.
-        // If not we just didn't find a successful rule yet, so we keep going anyway.
-    }
-
-    // If we get here, we either "failed" or we're in require all mode (but not both).
-    // If no rules possibly apply or we insisted that all rules check out, then we're good.
-    if (!method_restricted) {
-        request.log(SPRequest::SPDebug, "htaccess: no rules applied to this request method, granting access");
-        return shib_acl_true;
-    }
-    else if (sta->m_dc->bRequireAll == 1) {
-        request.log(SPRequest::SPDebug, "htaccess: all rules successful, granting access");
-        return shib_acl_true;
-    }
-    else if (sta->m_dc->bAuthoritative != 0) {
-        request.log(SPRequest::SPDebug, "htaccess: no rules were successful, denying access");
-        return shib_acl_false;
-    }
-
-    request.log(SPRequest::SPDebug, "htaccess: no rules were successful but not authoritative, leaving it up to Apache");
-    return shib_acl_indeterminate;
-}
-
-
-// Initial look at a request - create the per-request structure
-static int shib_post_read(request_rec *r)
-{
-    init_request_config(r);
-    //ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_post_read");
-    return DECLINED;
-}
-
-// fixups: set environment vars
-
-extern "C" int shib_fixups(request_rec* r)
-{
-  shib_request_config *rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
-  shib_dir_config *dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib);
-  if (dc->bOff==1 || dc->bUseEnvVars==0)
-    return DECLINED;
-
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
-
-  if (rc==nullptr || rc->env==nullptr || ap_is_empty_table(rc->env))
-        return DECLINED;
-
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars", ap_table_elts(rc->env)->nelts);
-  r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, rc->env);
-
-  return OK;
-}
 
 #ifdef SHIB_APACHE_13
 /*
@@ -1435,8 +1783,10 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
         exit(1);
     }
-    g_Config->AccessControlManager.registerFactory(HT_ACCESS_CONTROL,&htAccessFactory);
-    g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER,&ApacheRequestMapFactory);
+#ifndef SHIB_APACHE_24
+    g_Config->AccessControlManager.registerFactory(HT_ACCESS_CONTROL, &htAccessFactory);
+#endif
+    g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
 
     try {
         if (!g_Config->instantiate(g_szSHIBConfig, true))
@@ -1448,11 +1798,11 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         exit(1);
     }
 
-    ServiceProvider* sp=g_Config->getServiceProvider();
+    ServiceProvider* sp = g_Config->getServiceProvider();
     xmltooling::Locker locker(sp);
-    const PropertySet* props=sp->getPropertySet("InProcess");
+    const PropertySet* props = sp->getPropertySet("InProcess");
     if (props) {
-        pair<bool,const char*> unsetValue=props->getString("unsetHeaderValue");
+        pair<bool,const char*> unsetValue = props->getString("unsetHeaderValue");
         if (unsetValue.first)
             g_unsetHeaderValue = unsetValue.second;
         pair<bool,bool> flag=props->getBool("checkSpoofing");
@@ -1469,7 +1819,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     // Set the cleanup handler
     apr_pool_cleanup_register(p, nullptr, &shib_exit, apr_pool_cleanup_null);
 
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() done");
+    ap_log_error(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(s), "shib_child_init() done");
 }
 
 // Output filters
@@ -1583,6 +1933,9 @@ static command_rec shire_cmds[] = {
   {"AuthzShibAuthoritative", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bAuthoritative),
    OR_AUTHCFG, FLAG, "Allow failed mod_shib htaccess authorization to fall through to other modules"},
+  {"ShibCompatWith24", (config_fn_t)ap_set_flag_slot,
+   (void *) XtOffsetOf (shib_dir_config, bCompatWith24),
+   OR_AUTHCFG, FLAG, "Support Apache 2.4-style require rules"},
   {"ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bUseEnvVars),
    OR_AUTHCFG, FLAG, "Export attributes using environment variables (default)"},
@@ -1624,31 +1977,60 @@ module MODULE_VAR_EXPORT mod_shib = {
     shib_post_read		/* post read-request */
 };
 
-#elif defined(SHIB_APACHE_20) || defined(SHIB_APACHE_22)
+#else
 
-//static const char * const authnPre[] = { "mod_gss.c", nullptr };
+#ifdef SHIB_APACHE_24
+extern "C" static const authz_provider shib_authz_shibboleth_provider = { &shib_shibboleth_check_authz, nullptr };
+extern "C" static const authz_provider shib_authz_validuser_provider = { &shib_validuser_check_authz, nullptr };
+extern "C" static const authz_provider shib_authz_user_provider = { &shib_user_check_authz, nullptr };
+extern "C" static const authz_provider shib_authz_acclass_provider = { &shib_acclass_check_authz, nullptr };
+extern "C" static const authz_provider shib_authz_acdecl_provider = { &shib_acdecl_check_authz, nullptr };
+extern "C" static const authz_provider shib_authz_attr_provider = { &shib_attr_check_authz, nullptr };
+extern "C" static const authz_provider shib_authz_plugin_provider = { &shib_plugin_check_authz, nullptr };
+#endif
 
 extern "C" void shib_register_hooks (apr_pool_t *p)
 {
 #ifdef SHIB_DEFERRED_HEADERS
-  ap_register_output_filter("SHIB_HEADERS_OUT", do_output_filter, nullptr, AP_FTYPE_CONTENT_SET);
-  ap_hook_insert_filter(set_output_filter, nullptr, nullptr, APR_HOOK_LAST);
-  ap_register_output_filter("SHIB_HEADERS_ERR", do_error_filter, nullptr, AP_FTYPE_CONTENT_SET);
-  ap_hook_insert_error_filter(set_error_filter, nullptr, nullptr, APR_HOOK_LAST);
-  ap_hook_post_read_request(shib_post_read, nullptr, nullptr, APR_HOOK_MIDDLE);
+    ap_register_output_filter("SHIB_HEADERS_OUT", do_output_filter, nullptr, AP_FTYPE_CONTENT_SET);
+    ap_hook_insert_filter(set_output_filter, nullptr, nullptr, APR_HOOK_LAST);
+    ap_register_output_filter("SHIB_HEADERS_ERR", do_error_filter, nullptr, AP_FTYPE_CONTENT_SET);
+    ap_hook_insert_error_filter(set_error_filter, nullptr, nullptr, APR_HOOK_LAST);
+    ap_hook_post_read_request(shib_post_read, nullptr, nullptr, APR_HOOK_MIDDLE);
 #endif
-  ap_hook_child_init(shib_child_init, nullptr, nullptr, APR_HOOK_MIDDLE);
-  const char* prereq = getenv("SHIBSP_APACHE_PREREQ");
-  if (prereq && *prereq) {
-    const char* const authnPre[] = { prereq, nullptr };
-    ap_hook_check_user_id(shib_check_user, authnPre, nullptr, APR_HOOK_MIDDLE);
-  }
-  else {
-    ap_hook_check_user_id(shib_check_user, nullptr, nullptr, APR_HOOK_MIDDLE);
-  }
-  ap_hook_auth_checker(shib_auth_checker, nullptr, nullptr, APR_HOOK_FIRST);
-  ap_hook_handler(shib_handler, nullptr, nullptr, APR_HOOK_LAST);
-  ap_hook_fixups(shib_fixups, nullptr, nullptr, APR_HOOK_MIDDLE);
+    ap_hook_child_init(shib_child_init, nullptr, nullptr, APR_HOOK_MIDDLE);
+    const char* prereq = getenv("SHIBSP_APACHE_PREREQ");
+#ifdef SHIB_APACHE_24
+    if (prereq && *prereq) {
+        const char* const authnPre[] = { prereq, nullptr };
+        ap_hook_check_authn(shib_check_user, authnPre, nullptr, APR_HOOK_MIDDLE, AP_AUTH_INTERNAL_PER_URI);
+    }
+    else {
+        ap_hook_check_authn(shib_check_user, nullptr, nullptr, APR_HOOK_MIDDLE, AP_AUTH_INTERNAL_PER_URI);
+    }
+    ap_hook_check_authz(shib_auth_checker, nullptr, nullptr, APR_HOOK_FIRST, AP_AUTH_INTERNAL_PER_URI);
+#else
+    if (prereq && *prereq) {
+        const char* const authnPre[] = { prereq, nullptr };
+        ap_hook_check_user_id(shib_check_user, authnPre, nullptr, APR_HOOK_MIDDLE);
+    }
+    else {
+        ap_hook_check_user_id(shib_check_user, nullptr, nullptr, APR_HOOK_MIDDLE);
+    }
+    ap_hook_auth_checker(shib_auth_checker, nullptr, nullptr, APR_HOOK_FIRST);
+#endif
+    ap_hook_handler(shib_handler, nullptr, nullptr, APR_HOOK_LAST);
+    ap_hook_fixups(shib_fixups, nullptr, nullptr, APR_HOOK_MIDDLE);
+
+#ifdef SHIB_APACHE_24
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shibboleth", AUTHZ_PROVIDER_VERSION, &shib_authz_shibboleth_provider, AP_AUTH_INTERNAL_PER_CONF);
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "valid-user", AUTHZ_PROVIDER_VERSION, &shib_authz_validuser_provider, AP_AUTH_INTERNAL_PER_CONF);
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "user", AUTHZ_PROVIDER_VERSION, &shib_authz_user_provider, AP_AUTH_INTERNAL_PER_CONF);
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "authnContextClassRef", AUTHZ_PROVIDER_VERSION, &shib_authz_acclass_provider, AP_AUTH_INTERNAL_PER_CONF);
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "authnContextDeclRef", AUTHZ_PROVIDER_VERSION, &shib_authz_acdecl_provider, AP_AUTH_INTERNAL_PER_CONF);
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shib-attr", AUTHZ_PROVIDER_VERSION, &shib_authz_attr_provider, AP_AUTH_INTERNAL_PER_CONF);
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shib-plugin", AUTHZ_PROVIDER_VERSION, &shib_authz_plugin_provider, AP_AUTH_INTERNAL_PER_CONF);
+#endif
 }
 
 // SHIB Module commands
@@ -1671,9 +2053,6 @@ static command_rec shib_cmds[] = {
     AP_INIT_TAKE2("ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
         OR_AUTHCFG, "Set arbitrary Shibboleth request property for content"),
 
-    AP_INIT_TAKE1("ShibAccessControl", (config_fn_t)shib_set_acl_slot, nullptr,
-        OR_AUTHCFG, "Set arbitrary Shibboleth access control plugin for content"),
-
     AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bOff),
         OR_AUTHCFG, "Disable all Shib module activity here to save processing effort"),
@@ -1695,15 +2074,26 @@ static command_rec shib_cmds[] = {
     AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szRedirectToSSL),
         OR_AUTHCFG, "Redirect non-SSL requests to designated port"),
+#ifdef SHIB_APACHE_24
+    AP_INIT_FLAG("ShibRequestMapperAuthz", (config_fn_t)ap_set_flag_slot,
+        (void *) offsetof (shib_dir_config, bRequestMapperAuthz),
+        OR_AUTHCFG, "Support access control via shibboleth2.xml / RequestMapper"),
+#else
     AP_INIT_TAKE1("AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
         (void *) offsetof (shib_dir_config, szAuthGrpFile),
         OR_AUTHCFG, "Text file containing group names and member user IDs"),
+    AP_INIT_TAKE1("ShibAccessControl", (config_fn_t)shib_set_acl_slot, nullptr,
+        OR_AUTHCFG, "Set arbitrary Shibboleth access control plugin for content"),
     AP_INIT_FLAG("ShibRequireAll", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireAll),
         OR_AUTHCFG, "All require directives must match"),
     AP_INIT_FLAG("AuthzShibAuthoritative", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bAuthoritative),
         OR_AUTHCFG, "Allow failed mod_shib htaccess authorization to fall through to other modules"),
+    AP_INIT_FLAG("ShibCompatWith24", (config_fn_t)ap_set_flag_slot,
+        (void *) offsetof (shib_dir_config, bCompatWith24),
+        OR_AUTHCFG, "Support Apache 2.4-style require rules"),
+#endif
     AP_INIT_FLAG("ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bUseEnvVars),
         OR_AUTHCFG, "Export attributes using environment variables (default)"),
@@ -1727,8 +2117,6 @@ module AP_MODULE_DECLARE_DATA mod_shib = {
     shib_register_hooks         /* register hooks */
 };
 
-#else
-#error "unsupported Apache version"
 #endif
 
 }

@@ -35,7 +35,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		configs\accessError.html = configs\accessError.html
 		configs\apache.config.in = configs\apache.config.in
 		configs\apache2.config.in = configs\apache2.config.in
-		configs\apache22.config.in = configs\apache22.config.in
+		configs\apache24.config.in = configs\apache24.config.in
 		configs\attrChecker.html = configs\attrChecker.html
 		configs\attribute-map.xml = configs\attribute-map.xml
 		configs\attribute-policy.xml = configs\attribute-policy.xml
@@ -130,6 +130,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "memcache-store", "memcache-store\memcache-store.vcxproj", "{666A63A7-983F-4C19-8411-207F24305198}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "plugins", "plugins\plugins.vcxproj", "{A2140D6E-C2C6-4329-84E3-2F530CEBE445}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib_24", "apache\mod_shib24.vcxproj", "{B44C0852-83B8-4FB2-A86E-097C9C8256D1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -265,6 +267,14 @@ Global
 		{A2140D6E-C2C6-4329-84E3-2F530CEBE445}.Release|Win32.Build.0 = Release|Win32
 		{A2140D6E-C2C6-4329-84E3-2F530CEBE445}.Release|x64.ActiveCfg = Release|x64
 		{A2140D6E-C2C6-4329-84E3-2F530CEBE445}.Release|x64.Build.0 = Release|x64
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1}.Debug|Win32.Build.0 = Debug|Win32
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1}.Debug|x64.ActiveCfg = Debug|x64
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1}.Debug|x64.Build.0 = Debug|x64
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1}.Release|Win32.ActiveCfg = Release|Win32
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1}.Release|Win32.Build.0 = Release|Win32
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1}.Release|x64.ActiveCfg = Release|x64
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -276,6 +286,7 @@ Global
 		{68E9568B-476C-4289-B93C-893432378ADC} = {26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}
 		{1396D80A-8672-4224-9B02-95F3F4207CDB} = {26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}
 		{B44C0852-83B8-4FB2-A86E-097C9C8256D0} = {26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}
+		{B44C0852-83B8-4FB2-A86E-097C9C8256D1} = {26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}
 		{666A63A7-983F-4C19-8411-207F24305197} = {96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}
 		{26D4FABF-ACDE-4947-9C4A-7AE1B50CD83A} = {96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}
 		{26D4FABF-ACDE-4947-9C4A-7AE1B50CD83B} = {96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}

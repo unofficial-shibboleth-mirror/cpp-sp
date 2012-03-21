@@ -669,7 +669,7 @@ if test "$WANT_APACHE_20" = "yes" ; then
     AC_ARG_WITH(apxs2, 
         AS_HELP_STRING([--with-apxs2=FILE],[Specifies where to find the Apache 2.0 apxs script.]),
         [
-        AC_MSG_CHECKING(for user-specified Apache2 apxs name/location)
+        AC_MSG_CHECKING(for user-specified Apache 2.0 apxs name/location)
         if test "$withval" != "no" ; then
           if test "$withval" != "yes"; then
             APXS2=$withval
@@ -698,10 +698,10 @@ if test "$WANT_APACHE_20" = "yes" ; then
         fi
         ])
 
-    AC_MSG_CHECKING([to see if Apache2 apxs was located])
+    AC_MSG_CHECKING([to see if Apache 2.0 apxs was located])
     if test ! -f "$APXS2" ; then
         AC_MSG_RESULT(no)
-        AC_MSG_ERROR([Unable to locate Apache2 apxs script. An Apache development package may be missing from your server, or you may need to use the --with-apxs2 option.])
+        AC_MSG_ERROR([Unable to locate Apache 2.0 apxs script. An Apache development package may be missing from your server, or you may need to use the --with-apxs2 option.])
     fi
     AC_MSG_RESULT($APXS2)
     AC_SUBST(APXS2)
@@ -782,7 +782,7 @@ if test "$WANT_APACHE_22" = "yes" ; then
     AC_ARG_WITH(apxs22, 
         AS_HELP_STRING([--with-apxs22=FILE],[Specifies where to find the Apache 2.2 apxs script.]),
         [
-        AC_MSG_CHECKING(for user-specified Apache2.2 apxs name/location)
+        AC_MSG_CHECKING(for user-specified Apache 2.2 apxs name/location)
         if test "$withval" != "no" ; then
           if test "$withval" != "yes"; then
             APXS22=$withval
@@ -811,10 +811,10 @@ if test "$WANT_APACHE_22" = "yes" ; then
         fi
         ])
 
-    AC_MSG_CHECKING([to see if Apache2.2 apxs was located])
+    AC_MSG_CHECKING([to see if Apache 2.2 apxs was located])
     if test ! -f "$APXS22" ; then
         AC_MSG_RESULT(no)
-        AC_MSG_ERROR([Unable to locate Apache2.2 apxs script. An Apache development package may be missing from your server, or you may need to use the --with-apxs22 option.])
+        AC_MSG_ERROR([Unable to locate Apache 2.2 apxs script. An Apache development package may be missing from your server, or you may need to use the --with-apxs22 option.])
     fi
     AC_MSG_RESULT($APXS22)
     AC_SUBST(APXS22)
@@ -870,14 +870,85 @@ fi
 AC_SUBST(APXS22_CFLAGS)
 AC_SUBST(APXS22_INCLUDE)
 
+# Apache 2.4 (mod_shib_24)
+#   --enable-apache-24
+#   --with-apxs24     (DSO build, the normal way, uses apxs to derive build flags)
+#	--with-apr1       (DSO build, APR development package installed separately)
+#   --with-apu1       (DSO build, APR-UTIL development package installed separately)
+
+AC_ARG_ENABLE(apache-24,
+	AS_HELP_STRING([--enable-apache-24],[enable the Apache 2.4 module]),
+	[if test "x$enableval" = "x" ; then
+         WANT_APACHE_24=yes
+	 else
+	     WANT_APACHE_24="$enableval"
+	 fi
+	],[ WANT_APACHE_24=no ])
+AC_MSG_CHECKING(whether to build Apache 2.4 module)
+if test "$WANT_APACHE_24" != yes && test "$WANT_APACHE_24" != no ; then
+    WANT_APACHE_24=yes
+fi
+AC_MSG_RESULT($WANT_APACHE_24)
+
+if test "$WANT_APACHE_24" = "yes" ; then
+    AC_ARG_WITH(apxs24, 
+        AS_HELP_STRING([--with-apxs24=FILE],[Specifies where to find the Apache 2.4 apxs script.]),
+        [
+        AC_MSG_CHECKING(for user-specified Apache 2.4 apxs name/location)
+        if test "$withval" != "no" ; then
+          if test "$withval" != "yes"; then
+            APXS24=$withval
+            AC_MSG_RESULT("$withval")
+          fi
+        fi
+        ],
+        [
+        AC_PATH_PROG(APXS24, apxs2, no)
+        if test "$APXS24" = "no" ; then
+            AC_PATH_PROG(APXS24, apxs, no)
+        fi
+        if test "$APXS24" = "no" ; then
+          for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+            if test "$APXS24" = "no" && test -f "$i/apxs2" ; then
+              APXS24="$i/apxs2"
+            fi
+          done
+          if test "$APXS24" = "no" ; then
+            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+              if test "$APXS24" = "no" && test -f "$i/apxs" ; then
+                APXS24="$i/apxs"
+              fi
+            done
+          fi
+        fi
+        ])
+
+    AC_MSG_CHECKING([to see if Apache 2.4 apxs was located])
+    if test ! -f "$APXS24" ; then
+        AC_MSG_RESULT(no)
+        AC_MSG_ERROR([Unable to locate Apache 2.4 apxs script. An Apache development package may be missing from your server, or you may need to use the --with-apxs24 option.])
+    fi
+    AC_MSG_RESULT($APXS24)
+    AC_SUBST(APXS24)
+
+    # extract settings we need from APXS24 -q
+    APXS24_CC="`$APXS24 -q CC`"
+    APXS24_CFLAGS="`$APXS24 -q CPPFLAGS` `$APXS24 -q CFLAGS` $APR1_CFLAGS $APU1_CFLAGS"
+    APXS24_INCLUDE="`$APXS24 -q INCLUDEDIR`"
+fi
+
+AC_SUBST(APXS24_CFLAGS)
+AC_SUBST(APXS24_INCLUDE)
+
 # always output the Makefile, even if you don't use it
 AC_CONFIG_FILES([apache/Makefile])
 AM_CONDITIONAL(BUILD_AP13,test "$WANT_APACHE_13" = "yes")
 AM_CONDITIONAL(BUILD_AP20,test "$WANT_APACHE_20" = "yes")
 AM_CONDITIONAL(BUILD_AP22,test "$WANT_APACHE_22" = "yes")
+AM_CONDITIONAL(BUILD_AP24,test "$WANT_APACHE_24" = "yes")
 
 # add the apache module to the list of wanted subdirs..
-if test "$WANT_APACHE_13" = "yes" || test "$WANT_APACHE_20" = "yes" || test "$WANT_APACHE_22" = "yes" ; then
+if test "$WANT_APACHE_13" = "yes" || test "$WANT_APACHE_20" = "yes" || test "$WANT_APACHE_22" = "yes" || test "$WANT_APACHE_24" = "yes" ; then
     WANT_SUBDIRS="$WANT_SUBDIRS apache"
 fi
 
@@ -1180,6 +1251,18 @@ if test -n "$APXS22_CC" && test "$APXS22_CC" != "$CC" ; then
   echo ""
   echo "    Current compiler:      $CC"
   echo "   Apache's compiler:      $APXS22_CC"
+  echo ""
+  echo "This could cause problems."
+  echo "=================================================================="
+fi
+
+if test -n "$APXS24_CC" && test "$APXS24_CC" != "$CC" ; then
+  echo "=================================================================="
+  echo "WARNING: You have chosen to compile Apache-2.4 modules with a different"
+  echo "         compiler than the one used to compile Apache."
+  echo ""
+  echo "    Current compiler:      $CC"
+  echo "   Apache's compiler:      $APXS24_CC"
   echo ""
   echo "This could cause problems."
   echo "=================================================================="
