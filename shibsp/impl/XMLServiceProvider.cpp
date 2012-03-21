@@ -2161,6 +2161,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             if (extraAuthTypes.first) {
                 string types(extraAuthTypes.second);
                 split(outer->m_authTypes, types, is_space(), algorithm::token_compress_on);
+                outer->m_authTypes.insert("shibboleth");
             }
         }
     }
