@@ -1515,15 +1515,15 @@ pair<ShibTargetApache*,authz_status> shib_base_check_authz(request_rec* r)
     shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
     if (!rc || !rc->sta) {
         ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_base_check_authz found no per-request structure");
-        return make_pair(nullptr, AUTHZ_GENERAL_ERROR);
+        return make_pair((ShibTargetApache*)nullptr, AUTHZ_GENERAL_ERROR);
     }
     else if (!rc->sta->isInitialized()) {
-        return make_pair(nullptr, AUTHZ_DENIED_NO_USER);
+        return make_pair((ShibTargetApache*)nullptr, AUTHZ_DENIED_NO_USER);
     }
     return make_pair(rc->sta, AUTHZ_GRANTED);
 }
 
-extern "C" static authz_status shib_shibboleth_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_shibboleth_check_authz(request_rec* r, const char* require_line, const void*)
 {
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
@@ -1531,7 +1531,7 @@ extern "C" static authz_status shib_shibboleth_check_authz(request_rec* r, const
     return AUTHZ_GRANTED;
 }
 
-extern "C" static authz_status shib_validuser_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_validuser_check_authz(request_rec* r, const char* require_line, const void*)
 {
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
@@ -1551,9 +1551,9 @@ extern "C" static authz_status shib_validuser_check_authz(request_rec* r, const 
     return AUTHZ_DENIED_NO_USER;
 }
 
-extern "C" static authz_status shib_user_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_user_check_authz(request_rec* r, const char* require_line, const void*)
 {
-    if (!r->user)
+    if (!r->user || !*(r->user))
         return AUTHZ_DENIED_NO_USER;
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
@@ -1565,7 +1565,7 @@ extern "C" static authz_status shib_user_check_authz(request_rec* r, const char*
     return AUTHZ_DENIED;
 }
 
-extern "C" static authz_status shib_acclass_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_acclass_check_authz(request_rec* r, const char* require_line, const void*)
 {
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
@@ -1577,7 +1577,7 @@ extern "C" static authz_status shib_acclass_check_authz(request_rec* r, const ch
         const Session* session = sta.first->getSession(false);
         if (session && hta.doAuthnContext(*sta.first, session->getAuthnContextClassRef(), require_line) == AccessControl::shib_acl_true)
             return AUTHZ_GRANTED;
-        return AUTHZ_DENIED;
+        return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
         sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
@@ -1586,7 +1586,7 @@ extern "C" static authz_status shib_acclass_check_authz(request_rec* r, const ch
     return AUTHZ_GENERAL_ERROR;
 }
 
-extern "C" static authz_status shib_acdecl_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_acdecl_check_authz(request_rec* r, const char* require_line, const void*)
 {
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
@@ -1598,7 +1598,7 @@ extern "C" static authz_status shib_acdecl_check_authz(request_rec* r, const cha
         const Session* session = sta.first->getSession(false);
         if (session && hta.doAuthnContext(*sta.first, session->getAuthnContextDeclRef(), require_line) == AccessControl::shib_acl_true)
             return AUTHZ_GRANTED;
-        return AUTHZ_DENIED;
+        return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
         sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
@@ -1607,7 +1607,7 @@ extern "C" static authz_status shib_acdecl_check_authz(request_rec* r, const cha
     return AUTHZ_GENERAL_ERROR;
 }
 
-extern "C" static authz_status shib_attr_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_attr_check_authz(request_rec* r, const char* require_line, const void*)
 {
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
@@ -1622,7 +1622,7 @@ extern "C" static authz_status shib_attr_check_authz(request_rec* r, const char*
             if (rule && hta.doShibAttr(*sta.first, session, rule, require_line) == AccessControl::shib_acl_true)
                 return AUTHZ_GRANTED;
         }
-        return AUTHZ_DENIED;
+        return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
         sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
@@ -1631,7 +1631,7 @@ extern "C" static authz_status shib_attr_check_authz(request_rec* r, const char*
     return AUTHZ_GENERAL_ERROR;
 }
 
-extern "C" static authz_status shib_plugin_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_plugin_check_authz(request_rec* r, const char* require_line, const void*)
 {
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
@@ -1646,7 +1646,7 @@ extern "C" static authz_status shib_plugin_check_authz(request_rec* r, const cha
             if (config && hta.doAccessControl(*sta.first, session, config) == AccessControl::shib_acl_true)
                 return AUTHZ_GRANTED;
         }
-        return AUTHZ_DENIED;
+        return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
         sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
@@ -1980,13 +1980,13 @@ module MODULE_VAR_EXPORT mod_shib = {
 #else
 
 #ifdef SHIB_APACHE_24
-extern "C" static const authz_provider shib_authz_shibboleth_provider = { &shib_shibboleth_check_authz, nullptr };
-extern "C" static const authz_provider shib_authz_validuser_provider = { &shib_validuser_check_authz, nullptr };
-extern "C" static const authz_provider shib_authz_user_provider = { &shib_user_check_authz, nullptr };
-extern "C" static const authz_provider shib_authz_acclass_provider = { &shib_acclass_check_authz, nullptr };
-extern "C" static const authz_provider shib_authz_acdecl_provider = { &shib_acdecl_check_authz, nullptr };
-extern "C" static const authz_provider shib_authz_attr_provider = { &shib_attr_check_authz, nullptr };
-extern "C" static const authz_provider shib_authz_plugin_provider = { &shib_plugin_check_authz, nullptr };
+extern "C" const authz_provider shib_authz_shibboleth_provider = { &shib_shibboleth_check_authz, nullptr };
+extern "C" const authz_provider shib_authz_validuser_provider = { &shib_validuser_check_authz, nullptr };
+extern "C" const authz_provider shib_authz_user_provider = { &shib_user_check_authz, nullptr };
+extern "C" const authz_provider shib_authz_acclass_provider = { &shib_acclass_check_authz, nullptr };
+extern "C" const authz_provider shib_authz_acdecl_provider = { &shib_acdecl_check_authz, nullptr };
+extern "C" const authz_provider shib_authz_attr_provider = { &shib_attr_check_authz, nullptr };
+extern "C" const authz_provider shib_authz_plugin_provider = { &shib_plugin_check_authz, nullptr };
 #endif
 
 extern "C" void shib_register_hooks (apr_pool_t *p)
