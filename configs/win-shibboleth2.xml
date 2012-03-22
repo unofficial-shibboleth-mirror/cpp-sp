@@ -36,10 +36,10 @@
     <!--
     To customize behavior for specific resources on IIS, and to link vhosts or
     resources to ApplicationOverride settings below, use the XML syntax below.
-    See https://spaces.internet2.edu/display/SHIB2/NativeSPRequestMapHowTo for help.
+    See https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPRequestMapHowTo for help.
     
     Apache users should rely on web server options/commands in most cases, and can remove the
-    RequestMapper element. See https://spaces.internet2.edu/display/SHIB2/NativeSPApacheConfig
+    RequestMapper element. See https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApacheConfig
     -->
     <RequestMapper type="Native">
         <RequestMap>
@@ -141,7 +141,7 @@
 
         <!--
         The default settings can be overridden by creating ApplicationOverride elements (see
-        the https://spaces.internet2.edu/display/SHIB2/NativeSPApplicationOverride topic).
+        the https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApplicationOverride topic).
         Resource requests are mapped by web server commands, or the RequestMapper, to an
         applicationId setting.
         

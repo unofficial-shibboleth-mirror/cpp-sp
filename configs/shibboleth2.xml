@@ -13,10 +13,10 @@
     <!--
     To customize behavior for specific resources on Apache, and to link vhosts or
     resources to ApplicationOverride settings below, use web server options/commands.
-    See https://spaces.internet2.edu/display/SHIB2/NativeSPConfigurationElements for help.
+    See https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPConfigurationElements for help.
     
     For examples with the RequestMap XML syntax instead, see the example-shibboleth2.xml
-    file, and the https://spaces.internet2.edu/display/SHIB2/NativeSPRequestMapHowTo topic.
+    file, and the https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPRequestMapHowTo topic.
     -->
 
     <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
@@ -98,7 +98,7 @@
 
         <!--
         The default settings can be overridden by creating ApplicationOverride elements (see
-        the https://spaces.internet2.edu/display/SHIB2/NativeSPApplicationOverride topic).
+        the https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApplicationOverride topic).
         Resource requests are mapped by web server commands, or the RequestMapper, to an
         applicationId setting.
         
