@@ -374,7 +374,11 @@ public:
       return HTTPRequest::isSecure();
   }
   const char* getHostname() const {
-    return ap_get_server_name(m_req);
+#ifdef SHIB_APACHE_24
+      return ap_get_server_name_for_url(m_req);
+#else
+      return ap_get_server_name(m_req);
+#endif
   }
   int getPort() const {
     return ap_get_server_port(m_req);
