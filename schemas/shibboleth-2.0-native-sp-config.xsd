@@ -239,8 +239,10 @@
     <attribute name="authType" type="conf:string"/>
     <attribute name="requireSession" type="boolean"/>
     <attribute name="requireSessionWith" type="conf:string"/>
+    <attribute name="requireLogoutWith" type="anyURI"/>
     <attribute name="exportAssertion" type="boolean"/>
     <attribute name="exportStdVars" type="boolean"/>
+    <attribute name="exportCookie" type="boolean"/>
     <attribute name="redirectToSSL" type="unsignedInt"/>
     <attribute name="entityID" type="anyURI"/>
     <attribute name="discoveryURL" type="anyURI"/>

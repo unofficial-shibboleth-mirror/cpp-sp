@@ -149,6 +149,7 @@ namespace shibsp {
 
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
         const Application& app = request.getApplication();
+        app.clearHeader(request, "Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
         app.clearHeader(request, "Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
         app.clearHeader(request, "Shib-Session-Index", "HTTP_SHIB_SESSION_INDEX");
         app.clearHeader(request, "Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
@@ -268,10 +269,11 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 return make_pair(true, request.returnOK());
         }
 
-        // Three settings dictate how to proceed.
+        // These settings dictate how to proceed.
         pair<bool,const char*> authType = settings.first->getString("authType");
         pair<bool,bool> requireSession = settings.first->getBool("requireSession");
         pair<bool,const char*> requireSessionWith = settings.first->getString("requireSessionWith");
+        pair<bool,const char*> requireLogoutWith = settings.first->getString("requireLogoutWith");
 
         // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
@@ -294,7 +296,29 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 throw;
         }
 
-        if (!session) {
+        if (session) {
+            // Check for logout interception.
+            if (requireLogoutWith.first) {
+                // Check for a completion parameter on the query string.
+                const char* qstr = request.getQueryString();
+                if (!qstr || !strstr(qstr, "shiblogoutdone=1")) {
+                    // First leg of circuit, so we redirect to the logout endpoint specified with this URL as a return location.
+                    string selfurl = request.getRequestURL();
+                    if (!qstr)
+                        selfurl += '?';
+                    selfurl += "shiblogoutdone=1";
+                    string loc = requireLogoutWith.second;
+                    request.absolutize(loc);
+                    if (loc.find('?') != string::npos)
+                        loc += '&';
+                    else
+                        loc += '?';
+                    loc += "return=" + XMLToolingConfig::getConfig().getURLEncoder()->encode(selfurl.c_str());
+                    return make_pair(true, request.sendRedirect(loc.c_str()));
+                }
+            }
+        }
+        else {
             // No session.  Maybe that's acceptable?
             if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
                 return make_pair(true, request.returnOK());
@@ -305,7 +329,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 initiator=app->getSessionInitiatorById(requireSessionWith.second);
                 if (!initiator) {
                     throw ConfigurationException(
-                        "No session initiator found with id ($1), check requireSessionWith command.", params(1,requireSessionWith.second)
+                        "No session initiator found with id ($1), check requireSessionWith command.", params(1, requireSessionWith.second)
                         );
                 }
             }
@@ -329,7 +353,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(log, request, app, "session", tp));
+        return make_pair(true, sendError(log, request, app, "session", tp));
     }
 }
 
@@ -396,7 +420,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(log, request, app, "access", tp));
+        return make_pair(true, sendError(log, request, app, "access", tp));
     }
 }
 
@@ -464,6 +488,13 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             hval = session->getSessionIndex();
             if (hval)
                 app->setHeader(request, "Shib-Session-Index", hval);
+        }
+
+        // Check for export of algorithmically-derived portion of cookie names.
+        stdvars = settings.first->getBool("exportCookie");
+        if (stdvars.first && stdvars.second) {
+            pair<string,const char*> cookieprops = app->getCookieNameProps(nullptr);
+            app->setHeader(request, "Shib-Cookie-Name", cookieprops.first.c_str());
         }
 
         // Maybe export the assertion keys.
@@ -551,7 +582,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true,sendError(log, request, app, "session", tp));
+        return make_pair(true, sendError(log, request, app, "session", tp));
     }
 }
 

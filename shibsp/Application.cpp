@@ -66,6 +66,8 @@ pair<string,const char*> Application::getCookieNameProps(const char* prefix, tim
 
     if (lifetime)
         *lifetime = 0;
+    if (!prefix)
+        prefix = "";
     const PropertySet* props=getPropertySet("Sessions");
     if (props) {
         if (lifetime) {
@@ -78,12 +80,12 @@ pair<string,const char*> Application::getCookieNameProps(const char* prefix, tim
             p.second=defProps;
         pair<bool,const char*> p2=props->getString("cookieName");
         if (p2.first)
-            return make_pair(string(prefix) + p2.second,p.second);
-        return make_pair(string(prefix) + getHash(),p.second);
+            return make_pair(string(prefix) + p2.second, p.second);
+        return make_pair(string(prefix) + getHash(), p.second);
     }
 
     // Shouldn't happen, but just in case..
-    return pair<string,const char*>(prefix,defProps);
+    return pair<string,const char*>(prefix, defProps);
 }
 
 void Application::clearHeader(SPRequest& request, const char* rawname, const char* cginame) const
