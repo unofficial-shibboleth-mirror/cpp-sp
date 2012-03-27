@@ -65,4 +65,4 @@
 #define ap_reset_timeout(r)
 #define ap_kill_timeout(r)
 
-#include "mod_apache.cpp"
+#include "mod_shib.cpp"

@@ -198,7 +198,7 @@
     <None Include="Makefile.am" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mod_apache.cpp">
+    <ClCompile Include="mod_shib.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
