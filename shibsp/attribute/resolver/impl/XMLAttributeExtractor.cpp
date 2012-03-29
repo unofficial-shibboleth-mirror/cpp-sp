@@ -102,55 +102,14 @@ namespace shibsp {
             d.clear();
         }
 
+        void extractAttributes(const Application&, const char*, const char*, const NameIdentifier&, ptr_vector<Attribute>&) const;
+        void extractAttributes(const Application&, const char*, const char*, const NameID&, ptr_vector<Attribute>&) const;
+        void extractAttributes(const Application&, const GenericRequest*, const char*, const char*, const saml1::Attribute&, ptr_vector<Attribute>&) const;
+        void extractAttributes(const Application&, const GenericRequest*, const char*, const char*, const saml2::Attribute&, ptr_vector<Attribute>&) const;
+        void extractAttributes(const Application&, const GenericRequest*, const char*, const char*, const saml1::AttributeStatement&, ptr_vector<Attribute>&) const;
+        void extractAttributes(const Application&, const GenericRequest*, const char*, const char*, const saml2::AttributeStatement&, ptr_vector<Attribute>&) const;
         void extractAttributes(
-            const Application& application,
-            const char* assertingParty,
-            const char* relyingParty,
-            const NameIdentifier& nameid,
-            ptr_vector<Attribute>& attributes
-            ) const;
-        void extractAttributes(
-            const Application& application,
-            const char* assertingParty,
-            const char* relyingParty,
-            const NameID& nameid,
-            ptr_vector<Attribute>& attributes
-            ) const;
-        void extractAttributes(
-            const Application& application,
-            const char* assertingParty,
-            const char* relyingParty,
-            const saml1::Attribute& attr,
-            ptr_vector<Attribute>& attributes
-            ) const;
-        void extractAttributes(
-            const Application& application,
-            const char* assertingParty,
-            const char* relyingParty,
-            const saml2::Attribute& attr,
-            ptr_vector<Attribute>& attributes
-            ) const;
-        void extractAttributes(
-            const Application& application,
-            const char* assertingParty,
-            const char* relyingParty,
-            const saml1::AttributeStatement& statement,
-            ptr_vector<Attribute>& attributes
-            ) const;
-        void extractAttributes(
-            const Application& application,
-            const char* assertingParty,
-            const char* relyingParty,
-            const saml2::AttributeStatement& statement,
-            ptr_vector<Attribute>& attributes
-            ) const;
-        void extractAttributes(
-            const Application& application,
-            const ObservableMetadataProvider* observable,
-            const XMLCh* entityID,
-            const char* relyingParty,
-            const Extensions& ext,
-            ptr_vector<Attribute>& attributes
+            const Application&, const GenericRequest*, const ObservableMetadataProvider*, const XMLCh*, const char*, const Extensions&, ptr_vector<Attribute>&
             ) const;
 
         void getAttributeIds(vector<string>& attributes) const {
@@ -190,9 +149,14 @@ namespace shibsp {
             shutdown();
         }
 
+        // deprecated method
         void extractAttributes(
             const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
-            ) const;
+            ) const {
+            extractAttributes(application, nullptr, issuer, xmlObject, attributes);
+        }
+
+        void extractAttributes(const Application&, const GenericRequest*, const RoleDescriptor*, const XMLObject&, vector<Attribute*>&) const;
 
         void getAttributeIds(std::vector<std::string>& attributes) const {
             if (m_impl)
@@ -210,9 +174,7 @@ namespace shibsp {
     private:
         scoped_ptr<XMLExtractorImpl> m_impl;
 
-        void extractAttributes(
-            const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, ptr_vector<Attribute>& attributes
-            ) const;
+        void extractAttributes(const Application&, const GenericRequest*, const RoleDescriptor*, const XMLObject&, ptr_vector<Attribute>&) const;
     };
 
 #if defined (_MSC_VER)
@@ -443,7 +405,7 @@ void XMLExtractorImpl::extractAttributes(
         format = NameIdentifier::UNSPECIFIED;
     attrmap_t::const_iterator rule;
     if ((rule = m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
-        auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &nameid, assertingParty, relyingParty));
+        auto_ptr<Attribute> a(rule->second.first->decode(nullptr, rule->second.second, &nameid, assertingParty, relyingParty));
         if (a.get()) {
             attributes.push_back(a.get());
             a.release();
@@ -468,7 +430,7 @@ void XMLExtractorImpl::extractAttributes(
         format = NameID::UNSPECIFIED;
     attrmap_t::const_iterator rule;
     if ((rule = m_attrMap.find(pair<xstring,xstring>(format,xstring()))) != m_attrMap.end()) {
-        auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &nameid, assertingParty, relyingParty));
+        auto_ptr<Attribute> a(rule->second.first->decode(nullptr, rule->second.second, &nameid, assertingParty, relyingParty));
         if (a.get()) {
             attributes.push_back(a.get());
             a.release();
@@ -482,6 +444,7 @@ void XMLExtractorImpl::extractAttributes(
 
 void XMLExtractorImpl::extractAttributes(
     const Application& application,
+    const GenericRequest* request,
     const char* assertingParty,
     const char* relyingParty,
     const saml1::Attribute& attr,
@@ -496,7 +459,7 @@ void XMLExtractorImpl::extractAttributes(
         format = &chNull;
     attrmap_t::const_iterator rule;
     if ((rule = m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
-        auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty));
+        auto_ptr<Attribute> a(rule->second.first->decode(request, rule->second.second, &attr, assertingParty, relyingParty));
         if (a.get()) {
             attributes.push_back(a.get());
             a.release();
@@ -511,6 +474,7 @@ void XMLExtractorImpl::extractAttributes(
 
 void XMLExtractorImpl::extractAttributes(
     const Application& application,
+    const GenericRequest* request,
     const char* assertingParty,
     const char* relyingParty,
     const saml2::Attribute& attr,
@@ -527,7 +491,7 @@ void XMLExtractorImpl::extractAttributes(
         format = &chNull;
     attrmap_t::const_iterator rule;
     if ((rule = m_attrMap.find(pair<xstring,xstring>(name,format))) != m_attrMap.end()) {
-        auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty));
+        auto_ptr<Attribute> a(rule->second.first->decode(request, rule->second.second, &attr, assertingParty, relyingParty));
         if (a.get()) {
             attributes.push_back(a.get());
             a.release();
@@ -537,7 +501,7 @@ void XMLExtractorImpl::extractAttributes(
     else if (XMLString::equals(format, saml2::Attribute::UNSPECIFIED)) {
         // As a fallback, if the format is "unspecified", null out the value and re-map.
         if ((rule = m_attrMap.find(pair<xstring,xstring>(name,xstring()))) != m_attrMap.end()) {
-            auto_ptr<Attribute> a(rule->second.first->decode(rule->second.second, &attr, assertingParty, relyingParty));
+            auto_ptr<Attribute> a(rule->second.first->decode(request, rule->second.second, &attr, assertingParty, relyingParty));
             if (a.get()) {
                 attributes.push_back(a.get());
                 a.release();
@@ -555,6 +519,7 @@ void XMLExtractorImpl::extractAttributes(
 
 void XMLExtractorImpl::extractAttributes(
     const Application& application,
+    const GenericRequest* request,
     const char* assertingParty,
     const char* relyingParty,
     const saml1::AttributeStatement& statement,
@@ -562,16 +527,17 @@ void XMLExtractorImpl::extractAttributes(
     ) const
 {
     static void (XMLExtractorImpl::* extract)(
-        const Application&, const char*, const char*, const saml1::Attribute&, ptr_vector<Attribute>&
+        const Application&, const GenericRequest*, const char*, const char*, const saml1::Attribute&, ptr_vector<Attribute>&
         ) const = &XMLExtractorImpl::extractAttributes;
     for_each(
         make_indirect_iterator(statement.getAttributes().begin()), make_indirect_iterator(statement.getAttributes().end()),
-        boost::bind(extract, this, boost::cref(application), assertingParty, relyingParty, _1, boost::ref(attributes))
+        boost::bind(extract, this, boost::cref(application), request, assertingParty, relyingParty, _1, boost::ref(attributes))
         );
 }
 
 void XMLExtractorImpl::extractAttributes(
     const Application& application,
+    const GenericRequest* request,
     const char* assertingParty,
     const char* relyingParty,
     const saml2::AttributeStatement& statement,
@@ -579,16 +545,17 @@ void XMLExtractorImpl::extractAttributes(
     ) const
 {
     static void (XMLExtractorImpl::* extract)(
-        const Application&, const char*, const char*, const saml2::Attribute&, ptr_vector<Attribute>&
+        const Application&, const GenericRequest*, const char*, const char*, const saml2::Attribute&, ptr_vector<Attribute>&
         ) const = &XMLExtractorImpl::extractAttributes;
     for_each(
         make_indirect_iterator(statement.getAttributes().begin()), make_indirect_iterator(statement.getAttributes().end()),
-        boost::bind(extract, this, boost::cref(application), assertingParty, relyingParty, _1, boost::ref(attributes))
+        boost::bind(extract, this, boost::cref(application), request, assertingParty, relyingParty, _1, boost::ref(attributes))
         );
 }
 
 void XMLExtractorImpl::extractAttributes(
     const Application& application,
+    const GenericRequest* request,
     const ObservableMetadataProvider* observable,
     const XMLCh* entityID,
     const char* relyingParty,
@@ -656,11 +623,11 @@ void XMLExtractorImpl::extractAttributes(
 
         // Extract attributes into holding area with no asserting party set.
         static void (XMLExtractorImpl::* extractV2Attr)(
-            const Application&, const char*, const char*, const saml2::Attribute&, ptr_vector<Attribute>&
+            const Application&, const GenericRequest*, const char*, const char*, const saml2::Attribute&, ptr_vector<Attribute>&
             ) const = &XMLExtractorImpl::extractAttributes;
         for_each(
             make_indirect_iterator(container->getAttributes().begin()), make_indirect_iterator(container->getAttributes().end()),
-            boost::bind(extractV2Attr, this, boost::ref(application), (const char*)nullptr, relyingParty, _1, boost::ref(holding))
+            boost::bind(extractV2Attr, this, boost::ref(application), request, (const char*)nullptr, relyingParty, _1, boost::ref(holding))
             );
 
         if (entityID && m_entityAssertions) {
@@ -765,7 +732,7 @@ void XMLExtractorImpl::extractAttributes(
                         const_cast<const saml2::AttributeStatement*>(tokencopy->getAttributeStatements().front())->getAttributes();
                     for_each(
                         make_indirect_iterator(attrs2.begin()), make_indirect_iterator(attrs2.end()),
-                        boost::bind(extractV2Attr, this, boost::ref(application), inlineAssertingParty.get(), relyingParty, _1, boost::ref(holding2))
+                        boost::bind(extractV2Attr, this, boost::ref(application), request, inlineAssertingParty.get(), relyingParty, _1, boost::ref(holding2))
                         );
 
                     // Now we locally filter the attributes so that the actual issuer can be properly set.
@@ -852,14 +819,14 @@ void XMLExtractorImpl::extractAttributes(
 }
 
 void XMLExtractor::extractAttributes(
-    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
+    const Application& application, const GenericRequest* request, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
     ) const
 {
     if (!m_impl)
         return;
 
     ptr_vector<Attribute> holding;
-    extractAttributes(application, issuer, xmlObject, holding);
+    extractAttributes(application, request, issuer, xmlObject, holding);
 
     // Transfer ownership from the ptr_vector to the unsafe vector for API compatibility.
     // Any throws should leave each container in a consistent state. The holding container
@@ -872,14 +839,14 @@ void XMLExtractor::extractAttributes(
 }
 
 void XMLExtractor::extractAttributes(
-    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, ptr_vector<Attribute>& attributes
+    const Application& application, const GenericRequest* request, const RoleDescriptor* issuer, const XMLObject& xmlObject, ptr_vector<Attribute>& attributes
     ) const
 {
     static void (XMLExtractor::* extractEncrypted)(
-        const Application&, const RoleDescriptor*, const XMLObject&, ptr_vector<Attribute>&
+        const Application&, const GenericRequest*, const RoleDescriptor*, const XMLObject&, ptr_vector<Attribute>&
         ) const = &XMLExtractor::extractAttributes;
     static void (XMLExtractorImpl::* extractV1Statement)(
-        const Application&, const char*, const char*, const saml1::AttributeStatement&, ptr_vector<Attribute>&
+        const Application&, const GenericRequest*, const char*, const char*, const saml1::AttributeStatement&, ptr_vector<Attribute>&
         ) const = &XMLExtractorImpl::extractAttributes;
 
     const EntityDescriptor* entity = issuer ? dynamic_cast<const EntityDescriptor*>(issuer->getParent()) : nullptr;
@@ -890,12 +857,12 @@ void XMLExtractor::extractAttributes(
         const saml2::AttributeStatement* statement2 = dynamic_cast<const saml2::AttributeStatement*>(&xmlObject);
         if (statement2) {
             auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
-            m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *statement2, attributes);
+            m_impl->extractAttributes(application, request, assertingParty.get(), relyingParty, *statement2, attributes);
             // Handle EncryptedAttributes inline so we have access to the role descriptor.
             const vector<saml2::EncryptedAttribute*>& encattrs = statement2->getEncryptedAttributes();
             for_each(
                 make_indirect_iterator(encattrs.begin()), make_indirect_iterator(encattrs.end()),
-                boost::bind(extractEncrypted, this, boost::ref(application), issuer, _1, boost::ref(attributes))
+                boost::bind(extractEncrypted, this, boost::ref(application), request, issuer, _1, boost::ref(attributes))
                 );
             return;
         }
@@ -903,7 +870,7 @@ void XMLExtractor::extractAttributes(
         const saml1::AttributeStatement* statement1 = dynamic_cast<const saml1::AttributeStatement*>(&xmlObject);
         if (statement1) {
             auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
-            m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *statement1, attributes);
+            m_impl->extractAttributes(application, request, assertingParty.get(), relyingParty, *statement1, attributes);
             return;
         }
 
@@ -918,12 +885,12 @@ void XMLExtractor::extractAttributes(
             const vector<saml2::AttributeStatement*>& statements = token2->getAttributeStatements();
             for (indirect_iterator<vector<saml2::AttributeStatement*>::const_iterator> s = make_indirect_iterator(statements.begin());
                     s != make_indirect_iterator(statements.end()); ++s) {
-                m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *s, attributes);
+                m_impl->extractAttributes(application, request, assertingParty.get(), relyingParty, *s, attributes);
                 // Handle EncryptedAttributes inline so we have access to the role descriptor.
                 const vector<saml2::EncryptedAttribute*>& encattrs = const_cast<const saml2::AttributeStatement&>(*s).getEncryptedAttributes();
                 for_each(
                     make_indirect_iterator(encattrs.begin()), make_indirect_iterator(encattrs.end()),
-                    boost::bind(extractEncrypted, this, boost::ref(application), issuer, _1, boost::ref(attributes))
+                    boost::bind(extractEncrypted, this, boost::ref(application), request, issuer, _1, boost::ref(attributes))
                     );
             }
             return;
@@ -934,7 +901,7 @@ void XMLExtractor::extractAttributes(
             auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
             const vector<saml1::AttributeStatement*>& statements = token1->getAttributeStatements();
             for_each(make_indirect_iterator(statements.begin()), make_indirect_iterator(statements.end()),
-                boost::bind(extractV1Statement, m_impl.get(), boost::ref(application), assertingParty.get(), relyingParty, _1, boost::ref(attributes))
+                boost::bind(extractV1Statement, m_impl.get(), boost::ref(application), request, assertingParty.get(), relyingParty, _1, boost::ref(attributes))
                 );
             return;
         }
@@ -952,6 +919,7 @@ void XMLExtractor::extractAttributes(
         if (ext) {
             m_impl->extractAttributes(
                 application,
+                request,
                 dynamic_cast<const ObservableMetadataProvider*>(application.getMetadataProvider(false)),
                 entityToExtract->getEntityID(),
                 relyingParty,
@@ -965,6 +933,7 @@ void XMLExtractor::extractAttributes(
             if (ext) {
                 m_impl->extractAttributes(
                     application,
+                    request,
                     dynamic_cast<const ObservableMetadataProvider*>(application.getMetadataProvider(false)),
                     nullptr,   // not an entity, so inline assertions won't be processed
                     relyingParty,
@@ -982,11 +951,11 @@ void XMLExtractor::extractAttributes(
         auto_ptr_char assertingParty(entity ? entity->getEntityID() : nullptr);
         const saml2::Attribute* attr2 = dynamic_cast<const saml2::Attribute*>(&xmlObject);
         if (attr2)
-            return m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *attr2, attributes);
+            return m_impl->extractAttributes(application, request, assertingParty.get(), relyingParty, *attr2, attributes);
 
         const saml1::Attribute* attr1 = dynamic_cast<const saml1::Attribute*>(&xmlObject);
         if (attr1)
-            return m_impl->extractAttributes(application, assertingParty.get(), relyingParty, *attr1, attributes);
+            return m_impl->extractAttributes(application, request, assertingParty.get(), relyingParty, *attr1, attributes);
 
         throw AttributeExtractionException("Unable to extract attributes, unknown object type.");
     }
@@ -1008,13 +977,13 @@ void XMLExtractor::extractAttributes(
                     scoped_ptr<XMLObject> decrypted(encattr->decrypt(*cr, recipient, &mcc));
                     if (m_log.isDebugEnabled())
                         m_log.debugStream() << "decrypted Attribute: " << *decrypted << logging::eol;
-                    return extractAttributes(application, issuer, *decrypted, attributes);
+                    return extractAttributes(application, request, issuer, *decrypted, attributes);
                 }
                 else {
                     scoped_ptr<XMLObject> decrypted(encattr->decrypt(*cr, recipient));
                     if (m_log.isDebugEnabled())
                         m_log.debugStream() << "decrypted Attribute: " << *decrypted << logging::eol;
-                    return extractAttributes(application, issuer, *decrypted, attributes);
+                    return extractAttributes(application, request, issuer, *decrypted, attributes);
                 }
             }
             catch (std::exception& ex) {

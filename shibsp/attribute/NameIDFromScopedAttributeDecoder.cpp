@@ -60,8 +60,15 @@ namespace shibsp {
         }
         ~NameIDFromScopedAttributeDecoder() {}
 
+        // deprecated method
         shibsp::Attribute* decode(
             const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
+            ) const {
+            return decode(nullptr, ids, xmlObject, assertingParty, relyingParty);
+        }
+
+        shibsp::Attribute* decode(
+            const GenericRequest*, const vector<string>&, const XMLObject*, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -77,7 +84,7 @@ namespace shibsp {
 };
 
 shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
-    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const GenericRequest* request, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
 
@@ -89,7 +96,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
         new NameIDAttribute(ids, (!m_formatter.empty()) ? m_formatter.c_str() : DEFAULT_NAMEID_FORMATTER)
         );
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
-    vector<XMLObject*>::const_iterator v,stop;
+    pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> valrange;
 
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.NameIDFromScoped");
 
@@ -97,8 +104,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
         const opensaml::saml2::Attribute* saml2attr = dynamic_cast<const opensaml::saml2::Attribute*>(xmlObject);
         if (saml2attr) {
             const vector<XMLObject*>& values = saml2attr->getAttributeValues();
-            v = values.begin();
-            stop = values.end();
+            valrange = valueRange(request, values);
             if (log.isDebugEnabled()) {
                 auto_ptr_char n(saml2attr->getName());
                 log.debug(
@@ -111,8 +117,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
             const opensaml::saml1::Attribute* saml1attr = dynamic_cast<const opensaml::saml1::Attribute*>(xmlObject);
             if (saml1attr) {
                 const vector<XMLObject*>& values = saml1attr->getAttributeValues();
-                v = values.begin();
-                stop = values.end();
+                valrange = valueRange(request, values);
                 if (log.isDebugEnabled()) {
                     auto_ptr_char n(saml1attr->getAttributeName());
                     log.debug(
@@ -127,13 +132,13 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
             }
         }
 
-        for (; v!=stop; ++v) {
-            if (!(*v)->hasChildren()) {
-                val = toUTF8((*v)->getTextContent());
+        for (; valrange.first != valrange.second; ++valrange.first) {
+            if (!(*valrange.first)->hasChildren()) {
+                val = toUTF8((*valrange.first)->getTextContent());
                 if (val && *val) {
                     dest.push_back(NameIDAttribute::Value());
                     NameIDAttribute::Value& destval = dest.back();
-                    const AttributeExtensibleXMLObject* aexo=dynamic_cast<const AttributeExtensibleXMLObject*>(*v);
+                    const AttributeExtensibleXMLObject* aexo=dynamic_cast<const AttributeExtensibleXMLObject*>(*valrange.first);
                     xmlscope = aexo ? aexo->getAttribute(scopeqname) : nullptr;
                     if (!xmlscope || !*xmlscope) {
                         // Terminate the value at the scope delimiter.

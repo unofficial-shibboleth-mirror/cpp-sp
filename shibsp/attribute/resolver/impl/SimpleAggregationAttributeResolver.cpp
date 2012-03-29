@@ -75,6 +75,7 @@ namespace shibsp {
     public:
         SimpleAggregationContext(const Application& application, const Session& session)
             : m_app(application),
+              m_request(nullptr),
               m_session(&session),
               m_nameid(nullptr),
               m_class(session.getAuthnContextClassRef()),
@@ -85,6 +86,7 @@ namespace shibsp {
 
         SimpleAggregationContext(
             const Application& application,
+            const GenericRequest* request=nullptr,
             const NameID* nameid=nullptr,
             const XMLCh* entityID=nullptr,
             const XMLCh* authncontext_class=nullptr,
@@ -92,6 +94,7 @@ namespace shibsp {
             const vector<const opensaml::Assertion*>* tokens=nullptr,
             const vector<shibsp::Attribute*>* attributes=nullptr
             ) : m_app(application),
+                m_request(request),
                 m_session(nullptr),
                 m_nameid(nameid),
                 m_entityid(entityID),
@@ -108,6 +111,9 @@ namespace shibsp {
 
         const Application& getApplication() const {
             return m_app;
+        }
+        const GenericRequest* getRequest() const {
+            return m_request;
         }
         const char* getEntityID() const {
             return m_session ? m_session->getEntityID() : m_entityid.get();
@@ -139,6 +145,7 @@ namespace shibsp {
 
     private:
         const Application& m_app;
+        const GenericRequest* m_request;
         const Session* m_session;
         const NameID* m_nameid;
         auto_ptr_char m_entityid;
@@ -159,6 +166,7 @@ namespace shibsp {
         Lockable* lock() {return this;}
         void unlock() {}
 
+        // deprecated method
         ResolutionContext* createResolutionContext(
             const Application& application,
             const EntityDescriptor* issuer,
@@ -169,8 +177,22 @@ namespace shibsp {
             const vector<const opensaml::Assertion*>* tokens=nullptr,
             const vector<shibsp::Attribute*>* attributes=nullptr
             ) const {
+            return createResolutionContext(application, nullptr, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
+        }
+
+        ResolutionContext* createResolutionContext(
+            const Application& application,
+            const GenericRequest* request,
+            const EntityDescriptor* issuer,
+            const XMLCh* protocol,
+            const NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const vector<const opensaml::Assertion*>* tokens=nullptr,
+            const vector<shibsp::Attribute*>* attributes=nullptr
+            ) const {
             return new SimpleAggregationContext(
-                application, nameid, (issuer ? issuer->getEntityID() : nullptr), authncontext_class, authncontext_decl, tokens, attributes
+                application, request, nameid, (issuer ? issuer->getEntityID() : nullptr), authncontext_class, authncontext_decl, tokens, attributes
                 );
         }
 
@@ -549,7 +571,7 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         AttributeExtractor* extractor = m_extractor ? m_extractor.get() : application.getAttributeExtractor();
         if (extractor) {
             Locker extlocker(extractor);
-            extractor->extractAttributes(application, AA, *newtoken, ctx.getResolvedAttributes());
+            extractor->extractAttributes(application, ctx.getRequest(), AA, *newtoken, ctx.getResolvedAttributes());
         }
 
         AttributeFilter* filter = m_filter ? m_filter.get() : application.getAttributeFilter();

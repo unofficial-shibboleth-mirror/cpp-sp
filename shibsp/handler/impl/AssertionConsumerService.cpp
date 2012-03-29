@@ -542,6 +542,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             auto_ptr<ResolutionContext> ctx(
                 resolver->createResolutionContext(
                     application,
+                    request,
                     issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : nullptr,
                     protocol,
                     nameid,

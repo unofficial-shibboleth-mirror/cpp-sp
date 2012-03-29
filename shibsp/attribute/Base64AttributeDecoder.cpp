@@ -47,8 +47,15 @@ namespace shibsp {
         Base64AttributeDecoder(const DOMElement* e) : AttributeDecoder(e) {}
         ~Base64AttributeDecoder() {}
 
+        // deprecated method
         shibsp::Attribute* decode(
             const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
+            ) const {
+            return decode(nullptr, ids, xmlObject, assertingParty, relyingParty);
+        }
+
+        shibsp::Attribute* decode(
+            const GenericRequest*, const vector<string>&, const XMLObject*, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
     };
 
@@ -59,12 +66,12 @@ namespace shibsp {
 };
 
 shibsp::Attribute* Base64AttributeDecoder::decode(
-    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const GenericRequest* request, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     auto_ptr<SimpleAttribute> simple(new SimpleAttribute(ids));
     vector<string>& dest = simple->getValues();
-    vector<XMLObject*>::const_iterator v,stop;
+    pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> valrange;
 
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.Base64");
 
@@ -72,8 +79,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
         const opensaml::saml2::Attribute* saml2attr = dynamic_cast<const opensaml::saml2::Attribute*>(xmlObject);
         if (saml2attr) {
             const vector<XMLObject*>& values = saml2attr->getAttributeValues();
-            v = values.begin();
-            stop = values.end();
+            valrange = valueRange(request, values);
             if (log.isDebugEnabled()) {
                 auto_ptr_char n(saml2attr->getName());
                 log.debug(
@@ -86,8 +92,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
             const opensaml::saml1::Attribute* saml1attr = dynamic_cast<const opensaml::saml1::Attribute*>(xmlObject);
             if (saml1attr) {
                 const vector<XMLObject*>& values = saml1attr->getAttributeValues();
-                v = values.begin();
-                stop = values.end();
+                valrange = valueRange(request, values);
                 if (log.isDebugEnabled()) {
                     auto_ptr_char n(saml1attr->getAttributeName());
                 log.debug(
@@ -102,9 +107,9 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
             }
         }
 
-        for (; v!=stop; ++v) {
-            if (!(*v)->hasChildren()) {
-                auto_ptr_char val((*v)->getTextContent());
+        for (; valrange.first != valrange.second; ++valrange.first) {
+            if (!(*valrange.first)->hasChildren()) {
+                auto_ptr_char val((*valrange.first)->getTextContent());
                 if (val.get() && *val.get()) {
                     xsecsize_t x;
                     XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(val.get()),&x);

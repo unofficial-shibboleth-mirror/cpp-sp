@@ -68,6 +68,7 @@ namespace shibsp {
         virtual ~AttributeResolver();
 
         /**
+         * @deprecated
          * Creates a ResolutionContext based on session bootstrap material.
          *
          * <p>This enables resolution to occur ahead of session creation so that
@@ -92,7 +93,36 @@ namespace shibsp {
             const XMLCh* authncontext_decl=nullptr,
             const std::vector<const opensaml::Assertion*>* tokens=nullptr,
             const std::vector<Attribute*>* attributes=nullptr
-            ) const=0;
+            ) const;
+
+        /**
+         * Creates a ResolutionContext based on session bootstrap material.
+         *
+         * <p>This enables resolution to occur ahead of session creation so that
+         * Attributes can be supplied while creating the session.
+         *
+         * @param application       reference to Application that owns the eventual Session
+         * @param request           request triggering the resolution, if any
+         * @param issuer            issuing metadata of assertion issuer, if known
+         * @param protocol          protocol used to establish Session
+         * @param nameid            principal identifier, normalized to SAML 2, if any
+         * @param authncontext_class    method/category of authentication event, if known
+         * @param authncontext_decl specifics of authentication event, if known
+         * @param tokens            assertions initiating the Session, if any
+         * @param attributes        array of previously resolved attributes, if any
+         * @return  newly created ResolutionContext, owned by caller
+         */
+        virtual ResolutionContext* createResolutionContext(
+            const Application& application,
+            const xmltooling::GenericRequest* request,
+            const opensaml::saml2md::EntityDescriptor* issuer,
+            const XMLCh* protocol,
+            const opensaml::saml2::NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const std::vector<const opensaml::Assertion*>* tokens=nullptr,
+            const std::vector<Attribute*>* attributes=nullptr
+            ) const;
 
         /**
          * Creates a ResolutionContext for an existing Session.

@@ -33,6 +33,7 @@
 #include <vector>
 
 namespace xmltooling {
+    class XMLTOOL_API GenericRequest;
     class XMLTOOL_API QName;
     class XMLTOOL_API XMLObject;
 };
@@ -61,6 +62,9 @@ namespace shibsp {
         /** Flag for hiding attributes from CGI export. */
         bool m_internal;
 
+        /** Flag for language aware decoding. */
+        bool m_langAware;
+
         /** Hash algorithm to apply to decoded values. */
         std::string m_hashAlg;
 
@@ -72,10 +76,41 @@ namespace shibsp {
          */
         virtual Attribute* _decode(Attribute* attr) const;
 
+        /**
+         * Helper method that returns a range of objects the decoder should operate on,
+         * based on the language settings of the decoder and the client request.
+         *
+         * @param request   the client request, if any
+         * @param objects   the objects to examine
+         * @return  a pair of iterators representing the range of objects to examine
+         */
+        virtual std::pair<std::vector<xmltooling::XMLObject*>::const_iterator,std::vector<xmltooling::XMLObject*>::const_iterator> valueRange(
+            const xmltooling::GenericRequest* request, const std::vector<xmltooling::XMLObject*>& objects
+            ) const;
+
     public:
         virtual ~AttributeDecoder();
 
         /**
+         * Decodes an XMLObject into a resolved Attribute.
+         *
+         * @param request           request triggering the decode, if any
+         * @param ids               array containing primary identifier in first position, followed by any aliases
+         * @param xmlObject         XMLObject to decode
+         * @param assertingParty    name of the party asserting the attribute
+         * @param relyingParty      name of the party relying on the attribute
+         * @return a resolved Attribute, or nullptr
+         */
+        virtual Attribute* decode(
+            const xmltooling::GenericRequest* request,
+            const std::vector<std::string>& ids,
+            const xmltooling::XMLObject* xmlObject,
+            const char* assertingParty=nullptr,
+            const char* relyingParty=nullptr
+            ) const;
+
+        /**
+         * @deprecated
          * Decodes an XMLObject into a resolved Attribute.
          *
          * @param ids               array containing primary identifier in first position, followed by any aliases
@@ -89,7 +124,7 @@ namespace shibsp {
             const xmltooling::XMLObject* xmlObject,
             const char* assertingParty=nullptr,
             const char* relyingParty=nullptr
-            ) const=0;
+            ) const;
     };
 
 

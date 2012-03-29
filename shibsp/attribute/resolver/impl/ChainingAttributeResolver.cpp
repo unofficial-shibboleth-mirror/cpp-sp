@@ -25,6 +25,7 @@
  */
 
 #include "internal.h"
+#include "exceptions.h"
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "attribute/Attribute.h"
@@ -49,6 +50,7 @@ namespace shibsp {
     {
         ChainingContext(
             const Application& application,
+            const GenericRequest* request,
             const EntityDescriptor* issuer,
             const XMLCh* protocol,
             const NameID* nameid,
@@ -56,14 +58,17 @@ namespace shibsp {
             const XMLCh* authncontext_decl,
             const vector<const opensaml::Assertion*>* tokens,
             const vector<shibsp::Attribute*>* attributes
-            ) : m_app(application), m_issuer(issuer), m_protocol(protocol), m_nameid(nameid), m_authclass(authncontext_class), m_authdecl(authncontext_decl), m_session(nullptr) {
+            ) : m_app(application), m_request(request), m_issuer(issuer), m_protocol(protocol), m_nameid(nameid),
+                m_authclass(authncontext_class), m_authdecl(authncontext_decl), m_session(nullptr) {
             if (tokens)
                 m_tokens.assign(tokens->begin(), tokens->end());
             if (attributes)
                 m_attributes.assign(attributes->begin(), attributes->end());
         }
 
-        ChainingContext(const Application& application, const Session& session) : m_app(application), m_session(&session) {
+        ChainingContext(const Application& application, const Session& session)
+            : m_app(application), m_request(nullptr), m_issuer(nullptr), m_protocol(nullptr), m_nameid(nullptr),
+                m_authclass(nullptr), m_authdecl(nullptr), m_session(&session) {
         }
 
         ~ChainingContext() {
@@ -82,6 +87,7 @@ namespace shibsp {
         vector<opensaml::Assertion*> m_ownedAssertions;
 
         const Application& m_app;
+        const GenericRequest* m_request;
         const EntityDescriptor* m_issuer;
         const XMLCh* m_protocol;
         const NameID* m_nameid;
@@ -115,7 +121,22 @@ namespace shibsp {
             const vector<const opensaml::Assertion*>* tokens=nullptr,
             const vector<shibsp::Attribute*>* attributes=nullptr
             ) const {
-            return new ChainingContext(application, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
+            // Make sure new method gets run.
+            return createResolutionContext(application, nullptr, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
+        }
+
+        ResolutionContext* createResolutionContext(
+            const Application& application,
+            const GenericRequest* request,
+            const EntityDescriptor* issuer,
+            const XMLCh* protocol,
+            const NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const vector<const opensaml::Assertion*>* tokens=nullptr,
+            const vector<shibsp::Attribute*>* attributes=nullptr
+            ) const {
+            return new ChainingContext(application, request, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
@@ -170,6 +191,38 @@ AttributeResolver::~AttributeResolver()
 {
 }
 
+ResolutionContext* AttributeResolver::createResolutionContext(
+    const Application& application,
+    const GenericRequest* request,
+    const EntityDescriptor* issuer,
+    const XMLCh* protocol,
+    const NameID* nameid,
+    const XMLCh* authncontext_class,
+    const XMLCh* authncontext_decl,
+    const vector<const opensaml::Assertion*>* tokens,
+    const vector<shibsp::Attribute*>* attributes
+    ) const
+{
+    // Default call into deprecated method.
+    return createResolutionContext(application, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
+}
+
+ResolutionContext* AttributeResolver::createResolutionContext(
+    const Application& application,
+    const EntityDescriptor* issuer,
+    const XMLCh* protocol,
+    const NameID* nameid,
+    const XMLCh* authncontext_class,
+    const XMLCh* authncontext_decl,
+    const vector<const opensaml::Assertion*>* tokens,
+    const vector<shibsp::Attribute*>* attributes
+    ) const
+{
+    // Default for deprecated method.
+    throw ConfigurationException("Deprecated method implementation should always be overridden.");
+}
+
+
 ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
 {
     SPConfig& conf = SPConfig::getConfig();
@@ -206,7 +259,7 @@ void ChainingAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
             chain.m_session ?
                 i->createResolutionContext(chain.m_app, *chain.m_session) :
                 i->createResolutionContext(
-                    chain.m_app, chain.m_issuer, chain.m_protocol, chain.m_nameid, chain.m_authclass, chain.m_authdecl, &chain.m_tokens, &chain.m_attributes
+                    chain.m_app, chain.m_request, chain.m_issuer, chain.m_protocol, chain.m_nameid, chain.m_authclass, chain.m_authdecl, &chain.m_tokens, &chain.m_attributes
                     )
             );
 

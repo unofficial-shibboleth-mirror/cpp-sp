@@ -74,7 +74,7 @@ namespace shibsp {
     {
     public:
         QueryContext(const Application& application, const Session& session)
-                : m_query(true), m_app(application), m_session(&session), m_metadata(nullptr), m_entity(nullptr), m_nameid(nullptr) {
+                : m_query(true), m_app(application), m_request(nullptr), m_session(&session), m_metadata(nullptr), m_entity(nullptr), m_nameid(nullptr) {
             m_protocol = XMLString::transcode(session.getProtocol());
             m_class = XMLString::transcode(session.getAuthnContextClassRef());
             m_decl = XMLString::transcode(session.getAuthnContextDeclRef());
@@ -82,13 +82,14 @@ namespace shibsp {
 
         QueryContext(
             const Application& application,
+            const GenericRequest* request,
             const EntityDescriptor* issuer,
             const XMLCh* protocol,
             const NameID* nameid=nullptr,
             const XMLCh* authncontext_class=nullptr,
             const XMLCh* authncontext_decl=nullptr,
             const vector<const opensaml::Assertion*>* tokens=nullptr
-            ) : m_query(true), m_app(application), m_session(nullptr), m_metadata(nullptr), m_entity(issuer),
+            ) : m_query(true), m_app(application), m_request(request), m_session(nullptr), m_metadata(nullptr), m_entity(issuer),
                 m_protocol(protocol), m_nameid(nameid), m_class(authncontext_class), m_decl(authncontext_decl) {
 
             if (tokens) {
@@ -125,6 +126,9 @@ namespace shibsp {
 
         const Application& getApplication() const {
             return m_app;
+        }
+        const GenericRequest* getRequest() const {
+            return m_request;
         }
         const EntityDescriptor* getEntityDescriptor() const {
             if (m_entity)
@@ -163,6 +167,7 @@ namespace shibsp {
     private:
         bool m_query;
         const Application& m_app;
+        const GenericRequest* m_request;
         const Session* m_session;
         mutable MetadataProvider* m_metadata;
         mutable const EntityDescriptor* m_entity;
@@ -183,6 +188,7 @@ namespace shibsp {
         Lockable* lock() {return this;}
         void unlock() {}
 
+        // deprecated method
         ResolutionContext* createResolutionContext(
             const Application& application,
             const EntityDescriptor* issuer,
@@ -193,7 +199,21 @@ namespace shibsp {
             const vector<const opensaml::Assertion*>* tokens=nullptr,
             const vector<shibsp::Attribute*>* attributes=nullptr
             ) const {
-            return new QueryContext(application,issuer,protocol,nameid,authncontext_class,authncontext_decl,tokens);
+            return createResolutionContext(application, nullptr, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens);
+        }
+
+        ResolutionContext* createResolutionContext(
+            const Application& application,
+            const GenericRequest* request,
+            const EntityDescriptor* issuer,
+            const XMLCh* protocol,
+            const NameID* nameid=nullptr,
+            const XMLCh* authncontext_class=nullptr,
+            const XMLCh* authncontext_decl=nullptr,
+            const vector<const opensaml::Assertion*>* tokens=nullptr,
+            const vector<shibsp::Attribute*>* attributes=nullptr
+            ) const {
+            return new QueryContext(application, request, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens);
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
@@ -404,7 +424,7 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
                         continue;
                     }
                 }
-                extractor->extractAttributes(application, AA, *s, ctx.getResolvedAttributes());
+                extractor->extractAttributes(application, ctx.getRequest(), AA, *s, ctx.getResolvedAttributes());
             }
         }
 
@@ -647,7 +667,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
         AttributeExtractor* extractor = application.getAttributeExtractor();
         if (extractor) {
             Locker extlocker(extractor);
-            extractor->extractAttributes(application, AA, *newtoken, ctx.getResolvedAttributes());
+            extractor->extractAttributes(application, ctx.getRequest(), AA, *newtoken, ctx.getResolvedAttributes());
         }
 
         AttributeFilter* filter = application.getAttributeFilter();

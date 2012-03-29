@@ -52,8 +52,15 @@ namespace shibsp {
         }
         ~ScopedAttributeDecoder() {}
 
+        // deprecated method
         shibsp::Attribute* decode(
             const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
+            ) const {
+            return decode(nullptr, ids, xmlObject, assertingParty, relyingParty);
+        }
+
+        shibsp::Attribute* decode(
+            const GenericRequest*, const vector<string>&, const XMLObject*, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -67,7 +74,7 @@ namespace shibsp {
 };
 
 shibsp::Attribute* ScopedAttributeDecoder::decode(
-    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const GenericRequest* request, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     char* val;
@@ -76,7 +83,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
     xmltooling::QName scopeqname(nullptr,Scope);
     auto_ptr<ScopedAttribute> scoped(new ScopedAttribute(ids, m_delimiter));
     vector< pair<string,string> >& dest = scoped->getValues();
-    vector<XMLObject*>::const_iterator v,stop;
+    pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> valrange;
 
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.Scoped");
 
@@ -84,8 +91,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
         const opensaml::saml2::Attribute* saml2attr = dynamic_cast<const opensaml::saml2::Attribute*>(xmlObject);
         if (saml2attr) {
             const vector<XMLObject*>& values = saml2attr->getAttributeValues();
-            v = values.begin();
-            stop = values.end();
+            valrange = valueRange(request, values);
             if (log.isDebugEnabled()) {
                 auto_ptr_char n(saml2attr->getName());
                 log.debug(
@@ -98,8 +104,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
             const opensaml::saml1::Attribute* saml1attr = dynamic_cast<const opensaml::saml1::Attribute*>(xmlObject);
             if (saml1attr) {
                 const vector<XMLObject*>& values = saml1attr->getAttributeValues();
-                v = values.begin();
-                stop = values.end();
+                valrange = valueRange(request, values);
                 if (log.isDebugEnabled()) {
                     auto_ptr_char n(saml1attr->getAttributeName());
                     log.debug(
@@ -114,16 +119,15 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
             }
         }
 
-        for (; v!=stop; ++v) {
-            if (!(*v)->hasChildren()) {
-                val = toUTF8((*v)->getTextContent());
+        for (; valrange.first != valrange.second; ++valrange.first) {
+            if (!(*valrange.first)->hasChildren()) {
+                val = toUTF8((*valrange.first)->getTextContent());
                 if (val && *val) {
-                    const AttributeExtensibleXMLObject* aexo=dynamic_cast<const AttributeExtensibleXMLObject*>(*v);
+                    const AttributeExtensibleXMLObject* aexo=dynamic_cast<const AttributeExtensibleXMLObject*>(*valrange.first);
                     xmlscope = aexo ? aexo->getAttribute(scopeqname) : nullptr;
                     if (xmlscope && *xmlscope) {
-                        scope = toUTF8(xmlscope);
-                        dest.push_back(pair<string,string>(val,scope));
-                        delete[] scope;
+                        auto_arrayptr<char> noninlinescope(toUTF8(xmlscope));
+                        dest.push_back(pair<string,string>(val,noninlinescope.get()));
                     }
                     else {
                         scope = strchr(val, m_delimiter);
@@ -178,7 +182,7 @@ shibsp::Attribute* ScopedAttributeDecoder::decode(
         }
     }
 
-    if (val && *val && *val!=m_delimiter) {
+    if (val && *val && *val != m_delimiter) {
         scope = strchr(val, m_delimiter);
         if (scope) {
             *scope++ = 0;

@@ -44,8 +44,15 @@ namespace shibsp {
         DOMAttributeDecoder(const DOMElement* e);
         ~DOMAttributeDecoder() {}
 
+        // deprecated method
         Attribute* decode(
             const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
+            ) const {
+            return decode(nullptr, ids, xmlObject, assertingParty, relyingParty);
+        }
+
+        Attribute* decode(
+            const GenericRequest*, const vector<string>&, const XMLObject*, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -91,7 +98,7 @@ DOMAttributeDecoder::DOMAttributeDecoder(const DOMElement* e)
 }
 
 Attribute* DOMAttributeDecoder::decode(
-    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const GenericRequest* request, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.DOM");
@@ -102,13 +109,12 @@ Attribute* DOMAttributeDecoder::decode(
     auto_ptr<ExtensibleAttribute> attr(new ExtensibleAttribute(ids, m_formatter.c_str()));
     DDF dest = attr->getValues();
     vector<XMLObject*> genericObjectWrapper;    // used to support stand-alone object decoding
-    vector<XMLObject*>::const_iterator v,stop;
+    pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> valrange;
 
     const saml2::Attribute* saml2attr = dynamic_cast<const saml2::Attribute*>(xmlObject);
     if (saml2attr) {
         const vector<XMLObject*>& values = saml2attr->getAttributeValues();
-        v = values.begin();
-        stop = values.end();
+        valrange = valueRange(request, values);
         if (log.isDebugEnabled()) {
             auto_ptr_char n(saml2attr->getName());
             log.debug(
@@ -121,8 +127,7 @@ Attribute* DOMAttributeDecoder::decode(
         const saml1::Attribute* saml1attr = dynamic_cast<const saml1::Attribute*>(xmlObject);
         if (saml1attr) {
             const vector<XMLObject*>& values = saml1attr->getAttributeValues();
-            v = values.begin();
-            stop = values.end();
+            valrange = valueRange(request, values);
             if (log.isDebugEnabled()) {
                 auto_ptr_char n(saml1attr->getAttributeName());
                 log.debug(
@@ -134,13 +139,13 @@ Attribute* DOMAttributeDecoder::decode(
         else {
             log.debug("decoding arbitrary XMLObject type (%s)", xmlObject->getElementQName().toString().c_str());
             genericObjectWrapper.push_back(const_cast<XMLObject*>(xmlObject));
-            v = genericObjectWrapper.begin();
-            stop = genericObjectWrapper.end();
+            valrange.first = genericObjectWrapper.begin();
+            valrange.second = genericObjectWrapper.end();
         }
     }
 
-    for (; v!=stop; ++v) {
-        DOMElement* e = (*v)->getDOM();
+    for (; valrange.first != valrange.second; ++valrange.first) {
+        DOMElement* e = (*valrange.first)->getDOM();
         if (e) {
             DDF converted = convert(e, false);
             if (!converted.isnull())

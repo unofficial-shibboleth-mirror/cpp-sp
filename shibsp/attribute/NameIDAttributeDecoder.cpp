@@ -51,8 +51,15 @@ namespace shibsp {
         }
         ~NameIDAttributeDecoder() {}
 
+        // deprecated method
         shibsp::Attribute* decode(
             const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
+            ) const {
+            return decode(nullptr, ids, xmlObject, assertingParty, relyingParty);
+        }
+
+        shibsp::Attribute* decode(
+            const GenericRequest*, const vector<string>&, const XMLObject*, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -73,7 +80,7 @@ namespace shibsp {
 };
 
 shibsp::Attribute* NameIDAttributeDecoder::decode(
-    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const GenericRequest*, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     auto_ptr<NameIDAttribute> nameid(
@@ -118,7 +125,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
             }
         }
 
-        for (; v!=stop; ++v) {
+        for (; v != stop; ++v) {
             const NameIDType* n2 = dynamic_cast<const NameIDType*>(*v);
             if (n2) {
                 log.debug("decoding AttributeValue element of saml2:NameIDType type");

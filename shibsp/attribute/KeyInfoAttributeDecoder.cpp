@@ -50,8 +50,15 @@ namespace shibsp {
         KeyInfoAttributeDecoder(const DOMElement* e);
         ~KeyInfoAttributeDecoder() {}
 
+        // deprecated method
         Attribute* decode(
             const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
+            ) const {
+            return decode(nullptr, ids, xmlObject, assertingParty, relyingParty);
+        }
+
+        Attribute* decode(
+            const GenericRequest*, const vector<string>&, const XMLObject*, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -99,7 +106,7 @@ KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e)
 }
 
 Attribute* KeyInfoAttributeDecoder::decode(
-    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const GenericRequest*, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.KeyInfo");
@@ -146,7 +153,7 @@ Attribute* KeyInfoAttributeDecoder::decode(
         }
     }
 
-    for (; v!=stop; ++v) {
+    for (; v != stop; ++v) {
         const KeyInfo* k = dynamic_cast<const KeyInfo*>(*v);
         if (k)
             extract(k, dest);

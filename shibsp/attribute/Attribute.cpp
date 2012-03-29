@@ -33,9 +33,10 @@
 #endif
 #include "util/SPConstants.h"
 
-#include <xercesc/util/XMLUniDefs.hpp>
+#include <xmltooling/XMLObject.h>
 #include <xmltooling/security/SecurityHelper.h>
 #include <xmltooling/util/XMLHelper.h>
+#include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -72,9 +73,10 @@ namespace shibsp {
         chLatin_D, chLatin_e, chLatin_c, chLatin_o, chLatin_d, chLatin_e, chLatin_r, chNull
     };
 
-    static const XMLCh caseSensitive[] =           UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
-    static const XMLCh hashAlg[] =                 UNICODE_LITERAL_7(h,a,s,h,A,l,g);
-    static const XMLCh internal[] =                UNICODE_LITERAL_8(i,n,t,e,r,n,a,l);
+    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh hashAlg[] =          UNICODE_LITERAL_7(h,a,s,h,A,l,g);
+    static const XMLCh internal[] =         UNICODE_LITERAL_8(i,n,t,e,r,n,a,l);
+    static const XMLCh langAware[] =        UNICODE_LITERAL_9(l,a,n,g,A,w,a,r,e);
 #endif
 };
 
@@ -104,12 +106,36 @@ void shibsp::registerAttributeDecoders()
 AttributeDecoder::AttributeDecoder(const DOMElement *e)
     : m_caseSensitive(XMLHelper::getAttrBool(e, true, caseSensitive)),
         m_internal(XMLHelper::getAttrBool(e, false, internal)),
+        m_langAware(XMLHelper::getAttrBool(e, false, langAware)),
         m_hashAlg(XMLHelper::getAttrString(e, nullptr, hashAlg))
 {
 }
 
 AttributeDecoder::~AttributeDecoder()
 {
+}
+
+Attribute* AttributeDecoder::decode(
+    const GenericRequest* request,
+    const std::vector<std::string>& ids,
+    const xmltooling::XMLObject* xmlObject,
+    const char* assertingParty,
+    const char* relyingParty
+    ) const
+{
+    // Default call into deprecated method.
+    return decode(ids, xmlObject, assertingParty, relyingParty);
+}
+
+Attribute* AttributeDecoder::decode(
+    const std::vector<std::string>& ids,
+    const xmltooling::XMLObject* xmlObject,
+    const char* assertingParty,
+    const char* relyingParty
+    ) const
+{
+    // Default for deprecated method.
+    return nullptr;
 }
 
 Attribute* AttributeDecoder::_decode(Attribute* attr) const
@@ -136,6 +162,25 @@ Attribute* AttributeDecoder::_decode(Attribute* attr) const
 
     }
     return attr;
+}
+
+pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> AttributeDecoder::valueRange(
+    const GenericRequest* request, const vector<XMLObject*>& objects
+    ) const
+{
+    if (!m_langAware || !request)
+        return make_pair(objects.begin(), objects.end());
+    else if (request && request->startLangMatching()) {
+        do {
+            for (vector<XMLObject*>::const_iterator i = objects.begin(); i != objects.end(); ++i) {
+                if (request->matchLang((*i)->getLang())) {
+                    return make_pair(i, i + 1);
+                }
+            }
+        } while (request->continueLangMatching());
+    }
+
+    return make_pair(objects.begin(), objects.end());
 }
 #endif
 

@@ -44,8 +44,15 @@ namespace shibsp {
         XMLAttributeDecoder(const DOMElement* e) : AttributeDecoder(e) {}
         ~XMLAttributeDecoder() {}
 
+        // deprecated method
         Attribute* decode(
             const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
+            ) const {
+            return decode(nullptr, ids, xmlObject, assertingParty, relyingParty);
+        }
+
+        Attribute* decode(
+            const GenericRequest*, const vector<string>&, const XMLObject*, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;
 
     private:
@@ -62,7 +69,7 @@ namespace shibsp {
 
 
 Attribute* XMLAttributeDecoder::decode(
-    const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
+    const GenericRequest* request, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
     if (!xmlObject)
@@ -93,13 +100,12 @@ Attribute* XMLAttributeDecoder::decode(
         return dest.empty() ? nullptr : _decode(attr.release());
     }
 
-    vector<XMLObject*>::const_iterator v,stop;
+    pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> valrange;
 
     const saml2::Attribute* saml2attr = dynamic_cast<const saml2::Attribute*>(xmlObject);
     if (saml2attr) {
         const vector<XMLObject*>& values = saml2attr->getAttributeValues();
-        v = values.begin();
-        stop = values.end();
+        valrange = valueRange(request, values);
         if (log.isDebugEnabled()) {
             auto_ptr_char n(saml2attr->getName());
             log.debug(
@@ -112,8 +118,7 @@ Attribute* XMLAttributeDecoder::decode(
         const saml1::Attribute* saml1attr = dynamic_cast<const saml1::Attribute*>(xmlObject);
         if (saml1attr) {
             const vector<XMLObject*>& values = saml1attr->getAttributeValues();
-            v = values.begin();
-            stop = values.end();
+            valrange = valueRange(request, values);
             if (log.isDebugEnabled()) {
                 auto_ptr_char n(saml1attr->getAttributeName());
                 log.debug(
@@ -128,8 +133,8 @@ Attribute* XMLAttributeDecoder::decode(
         }
     }
 
-    for (; v!=stop; ++v) {
-        DOMElement* e = (*v)->getDOM();
+    for (; valrange.first != valrange.second; ++valrange.first) {
+        DOMElement* e = (*valrange.first)->getDOM();
         if (e) {
             dest.push_back(string());
             XMLHelper::serialize(e, dest.back());
