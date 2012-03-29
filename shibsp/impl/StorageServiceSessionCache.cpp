@@ -62,6 +62,7 @@
 # include <saml/saml2/metadata/Metadata.h>
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/util/StorageService.h>
+# include <xercesc/util/XMLStringTokenizer.hpp>
 using namespace opensaml::saml2md;
 #else
 # include <ctime>
@@ -206,7 +207,8 @@ namespace shibsp {
         bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
         LogoutEvent* newLogoutEvent(const Application& app) const;
 
-        bool m_cacheAssertions;
+        bool m_cacheAssertions,m_reverseIndex;
+        set<xstring> m_excludedNames;
 #endif
         const DOMElement* m_root;         // Only valid during initialization
         unsigned long m_inprocTimeout,m_cacheTimeout,m_cacheAllowance;
@@ -766,21 +768,23 @@ SessionCacheEx::~SessionCacheEx()
 SSCache::SSCache(const DOMElement* e)
     : m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), inproc(true),
 #ifndef SHIBSP_LITE
-      m_storage(nullptr), m_storage_lite(nullptr), m_cacheAssertions(true),
+      m_storage(nullptr), m_storage_lite(nullptr), m_cacheAssertions(true), m_reverseIndex(true),
 #endif
       m_root(e), m_inprocTimeout(900), m_cacheTimeout(0), m_cacheAllowance(0), shutdown(false)
 {
     SPConfig& conf = SPConfig::getConfig();
     inproc = conf.isEnabled(SPConfig::InProcess);
 
-    static const XMLCh cacheAllowance[] =   UNICODE_LITERAL_14(c,a,c,h,e,A,l,l,o,w,a,n,c,e);
-    static const XMLCh cacheAssertions[] =  UNICODE_LITERAL_15(c,a,c,h,e,A,s,s,e,r,t,i,o,n,s);
-    static const XMLCh cacheTimeout[] =     UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
-    static const XMLCh inprocTimeout[] =    UNICODE_LITERAL_13(i,n,p,r,o,c,T,i,m,e,o,u,t);
-    static const XMLCh inboundHeader[] =    UNICODE_LITERAL_13(i,n,b,o,u,n,d,H,e,a,d,e,r);
-    static const XMLCh outboundHeader[] =   UNICODE_LITERAL_14(o,u,t,b,o,u,n,d,H,e,a,d,e,r);
-    static const XMLCh _StorageService[] =  UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
-    static const XMLCh _StorageServiceLite[] = UNICODE_LITERAL_18(S,t,o,r,a,g,e,S,e,r,v,i,c,e,L,i,t,e);
+    static const XMLCh cacheAllowance[] =       UNICODE_LITERAL_14(c,a,c,h,e,A,l,l,o,w,a,n,c,e);
+    static const XMLCh cacheAssertions[] =      UNICODE_LITERAL_15(c,a,c,h,e,A,s,s,e,r,t,i,o,n,s);
+    static const XMLCh cacheTimeout[] =         UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
+    static const XMLCh excludeReverseIndex[] =  UNICODE_LITERAL_19(e,x,c,l,u,d,e,R,e,v,e,r,s,e,I,n,d,e,x);
+    static const XMLCh inprocTimeout[] =        UNICODE_LITERAL_13(i,n,p,r,o,c,T,i,m,e,o,u,t);
+    static const XMLCh inboundHeader[] =        UNICODE_LITERAL_13(i,n,b,o,u,n,d,H,e,a,d,e,r);
+    static const XMLCh maintainReverseIndex[] = UNICODE_LITERAL_20(m,a,i,n,t,a,i,n,R,e,v,e,r,s,e,I,n,d,e,x);
+    static const XMLCh outboundHeader[] =       UNICODE_LITERAL_14(o,u,t,b,o,u,n,d,H,e,a,d,e,r);
+    static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
+    static const XMLCh _StorageServiceLite[] =  UNICODE_LITERAL_18(S,t,o,r,a,g,e,S,e,r,v,i,c,e,L,i,t,e);
 
     m_cacheTimeout = XMLHelper::getAttrInt(e, 0, cacheTimeout);
     m_cacheAllowance = XMLHelper::getAttrInt(e, 0, cacheAllowance);
@@ -823,6 +827,13 @@ SSCache::SSCache(const DOMElement* e)
         }
 
         m_cacheAssertions = XMLHelper::getAttrBool(e, true, cacheAssertions);
+        m_reverseIndex = XMLHelper::getAttrBool(e, true, maintainReverseIndex);
+        const XMLCh* excludedNames = e ? e->getAttributeNS(nullptr, excludeReverseIndex) : nullptr;
+        if (excludedNames && *excludedNames) {
+            XMLStringTokenizer toks(excludedNames);
+            while (toks.hasMoreTokens())
+                m_excludedNames.insert(toks.nextToken());
+        }
     }
 #endif
 
@@ -1069,12 +1080,13 @@ void SSCache::insert(
         throw FatalProfileException("Attempted to create a session with a duplicate key.");
 
     // Store the reverse mapping for logout.
-    try {
-        if (nameid)
+    if (nameid && m_reverseIndex && (m_excludedNames.size() == 0 || m_excludedNames.count(nameid->getName()) == 0)) {
+        try {
             insert(key.get(), expires, name.get(), index.get());
-    }
-    catch (std::exception& ex) {
-        m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
+        }
+        catch (std::exception& ex) {
+            m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
+        }
     }
 
     if (tokens && m_cacheAssertions) {
@@ -1228,6 +1240,11 @@ vector<string>::size_type SSCache::logout(
 
         obj.destroy();
         record.erase();
+    }
+
+    if (!m_reverseIndex) {
+        m_log.error("cannot support logout because maintainReverseIndex property is turned off");
+        throw ConfigurationException("Logout is unsupported by the session cache configuration.");
     }
 
     // Read in potentially matching sessions.

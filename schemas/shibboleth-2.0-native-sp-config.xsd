@@ -112,6 +112,8 @@
         <attribute name="StorageService" type="IDREF"/>
         <attribute name="cacheAllowance" type="unsignedInt"/>
         <attribute name="cacheTimeout" type="unsignedInt"/> <!-- deprecated -->
+        <attribute name="maintainReverseIndex" type="boolean"/>
+        <attribute name="excludeReverseIndex" type="conf:listOfStrings"/>
         <anyAttribute namespace="##any" processContents="lax"/>
       </restriction>
     </complexContent>
