@@ -65,6 +65,7 @@
                 </choice>
                 <element ref="ds:Signature" minOccurs="0"/>
             </sequence>
+            <attribute name="metadataAttributeCaching" type="boolean"/>
             <attribute name="metadataPolicyId" type="am:string"/>
         </complexType>
     </element>
@@ -161,7 +162,16 @@
         </attribute>
         <attribute name="internal" type="boolean">
             <annotation>
-                <documentation>Flag controlling whether the resulting attribute should be exported for CGI use.</documentation>
+                <documentation>
+                    Flag controlling whether the resulting attribute should be exported for CGI use.
+                </documentation>
+            </annotation>
+        </attribute>
+        <attribute name="langAware" type="boolean">
+            <annotation>
+                <documentation>
+                    Flag controlling whether the decoder should select only the best matching value by language.
+                </documentation>
             </annotation>
         </attribute>
         <attribute name="hashAlg" type="am:string">

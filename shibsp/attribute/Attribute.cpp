@@ -168,8 +168,9 @@ pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> Attr
     const GenericRequest* request, const vector<XMLObject*>& objects
     ) const
 {
-    if (!m_langAware || !request)
+    if (!m_langAware || !request || objects.empty()) {
         return make_pair(objects.begin(), objects.end());
+    }
     else if (request && request->startLangMatching()) {
         do {
             for (vector<XMLObject*>::const_iterator i = objects.begin(); i != objects.end(); ++i) {
@@ -180,7 +181,7 @@ pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> Attr
         } while (request->continueLangMatching());
     }
 
-    return make_pair(objects.begin(), objects.end());
+    return make_pair(objects.begin(), objects.begin() + 1);
 }
 #endif
 

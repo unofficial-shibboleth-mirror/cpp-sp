@@ -131,7 +131,7 @@ namespace shibsp {
         scoped_ptr<AttributeFilter> m_filter;
         scoped_ptr<MetadataProvider> m_metadata;
         scoped_ptr<TrustEngine> m_trust;
-        bool m_entityAssertions;
+        bool m_entityAssertions,m_metaAttrCaching;
 
         // manages caching of decoded Attributes
         scoped_ptr<RWLock> m_attrLock;
@@ -186,25 +186,27 @@ namespace shibsp {
         return new XMLExtractor(e);
     }
 
-    static const XMLCh _aliases[] =             UNICODE_LITERAL_7(a,l,i,a,s,e,s);
-    static const XMLCh _AttributeDecoder[] =    UNICODE_LITERAL_16(A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
-    static const XMLCh _AttributeFilter[] =     UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
-    static const XMLCh Attributes[] =           UNICODE_LITERAL_10(A,t,t,r,i,b,u,t,e,s);
-    static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
-    static const XMLCh isRequested[] =          UNICODE_LITERAL_11(i,s,R,e,q,u,e,s,t,e,d);
-    static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
-    static const XMLCh _name[] =                UNICODE_LITERAL_4(n,a,m,e);
-    static const XMLCh nameFormat[] =           UNICODE_LITERAL_10(n,a,m,e,F,o,r,m,a,t);
-    static const XMLCh metadataPolicyId[] =     UNICODE_LITERAL_16(m,e,t,a,d,a,t,a,P,o,l,i,c,y,I,d);
-    static const XMLCh _TrustEngine[] =         UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
-    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh _aliases[] =                 UNICODE_LITERAL_7(a,l,i,a,s,e,s);
+    static const XMLCh _AttributeDecoder[] =        UNICODE_LITERAL_16(A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
+    static const XMLCh _AttributeFilter[] =         UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
+    static const XMLCh Attributes[] =               UNICODE_LITERAL_10(A,t,t,r,i,b,u,t,e,s);
+    static const XMLCh _id[] =                      UNICODE_LITERAL_2(i,d);
+    static const XMLCh isRequested[] =              UNICODE_LITERAL_11(i,s,R,e,q,u,e,s,t,e,d);
+    static const XMLCh _MetadataProvider[] =        UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
+    static const XMLCh metadataAttributeCaching[] = UNICODE_LITERAL_24(m,e,t,a,d,a,t,a,A,t,t,r,i,b,u,t,e,C,a,c,h,i,n,g);
+    static const XMLCh metadataPolicyId[] =         UNICODE_LITERAL_16(m,e,t,a,d,a,t,a,P,o,l,i,c,y,I,d);
+    static const XMLCh _name[] =                    UNICODE_LITERAL_4(n,a,m,e);
+    static const XMLCh nameFormat[] =               UNICODE_LITERAL_10(n,a,m,e,F,o,r,m,a,t);
+    static const XMLCh _TrustEngine[] =             UNICODE_LITERAL_11(T,r,u,s,t,E,n,g,i,n,e);
+    static const XMLCh _type[] =                    UNICODE_LITERAL_4(t,y,p,e);
 };
 
 XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
     : m_log(log),
         m_document(nullptr),
         m_policyId(XMLHelper::getAttrString(e, nullptr, metadataPolicyId)),
-        m_entityAssertions(true)
+        m_entityAssertions(true),
+        m_metaAttrCaching(XMLHelper::getAttrBool(e, true, metadataAttributeCaching))
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLExtractorImpl");
@@ -356,7 +358,8 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
     }
 
-    m_attrLock.reset(RWLock::create());
+    if (m_metaAttrCaching)
+        m_attrLock.reset(RWLock::create());
 }
 
 void XMLExtractorImpl::generateMetadata(SPSSODescriptor& role) const
@@ -573,7 +576,7 @@ void XMLExtractorImpl::extractAttributes(
         map<const ObservableMetadataProvider*,decoded_t>::iterator cacheEntry;
 
         // Check for cached result.
-        if (observable) {
+        if (observable && m_metaAttrCaching) {
             m_attrLock->rdlock();
             cacheEntry = m_decodedMap.find(observable);
             if (cacheEntry == m_decodedMap.end()) {
