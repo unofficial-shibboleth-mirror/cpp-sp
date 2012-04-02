@@ -78,48 +78,57 @@ Dim InstallDir
 Dim ShibISAPIPath
 Dim site, siteObj, sitePath
 
-
-'Don't show errors, we'll handle anything important
+' First of all look for the FileExtension
+Set WshShell = CreateObject("WScript.Shell")
 On Error Resume Next
-
-'Attempt to get W3SVC.  If failure, end script (e.g. IIS isn't available)
-Set WebObj = GetObject("IIS://LocalHost/W3SVC")
+regValue = WshShell.RegRead("HKLM\SOFTWARE\Shibboleth\FileExtension")
 if (Err = 0) then
+  ' Registry key is still there - this is an upgrade, so exit
 
-  'Get the INSTALLDIR value via CustomActionData
-  InstallDir = Session.Property("CustomActionData")
+else 
+  ' Key is gone - a pure uninstall
 
-  'Remove all trailing backslashes to normalize
-  do while (mid(InstallDir,Len(InstallDir),1) = "\")
-    InstallDir = mid(InstallDir,1,Len(InstallDir)-1)
-  loop
-  ShibISAPIPath = InstallDir & "\lib\shibboleth\isapi_shib.dll"
+  'Don't show errors, we'll handle anything important
+  On Error Resume Next
 
-  'Delete ISAPI Filter
-  'First do the master service
-  DeleteISAPIFilters "IIS://LocalHost/W3SVC",ShibISAPIPath
-  'Now do the websites
-  for each site in WebObj
-    if (site.Class = "IIsWebServer") then
-      sitePath = "IIS://LocalHost/W3SVC/" & site.Name
-      DeleteISAPIFilters sitePath,ShibISAPIPath
-    end if
-  next
+  'Attempt to get W3SVC.  If failure, end script (e.g. IIS isn't available)
+  Set WebObj = GetObject("IIS://LocalHost/W3SVC")
+  if (Err = 0) then
 
-  'Delete File Extensions
-  'First do the master service
-  DeleteFileExtensions WebObj,ShibISAPIPath
-  'Now do the websites
-  for each site in WebObj
-    if (site.Class = "IIsWebServer") then
-      set siteObj = GetObject("IIS://LocalHost/W3SVC/" & site.Name & "/ROOT")
-      DeleteFileExtensions siteObj,ShibISAPIPath
-    end if
-  next
+    'Get the INSTALLDIR value via CustomActionData
+    InstallDir = Session.Property("CustomActionData")
 
+    'Remove all trailing backslashes to normalize
+    do while (mid(InstallDir,Len(InstallDir),1) = "\")
+      InstallDir = mid(InstallDir,1,Len(InstallDir)-1)
+    loop
+    ShibISAPIPath = InstallDir & "\lib\shibboleth\isapi_shib.dll"
 
-  'Delete Web Services Extension (universal, no need to do for each site)
-  WebObj.DeleteExtensionFileRecord ShibISAPIPath
+    'Delete ISAPI Filter
+    'First do the master service
+    DeleteISAPIFilters "IIS://LocalHost/W3SVC",ShibISAPIPath
+    'Now do the websites
+    for each site in WebObj
+      if (site.Class = "IIsWebServer") then
+        sitePath = "IIS://LocalHost/W3SVC/" & site.Name
+        DeleteISAPIFilters sitePath,ShibISAPIPath
+      end if
+    next
 
-'Last end if
+    'Delete File Extensions
+    'First do the master service
+    DeleteFileExtensions WebObj,ShibISAPIPath
+    'Now do the websites
+    for each site in WebObj
+      if (site.Class = "IIsWebServer") then
+        set siteObj = GetObject("IIS://LocalHost/W3SVC/" & site.Name & "/ROOT")
+        DeleteFileExtensions siteObj,ShibISAPIPath
+      end if
+    next
+
+    'Delete Web Services Extension (universal, no need to do for each site)
+    WebObj.DeleteExtensionFileRecord ShibISAPIPath
+  ' Got the IIS Object
+  End If
+' Sense whether this is an upgrade
 end if
