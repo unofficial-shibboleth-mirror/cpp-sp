@@ -19,7 +19,7 @@
  */
 
 /**
- * mod_apache.cpp
+ * mod_shib.cpp
  *
  * Apache module implementation.
  */
@@ -324,6 +324,9 @@ class ShibTargetApache : public AbstractSPRequest
   mutable bool m_gotBody,m_firsttime;
   mutable vector<string> m_certs;
   set<string> m_allhttp;
+#if defined(SHIBSP_HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
+  mutable gss_name_t m_gssname;
+#endif
 
 public:
   bool m_handler;
@@ -333,9 +336,20 @@ public:
   shib_request_config* m_rc;
 
   ShibTargetApache(request_rec* req) : AbstractSPRequest(SHIBSP_LOGCAT".Apache"),
-        m_gotBody(false),m_firsttime(true), m_handler(false), m_req(req), m_dc(nullptr), m_sc(nullptr), m_rc(nullptr) {
+        m_gotBody(false),m_firsttime(true),
+#if defined(SHIBSP_HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
+        m_gssname(GSS_C_NO_NAME),
+#endif
+        m_handler(false), m_req(req), m_dc(nullptr), m_sc(nullptr), m_rc(nullptr) {
   }
-  virtual ~ShibTargetApache() {}
+  virtual ~ShibTargetApache() {
+#if defined(SHIBSP_HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
+    if (m_gssname != GSS_C_NO_NAME) {
+        OM_uint32 minor;
+        gss_release_name(&minor, &m_gssname);
+    }
+#endif
+  }
 
   bool isInitialized() const {
       return (m_sc != nullptr);
@@ -634,7 +648,19 @@ public:
     apr_pool_userdata_get((void**)&ctx, g_szGSSContextKey, m_req->pool);
     return ctx;
   }
-#endif
+  gss_name_t getGSSName() const {
+      if (m_gssname == GSS_C_NO_NAME) {
+          gss_ctx_id_t ctx = getGSSContext();
+          if (ctx != GSS_C_NO_CONTEXT) {
+              OM_uint32 minor;
+              OM_uint32 major = gss_inquire_context(&minor, ctx, &m_gssname, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+              if (major != GSS_S_COMPLETE)
+                  m_gssname = GSS_C_NO_NAME;
+          }
+      }
+      return m_gssname;
+  }
+  #endif
 };
 
 /********************************************************************************/

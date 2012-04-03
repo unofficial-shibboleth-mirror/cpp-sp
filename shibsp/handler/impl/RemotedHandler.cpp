@@ -45,6 +45,12 @@
 # include <xsec/framework/XSECProvider.hpp>
 #endif
 
+#ifdef HAVE_GSSAPI_NAMINGEXTS
+# ifdef SHIBSP_HAVE_GSSMIT
+#  include <gssapi/gssapi_ext.h>
+# endif
+#endif
+
 using namespace shibsp;
 using namespace opensaml;
 using namespace xmltooling;
@@ -64,12 +70,13 @@ namespace shibsp {
         mutable scoped_ptr<CGIParser> m_parser;
         mutable vector<XSECCryptoX509*> m_certs;
 #ifdef SHIBSP_HAVE_GSSAPI
-        mutable gss_ctx_id_t m_gss;
+        mutable gss_ctx_id_t m_gssctx;
+        mutable gss_name_t m_gssname;
 #endif
     public:
         RemotedRequest(DDF& input) : m_input(input), m_parser(nullptr)
 #ifdef SHIBSP_HAVE_GSSAPI
-            , m_gss(GSS_C_NO_CONTEXT)
+            , m_gssctx(GSS_C_NO_CONTEXT), m_gssname(GSS_C_NO_NAME)
 #endif
         {
         }
@@ -77,10 +84,11 @@ namespace shibsp {
         virtual ~RemotedRequest() {
             for_each(m_certs.begin(), m_certs.end(), xmltooling::cleanup<XSECCryptoX509>());
 #ifdef SHIBSP_HAVE_GSSAPI
-            if (m_gss != GSS_C_NO_CONTEXT) {
-                OM_uint32 minor;
-                gss_delete_sec_context(&minor, &m_gss, GSS_C_NO_BUFFER);
-            }
+            OM_uint32 minor;
+            if (m_gssctx != GSS_C_NO_CONTEXT)
+                gss_delete_sec_context(&minor, &m_gssctx, GSS_C_NO_BUFFER);
+            if (m_gssname != GSS_C_NO_NAME)
+                gss_release_name(&minor, &m_gssname);
 #endif
         }
 
@@ -125,6 +133,7 @@ namespace shibsp {
 #ifdef SHIBSP_HAVE_GSSAPI
         // GSSRequest
         gss_ctx_id_t getGSSContext() const;
+        gss_name_t getGSSName() const;
 #endif
 
         // HTTPRequest
@@ -215,19 +224,19 @@ const std::vector<XSECCryptoX509*>& RemotedRequest::getClientCertificates() cons
 #ifdef SHIBSP_HAVE_GSSAPI
 gss_ctx_id_t RemotedRequest::getGSSContext() const
 {
-    if (m_gss == GSS_C_NO_CONTEXT) {
+    if (m_gssctx == GSS_C_NO_CONTEXT) {
         const char* encoded = m_input["gss_context"].string();
         if (encoded) {
             xsecsize_t x;
-            XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(encoded), &x);
+            XMLByte* decoded = Base64::decode(reinterpret_cast<const XMLByte*>(encoded), &x);
             if (decoded) {
                 gss_buffer_desc importbuf;
                 importbuf.length = x;
                 importbuf.value = decoded;
                 OM_uint32 minor;
-                OM_uint32 major = gss_import_sec_context(&minor, &importbuf, &m_gss);
+                OM_uint32 major = gss_import_sec_context(&minor, &importbuf, &m_gssctx);
                 if (major != GSS_S_COMPLETE)
-                    m_gss = GSS_C_NO_CONTEXT;
+                    m_gssctx = GSS_C_NO_CONTEXT;
 #ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
                 XMLString::release(&decoded);
 #else
@@ -236,7 +245,45 @@ gss_ctx_id_t RemotedRequest::getGSSContext() const
             }
         }
     }
-    return m_gss;
+    return m_gssctx;
+}
+
+gss_name_t RemotedRequest::getGSSName() const
+{
+    if (m_gssname == GSS_C_NO_NAME) {
+        const char* encoded = m_input["gss_name"].string();
+        if (encoded) {
+            xsecsize_t x;
+            XMLByte* decoded = Base64::decode(reinterpret_cast<const XMLByte*>(encoded), &x);
+            gss_buffer_desc importbuf;
+            importbuf.length = x;
+            importbuf.value = decoded;
+            OM_uint32 major,minor;
+#ifdef HAVE_GSSAPI_COMPOSITE_NAME
+            major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME_COMPOSITE, &m_gssname);
+#else
+            major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME, &m_gssname);
+#endif
+            if (major != GSS_S_COMPLETE)
+                m_gssname = GSS_C_NO_NAME;
+#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
+            XMLString::release(&decoded);
+#else
+            XMLString::release((char**)&decoded);
+#endif
+        }
+
+        if (m_gssname == GSS_C_NO_NAME) {
+            gss_ctx_id_t ctx = getGSSContext();
+             if (ctx != GSS_C_NO_CONTEXT) {
+                 OM_uint32 minor;
+                 OM_uint32 major = gss_inquire_context(&minor, ctx, &m_gssname, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+                 if (major != GSS_S_COMPLETE)
+                     m_gssname = GSS_C_NO_NAME;
+             }
+         }
+    }
+    return m_gssname;
 }
 #endif
 
@@ -372,13 +419,12 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
         gss_ctx_id_t ctx = gss->getGSSContext();
         if (ctx != GSS_C_NO_CONTEXT) {
             OM_uint32 minor;
-            gss_buffer_desc contextbuf;
-            contextbuf.length = 0;
-            contextbuf.value = nullptr;
+            gss_buffer_desc contextbuf = GSS_C_EMPTY_BUFFER;
             OM_uint32 major = gss_export_sec_context(&minor, &ctx, &contextbuf);
             if (major == GSS_S_COMPLETE) {
-                xsecsize_t len=0;
-                XMLByte* out=Base64::encode(reinterpret_cast<const XMLByte*>(contextbuf.value), contextbuf.length, &len);
+                xsecsize_t len = 0;
+                XMLByte* out = Base64::encode(reinterpret_cast<const XMLByte*>(contextbuf.value), contextbuf.length, &len);
+                gss_release_buffer(&minor, &contextbuf);
                 if (out) {
                     string ctx;
                     ctx.append(reinterpret_cast<char*>(out), len);
@@ -397,6 +443,37 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
                 request.log(SPRequest::SPError, "error while exporting GSS context");
             }
         }
+#ifdef HAVE_GSSAPI_NAMINGEXTS
+        else {
+            gss_name_t name = gss->getGSSName();
+            if (name != GSS_C_NO_NAME) {
+                OM_uint32 minor;
+                gss_buffer_desc namebuf = GSS_C_EMPTY_BUFFER;
+                OM_uint32 major = gss_export_name_composite(&minor, name, &namebuf);
+                if (major == GSS_S_COMPLETE) {
+                    xsecsize_t len = 0;
+                    XMLByte* out = Base64::encode(reinterpret_cast<const XMLByte*>(namebuf.value), namebuf.length, &len);
+                    gss_release_buffer(&minor, &namebuf);
+                    if (out) {
+                        string nm;
+                        nm.append(reinterpret_cast<char*>(out), len);
+#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
+                        XMLString::release(&out);
+#else
+                        XMLString::release((char**)&out);
+#endif
+                        in.addmember("gss_name").string(nm.c_str());
+                    }
+                    else {
+                        request.log(SPRequest::SPError, "error while base64-encoding GSS name");
+                    }
+                }
+                else {
+                    request.log(SPRequest::SPError, "error while exporting GSS name");
+                }
+            }
+        }
+#endif
     }
 #endif
 

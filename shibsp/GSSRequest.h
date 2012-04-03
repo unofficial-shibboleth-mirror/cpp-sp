@@ -58,6 +58,14 @@ namespace shibsp {
          * @return  a GSS-API context handle, or GSS_C_NO_CONTEXT
          */
         virtual gss_ctx_id_t getGSSContext() const=0;
+
+        /**
+         * Returns the GSS-API initiator name established for this request, or
+         * GSS_C_NO_NAME if none is available.
+         *
+         * @return  a GSS-API name, or GSS_C_NO_NAME
+         */
+        virtual gss_name_t getGSSName() const;
     };
 };
 

@@ -65,6 +65,11 @@ GSSRequest::GSSRequest()
 GSSRequest::~GSSRequest()
 {
 }
+
+gss_name_t GSSRequest::getGSSName() const
+{
+    return GSS_C_NO_NAME;
+}
 #endif
 
 AbstractSPRequest::AbstractSPRequest(const char* category)
