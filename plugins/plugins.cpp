@@ -44,6 +44,7 @@ namespace shibsp {
 #ifdef HAVE_GSSAPI_NAMINGEXTS
     PluginManager<AttributeExtractor,string,const DOMElement*>::Factory GSSAPIExtractorFactory;
 #endif
+    PluginManager<AttributeResolver,string,const DOMElement*>::Factory TransformAttributeResolverFactory;
 };
 
 extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
@@ -55,6 +56,7 @@ extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
     XMLObjectBuilder::registerBuilder(xmltooling::QName(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _GSSAPIName), new AnyElementBuilder());
     XMLObjectBuilder::registerBuilder(xmltooling::QName(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _GSSAPIContext), new AnyElementBuilder());
 #endif
+    SPConfig::getConfig().AttributeResolverManager.registerFactory("Transform", TransformAttributeResolverFactory);
     return 0;   // signal success
 }
 

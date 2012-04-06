@@ -177,6 +177,7 @@
   <ItemGroup>
     <ClCompile Include="GSSAPIAttributeExtractor.cpp" />
     <ClCompile Include="plugins.cpp" />
+    <ClCompile Include="TransformAttributeResolver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="internal.h" />
