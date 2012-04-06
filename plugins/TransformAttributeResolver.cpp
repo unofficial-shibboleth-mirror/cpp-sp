@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <shibsp/exceptions.h>
 #include <shibsp/SessionCache.h>
 #include <shibsp/attribute/SimpleAttribute.h>
@@ -41,6 +42,7 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace xercesc;
+using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -122,21 +124,25 @@ namespace shibsp {
         void resolveAttributes(ResolutionContext& ctx) const;
 
         void getAttributeIds(vector<string>& attributes) const {
-            if (!m_dest.empty())
-                attributes.push_back(m_dest.front());
+            for (vector<regex_t>::const_iterator r = m_regex.begin(); r != m_regex.end(); ++r) {
+                if (!r->get<0>().empty())
+                    attributes.push_back(r->get<0>());
+            }
         }
 
     private:
         Category& m_log;
         string m_source;
-        vector<string> m_dest;
-        vector< pair<boost::shared_ptr<RegularExpression>,const XMLCh*> > m_regex;
+        // dest id, regex to apply, replacement string
+        typedef tuple<string,boost::shared_ptr<RegularExpression>,const XMLCh*> regex_t;
+        vector<regex_t> m_regex;
     };
 
-    static const XMLCh dest[] =         UNICODE_LITERAL_4(d,e,s,t);
-    static const XMLCh match[] =        UNICODE_LITERAL_5(m,a,t,c,h);
-    static const XMLCh source[] =       UNICODE_LITERAL_6(s,o,u,r,c,e);
-    static const XMLCh Regex[] =        UNICODE_LITERAL_5(R,e,g,e,x);
+    static const XMLCh dest[] =             UNICODE_LITERAL_4(d,e,s,t);
+    static const XMLCh match[] =            UNICODE_LITERAL_5(m,a,t,c,h);
+    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh source[] =           UNICODE_LITERAL_6(s,o,u,r,c,e);
+    static const XMLCh Regex[] =            UNICODE_LITERAL_5(R,e,g,e,x);
 
     AttributeResolver* SHIBSP_DLLLOCAL TransformAttributeResolverFactory(const DOMElement* const & e)
     {
@@ -149,8 +155,7 @@ vector<opensaml::Assertion*> TransformContext::m_assertions;
 
 TransformAttributeResolver::TransformAttributeResolver(const DOMElement* e)
     : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Transform")),
-        m_source(XMLHelper::getAttrString(e, nullptr, source)),
-        m_dest(1, XMLHelper::getAttrString(e, nullptr, dest))
+        m_source(XMLHelper::getAttrString(e, nullptr, source))
 {
     if (m_source.empty())
         throw ConfigurationException("Transform AttributeResolver requires source attribute.");
@@ -158,11 +163,14 @@ TransformAttributeResolver::TransformAttributeResolver(const DOMElement* e)
     e = XMLHelper::getFirstChildElement(e, Regex);
     while (e) {
         if (e->hasChildNodes() && e->hasAttributeNS(nullptr, match)) {
-            const XMLCh* repl = e->getTextContent();
+            const XMLCh* repl(e->getTextContent());
+            string destId(XMLHelper::getAttrString(e, nullptr, dest));
+            bool caseflag(XMLHelper::getAttrBool(e, true, caseSensitive));
             if (repl && *repl) {
                 try {
-                    boost::shared_ptr<RegularExpression> re(new RegularExpression(e->getAttributeNS(nullptr, match)));
-                    m_regex.push_back(pair<boost::shared_ptr<RegularExpression>,const XMLCh*>(re, repl));
+                    static XMLCh options[] = { chLatin_i, chNull };
+                    boost::shared_ptr<RegularExpression> re(new RegularExpression(e->getAttributeNS(nullptr, match), (caseflag ? &chNull : options)));
+                    m_regex.push_back(make_tuple(destId, re, repl));
                 }
                 catch (XMLException& ex) {
                     auto_ptr_char msg(ex.getMessage());
@@ -185,38 +193,53 @@ void TransformAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
     if (!tctx.getInputAttributes())
         return;
 
-    SimpleAttribute* dest = nullptr;
-    auto_ptr<SimpleAttribute> destwrapper;
-
     for (vector<Attribute*>::const_iterator a = tctx.getInputAttributes()->begin(); a != tctx.getInputAttributes()->end(); ++a) {
         if (m_source != (*a)->getId() || (*a)->valueCount() == 0) {
             continue;
         }
-        else if (m_dest.empty() || m_dest.front().empty()) {
-            // Can we transform in-place?
-            dest = dynamic_cast<SimpleAttribute*>(*a);
-            if (!dest) {
-                m_log.warn("can't transform non-simple attribute (%s) in place, skipping it", m_source.c_str());
-                continue;
+
+        // We run each transform expression against each value of the input. Each transform either generates
+        // a new attribute from its dest property, or overwrites a SimpleAttribute's values in place.
+
+        for (vector<regex_t>::const_iterator r = m_regex.begin(); r != m_regex.end(); ++r) {
+            SimpleAttribute* dest = nullptr;
+            auto_ptr<SimpleAttribute> destwrapper;
+
+            // First tuple element is the destination attribute ID, if any.
+            if (r->get<0>().empty()) {
+                // Can we transform in-place?
+                dest = dynamic_cast<SimpleAttribute*>(*a);
+                if (!dest) {
+                    m_log.warn("can't transform non-simple attribute (%s) 'in place'", m_source.c_str());
+                    continue;
+                }
             }
-        }
-        else if (!destwrapper.get()) {
-            destwrapper.reset(new SimpleAttribute(m_dest));
-        }
+            else {
+                // Create a destination attribute.
+                vector<string> ids(1, r->get<0>());
+                destwrapper.reset(new SimpleAttribute(ids));
+            }
 
-        m_log.debug("applying transform to source attribute (%s) with %lu value(s)", m_source.c_str(), (*a)->valueCount());
+            if (dest)
+                m_log.debug("applying in-place transform to source attribute (%s)", m_source.c_str());
+            else
+                m_log.debug("applying transform from source attribute (%s) to dest attribute (%s)", m_source.c_str(), r->get<0>().c_str());
 
-        // Apply transforms to each value.
-        for (size_t i = 0; i < (*a)->valueCount(); ++i) {
-            // Run the transform set in sequence against the initial value, substituting the result into the next step.
-            XMLCh* destval = nullptr;
-            auto_arrayptr<XMLCh> srcval(fromUTF8((*a)->getSerializedValues()[i].c_str()));
-            for (vector< pair<boost::shared_ptr<RegularExpression>,const XMLCh*> >::const_iterator r = m_regex.begin(); r != m_regex.end(); ++r) {
+            for (size_t i = 0; i < (*a)->valueCount(); ++i) {
+                auto_arrayptr<XMLCh> srcval(fromUTF8((*a)->getSerializedValues()[i].c_str()));
                 try {
-                    XMLCh* temp = r->first->replace(destval ? destval : srcval.get(), r->second);
-                    if (temp) {
+                    XMLCh* destval = r->get<1>()->replace(srcval.get(), r->get<2>());
+                    if (destval) {
+                        auto_arrayptr<char> narrow(toUTF8(destval));
                         XMLString::release(&destval);
-                        destval = temp;
+                        if (dest) {
+                            // Modify in place.
+                            dest->getValues()[i] = narrow.get();
+                        }
+                        else {
+                            // Add to new object.
+                            destwrapper->getValues().push_back(narrow.get());
+                        }
                     }
                 }
                 catch (XMLException& ex) {
@@ -225,25 +248,11 @@ void TransformAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
                 }
             }
 
-            // Save the result.
-            if (destval) {
-                auto_arrayptr<char> narrow(toUTF8(destval));
-                XMLString::release(&destval);
-                if (dest) {
-                    // Modify in place.
-                    dest->getValues()[i] = narrow.get();
-                }
-                else {
-                    // Add to new object.
-                    destwrapper->getValues().push_back(narrow.get());
-                }
+            // Save off new object.
+            if (destwrapper.get()) {
+                ctx.getResolvedAttributes().push_back(destwrapper.get());
+                destwrapper.release();
             }
         }
-    }
-
-    // Save off new object.
-    if (destwrapper.get()) {
-        ctx.getResolvedAttributes().push_back(destwrapper.get());
-        destwrapper.release();
     }
 }
