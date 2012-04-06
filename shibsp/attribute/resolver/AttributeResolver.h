@@ -34,6 +34,10 @@
 #include <vector>
 #include <xmltooling/Lockable.h>
 
+namespace xmltooling {
+    class XMLTOOL_API GenericRequest;
+};
+
 namespace opensaml {
     class SAML_API Assertion;
     namespace saml2 {

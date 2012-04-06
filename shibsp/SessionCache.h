@@ -48,6 +48,9 @@ namespace opensaml {
     namespace saml2 {
         class SAML_API NameID;
     };
+    namespace saml2md {
+        class SAML_API EntityDescriptor;
+    };
 };
 #endif
 
