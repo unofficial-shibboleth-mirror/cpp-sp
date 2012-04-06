@@ -131,7 +131,7 @@ void Application::clearAttributeHeaders(SPRequest& request) const
             out = getServiceProvider().getListenerService()->send(in);
             if (out.islist()) {
                 DDF header = out.first();
-                while (header.isstring()) {
+                while (header.name() && header.isstring()) {
                     m_unsetHeaders.push_back(pair<string,string>(header.name(),header.string()));
                     header = out.next();
                 }
