@@ -223,8 +223,8 @@ void TransformAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
                 m_log.debug("applying transform from source attribute (%s) to dest attribute (%s)", m_source.c_str(), r->get<0>().c_str());
 
             for (size_t i = 0; i < (*a)->valueCount(); ++i) {
-                auto_arrayptr<XMLCh> srcval(fromUTF8((*a)->getSerializedValues()[i].c_str()));
                 try {
+                    auto_arrayptr<XMLCh> srcval(fromUTF8((*a)->getSerializedValues()[i].c_str()));
                     XMLCh* destval = r->get<1>()->replace(srcval.get(), r->get<2>());
                     if (destval) {
                         auto_arrayptr<char> narrow(toUTF8(destval));

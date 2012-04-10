@@ -46,6 +46,8 @@ namespace shibsp {
 #endif
     PluginManager<AttributeResolver,string,const DOMElement*>::Factory TemplateAttributeResolverFactory;
     PluginManager<AttributeResolver,string,const DOMElement*>::Factory TransformAttributeResolverFactory;
+    PluginManager<AttributeResolver,string,const DOMElement*>::Factory UpperCaseAttributeResolverFactory;
+    PluginManager<AttributeResolver,string,const DOMElement*>::Factory LowerCaseAttributeResolverFactory;
 };
 
 extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
@@ -60,6 +62,8 @@ extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
 #endif
     conf.AttributeResolverManager.registerFactory("Template", TemplateAttributeResolverFactory);
     conf.AttributeResolverManager.registerFactory("Transform", TransformAttributeResolverFactory);
+    conf.AttributeResolverManager.registerFactory("UpperCase", UpperCaseAttributeResolverFactory);
+    conf.AttributeResolverManager.registerFactory("LowerCase", LowerCaseAttributeResolverFactory);
     return 0;   // signal success
 }
 

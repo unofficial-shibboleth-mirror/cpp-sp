@@ -11,6 +11,7 @@ common_sources = \
 
 plugins_la_SOURCES = \
 	${common_sources} \
+    CaseFoldingAttributeResolver.cpp \
 	GSSAPIAttributeExtractor.cpp \
     TemplateAttributeResolver.cpp \
     TransformAttributeResolver.cpp

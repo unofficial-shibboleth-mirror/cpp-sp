@@ -175,6 +175,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CaseFoldingAttributeResolver.cpp" />
     <ClCompile Include="GSSAPIAttributeExtractor.cpp" />
     <ClCompile Include="plugins.cpp" />
     <ClCompile Include="TemplateAttributeResolver.cpp" />
