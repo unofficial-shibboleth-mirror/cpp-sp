@@ -12,6 +12,7 @@ common_sources = \
 plugins_la_SOURCES = \
 	${common_sources} \
 	GSSAPIAttributeExtractor.cpp \
+    TemplateAttributeResolver.cpp \
     TransformAttributeResolver.cpp
 
 #plugins_lite_la_SOURCES = \

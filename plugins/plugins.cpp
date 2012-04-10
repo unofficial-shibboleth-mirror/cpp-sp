@@ -44,19 +44,22 @@ namespace shibsp {
 #ifdef HAVE_GSSAPI_NAMINGEXTS
     PluginManager<AttributeExtractor,string,const DOMElement*>::Factory GSSAPIExtractorFactory;
 #endif
+    PluginManager<AttributeResolver,string,const DOMElement*>::Factory TemplateAttributeResolverFactory;
     PluginManager<AttributeResolver,string,const DOMElement*>::Factory TransformAttributeResolverFactory;
 };
 
 extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
 {
+    SPConfig& conf = SPConfig::getConfig();
 #ifdef HAVE_GSSAPI_NAMINGEXTS
-    SPConfig::getConfig().AttributeExtractorManager.registerFactory("GSSAPI", GSSAPIExtractorFactory);
+    conf.AttributeExtractorManager.registerFactory("GSSAPI", GSSAPIExtractorFactory);
     static const XMLCh _GSSAPIName[] = UNICODE_LITERAL_10(G,S,S,A,P,I,N,a,m,e);
     static const XMLCh _GSSAPIContext[] = UNICODE_LITERAL_13(G,S,S,A,P,I,C,o,n,t,e,x,t);
     XMLObjectBuilder::registerBuilder(xmltooling::QName(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _GSSAPIName), new AnyElementBuilder());
     XMLObjectBuilder::registerBuilder(xmltooling::QName(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _GSSAPIContext), new AnyElementBuilder());
 #endif
-    SPConfig::getConfig().AttributeResolverManager.registerFactory("Transform", TransformAttributeResolverFactory);
+    conf.AttributeResolverManager.registerFactory("Template", TemplateAttributeResolverFactory);
+    conf.AttributeResolverManager.registerFactory("Transform", TransformAttributeResolverFactory);
     return 0;   // signal success
 }
 

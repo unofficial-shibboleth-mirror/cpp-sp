@@ -50,20 +50,17 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL TransformContext : public ResolutionContext
     {
     public:
-        TransformContext(const Session& session) : m_inputAttributes(&session.getAttributes()) {
-        }
-
-        TransformContext(const vector<shibsp::Attribute*>* attributes) : m_inputAttributes(attributes) {
+        TransformContext(const vector<Attribute*>* attributes) : m_inputAttributes(attributes) {
         }
 
         ~TransformContext() {
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<shibsp::Attribute>());
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
         }
 
-        const vector<shibsp::Attribute*>* getInputAttributes() const {
+        const vector<Attribute*>* getInputAttributes() const {
             return m_inputAttributes;
         }
-        vector<shibsp::Attribute*>& getResolvedAttributes() {
+        vector<Attribute*>& getResolvedAttributes() {
             return m_attributes;
         }
         vector<opensaml::Assertion*>& getResolvedAssertions() {
@@ -71,8 +68,8 @@ namespace shibsp {
         }
 
     private:
-        const vector<shibsp::Attribute*>* m_inputAttributes;
-        vector<shibsp::Attribute*> m_attributes;
+        const vector<Attribute*>* m_inputAttributes;
+        vector<Attribute*> m_attributes;
         static vector<opensaml::Assertion*> m_assertions;   // empty dummy
     };
 
@@ -97,7 +94,7 @@ namespace shibsp {
             const XMLCh* authncontext_class=nullptr,
             const XMLCh* authncontext_decl=nullptr,
             const vector<const opensaml::Assertion*>* tokens=nullptr,
-            const vector<shibsp::Attribute*>* attributes=nullptr
+            const vector<Attribute*>* attributes=nullptr
             ) const {
             // Make sure new method gets run.
             return createResolutionContext(application, nullptr, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
@@ -112,13 +109,13 @@ namespace shibsp {
             const XMLCh* authncontext_class=nullptr,
             const XMLCh* authncontext_decl=nullptr,
             const vector<const opensaml::Assertion*>* tokens=nullptr,
-            const vector<shibsp::Attribute*>* attributes=nullptr
+            const vector<Attribute*>* attributes=nullptr
             ) const {
             return new TransformContext(attributes);
         }
 
         ResolutionContext* createResolutionContext(const Application& application, const Session& session) const {
-            return new TransformContext(session);
+            return new TransformContext(&session.getAttributes());
         }
 
         void resolveAttributes(ResolutionContext& ctx) const;
