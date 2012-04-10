@@ -233,7 +233,7 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Chaining").info(
+                Category::getInstance(SHIBSP_LOGCAT".AttributeResolver."CHAINING_ATTRIBUTE_RESOLVER).info(
                     "building AttributeResolver of type (%s)...", t.c_str()
                     );
                 auto_ptr<AttributeResolver> np(conf.AttributeResolverManager.newPlugin(t.c_str(), e));
@@ -241,7 +241,7 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
                 np.release();
             }
             catch (exception& ex) {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Chaining").error(
+                Category::getInstance(SHIBSP_LOGCAT".AttributeResolver."CHAINING_ATTRIBUTE_RESOLVER).error(
                     "caught exception processing embedded AttributeResolver element: %s", ex.what()
                     );
             }
@@ -254,23 +254,30 @@ void ChainingAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
 {
     ChainingContext& chain = dynamic_cast<ChainingContext&>(ctx);
     for (ptr_vector<AttributeResolver>::iterator i = m_resolvers.begin(); i != m_resolvers.end(); ++i) {
-        Locker locker(&(*i));
-        scoped_ptr<ResolutionContext> context(
-            chain.m_session ?
-                i->createResolutionContext(chain.m_app, *chain.m_session) :
-                i->createResolutionContext(
-                    chain.m_app, chain.m_request, chain.m_issuer, chain.m_protocol, chain.m_nameid, chain.m_authclass, chain.m_authdecl, &chain.m_tokens, &chain.m_attributes
-                    )
-            );
+        try {
+            Locker locker(&(*i));
+            scoped_ptr<ResolutionContext> context(
+                chain.m_session ?
+                    i->createResolutionContext(chain.m_app, *chain.m_session) :
+                    i->createResolutionContext(
+                        chain.m_app, chain.m_request, chain.m_issuer, chain.m_protocol, chain.m_nameid, chain.m_authclass, chain.m_authdecl, &chain.m_tokens, &chain.m_attributes
+                        )
+                );
 
-        i->resolveAttributes(*context);
+            i->resolveAttributes(*context);
 
-        chain.m_attributes.insert(chain.m_attributes.end(), context->getResolvedAttributes().begin(), context->getResolvedAttributes().end());
-        chain.m_ownedAttributes.insert(chain.m_ownedAttributes.end(), context->getResolvedAttributes().begin(), context->getResolvedAttributes().end());
-        context->getResolvedAttributes().clear();
+            chain.m_attributes.insert(chain.m_attributes.end(), context->getResolvedAttributes().begin(), context->getResolvedAttributes().end());
+            chain.m_ownedAttributes.insert(chain.m_ownedAttributes.end(), context->getResolvedAttributes().begin(), context->getResolvedAttributes().end());
+            context->getResolvedAttributes().clear();
 
-        chain.m_tokens.insert(chain.m_tokens.end(), context->getResolvedAssertions().begin(), context->getResolvedAssertions().end());
-        chain.m_ownedAssertions.insert(chain.m_ownedAssertions.end(), context->getResolvedAssertions().begin(), context->getResolvedAssertions().end());
-        context->getResolvedAssertions().clear();
+            chain.m_tokens.insert(chain.m_tokens.end(), context->getResolvedAssertions().begin(), context->getResolvedAssertions().end());
+            chain.m_ownedAssertions.insert(chain.m_ownedAssertions.end(), context->getResolvedAssertions().begin(), context->getResolvedAssertions().end());
+            context->getResolvedAssertions().clear();
+        }
+        catch (exception& ex) {
+            Category::getInstance(SHIBSP_LOGCAT".AttributeResolver."CHAINING_ATTRIBUTE_RESOLVER).error(
+                "caught exception applying AttributeResolver in chain: %s", ex.what()
+                );
+        }
     }
 }
