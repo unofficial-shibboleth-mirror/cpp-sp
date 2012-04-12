@@ -1774,6 +1774,7 @@ void SSCache::receive(DDF& in, ostream& out)
         string record;
         time_t lastAccess;
         if (!m_storage->readText(key, "session", &record, &lastAccess)) {
+            m_log.debug("session not found in cache (%s)", key);
             DDF ret(nullptr);
             DDFJanitor jan(ret);
             out << ret;
