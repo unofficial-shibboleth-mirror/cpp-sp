@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<?define BuildDirectory='G:\Downloads\shib\' ?>
+<?define OpenSAMLVersion='2.4.3' ?> 
+<?define OpenSAMLFileVersion='2_4' ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Module Id='OpenSAMLMergeModule_x86' Language='1033' Version='$(var.OpenSAMLVersion)'>
+    <Package Id='{D6367F80-6B31-4554-ABE4-53404DD46F35}' Description='Merge Module for OpenSAML'
+             Comments='This module is built by the Shibboleth Consortium. Includes DDLs SAMLSign and Schema'
+             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x86'/>
+
+    <!-- For now just install this where it is put we expect to go into lib and lib\debug below.  
+         At a a later date, we may chose to make this a placed module  -->
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
+        <Directory Id='shibboleth' Name='Shibboleth'>
+          <Directory Id='shibboleth_SP' Name='SP'>
+            <Directory Id='lib' Name='lib'>
+
+              <Component Id='saml2_0.dll' Guid='{B52F8C71-2042-4CDF-A250-BD773985A2AB}'>
+                <File KeyPath='yes'
+                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-opensaml\Release\saml$(var.OpenSAMLFileVersion).dll' />
+              </Component>
+              <Component Id='samlsign.exe' Guid='{3DC7A431-9623-4283-BA07-444DB1C1F864}'>
+                <File KeyPath='yes'
+                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-opensaml\Release\samlsign.exe' />
+              </Component>
+              <Directory Id='lib_debug' Name='debug'>
+                <Component Id='saml2_0D.dll' Guid='{7B934257-5F7F-428E-930E-A793A11573D7}'>
+                  <File KeyPath='yes'
+                        Source='$(var.BuildDirectory)\cvs\2.0\cpp-opensaml\Debug\saml$(var.OpenSAMLFileVersion)D.dll' />
+                </Component>
+                <Component Id='samlsign.exe_Debug' Guid='{EFCAEBC5-242F-416C-8F87-B7DD49C1AE29}'>
+                  <File Id='samlsign.exe_Debug' KeyPath='yes'
+                        Source='$(var.BuildDirectory)\cvs\2.0\cpp-opensaml\Debug\samlsign.exe' />
+                </Component>
+              </Directory><!-- lib_debug-->
+            </Directory><!-- lib -->
+            <Directory Id='share' Name='share'>
+              <Directory Id='share_xml' Name='xml'>
+                <Directory Id='share_xml_opensaml' Name='opensaml' />
+              </Directory><!-- xml-->
+            </Directory><!-- share -->
+          </Directory><!-- shibboleth_SP -->
+        </Directory><!-- shibboleth -->
+      </Directory><!-- ProgramFilesFolder -->
+    </Directory><!-- TARGETDIR -->
+    <ComponentRef Id='schema_assertion_01'/>
+    <ComponentRef Id='schema_assertion_1_1'/>
+    <ComponentRef Id='schema_protocol_01'/>
+    <ComponentRef Id='schema_protocol_1_1'/>
+    <ComponentRef Id='samlschema' />
+  </Module>
+</Wix>
+
+    

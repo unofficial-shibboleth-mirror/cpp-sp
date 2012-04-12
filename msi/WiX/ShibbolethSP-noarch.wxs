@@ -1,0 +1,245 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the 'License'); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an 'AS IS' BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<?define BuildDirectory='G:\Downloads\shib\' ?>
+<?define OpenSSLDirVersion='1.0.0a' ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <!-- This is where we put all the architecture neutral bits of the
+       Shibboleth install.  It turns out that it may not be all the
+       architecture insenstive stuff since some GUIDS may have moved
+       -->
+  <Fragment>
+    <!-- Files First -->
+    <!-- Configuration, licenses and documentation -->
+
+    <DirectoryRef Id='INSTALLDIR'>
+      <Directory Id='doc' Name='doc' >
+        <Directory Id='doc_shibboleth' Name='shibboleth' 
+                   FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc' >
+          <Component Id='doc_shibboleth' Guid='{8239E994-8295-4E26-8708-DDF240B486BF}'>
+            <File Name='main.css' KeyPath='yes'/>
+            <File Name='logo.jpg' />
+            <File Name='CREDITS.txt' />
+            <File Name='LICENSE.txt' />
+            <File Name='NOTICE.txt' />
+            <File Name='README.txt'/>
+            <File Name='RELEASE.txt' />
+          </Component>
+        </Directory><!-- doc_shibboleth -->
+      </Directory><!-- doc -->
+      <Directory Id='etc' Name='etc' >
+        <Directory Id='etc_shibboleth' Name='shibboleth' 
+                   FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs' >
+          <Component Id='etc_shibboleth_perm' Guid='{1F1B9F9B-6437-46F1-ACE8-8D135612336C}' Permanent='yes'>
+            <File KeyPath='yes' 
+                  Source='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\apps\openssl.cnf' />
+            <File Name='upgrade.xsl' />
+            <File Name='example-metadata.xml' />
+            <File Name='example-shibboleth2.xml' />
+          </Component>
+          <Component Id='etc_shibboleth_nonperm' Guid='{A5BBCB8B-42B3-4402-B66D-66D2971F509F}'>
+            <File Name='keygen.bat' KeyPath='yes' />
+            <File Name='xsltproc.js' />
+          </Component>
+          <Directory Id='etc_shibboleth_dist' Name='dist' 
+                     FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs' >
+            <Component Id='dist_noperm' Guid='{6AEBA525-8F52-4D14-BAEE-0292A2E214D1}'>
+              <!-- Note that the dir creation here is an accident caused by the inhertited Installer -->
+              <CreateFolder Directory='var_run_shibboleth' />
+              <File Name='apache22.config.in' KeyPath='yes' />
+              <File Name='sslError.html' />
+              <File Name='bindingTemplate.html' />
+              <File Name='globalLogout.html' />
+              <File Name='localLogout.html' />
+              <File Name='attribute-map.xml' />
+              <File Name='attribute-policy.xml'/>
+              <File Name='shibboleth2.xml' />
+              <File Name='console.logger' />
+              <File Name='discoveryTemplate.html' />
+              <File Name='postTemplate.html' />
+              <File Name='partialLogout.html' />
+              <File Name='protocols.xml' />
+              <File Name='security-policy.xml' />
+            </Component>
+            <Component Id='accessError.html' Guid='{6FAA81A0-A020-4E60-A37D-1EC4D0D5FD06}' Permanent='yes'>
+              <File Name='accessError.html' />
+            </Component>
+            <Component Id='apache.config' Guid='{AF4EB2B1-2489-4E39-A89E-1CA7AC2B7483}' Permanent='yes'>
+              <File Name='apache.config.in' />
+            </Component>
+            <Component Id='apache2.config' Guid='{85BF72A1-FBA8-4955-ACCF-ABC83B1292C9}' Permanent='yes'>
+              <File Name='apache2.config.in' KeyPath='yes' />
+            </Component>
+            <Component Id='metadataError.html' Guid='{8C46D04A-A943-4FA4-AFCB-9B040306C2C0}' Permanent='yes'>
+              <File  Name='metadataError.html' KeyPath='yes' />
+            </Component>
+            <Component Id='native.logger' Guid='{8586D4C7-E237-4C7F-BC79-DE0B06473395}' Permanent='yes'>
+              <File Name='native.logger.in' KeyPath='yes' />
+            </Component>
+            <Component Id='sessionError.html' Guid='{8AA240B3-DC5D-4687-B321-4F5E1BAEA820}' Permanent='yes'>
+              <File Name='sessionError.html' KeyPath='yes' />
+            </Component>
+            <Component Id='shibd.logger' Guid='{D8DA3D14-F779-4691-A883-4995158D2A74}' Permanent='yes'>
+              <File Name='shibd.logger.in' KeyPath='yes' />
+            </Component>
+          </Directory><!-- etc_shibboleth_dist -->
+        </Directory><!-- etc_shibboleth -->
+      </Directory><!-- etc_dist -->
+      <Directory Id='var' Name='var'>
+        <Directory Id='var_log' Name='log'>
+          <Directory Id='var_log_shibboleth' Name='shibboleth'>
+            <Component Id='var_log_shibboleth_folder' Guid='{2BFC84E4-634B-4D70-910A-D5640739C8C8}' KeyPath='yes'>
+              <CreateFolder />
+            </Component>
+          </Directory><!-- var_log_shibboleth -->
+        </Directory><!-- var_log -->
+        <Directory Id='var_run' Name='run'>
+          <Directory Id='var_run_shibboleth' Name='shibboleth' />
+        </Directory><!-- var_run -->
+      </Directory><!-- var -->
+    </DirectoryRef>
+    <!-- Schemas -->
+    <DirectoryRef Id='SHARE_DIR'><!-- \opt\shibboleth-sp\share -->
+      <Directory Id='share_xml' Name='xml'>
+        <Directory Id='share_xml_shibboleth' Name='shibboleth'
+                   FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas' >
+          <Component Id='share_xml_shibboleth' Guid='{69FCD385-B31D-43FB-B8A7-6F8D30391661}'>
+            <File Name='shibboleth-metadata-1.0.xsd' KeyPath='yes' />
+            <File Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas\catalog.xml.in' />
+            <File Name='shibboleth-2.0-attribute-map.xsd' />
+            <File Name='shibboleth-2.0-afp.xsd' />
+            <File Name='shibboleth-2.0-afp-mf-saml.xsd' />
+            <File Name='WS-Trust.xsd' />
+            <File Name='shibboleth-2.0-sp-notify.xsd' />
+            <File Name='shibboleth-2.0-native-sp-config.xsd' />
+            <File Name='shibboleth-2.0-afp-mf-basic.xsd' />
+            <File Name='shibboleth-2.0-native-sp-protocols.xsd' />
+          </Component>
+          <Component Id='share_xml_shibboleth_xsd' Guid='{8C5B6416-5BE3-4D4D-BF8B-B677365DA58C}'>
+            <File Name='shibboleth.xsd' KeyPath='yes' />
+          </Component>
+        </Directory><!-- share_xml_shibboleth -->
+      </Directory><!-- share_xml -->
+    </DirectoryRef><!-- share -->
+    <!-- Previous version search -->
+    <Property Id='SHIB_OLDVERSION' Value='none' Secure='yes'>
+      <!-- 32 bit -->
+      <RegistrySearch Id='SP2_2_1' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{2A19CDBC-E0DA-452C-8B38-1AA9DB4D579F}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_4_1_32' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{A5D2DE8D-2A4A-4D74-98B5-BA448DD4DC39}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_4_2_32' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8280E58C-D290-42CD-9425-BCC0BA439649}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_4_3_32' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{7B9F4513-3141-4270-B1F5-43A467235B6B}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_2_0_32' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{EAAAD296-3942-4535-B39B-81A57E94FCF7}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_3_0_32' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{790EE9BA-BB63-43D3-9080-F9AF7AC43114}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_1_0_32' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{2E80BF81-72BC-4E9C-8A79-D7D7EA20AAE4}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='AppReg2' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{A9A0D770-C658-4659-BC75-6F8289DDEAA3}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_4_0_32' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{56028A6A-D5A3-47C5-9494-092E1C840A8F}' 
+                      Name='DisplayName' Type='raw' />
+      <RegistrySearch Id='AppReg1' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{6E62498D-162E-45AA-87C7-157308552043}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_0_0_32' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D62F990B-2A8A-442B-BF85-7FE075B2CE0C}' 
+                      Name='DisplayVersion' Type='raw' />
+      <RegistrySearch Id='SP2_3_1' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{E4FA3B6C-6347-4B58-A07D-F9E388B3944B}' 
+                      Name='DisplayVersion' Type='raw' />
+
+      <!-- 64 bit 
+      <RegistrySearch Id='SP_2_2_1_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{5492935D-7D97-42FE-A916-5190C3F8C403}' 
+                      Name='DisplayVersion' Type='raw' Win64='yes' />
+      <RegistrySearch Id='SP2_4_1_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{3936DF1B-DFF2-4A02-8A2C-8AB893718397}' 
+                      Name='DisplayVersion' Type='raw' Win64='yes' />
+      <RegistrySearch Id='SP2_4_2_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1081BC03-B61E-4F3C-ACD9-4C8C7D3E9928}' 
+                      Name='DisplayVersion' Type='raw' Win64='yes' />
+      <RegistrySearch Id='SP_2_4_3_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9367CC0C-D76D-4DA8-AF51-0DD144430DD8}' 
+                      Name='DisplayVersion' Type='raw' Win64='yes' />
+      <RegistrySearch Id='SP2_3_0_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{C7F88000-9E35-4B23-86AD-997F90B04DEE}' 
+                      Name='DisplayVersion' Type='raw' Win64='yes' />
+      <RegistrySearch Id='SP2_4_0_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8F0834E5-A3C8-4B7F-B8DF-30BC90331C03}' 
+                      Name='DisplayName' Type='raw' Win64='yes' />
+      <RegistrySearch Id='SP2_1_0_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{A8C641B8-0924-4264-BEBD-8D20F8B3EB79}' 
+                      Name='DisplayVersion' Type='raw' Win64='yes' />
+      <RegistrySearch Id='SP2_2_0_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{DDEEB7B2-A639-4513-8437-83564FECAFD3}' 
+                      Name='DisplayVersion' Type='raw' Win64='yes' />
+      <RegistrySearch Id='SP2_3_1_64' Root='HKLM' 
+                      Key='SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{CFF81891-E7C4-47C3-B173-87CF1B947D05}' 
+                      Name='DisplayVersion' Type='raw' Win64='yes' /> -->
+    </Property>
+
+    <Property Id="SHIBD_PORT" Value="1600" Secure="yes" />
+
+    <Condition Message='Shibboleth requires Windows XP SP2 or later.'>NOT VersionNT OR (VersionNT &gt;= 501)</Condition>
+    <Condition Message='Shibboleth requires a Windows NT-based operating system.'>NOT Version9X</Condition>
+    <Condition Message='You must uninstall recent versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.'>SHIB_OLDVERSION = "none"</Condition>
+
+    <!-- The actions to perform after the files have been copied -->
+    <Binary Id='EditConfigFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_config_files.vbs' />
+    <CustomAction Id='EditConfigFiles' 
+                  BinaryKey='EditConfigFileSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
+    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[SHIBD_PORT]' />
+    <InstallExecuteSequence>
+      <Custom Action='SetEditConfigFiles' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='EditConfigFiles' After='InstallFiles'>NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+    <!-- Components
+
+         <ComponentRef Id='doc_shibboleth'/>
+         <ComponentRef Id='etc_shibboleth_perm'/>
+         <ComponentRef Id='etc_shibboleth_nonperm'/>
+         <ComponentRef Id='dist_noperm'/>
+         <ComponentRef Id='accessError.html'/>
+         <ComponentRef Id='apache.config'/>
+         <ComponentRef Id='apache2.config'/>
+         <ComponentRef Id='metadataError.html'/>
+         <ComponentRef Id='native.logger'/>
+         <ComponentRef Id='sessionError.html'/>
+         <ComponentRef Id='shibd.logger'/>
+         <ComponentRef Id='var_log_shibboleth_folder'/>
+         <ComponentRef Id='share_xml_shibboleth'/>
+         <ComponentRef Id='share_xml_shibboleth_xsd'/>
+         -->
+
+  </Fragment>
+</Wix>

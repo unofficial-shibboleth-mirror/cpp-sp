@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<?define BuildDirectory='G:\Downloads\shib\' ?>
+<?define XmlToolingVersion='1.4.2' ?> 
+<?define XmlToolingFileVersion='1_4' ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Module Id='XmlToolingMergeModule_x86' Language='1033' Version='$(var.XmlToolingVersion)'>
+    <Package Id='{29A047F2-DECA-45A7-97D8-801217B3C632}' Description='Merge Module for XMLTooling'
+             Comments='This module is built by the Shibboleth Consortium. Includes DDLs and Schema'
+             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x86'/>
+
+    <!-- For now just install this where it is put we expect to go into lib and lib\debug below.  
+         At a a later date, we may chose to make this a placed module  -->
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
+        <Directory Id='shibboleth' Name='Shibboleth'>
+          <Directory Id='shibboleth_sp' Name='SP'>
+            <Directory Id='lib' Name='lib'>
+              <Component Id='xmltooling.dll' Guid='{53533A59-A563-439D-B13D-A4D7090C42D3}'>
+                <File Id='xmltooling.dll'
+                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\Release\xmltooling$(var.XmlToolingFileVersion).dll' />
+              </Component>
+              <Component Id='xmltoolinglite.dll' Guid='{5045A722-D6D6-4E55-9196-CB7C50B4446F}'>
+                <File Id='xmltoolinglite.dll'
+                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll' />
+              </Component>
+              <Directory Id='lib_debug' Name='debug'>
+                <Component Id='xmltoolingD.dll' Guid='{380E59DF-24F8-4F60-97A7-CC67FB76B4CC}'>
+                  <File Id='xmltoolingD.dll'
+                        Source='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\Debug\xmltooling$(var.XmlToolingFileVersion)D.dll' />
+                </Component>
+                <Component Id='xmltoolingliteD.dll' Guid='{DB6D8737-4E3D-4C06-87F1-C59C7D7CB47A}'>
+                  <File Id='xmltoolingliteD.dll'
+                        Source='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.dll' />
+                </Component>
+              </Directory><!-- lib_debug-->
+            </Directory><!-- lib -->
+            <Directory Id='share' Name='share'>
+              <Directory Id='share_xml' Name='xml'>
+                <Directory Id='share_xml_xmltooling' Name='xmltooling' />
+              </Directory><!-- xml-->
+            </Directory><!-- share -->
+          </Directory><!-- shibboleth_sp -->
+        </Directory><!-- shibboleth -->
+      </Directory><!-- ProgramFiles -->
+    </Directory><!-- TARGETDIR -->
+    <ComponentRef Id='xmltoolingschema'/>
+  </Module>
+</Wix>

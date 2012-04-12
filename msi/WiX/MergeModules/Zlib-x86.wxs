@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<?define BuildDirectory='G:\Downloads\shib\' ?>
+<?define ZlibVersion='1.2.5' ?>
+<?define ZlibFileVersion='1' ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Module Id='ZlibMergeModule_x86' Language='1033' Version='$(var.ZlibVersion)'>
+    <Package Id='{F5C689A2-A72F-417E-B0F8-CF9B1450EE97}' Description='Merge Module for Zlib'
+             Comments='This module is built by the Shibboleth Consortium.'
+             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x86'/>
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
+        <Directory Id='shibboleth' Name='Shibboleth'>
+          <Directory Id='shibboleth_sp' Name='SP'>
+            <Directory Id='lib' Name='lib'>
+              <Component Id='zlib1.dll' Guid='{059557A8-7311-47BB-8A5F-CC85F72AE495}'>
+                <File KeyPath='yes'
+                      Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win32_DLL_Release\zlib$(var.ZlibFileVersion).dll'/>
+              </Component>
+              <Directory Id='lib_debug' Name='debug'>
+                <Component Id='zlib1d.dll' Guid='{3DA71CD4-F204-49D5-A689-7B1B4C2D395A}'>
+                  <File Id='zlib1d.dll' KeyPath='yes' 
+                        Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win32_DLL_Debug\zlib$(var.ZlibFileVersion)d.dll'/>
+                </Component>
+              </Directory><!-- lib_debug-->
+            </Directory><!-- lib -->
+          </Directory><!-- shibboleth_sp -->
+        </Directory><!-- shibboleth -->
+      </Directory><!-- ProgramFilesFolder -->
+    </Directory><!-- TARGETDIR -->
+  </Module>
+</Wix>
+
+    
