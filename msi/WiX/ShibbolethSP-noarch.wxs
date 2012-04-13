@@ -54,7 +54,7 @@
             <File Name='example-shibboleth2.xml' />
           </Component>
           <Component Id='etc_shibboleth_nonperm' Guid='{A5BBCB8B-42B3-4402-B66D-66D2971F509F}'>
-            <File Name='keygen.bat' KeyPath='yes' />
+            <File Name='keygen.bat' KeyPath='yes' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs\keygen.bat-wix'/>
             <File Name='xsltproc.js' />
           </Component>
           <Directory Id='etc_shibboleth_dist' Name='dist' 
@@ -214,13 +214,18 @@
     <Condition Message='You must uninstall recent versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.'>SHIB_OLDVERSION = "none"</Condition>
 
     <!-- The actions to perform after the files have been copied -->
-    <Binary Id='EditConfigFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_config_files.vbs' />
+    <Binary Id='EditConfigFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_config_files.vbs-wix' />
+    <Binary Id='KeyGenSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_keygen.vbs' />
     <CustomAction Id='EditConfigFiles' 
                   BinaryKey='EditConfigFileSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[SHIBD_PORT]' />
+    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[SHIBD_PORT];@;[ProgramFilesFolder]' />
+    <CustomAction Id='KeyGen' BinaryKey='KeyGenSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
+    <CustomAction Id='SetKeyGen' Property='KeyGen' Value='[INSTALLDIR]' />
     <InstallExecuteSequence>
       <Custom Action='SetEditConfigFiles' Before='CostInitialize'>NOT Installed</Custom>
       <Custom Action='EditConfigFiles' After='InstallFiles'>NOT Installed</Custom>
+      <Custom Action='SetKeyGen' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='KeyGen' After='EditConfigFiles'>NOT Installed</Custom>
     </InstallExecuteSequence>
 
     <!-- Components
