@@ -1744,7 +1744,7 @@ extern "C" const char* shib_set_acl_slot(cmd_parms* params, shib_dir_config* dc,
     if (absolute || !params->path)
         dc->szAccessControl = ap_pstrdup(params->pool, arg);
     else
-        dc->szAccessControl = ap_pstrcat(params->pool, params->path, arg, nullptr);
+        dc->szAccessControl = ap_pstrcat(params->pool, params->path, arg, NULL);
     return nullptr;
 }
 #endif
