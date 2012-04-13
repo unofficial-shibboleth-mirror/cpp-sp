@@ -32,6 +32,7 @@
 
 #include <string>
 #include <vector>
+#include <xercesc/util/XercesDefs.hpp>
 #include <xmltooling/Lockable.h>
 
 namespace xmltooling {
