@@ -40,6 +40,8 @@ namespace shibsp {
         ArtifactResolver();
         virtual ~ArtifactResolver();
 
+        bool isSupported(const opensaml::saml2md::SSODescriptorType& ssoDescriptor) const;
+
         opensaml::saml1p::Response* resolve(
             const std::vector<opensaml::SAMLArtifact*>& artifacts,
             const opensaml::saml2md::IDPSSODescriptor& idpDescriptor,

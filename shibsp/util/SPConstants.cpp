@@ -120,6 +120,14 @@ const XMLCh shibspconstants::SHIB1_AUTHNREQUEST_PROFILE_URI[] = // urn:mace:shib
   chLatin_R, chLatin_e, chLatin_q, chLatin_u, chLatin_e, chLatin_s, chLatin_t, chNull
 };
 
+const XMLCh shibspconstants::SHIB2_BINDING_FILE[] = // urn:mace:shibboleth:2.0:bindings:File
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+  chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+  chDigit_2, chPeriod, chDigit_0, chColon,
+  chLatin_b, chLatin_i, chLatin_n, chLatin_d, chLatin_i, chLatin_n, chLatin_g, chLatin_s, chColon,
+  chLatin_F, chLatin_i, chLatin_l, chLatin_e, chNull
+};
+
 const char shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI[] = "urn:mace:shibboleth:sp:1.3:SessionInit";
 
 const char shibspconstants::SHIB1_LOGOUT_PROFILE_URI[] = "urn:mace:shibboleth:sp:1.3:Logout";

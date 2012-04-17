@@ -74,6 +74,9 @@ namespace shibspconstants {
     /** Shibboleth 1.x AuthnRequest binding/profile ("urn:mace:shibboleth:1.0:profiles:AuthnRequest") */
     extern SHIBSP_API const XMLCh SHIB1_AUTHNREQUEST_PROFILE_URI[];
 
+    /** Shibboleth 2 filesystem-based SAML binding ("urn:mace:shibboleth:2.0:bindings:File") */
+    extern SHIBSP_API const XMLCh SHIB2_BINDING_FILE[];
+
     /** Shibboleth 1.3 SessionInit binding/profile ("urn:mace:shibboleth:sp:1.3:SessionInit") */
     extern SHIBSP_API const char SHIB1_SESSIONINIT_PROFILE_URI[];
 
