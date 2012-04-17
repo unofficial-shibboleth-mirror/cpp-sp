@@ -16,6 +16,7 @@ log4j.category.XMLTooling.libcurl=INFO
 #log4j.category.OpenSAML.MessageDecoder=DEBUG
 #log4j.category.OpenSAML.MessageEncoder=DEBUG
 #log4j.category.OpenSAML.SecurityPolicyRule=DEBUG
+#log4j.category.XMLTooling.SOAPClient=DEBUG
 # interprocess message remoting
 #log4j.category.Shibboleth.Listener=DEBUG
 # mapping of requests to applicationId
