@@ -1063,6 +1063,8 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
 
     SPConfig& conf = SPConfig::getConfig();
 
+    int index = 0; // track ACS indexes globally across all protocols
+
     // Tokenize the protocol list inside the element.
     XMLStringTokenizer prottokens(e->getTextContent());
     while (prottokens.hasMoreTokens()) {
@@ -1092,7 +1094,6 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
         const vector<const PropertySet*>& bindings = pp.getBindings(prot.get(), "SSO");
         if (!bindings.empty()) {
             log.info("auto-configuring SSO endpoints for protocol (%s)", prot.get());
-            int index = 0;
             pair<bool,const XMLCh*> idprop,pathprop;
             for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b, ++index) {
                 idprop = (*b)->getXMLString("id");
@@ -1101,7 +1102,7 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                     DOMElement* acsdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _AssertionConsumerService);
                     acsdom->setAttributeNS(nullptr, Binding, idprop.second);
                     acsdom->setAttributeNS(nullptr, Location, pathprop.second);
-                    xstring indexbuf(chDigit_1 + (index % 10), 1);
+                    xstring indexbuf(1, chDigit_1 + (index % 10));
                     if (index / 10)
                         indexbuf = (XMLCh)(chDigit_1 + (index / 10)) + indexbuf;
                     acsdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
@@ -1323,20 +1324,21 @@ void XMLApplication::doArtifactResolution(const ProtocolProvider& pp, const char
 {
     SPConfig& conf = SPConfig::getConfig();
 
+    int index = 0; // track indexes globally across all protocols
+
     // Look for incoming bindings.
     const vector<const PropertySet*>& bindings = pp.getBindings(protocol, "ArtifactResolution");
     if (!bindings.empty()) {
         log.info("auto-configuring ArtifactResolution endpoints for protocol (%s)", protocol);
-        int index = 0;
         pair<bool,const XMLCh*> idprop,pathprop;
-        for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b) {
+        for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b, ++index) {
             idprop = (*b)->getXMLString("id");
             pathprop = (*b)->getXMLString("path");
             if (idprop.first && pathprop.first) {
                 DOMElement* artdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _ArtifactResolutionService);
                 artdom->setAttributeNS(nullptr, Binding, idprop.second);
                 artdom->setAttributeNS(nullptr, Location, pathprop.second);
-                xstring indexbuf(chDigit_1 + (index % 10), 1);
+                xstring indexbuf(1, chDigit_1 + (index % 10));
                 if (index / 10)
                     indexbuf = (XMLCh)(chDigit_1 + (index / 10)) + indexbuf;
                 artdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
