@@ -197,7 +197,7 @@ ArtifactResponse* ArtifactResolver::resolve(
                         loc = loc.substr(7);
                     XMLToolingConfig::getConfig().getPathResolver()->resolve(loc, PathResolver::XMLTOOLING_RUN_FILE);
                     loc += '/' + SAMLArtifact::toHex(artifact.getMessageHandle());
-                    ifstream in(loc);
+                    ifstream in(loc.c_str());
                     if (in) {
                         auto_ptr<XMLObject> xmlObject;
                         try {
