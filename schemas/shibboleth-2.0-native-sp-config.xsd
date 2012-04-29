@@ -465,6 +465,7 @@
     <attribute name="requireTransportAuth" type="boolean"/>
     <attribute name="requireSignedAssertions" type="boolean"/>
     <attribute name="sessionHook" type="anyURI"/>
+    <attribute name="artifactByFilesystem" type="boolean"/>
   </attributeGroup>
     
   <complexType name="SessionsType">

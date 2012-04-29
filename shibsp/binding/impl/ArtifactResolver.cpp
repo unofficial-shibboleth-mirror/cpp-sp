@@ -162,6 +162,9 @@ ArtifactResponse* ArtifactResolver::resolve(
         ep_end = ep_start + 1;
     }
 
+    const PropertySet* rp = sppolicy.getApplication().getRelyingParty(dynamic_cast<const EntityDescriptor*>(ssoDescriptor.getParent()));
+    pair<bool,bool> artifactByFilesystem = rp->getBool("artifactByFilesystem");
+
     for (vector<ArtifactResolutionService*>::const_iterator ep = ep_start; !response && ep != ep_end; ++ep) {
         try {
             if (XMLString::equals((*ep)->getBinding(), binding.get())) {
@@ -170,7 +173,7 @@ ArtifactResponse* ArtifactResolver::resolve(
                 ArtifactResolve* request = ArtifactResolveBuilder::buildArtifactResolve();
                 Issuer* iss = IssuerBuilder::buildIssuer();
                 request->setIssuer(iss);
-                iss->setName(sppolicy.getApplication().getRelyingParty(dynamic_cast<EntityDescriptor*>(ssoDescriptor.getParent()))->getXMLString("entityID").second);
+                iss->setName(rp->getXMLString("entityID").second);
                 auto_ptr_XMLCh artbuf(artifact.encode().c_str());
                 Artifact* a = ArtifactBuilder::buildArtifact();
                 a->setArtifact(artbuf.get());
@@ -184,7 +187,7 @@ ArtifactResponse* ArtifactResolver::resolve(
                     break;
                 }
             }
-            else if (XMLString::equals((*ep)->getBinding(), shibspconstants::SHIB2_BINDING_FILE)) {
+            else if (artifactByFilesystem.first && artifactByFilesystem.second && XMLString::equals((*ep)->getBinding(), shibspconstants::SHIB2_BINDING_FILE)) {
                 // This implements a resolution process against the local file system for custom integration needs.
                 // The local filesystem is presumed to be "secure" so that unsigned, unencrypted responses are acceptable.
                 // The binding here is not SOAP, but rather REST-like, with the base location used to construct a filename
