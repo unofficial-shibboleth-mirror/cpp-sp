@@ -31,16 +31,12 @@
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
-#include "handler/AbstractHandler.h"
-#include "util/IPRange.h"
+#include "handler/SecuredHandler.h"
 
 #include <ctime>
-#include <boost/bind.hpp>
-#include <boost/algorithm/string.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -50,22 +46,7 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL Blocker : public DOMNodeFilter
-    {
-    public:
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-        short
-#else
-        FilterAction
-#endif
-        acceptNode(const DOMNode* node) const {
-            return FILTER_REJECT;
-        }
-    };
-
-    static SHIBSP_DLLLOCAL Blocker g_Blocker;
-
-    class SHIBSP_API SessionHandler : public AbstractHandler
+    class SHIBSP_API SessionHandler : public SecuredHandler
     {
     public:
         SessionHandler(const DOMElement* e, const char* appId);
@@ -74,17 +55,7 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        void parseACL(const string& acl) {
-            try {
-                m_acl.push_back(IPRange::parseCIDRBlock(acl.c_str()));
-            }
-            catch (std::exception& ex) {
-                m_log.error("invalid CIDR block (%s): %s", acl.c_str(), ex.what());
-            }
-        }
-
         bool m_values;
-        vector<IPRange> m_acl;
     };
 
 #if defined (_MSC_VER)
@@ -99,20 +70,8 @@ namespace shibsp {
 };
 
 SessionHandler::SessionHandler(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionHandler"), &g_Blocker), m_values(false)
+    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionHandler")), m_values(false)
 {
-    pair<bool,const char*> acl = getString("acl");
-    if (acl.first) {
-        string aclbuf=acl.second;
-        vector<string> aclarray;
-        split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
-        for_each(aclarray.begin(), aclarray.end(), boost::bind(&SessionHandler::parseACL, this, _1));
-        if (m_acl.empty()) {
-            m_log.warn("invalid CIDR range(s) in Session handler acl property, allowing 127.0.0.1 as a fall back");
-            m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
-        }
-    }
-
     pair<bool,bool> flag = getBool("showAttributeValues");
     if (flag.first)
         m_values = flag.second;
@@ -120,14 +79,10 @@ SessionHandler::SessionHandler(const DOMElement* e, const char* appId)
 
 pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
 {
-    if (!m_acl.empty()) {
-        static bool (IPRange::* contains)(const char*) const = &IPRange::contains;
-        if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
-            m_log.error("session handler request blocked from invalid address (%s)", request.getRemoteAddr().c_str());
-            istringstream msg("Session Handler Blocked");
-            return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
-        }
-    }
+    // Check ACL in base class.
+    pair<bool,long> ret = SecuredHandler::run(request, isHandler);
+    if (ret.first)
+        return ret;
 
     stringstream s;
     s << "<html><head><title>Session Summary</title></head><body><pre>" << endl;

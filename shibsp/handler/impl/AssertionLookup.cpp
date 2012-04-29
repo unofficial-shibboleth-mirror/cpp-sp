@@ -30,14 +30,10 @@
 #include "ServiceProvider.h"
 #include "SessionCacheEx.h"
 #include "SPRequest.h"
-#include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
-#include "util/IPRange.h"
-#include "util/SPConstants.h"
+#include "handler/SecuredHandler.h"
 
-#include <boost/bind.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/algorithm/string.hpp>
 
 #ifndef SHIBSP_LITE
 # include <saml/exceptions.h>
@@ -59,22 +55,7 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL Blocker : public DOMNodeFilter
-    {
-    public:
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-        short
-#else
-        FilterAction
-#endif
-        acceptNode(const DOMNode* node) const {
-            return FILTER_REJECT;
-        }
-    };
-
-    static SHIBSP_DLLLOCAL Blocker g_Blocker;
-
-    class SHIBSP_API AssertionLookup : public AbstractHandler, public RemotedHandler
+    class SHIBSP_API AssertionLookup : public SecuredHandler, public RemotedHandler
     {
     public:
         AssertionLookup(const DOMElement* e, const char* appId);
@@ -89,16 +70,6 @@ namespace shibsp {
 
     private:
         pair<bool,long> processMessage(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
-        void parseACL(const string& acl) {
-            try {
-                m_acl.push_back(IPRange::parseCIDRBlock(acl.c_str()));
-            }
-            catch (std::exception& ex) {
-                m_log.error("invalid CIDR block (%s): %s", acl.c_str(), ex.what());
-            }
-        }
-
-        vector<IPRange> m_acl;
     };
 
 #if defined (_MSC_VER)
@@ -113,42 +84,20 @@ namespace shibsp {
 };
 
 AssertionLookup::AssertionLookup(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".AssertionLookup"), &g_Blocker)
+    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".AssertionLookup"), "exportACL", "127.0.0.1 ::1")
 {
-    if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
-        pair<bool,const char*> acl = getString("exportACL");
-        if (acl.first) {
-            string aclbuf=acl.second;
-            vector<string> aclarray;
-            split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
-            for_each(aclarray.begin(), aclarray.end(), boost::bind(&AssertionLookup::parseACL, this, _1));
-            if (m_acl.empty()) {
-                m_log.warn("invalid CIDR range(s) in acl property, allowing 127.0.0.1 as a fall back");
-                m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
-            }
-        }
-        else {
-            m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
-        }
-    }
-
     setAddress("run::AssertionLookup");
 }
 
 pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
 {
-    SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::InProcess) && !m_acl.empty()) {
-        static bool (IPRange::* contains)(const char*) const = &IPRange::contains;
-        if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
-            m_log.error("request for assertion lookup blocked from invalid address (%s)", request.getRemoteAddr().c_str());
-            istringstream msg("Assertion Lookup Blocked");
-            return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
-        }
-    }
+    // Check ACL in base class.
+    pair<bool,long> ret = SecuredHandler::run(request, isHandler);
+    if (ret.first)
+        return ret;
 
     try {
-        if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
             return processMessage(request.getApplication(), request, request);
         }
@@ -171,8 +120,8 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
 void AssertionLookup::receive(DDF& in, ostream& out)
 {
     // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
+    const char* aid = in["application_id"].string();
+    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
         m_log.error("couldn't find application (%s) for assertion lookup", aid ? aid : "(missing)");
@@ -233,6 +182,6 @@ pair<bool,long> AssertionLookup::processMessage(const Application& application, 
     httpResponse.setContentType("application/samlassertion+xml");
     return make_pair(true, httpResponse.sendResponse(s));
 #else
-    return make_pair(false,0L);
+    return make_pair(false, 0L);
 #endif
 }

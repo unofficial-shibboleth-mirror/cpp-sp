@@ -76,6 +76,7 @@ handinclude_HEADERS = \
 	handler/LogoutHandler.h \
 	handler/LogoutInitiator.h \
 	handler/RemotedHandler.h \
+    handler/SecuredHandler.h \
 	handler/SessionInitiator.h
 
 liteinclude_HEADERS = \
@@ -129,14 +130,13 @@ common_sources = \
 	handler/impl/ChainingSessionInitiator.cpp \
 	handler/impl/CookieSessionInitiator.cpp \
 	handler/impl/DiscoveryFeed.cpp \
+    handler/impl/ExternalAuthHandler.cpp \
 	handler/impl/FormSessionInitiator.cpp \
 	handler/impl/LocalLogoutInitiator.cpp \
 	handler/impl/LogoutHandler.cpp \
 	handler/impl/LogoutInitiator.cpp \
 	handler/impl/MetadataGenerator.cpp \
 	handler/impl/RemotedHandler.cpp \
-	handler/impl/StatusHandler.cpp \
-	handler/impl/SessionHandler.cpp \
 	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \
 	handler/impl/SAML2ArtifactResolution.cpp \
@@ -145,8 +145,11 @@ common_sources = \
 	handler/impl/SAML2NameIDMgmt.cpp \
 	handler/impl/SAML2SessionInitiator.cpp \
 	handler/impl/SAMLDSSessionInitiator.cpp \
+    handler/impl/SecuredHandler.cpp \
+	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/Shib1SessionInitiator.cpp \
+	handler/impl/StatusHandler.cpp \
 	handler/impl/TransformSessionInitiator.cpp \
 	handler/impl/WAYFSessionInitiator.cpp \
 	impl/ChainingAccessControl.cpp \

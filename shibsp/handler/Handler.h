@@ -164,6 +164,9 @@ namespace shibsp {
     /** Handler for metadata generation. */
     #define DISCOVERY_FEED_HANDLER "DiscoveryFeed"
 
+    /** Handler for external authentication integration. */
+    #define EXTERNAL_AUTH_HANDLER "ExternalAuth"
+
     /** Handler for metadata generation. */
     #define METADATA_GENERATOR_HANDLER "MetadataGenerator"
 

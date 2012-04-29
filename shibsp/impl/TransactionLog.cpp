@@ -688,7 +688,7 @@ namespace {
         }
         
         const LogoutEvent* logout = dynamic_cast<const LogoutEvent*>(&e);
-        if (logout && logout->m_session) {
+        if (logout && logout->m_session && logout->m_session->getEntityID()) {
             os << logout->m_session->getEntityID();
             return true;
         }

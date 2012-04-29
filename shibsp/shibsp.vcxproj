@@ -188,7 +188,9 @@
     <ClCompile Include="binding\impl\XMLProtocolProvider.cpp" />
     <ClCompile Include="handler\impl\AttributeCheckerHandler.cpp" />
     <ClCompile Include="handler\impl\DiscoveryFeed.cpp" />
+    <ClCompile Include="handler\impl\ExternalAuthHandler.cpp" />
     <ClCompile Include="handler\impl\LogoutInitiator.cpp" />
+    <ClCompile Include="handler\impl\SecuredHandler.cpp" />
     <ClCompile Include="impl\XMLSecurityPolicyProvider.cpp" />
     <ClCompile Include="ServiceProvider.cpp" />
     <ClCompile Include="SPConfig.cpp" />
@@ -290,6 +292,7 @@
     <ClInclude Include="binding\ProtocolProvider.h" />
     <ClInclude Include="GSSRequest.h" />
     <ClInclude Include="handler\LogoutInitiator.h" />
+    <ClInclude Include="handler\SecuredHandler.h" />
     <ClInclude Include="remoting\impl\SocketListener.h" />
     <ClInclude Include="AbstractSPRequest.h" />
     <ClInclude Include="AccessControl.h" />

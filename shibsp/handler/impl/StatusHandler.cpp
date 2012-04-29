@@ -29,15 +29,12 @@
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
-#include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
-#include "util/IPRange.h"
+#include "handler/SecuredHandler.h"
 #include "util/CGIParser.h"
 
-#include <boost/bind.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/algorithm/string.hpp>
 #include <xmltooling/version.h>
 #include <xmltooling/util/DateTime.h>
 
@@ -68,22 +65,7 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_DLLLOCAL Blocker : public DOMNodeFilter
-    {
-    public:
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-        short
-#else
-        FilterAction
-#endif
-        acceptNode(const DOMNode* node) const {
-            return FILTER_REJECT;
-        }
-    };
-
-    static SHIBSP_DLLLOCAL Blocker g_Blocker;
-
-    class SHIBSP_API StatusHandler : public AbstractHandler, public RemotedHandler
+    class SHIBSP_API StatusHandler : public SecuredHandler, public RemotedHandler
     {
     public:
         StatusHandler(const DOMElement* e, const char* appId);
@@ -95,16 +77,6 @@ namespace shibsp {
     private:
         pair<bool,long> processMessage(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
         ostream& systemInfo(ostream& os) const;
-        void parseACL(const string& acl) {
-            try {
-                m_acl.push_back(IPRange::parseCIDRBlock(acl.c_str()));
-            }
-            catch (std::exception& ex) {
-                m_log.error("invalid CIDR block (%s): %s", acl.c_str(), ex.what());
-            }
-        }
-
-        vector<IPRange> m_acl;
     };
 
 #if defined (_MSC_VER)
@@ -279,22 +251,8 @@ namespace shibsp {
 };
 
 StatusHandler::StatusHandler(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".StatusHandler"), &g_Blocker)
+    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".StatusHandler"))
 {
-    if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
-        pair<bool,const char*> acl = getString("acl");
-        if (acl.first) {
-            string aclbuf=acl.second;
-            vector<string> aclarray;
-            split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
-            for_each(aclarray.begin(), aclarray.end(), boost::bind(&StatusHandler::parseACL, this, _1));
-            if (m_acl.empty()) {
-                m_log.warn("invalid CIDR range(s) in Status handler acl property, allowing 127.0.0.1 as a fall back");
-                m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
-            }
-        }
-    }
-
     string address(appId);
     address += getString("Location").second;
     setAddress(address.c_str());
@@ -302,15 +260,10 @@ StatusHandler::StatusHandler(const DOMElement* e, const char* appId)
 
 pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
 {
-    SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::InProcess) && !m_acl.empty()) {
-        static bool (IPRange::* contains)(const char*) const = &IPRange::contains;
-        if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
-            m_log.error("status handler request blocked from invalid address (%s)", request.getRemoteAddr().c_str());
-            istringstream msg("Status Handler Blocked");
-            return make_pair(true,request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
-        }
-    }
+    // Check ACL in base class.
+    pair<bool,long> ret = SecuredHandler::run(request, isHandler);
+    if (ret.first)
+        return ret;
 
     const char* target = request.getParameter("target");
     if (target) {
@@ -343,7 +296,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
 
     try {
-        if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
             return processMessage(request.getApplication(), request, request);
         }

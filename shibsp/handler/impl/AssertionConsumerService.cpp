@@ -376,26 +376,28 @@ opensaml::SecurityPolicy* AssertionConsumerService::createSecurityPolicy(
     return new SecurityPolicy(application, role, validate, policyId);
 }
 
-class SHIBSP_DLLLOCAL DummyContext : public ResolutionContext
-{
-public:
-    DummyContext(const vector<Attribute*>& attributes) : m_attributes(attributes) {
-    }
+namespace {
+    class SHIBSP_DLLLOCAL DummyContext : public ResolutionContext
+    {
+    public:
+        DummyContext(const vector<Attribute*>& attributes) : m_attributes(attributes) {
+        }
 
-    virtual ~DummyContext() {
-        for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-    }
+        virtual ~DummyContext() {
+            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
+        }
 
-    vector<Attribute*>& getResolvedAttributes() {
-        return m_attributes;
-    }
-    vector<Assertion*>& getResolvedAssertions() {
-        return m_tokens;
-    }
+        vector<Attribute*>& getResolvedAttributes() {
+            return m_attributes;
+        }
+        vector<Assertion*>& getResolvedAssertions() {
+            return m_tokens;
+        }
 
-private:
-    vector<Attribute*> m_attributes;
-    static vector<Assertion*> m_tokens; // never any tokens, so just share an empty vector
+    private:
+        vector<Attribute*> m_attributes;
+        static vector<Assertion*> m_tokens; // never any tokens, so just share an empty vector
+    };
 };
 
 vector<Assertion*> DummyContext::m_tokens;
@@ -430,7 +432,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
 ResolutionContext* AssertionConsumerService::resolveAttributes(
     const Application& application,
     const GenericRequest* request,
-    const saml2md::RoleDescriptor* issuer,
+    const RoleDescriptor* issuer,
     const XMLCh* protocol,
     const xmltooling::XMLObject* protmsg,
     const saml1::NameIdentifier* v1nameid,
@@ -516,7 +518,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
 
         AttributeFilter* filter = application.getAttributeFilter();
         if (filter && !resolvedAttributes.empty()) {
-            BasicFilteringContext fc(application, resolvedAttributes, issuer, authncontext_class);
+            BasicFilteringContext fc(application, resolvedAttributes, issuer, authncontext_class, authncontext_decl);
             Locker filtlocker(filter);
             try {
                 filter->filterAttributes(fc, resolvedAttributes);
@@ -621,7 +623,7 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
     }
 }
 
-LoginEvent* AssertionConsumerService::newLoginEvent(const Application& application, const xmltooling::HTTPRequest& request) const
+LoginEvent* AssertionConsumerService::newLoginEvent(const Application& application, const HTTPRequest& request) const
 {
     if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
         return nullptr;

@@ -365,8 +365,8 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
     in.addmember("hostname").unsafe_string(request.getHostname());
     in.addmember("port").integer(request.getPort());
     in.addmember("content_type").string(request.getContentType().c_str());
-    in.addmember("content_length").integer(request.getContentLength());
     in.addmember("body").string(request.getRequestBody());
+    in.addmember("content_length").integer(request.getContentLength());
     in.addmember("remote_user").string(request.getRemoteUser().c_str());
     in.addmember("client_addr").string(request.getRemoteAddr().c_str());
     in.addmember("method").string(request.getMethod());
