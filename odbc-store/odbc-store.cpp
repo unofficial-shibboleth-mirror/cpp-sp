@@ -139,7 +139,7 @@ namespace {
             return createRow(STRING_TABLE, context, key, value, expiration);
         }
         int readString(const char* context, const char* key, string* pvalue=nullptr, time_t* pexpiration=nullptr, int version=0) {
-            return readRow(STRING_TABLE, context, key, pvalue, pexpiration, version, false);
+            return readRow(STRING_TABLE, context, key, pvalue, pexpiration, version);
         }
         int updateString(const char* context, const char* key, const char* value=nullptr, time_t expiration=0, int version=0) {
             return updateRow(STRING_TABLE, context, key, value, expiration, version);
@@ -152,7 +152,7 @@ namespace {
             return createRow(TEXT_TABLE, context, key, value, expiration);
         }
         int readText(const char* context, const char* key, string* pvalue=nullptr, time_t* pexpiration=nullptr, int version=0) {
-            return readRow(TEXT_TABLE, context, key, pvalue, pexpiration, version, true);
+            return readRow(TEXT_TABLE, context, key, pvalue, pexpiration, version);
         }
         int updateText(const char* context, const char* key, const char* value=nullptr, time_t expiration=0, int version=0) {
             return updateRow(TEXT_TABLE, context, key, value, expiration, version);
@@ -179,7 +179,7 @@ namespace {
 
     private:
         bool createRow(const char *table, const char* context, const char* key, const char* value, time_t expiration);
-        int readRow(const char *table, const char* context, const char* key, string* pvalue, time_t* pexpiration, int version, bool text);
+        int readRow(const char *table, const char* context, const char* key, string* pvalue, time_t* pexpiration, int version);
         int updateRow(const char *table, const char* context, const char* key, const char* value, time_t expiration, int version);
         bool deleteRow(const char *table, const char* context, const char* key);
 
@@ -502,9 +502,7 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
     throw IOException("ODBC StorageService failed to insert record.");
 }
 
-int ODBCStorageService::readRow(
-    const char *table, const char* context, const char* key, string* pvalue, time_t* pexpiration, int version, bool text
-    )
+int ODBCStorageService::readRow(const char *table, const char* context, const char* key, string* pvalue, time_t* pexpiration, int version)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("readRow");
@@ -522,8 +520,10 @@ int ODBCStorageService::readRow(
     string q("SELECT version");
     if (pexpiration)
         q += ",expires";
-    if (pvalue)
+    if (pvalue) {
+        pvalue->erase();
         q = q + ",CASE version WHEN " + lexical_cast<string>(version) + " THEN null ELSE value END";
+    }
     q = q + " FROM " + table + " WHERE context='" + scontext.tostr() + "' AND id='" + skey.tostr() + "' AND expires > " + timebuf;
     if (m_log.isDebugEnabled())
         m_log.debug("SQL: %s", q.c_str());
