@@ -664,21 +664,26 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     }
 
     pair<bool,bool> requestDelegation = getBool("requestDelegation");
-    if (requestDelegation.first && requestDelegation.second && entity.first) {
-        // Request delegation by including the IdP as an Audience.
-        // Also specify the expected session lifetime as the bound on the assertion lifetime.
-        const PropertySet* sessionProps = app.getPropertySet("Sessions");
-        pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
-        if (!lifetime.first || lifetime.second == 0)
-            lifetime.second = 28800;
-        if (!req->getConditions())
-            req->setConditions(ConditionsBuilder::buildConditions());
-        req->getConditions()->setNotOnOrAfter(time(nullptr) + lifetime.second + 300);
-        AudienceRestriction* audrest = AudienceRestrictionBuilder::buildAudienceRestriction();
-        req->getConditions()->getConditions().push_back(audrest);
-        Audience* aud = AudienceBuilder::buildAudience();
-        audrest->getAudiences().push_back(aud);
-        aud->setAudienceURI(entity.first->getEntityID());
+    if (requestDelegation.first && requestDelegation.second) {
+        if (entity.first) {
+            // Request delegation by including the IdP as an Audience.
+            // Also specify the expected session lifetime as the bound on the assertion lifetime.
+            const PropertySet* sessionProps = app.getPropertySet("Sessions");
+            pair<bool,unsigned int> lifetime = sessionProps ? sessionProps->getUnsignedInt("lifetime") : pair<bool,unsigned int>(true,28800);
+            if (!lifetime.first || lifetime.second == 0)
+                lifetime.second = 28800;
+            if (!req->getConditions())
+                req->setConditions(ConditionsBuilder::buildConditions());
+            req->getConditions()->setNotOnOrAfter(time(nullptr) + lifetime.second + 300);
+            AudienceRestriction* audrest = AudienceRestrictionBuilder::buildAudienceRestriction();
+            req->getConditions()->getConditions().push_back(audrest);
+            Audience* aud = AudienceBuilder::buildAudience();
+            audrest->getAudiences().push_back(aud);
+            aud->setAudienceURI(entity.first->getEntityID());
+        }
+        else {
+            m_log.warn("requestDelegation set, but IdP unknown at request time");
+        }
     }
 
     if (ECP && entityID) {
