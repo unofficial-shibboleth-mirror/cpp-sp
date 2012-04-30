@@ -455,11 +455,10 @@ long AbstractHandler::sendMessage(
     const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : nullptr;
     const PropertySet* relyingParty = application.getRelyingParty(entity);
     pair<bool,const char*> flag = signIfPossible ? make_pair(true,(const char*)"true") : relyingParty->getString("signing");
-    if (role && flag.first &&
-        (!strcmp(flag.second, "true") ||
-            (encoder.isUserAgentPresent() && !strcmp(flag.second, "front")) ||
-            (!encoder.isUserAgentPresent() && !strcmp(flag.second, "back")))) {
-        CredentialResolver* credResolver=application.getCredentialResolver();
+    if (flag.first && (!strcmp(flag.second, "true") ||
+                        (encoder.isUserAgentPresent() && !strcmp(flag.second, "front")) ||
+                        (!encoder.isUserAgentPresent() && !strcmp(flag.second, "back")))) {
+        CredentialResolver* credResolver = application.getCredentialResolver();
         if (credResolver) {
             Locker credLocker(credResolver);
             const Credential* cred = nullptr;
