@@ -61,6 +61,9 @@ using namespace opensaml;
 using saml2::NameID;
 using saml2::AuthnStatement;
 using saml2::AuthnContext;
+# ifndef min
+#  define min(a,b)            (((a) < (b)) ? (a) : (b))
+# endif
 #endif
 
 using namespace shibspconstants;
@@ -528,7 +531,6 @@ pair<bool,long> ExternalAuth::processMessage(
         static const XMLCh _SessionID[] = UNICODE_LITERAL_9(S,e,s,s,i,o,n,I,D);
         static const XMLCh _RelayState[] = UNICODE_LITERAL_10(R,e,l,a,y,S,t,a,t,e);
         static const XMLCh _Cookie[] = UNICODE_LITERAL_6(C,o,o,k,i,e);
-        static const XMLCh _name[] = UNICODE_LITERAL_4(n,a,m,e);
         DOMDocument* retdoc = XMLToolingConfig::getConfig().getParser().newDocument();
         XercesJanitor<DOMDocument> retjanitor(retdoc);
         retdoc->appendChild(retdoc->createElement(_ExternalAuth));
