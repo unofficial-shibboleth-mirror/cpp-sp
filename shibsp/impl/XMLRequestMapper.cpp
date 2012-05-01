@@ -643,8 +643,10 @@ pair<bool,DOMElement*> XMLRequestMapper::background_load()
 RequestMapper::Settings XMLRequestMapper::getSettings(const HTTPRequest& request) const
 {
     try {
-        string vhost = string(request.getScheme()) + "://" + request.getHostname() + ':' + lexical_cast<string>(request.getPort());
-        const Override* o=m_impl->findOverride(vhost.c_str(), request);
+        string normalizedhost(request.getHostname());
+        to_lower(normalizedhost);
+        string vhost = string(request.getScheme()) + "://" + normalizedhost + ':' + lexical_cast<string>(request.getPort());
+        const Override* o = m_impl->findOverride(vhost.c_str(), request);
         return Settings(o, o->getAC());
     }
     catch (XMLException& ex) {
