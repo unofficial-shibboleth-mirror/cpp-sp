@@ -22,22 +22,22 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XercesMergeModule_x86' Language='1033' Version='$(var.XercesVersion)'>
-    <Package Id='{5A32778E-B904-4828-90CD-A317B4F6DF7D}' Description='Merge Module for Xerces (x86)'
+    <Package Id='{72CA15B1-CEB8-4C9B-A5CB-5254759E4B3A}' Description='Merge Module for Xerces (x64)'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
     <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
+      <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
-              <Component Id='xercesc.dll' Guid='{64C16FA9-685C-4612-B9C2-0B56C84A69E1}'>
+              <Component Id='xercesc.dll' Guid='{5C2BA2C6-36EC-4EB3-A343-8C1C9D499B9C}' Win64='yes'>
                 <File Id='xercesc.dll' KeyPath='yes'
-                      Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll'/>
+                      Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
-                <Component Id='xercescD.dll' Guid='{3F92209F-35C7-4D7C-BAC3-B0A96DF0CBDF}'>
+                <Component Id='xercescD.dll' Guid='{236B6A7F-73C0-4EBF-9C06-90C1BE160ACE}' Win64='yes'>
                   <File Id='xercescd.dll' KeyPath='yes'
-                        Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
+                        Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->

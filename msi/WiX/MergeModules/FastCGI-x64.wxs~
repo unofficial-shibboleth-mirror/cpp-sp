@@ -17,35 +17,44 @@
    permissions and limitations under the License.  -->
 
 <?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define XercesVersion='3.1.1' ?>
-<?define XercesFileVersion='3_1' ?>
+<?define FastCGIVersion='2.4.0' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='XercesMergeModule_x86' Language='1033' Version='$(var.XercesVersion)'>
-    <Package Id='{5A32778E-B904-4828-90CD-A317B4F6DF7D}' Description='Merge Module for Xerces (x86)'
+  <Module Id='FastCGIMergeModule_x86' Language='1033' Version='$(var.FastCGIVersion)'>
+    <Package Id='{2C0C288C-D24D-48E0-9BAD-DEFD6A8D8D64}' Description='Merge Module for FastCGI'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x86'/>
+
+    <!-- For now just install this where it is put we expect to go into lib and lib\debug below.  
+         At a a later date, we may chose to make this a placed module  -->
+
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
-          <Directory Id='shibboleth_sp' Name='SP'>
+          <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib'>
-              <Component Id='xercesc.dll' Guid='{64C16FA9-685C-4612-B9C2-0B56C84A69E1}'>
-                <File Id='xercesc.dll' KeyPath='yes'
-                      Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll'/>
+              <Component Id='libfcgi.dll21' Guid='{FD6F8E32-CBDF-4662-A39C-8EC713483C51}'>
+                <File KeyPath='yes' 
+                      Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-VC10\Win32\Release\libfcgi.dll' />
               </Component>
               <Directory Id='lib_debug' Name='debug'>
-                <Component Id='xercescD.dll' Guid='{3F92209F-35C7-4D7C-BAC3-B0A96DF0CBDF}'>
-                  <File Id='xercescd.dll' KeyPath='yes'
-                        Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
+                <Component Id='libfcgi.dll' Guid='{682FFA3A-D517-4332-BCC5-EF24252C3528}'>
+                  <File KeyPath='yes' 
+                        Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-VC10\Win32\Debug\libfcgid.dll' />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
-          </Directory><!-- shibboleth_SP -->
-        </Directory><!-- shibboleth -->
+            <Directory Id='doc' Name='doc'>
+                <Component Id='FASTCGI.LICENSE' Guid='{3FB61369-D8A7-4076-B659-DEDA2558A1AF}'>
+                  <File KeyPath='yes' 
+                        Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc\FASTCGI.LICENSE' />
+                </Component>
+            </Directory><!-- doc -->
+          </Directory><!-- shibboleth -->
+        </Directory><!-- shibboleth_SP -->
       </Directory><!-- ProgramFilesFolder -->
     </Directory><!-- TARGETDIR -->
   </Module>
 </Wix>
 
-    
+

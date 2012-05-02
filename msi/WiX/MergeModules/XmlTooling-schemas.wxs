@@ -19,18 +19,25 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Fragment>
-    <DirectoryRef Id='share_xml_xmltooling'
-                  FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\schemas\' >
-
-      <Component Id='xmltoolingschema' Guid='{2197D645-3AA3-46F1-B250-0F964B901A94}'>
-        <File Name='xenc-schema.xsd'/>
-        <File Name='xmldsig-core-schema.xsd'  />
-        <File Name='soap-envelope.xsd'  />
-        <File Name='xml.xsd'  />
-        <File Name='xmltooling.xsd'  />
-        <File Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\schemas\catalog.xml.in'  />
-        <File Name='xmldsig11-schema.xsd' />
-      </Component>
-    </DirectoryRef>
+    <DirectoryRef Id='TARGETDIR'>
+      <Directory Id='CommonAppDataFolder' Name='CommonFiles' >
+        <Directory Id='common_shibboleth' Name='Shibboleth' >
+          <Directory Id='common_sp' Name='SP' >
+            <Directory Id='common_doc' Name='doc' 
+                       FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\schemas\' >
+              <Component Id='xmltoolingschema' Guid='{2197D645-3AA3-46F1-B250-0F964B901A94}'>
+                <File Name='xenc-schema.xsd'/>
+                <File Name='xmldsig-core-schema.xsd'  />
+                <File Name='soap-envelope.xsd'  />
+                <File Name='xml.xsd'  />
+                <File Name='xmltooling.xsd'  />
+                <File Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\schemas\catalog.xml.in'  />
+                <File Name='xmldsig11-schema.xsd' />
+              </Component>
+            </Directory><!--common_doc-->
+          </Directory><!--common_sp-->
+        </Directory><!--common_shibboleth-->
+      </Directory><!--CommonAppDataFolder-->
+    </DirectoryRef><!--TargetDir-->
   </Fragment>
 </Wix>

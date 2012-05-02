@@ -21,27 +21,31 @@
 <?define XmlToolingFileVersion='1_4' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='XmlToolingMergeModule_x86' Language='1033' Version='$(var.XmlToolingVersion)'>
-    <Package Id='{29A047F2-DECA-45A7-97D8-801217B3C632}' Description='Merge Module for XMLTooling (x86)'
+  <Module Id='XmlToolingMergeModule_x64' Language='1033' Version='$(var.XmlToolingVersion)'>
+    <Package Id='{F944F719-7138-484D-A5B3-753411741B40}' Description='Merge Module for XMLTooling (x64)'
              Comments='This module is built by the Shibboleth Consortium. Includes DDLs and Schema'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+
+    <!-- For now just install this where it is put we expect to go into lib and lib\debug below.  
+         At a a later date, we may chose to make this a placed module  -->
+
     <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
+      <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\Release'>
-              <Component Id='xmltooling.dll' Guid='{53533A59-A563-439D-B13D-A4D7090C42D3}'>
+            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\x64\Release'>
+              <Component Id='xmltooling.dll' Guid='{7BBFB3D8-A9F8-429B-96BE-C1B283EBFDFB}' Win64='yes'>
                 <File Id='xmltooling.dll' Name='xmltooling$(var.XmlToolingFileVersion).dll' />
               </Component>
-              <Component Id='xmltoolinglite.dll' Guid='{5045A722-D6D6-4E55-9196-CB7C50B4446F}'>
+              <Component Id='xmltoolinglite.dll' Guid='{060F61B9-36E9-4F33-9B5B-C59A43709052}' Win64='yes'>
                 <File Id='xmltoolinglite.dll' Name='xmltooling-lite$(var.XmlToolingFileVersion).dll' />
               </Component>
               <Directory Id='lib_debug' Name='debug' 
-                         FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\Debug'>
-                <Component Id='xmltoolingD.dll' Guid='{380E59DF-24F8-4F60-97A7-CC67FB76B4CC}'>
+                         FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\x64\Debug'>
+                <Component Id='xmltoolingD.dll' Guid='{C380627F-9D45-4626-A249-3831FC7C83FC}' Win64='yes'>
                   <File Id='xmltoolingD.dll' Name='xmltooling$(var.XmlToolingFileVersion)D.dll' />
                 </Component>
-                <Component Id='xmltoolingliteD.dll' Guid='{DB6D8737-4E3D-4C06-87F1-C59C7D7CB47A}'>
+                <Component Id='xmltoolingliteD.dll' Guid='{2786A98E-763C-41A1-A6D5-363DB22F17E9}' Win64='yes'>
                   <File Id='xmltoolingliteD.dll' Name='xmltooling-lite$(var.XmlToolingFileVersion)D.dll' />
                 </Component>
               </Directory><!-- lib_debug-->

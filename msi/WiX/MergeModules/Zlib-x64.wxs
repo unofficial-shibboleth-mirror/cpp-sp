@@ -1,5 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
-
+<?xml version='1.0' encoding='utf-8'?>
 <!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
    agreements.  See the NOTICE file distributed with this work for
@@ -17,31 +16,32 @@
    permissions and limitations under the License.  -->
 
 <?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define XercesVersion='3.1.1' ?>
-<?define XercesFileVersion='3_1' ?>
+<?define ZlibVersion='1.2.5' ?>
+<?define ZlibFileVersion='1' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='XercesMergeModule_x86' Language='1033' Version='$(var.XercesVersion)'>
-    <Package Id='{5A32778E-B904-4828-90CD-A317B4F6DF7D}' Description='Merge Module for Xerces (x86)'
+  <Module Id='ZlibMergeModule_x86' Language='1033' Version='$(var.ZlibVersion)'>
+    <Package Id='{68821F70-8952-4778-8149-85A93E4BF426}' Description='Merge Module for Zlib (x64)'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x64'/>
+
     <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
+      <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
-              <Component Id='xercesc.dll' Guid='{64C16FA9-685C-4612-B9C2-0B56C84A69E1}'>
-                <File Id='xercesc.dll' KeyPath='yes'
-                      Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll'/>
+              <Component Id='zlib1.dll' Guid='{792D44C3-3DCE-465D-AAFF-520AB2F20DA2}' Win64='yes'>
+                <File KeyPath='yes'
+                      Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win32_DLL_Release\zlib$(var.ZlibFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
-                <Component Id='xercescD.dll' Guid='{3F92209F-35C7-4D7C-BAC3-B0A96DF0CBDF}'>
-                  <File Id='xercescd.dll' KeyPath='yes'
-                        Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
+                <Component Id='zlib1d.dll' Guid='{74D67C6F-655E-4E4D-A147-39F32DB6E796}' Win64='yes'>
+                  <File Id='zlib1d.dll' KeyPath='yes' 
+                        Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win32_DLL_Debug\zlib$(var.ZlibFileVersion)d.dll'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
-          </Directory><!-- shibboleth_SP -->
+          </Directory><!-- shibboleth_sp -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->
     </Directory><!-- TARGETDIR -->

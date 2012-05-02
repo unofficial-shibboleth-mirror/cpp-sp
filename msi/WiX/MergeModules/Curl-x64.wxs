@@ -17,27 +17,35 @@
    permissions and limitations under the License.  -->
 
 <?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define XercesVersion='3.1.1' ?>
-<?define XercesFileVersion='3_1' ?>
+<?define CurlVersion='7.21.2' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='XercesMergeModule_x86' Language='1033' Version='$(var.XercesVersion)'>
-    <Package Id='{5A32778E-B904-4828-90CD-A317B4F6DF7D}' Description='Merge Module for Xerces (x86)'
+  <Module Id='CurlMergeModule_x64' Language='1033' Version='$(var.CurlVersion)'>
+    <Package Id='{DB1A5E0D-0052-40F3-9D7B-469CCD0CEB2D}' Description='Merge Module for CURL (x64)'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+
     <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
+      <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
-              <Component Id='xercesc.dll' Guid='{64C16FA9-685C-4612-B9C2-0B56C84A69E1}'>
-                <File Id='xercesc.dll' KeyPath='yes'
-                      Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll'/>
+              <Component Id='libcurl.dll' Guid='{14BDB19A-B7F1-4038-B114-8388F3FF07F0}' Win64='yes'>
+                <File KeyPath='yes'
+                      Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\lib\release-dll-ssl-dll-zlib-dll.x64\libcurl.dll'/>
+              </Component>
+              <Component Id='curl.exe' Guid='{52103377-AEF6-4533-B0CE-D3A786D2D17E}' Win64='yes'>
+                <File KeyPath='yes' 
+                      Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\src\release.x64\curl.exe'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
-                <Component Id='xercescD.dll' Guid='{3F92209F-35C7-4D7C-BAC3-B0A96DF0CBDF}'>
-                  <File Id='xercescd.dll' KeyPath='yes'
-                        Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
+                <Component Id='libcurld.dll' Guid='{6F225F9F-25CD-4F6D-8A8F-01C6DD0F0959}' Win64='yes'>
+                  <File KeyPath='yes' 
+                        Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll.x64\libcurld.dll'/>
+                </Component>
+                <Component Id='curl.exe_debug' Guid='{F363D42B-8CB6-4ED8-B2D3-3637B6110E38}' Win64='yes'>
+                  <File Id='curl.exe_debug' KeyPath='yes' 
+                        Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\src\debug.x64\curl.exe'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
@@ -47,5 +55,3 @@
     </Directory><!-- TARGETDIR -->
   </Module>
 </Wix>
-
-    

@@ -21,12 +21,9 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='CurlMergeModule_x86' Language='1033' Version='$(var.CurlVersion)'>
-    <Package Id='10467105-6375-49E1-AC35-045084BD8FA4' Description='Merge Module for CURL'
+    <Package Id='10467105-6375-49E1-AC35-045084BD8FA4' Description='Merge Module for CURL (x86)'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x86'/>
-
-    <!-- For now just install this where it is put we expect to go into lib and lib\debug below.  
-         At a a later date, we may chose to make this a placed module  -->
+             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x64'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>

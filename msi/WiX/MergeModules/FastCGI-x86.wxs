@@ -21,12 +21,9 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='FastCGIMergeModule_x86' Language='1033' Version='$(var.FastCGIVersion)'>
-    <Package Id='{2C0C288C-D24D-48E0-9BAD-DEFD6A8D8D64}' Description='Merge Module for FastCGI'
+    <Package Id='{2C0C288C-D24D-48E0-9BAD-DEFD6A8D8D64}' Description='Merge Module for FastCGI (x86)'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x86'/>
-
-    <!-- For now just install this where it is put we expect to go into lib and lib\debug below.  
-         At a a later date, we may chose to make this a placed module  -->
+             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
@@ -45,12 +42,10 @@
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
-              <Directory Id='doc_shibboleth' Name='shibboleth'>
-                <Component Id='FASTCGI.LICENSE' Guid='{3FB61369-D8A7-4076-B659-DEDA2558A1AF}'>
-                  <File KeyPath='yes' 
-                        Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc\FASTCGI.LICENSE' />
-                </Component>
-              </Directory><!-- doc_shibboleth-->
+              <Component Id='FASTCGI.LICENSE' Guid='{3FB61369-D8A7-4076-B659-DEDA2558A1AF}'>
+                <File KeyPath='yes' 
+                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc\FASTCGI.LICENSE' />
+              </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth -->
         </Directory><!-- shibboleth_SP -->

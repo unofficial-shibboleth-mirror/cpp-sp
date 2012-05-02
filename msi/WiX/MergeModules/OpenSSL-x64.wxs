@@ -22,45 +22,45 @@
 <?define OpenSSLFileVersion='1_0_0' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='OpenSSLMergeModule_x86' Language='1033' Version='$(var.OpenSSLVersion)'>
-    <Package Id='11FD68EE-607E-4755-98AA-1C7EE5E03652' Description='Merge Module for OpenSSL (x86)'
+  <Module Id='OpenSSLMergeModule_x64' Language='1033' Version='$(var.OpenSSLVersion)'>
+    <Package Id='{EEB21422-347C-4AFA-A347-DCA0E5D61572}' Description='Merge Module for OpenSSL (x64)'
              Comments='This module is built by the Shibboleth Consortium. Includes libeay32 and ssleay32.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x64'/>
     <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
-        <Directory Id='shibboleth' Name='Shibboleth'>
-          <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out32dll\'>
-              <Component Id='libeay32.dll' Guid='{38378D46-4CF2-4DE5-A30D-79F92AD6DD06}'>
+      <Directory Id='ProgramFiles64Folder' >
+        <Directory Id='shibboleth64' Name='Shibboleth'>
+          <Directory Id='shibboleth_sp64' Name='SP'>
+            <Directory Id='lib64' Name='lib' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out64dll\' >
+              <Component Id='libeay64.dll' Guid='{49ED7AFD-EB3D-4296-84BC-E40C0E40DE5D}' Win64='yes'>
                 <File KeyPath='yes' Name='libeay32_$(var.OpenSSLFileVersion).dll' />
               </Component>
-              <Component Id='ssleay32.dll' Guid='{9C1CAE5E-F8E9-4EBA-961B-1DD149097702}'>
+              <Component Id='ssleay64.dll' Guid='{649A8C33-1F00-40BD-BBA4-0D8FD7C258CD}' Win64='yes'>
                 <File KeyPath='yes' Name='ssleay32_$(var.OpenSSLFileVersion).dll' />
               </Component>
-              <Component Id='openssl.exe' Guid='{886F0254-AD10-45C6-A723-37C7FA466651}'>
+              <Component Id='openssl64.exe' Guid='{AF6DBF01-02E0-4CA4-9466-2E95EAC1200E}' Win64='yes'>
                 <File KeyPath='yes' Name='openssl.exe' />
               </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out32dll.dbg\' >
-                <Component Id='libeay32.dll_debug' Guid='{86C4099A-1E75-4676-8F6D-BF5748F657B6}'>
-                  <File Id='libeay32.dll_debug' KeyPath='yes' Name='libeay32_$(var.OpenSSLFileVersion)D.dll' />
+              <Directory Id='lib_debug64' Name='debug' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out64dll.dbg\'>
+                <Component Id='libeay64.dll_debug' Guid='{77010CF4-1367-4E42-86EA-C29D72EDAEC5}' Win64='yes'>
+                  <File Id='libeay64.dll_debug' KeyPath='yes' Name='libeay32_$(var.OpenSSLFileVersion)D.dll' />
                 </Component>
-                <Component Id='ssleay32.dll_debug' Guid='{2097A37D-650E-45F4-96C0-94C748DEA49C}'>
-                  <File Id='ssleay32.dll_debug' KeyPath='yes' Name='ssleay32_$(var.OpenSSLFileVersion)D.dll' />
+                <Component Id='ssleay64.dll_debug' Guid='{52C30BD0-3769-4021-85F7-4AE539DCED41}' Win64='yes'>
+                  <File Id='ssleay64.dll_debug' KeyPath='yes' Name='ssleay32_$(var.OpenSSLFileVersion)D.dll' />
                 </Component>
-                <Component Id='openssl.exe_debug' Guid='{D47E4692-F648-4800-BE4A-9D84DAD5DEEA}'>
-                  <File Id='openssl.exe_debug' Name='openssl.exe' />
+                <Component Id='openssl64.exe_debug' Guid='{3555958C-C30D-4829-BC17-936D2EEC3EA4}' Win64='yes'>
+                  <File Id='openssl64.exe_debug' Name='openssl.exe' />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
-            <Directory Id='doc' Name='doc'>
-              <Component Id='OPENSSL.LICENSE' Guid='{CEC1CC66-6D48-475A-8C99-B687B0B901AA}'>
-                <File KeyPath='yes' 
+            <Directory Id='doc64' Name='doc'>
+              <Component Id='OPENSSL.LICENSE_64' Guid='{10B77A21-E554-47F2-99F0-7171304FE899}' Win64='yes'>
+                <File KeyPath='yes' Id='OPENSSL.LICENSE_64'
                       Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc\OPENSSL.LICENSE' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->
-    </Directory><!-- TARGETDIR -->
+    </Directory>
   </Module>
 </Wix>    
