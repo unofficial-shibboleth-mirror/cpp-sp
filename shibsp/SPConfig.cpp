@@ -190,7 +190,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     PathResolver localpr;
     localpr.setDefaultPrefix(inst_prefix2.c_str());
     inst_prefix = getenv("SHIBSP_CFGDIR");
-    if (!inst_prefix)
+    if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_CFGDIR;
     localpr.setCfgDir(inst_prefix);
     XMLToolingConfig::getConfig().log_config(localpr.resolve(ll, PathResolver::XMLTOOLING_CFG_FILE, PACKAGE_NAME).c_str());
@@ -240,19 +240,23 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     pr->setDefaultPrefix(inst_prefix2.c_str());
     pr->setCfgDir(inst_prefix);
     inst_prefix = getenv("SHIBSP_LIBDIR");
-    if (!inst_prefix)
+    if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_LIBDIR;
     pr->setLibDir(inst_prefix);
     inst_prefix = getenv("SHIBSP_LOGDIR");
-    if (!inst_prefix)
+    if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_LOGDIR;
     pr->setLogDir(inst_prefix);
     inst_prefix = getenv("SHIBSP_RUNDIR");
-    if (!inst_prefix)
+    if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_RUNDIR;
     pr->setRunDir(inst_prefix);
+    inst_prefix = getenv("SHIBSP_CACHEDIR");
+    if (!inst_prefix || !*inst_prefix)
+        inst_prefix = SHIBSP_CACHEDIR;
+    pr->setCacheDir(inst_prefix);
     inst_prefix = getenv("SHIBSP_XMLDIR");
-    if (!inst_prefix)
+    if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_XMLDIR;
     pr->setXMLDir(inst_prefix);
 
