@@ -232,7 +232,17 @@ bool TCPListener::connect(ShibSocket& s) const
     if(SOCKET_ERROR==::connect(s, (const struct sockaddr*)&m_sockaddr, sizeof(m_sockaddr)))
         return log_error("connect");
 #else
+    // Newer BSDs require the struct length be passed based on the socket address.
+    // Others have no field for that and take the whole struct size like Windows does.
+# ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+#  ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+    if (::connect(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.ss_len) < 0)
+#  else
+    if (::connect(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.sin_len) < 0)
+#  endif
+# else
     if (::connect(s, (const struct sockaddr*)&m_sockaddr, sizeof(m_sockaddr)) < 0)
+# endif
         return log_error("connect");
 #endif
     return true;
