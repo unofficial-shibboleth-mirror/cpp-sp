@@ -16,9 +16,7 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define XercesVersion='3.1.1' ?>
-<?define XercesFileVersion='3_1' ?>
+<?include ..\Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XercesMergeModule_x86' Language='1033' Version='$(var.XercesVersion)'>

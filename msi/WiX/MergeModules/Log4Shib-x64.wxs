@@ -16,9 +16,7 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define LogForShibVersion='1.0.5' ?>
-<?define LogForShibFileVersion='1_0' ?>
+<?include ..\Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='Log4ShibMergeModule_x86' Language='1033' Version='$(var.LogForShibVersion)'>

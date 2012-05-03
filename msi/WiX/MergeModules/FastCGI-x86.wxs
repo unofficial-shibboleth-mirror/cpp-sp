@@ -16,8 +16,7 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define FastCGIVersion='2.4.0' ?>
+<?include ..\Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='FastCGIMergeModule_x86' Language='1033' Version='$(var.FastCGIVersion)'>

@@ -16,8 +16,7 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define CurlVersion='7.21.2' ?>
+<?include ..\Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='CurlMergeModule_x86' Language='1033' Version='$(var.CurlVersion)'>

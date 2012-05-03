@@ -15,8 +15,7 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define XmlToolingVersion='1.4.2' ?>
+<?include ..\Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XmlTooling_schemas' Language='1033' Version='$(var.XmlToolingVersion)'>

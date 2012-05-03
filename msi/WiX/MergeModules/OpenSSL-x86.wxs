@@ -16,10 +16,7 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?define BuildDirectory='G:\Downloads\shib\' ?>
-<?define OpenSSLVersion='1.0.0.10' ?><!-- 1.0.0a -->
-<?define OpenSSLDirVersion='1.0.0a' ?>
-<?define OpenSSLFileVersion='1_0_0' ?>
+<?include ..\Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='OpenSSLMergeModule_x86' Language='1033' Version='$(var.OpenSSLVersion)'>
