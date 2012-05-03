@@ -143,6 +143,8 @@ bool SessionInitiator::checkCompatibility(SPRequest& request, bool isHandler) co
 
 pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 {
+    cleanRelayState(request.getApplication(), request, request);
+
     const char* entityID = nullptr;
     pair<bool,const char*> param = getString("entityIDParam");
     if (isHandler) {

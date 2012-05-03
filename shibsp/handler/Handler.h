@@ -63,6 +63,20 @@ namespace shibsp {
         virtual void log(SPRequest::SPLogLevel level, const std::string& msg) const;
 
         /**
+         * Prevents unused relay state from building up by cleaning old state from the client.
+         *
+         * <p>Handlers that generate relay state should call this method as a house cleaning
+         * step.
+         *
+         * @param application   the associated Application
+         * @param request       incoming HTTP request
+         * @param response      outgoing HTTP response
+         */
+        virtual void cleanRelayState(
+            const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse& response
+            ) const;
+
+        /**
          * Implements various mechanisms to preserve RelayState,
          * such as cookies or StorageService-backed keys.
          *

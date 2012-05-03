@@ -177,6 +177,54 @@ void Handler::log(SPRequest::SPLogLevel level, const string& msg) const
         );
 }
 
+void Handler::cleanRelayState(
+    const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse& response
+    ) const
+{
+    // Only cookie-based relay state requires cleaning.
+    pair<bool,const char*> mech = getString("relayState");
+    if (!mech.first) {
+        // Check for setting on Sessions element.
+        const PropertySet* sessionprop = application.getPropertySet("Sessions");
+        if (sessionprop)
+            mech = sessionprop->getString("relayState");
+    }
+    if (!mech.first || !mech.second || strncmp(mech.second, "cookie", 6))
+        return;
+    
+    int maxCookies = 25,purgedCookies = 0;
+    mech.second += 6;
+    if (*mech.second == ':' && isdigit(*(++mech.second))) {
+        maxCookies = atoi(mech.second);
+        if (maxCookies == 0)
+            maxCookies = 25;
+    }
+
+    string exp;
+
+    // Walk the list of cookies backwards by name.
+    const map<string,string>& cookies = request.getCookies();
+    for (map<string,string>::const_reverse_iterator i = cookies.rbegin(); i != cookies.rend(); ++i) {
+        // Process relay state cookies only.
+        if (starts_with(i->first, "_shibstate_")) {
+            if (maxCookies > 0) {
+                // Keep it, but count it against the limit.
+                --maxCookies;
+            }
+            else {
+                // We're over the limit, so everything here and older gets cleaned up.
+                if (exp.empty())
+                    exp = string(application.getCookieNameProps("_shibstate_").second) + "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
+                response.setCookie(i->first.c_str(), exp.c_str());
+                ++purgedCookies;
+            }
+        }
+    }
+
+    if (purgedCookies > 0)
+        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedCookies) + " stale relay state cookie(s) from client");
+}
+
 void Handler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
 {
     // The empty string implies no state to deal with.
@@ -194,22 +242,22 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
     if (!mech.first || !mech.second || !*mech.second)
         return;
 
-    if (!strcmp(mech.second, "cookie")) {
+    if (!strncmp(mech.second, "cookie", 6)) {
         // Here we store the state in a cookie and send a fixed
         // value so we can recognize it on the way back.
         if (relayState.find("cookie:") != 0) {
-            const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
-            pair<string,const char*> shib_cookie=application.getCookieNameProps("_shibstate_");
-            string stateval = urlenc->encode(relayState.c_str()) + shib_cookie.second;
+            pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibstate_");
+            string stateval = XMLToolingConfig::getConfig().getURLEncoder()->encode(relayState.c_str()) + shib_cookie.second;
             // Generate a random key for the cookie name instead of the fixed name.
             string rsKey;
-            generateRandomHex(rsKey, 5);
+            generateRandomHex(rsKey, 4);
+            rsKey = lexical_cast<string>(time(nullptr)) + '_' + rsKey;
             shib_cookie.first = "_shibstate_" + rsKey;
             response.setCookie(shib_cookie.first.c_str(), stateval.c_str());
             relayState = "cookie:" + rsKey;
         }
     }
-    else if (strstr(mech.second,"ss:")==mech.second) {
+    else if (!strncmp(mech.second, "ss:", 3)) {
         if (relayState.find("ss:") != 0) {
             mech.second+=3;
             if (*mech.second) {
@@ -323,7 +371,7 @@ void Handler::recoverRelayState(
         }
     }
 
-    // Look for cookie-backed state of the form "cookie:key".
+    // Look for cookie-backed state of the form "cookie:timestamp_key".
     if (strstr(state,"cookie:")==state) {
         state += 7;
         if (*state) {
@@ -333,11 +381,10 @@ void Handler::recoverRelayState(
             state = request.getCookie(relay_cookie.first.c_str());
             if (state && *state) {
                 // URL-decode the value.
-                char* rscopy=strdup(state);
+                char* rscopy = strdup(state);
                 XMLToolingConfig::getConfig().getURLEncoder()->decode(rscopy);
                 relayState = rscopy;
                 free(rscopy);
-
                 if (clear) {
                     string exp(relay_cookie.second);
                     exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
