@@ -16,10 +16,15 @@
    permissions and limitations under the License.  -->
 
 <?define BuildDirectory='G:\Downloads\shib\' ?>
+<?define XmlToolingVersion='1.4.2' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Fragment>
-    <DirectoryRef Id='TARGETDIR'>
+  <Module Id='XmlTooling_schemas' Language='1033' Version='$(var.XmlToolingVersion)'>
+    <Package Id='{C4A8AAF1-D263-4361-9695-CE0F56B5D3C6}' Description='Merge Module for XmlTooling schemas'
+             Comments='This module is built by the Shibboleth Consortium. Includes DDLs SAMLSign'
+             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='CommonAppDataFolder' Name='CommonFiles' >
         <Directory Id='common_shibboleth' Name='Shibboleth' >
           <Directory Id='common_sp' Name='SP' >
@@ -38,6 +43,6 @@
           </Directory><!--common_sp-->
         </Directory><!--common_shibboleth-->
       </Directory><!--CommonAppDataFolder-->
-    </DirectoryRef><!--TargetDir-->
-  </Fragment>
+    </Directory><!--TargetDir-->
+  </Module>
 </Wix>

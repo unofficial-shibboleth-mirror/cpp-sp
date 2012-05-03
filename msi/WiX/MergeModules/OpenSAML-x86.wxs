@@ -50,11 +50,6 @@
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->
     </Directory><!-- TARGETDIR -->
-    <ComponentRef Id='schema_assertion_01'/>
-    <ComponentRef Id='schema_assertion_1_1'/>
-    <ComponentRef Id='schema_protocol_01'/>
-    <ComponentRef Id='schema_protocol_1_1'/>
-    <ComponentRef Id='samlschema' />
   </Module>
 </Wix>
 

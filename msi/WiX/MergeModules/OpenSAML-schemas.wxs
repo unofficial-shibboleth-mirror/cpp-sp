@@ -17,10 +17,15 @@
      permissions and limitations under the License.  -->
 
 <?define BuildDirectory='G:\Downloads\shib\' ?>
+<?define OpenSAMLVersion='2.4.3' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Fragment>
-    <DirectoryRef Id='TARGETDIR'>
+  <Module Id='OpenSAMLMergeModule_schemas' Language='1033' Version='$(var.OpenSAMLVersion)'>
+    <Package Id='{8567178A-EEA1-4798-9D20-C2E2F7247D0F}' Description='Merge Module for OpenSAML schemas'
+             Comments='This module is built by the Shibboleth Consortium'
+             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='CommonAppDataFolder' Name='CommonFiles' >
         <Directory Id='common_shibboleth' Name='Shibboleth' >
           <Directory Id='common_sp' Name='SP' >
@@ -102,6 +107,6 @@
           </Directory><!--common_sp-->
         </Directory><!--common_shibboleth-->
       </Directory><!--CommonAppDataFolder-->
-    </DirectoryRef><!--TargetDir-->
-  </Fragment>
+    </Directory><!--TargetDir-->
+  </Module>
 </Wix>

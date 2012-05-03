@@ -50,6 +50,5 @@
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFiles -->
     </Directory><!-- TARGETDIR -->
-    <ComponentRef Id='xmltoolingschema'/>
   </Module>
 </Wix>

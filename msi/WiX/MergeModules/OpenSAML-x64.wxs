@@ -23,7 +23,7 @@
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='OpenSAMLMergeModule_x64' Language='1033' Version='$(var.OpenSAMLVersion)'>
     <Package Id='{C4A8AAF1-D263-4361-9695-CE0F56B5D3C6}' Description='Merge Module for OpenSAML (x64)'
-             Comments='This module is built by the Shibboleth Consortium. Includes DDLs SAMLSign and Schema'
+             Comments='This module is built by the Shibboleth Consortium. Includes DDLs SAMLSign'
              Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
@@ -50,11 +50,6 @@
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->
     </Directory><!-- TARGETDIR -->
-    <ComponentRef Id='schema_assertion_01'/>
-    <ComponentRef Id='schema_assertion_1_1'/>
-    <ComponentRef Id='schema_protocol_01'/>
-    <ComponentRef Id='schema_protocol_1_1'/>
-    <ComponentRef Id='samlschema' />
   </Module>
 </Wix>
 

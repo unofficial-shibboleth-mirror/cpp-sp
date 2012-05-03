@@ -17,10 +17,10 @@
    permissions and limitations under the License.  -->
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Id='C59417F2-CCCA-4668-A39E-E7227D295D59' Name='Test Package1' Language='1033' UpgradeCode='{948E0C71-CC50-48C0-83F6-4D261A7521CA}'
+  <Product Id='C59417F2-CCCA-4668-A39E-E7227D295DD9' Name='Test Package21' Language='1033' UpgradeCode='{948E0C71-CC50-48C0-83F6-4D261A7521CD}'
            Version='1.0.0.0' Manufacturer='Shibboleth Consortium' >
-    <Package Description='TEST Windows Installer package'
-             Comments='Ignore Ignore Ignore Ignore' Platform='x64'
+    <Package Description='TEST2 Windows Installer package'
+             Comments='Ignore Ignore Ignore Ignore' Platform='x86'
              Manufacturer='Shibboleth Consortium' InstallerVersion='405' Compressed='yes' />
 
     <Media Id='1' Cabinet='product.cab' EmbedCab='yes' />
@@ -29,6 +29,8 @@
       <Directory Id='ProgramFilesFolder' >
         <Merge Id='XmlTooling-32' Language='1033' SourceFile='.\XmlTooling-x86.msm' DiskId='1' />
         <Merge Id='OpenSAML-32' Language='1033' SourceFile='.\OpenSAML-x86.msm' DiskId='1' />
+        <Merge Id='XmlTooling-Schemas' Language='1033' SourceFile='.\XmlTooling-Schemas.msm' DiskId='1' />
+        <Merge Id='OpenSAML-Schemas' Language='1033' SourceFile='.\OpenSAML-Schemas.msm' DiskId='1' />
 <!--
         <Merge Id='OpenSSL-32' Language='1033' SourceFile='.\OpenSSL-x86.msm' DiskId='1' />
         <Merge Id='Curl-32' Language='1033' SourceFile='.\Curl-x86.msm' DiskId='1' />
@@ -37,13 +39,13 @@
         <Merge Id='Shibboleth-32' Language='1033' SourceFile='.\Shibboleth-x86.msm' DiskId='1' />
         <Merge Id='Xerces-32' Language='1033' SourceFile='.\Xerces-x86.msm' DiskId='1' />
         <Merge Id='XmlSec-32' Language='1033' SourceFile='.\XmlSec-x86.msm' DiskId='1' />
-        <Merge Id='Zlib-32' Language='1033' SourceFile='.\Zlib-x86.msm' DiskId='1' />  -->
+        <Merge Id='Zlib-32' Language='1033' SourceFile='.\Zlib-x86.msm' DiskId='1' />  
       </Directory>
       <Directory Id='ProgramFiles64Folder' > 
         <Merge Id='XmlTooling-64' Language='1033' SourceFile='.\XmlTooling-x64.msm' DiskId='1' />
         <Merge Id='OpenSAML-64' Language='1033' SourceFile='.\OpenSAML-x64.msm' DiskId='1' /> 
 
-<!--
+
         <Merge Id='OpenSSL-64' Language='1033' SourceFile='.\OpenSSL-x64.msm' DiskId='1' />
         <Merge Id='OpenSAML-64' Language='1033' SourceFile='.\OpenSAML-x64.msm' DiskId='1' />
         <Merge Id='Curl-64' Language='1033' SourceFile='.\Curl-x64.msm' DiskId='1' FileCompression='true' />
@@ -62,8 +64,8 @@
     <Feature Id='MyFeature' Title='My 1st Feature' Level='1'>
       <MergeRef Id='XmlTooling-32'/> 
       <MergeRef Id='OpenSAML-32'/>
-      <MergeRef Id='XmlTooling-64'/> 
-      <MergeRef Id='OpenSAML-64'/>
+      <MergeRef Id='XmlTooling-Schemas'/> 
+      <MergeRef Id='OpenSAML-Schemas'/>
     </Feature>
   </Product>
 </Wix>
