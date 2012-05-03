@@ -206,7 +206,17 @@ bool TCPListener::bind(ShibSocket& s, bool force) const
         return false;
     }
 #else
+    // Newer BSDs require the struct length be passed based on the socket address.
+    // Others have no field for that and take the whole struct size like Windows does.
+# ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+#  ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+    if (::bind(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.ss_len) < 0) {
+#  else
+    if (::bind(s, (const struct sockaddr*)&m_sockaddr, m_sockaddr.sin_len) < 0) {
+#  endif
+# else
     if (::bind(s, (const struct sockaddr*)&m_sockaddr, sizeof(m_sockaddr)) < 0) {
+# endif
         log_error("bind");
         close(s);
         return false;
