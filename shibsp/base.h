@@ -76,19 +76,31 @@
   #define SHIBSP_EXCEPTIONAPI(api)
 #endif
 
-#ifdef WIN32
-
-/** Default catalog path on Windows. */
-# define SHIBSP_SCHEMAS "c:/opt/shibboleth-sp/share/xml/xmltooling/catalog.xml;c:/opt/shibboleth-sp/share/xml/opensaml/saml20-catalog.xml;c:/opt/shibboleth-sp/share/xml/opensaml/saml11-catalog.xml;c:/opt/shibboleth-sp/share/xml/shibboleth/catalog.xml"
-
-/** Default name of configuration file on Windows. */
-# define SHIBSP_CONFIG  "shibboleth2.xml"
-
 /**
  * Controls default logging level of console tools and other situations
  * where fully-configured logging isn't used.
  */
 #define SHIBSP_LOGGING  "console.logger"
+
+/** Default name of SP in-process logging config file. */
+#define SHIBSP_INPROC_LOGGING "native.logger"
+
+/** Default name of SP out-of-process logging config file. */
+#define SHIBSP_OUTOFPROC_LOGGING "shibd.logger"
+
+/** Logging category for Service Provider functions. */
+#define SHIBSP_LOGCAT "Shibboleth"
+
+/** Logging category for Service Provider auditing. */
+#define SHIBSP_TX_LOGCAT "Shibboleth-TRANSACTION"
+
+/** Default name of configuration file. */
+# define SHIBSP_CONFIG  "shibboleth2.xml"
+
+#ifdef WIN32
+
+/** Default catalog path on Windows. */
+# define SHIBSP_SCHEMAS "c:/opt/shibboleth-sp/share/xml/xmltooling/catalog.xml;c:/opt/shibboleth-sp/share/xml/opensaml/saml20-catalog.xml;c:/opt/shibboleth-sp/share/xml/opensaml/saml11-catalog.xml;c:/opt/shibboleth-sp/share/xml/shibboleth/catalog.xml"
 
 /** Default prefix for installation (used to resolve relative paths). */
 #define SHIBSP_PREFIX   "c:/opt/shibboleth-sp"
@@ -114,11 +126,5 @@
 #else
 # include <shibsp/paths.h>
 #endif
-
-/** Logging category for Service Provider functions. */
-#define SHIBSP_LOGCAT "Shibboleth"
-
-/** Logging category for Service Provider auditing. */
-#define SHIBSP_TX_LOGCAT "Shibboleth-TRANSACTION"
 
 #endif /* __shibsp_base_h__ */

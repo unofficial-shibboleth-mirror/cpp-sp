@@ -308,10 +308,10 @@ struct shib_request_config
 // create a request record
 static shib_request_config* init_request_config(request_rec *r)
 {
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "init_request_config");
     shib_request_config* rc = (shib_request_config*)ap_pcalloc(r->pool,sizeof(shib_request_config));
     memset(rc, 0, sizeof(shib_request_config));
     ap_set_module_config(r->request_config, &mod_shib, rc);
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_init_rc");
     return rc;
 }
 
@@ -695,7 +695,7 @@ extern "C" int shib_check_user(request_rec* r)
     if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff == 1)
         return DECLINED;
 
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user(%d): ENTER", (int)getpid());
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user entered in pid (%d)", (int)getpid());
 
     string threadid("[");
     threadid += lexical_cast<string>(getpid()) + "] shib_check_user";
@@ -722,7 +722,7 @@ extern "C" int shib_check_user(request_rec* r)
         pair<bool,long> res = psta->getServiceProvider().doAuthentication(*psta, true);
         apr_pool_userdata_setn((const void*)42,g_UserDataKey,nullptr,r->pool);
         // If directed, install a spoof key to recognize when we've already cleared headers.
-        if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bUseHeaders==1))
+        if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bUseHeaders == 1))
             ap_table_set(r->headers_in, "Shib-Spoof-Check", g_spoofKey.c_str());
         if (res.first) {
 #ifdef SHIB_APACHE_24
@@ -784,12 +784,12 @@ extern "C" int shib_handler(request_rec* r)
     void* data;
     apr_pool_userdata_get(&data,g_UserDataKey,r->pool);
     if (data==(const void*)42) {
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler skipped since check_user ran");
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_handler skipped since check_user ran");
         return DECLINED;
     }
 #endif
 
-    ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_handler(%d): ENTER: %s", (int)getpid(), r->handler);
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_handler entered in pid (%d): %s", (int)getpid(), r->handler);
 
     try {
 #ifndef SHIB_APACHE_24
@@ -811,7 +811,7 @@ extern "C" int shib_handler(request_rec* r)
         pair<bool,long> res = psta->getServiceProvider().doHandler(*psta);
         if (res.first) return res.second;
 
-        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not do anything.");
+        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "doHandler() did not handle the request");
         return SERVER_ERROR;
     }
     catch (std::exception& e) {
@@ -844,7 +844,7 @@ extern "C" int shib_auth_checker(request_rec* r)
         return DECLINED;
     }
 
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker(%d): ENTER", (int)getpid());
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_auth_checker entered in pid (%d)", (int)getpid());
 
     string threadid("[");
     threadid += lexical_cast<string>(getpid()) + "] shib_auth_checker";
@@ -889,20 +889,20 @@ extern "C" int shib_auth_checker(request_rec* r)
 // Overlays environment variables on top of subprocess table.
 extern "C" int shib_fixups(request_rec* r)
 {
-  shib_dir_config *dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib);
-  if (dc->bOff==1 || dc->bUseEnvVars==0)
-    return DECLINED;
-
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup(%d): ENTER", (int)getpid());
-
-  shib_request_config *rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
-  if (rc==nullptr || rc->env==nullptr || ap_is_empty_table(rc->env))
+    shib_dir_config *dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib);
+    if (dc->bOff==1 || dc->bUseEnvVars==0)
         return DECLINED;
 
-  ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r), "shib_fixup adding %d vars", ap_table_elts(rc->env)->nelts);
-  r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, rc->env);
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_fixups entered in pid (%d)", (int)getpid());
 
-  return OK;
+    shib_request_config *rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
+    if (rc==nullptr || rc->env==nullptr || ap_is_empty_table(rc->env))
+        return DECLINED;
+
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_fixups adding %d vars", ap_table_elts(rc->env)->nelts);
+    r->subprocess_env = ap_overlay_tables(r->pool, r->subprocess_env, rc->env);
+
+    return OK;
 }
 
 
@@ -1016,11 +1016,11 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
     const char *group_name, *ll, *w;
 
 #ifdef SHIB_APACHE_13
-    if (!(f=ap_pcfg_openfile(r->pool,grpfile))) {
+    if (!(f=ap_pcfg_openfile(r->pool, grpfile))) {
 #else
     if (ap_pcfg_openfile(&f,r->pool,grpfile) != APR_SUCCESS) {
 #endif
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG,SH_AP_R(r),"groups_for_user() could not open group file: %s\n",grpfile);
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG, SH_AP_R(r), "groups_for_user: could not open group file: %s\n", grpfile);
         return nullptr;
     }
 
@@ -1030,7 +1030,7 @@ static SH_AP_TABLE* groups_for_user(request_rec* r, const char* user, char* grpf
 #else
     if (apr_pool_create(&sp,r->pool) != APR_SUCCESS) {
         ap_log_rerror(APLOG_MARK,APLOG_ERR,0,r,
-            "groups_for_user() could not create a subpool");
+            "groups_for_user: could not create a subpool");
         return nullptr;
     }
 #endif
@@ -1758,11 +1758,10 @@ extern "C" const char* shib_set_acl_slot(cmd_parms* params, shib_dir_config* dc,
 extern "C" void shib_child_exit(server_rec* s, SH_AP_POOL* p)
 {
     if (g_Config) {
-        ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit(%d) dealing with g_Config..", (int)getpid());
         g_Config->term();
         g_Config = nullptr;
-        ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_exit() done");
     }
+    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, SH_AP_R(s), "child_exit: mod_shib shutdown in pid (%d)", (int)getpid());
 }
 #else
 /*
@@ -1775,32 +1774,27 @@ extern "C" apr_status_t shib_exit(void* data)
         g_Config->term();
         g_Config = nullptr;
     }
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0,nullptr,"shib_exit() done");
+    server_rec* s = reinterpret_cast<server_rec*>(data);
+    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, SH_AP_R(s), "shib_exit: mod_shib shutdown in pid (%d)", (int)getpid());
     return OK;
 }
-#endif
 
 /*
- * shire_child_init()
- *  Things to do when the child process is initialized.
- *  (or after the configs are read in apache-2)
+ * shib_post_config()
+ *  We do the library init/term work here for 2.x to reduce overhead and
+ *  get default logging established before the fork happens.
  */
-#ifdef SHIB_APACHE_13
-extern "C" void shib_child_init(server_rec* s, SH_AP_POOL* p)
-#else
-extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
-#endif
+apr_status_t shib_post_config(apr_pool_t* p, apr_pool_t*, apr_pool_t*, server_rec* s)
 {
     // Initialize runtime components.
-
-    ap_log_error(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init(%d) starting", (int)getpid());
+    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, SH_AP_R(s),"post_config: mod_shib initializing in pid (%d)", (int)getpid());
 
     if (g_Config) {
-        ap_log_error(APLOG_MARK,APLOG_ERR|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() already initialized!");
-        exit(1);
+        ap_log_error(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(s), "post_config: mod_shib already initialized");
+        return !OK;
     }
 
-    g_Config=&SPConfig::getConfig();
+    g_Config = &SPConfig::getConfig();
     g_Config->setFeatures(
         SPConfig::Listener |
         SPConfig::Caching |
@@ -1810,21 +1804,70 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         SPConfig::Handlers
         );
     if (!g_Config->init(g_szSchemaDir, g_szPrefix)) {
-        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to initialize libraries");
-        exit(1);
+        ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, SH_AP_R(s), "post_config: mod_shib failed to initialize libraries");
+        return !OK;
     }
 #ifndef SHIB_APACHE_24
     g_Config->AccessControlManager.registerFactory(HT_ACCESS_CONTROL, &htAccessFactory);
 #endif
     g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
 
+    // Set the cleanup handler, passing in the server_rec for logging.
+    apr_pool_cleanup_register(p, s, &shib_exit, apr_pool_cleanup_null);
+
+    return OK;
+}
+
+#endif
+
+/*
+ * shib_child_init()
+ *  Things to do when the child process is initialized.
+ *  We can't use post-config for all of it on 2.x because only the forking thread shows
+ *  up in the child, losing the internal threads spun up by plugins in the SP.
+ */
+#ifdef SHIB_APACHE_13
+extern "C" void shib_child_init(server_rec* s, SH_AP_POOL* p)
+#else
+extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
+#endif
+{
+    // Initialize runtime components.
+
+    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, SH_AP_R(s),"child_init: mod_shib initializing in pid (%d)", (int)getpid());
+
+    // 2.x versions have already initialized the libraries.
+#ifdef SHIB_APACHE_13
+    if (g_Config) {
+        ap_log_error(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(s), "child_init: mod_shib already initialized, exiting");
+        exit(1);
+    }
+
+    g_Config = &SPConfig::getConfig();
+    g_Config->setFeatures(
+        SPConfig::Listener |
+        SPConfig::Caching |
+        SPConfig::RequestMapping |
+        SPConfig::InProcess |
+        SPConfig::Logging |
+        SPConfig::Handlers
+        );
+    if (!g_Config->init(g_szSchemaDir, g_szPrefix)) {
+        ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, SH_AP_R(s), "child_init: mod_shib failed to initialize libraries");
+        exit(1);
+    }
+    g_Config->AccessControlManager.registerFactory(HT_ACCESS_CONTROL, &htAccessFactory);
+    g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
+#endif
+
+    // The config gets installed for all versions here due to the background thread/fork issues.
     try {
         if (!g_Config->instantiate(g_szSHIBConfig, true))
             throw runtime_error("unknown error");
     }
     catch (std::exception& ex) {
-        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"%s",ex.what());
-        ap_log_error(APLOG_MARK,APLOG_CRIT|APLOG_NOERRNO,SH_AP_R(s),"shib_child_init() failed to load configuration");
+        ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, SH_AP_R(s), "child_init: mod_shib failed to load configuration: %s", ex.what());
+        g_Config->term();
         exit(1);
     }
 
@@ -1846,10 +1889,10 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
         g_catchAll = flag.first && flag.second;
     }
 
-    // Set the cleanup handler
-    apr_pool_cleanup_register(p, nullptr, &shib_exit, apr_pool_cleanup_null);
+    // Set the cleanup handler, passing in the server_rec for logging.
+    apr_pool_cleanup_register(p, s, &shib_exit, apr_pool_cleanup_null);
 
-    ap_log_error(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(s), "shib_child_init() done");
+    ap_log_error(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(s), "child_init: mod_shib config initialized");
 }
 
 // Output filters
@@ -1876,7 +1919,7 @@ static apr_status_t do_output_filter(ap_filter_t *f, apr_bucket_brigade *in)
     shib_request_config *rc = (shib_request_config*) ap_get_module_config(r->request_config, &mod_shib);
 
     if (rc && rc->hdr_out) {
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_out_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "output_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
         // can't use overlap call because it will collapse Set-Cookie headers
         //apr_table_overlap(r->headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
         apr_table_do(_table_add,r->headers_out, rc->hdr_out,NULL);
@@ -1895,7 +1938,7 @@ static apr_status_t do_error_filter(ap_filter_t *f, apr_bucket_brigade *in)
     shib_request_config *rc = (shib_request_config*) ap_get_module_config(r->request_config, &mod_shib);
 
     if (rc && rc->hdr_out) {
-        ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(r),"shib_err_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "error_filter: merging %d headers", apr_table_elts(rc->hdr_out)->nelts);
         // can't use overlap call because it will collapse Set-Cookie headers
         //apr_table_overlap(r->err_headers_out, rc->hdr_out, APR_OVERLAP_TABLES_MERGE);
         apr_table_do(_table_add,r->err_headers_out, rc->hdr_out,NULL);
@@ -2028,6 +2071,7 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
     ap_hook_insert_error_filter(set_error_filter, nullptr, nullptr, APR_HOOK_LAST);
     ap_hook_post_read_request(shib_post_read, nullptr, nullptr, APR_HOOK_MIDDLE);
 #endif
+    ap_hook_post_config(shib_post_config, nullptr, nullptr, APR_HOOK_MIDDLE);
     ap_hook_child_init(shib_child_init, nullptr, nullptr, APR_HOOK_MIDDLE);
     const char* prereq = getenv("SHIBSP_APACHE_PREREQ");
 #ifdef SHIB_APACHE_24

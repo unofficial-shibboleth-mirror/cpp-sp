@@ -1922,6 +1922,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
     const DOMElement* SHIRE=XMLHelper::getFirstChildElement(e, InProcess);
 
     // Initialize logging manually in order to redirect log messages as soon as possible.
+    // If no explicit config is supplied, we now assume the caller has done this, so that
+    // setuid processes can potentially do this as root.
     if (conf.isEnabled(SPConfig::Logging)) {
         string logconf;
         if (conf.isEnabled(SPConfig::OutOfProcess))
@@ -1930,15 +1932,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             logconf = XMLHelper::getAttrString(SHIRE, nullptr, logger);
         if (logconf.empty())
             logconf = XMLHelper::getAttrString(e, nullptr, logger);
-        if (logconf.empty() && !getenv("SHIBSP_LOGGING")) {
-            // No properties found, so default them.
-            if (conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess))
-                logconf = "shibd.logger";
-            else if (!conf.isEnabled(SPConfig::OutOfProcess) && conf.isEnabled(SPConfig::InProcess))
-                logconf = "native.logger";
-            else
-                logconf = "shibboleth.logger";
-        }
         if (!logconf.empty()) {
             log.debug("loading new logging configuration from (%s), check log destination for status of configuration", logconf.c_str());
             if (!XMLToolingConfig::getConfig().log_config(logconf.c_str()))
