@@ -185,9 +185,9 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 
     const char* logconf = getenv("SHIBSP_LOGGING");
     if (!logconf || !*logconf) {
-        if (isEnabled(SPConfig::OutOfProcess) && !isEnabled(SPConfig::InProcess))
+        if (isEnabled(SPConfig::Logging) && isEnabled(SPConfig::OutOfProcess) && !isEnabled(SPConfig::InProcess))
             logconf = SHIBSP_OUTOFPROC_LOGGING;
-        else if (isEnabled(SPConfig::InProcess) && !isEnabled(SPConfig::OutOfProcess))
+        else if (isEnabled(SPConfig::Logging) && isEnabled(SPConfig::InProcess) && !isEnabled(SPConfig::OutOfProcess))
             logconf = SHIBSP_INPROC_LOGGING;
         else
             logconf = SHIBSP_LOGGING;
