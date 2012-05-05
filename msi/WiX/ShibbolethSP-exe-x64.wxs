@@ -1,0 +1,138 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the 'License'); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an 'AS IS' BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<?include Versions.wxi ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <!-- This is where we put all executables & so & dlls which make up the SP X86 installer
+       -->
+  <Fragment>
+    <!-- Configuration, licenses and documentation -->
+    <DirectoryRef Id='INSTALLDIR'>
+      <Directory Id='bin64' Name='bin64' 
+                 FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Release' >
+        <Component Id='resolvertest64.exe' Guid='{C29672B6-971D-4828-BB51-1190C0877381}' Win64='yes'>
+          <File Id='resolvertest64.exe' Name='resolvertest.exe' KeyPath='yes' />
+        </Component>
+        <Component Id='mdquery64.exe' Guid='{3645630B-3991-4693-8664-A49242B9CF05}' Win64='yes'>
+          <File Id='mdquery64.exe' Name='mdquery.exe' KeyPath='yes' />
+        </Component>
+        <Directory Id='bin64_debug' Name='debug' 
+                   FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Debug' >
+          <Component Id='resolvertest64.exe_debug' Guid='{58C98426-8C96-41EE-B956-A6BBAEAE5A10}' Win64='yes'>
+            <File Id='resolvertest64.exe_debug' Name='resolvertest.exe' KeyPath='yes'/>
+          </Component>
+          <Component Id='mdquery64.exe_debug' Guid='{2153EDFC-9962-4AF4-8071-40D0FF497BF9}' Win64='yes'>
+            <File Id='mdquery64.exe_debug' Name='mdquery.exe' KeyPath='yes' />
+          </Component>
+        </Directory><!-- bin_debug -->
+      </Directory><!-- bin -->
+
+      <Directory Id='lib64' Name='lib64' >
+        <Directory Id='lib64_shibboleth' Name='shibboleth' 
+                   FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Release' >
+          <Component Id='adfs64.so' Guid='{2891ECDC-F507-4CEC-8A65-8B20FB93F4B7}' Win64='yes'>
+            <File Id='adfs64.so' Name='adfs.so' KeyPath='yes' />
+          </Component>
+          <Component Id='adfslite64.so' Guid='{1162CDA0-C3F8-4599-B01E-9EDAA73B2C0B}' Win64='yes'>
+            <File Id='adfslite64.so' Name='adfs-lite.so' KeyPath='yes' />
+          </Component>
+          <Component Id='isapi_shib64.dll' Guid='{3BC7260B-D035-4F79-A39E-EDA0181BBB1B}' Win64='yes'>
+            <File Id='isapi_shib64.dll' Name='isapi_shib.dll' KeyPath='yes' />
+          </Component>
+          <Component Id='mod_shib_2264.so' Guid='{3C8F67F5-C7C2-40DB-94AB-A26266C113C8}' Win64='yes'>
+            <File Id='mod_shib_2264.so' Name='mod_shib_22.so' KeyPath='yes' />
+          </Component>
+          <Component Id='odbcstore64.so' Guid='{D9CF6BD3-4BDB-4BC5-9EB3-6C68CA7544B6}' Win64='yes'>
+            <File Id='odbcstore64.so' Name='odbc-store.so' KeyPath='yes' />
+          </Component>
+          <Component Id='shibauthorizer64.exe' Guid='{5A323F4F-AE87-451A-9253-1965E46C9C5F}' Win64='yes'>
+            <File Id='shibauthorizer64.exe' Name='shibauthorizer.exe' KeyPath='yes' />
+          </Component>
+          <Component Id='shibresponder64.exe' Guid='{538D6EEC-1AE1-400B-94AF-2B7791BFEBDA}' Win64='yes'>
+            <File Id='shibresponder64.exe' Name='shibresponder.exe' KeyPath='yes' />
+          </Component>
+          <Directory Id='lib64_shibboleth_debug' Name='debug' 
+                     FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Debug' >
+            <Component Id='adfsD64.so' Guid='{BFF58DDD-CF04-49B1-A172-C84087705D2A}' Win64='yes'>
+              <File Id='adfsD64.so' Name='adfs.so' KeyPath='yes' />
+            </Component>
+            <Component Id='adfsliteD64.so' Guid='{2A3D71BE-BF8F-4CBD-B890-B25F391B09FA}' Win64='yes'>
+              <File Id='adfs_liteD64.so' Name='adfs-lite.so' KeyPath='yes' />
+            </Component>
+            <Component Id='isapi_shibD64.dll' Guid='{60BC5679-A40E-42E5-9FC0-CCE924E660ED}' Win64='yes'>
+              <File Id='isapi_shibD64.dll' Name='isapi_shib.dll' KeyPath='yes' />
+            </Component>
+            <Component Id='mod_shib_22D64.so' Guid='{59FE3C18-1920-48A0-80BC-7ECF8579E441}' Win64='yes'>
+              <File Id='mod_shib_22D64.so' Name='mod_shib_22.so' KeyPath='yes' />
+            </Component>
+            <Component Id='odbcstoreD64.so' Guid='{586CE55A-F089-4541-96D5-5EE26F8FC471}' Win64='yes'>
+              <File Id='odbc_storeD64.so' Name='odbc-store.so' KeyPath='yes' />
+            </Component>
+            <Component Id='shibauthorizerD64.exe' Guid='{642C9137-66C8-4E2E-A76C-4D9F65B17157}' Win64='yes'>
+              <File Id='shibauthorizer64.exe_Debug' Name='shibauthorizer.exe' KeyPath='yes' />
+            </Component>
+            <Component Id='shibresponderD64.exe' Guid='{7947F31A-1429-44FC-85B2-BF1E7AA50D20}' Win64='yes'>
+              <File Id='shibresponder64.exe_Debug' Name='shibresponder.exe' KeyPath='yes' />
+            </Component>
+          </Directory><!-- lib_shibboleth_debug -->
+        </Directory><!-- lib_shibboleth -->
+      </Directory><!-- lib -->
+      <!-- the service bin -->
+      <Directory Id='sbin64' Name='sbin64'
+                 FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Release' >
+        <Component Id='shibd64.exe' Guid='{707B57A2-CCA0-48A6-9F66-275EB04474AA}' Win64='yes'>
+          <File Id='shibd64.exe' Name='shibd.exe' KeyPath='yes' />
+        </Component>
+        <Directory Id='sbin64_debug' Name='debug'
+                   FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Debug' >
+          <Component Id='shibdD64.exe' Guid='{657A1902-0104-47C7-84A7-AEB5F736B02F}' Win64='yes'>
+            <File Id='shibd64.exe_debug' Name='shibd.exe' KeyPath='yes' />
+          </Component>
+        </Directory><!-- sbin_debug -->
+      </Directory><!-- sbin -->
+    </DirectoryRef><!-- INSTALLDIR -->
+
+    <!-- Components
+         <ComponentRef Id='resolvertest64.exe'/>
+         <ComponentRef Id='mdquery64.exe'/>
+         <ComponentRed Id='resolvertest64.exe_debug'/>
+         <ComponentRef Id='mdquery64.exe_debug' />
+
+         <ComponentRef Id='adfs64.so'/>
+         <ComponentRef Id='adfslite64.so'/>
+         <ComponentRef Id='isapi_shib64.dll'/>
+         <ComponentRef Id='mod_shib_2264.so'/>
+         <ComponentRef Id='odbcstore64.so'/>
+         <ComponentRef Id='shibauthorizer64.exe'/>
+         <ComponentRef Id='shibresponder64.exe'/>
+
+         <ComponentRef Id='adfsD64.so'/>
+         <ComponentRef Id='adfsliteD64.so'/>
+         <ComponentRef Id='isapi_shibD64.dll'/>
+         <ComponentRef Id='mod_shib_22D64.so'/>
+         <ComponentRef Id='odbcstoreD64.so'/>
+         <ComponentRef Id='shibauthorizerD64.exe'/>
+         <ComponentRef Id='shibresponderD64.exe'/>
+
+         <ComponentRef Id='shibd64.exe'/>
+         <ComponentRef Id='shibdD64.exe'/>
+         -->
+
+  </Fragment>
+</Wix>

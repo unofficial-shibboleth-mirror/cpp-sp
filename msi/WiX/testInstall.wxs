@@ -27,7 +27,7 @@
     <!-- Files -->
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <!-- The test bit -->
-      <Directory Id='Opt' Name='opt'>
+      <Directory Id='OPT' Name='opt'>
         <Directory Id='INSTALLDIR' Name='shibboleth-sp'>
           <Component Id='MyComponent' Guid='74DBAA41-4C46-4944-80F6-27F925991CB2'>
             <File Source='FileCounts.txt' />

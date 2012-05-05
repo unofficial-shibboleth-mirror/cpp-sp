@@ -1,0 +1,200 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the 'License'); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an 'AS IS' BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<?include Versions.wxi ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Product Id='{EA2259A7-D844-475A-B473-CCE3EEA209D9}' Language='1033' 
+           Manufacturer='Shibboleth Consortium' Name='Shibboleth $(var.ShibbolethVersion)' 
+           UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion)'>
+    <Package Description='Installer for Shibboleth SP (x86 and x64)' Compressed='yes'
+             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+
+    <PropertyRef Id='SHIB_OLDVERSION_64'/>
+    <PropertyRef Id='SHIB_OLDVERSION'/>
+
+    <Condition Message='Shibboleth requires Windows XP SP2 or later.'>NOT VersionNT OR (VersionNT &gt;= 501)</Condition>
+    <Condition Message='Shibboleth requires a Windows NT-based operating system.'>NOT Version9X</Condition>
+    <Condition Message='You must uninstall recent versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.'>(SHIB_OLDVERSION = "none") AND (SHIB_OLDVERSION_64 = "none")</Condition>
+
+    <Media Id='1' Cabinet='product.cab' EmbedCab='yes' />
+
+    <?include ShibbolethSP-properties.wxi?>
+
+    <!-- Files -->
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <!-- The test bit -->
+      <Directory Id='OPT' Name='opt'>
+        <Directory Id='INSTALLDIR' Name='shibboleth-sp'/>
+      </Directory>
+
+      <Directory Id='ProgramFilesFolder' Name='PFiles'>
+        <!-- 32 bit merge modules -notionally go to "Program Files (x86)" -->
+        <Merge Id='CurlMergeModule_x86' Language='1033' SourceFile='MergeModules\Curl-x86.msm' DiskId='1' />
+        <Merge Id='FastCGIMergeModule_x86' Language='1033' SourceFile='MergeModules\FastCGI-x86.msm' DiskId='1' />
+        <Merge Id='Log4ShibMergeModule_x86' Language='1033' SourceFile='MergeModules\Log4Shib-x86.msm' DiskId='1' />
+        <Merge Id='OpenSAMLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSAML-x86.msm' DiskId='1' />
+        <Merge Id='OpenSSLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSSL-x86.msm' DiskId='1' />
+        <Merge Id='ShibbolethMergeModule_x86' Language='1033' SourceFile='MergeModules\Shibboleth-x86.msm' DiskId='1' />
+        <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='MergeModules\Xerces-x86.msm' DiskId='1' />
+        <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='MergeModules\XmlSec-x86.msm' DiskId='1' />
+        <Merge Id='XmlToolingMergeModule_x86' Language='1033' SourceFile='MergeModules\XmlTooling-x86.msm' DiskId='1' />
+        <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='MergeModules\Zlib-x86.msm' DiskId='1' />
+
+        <Merge Id='Microsoft_VC100_DebugCRT_x86' Language='1033' 
+               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_DebugCRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_VC100_CRT_x86' Language='1033' 
+               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_CRT_x86.msm' DiskId='1' />
+      </Directory><!--ProgramFilesFolder-->
+
+      <Directory Id='ProgramFiles64Folder' Name='PFiles'>
+        <!-- 64 bit merge modules notionally go to "Program Files" -->
+        <Merge Id='CurlMergeModule_x64' Language='1033' SourceFile='MergeModules\Curl-x64.msm' DiskId='1' />
+        <Merge Id='FastCGIMergeModule_x64' Language='1033' SourceFile='MergeModules\FastCGI-x64.msm' DiskId='1' />
+        <Merge Id='Log4ShibMergeModule_x64' Language='1033' SourceFile='MergeModules\Log4Shib-x64.msm' DiskId='1' />
+        <Merge Id='OpenSAMLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSAML-x64.msm' DiskId='1' />
+        <Merge Id='OpenSSLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSSL-x64.msm' DiskId='1' />
+        <Merge Id='ShibbolethMergeModule_x64' Language='1033' SourceFile='MergeModules\Shibboleth-x64.msm' DiskId='1' />
+        <Merge Id='XercesMergeModule_x64' Language='1033' SourceFile='MergeModules\Xerces-x64.msm' DiskId='1' />
+        <Merge Id='XmlSecMergeModule_x64' Language='1033' SourceFile='MergeModules\XmlSec-x64.msm' DiskId='1' />
+        <Merge Id='XmlToolingMergeModule_x64' Language='1033' SourceFile='MergeModules\XmlTooling-x64.msm' DiskId='1' />
+        <Merge Id='ZlibMergeModule_x64' Language='1033' SourceFile='MergeModules\Zlib-x64.msm' DiskId='1' />
+
+        <Merge Id='Microsoft_VC100_DebugCRT_x64' Language='1033' 
+               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_DebugCRT_x64.msm' DiskId='1' />
+        <Merge Id='Microsoft_VC100_CRT_x64' Language='1033' 
+               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_CRT_x64.msm' DiskId='1' />
+      </Directory><!--ProgramFiles64Folder-->
+    </Directory><!--TARGETDIR-->
+
+    <Feature Id='Shibboleth' Title='Shibboleth' Level='1'>
+      <MergeRef Id='CurlMergeModule_x86'/>
+      <MergeRef Id='FastCGIMergeModule_x86'/>
+      <MergeRef Id='Log4ShibMergeModule_x86'/>
+      <MergeRef Id='OpenSAMLMergeModule_x86'/>
+      <MergeRef Id='OpenSSLMergeModule_x86'/>
+      <MergeRef Id='ShibbolethMergeModule_x86'/>
+      <MergeRef Id='XercesMergeModule_x86'/>
+      <MergeRef Id='XmlSecMergeModule_x86'/>
+      <MergeRef Id='XmlToolingMergeModule_x86'/>
+      <MergeRef Id='ZlibMergeModule_x86'/>
+
+      <MergeRef Id='Microsoft_VC100_DebugCRT_x86'/>
+      <MergeRef Id='Microsoft_VC100_CRT_x86' />
+
+      <MergeRef Id='CurlMergeModule_x64'/>
+      <MergeRef Id='FastCGIMergeModule_x64'/>
+      <MergeRef Id='Log4ShibMergeModule_x64'/>
+      <MergeRef Id='OpenSAMLMergeModule_x64'/>
+      <MergeRef Id='OpenSSLMergeModule_x64'/>
+      <MergeRef Id='ShibbolethMergeModule_x64'/>
+      <MergeRef Id='XercesMergeModule_x64'/>
+      <MergeRef Id='XmlSecMergeModule_x64'/>
+      <MergeRef Id='XmlToolingMergeModule_x64'/>
+      <MergeRef Id='ZlibMergeModule_x64'/>
+
+      <MergeRef Id='Microsoft_VC100_DebugCRT_x64'/>
+      <MergeRef Id='Microsoft_VC100_CRT_x64' />
+
+      <!-- ShibbolethSP-exe-x64-->
+
+      <ComponentRef Id='resolvertest64.exe'/>
+      <ComponentRef Id='mdquery64.exe'/>
+      <ComponentRef Id='resolvertest64.exe_debug'/>
+      <ComponentRef Id='mdquery64.exe_debug' />
+
+      <ComponentRef Id='adfs64.so'/>
+      <ComponentRef Id='adfslite64.so'/>
+      <ComponentRef Id='isapi_shib64.dll'/>
+      <ComponentRef Id='mod_shib_2264.so'/>
+      <ComponentRef Id='odbcstore64.so'/>
+      <ComponentRef Id='shibauthorizer64.exe'/>
+      <ComponentRef Id='shibresponder64.exe'/>
+
+      <ComponentRef Id='adfsD64.so'/>
+      <ComponentRef Id='adfsliteD64.so'/>
+      <ComponentRef Id='isapi_shibD64.dll'/>
+      <ComponentRef Id='mod_shib_22D64.so'/>
+      <ComponentRef Id='odbcstoreD64.so'/>
+      <ComponentRef Id='shibauthorizerD64.exe'/>
+      <ComponentRef Id='shibresponderD64.exe'/>
+
+      <ComponentRef Id='shibd64.exe'/>
+      <ComponentRef Id='shibdD64.exe'/>
+
+      <!-- ShibbolethSP-registry-x64 -->
+
+      <ComponentRef Id='file_extension64'/>
+      <ComponentRef Id='shib64.ico' />
+
+      <!-- ShibbolethSP-noarch-x64 -->
+
+      <ComponentRef Id='doc_shibboleth'/>
+      <ComponentRef Id='etc_shibboleth_perm'/>
+      <ComponentRef Id='etc_shibboleth_nonperm'/>
+      <ComponentRef Id='dist_noperm'/>
+      <ComponentRef Id='accessError.html'/>
+      <ComponentRef Id='apache.config'/>
+      <ComponentRef Id='apache2.config'/>
+      <ComponentRef Id='metadataError.html'/>
+      <ComponentRef Id='native.logger'/>
+      <ComponentRef Id='sessionError.html'/>
+      <ComponentRef Id='shibd.logger'/>
+      <ComponentRef Id='var_log_shibboleth_folder'/>
+      <ComponentRef Id='share_xml_shibboleth'/>
+      <ComponentRef Id='share_xml_shibboleth_xsd'/>
+
+      <!-- ShibbolethSP-exe-x64-->
+
+      <ComponentRef Id='resolvertest.exe'/>
+      <ComponentRef Id='mdquery.exe'/>
+      <ComponentRef Id='resolvertest.exe_debug'/>
+      <ComponentRef Id='mdquery.exe_debug'/>
+
+      <ComponentRef Id='adfs.so'/>
+      <ComponentRef Id='adfslite.so'/>
+      <ComponentRef Id='isapi_shib.dll'/>
+      <ComponentRef Id='mod_shib_13.so'/>
+      <ComponentRef Id='mod_shib_20.so'/>
+      <ComponentRef Id='mod_shib_22.so'/>
+      <ComponentRef Id='nsapi_shib.dll'/>
+      <ComponentRef Id='odbcstore.so'/>
+      <ComponentRef Id='shibauthorizer.exe'/>
+      <ComponentRef Id='shibresponder.exe'/>
+
+      <ComponentRef Id='adfsD.so'/>
+      <ComponentRef Id='adfsliteD.so'/>
+      <ComponentRef Id='isapi_shibD.dll'/>
+      <ComponentRef Id='mod_shib_13D.so'/>
+      <ComponentRef Id='mod_shib_20D.so'/>
+      <ComponentRef Id='mod_shib_22D.so'/>
+      <ComponentRef Id='nsapi_shibD.dll'/>
+      <ComponentRef Id='odbcstoreD.so'/>
+      <ComponentRef Id='shibauthorizerD.exe'/>
+      <ComponentRef Id='shibresponderD.exe'/>
+
+      <ComponentRef Id='shibd.exe'/>
+      <ComponentRef Id='shibdD.exe'/>
+
+      <!-- ShibbolethSP-registry-x64 -->
+      <ComponentRef Id='file_extension'/>
+      <ComponentRef Id='shib.ico' />
+
+    </Feature>
+  </Product>
+</Wix>

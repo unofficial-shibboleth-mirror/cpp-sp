@@ -18,7 +18,7 @@
 <?include ..\Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='ShibbolethSPMergeModule_x64' Language='1033' Version='$(var.ShibbolethVersion)'>
+  <Module Id='ShibbolethSPMergeModule_x64' Language='1033' Version='$(var.ShibbolethDllVersion)'>
     <Package Id='{DF6FAD40-5EF8-43F2-BBE1-BD42B9E9ACAB}' Description='Merge Module for Shibboleth DLLs (x64)'
              Comments='This module is built by the Shibboleth Consortium.'
              Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
@@ -30,18 +30,18 @@
             <Directory Id='lib' Name='lib' 
                        FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Release'>
               <Component Id='shibsplite.dll' Guid='{2D6A6399-62A6-4BF6-8D58-82E1EFE8C65E}' Win64='yes'>
-                <File Name='shibsp-lite$(var.ShibbolethSPFileVersion).dll' KeyPath='yes' />
+                <File Name='shibsp-lite$(var.ShibbolethDllFileVersion).dll' KeyPath='yes' />
               </Component>
               <Component Id='shibsp.dll' Guid='{B7DE652A-6853-4389-AD47-5DBB5AC89BDB}' Win64='yes'>
-                <File Name='shibsp$(var.ShibbolethSPFileVersion).dll' KeyPath='yes' />
+                <File Name='shibsp$(var.ShibbolethDllFileVersion).dll' KeyPath='yes' />
               </Component>
               <Directory Id='lib_debug' Name='debug' 
                          FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Debug' >
                 <Component Id='shibspliteD.dll' Guid='{5EF6FF17-0510-484B-9F24-523B29EB416C}' Win64='yes'>
-                  <File Name='shibsp-lite$(var.ShibbolethSPFileVersion)D.dll' KeyPath='yes' />
+                  <File Name='shibsp-lite$(var.ShibbolethDllFileVersion)D.dll' KeyPath='yes' />
                 </Component>
                 <Component Id='shibspD.dll' Guid='{222ED92E-DD0B-410E-9A90-D1DD1AA878CF}' Win64='yes'>
-                  <File Name='shibsp$(var.ShibbolethSPFileVersion)D.dll' KeyPath='yes' />
+                  <File Name='shibsp$(var.ShibbolethDllFileVersion)D.dll' KeyPath='yes' />
                 </Component>
               </Directory><!-- lib_debug -->
             </Directory><!-- lib -->
