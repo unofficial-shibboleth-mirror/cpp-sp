@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Include xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <!-- ShibbolethSP-noarch -->
+
+  <ComponentRef Id='doc_shibboleth'/>
+  <ComponentRef Id='etc_shibboleth_perm'/>
+  <ComponentRef Id='etc_shibboleth_nonperm'/>
+  <ComponentRef Id='dist_noperm'/>
+  <ComponentRef Id='accessError.html'/>
+  <ComponentRef Id='apache.config'/>
+  <ComponentRef Id='apache2.config'/>
+  <ComponentRef Id='metadataError.html'/>
+  <ComponentRef Id='native.logger'/>
+  <ComponentRef Id='sessionError.html'/>
+  <ComponentRef Id='shibd.logger'/>
+  <ComponentRef Id='var_log_shibboleth_folder'/>
+  <ComponentRef Id='share_xml_shibboleth'/>
+  <ComponentRef Id='share_xml_shibboleth_xsd'/>
+
+  <!-- ShibbolethSP-exe-x64-->
+
+  <ComponentRef Id='resolvertest.exe'/>
+  <ComponentRef Id='mdquery.exe'/>
+  <ComponentRef Id='resolvertest.exe_debug'/>
+  <ComponentRef Id='mdquery.exe_debug'/>
+
+  <ComponentRef Id='adfs.so'/>
+  <ComponentRef Id='adfslite.so'/>
+  <ComponentRef Id='isapi_shib.dll'/>
+  <ComponentRef Id='mod_shib_13.so'/>
+  <ComponentRef Id='mod_shib_20.so'/>
+  <ComponentRef Id='mod_shib_22.so'/>
+  <ComponentRef Id='nsapi_shib.dll'/>
+  <ComponentRef Id='odbcstore.so'/>
+  <ComponentRef Id='shibauthorizer.exe'/>
+  <ComponentRef Id='shibresponder.exe'/>
+
+  <ComponentRef Id='adfsD.so'/>
+  <ComponentRef Id='adfsliteD.so'/>
+  <ComponentRef Id='isapi_shibD.dll'/>
+  <ComponentRef Id='mod_shib_13D.so'/>
+  <ComponentRef Id='mod_shib_20D.so'/>
+  <ComponentRef Id='mod_shib_22D.so'/>
+  <ComponentRef Id='nsapi_shibD.dll'/>
+  <ComponentRef Id='odbcstoreD.so'/>
+  <ComponentRef Id='shibauthorizerD.exe'/>
+  <ComponentRef Id='shibresponderD.exe'/>
+
+  <ComponentRef Id='shibd.exe'/>
+  <ComponentRef Id='shibdD.exe'/>
+
+  <!-- ShibbolethSP-registry-x32 -->
+  <ComponentRef Id='file_extension'/>
+  <ComponentRef Id='shib.ico' />
+</Include>

@@ -22,7 +22,7 @@
   <Module Id='CurlMergeModule_x86' Language='1033' Version='$(var.CurlVersion)'>
     <Package Id='10467105-6375-49E1-AC35-045084BD8FA4' Description='Merge Module for CURL (x86)'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='400'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>

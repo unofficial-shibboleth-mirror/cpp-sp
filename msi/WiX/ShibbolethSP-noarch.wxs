@@ -113,45 +113,55 @@
         </Directory><!-- var_run -->
       </Directory><!-- var -->
       <!-- Schemas -->
+      <!-- TODO Move to a merge module -->
       <Directory Id='CommonAppDataFolder' Name='CommonFiles' >
-        <Directory Id='common_shibboleth' Name='Shibboleth' >
-          <Directory Id='common_sp' Name='SP' >
-            <Directory Id='common_doc' Name='doc' 
-                       FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas' >
-              <Component Id='share_xml_shibboleth' Guid='{69FCD385-B31D-43FB-B8A7-6F8D30391661}'>
-                <File Name='shibboleth-metadata-1.0.xsd' KeyPath='yes' />
-                <File Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas\catalog.xml.in' />
-                <File Name='shibboleth-2.0-attribute-map.xsd' />
-                <File Name='shibboleth-2.0-afp.xsd' />
-                <File Name='shibboleth-2.0-afp-mf-saml.xsd' />
-                <File Name='WS-Trust.xsd' />
-                <File Name='shibboleth-2.0-sp-notify.xsd' />
-                <File Name='shibboleth-2.0-native-sp-config.xsd' />
-                <File Name='shibboleth-2.0-afp-mf-basic.xsd' />
-                <File Name='shibboleth-2.0-native-sp-protocols.xsd' />
-              </Component>
-              <Component Id='share_xml_shibboleth_xsd' Guid='{8C5B6416-5BE3-4D4D-BF8B-B677365DA58C}'>
-                <File Name='shibboleth.xsd' KeyPath='yes' />
-              </Component>
-            </Directory><!--common_doc-->
-          </Directory><!--common_sp-->
-        </Directory><!--common_shibboleth-->
+        <Directory Id='Shibboleth' Name='Shibboleth' >
+          <Directory Id='SP' Name='SP' >
+            <Directory Id='xml' Name='xml' >
+              <Directory Id='xml_shibboleth' Name='shibboleth'
+                         FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas' >
+                <Component Id='share_xml_shibboleth' Guid='{69FCD385-B31D-43FB-B8A7-6F8D30391661}'>
+                  <File Name='shibboleth-metadata-1.0.xsd' KeyPath='yes' />
+                  <File Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas\catalog.xml.in' />
+                  <File Name='shibboleth-2.0-attribute-map.xsd' />
+                  <File Name='shibboleth-2.0-afp.xsd' />
+                  <File Name='shibboleth-2.0-afp-mf-saml.xsd' />
+                  <File Name='WS-Trust.xsd' />
+                  <File Name='shibboleth-2.0-sp-notify.xsd' />
+                  <File Name='shibboleth-2.0-native-sp-config.xsd' />
+                  <File Name='shibboleth-2.0-afp-mf-basic.xsd' />
+                  <File Name='shibboleth-2.0-native-sp-protocols.xsd' />
+                </Component>
+                <Component Id='share_xml_shibboleth_xsd' Guid='{8C5B6416-5BE3-4D4D-BF8B-B677365DA58C}'>
+                  <File Name='shibboleth.xsd' KeyPath='yes' />
+                </Component>
+              </Directory><!--xml_shibboleth-->
+            </Directory><!--xml-->
+          </Directory><!--SP-->
+        </Directory><!--Shibboleth-->
       </Directory><!--CommonAppDataFolder-->
     </DirectoryRef>
 
-    <!-- The actions to perform after the files have been copied -->
+    <!-- The actions to perform after the files have been copied
+      TODO optionally add in the set64shibd set32shibd -->
     <Binary Id='EditConfigFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_config_files.vbs-wix' />
     <Binary Id='KeyGenSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_keygen.vbs' />
     <CustomAction Id='EditConfigFiles' 
                   BinaryKey='EditConfigFileSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[SHIBD_PORT];@;[ProgramFilesFolder]' />
+    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[SHIBD_PORT];@;[CommonAppDataFolder]' />
+    <!-- TODO use QtExecCmdLine -->
     <CustomAction Id='KeyGen' BinaryKey='KeyGenSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetKeyGen' Property='KeyGen' Value='[INSTALLDIR]' />
+
+    <!-- TODO IIS Install (if not ALREADYINSTALLED)
+         IIS Uninstalll (if UGRADINGPRODUCTCODE) -->
     <InstallExecuteSequence>
       <Custom Action='SetEditConfigFiles' Before='CostInitialize'>NOT Installed</Custom>
+      <!--TODO move editing of the catalog files to the merge module-->
       <Custom Action='EditConfigFiles' After='InstallFiles'>NOT Installed</Custom>
       <Custom Action='SetKeyGen' Before='CostInitialize'>NOT Installed</Custom>
-      <Custom Action='KeyGen' After='EditConfigFiles'>NOT Installed</Custom>
+      <Custom Action='KeyGen' After='WriteEnvironmentStrings'>NOT Installed</Custom><!--After WriteEnvironmentStrings so the path is set -->
+
     </InstallExecuteSequence>
 
     <!-- Components

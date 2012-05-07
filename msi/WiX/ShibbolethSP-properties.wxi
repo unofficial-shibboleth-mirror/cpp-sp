@@ -22,9 +22,6 @@
        but the GUI is not required.  -->
 <Include>
 
-  <Property Id="OPT"  Secure="yes" Value="opt" />
-  <Property Id="INSTALLDIR" Secure="yes" Value="Shibboleth-SP" />
-
   <!-- Are we installing IIS, if so what extension to used -->
   <Property Id="SHIB_FILE_EXTENSION" Value=".sso" Secure="yes">
     <RegistrySearch Id="AppReg" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="FileExtension" Type="raw" />
