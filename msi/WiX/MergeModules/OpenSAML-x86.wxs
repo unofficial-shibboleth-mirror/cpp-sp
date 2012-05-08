@@ -22,7 +22,7 @@
   <Module Id='OpenSAMLMergeModule_x86' Language='1033' Version='$(var.OpenSAMLVersion)'>
     <Package Id='{D6367F80-6B31-4554-ABE4-53404DD46F35}' Description='Merge Module for OpenSAML (x86)'
              Comments='This module is built by the Shibboleth Consortium. Includes DDLs SAMLSign and Schema'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x86'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>

@@ -21,16 +21,18 @@
            Version='1.0.0.0' Manufacturer='Shibboleth Consortium' >
     <Package Description='TEST Windows Installer package'
              Comments='Ignore Ignore Ignore Ignore' Platform='x64'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Compressed='yes' />
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Compressed='yes' />
 
     <Media Id='1' Cabinet='product.cab' EmbedCab='yes' />
     <!-- Files -->
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' >
-        <Merge Id='OpenSSL-32' Language='1033' SourceFile='.\OpenSSL-x86.msm' DiskId='1' />
-<!--        <Merge Id='OpenSAML-32' Language='1033' SourceFile='.\OpenSAML-x86.msm' DiskId='1' />  -->
         <Merge Id='OpenSAML-schemas' Language='1033' SourceFile='.\OpenSAML-schemas.msm' DiskId='1' />
-<!--        <Merge Id='XmlTooling-32' Language='1033' SourceFile='.\XmlTooling-x86.msm' DiskId='1' /> -->
+
+<!--        <Merge Id='OpenSAML-32' Language='1033' SourceFile='.\OpenSAML-x86.msm' DiskId='1' /> 
+        <Merge Id='OpenSSL-32' Language='1033' SourceFile='.\OpenSSL-x86.msm' DiskId='1' />
+        <Merge Id='XmlTooling-32' Language='1033' SourceFile='.\XmlTooling-x86.msm' DiskId='1' /> 
+
         <Merge Id='XmlTooling-Schemas' Language='1033' SourceFile='.\XmlTooling-schemas.msm' DiskId='1' />
         <Merge Id='Curl-32' Language='1033' SourceFile='.\Curl-x86.msm' DiskId='1' />
         <Merge Id='FastCGI-32' Language='1033' SourceFile='.\FastCGI-x86.msm' DiskId='1' />
@@ -51,15 +53,15 @@
         <Merge Id='XmlSec-64' Language='1033' SourceFile='.\XmlSec-x64.msm' DiskId='1' />
         <Merge Id='XmlTooling-64' Language='1033' SourceFile='.\XmlTooling-x64.msm' DiskId='1' />
         <Merge Id='Zlib-64' Language='1033' SourceFile='.\Zlib-x64.msm' DiskId='1' />
-      </Directory>
+-->      </Directory>
     </Directory>
 
     <!-- Feature -->
     <Feature Id='MyFeature' Title='My 1st Feature' Level='1'>
+      <MergeRef Id='OpenSAML-schemas'/>
+<!--      <MergeRef Id='OpenSAML-32'/> 
       <MergeRef Id='OpenSSL-32'/>
       <MergeRef Id='OpenSSL-64'/>
-<!--      <MergeRef Id='OpenSAML-32'/> -->
-      <MergeRef Id='OpenSAML-schemas'/>
       <MergeRef Id='OpenSAML-64'/>
       <MergeRef Id='Curl-32'/>
       <MergeRef Id='Curl-64'/>
@@ -75,11 +77,11 @@
       <MergeRef Id='Xerces-64'/>
       <MergeRef Id='XmlSec-32'/>
       <MergeRef Id='XmlSec-64'/>
-<!--      <MergeRef Id='XmlTooling-32'/>  -->
       <MergeRef Id='XmlTooling-Schemas'/> 
       <MergeRef Id='XmlTooling-64'/>
       <MergeRef Id='Zlib-32'/>
       <MergeRef Id='Zlib-64'/>
+      <MergeRef Id='XmlTooling-32'/>  -->
     </Feature>
   </Product>
 </Wix>

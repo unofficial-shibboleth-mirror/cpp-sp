@@ -22,7 +22,7 @@
   <Module Id='Log4ShibMergeModule_x86' Language='1033' Version='$(var.LogForShibVersion)'>
     <Package Id='{A2D51A0D-847A-4941-80FC-C8C8E697565F}' Description='Merge Module for Log4Shib (x64)'
              Comments='This module is built by the Shibboleth Consortium. Includes log4cpp/shib and NTEventLogAppender.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>

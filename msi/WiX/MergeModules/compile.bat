@@ -1,6 +1,5 @@
 goto current
 :current
-
  wixcop -indent:2 Curl-x86.wxs
  candle Curl-x86.wxs
  light  Curl-x86.wixobj
@@ -43,7 +42,8 @@ wixcop -indent:2 OpenSAML-x64.wxs
  candle OpenSAML-x64.wxs
  light  OpenSAML-x64.wixobj 
  smoke  OpenSAML-x64.msm
-goto continue
+
+
 wixcop -indent:2 OpenSSL-x86.wxs
 candle OpenSSL-x86.wxs
 light  OpenSSL-x86.wixobj
@@ -83,7 +83,6 @@ rem smoke  OpenSSL-x64.msm
  light  XmlSec-x64.wixobj
  smoke  XmlSec-x64.msm
 
-:continue
  wixcop -indent:2  XmlTooling-x86.wxs
  candle XmlTooling-x86.wxs
  wixcop -indent:2  XmlTooling-schemas.wxs

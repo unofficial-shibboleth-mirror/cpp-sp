@@ -21,7 +21,7 @@
            Version='1.0.0.0' Manufacturer='Shibboleth Consortium' >
     <Package Description='TEST2 Windows Installer package'
              Comments='Ignore Ignore Ignore Ignore' Platform='x86'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Compressed='yes' />
+             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Compressed='yes' />
 
     <Media Id='1' Cabinet='product.cab' EmbedCab='yes' />
     <!-- Files -->

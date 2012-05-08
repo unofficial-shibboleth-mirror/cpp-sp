@@ -22,7 +22,7 @@
   <Module Id='FastCGIMergeModule_x64' Language='1033' Version='$(var.FastCGIVersion)'>
     <Package Id='{4820855A-68B9-4EBB-94CD-4C1F9DA6EB02}' Description='Merge Module for FastCGI (x64)'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>

@@ -21,7 +21,7 @@
   <Module Id='ZlibMergeModule_x86' Language='1033' Version='$(var.ZlibVersion)'>
     <Package Id='{F5C689A2-A72F-417E-B0F8-CF9B1450EE97}' Description='Merge Module for Zlib (x86)'
              Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x86'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>

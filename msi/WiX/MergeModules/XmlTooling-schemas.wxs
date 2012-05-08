@@ -19,9 +19,9 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XmlTooling_schemas' Language='1033' Version='$(var.XmlToolingVersion)'>
-    <Package Id='{C4A8AAF1-D263-4361-9695-CE0F56B5D3C6}' Description='Merge Module for XmlTooling schemas'
-             Comments='This module is built by the Shibboleth Consortium. Includes DDLs SAMLSign'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+    <Package Id='{6C74499B-E2BD-4705-A619-8901A6745D8C}' Description='Merge Module for XmlTooling schemas'
+             Comments='This module is built by the Shibboleth Consortium.'
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x86'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='CommonAppDataFolder' Name='CommonFiles' >
@@ -32,12 +32,25 @@
                          FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\schemas\' >
                 <Component Id='xmltoolingschema' Guid='{2197D645-3AA3-46F1-B250-0F964B901A94}'>
                   <File Name='xenc-schema.xsd'/>
-                  <File Name='xmldsig-core-schema.xsd'  />
+                </Component>
+                <Component Id='xmldsigcoreschema.xsd' Guid='{72871706-1D8F-4695-B573-AF2EB0635281}'>
+                  <File Name='xmldsig-core-schema.xsd'/>
+                </Component>
+                <Component Id='soapenvelope.xsd' Guid='{A2B2255D-344E-44E9-B894-5AB3416D8CBC}'>
                   <File Name='soap-envelope.xsd'  />
+                </Component>
+                <Component Id='xml.xsd' Guid='{E58D7865-6B4D-4CDB-859F-0A69AD1E20BF}'>
                   <File Name='xml.xsd'  />
+                </Component>
+                <Component Id='xmltooling.xsd' Guid='{E99A5CCE-C0A9-483C-BB02-A147E0C1A609}'>
                   <File Name='xmltooling.xsd'  />
-                  <File Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\schemas\catalog.xml.in'  />
-                  <File Name='xmldsig11-schema.xsd' />
+                </Component>
+                <Component Id='log.xml' Guid='{CD84FD26-CCB0-4FC6-9B51-E72CC23046D8}'>
+                <File Name='catalog.xml' 
+                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\schemas\catalog.xml.in'/>
+                </Component>
+                <Component Id='xmldsig11schema.xsd' Guid='{A0E6F269-77F0-47E6-B59A-887977ECE06A}'>
+                  <File Name='xmldsig11-schema.xsd'/>
                 </Component>
               </Directory><!--xmltooling-->
             </Directory><!--xml-->
@@ -45,5 +58,19 @@
         </Directory><!--Shibboleth-->
       </Directory><!--CommonAppDataFolder-->
     </Directory><!--TargetDir-->
+
+    <Binary Id='EditCatalogFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_catalog.vbs' />
+    <CustomAction Id='EditCatalog' BinaryKey='EditCatalogFileSrc' VBScriptCall='' 
+                  Execute='deferred' Impersonate='no' />
+    <CustomAction Id='SetEditCatalog' Property='EditCatalog' 
+                  Value='[CommonAppDataFolder]Shibboleth\SP\xml\xmltooling\;@;catalog.xml' />
+
+    <InstallExecuteSequence>
+      <Custom Action='SetEditCatalog' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='EditCatalog' After='InstallFiles'>NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+
+
   </Module>
 </Wix>

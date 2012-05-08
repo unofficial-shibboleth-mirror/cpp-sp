@@ -22,7 +22,7 @@
   <Module Id='XmlToolingMergeModule_x64' Language='1033' Version='$(var.XmlToolingVersion)'>
     <Package Id='{F944F719-7138-484D-A5B3-753411741B40}' Description='Merge Module for XMLTooling (x64)'
              Comments='This module is built by the Shibboleth Consortium. Includes DDLs and Schema'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
     <!-- For now just install this where it is put we expect to go into lib and lib\debug below.  
          At a a later date, we may chose to make this a placed module  -->

@@ -22,7 +22,7 @@
   <Module Id='XmlToolingMergeModule_x86' Language='1033' Version='$(var.XmlToolingVersion)'>
     <Package Id='{29A047F2-DECA-45A7-97D8-801217B3C632}' Description='Merge Module for XMLTooling (x86)'
              Comments='This module is built by the Shibboleth Consortium. Includes DDLs and Schema'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='400' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x86'/>
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>

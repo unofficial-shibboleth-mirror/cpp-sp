@@ -22,7 +22,7 @@
   <Module Id='OpenSSLMergeModule_x86' Language='1033' Version='$(var.OpenSSLVersion)'>
     <Package Id='11FD68EE-607E-4755-98AA-1C7EE5E03652' Description='Merge Module for OpenSSL (x86)'
              Comments='This module is built by the Shibboleth Consortium. Includes libeay32 and ssleay32.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='200' Platform='x86'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x86'/>
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>

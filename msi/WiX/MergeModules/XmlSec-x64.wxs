@@ -22,7 +22,7 @@
   <Module Id='XmlSecmergemodule_x64' Language='1033' Version='$(var.XmlSecVersion)'>
     <Package Id='{B94AFB16-A52E-4C88-9011-FF0C897ABDE1}' Description='Merge Module for XmlSec (x64)'
              Comments='This module is built by the Shibboleth Consortium. Includes Several excutables.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
