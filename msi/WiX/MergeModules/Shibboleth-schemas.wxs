@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Licensed to the University Corporation for Advanced Internet
+     Development, Inc. (UCAID) under one or more contributor license
+     agreements.  See the NOTICE file distributed with this work for
+     additional information regarding copyright ownership. The UCAID
+     licenses this file to You under the Apache License, Version 2.0
+     (the "License"); you may not use this file except in compliance
+     with the License.  You may obtain a copy of the License at
+     
+     http://www.apache.org/licenses/LICENSE-2.0
+     
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+     implied.  See the License for the specific language governing
+     permissions and limitations under the License.  -->
+
+<?include ..\Versions.wxi ?>
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Module Id='Shibboleth_schemas' Language='1033' Version='$(var.ShibbolethDllVersion)'>
+    <Package Id='{5AC5161D-114D-4BFB-AF7C-4E8E7F964965}' Description='Merge Module for Shibboleth schemas'
+             Comments='This module is built by the Shibboleth Consortium.'
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x86'/>
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='CommonAppDataFolder' Name='CommonFiles' >
+        <Directory Id='Shibboleth' Name='Shibboleth' >
+          <Directory Id='SP' Name='SP' >
+            <Directory Id='xml' Name='xml' >
+              <Directory Id='xml_shibboleth' Name='shibboleth'
+                         FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas' >
+                <Component Id='share_xml_shibboleth' Guid='{E2740531-4A6C-43C8-9E1A-9F7CA87862B7}'>
+                  <File Name='shibboleth-metadata-1.0.xsd' KeyPath='yes' />
+                </Component>
+                <Component Id='catalog.xml' Guid='{C6EA59A2-0A86-4F5F-B5F8-E37A2310A793}'>
+                  <File Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas\catalog.xml.in' />
+                </Component>
+                <Component Id='attributemap.xsd' Guid='{58A966DC-94E0-45FF-9A31-C67BAE0AB1C1}'>
+                  <File Name='shibboleth-2.0-attribute-map.xsd' />
+                </Component>
+                <Component Id='afp.xsd' Guid='{9672ADDF-8053-41C3-A58A-C8B99C710336}'>
+                  <File Name='shibboleth-2.0-afp.xsd' />
+                </Component>
+                <Component Id='afpmfsaml.xsd' Guid='{40B8AEF3-0A31-4204-95E7-F8079CB55979}'>
+                  <File Name='shibboleth-2.0-afp-mf-saml.xsd' />
+                </Component>
+                <Component Id='WSTrust.xsd' Guid='{91EA82B5-A19C-40C0-8D1C-40FA020A484E}'>
+                  <File Name='WS-Trust.xsd' />
+                </Component>
+                <Component Id='spnotify.xsd' Guid='{65EBC9F1-C958-4B17-9554-7F86186A15C1}'>
+                  <File Name='shibboleth-2.0-sp-notify.xsd' />
+                </Component>
+                <Component Id='nativespconfig.xsd' Guid='{5514B435-94AB-4A92-9737-0BEB78C146C8}'>
+                  <File Name='shibboleth-2.0-native-sp-config.xsd' />
+                </Component>
+                <Component Id='afpmfbasic.xsd' Guid='{D1C32485-D3DF-414C-B2FF-721F169CAC05}'>
+                  <File Name='shibboleth-2.0-afp-mf-basic.xsd' />
+                </Component>
+                <Component Id='nativespprotocols' Guid='{AE42FFFB-1A59-4F1D-9935-15D727B99929}'>
+                  <File Id='nativespprotocols' Name='shibboleth-2.0-native-sp-protocols.xsd' />
+                </Component>
+                <Component Id='shibboleth.xsd' Guid='{18F3DD83-0C0A-480E-8C87-043C9296DFE5}'>
+                  <File Name='shibboleth.xsd' KeyPath='yes' />
+                </Component>
+              </Directory><!--xml_shibboleth-->
+            </Directory><!--xml-->
+          </Directory><!--SP-->
+        </Directory><!--Shibboleth-->
+      </Directory><!--CommonAppDataFolder-->
+    </Directory><!--TargetDir-->
+
+    <Binary Id='EditCatalogFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_catalog.vbs' />
+    <CustomAction Id='EditCatalog' BinaryKey='EditCatalogFileSrc' VBScriptCall='' 
+                  Execute='deferred' Impersonate='no' />
+    <CustomAction Id='SetEditCatalog' Property='EditCatalog' 
+                  Value='[CommonAppDataFolder]Shibboleth\SP\xml\shibboleth\;@;catalog.xml' />
+
+    <InstallExecuteSequence>
+      <Custom Action='SetEditCatalog' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='EditCatalog' After='InstallFiles'>NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+
+
+  </Module>
+</Wix>

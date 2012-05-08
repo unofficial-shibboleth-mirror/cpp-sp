@@ -11,30 +11,30 @@
 
   <?define FastCGIVersion='2.4.0' ?>
 
-  <?define LogForShibVersion='1.0.5' ?>
+  <?define LogForShibVersion='1.0.5' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
   <?define LogForShibFileVersion='1_0' ?> <!-- '$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\msvc10\x64\Release\'> -->
 
-  <?define OpenSAMLVersion='2.4.3' ?> 
+  <?define OpenSAMLVersion='2.4.3' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
   <?define OpenSAMLFileVersion='2_4' ?><!-- 'saml$(var.OpenSAMLFileVersion).dll' -->
 
   <?define OpenSSLVersion='1.0.0.10' ?><!-- 1.0.0a -->
   <?define OpenSSLDirVersion='1.0.0a' ?><!-- '$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out64dll.dbg\'> -->
-  <?define OpenSSLFileVersion='1_0_0' ?><!-- 'libeay32_$(var.OpenSSLFileVersion)D.dll' -->
+  <?define OpenSSLFileVersion='1_0_0' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
   <!-- Do not confuse ShibbolethDllVersion with ShibbolethVersion -->
-  <?define ShibbolethDllFileVersion='1_4' ?><!-- 'shibsp-lite$(var.ShibbolethSPFileVersion).dll'  -->
+  <?define ShibbolethDllFileVersion='1_4' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
   <?define ShibbolethDllVersion='1.4.2' ?>
 
   <?define XercesVersion='3.1.1' ?><!-- $(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll' -->
-  <?define XercesFileVersion='3_1' ?>
+  <?define XercesFileVersion='3_1' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
   <?define XmlSecVersion='1.6.0' ?><!-- '$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan' -->
-  <?define XmlSecFileVersion='1_6' ?><!--'xsec_$(var.XmlSecFileVersion).dll'-->
+  <?define XmlSecFileVersion='1_6' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
   <?define XmlToolingVersion='1.4.2' ?>
   <?define XmlToolingFileVersion='1_4' ?><!--'xmltooling$(var.XmlToolingFileVersion)D.dll'-->
 
   <?define ZlibVersion='1.2.5' ?><!--'$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win32_DLL_Release\zlib$(var.ZlibFileVersion).dll'-->
-  <?define ZlibFileVersion='1' ?>
+  <?define ZlibFileVersion='1' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 </Include>

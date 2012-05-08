@@ -23,7 +23,7 @@
            Manufacturer='Shibboleth Consortium' Name='Shibboleth $(var.ShibbolethVersion)' 
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion)'>
     <Package Description='Installer for Shibboleth SP (x86 and x64)' Compressed='yes'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='405' Platform='x64'/>
+             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
     <PropertyRef Id='SHIB_OLDVERSION_64'/>
     <PropertyRef Id='SHIB_OLDVERSION'/>
@@ -53,6 +53,7 @@
                SourceFile='MergeModules\OpenSAML-schemas.msm' DiskId='1' />
         <Merge Id='OpenSSLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSSL-x86.msm' DiskId='1' />
         <Merge Id='ShibbolethMergeModule_x86' Language='1033' SourceFile='MergeModules\Shibboleth-x86.msm' DiskId='1' />
+        <Merge Id='ShibbolethMergeModule_schemas' Language='1033' SourceFile='MergeModules\Shibboleth-schemas.msm' DiskId='1' />
         <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='MergeModules\Xerces-x86.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='MergeModules\XmlSec-x86.msm' DiskId='1' />
         <Merge Id='XmlToolingMergeModule_x86' Language='1033' SourceFile='MergeModules\XmlTooling-x86.msm' DiskId='1' />
@@ -108,6 +109,7 @@
       <MergeRef Id='OpenSAMLMergeModule_schemas'/>
       <MergeRef Id='OpenSSLMergeModule_x86'/>
       <MergeRef Id='ShibbolethMergeModule_x86'/>
+      <MergeRef Id='ShibbolethMergeModule_schemas'/>
       <MergeRef Id='XercesMergeModule_x86'/>
       <MergeRef Id='XmlSecMergeModule_x86'/>
       <MergeRef Id='XmlToolingMergeModule_x86'/>
