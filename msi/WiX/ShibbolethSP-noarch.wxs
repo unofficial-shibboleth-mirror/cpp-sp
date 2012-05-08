@@ -1,20 +1,20 @@
 <?xml version='1.0' encoding='UTF-8'?>
 
 <!-- Licensed to the University Corporation for Advanced Internet
-   Development, Inc. (UCAID) under one or more contributor license
-   agreements.  See the NOTICE file distributed with this work for
-   additional information regarding copyright ownership. The UCAID
-   licenses this file to You under the Apache License, Version 2.0
-   (the 'License'); you may not use this file except in compliance
-   with the License.  You may obtain a copy of the License at
- 
+     Development, Inc. (UCAID) under one or more contributor license
+     agreements.  See the NOTICE file distributed with this work for
+     additional information regarding copyright ownership. The UCAID
+     licenses this file to You under the Apache License, Version 2.0
+     (the 'License'); you may not use this file except in compliance
+     with the License.  You may obtain a copy of the License at
+     
      http://www.apache.org/licenses/LICENSE-2.0
- 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an 'AS IS' BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-   implied.  See the License for the specific language governing
-   permissions and limitations under the License.  -->
+     
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an 'AS IS' BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+     implied.  See the License for the specific language governing
+     permissions and limitations under the License.  -->
 
 <?include Versions.wxi ?>
 
@@ -22,7 +22,7 @@
   <!-- This is where we put all the architecture neutral bits of the
        Shibboleth install.  It turns out that it may not be all the
        architecture insenstive stuff since some GUIDS may have moved
-       -->
+    -->
   <Fragment>
     <!-- Files First -->
     <!-- Configuration, licenses and documentation -->
@@ -31,14 +31,25 @@
       <Directory Id='doc' Name='doc' >
         <Directory Id='doc_shibboleth' Name='shibboleth' 
                    FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc' >
-          <!-- TODO seperate components -->
-          <Component Id='doc_shibboleth' Guid='{8239E994-8295-4E26-8708-DDF240B486BF}'>
+          <Component Id='main.css' Guid='{EA1366EE-0FD1-42E7-9F3F-C19E6C0D12D6}'>
             <File Name='main.css' KeyPath='yes'/>
+          </Component>
+          <Component Id='logo.jpg' Guid='{7F05E91A-A390-4A72-B4DC-1A4FE950B30A}'>
             <File Name='logo.jpg' />
+          </Component>
+          <Component Id='CREDITS.txt' Guid='{9A792E0C-61F1-4D08-9672-BE82FFB6B7F1}'>
             <File Name='CREDITS.txt' />
+          </Component>
+          <Component Id='LICENSE.txt' Guid='{404E7A3C-22C2-4A02-8DC0-7D5C0B25DED1}'>
             <File Name='LICENSE.txt' />
+          </Component>
+          <Component Id='NOTICE.txt' Guid='{80619251-6754-480A-AFAA-D7398482053C}'>
             <File Name='NOTICE.txt' />
+          </Component>
+          <Component Id='README.txt' Guid='{2E5A28EE-B70B-402B-8E6F-72E8EC1EEF0D}'>
             <File Name='README.txt'/>
+          </Component>
+          <Component Id='RELEASE.txt' Guid='{5822AF4E-BE53-4952-B662-6BE2D3913D31}'>
             <File Name='RELEASE.txt' />
           </Component>
         </Directory><!-- doc_shibboleth -->
@@ -46,36 +57,70 @@
       <Directory Id='etc' Name='etc' >
         <Directory Id='etc_shibboleth' Name='shibboleth' 
                    FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs' >
-          <!-- TODO seperate components -->
-          <Component Id='etc_shibboleth_perm' Guid='{1F1B9F9B-6437-46F1-ACE8-8D135612336C}' Permanent='yes'>
+          <Component Id='openssl.cnf' Guid='{1F1B9F9B-6437-46F1-ACE8-8D135612336C}' Permanent='yes'>
             <File KeyPath='yes' 
                   Source='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\apps\openssl.cnf' />
+          </Component>
+          <Component Id='upgrade.xsl' Guid='{D8D1270C-2F85-4465-8EC0-F5F30A2B3EDD}' Permanent='yes'>
             <File Name='upgrade.xsl' />
+          </Component>
+          <Component Id='examplemetadata.xml' Guid='{D9852008-249D-405D-8059-5DAD307D2723}' 
+                     Permanent='yes'>
             <File Name='example-metadata.xml' />
+          </Component>
+          <Component Id='exampleshibboleth2.xml' Guid='{85415A41-2B4E-406F-9CFC-63CFC360A9C7}' 
+                     Permanent='yes'>
             <File Name='example-shibboleth2.xml' />
           </Component>
           <Component Id='etc_shibboleth_nonperm' Guid='{A5BBCB8B-42B3-4402-B66D-66D2971F509F}'>
             <File Name='keygen.bat' KeyPath='yes' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs\keygen.bat-wix'/>
+          </Component>
+          <Component Id='xsltproc.js' Guid='{B87F4A53-3C37-45DA-BE6F-C46790FA7C2D}'>
             <File Name='xsltproc.js' />
           </Component>
           <Directory Id='etc_shibboleth_dist' Name='dist' 
                      FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs' >
             <Component Id='dist_noperm' Guid='{6AEBA525-8F52-4D14-BAEE-0292A2E214D1}'>
-              <!-- Note that the dir creation here is an accident caused by the inhertited Installer -->
-              <CreateFolder Directory='var_run_shibboleth' />
+
               <File Name='apache22.config.in' KeyPath='yes' />
+            </Component>
+            <Component Id='sslError.html' Guid='{A74BA230-C49F-4151-BBF4-AA80D554D099}'>
               <File Name='sslError.html' />
+            </Component>
+            <Component Id='bindingTemplate.html' Guid='{F5A3A434-9209-43EC-9314-1F705055DDEC}'>
               <File Name='bindingTemplate.html' />
+            </Component>
+            <Component Id='globalLogout.html' Guid='{E65F580D-5489-4D79-A8FC-F9FFED666FC1}'>
               <File Name='globalLogout.html' />
+            </Component>
+            <Component Id='localLogout.html' Guid='{70FA3A47-A950-4074-BC13-C56D94497BD9}'>
               <File Name='localLogout.html' />
+            </Component>
+            <Component Id='attributemap' Guid='{878C9456-E65F-4541-A0FA-975379EAC6B6}'>
               <File Name='attribute-map.xml' />
+            </Component>
+            <Component Id='attributepolicy' Guid='{55B88F7B-E2EA-4B70-87B7-33C566B9F992}'>
               <File Name='attribute-policy.xml'/>
+            </Component>
+            <Component Id='shibboleth2.xml' Guid='{E520FEDE-3F0E-47C6-9345-47223B82825A}'>
               <File Name='shibboleth2.xml' />
+            </Component>
+            <Component Id='console.logger' Guid='{8AC85980-32B9-4EA2-9245-167FB1AB2570}'>
               <File Name='console.logger' />
+            </Component>
+            <Component Id='discoveryTemplate.html' Guid='{A9573113-4387-46DD-A636-84482AF2C672}'>
               <File Name='discoveryTemplate.html' />
+            </Component>
+            <Component Id='postTemplate.html' Guid='{5B7111E8-8E04-42F1-AB02-E47AFB7C3D28}'>
               <File Name='postTemplate.html' />
+            </Component>
+            <Component Id='partialLogout.html' Guid='{E1F6208B-3C70-4632-B84C-C7D141DC4192}'>
               <File Name='partialLogout.html' />
+            </Component>
+            <Component Id='protocols.xml' Guid='{B226CAAC-2D18-411A-9FBF-3FE237EBEF4D}'>
               <File Name='protocols.xml' />
+            </Component>
+            <Component Id='securitypolicy.xml' Guid='{0EC04525-FCCF-4B60-8797-9B0CEC222B8C}'>
               <File Name='security-policy.xml' />
             </Component>
             <Component Id='accessError.html' Guid='{6FAA81A0-A020-4E60-A37D-1EC4D0D5FD06}' Permanent='yes'>
@@ -105,19 +150,21 @@
       <Directory Id='var' Name='var'>
         <Directory Id='var_log' Name='log'>
           <Directory Id='var_log_shibboleth' Name='shibboleth'>
-            <Component Id='var_log_shibboleth_folder' Guid='{2BFC84E4-634B-4D70-910A-D5640739C8C8}' KeyPath='yes'>
+            <Component Id='var_log_shibboleth_folder' Guid='{2BFC84E4-634B-4D70-910A-D5640739C8C8}'>
               <CreateFolder />
             </Component>
           </Directory><!-- var_log_shibboleth -->
         </Directory><!-- var_log -->
         <Directory Id='var_run' Name='run'>
-          <Directory Id='var_run_shibboleth' Name='shibboleth' />
+          <Directory Id='var_run_shibboleth' Name='shibboleth'>
+            <Component Id='var_run_shibboleth_folder' Guid='{35E176B1-965A-4571-B24E-E0C8E69B0459}'>
+              <CreateFolder />
+            </Component>
+          </Directory>
         </Directory><!-- var_run -->
       </Directory><!-- var -->
     </DirectoryRef>
-
-    <!-- The actions to perform after the files have been copied
-      TODO optionally add in the set64shibd set32shibd -->
+    
     <Binary Id='EditConfigFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_config_files.vbs-wix' />
     <Binary Id='KeyGenSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_keygen.vbs' />
     <CustomAction Id='EditConfigFiles' 
@@ -126,24 +173,50 @@
     <!-- TODO use QtExecCmdLine -->
     <CustomAction Id='KeyGen' BinaryKey='KeyGenSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetKeyGen' Property='KeyGen' Value='[INSTALLDIR]' />
-
+    
     <!-- TODO IIS Install (if not ALREADYINSTALLED)
-         IIS Uninstalll (if UGRADINGPRODUCTCODE) -->
+         TODO IIS Uninstalll (if UGRADINGPRODUCTCODE) -->
     <InstallExecuteSequence>
       <Custom Action='SetEditConfigFiles' Before='CostInitialize'>NOT Installed</Custom>
-      <!--TODO move editing of the catalog files to the merge module-->
       <Custom Action='EditConfigFiles' After='InstallFiles'>NOT Installed</Custom>
       <Custom Action='SetKeyGen' Before='CostInitialize'>NOT Installed</Custom>
-      <Custom Action='KeyGen' After='WriteEnvironmentStrings'>NOT Installed</Custom><!--After WriteEnvironmentStrings so the path is set -->
-
+      <!-- Run KeyGen after WriteEnvironmentStrings so the path is set -->
+      <Custom Action='KeyGen' After='WriteEnvironmentStrings'>NOT Installed</Custom>
     </InstallExecuteSequence>
-
+    
     <!-- Components
+         <ComponentRef Id='main.css'/>
+         <ComponentRef Id='logo.jpg'/>
+         <ComponentRef Id='CREDITS.txt'/>
+         <ComponentRef Id='LICENSE.txt'/>
+         <ComponentRef Id='NOTICE.txt'/>
+         <ComponentRef Id='README.txt'/>
+         <ComponentRef Id='RELEASE.txt'/>
+         
+         <ComponentRef Id='openssl.cnf'/>
+         <ComponentRef Id='upgrade.xsl'/>
+         <ComponentRef Id='examplemetadata.xml'/>
+         <ComponentRef Id='exampleshibboleth2.xml' 
 
-         <ComponentRef Id='doc_shibboleth'/>
-         <ComponentRef Id='etc_shibboleth_perm'/>
          <ComponentRef Id='etc_shibboleth_nonperm'/>
+
          <ComponentRef Id='dist_noperm'/>
+         <ComponentRef Id='xsltproc.js'/>
+         <ComponentRef Id='sslError.html'/>
+         <ComponentRef Id='xsltproc.js'/>
+         <ComponentRef Id='bindingTemplate.html'/>
+         <ComponentRef Id='globalLogout.html'/>
+         <ComponentRef Id='localLogout.html'/>
+         <ComponentRef Id='attributemap'/>
+         <ComponentRef Id='attributepolicy'/>
+         <ComponentRef Id='shibboleth2.xml'/>
+         <ComponentRef Id='console.logger'/>
+         <ComponentRef Id='discoveryTemplate.html'/>
+         <ComponentRef Id='postTemplate.html'/>
+         <ComponentRef Id='partialLogout.html'/>
+         <ComponentRef Id='protocols.xml'/>
+         <ComponentRef Id='security-policy.xml'
+
          <ComponentRef Id='accessError.html'/>
          <ComponentRef Id='apache.config'/>
          <ComponentRef Id='apache2.config'/>
@@ -152,9 +225,7 @@
          <ComponentRef Id='sessionError.html'/>
          <ComponentRef Id='shibd.logger'/>
          <ComponentRef Id='var_log_shibboleth_folder'/>
-         <ComponentRef Id='share_xml_shibboleth'/>
-         <ComponentRef Id='share_xml_shibboleth_xsd'/>
+         <ComponentRef Id='var_run_shibboleth_folder'/>  
          -->
-
   </Fragment>
 </Wix>
