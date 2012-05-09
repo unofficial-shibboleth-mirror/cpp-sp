@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-
+<!-- TODO etc is uninstallable, etc\dist isn't -->
 <!-- Licensed to the University Corporation for Advanced Internet
      Development, Inc. (UCAID) under one or more contributor license
      agreements.  See the NOTICE file distributed with this work for
@@ -164,15 +164,15 @@
         </Directory><!-- var_run -->
       </Directory><!-- var -->
     </DirectoryRef>
-    
+
     <Binary Id='EditConfigFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_config_files.vbs-wix' />
-    <Binary Id='KeyGenSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_keygen.vbs' />
+
     <CustomAction Id='EditConfigFiles' 
                   BinaryKey='EditConfigFileSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[SHIBD_PORT];@;[CommonAppDataFolder]' />
-    <!-- TODO use QtExecCmdLine -->
-    <CustomAction Id='KeyGen' BinaryKey='KeyGenSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetKeyGen' Property='KeyGen' Value='[INSTALLDIR]' />
+    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[SHIBD_PORT];@;[OUR_DLL_PATH]' />
+
+    <CustomAction Id='KeyGen' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
+    <CustomAction Id='SetKeyGen' Property='KeyGen' Value='&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot;' />
     
     <!-- TODO IIS Install (if not ALREADYINSTALLED)
          TODO IIS Uninstalll (if UGRADINGPRODUCTCODE) -->

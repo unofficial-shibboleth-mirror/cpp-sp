@@ -47,7 +47,7 @@ if (Err = 0) then
   msiProperties = split(customData,";@;")
   InstallDir = msiProperties(0)
   ShibdPort = msiProperties(1)
-  ProgramFiles = msiProperties(2)
+  ProgramData = msiProperties(2)
 
   'Remove all trailing backslashes to normalize
   do while (mid(InstallDir,Len(InstallDir),1) = "\")
@@ -64,11 +64,6 @@ if (Err = 0) then
   'Perform actual Substitutions
   'Afterwards, if the config file doesn't already exist, copy up to etc/shibboleth
   'Also strip *.in for files in dist
-
-  'Keygen.bat is updated in placehowever
-  Keygen = ConfigDir & "keygen.bat"
-  ReplaceInFile Keygen, "@-PROGRAMFILES-@", ProgramFiles
-
 
   ConfigFile = DistDir & "shibd.logger.in"
   ReplaceInFile ConfigFile, "@-PKGLOGDIR-@", ConvertedDir & "/var/log/shibboleth"
@@ -193,23 +188,5 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "protocols.xml", ConfigDir, false
   End If
   
-  'Finally, fix up schema catalogs.
-  
-  XMLDir = InstallDir & "\share\xml\xmltooling\"
-  ConfigFile = XMLDir & "catalog.xml"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
-
-  XMLDir = InstallDir & "\share\xml\opensaml\"
-  ConfigFile = XMLDir & "saml20-catalog.xml"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
-  ConfigFile = XMLDir & "saml11-catalog.xml"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
-  ConfigFile = XMLDir & "saml10-catalog.xml"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
-
-  XMLDir = InstallDir & "\share\xml\shibboleth\"
-  ConfigFile = XMLDir & "catalog.xml"
-  ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
-
 'Last End If
 End If

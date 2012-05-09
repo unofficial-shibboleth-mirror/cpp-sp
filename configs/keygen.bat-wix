@@ -29,6 +29,7 @@ set /a DAYS=%YEARS%*365
 if not defined FQDN goto guess_fqdn
 
 :generate
+set PATH=%PATH%;%ProgramFiles%\Shibboleth\SP\lib\
 set CNF="%PREFIX%sp-cert.cnf"
 echo # OpenSSL configuration file for creating sp-cert.pem    >%CNF%
 echo [req]                                                   >>%CNF%
