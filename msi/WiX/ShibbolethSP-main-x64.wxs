@@ -66,6 +66,7 @@
         <Merge Id='CurlMergeModule_x64' Language='1033' SourceFile='MergeModules\Curl-x64.msm' DiskId='1' />
         <Merge Id='FastCGIMergeModule_x64' Language='1033' SourceFile='MergeModules\FastCGI-x64.msm' DiskId='1' />
         <Merge Id='Log4ShibMergeModule_x64' Language='1033' SourceFile='MergeModules\Log4Shib-x64.msm' DiskId='1' />
+        <Merge Id='OpenSSLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSSL-x64.msm' DiskId='1' />
         <Merge Id='ShibbolethMergeModule_x64' Language='1033' SourceFile='MergeModules\Shibboleth-x64.msm' DiskId='1' />
         <Merge Id='XercesMergeModule_x64' Language='1033' SourceFile='MergeModules\Xerces-x64.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x64' Language='1033' SourceFile='MergeModules\XmlSec-x64.msm' DiskId='1' />
@@ -89,6 +90,15 @@
 
     </Directory><!--TARGETDIR-->
 
+    <DirectoryRef Id='etc_shibboleth' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs'>
+      <Component Id='SetService64' Guid='{8DE75314-84B5-4BD1-ABD2-9FC1DEE399DC}' Permanent='yes'>
+        <File KeyPath='yes' Name='SetService64.bat' />
+      </Component>
+      <Component Id='SetService32' Guid='{3332A486-845E-4EE4-975F-3D75757EB941}' Permanent='yes'>
+        <File KeyPath='yes' Name='SetService32.bat' />
+      </Component>
+    </DirectoryRef><!-- etc_shibboleth -->
+
     <!-- TODO use QtExecCmdLine to execute SetX64Shibd -->
 
     <Feature Id='Shibboleth' Title='Shibboleth' Level='1' Display='hidden' 
@@ -109,6 +119,7 @@
       <MergeRef Id='CurlMergeModule_x64'/>
       <MergeRef Id='FastCGIMergeModule_x64'/>
       <MergeRef Id='Log4ShibMergeModule_x64'/>
+      <MergeRef Id='OpenSSLMergeModule_x64'/>
       <MergeRef Id='ShibbolethMergeModule_x64'/>
       <MergeRef Id='XercesMergeModule_x64'/>
       <MergeRef Id='XmlSecMergeModule_x64'/>
@@ -151,6 +162,9 @@
       <!-- ShibbolethSP-main-x64 -->
       <ComponentRef Id='SetPath'/>
       <ComponentRef Id='SetPath64'/>
+
+      <ComponentRef Id='SetService64' />
+      <ComponentRef Id='SetService32' />
 
       <?include ShibbolethSP-defs-x86.wxi ?>
 

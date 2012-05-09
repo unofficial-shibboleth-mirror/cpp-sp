@@ -187,6 +187,13 @@ if (Err = 0) then
   If (NOT FileSystemObj.FileExists(ConfigDir & "protocols.xml")) then
     FileSystemObj.CopyFile DistDir & "protocols.xml", ConfigDir, false
   End If
+
+  ConfigFile  = ConfigDir & "SetService64.bat"
+  ReplaceInFile ConfigFile, "@-INSTALLDIR-@", InstallDir
+
+  ConfigFile  = ConfigDir & "SetService32.bat"
+  ReplaceInFile ConfigFile, "@-INSTALLDIR-@", InstallDir
   
+
 'Last End If
 End If

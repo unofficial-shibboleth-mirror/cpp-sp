@@ -14,12 +14,11 @@
   <ComponentRef Id='upgrade.xsl'/>
   <ComponentRef Id='examplemetadata.xml'/>
   <ComponentRef Id='exampleshibboleth2.xml'/> 
-
-  <ComponentRef Id='etc_shibboleth_nonperm'/>
+  <ComponentRef Id='xsltproc.js'/>
+  <ComponentRef Id='keygen.bat'/>
 
   <ComponentRef Id='dist_noperm'/>
   <ComponentRef Id='sslError.html'/>
-  <ComponentRef Id='xsltproc.js'/>
   <ComponentRef Id='bindingTemplate.html'/>
   <ComponentRef Id='globalLogout.html'/>
   <ComponentRef Id='localLogout.html'/>
