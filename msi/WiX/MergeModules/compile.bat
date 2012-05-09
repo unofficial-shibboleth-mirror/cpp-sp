@@ -63,6 +63,11 @@ rem smoke  OpenSSL-x64.msm
  light  Shibboleth-x64.wixobj
  smoke  Shibboleth-x64.msm
 
+ wixcop -indent:2 Shibboleth-schemas.wxs
+ candle Shibboleth-schemas.wxs
+ light  Shibboleth-schemas.wixobj
+ smoke  Shibboleth-schemas.msm
+
  wixcop -indent:2  Xerces-x86.wxs
  candle Xerces-x86.wxs
  light  Xerces-x86.wixobj
@@ -82,23 +87,6 @@ rem smoke  OpenSSL-x64.msm
  candle XmlSec-x64.wxs
  light  XmlSec-x64.wixobj
  smoke  XmlSec-x64.msm
-
- wixcop -indent:2  XmlTooling-x86.wxs
- candle XmlTooling-x86.wxs
- wixcop -indent:2  XmlTooling-schemas.wxs
- candle XmlTooling-schemas.wxs
- light  XmlTooling-x86.wixobj 
- smoke  XmlTooling-x86.msm
-
- wixcop -indent:2  XmlTooling-schemas.wxs
- candle XmlTooling-schemas.wxs
- light  XmlTooling-schemas.wixobj
- smoke  XmlTooling-schemas.msm
-
- wixcop -indent:2  XmlTooling-x64.wxs
- candle XmlTooling-x64.wxs
- light  XmlTooling-x64.wixobj
- smoke  XmlTooling-x64.msm
 
  wixcop -indent:2  Zlib-x86.wxs
  candle Zlib-x86.wxs

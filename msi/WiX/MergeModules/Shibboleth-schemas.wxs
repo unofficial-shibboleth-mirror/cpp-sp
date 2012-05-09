@@ -34,7 +34,7 @@
                   <File Name='shibboleth-metadata-1.0.xsd' KeyPath='yes' />
                 </Component>
                 <Component Id='catalog.xml' Guid='{C6EA59A2-0A86-4F5F-B5F8-E37A2310A793}'>
-                  <File Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas\catalog.xml.in' />
+                  <File Id='ShibbolethCatalog' Name='catalog.xml' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\schemas\catalog.xml.in' />
                 </Component>
                 <Component Id='attributemap.xsd' Guid='{58A966DC-94E0-45FF-9A31-C67BAE0AB1C1}'>
                   <File Name='shibboleth-2.0-attribute-map.xsd' />
@@ -70,15 +70,27 @@
       </Directory><!--CommonAppDataFolder-->
     </Directory><!--TargetDir-->
 
-    <Binary Id='EditCatalogFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_catalog.vbs' />
-    <CustomAction Id='EditCatalog' BinaryKey='EditCatalogFileSrc' VBScriptCall='' 
+    <?include OpenSAML-schemas.wxi ?>
+
+    <CustomAction Id='EditShibbolethCatalog' BinaryKey='EditCatalogFileSrc' VBScriptCall='' 
                   Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetEditCatalog' Property='EditCatalog' 
+    <CustomAction Id='SetEditShibbolethCatalog' Property='EditShibbolethCatalog' 
                   Value='[CommonAppDataFolder]Shibboleth\SP\xml\shibboleth\;@;catalog.xml' />
 
+
     <InstallExecuteSequence>
-      <Custom Action='SetEditCatalog' Before='CostInitialize'>NOT Installed</Custom>
-      <Custom Action='EditCatalog' After='InstallFiles'>NOT Installed</Custom>
+      <Custom Action='SetEditCatalogSAML10' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='EditCatalogSAML10' After='InstallFiles'>NOT Installed</Custom>
+      <Custom Action='SetEditCatalogSAML11' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='EditCatalogSAML11' After='InstallFiles'>NOT Installed</Custom>
+      <Custom Action='SetEditCatalogSAML20' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='EditCatalogSAML20' After='InstallFiles'>NOT Installed</Custom>
+
+      <Custom Action='SetEditXMLToolingCatalog' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='EditXMLToolingCatalog' After='InstallFiles'>NOT Installed</Custom>
+
+      <Custom Action='SetEditShibbolethCatalog' Before='CostInitialize'>NOT Installed</Custom>
+      <Custom Action='EditShibbolethCatalog' After='InstallFiles'>NOT Installed</Custom>
     </InstallExecuteSequence>
 
 

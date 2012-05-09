@@ -116,11 +116,12 @@
                  FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\Release' >
         <Component Id='shibd.exe' Guid='{2476BB80-9384-4026-86F5-E1569A685187}'>
           <File Name='shibd.exe' KeyPath='yes' />
+          <!-- TODO this should not happen on an upgrade (install/uninstall) -->
           <ServiceInstall Id='shibd' Name='shibd_Default' 
                           DisplayName='Shibboleth 2 Daemon (Default)' Type='ownProcess' 
                           Start='auto' ErrorControl='ignore' />
           <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='uninstall'  
-                          Remove='uninstall' Wait='yes' />
+                          Remove='uninstall' Start='install' Wait='yes' />
         </Component>
         <Directory Id='sbin_debug' Name='debug'
                    FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\Debug' >

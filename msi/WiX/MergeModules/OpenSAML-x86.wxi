@@ -1,0 +1,63 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<Include xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <DirectoryRef Id='lib' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-opensaml\Release\'>
+    <Component Id='saml2_0.dll' Guid='{B52F8C71-2042-4CDF-A250-BD773985A2AB}'>
+      <File KeyPath='yes' Name='saml$(var.OpenSAMLFileVersion).dll' />
+    </Component>
+    <Component Id='samlsign.exe' Guid='{3DC7A431-9623-4283-BA07-444DB1C1F864}'>
+      <File KeyPath='yes' Name='samlsign.exe' />
+    </Component>
+  </DirectoryRef><!-- lib -->
+  <DirectoryRef Id='lib' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\Release'>
+    <Component Id='xmltooling.dll' Guid='{53533A59-A563-439D-B13D-A4D7090C42D3}'>
+      <File Id='xmltooling.dll' Name='xmltooling$(var.XmlToolingFileVersion).dll' />
+    </Component>
+    <Component Id='xmltoolinglite.dll' Guid='{5045A722-D6D6-4E55-9196-CB7C50B4446F}'>
+      <File Id='xmltoolinglite.dll' Name='xmltooling-lite$(var.XmlToolingFileVersion).dll' />
+    </Component>
+  </DirectoryRef><!-- lib -->
+  <DirectoryRef Id='lib_debug' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-opensaml\Debug'>
+    <Component Id='saml2_0D.dll' Guid='{7B934257-5F7F-428E-930E-A793A11573D7}'>
+      <File KeyPath='yes' Name='saml$(var.OpenSAMLFileVersion)D.dll' />
+    </Component>
+    <Component Id='samlsign.exe_Debug' Guid='{EFCAEBC5-242F-416C-8F87-B7DD49C1AE29}'>
+      <File Id='samlsign.exe_Debug' KeyPath='yes' Name='samlsign.exe' />
+    </Component>
+  </DirectoryRef><!-- lib_debug-->
+  <DirectoryRef Id='lib_debug' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-xmltooling\Debug'>
+    <Component Id='xmltoolingD.dll' Guid='{380E59DF-24F8-4F60-97A7-CC67FB76B4CC}'>
+      <File Id='xmltoolingD.dll' Name='xmltooling$(var.XmlToolingFileVersion)D.dll' />
+    </Component>
+    <Component Id='xmltoolingliteD.dll' Guid='{DB6D8737-4E3D-4C06-87F1-C59C7D7CB47A}'>
+      <File Id='xmltoolingliteD.dll' Name='xmltooling-lite$(var.XmlToolingFileVersion)D.dll' />
+    </Component>
+  </DirectoryRef><!-- lib_debug-->
+  <DirectoryRef Id='doc' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc'>
+    <Component Id='doc_shibboleth' Guid='{EEA99655-7A42-4D5D-AB64-AA7DD5A99409}'>
+      <File Name='CREDITS.txt' KeyPath='yes'/>
+      <File Name='LICENSE.txt' />
+      <File Name='NOTICE.txt' />
+      <File Name='README.txt'/>
+      <File Name='RELEASE.txt' />
+    </Component>
+  </DirectoryRef><!-- doc -->
+</Include>
+
+    

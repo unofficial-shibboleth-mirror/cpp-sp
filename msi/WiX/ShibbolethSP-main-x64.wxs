@@ -48,17 +48,11 @@
         <Merge Id='CurlMergeModule_x86' Language='1033' SourceFile='MergeModules\Curl-x86.msm' DiskId='1' />
         <Merge Id='FastCGIMergeModule_x86' Language='1033' SourceFile='MergeModules\FastCGI-x86.msm' DiskId='1' />
         <Merge Id='Log4ShibMergeModule_x86' Language='1033' SourceFile='MergeModules\Log4Shib-x86.msm' DiskId='1' />
-        <Merge Id='OpenSAMLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSAML-x86.msm' DiskId='1' />
-        <Merge Id='OpenSAMLMergeModule_schemas' Language='1033' 
-               SourceFile='MergeModules\OpenSAML-schemas.msm' DiskId='1' />
         <Merge Id='OpenSSLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSSL-x86.msm' DiskId='1' />
         <Merge Id='ShibbolethMergeModule_x86' Language='1033' SourceFile='MergeModules\Shibboleth-x86.msm' DiskId='1' />
         <Merge Id='ShibbolethMergeModule_schemas' Language='1033' SourceFile='MergeModules\Shibboleth-schemas.msm' DiskId='1' />
         <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='MergeModules\Xerces-x86.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='MergeModules\XmlSec-x86.msm' DiskId='1' />
-        <Merge Id='XmlToolingMergeModule_x86' Language='1033' SourceFile='MergeModules\XmlTooling-x86.msm' DiskId='1' />
-        <Merge Id='XmlToolingMergeModule_schemas' Language='1033' 
-               SourceFile='MergeModules\XmlTooling-schemas.msm' DiskId='1' />
         <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='MergeModules\Zlib-x86.msm' DiskId='1' />
 
         <Merge Id='Microsoft_VC100_DebugCRT_x86' Language='1033' 
@@ -72,12 +66,9 @@
         <Merge Id='CurlMergeModule_x64' Language='1033' SourceFile='MergeModules\Curl-x64.msm' DiskId='1' />
         <Merge Id='FastCGIMergeModule_x64' Language='1033' SourceFile='MergeModules\FastCGI-x64.msm' DiskId='1' />
         <Merge Id='Log4ShibMergeModule_x64' Language='1033' SourceFile='MergeModules\Log4Shib-x64.msm' DiskId='1' />
-        <Merge Id='OpenSAMLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSAML-x64.msm' DiskId='1' />
-        <Merge Id='OpenSSLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSSL-x64.msm' DiskId='1' />
         <Merge Id='ShibbolethMergeModule_x64' Language='1033' SourceFile='MergeModules\Shibboleth-x64.msm' DiskId='1' />
         <Merge Id='XercesMergeModule_x64' Language='1033' SourceFile='MergeModules\Xerces-x64.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x64' Language='1033' SourceFile='MergeModules\XmlSec-x64.msm' DiskId='1' />
-        <Merge Id='XmlToolingMergeModule_x64' Language='1033' SourceFile='MergeModules\XmlTooling-x64.msm' DiskId='1' />
         <Merge Id='ZlibMergeModule_x64' Language='1033' SourceFile='MergeModules\Zlib-x64.msm' DiskId='1' />
 
         <Merge Id='Microsoft_VC100_DebugCRT_x64' Language='1033' 
@@ -105,15 +96,11 @@
       <MergeRef Id='CurlMergeModule_x86'/>
       <MergeRef Id='FastCGIMergeModule_x86'/>
       <MergeRef Id='Log4ShibMergeModule_x86'/>
-      <MergeRef Id='OpenSAMLMergeModule_x86'/>
-      <MergeRef Id='OpenSAMLMergeModule_schemas'/>
       <MergeRef Id='OpenSSLMergeModule_x86'/>
       <MergeRef Id='ShibbolethMergeModule_x86'/>
       <MergeRef Id='ShibbolethMergeModule_schemas'/>
       <MergeRef Id='XercesMergeModule_x86'/>
       <MergeRef Id='XmlSecMergeModule_x86'/>
-      <MergeRef Id='XmlToolingMergeModule_x86'/>
-      <MergeRef Id='XmlToolingMergeModule_schemas'/>
       <MergeRef Id='ZlibMergeModule_x86'/>
 
       <MergeRef Id='Microsoft_VC100_DebugCRT_x86'/>
@@ -122,12 +109,9 @@
       <MergeRef Id='CurlMergeModule_x64'/>
       <MergeRef Id='FastCGIMergeModule_x64'/>
       <MergeRef Id='Log4ShibMergeModule_x64'/>
-      <MergeRef Id='OpenSAMLMergeModule_x64'/>
-      <MergeRef Id='OpenSSLMergeModule_x64'/>
       <MergeRef Id='ShibbolethMergeModule_x64'/>
       <MergeRef Id='XercesMergeModule_x64'/>
       <MergeRef Id='XmlSecMergeModule_x64'/>
-      <MergeRef Id='XmlToolingMergeModule_x64'/>
       <MergeRef Id='ZlibMergeModule_x64'/>
 
       <MergeRef Id='Microsoft_VC100_DebugCRT_x64'/>

@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- TODO roll in xmltooling make subsidiary to Shib -->
 
 <!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
@@ -29,26 +28,15 @@
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-opensaml\Release\'>
-              <Component Id='saml2_0.dll' Guid='{B52F8C71-2042-4CDF-A250-BD773985A2AB}'>
-                <File KeyPath='yes' Name='saml$(var.OpenSAMLFileVersion).dll' />
-              </Component>
-              <Component Id='samlsign.exe' Guid='{3DC7A431-9623-4283-BA07-444DB1C1F864}'>
-                <File KeyPath='yes' Name='samlsign.exe' />
-              </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-opensaml\Debug'>
-                <Component Id='saml2_0D.dll' Guid='{7B934257-5F7F-428E-930E-A793A11573D7}'>
-                  <File KeyPath='yes' Name='saml$(var.OpenSAMLFileVersion)D.dll' />
-                </Component>
-                <Component Id='samlsign.exe_Debug' Guid='{EFCAEBC5-242F-416C-8F87-B7DD49C1AE29}'>
-                  <File Id='samlsign.exe_Debug' KeyPath='yes' Name='samlsign.exe' />
-                </Component>
-              </Directory><!-- lib_debug-->
+            <Directory Id='lib' Name='lib'>
+              <Directory Id='lib_debug' Name='debug'/>
             </Directory><!-- lib -->
+            <Directory Id='doc' Name='doc' />
           </Directory><!-- shibboleth_SP -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->
     </Directory><!-- TARGETDIR -->
+    <?include OpenSAML-x86.wxi ?>
   </Module>
 </Wix>
 

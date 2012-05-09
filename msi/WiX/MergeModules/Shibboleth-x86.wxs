@@ -45,18 +45,12 @@
                 </Component>
               </Directory><!-- lib_debug -->
             </Directory><!-- lib -->
-            <Directory Id='doc' Name='doc' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc'>
-              <Component Id='doc_shibboleth' Guid='{EEA99655-7A42-4D5D-AB64-AA7DD5A99409}'>
-                <File Name='CREDITS.txt' KeyPath='yes'/>
-                <File Name='LICENSE.txt' />
-                <File Name='NOTICE.txt' />
-                <File Name='README.txt'/>
-                <File Name='RELEASE.txt' />
-              </Component>
-            </Directory><!-- doc -->          </Directory><!-- shibboleth_sp -->
+            <Directory Id='doc' Name='doc'/>
+          </Directory><!-- shibboleth_sp -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->
     </Directory><!-- TARGETDIR -->
+    <?include OpenSAML-x86.wxi ?>
   </Module>
 </Wix>
 
