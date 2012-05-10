@@ -23,27 +23,27 @@
 <Include>
 
   <!-- Are we installing IIS, if so what extension to used -->
-  <Property Id="SHIB_FILE_EXTENSION" Value=".sso" Secure="yes">
-    <RegistrySearch Id="AppReg" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="FileExtension" Type="raw" />
+  <Property Id='SHIB_FILE_EXTENSION' Value='.sso' Secure='yes'>
+    <RegistrySearch Id='AppReg' Root='HKLM' Key='SOFTWARE\Shibboleth' Name='FileExtension' Type='raw' />
   </Property>
   
   <!-- IIS install -->
-  <Property Id="INSTALL_ISAPI_FILTER" Value="TRUE" Secure="yes" />
+  <Property Id='INSTALL_ISAPI_FILTER' Value='TRUE' Secure='yes' />
   <!-- Install shibd_service -->
-  <Property Id="INSTALL_SHIBD_SERVICE" Value="TRUE" Secure="yes" />
+  <Property Id='INSTALL_SHIBD_SERVICE' Value='TRUE' Secure='yes' />
   <!-- 64 bit or 32bit service and DLLS, also used to swap in the 64 bit service -->
-  <Property Id="INSTALL_32BIT" Secure="yes" />
-  <Property Id="SHIBD_PORT" Value="1600" Secure="yes" />
+  <Property Id='INSTALL_32BIT' Secure='yes' />
+  <Property Id='SHIBD_PORT' Value='1600' Secure='yes' />
 
-  <Property Id="ARPCONTACT" Value="contact@shibboleth.net" />
-  <Property Id="ARPHELPLINK" Value="https://wiki.shibboleth.net/confluence/display/SHIB2/Installation+and+Configuration" />
-  <Property Id="ARPURLUPDATEINFO" Value="https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPWindowsUpgrade" />
-  <Property Id="ARPURLINFOABOUT" Value="http://www.shibboleth.net/" />
+  <Property Id='ARPCONTACT' Value='contact@shibboleth.net' />
+  <Property Id='ARPHELPLINK' Value='https://wiki.shibboleth.net/confluence/display/SHIB2/Installation+and+Configuration' />
+  <Property Id='ARPURLUPDATEINFO' Value='https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPWindowsUpgrade' />
+  <Property Id='ARPURLINFOABOUT' Value='http://www.shibboleth.net/' />
 
   <!-- UPGRADINGPRODUCTCODE set in the uninstall if this is an upgrade uninstall -->
 
   <Upgrade Id='$(var.ShibbolethUpgradeCode)'>
-    <UpgradeVersion ExcludeLanguages="yes" IncludeMaximum="yes" Maximum="2.5.0" Minimum="0.0.1" OnlyDetect="yes" Property="ALREADYINSTALLED"/>
+    <UpgradeVersion ExcludeLanguages='yes' IncludeMaximum='yes' Maximum='127.255.255' Minimum='0.0.1' OnlyDetect='yes' Property='ALREADYINSTALLED'/>
   </Upgrade>
 </Include>
 

@@ -36,7 +36,7 @@ End Sub
 
 
 Dim FileSystemObj, ConvertedDir, ConfigFile, XMLDir, WshShell
-Dim customData, msiProperties, InstallDir, ShibdPort
+Dim customData, msiProperties, InstallDir, ShibdPort, LogFile
 
 on error resume next
 Set FileSystemObj = CreateObject("Scripting.FileSystemObject")
@@ -47,7 +47,12 @@ if (Err = 0) then
   msiProperties = split(customData,";@;")
   InstallDir = msiProperties(0)
   ShibdPort = msiProperties(1)
-  ProgramData = msiProperties(2)
+
+  Set LogFile = FileSystemObj.OpenTextFile(InstallDir & "\var\log\shibboleth\Installer.log", 8, true)
+
+  If (LogFile) then
+     LogFile.WriteLine "Edit Config Files to " & InstallDir & ", Port = " & ShibdPort
+  End If
 
   'Remove all trailing backslashes to normalize
   do while (mid(InstallDir,Len(InstallDir),1) = "\")

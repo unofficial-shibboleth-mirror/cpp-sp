@@ -116,7 +116,7 @@
                  FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\Release' >
         <Component Id='shibd.exe' Guid='{2476BB80-9384-4026-86F5-E1569A685187}'>
           <File Name='shibd.exe' KeyPath='yes' />
-          <!-- TODO this should not happen on an upgrade (install/uninstall) -->
+          <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
           <ServiceInstall Id='shibd' Name='shibd_Default' 
                           DisplayName='Shibboleth 2 Daemon (Default)' Type='ownProcess' 
                           Start='auto' ErrorControl='ignore' />

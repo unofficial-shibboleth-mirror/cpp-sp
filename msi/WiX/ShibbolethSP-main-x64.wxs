@@ -25,6 +25,9 @@
     <Package Description='Installer for Shibboleth SP (x86 and x64)' Compressed='yes'
              Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
+    <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." 
+                  MigrateFeatures="yes"  Schedule="afterInstallExecute" />
+
     <PropertyRef Id='SHIB_OLDVERSION_64'/>
     <PropertyRef Id='SHIB_OLDVERSION'/>
 
@@ -98,8 +101,6 @@
         <File KeyPath='yes' Name='SetService32.bat' />
       </Component>
     </DirectoryRef><!-- etc_shibboleth -->
-
-    <!-- TODO use QtExecCmdLine to execute SetX64Shibd -->
 
     <Feature Id='Shibboleth' Title='Shibboleth' Level='1' Display='hidden' 
              ConfigurableDirectory='INSTALLDIR'>

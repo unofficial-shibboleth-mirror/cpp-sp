@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<!-- TODO etc is uninstallable, etc\dist isn't -->
 <!-- Licensed to the University Corporation for Advanced Internet
      Development, Inc. (UCAID) under one or more contributor license
      agreements.  See the NOTICE file distributed with this work for
@@ -173,15 +172,69 @@
 
     <CustomAction Id='KeyGen' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetKeyGen' Property='KeyGen' Value='&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot;' />
-    
-    <!-- TODO IIS Install (if not ALREADYINSTALLED)
-         TODO IIS Uninstalll (if UGRADINGPRODUCTCODE) -->
+
+    <Binary Id='install_isapi' 
+            SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_install_isapi_filter.vbs-wix'/>
+    <Binary Id='uninstall_isapi' 
+            SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_uninstall_isapi_filter.vbs-wix'/>
+
+    <CustomAction Id='SetShibInstallISAPIFilter32' Property='ShibInstallISAPIFilter' 
+                  Value='[INSTALLDIR];@;[INSTALLDIR]lib\shibboleth\isapi_shib.dll;@;[SHIB_FILE_EXTENSION]' />
+    <CustomAction Id='SetShibInstallISAPIFilter64' Property='ShibInstallISAPIFilter' 
+                  Value='[INSTALLDIR];@;[INSTALLDIR]lib64\shibboleth\isapi_shib.dll;@;[SHIB_FILE_EXTENSION]' />
+    <CustomAction Id='ShibInstallISAPIFilter' BinaryKey='install_isapi' 
+                  VBScriptCall='' Execute='deferred' Impersonate='no' />
+
+    <CustomAction Id='SetShibUninstallISAPIFilter' Property='ShibUninstallISAPIFilter' 
+                  Value='[INSTALLDIR]'/>
+    <CustomAction Id='ShibUninstallISAPIFilter' BinaryKey='uninstall_isapi' 
+                  VBScriptCall='' Execute='deferred' Impersonate='no' />
+
+    <CustomAction Id='ServicePath64' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
+    <CustomAction Id='SetServicePath64' Property='ServicePath64' Value='&quot;[INSTALLDIR]etc\shibboleth\SetService64.bat&quot;' />
+
+
     <InstallExecuteSequence>
       <Custom Action='SetEditConfigFiles' Before='CostInitialize'>NOT Installed</Custom>
       <Custom Action='EditConfigFiles' After='InstallFiles'>NOT Installed</Custom>
+
       <Custom Action='SetKeyGen' Before='CostInitialize'>NOT Installed</Custom>
       <!-- Run KeyGen after WriteEnvironmentStrings so the path is set -->
       <Custom Action='KeyGen' After='WriteEnvironmentStrings'>NOT Installed</Custom>
+
+      <!-- Install IIS if
+           - this is an install
+           - AND we were told to
+           - AND this is NOT an upgrade
+        -->
+      <Custom Action='SetShibInstallISAPIFilter32' 
+              Before='CostInitialize'>(NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND (INSTALL_32BIT)</Custom>
+      <Custom Action='SetShibInstallISAPIFilter64' 
+              Before='CostInitialize'>(NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT)</Custom>
+      <Custom Action='ShibInstallISAPIFilter' 
+              After='InstallFiles'>(NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED)</Custom>
+
+      <!-- (try to) Uninstall IIS if
+           - this is an uninstall
+           - this is not an upgrade
+           -->
+      <Custom Action='SetShibUninstallISAPIFilter' 
+              After='CostFinalize'>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</Custom>
+      <Custom Action='ShibUninstallISAPIFilter' 
+              Before='RemoveFiles'>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</Custom>
+      <!-- set service path to 64 bit one if this is an install and if we werre told to -->
+
+      <Custom Action='SetServicePath64' 
+              Before='CostInitialize'>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT)</Custom>
+      <Custom Action='ServicePath64' 
+              After='InstallServices'>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT)</Custom>
+
+
+      <!-- Do not mess with SCM if this is an upgrade -->
+
+      <InstallServices>(NOT Installed) AND (NOT ALREADYINSTALLED) AND (INSTALL_SHIBD_SERVICE = "TRUE")</InstallServices>
+      <DeleteServices>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</DeleteServices>
+
     </InstallExecuteSequence>
     
     <!-- Components

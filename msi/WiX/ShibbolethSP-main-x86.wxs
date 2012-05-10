@@ -25,6 +25,9 @@
     <Package Description='Installer for Shibboleth SP (x86 and x64)' Compressed='yes'
              Manufacturer='Shibboleth Consortium' InstallerVersion='300'/>
 
+    <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." 
+                  MigrateFeatures="yes"  Schedule="afterInstallExecute" />
+
     <PropertyRef Id='SHIB_OLDVERSION'/>
 
     <Condition Message='Shibboleth requires Windows XP SP2 or later.'>NOT VersionNT OR (VersionNT &gt;= 501)</Condition>
