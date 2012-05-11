@@ -103,7 +103,7 @@ pair<bool,long> SecuredHandler::run(SPRequest& request, bool isHandler) const
     if (conf.isEnabled(SPConfig::InProcess) && !m_acl.empty()) {
         static bool (IPRange::* contains)(const char*) const = &IPRange::contains;
         if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
-            m_log.error("handler request blocked from invalid address (%s)", request.getRemoteAddr().c_str());
+            request.log(SPRequest::SPWarn, string("handler request blocked from invalid address (") + request.getRemoteAddr() + ')');
             istringstream msg("Access Denied");
             return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
         }

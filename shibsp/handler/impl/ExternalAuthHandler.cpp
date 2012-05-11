@@ -124,38 +124,40 @@ namespace shibsp {
 
 };
 
-static ostream& json_safe(ostream& os, const char* buf)
-{
-    os << '"';
-    for (; *buf; ++buf) {
-        switch (*buf) {
-            case '\\':
-            case '"':
-                os << '\\';
-                os << *buf;
-                break;
-            case '\b':
-                os << "\\b";
-                break;
-            case '\t':
-                os << "\\t";
-                break;
-            case '\n':
-                os << "\\n";
-                break;
-            case '\f':
-                os << "\\f";
-                break;
-            case '\r':
-                os << "\\r";
-                break;
-            default:
-                os << *buf;
+namespace {
+    static ostream& json_safe(ostream& os, const char* buf)
+    {
+        os << '"';
+        for (; *buf; ++buf) {
+            switch (*buf) {
+                case '\\':
+                case '"':
+                    os << '\\';
+                    os << *buf;
+                    break;
+                case '\b':
+                    os << "\\b";
+                    break;
+                case '\t':
+                    os << "\\t";
+                    break;
+                case '\n':
+                    os << "\\n";
+                    break;
+                case '\f':
+                    os << "\\f";
+                    break;
+                case '\r':
+                    os << "\\r";
+                    break;
+                default:
+                    os << *buf;
+            }
         }
+        os << '"';
+        return os;
     }
-    os << '"';
-    return os;
-}
+};
 
 ExternalAuth::ExternalAuth(const DOMElement* e, const char* appId)
     : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".ExternalAuth"), "acl", "127.0.0.1 ::1")
