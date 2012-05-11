@@ -16,11 +16,11 @@
      implied.  See the License for the specific language governing
      permissions and limitations under the License.  -->
 
-<!-- <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-   This is where we put all the configuration properties we will
-       used to drive the install.  The GUI will change them as required,
-       but the GUI is not required.  -->
-<Include>
+<!-- This is where we put all the configuration properties we will
+     used to drive the install.  The GUI will change them as required,
+     but the GUI is not required.  -->
+
+<Include xmlns='http://schemas.microsoft.com/wix/2006/wi'>
 
   <!-- Are we installing IIS, if so what extension to used -->
   <Property Id='SHIB_FILE_EXTENSION' Value='.sso' Secure='yes'>

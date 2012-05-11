@@ -39,6 +39,8 @@
 
     <?include ShibbolethSP-properties.wxi?>
 
+    <?include ShibbolethSP-gui.wxi ?>
+
     <!-- Files -->
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <!-- The test bit -->
