@@ -37,9 +37,13 @@
 
     <Media Id='1' Cabinet='product.cab' EmbedCab='yes' />
 
+
     <?include ShibbolethSP-properties.wxi?>
 
-    <?include ShibbolethSP-gui.wxi ?>
+    <!-- NOTE we should not use sys.BUILDARCH since that reflects the candle parameters, *NOT* the architecture -->
+    <Property Id='IS64BITINSTALL' Value='TRUE'/>
+    <UIRef Id="Shib_InstallDir"/>
+
 
     <!-- Files -->
     <Directory Id='TARGETDIR' Name='SourceDir'>

@@ -225,9 +225,9 @@
       <!-- set service path to 64 bit one if this is an install and if we werre told to -->
 
       <Custom Action='SetServicePath64' 
-              Before='CostInitialize'>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT)</Custom>
+              Before='CostInitialize'>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")</Custom>
       <Custom Action='ServicePath64' 
-              After='InstallServices'>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT)</Custom>
+              After='InstallServices'>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")</Custom>
 
 
       <!-- Do not mess with SCM if this is an upgrade -->

@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the 'License'); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an 'AS IS' BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Fragment>
+    <UI>
+      <Dialog Id='IISDlg' Width='370' Height='270' Title='[ProductName] Setup' >
+        <Control Id='Next' Type='PushButton' X='236' Y='243' Width='56' Height='17' Default='yes' 
+                 Text='!(loc.WixUINext)' />
+        <Control Id='Back' Type='PushButton' X='180' Y='243' Width='56' Height='17' 
+                 Text='!(loc.WixUIBack)' />
+        <Control Id='Cancel' Type='PushButton' X='304' Y='243' Width='56' Height='17' Cancel='yes' 
+                 Text='!(loc.WixUICancel)'>
+          <Publish Event='SpawnDialog' Value='CancelDlg'>1</Publish>
+        </Control>
+
+        <Control Id='Title' Type='Text' X='15' Y='6' Width='200' Height='15' Transparent='yes' NoPrefix='yes' 
+                 Text='{\WixUI_Font_Title}Install ISAPI Filter' />
+        <Control Id='BannerBitmap' Type='Bitmap' X='0' Y='0' Width='370' Height='44' TabSkip='no' 
+                 Text='!(loc.InstallDirDlgBannerBitmap)' />
+        <Control Id='Description' Type='Text' X='25' Y='23' Width='280' Height='15' Transparent='yes'
+                 NoPrefix='yes' Text='Install the ISAPI filter for IIS' />
+        <Control Id='BannerLine' Type='Line' X='0' Y='44' Width='370' Height='0' />
+        <Control Id='BottomLine' Type='Line' X='0' Y='234' Width='370' Height='0' />
+
+
+        <Control Id='IISLine2' Type='Text' X='25' Y='79' Width='312' Height='20' 
+                 Text='This will install the ISAPI filter for IIS, register the specified file extension and create a Web Services Extension entry (IIS 6 and later).'/>
+        <Control Id='InstallISAPICheckBox' Type='CheckBox' X='86' Y='154' Width='180' Height='14' 
+                 Property='INSTALL_ISAPI_FILTER' Text='Install ISAPI filter and configure IIS' 
+                 CheckBoxValue='TRUE' TabSkip='yes' />
+
+        <Control Id='ShibExtensionBox' Type='GroupBox' X='99' Y='165' Width='175' Height='35' TabSkip='yes' />
+        <Control Id='ShibExtensionText' Type='Text' X='114' Y='180' Width='96' Height='12' 
+                 Text='Shibboleth File Extension:' TabSkip='yes'/>
+        <Control Id='ShibExtensionEdit' Type='Edit' X='211' Y='177' Width='51' Height='16' 
+                 Property='SHIB_FILE_EXTENSION' TabSkip='yes'>
+          <Condition Action='disable'>INSTALL_ISAPI_FILTER &lt;&gt; "TRUE"</Condition>
+          <Condition Action='enable'>INSTALL_ISAPI_FILTER = "TRUE"</Condition>
+        </Control>
+
+      </Dialog>
+    </UI>
+  </Fragment>
+</Wix>

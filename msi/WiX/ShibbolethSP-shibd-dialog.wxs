@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!-- Licensed to the University Corporation for Advanced Internet
+   Development, Inc. (UCAID) under one or more contributor license
+   agreements.  See the NOTICE file distributed with this work for
+   additional information regarding copyright ownership. The UCAID
+   licenses this file to You under the Apache License, Version 2.0
+   (the 'License'); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+ 
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an 'AS IS' BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied.  See the License for the specific language governing
+   permissions and limitations under the License.  -->
+
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <Fragment>
+    <UI>
+      <Dialog Id='ShibdDlg' Width='370' Height='270' Title='[ProductName] Setup'>
+        <Control Id='Next' Type='PushButton' X='236' Y='243' Width='56' Height='17' Default='yes' Text='!(loc.WixUINext)' />
+        <Control Id='Back' Type='PushButton' X='180' Y='243' Width='56' Height='17' Text='!(loc.WixUIBack)' />
+        <Control Id='Cancel' Type='PushButton' X='304' Y='243' Width='56' Height='17' Cancel='yes' Text='!(loc.WixUICancel)'>
+          <Publish Event='SpawnDialog' Value='CancelDlg'>1</Publish>
+        </Control>
+
+        <Control Id='Title' Type='Text' X='15' Y='6' Width='200' Height='15' Transparent='yes' NoPrefix='yes' 
+                 Text='{\WixUI_Font_Title}Shibd Service' />
+
+        <Control Id='BannerBitmap' Type='Bitmap' X='0' Y='0' Width='370' Height='44' TabSkip='no' 
+                 Text='!(loc.InstallDirDlgBannerBitmap)' />
+
+        <Control Id='Description64' Type='Text' X='25' Y='23' Width='280' Height='15' Transparent='yes' NoPrefix='yes' 
+                 Text='Specify which architecture to run and the port for the Shibd daemon'>
+          <Condition Action='hide' >IS64BITINSTALL &lt;&gt; "TRUE"</Condition>
+        </Control>
+        <Control Id='Description32' Type='Text' X='25' Y='23' Width='280' Height='15' Transparent='yes' NoPrefix='yes' Text='Specify the port for the Shibd daemon'>
+          <Condition Action='hide' >IS64BITINSTALL = "TRUE"</Condition>
+        </Control>
+
+
+        <Control Id='BannerLine' Type='Line' X='0' Y='44' Width='370' Height='0' />
+        <Control Id='BottomLine' Type='Line' X='0' Y='234' Width='370' Height='0' />
+
+        <Control Id='ShibdLine1' Type='Text' X='25' Y='60' Width='312' Height='10' 
+                 Text='Please enter the TCP port number in which the shibd daemon should run'/>
+        <Control Id='ShibdLine2' Type='Text' X='25' Y='79' Width='312' Height='20' 
+                 Text='NOTE: This is NOT the web server port and MUST be a valid Windows port number that is NOT in use by any other process!'/>
+        <Control Id='ShibdLine3' Type='Text' X='25' Y='108' Width='312' Height='20' 
+                 Text='If a copy of shibboleth.xml already exists in the installation path, it will NOT be updated with this new port number.'/>
+        <Control Id='InstallShibdCheckBox' Type='CheckBox' X='118' Y='154' Width='96' Height='14' 
+                 Property='INSTALL_SHIBD_SERVICE' Text='Install Shibd daemon' 
+                 CheckBoxValue='TRUE' TabSkip='yes' />
+
+        <Control Id='ShibdPortBox' Type='GroupBox' X='131' Y='165' Width='104' Height='35' />
+
+        <Control Id='ShibdPortText' Type='Text' X='146' Y='181' Width='40' Height='12' Text='Shibd port' >
+          <Condition Action='disable'>INSTALL_SHIBD_SERVICE &lt;&gt; "TRUE"</Condition>
+          <Condition Action='enable'>INSTALL_SHIBD_SERVICE = "TRUE"</Condition>
+        </Control>
+        <Control Id='ShibdPortEnter' Type='Edit' X='187' Y='178' Width='35' Height='16' 
+                 Property='SHIBD_PORT' TabSkip='no'>
+          <Condition Action='disable'>INSTALL_SHIBD_SERVICE &lt;&gt; "TRUE"</Condition>
+          <Condition Action='enable'>INSTALL_SHIBD_SERVICE = "TRUE"</Condition>
+        </Control>
+
+        <Control Id='Install32BitShibd' Type='CheckBox' X='118' Y='205' Width='140' Height='14' 
+                 Property='INSTALL_32BIT' Text='Install 32 bit shibd and plugins' 
+                 CheckBoxValue='TRUE' TabSkip='yes'>
+          <Condition Action='hide' >IS64BITINSTALL &lt;&gt; "TRUE"</Condition>
+        </Control>
+
+      </Dialog>
+    </UI>
+  </Fragment>
+</Wix>
