@@ -30,6 +30,7 @@
 #include "remoting/ListenerService.h"
 
 #include <xercesc/dom/DOM.hpp>
+#include <xmltooling/security/SecurityHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -103,10 +104,26 @@ void ListenerService::receive(DDF &in, ostream& out)
 {
     if (!in.name())
         throw ListenerException("Incoming message with no destination address rejected.");
-    else if (!strcmp("ping",in.name())) {
-        DDF outmsg=DDF(nullptr).integer(in.integer() + 1);
+    else if (!strcmp("ping", in.name())) {
+        DDF outmsg = DDF(nullptr).integer(in.integer() + 1);
         DDFJanitor jan(outmsg);
         out << outmsg;
+        return;
+    }
+    else if (!strcmp("hash", in.name())) {
+#ifndef SHIBSP_LITE
+        const char* hashAlg = in["alg"].string();
+        const char* data = in["data"].string();
+        if (!hashAlg || !*hashAlg || !data || !*data)
+            throw ListenerException("Hash request missing algorithm or data parameters.");
+        DDF outmsg(nullptr);
+        DDFJanitor jan(outmsg);
+        outmsg.string(SecurityHelper::doHash(hashAlg, data, strlen(data)).c_str());
+        out << outmsg;
+        return;
+#else
+        throw ListenerException("Hash algorithms unavailable in lite build of library.");
+#endif
     }
 
     // Two stage lookup, on the listener itself, and the SP interface.

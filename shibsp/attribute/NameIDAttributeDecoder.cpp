@@ -84,7 +84,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
     ) const
 {
     auto_ptr<NameIDAttribute> nameid(
-        new NameIDAttribute(ids, (!m_formatter.empty()) ? m_formatter.c_str() : DEFAULT_NAMEID_FORMATTER)
+        new NameIDAttribute(ids, (!m_formatter.empty()) ? m_formatter.c_str() : DEFAULT_NAMEID_FORMATTER, m_hashAlg.c_str())
         );
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
     vector<XMLObject*>::const_iterator v,stop;
@@ -159,7 +159,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
             }
         }
 
-        return dest.empty() ? nullptr : _decode(nameid.release());
+        return dest.empty() ? nullptr : nameid.release();
     }
 
     const NameIDType* saml2name = dynamic_cast<const NameIDType*>(xmlObject);
@@ -188,7 +188,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
         }
     }
 
-    return dest.empty() ? nullptr : _decode(nameid.release());
+    return dest.empty() ? nullptr : nameid.release();
 }
 
 void NameIDAttributeDecoder::extract(

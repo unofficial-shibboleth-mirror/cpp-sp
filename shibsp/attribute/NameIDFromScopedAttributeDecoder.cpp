@@ -93,7 +93,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
     const XMLCh* xmlscope;
     xmltooling::QName scopeqname(nullptr,Scope);
     auto_ptr<NameIDAttribute> nameid(
-        new NameIDAttribute(ids, (!m_formatter.empty()) ? m_formatter.c_str() : DEFAULT_NAMEID_FORMATTER)
+        new NameIDAttribute(ids, (!m_formatter.empty()) ? m_formatter.c_str() : DEFAULT_NAMEID_FORMATTER, m_hashAlg.c_str())
         );
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
     pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> valrange;
@@ -162,7 +162,7 @@ shibsp::Attribute* NameIDFromScopedAttributeDecoder::decode(
             }
         }
 
-        return dest.empty() ? nullptr : _decode(nameid.release());
+        return dest.empty() ? nullptr : nameid.release();
     }
 
     log.warn("XMLObject type not recognized by NameIDFromScopedAttributeDecoder, no values returned");

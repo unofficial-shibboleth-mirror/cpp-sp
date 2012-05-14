@@ -50,8 +50,9 @@ namespace shibsp {
          * 
          * @param ids       array with primary identifier in first position, followed by any aliases
          * @param formatter template for serialization of tuple
+         * @param hashAlg   hash algorithm to apply in producing serialized values
          */
-        NameIDAttribute(const std::vector<std::string>& ids, const char* formatter=DEFAULT_NAMEID_FORMATTER);
+        NameIDAttribute(const std::vector<std::string>& ids, const char* formatter=DEFAULT_NAMEID_FORMATTER, const char* hashAlg=nullptr);
 
         /**
          * Constructs based on a remoted NameIDAttribute.
@@ -99,7 +100,7 @@ namespace shibsp {
     
     private:
         std::vector<Value> m_values;
-        std::string m_formatter;
+        std::string m_formatter,m_hashAlg;
     };
 
 #if defined (_MSC_VER)
