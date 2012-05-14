@@ -168,7 +168,7 @@
 
     <CustomAction Id='EditConfigFiles' 
                   BinaryKey='EditConfigFileSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[SHIBD_PORT];@;[OUR_DLL_PATH]' />
+    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR]' />
 
     <CustomAction Id='KeyGen' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetKeyGen' Property='KeyGen' Value='&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot;' />
@@ -207,12 +207,15 @@
            - AND we were told to
            - AND this is NOT an upgrade
         -->
-      <Custom Action='SetShibInstallISAPIFilter32' 
-              Before='CostInitialize'>(NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND (INSTALL_32BIT)</Custom>
-      <Custom Action='SetShibInstallISAPIFilter64' 
-              Before='CostInitialize'>(NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT)</Custom>
-      <Custom Action='ShibInstallISAPIFilter' 
-              After='InstallFiles'>(NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED)</Custom>
+      <Custom Action='SetShibInstallISAPIFilter32' Before='CostInitialize'>
+        (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND (INSTALL_32BIT) AND IISMAJORVERSION
+      </Custom>
+      <Custom Action='SetShibInstallISAPIFilter64' Before='CostInitialize'>
+        (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND IISMAJORVERSION
+      </Custom>
+      <Custom Action='ShibInstallISAPIFilter' After='InstallFiles'>
+        (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED)  AND IISMAJORVERSION
+      </Custom>
 
       <!-- (try to) Uninstall IIS if
            - this is an uninstall
@@ -224,10 +227,12 @@
               Before='RemoveFiles'>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</Custom>
       <!-- set service path to 64 bit one if this is an install and if we werre told to -->
 
-      <Custom Action='SetServicePath64' 
-              Before='CostInitialize'>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")</Custom>
-      <Custom Action='ServicePath64' 
-              After='InstallServices'>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")</Custom>
+      <Custom Action='SetServicePath64' Before='CostInitialize'>
+        (NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
+      </Custom>
+      <Custom Action='ServicePath64' After='InstallServices'>
+        (NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
+      </Custom>
 
 
       <!-- Do not mess with SCM if this is an upgrade -->

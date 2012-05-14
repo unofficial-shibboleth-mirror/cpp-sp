@@ -68,12 +68,14 @@
       <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2">1</Publish>
 
       <Publish Dialog="ShibdDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg">1</Publish>
-      <Publish Dialog="ShibdDlg" Control="Next" Event="NewDialog" Value="IISDlg">1</Publish>
+      <Publish Dialog="ShibdDlg" Control="Next" Event="NewDialog" Value="IISDlg">IISMAJORVERSION</Publish>
+      <Publish Dialog="ShibdDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">NOT IISMAJORVERSION</Publish>
 
       <Publish Dialog="IISDlg" Control="Back" Event="NewDialog" Value="ShibdDlg">1</Publish>
       <Publish Dialog="IISDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
 
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="IISDlg" Order="1">NOT Installed</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="IISDlg" Order="1">(NOT Installed) AND IISMAJORVERSION </Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="IISDlg" Order="1">(NOT Installed) AND (NOT IISMAJORVERSION)</Publish>
       <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
       <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">Installed AND PATCH</Publish>
 

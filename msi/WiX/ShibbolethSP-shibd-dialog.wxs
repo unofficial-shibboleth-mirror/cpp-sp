@@ -54,8 +54,8 @@
                  Property='INSTALL_SHIBD_SERVICE' Text='Install Shibd daemon' 
                  CheckBoxValue='TRUE' TabSkip='yes' />
 
+        <!--
         <Control Id='ShibdPortBox' Type='GroupBox' X='131' Y='165' Width='104' Height='35' />
-
         <Control Id='ShibdPortText' Type='Text' X='146' Y='181' Width='40' Height='12' Text='Shibd port' >
           <Condition Action='disable'>INSTALL_SHIBD_SERVICE &lt;&gt; "TRUE"</Condition>
           <Condition Action='enable'>INSTALL_SHIBD_SERVICE = "TRUE"</Condition>
@@ -65,6 +65,7 @@
           <Condition Action='disable'>INSTALL_SHIBD_SERVICE &lt;&gt; "TRUE"</Condition>
           <Condition Action='enable'>INSTALL_SHIBD_SERVICE = "TRUE"</Condition>
         </Control>
+        -->
 
         <Control Id='Install32BitShibd' Type='CheckBox' X='118' Y='205' Width='140' Height='14' 
                  Property='INSTALL_32BIT' Text='Install 32 bit shibd and plugins' 
