@@ -29,7 +29,7 @@ set /a DAYS=%YEARS%*365
 if not defined FQDN goto guess_fqdn
 
 :generate
-set PATH=%PREFIX%..\..\lib;%PREFIX%..\..\bin
+set PATH=%PATH%;%ProgramFiles%\Shibboleth\SP\lib\
 set CNF="%PREFIX%sp-cert.cnf"
 echo # OpenSSL configuration file for creating sp-cert.pem    >%CNF%
 echo [req]                                                   >>%CNF%
@@ -46,7 +46,7 @@ echo CN=%FQDN%                                               >>%CNF%
 echo [ext]                                                   >>%CNF%
 if defined ENTITYID (echo subjectAltName=DNS:%FQDN%,URI:%ENTITYID% >>%CNF%) else (echo subjectAltName=DNS:%FQDN% >>%CNF%)
 echo subjectKeyIdentifier=hash                               >>%CNF%
-%PREFIX%..\..\bin\openssl.exe req -config %PREFIX%sp-cert.cnf -new -x509 -days %DAYS% -keyout %PREFIX%sp-key.pem -out %PREFIX%sp-cert.pem
+openssl.exe req -config %CNF% -new -x509 -days %DAYS% -keyout "%PREFIX%sp-key.pem" -out "%PREFIX%sp-cert.pem"
 del %CNF%
 exit /b
 
@@ -92,7 +92,7 @@ if defined USERDNSDOMAIN set FQDN=%USERDNSDOMAIN%
 for /F %%i in ('hostname') do set HOST=%%i
 if defined FQDN (set FQDN=%HOST%.%FQDN%) else (set FQDN=%HOST%)
 
-echo >%FQDN%
+echo >"%FQDN%"
 for /F %%i in ('dir /b/l %FQDN%') do set FQDN=%%i
 del %FQDN%
 goto generate
