@@ -157,6 +157,8 @@ EXTRA_DIST = \
 	keygen.bat \
 	keygen.sh \
 	metagen.sh \
+	SetService32.bat \
+	SetService64.bat \
 	upgrade.xsl \
 	xsltproc.js \
 	$(CONFIGFILES)
