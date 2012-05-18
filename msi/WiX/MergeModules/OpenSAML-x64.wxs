@@ -56,7 +56,7 @@
                   <File KeyPath='yes' Checksum='yes'
                     Source='$(var.SPBuildDirectory)\cpp-xmltooling\x64\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.dll' />
                 </Component>
-              </Directory> <!-- lib_debug -->
+              </Directory><!-- lib_debug -->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='doc' Guid='{F858AC39-4C24-4255-A86E-4747FE45624E}' Win64='yes'>
@@ -64,7 +64,7 @@
                 <File Name='OPENSAML.NOTICE' Source='$(var.SPBuildDirectory)\cpp-opensaml\doc\NOTICE.txt' />
                 <File Name='OPENSAML.README' Source='$(var.SPBuildDirectory)\cpp-opensaml\doc\README.txt' />
               </Component>
-            </Directory> <!-- doc -->
+            </Directory><!-- doc -->
           </Directory><!--shibboleth_SP-->
         </Directory><!--shibboleth-->
       </Directory><!--ProgramFiles64Folder-->

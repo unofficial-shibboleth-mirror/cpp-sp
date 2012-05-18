@@ -40,7 +40,7 @@
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
-              <Component Id='XERCES.LICENSE' Guid='{12731F0B-681B-4154-9B02-BEB219954D44}'>
+              <Component Id='XERCES.LICENSE' Guid='{12731F0B-681B-4154-9B02-BEB219954D44}' Win64='yes'>
                 <File KeyPath='yes' Name='XERCES.LICENSE'
                     Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\LICENSE' />
               </Component>

@@ -44,7 +44,7 @@
           <Component Id='adfs64.so' Guid='{2891ECDC-F507-4CEC-8A65-8B20FB93F4B7}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='adfs64.so' Name='adfs.so' />
           </Component>
-          <Component Id='adfslite64.so' Guid='{1162CDA0-C3F8-4599-B01E-9EDAA73B2C0B}' Win64='yes'>
+          <Component Id='adfs_lite64.so' Guid='{1162CDA0-C3F8-4599-B01E-9EDAA73B2C0B}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='adfslite64.so' Name='adfs-lite.so' />
           </Component>
           <Component Id='isapi_shib64.dll' Guid='{3BC7260B-D035-4F79-A39E-EDA0181BBB1B}' Win64='yes'>

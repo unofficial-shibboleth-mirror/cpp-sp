@@ -31,8 +31,8 @@
   <ComponentRef Id='protocols.xml'/>
   <ComponentRef Id='security_policy.xml'/>
   <ComponentRef Id='accessError.html'/>
-  <ComponentRef Id='apache.config'/>
-  <ComponentRef Id='apache2.config'/>
+  <ComponentRef Id='apache.config.in'/>
+  <ComponentRef Id='apache2.config.in'/>
   <ComponentRef Id='apache22.config.in'/>
   <ComponentRef Id='apache24.config.in'/>
   <ComponentRef Id='metadataError.html'/>
@@ -51,7 +51,7 @@
   <ComponentRef Id='mdquery.exe_debug'/>
 
   <ComponentRef Id='adfs.so'/>
-  <ComponentRef Id='adfslite.so'/>
+  <ComponentRef Id='adfs_lite.so'/>
   <ComponentRef Id='isapi_shib.dll'/>
   <ComponentRef Id='mod_shib_13.so'/>
   <ComponentRef Id='mod_shib_20.so'/>

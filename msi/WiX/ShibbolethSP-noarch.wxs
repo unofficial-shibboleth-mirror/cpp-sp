@@ -83,7 +83,7 @@
             <Component Id='apache22.config.in' Guid='{6AEBA525-8F52-4D14-BAEE-0292A2E214D1}'>
               <File KeyPath='yes' Name='apache22.config.in' />
             </Component>
-            <Component Id='apache24.config.in' Guid='{6AEBA525-8F52-4D14-BAEE-0292A2E214D1}'>
+            <Component Id='apache24.config.in' Guid='{3562B68A-E54A-4F1B-9F10-BDACB5FFE8CB}'>
               <File KeyPath='yes' Name='apache24.config.in' />
             </Component>
             <Component Id='sslError.html' Guid='{A74BA230-C49F-4151-BBF4-AA80D554D099}'>

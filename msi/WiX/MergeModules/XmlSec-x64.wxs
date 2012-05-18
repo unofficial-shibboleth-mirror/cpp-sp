@@ -76,7 +76,7 @@
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
-              <Component Id='SANTUARIO.LICENSE' Guid='{07288B10-ED5A-443F-BC90-CFD987C798C4}'>
+              <Component Id='SANTUARIO.LICENSE' Guid='{07288B10-ED5A-443F-BC90-CFD987C798C4}' Win64='yes'>
                 <File KeyPath='yes' Name='SANTUARIO.LICENSE'
                   Source='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\LICENSE.txt' />
               </Component>
