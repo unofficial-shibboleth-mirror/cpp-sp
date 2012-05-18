@@ -1,4 +1,4 @@
-Name:		@PACKAGE_NAME@
+Name:		shibboleth-sp
 Version:	@PACKAGE_VERSION@
 Release:	1
 Summary:	Open source system for attribute-based Web SSO
@@ -6,8 +6,9 @@ Group:		Productivity/Networking/Security
 Vendor:		Internet2
 License:	Apache 2.0
 URL:		http://shibboleth.internet2.edu/
-Source:		%{name}-sp-%{version}.tar.gz
+Source:		%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
+Obsoletes:	@PACKAGE_NAME@ < %{version}-%{release}
 Requires:	openssl
 PreReq:		xmltooling-schemas, opensaml-schemas
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
