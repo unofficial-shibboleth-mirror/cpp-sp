@@ -71,7 +71,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "Comments", "\0"
-            VALUE "CompanyName", "Internet2\0"
+            VALUE "CompanyName", "Shibboleth Consortium\0"
             VALUE "FileDescription", "Shibboleth ADFSv1 Plugin\0"
             VALUE "FileVersion", "2, 5, 0, 0\0"
 #ifdef SHIBSP_LITE
@@ -79,7 +79,7 @@ BEGIN
 #else
             VALUE "InternalName", "adfs\0"
 #endif
-            VALUE "LegalCopyright", "Copyright © 2011 Internet2\0"
+            VALUE "LegalCopyright", "Copyright © 2012 UCAID\0"
             VALUE "LegalTrademarks", "\0"
 #ifdef SHIBSP_LITE
             VALUE "OriginalFilename", "adfs-lite.so\0"
@@ -87,7 +87,7 @@ BEGIN
             VALUE "OriginalFilename", "adfs.so\0"
 #endif
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 2.5\0"
+            VALUE "ProductName", "Shibboleth 2.5.0\0"
             VALUE "ProductVersion", "2, 5, 0, 0\0"
             VALUE "SpecialBuild", "\0"
         END
