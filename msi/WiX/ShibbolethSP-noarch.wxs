@@ -54,11 +54,8 @@
         </Directory><!-- doc_shibboleth -->
       </Directory><!-- doc -->
       <Directory Id='etc' Name='etc' >
-        <Directory Id='etc_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs' >
-          <Component Id='openssl.cnf' Guid='{1F1B9F9B-6437-46F1-ACE8-8D135612336C}' Permanent='yes'>
-            <File KeyPath='yes' Source='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\apps\openssl.cnf' />
-          </Component>
-          <Component Id='upgrade.xsl' Guid='{D8D1270C-2F85-4465-8EC0-F5F30A2B3EDD}' Permanent='yes'>
+        <Directory Id='etc_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs'>
+          <Component Id='upgrade.xsl' Guid='{D8D1270C-2F85-4465-8EC0-F5F30A2B3EDD}'>
             <File KeyPath='yes' Name='upgrade.xsl' />
           </Component>
           <Component Id='example_metadata.xml' Guid='{D9852008-249D-405D-8059-5DAD307D2723}' Permanent='yes'>
@@ -67,13 +64,13 @@
           <Component Id='example_shibboleth2.xml' Guid='{85415A41-2B4E-406F-9CFC-63CFC360A9C7}' Permanent='yes'>
             <File KeyPath='yes' Name='example-shibboleth2.xml' />
           </Component>
-          <Component Id='keygen.bat' Guid='{A5BBCB8B-42B3-4402-B66D-66D2971F509F}'  Permanent='yes'>
-            <File KeyPath='yes' Name='keygen.bat' Source='$(var.SPBuildDirectory)\cpp-sp\configs\keygen.bat-wix'/>
+          <Component Id='keygen.bat' Guid='{A5BBCB8B-42B3-4402-B66D-66D2971F509F}'>
+            <File KeyPath='yes' Name='keygen.bat'/>
           </Component>
-          <Component Id='xsltproc.js' Guid='{B87F4A53-3C37-45DA-BE6F-C46790FA7C2D}'  Permanent='yes'>
+          <Component Id='xsltproc.js' Guid='{B87F4A53-3C37-45DA-BE6F-C46790FA7C2D}'>
             <File KeyPath='yes' Name='xsltproc.js' />
           </Component>
-          <Directory Id='etc_shibboleth_dist' Name='dist' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs' >
+          <Directory Id='etc_shibboleth_dist' Name='dist' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs'>
             <Component Id='apache.config.in' Guid='{AF4EB2B1-2489-4E39-A89E-1CA7AC2B7483}'>
               <File KeyPath='yes' Name='apache.config.in' />
             </Component>

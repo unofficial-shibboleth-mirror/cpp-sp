@@ -10,7 +10,6 @@
   <ComponentRef Id='README.txt'/>
   <ComponentRef Id='RELEASE.txt'/>
 
-  <ComponentRef Id='openssl.cnf'/>
   <ComponentRef Id='upgrade.xsl'/>
   <ComponentRef Id='example_metadata.xml'/>
   <ComponentRef Id='example_shibboleth2.xml'/> 
