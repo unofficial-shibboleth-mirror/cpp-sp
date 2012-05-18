@@ -12,37 +12,38 @@
 
   <ComponentRef Id='openssl.cnf'/>
   <ComponentRef Id='upgrade.xsl'/>
-  <ComponentRef Id='examplemetadata.xml'/>
-  <ComponentRef Id='exampleshibboleth2.xml'/> 
+  <ComponentRef Id='example_metadata.xml'/>
+  <ComponentRef Id='example_shibboleth2.xml'/> 
   <ComponentRef Id='xsltproc.js'/>
   <ComponentRef Id='keygen.bat'/>
-
-  <ComponentRef Id='dist_noperm'/>
+  <ComponentRef Id='attrChecker.html'/>
   <ComponentRef Id='sslError.html'/>
   <ComponentRef Id='bindingTemplate.html'/>
   <ComponentRef Id='globalLogout.html'/>
   <ComponentRef Id='localLogout.html'/>
-  <ComponentRef Id='attributemap'/>
-  <ComponentRef Id='attributepolicy'/>
+  <ComponentRef Id='attribute_map.xml'/>
+  <ComponentRef Id='attribute_policy.xml'/>
   <ComponentRef Id='shibboleth2.xml'/>
   <ComponentRef Id='console.logger'/>
   <ComponentRef Id='discoveryTemplate.html'/>
   <ComponentRef Id='postTemplate.html'/>
   <ComponentRef Id='partialLogout.html'/>
   <ComponentRef Id='protocols.xml'/>
-  <ComponentRef Id='securitypolicy.xml'/>
-
+  <ComponentRef Id='security_policy.xml'/>
   <ComponentRef Id='accessError.html'/>
   <ComponentRef Id='apache.config'/>
   <ComponentRef Id='apache2.config'/>
+  <ComponentRef Id='apache22.config.in'/>
+  <ComponentRef Id='apache24.config.in'/>
   <ComponentRef Id='metadataError.html'/>
-  <ComponentRef Id='native.logger'/>
+  <ComponentRef Id='native.logger.in'/>
   <ComponentRef Id='sessionError.html'/>
-  <ComponentRef Id='shibd.logger'/>
+  <ComponentRef Id='shibd.logger.in'/>
+  <ComponentRef Id='var_cache_shibboleth_folder'/>
   <ComponentRef Id='var_log_shibboleth_folder'/>
   <ComponentRef Id='var_run_shibboleth_folder'/>
 
-  <!-- ShibbolethSP-exe-x64-->
+  <!-- ShibbolethSP-exe-x86-->
 
   <ComponentRef Id='resolvertest.exe'/>
   <ComponentRef Id='mdquery.exe'/>
@@ -55,24 +56,28 @@
   <ComponentRef Id='mod_shib_13.so'/>
   <ComponentRef Id='mod_shib_20.so'/>
   <ComponentRef Id='mod_shib_22.so'/>
+  <ComponentRef Id='mod_shib_24.so'/>
   <ComponentRef Id='nsapi_shib.dll'/>
-  <ComponentRef Id='odbcstore.so'/>
+  <ComponentRef Id='odbc_store.so'/>
+  <ComponentRef Id='plugins.so'/>
   <ComponentRef Id='shibauthorizer.exe'/>
   <ComponentRef Id='shibresponder.exe'/>
 
-  <ComponentRef Id='adfsD.so'/>
-  <ComponentRef Id='adfsliteD.so'/>
-  <ComponentRef Id='isapi_shibD.dll'/>
-  <ComponentRef Id='mod_shib_13D.so'/>
-  <ComponentRef Id='mod_shib_20D.so'/>
-  <ComponentRef Id='mod_shib_22D.so'/>
-  <ComponentRef Id='nsapi_shibD.dll'/>
-  <ComponentRef Id='odbcstoreD.so'/>
-  <ComponentRef Id='shibauthorizerD.exe'/>
-  <ComponentRef Id='shibresponderD.exe'/>
+  <ComponentRef Id='adfs.so_debug'/>
+  <ComponentRef Id='adfs_lite.so_debug'/>
+  <ComponentRef Id='isapi_shib.dll_debug'/>
+  <ComponentRef Id='mod_shib_13.so_debug'/>
+  <ComponentRef Id='mod_shib_20.so_debug'/>
+  <ComponentRef Id='mod_shib_22.so_debug'/>
+  <ComponentRef Id='mod_shib_24.so_debug'/>
+  <ComponentRef Id='nsapi_shib.dll_debug'/>
+  <ComponentRef Id='odbc_store.so_debug'/>
+  <ComponentRef Id='plugins.so_debug'/>
+  <ComponentRef Id='shibauthorizer.exe_debug'/>
+  <ComponentRef Id='shibresponder.exe_debug'/>
 
   <ComponentRef Id='shibd.exe'/>
-  <ComponentRef Id='shibdD.exe'/>
+  <ComponentRef Id='shibd.exe_debug'/>
 
   <!-- ShibbolethSP-registry-x32 -->
   <ComponentRef Id='file_extension'/>

@@ -29,12 +29,12 @@
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
               <Component Id='zlib1.dll' Guid='{059557A8-7311-47BB-8A5F-CC85F72AE495}'>
-                <File KeyPath='yes'
+                <File KeyPath='yes' Checksum='yes'
                       Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win32_DLL_Release\zlib$(var.ZlibFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='zlib1d.dll' Guid='{3DA71CD4-F204-49D5-A689-7B1B4C2D395A}'>
-                  <File Id='zlib1d.dll' KeyPath='yes' 
+                  <File KeyPath='yes' Checksum='yes'
                         Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win32_DLL_Debug\zlib$(var.ZlibFileVersion)d.dll'/>
                 </Component>
               </Directory><!-- lib_debug-->
@@ -45,5 +45,3 @@
     </Directory><!-- TARGETDIR -->
   </Module>
 </Wix>
-
-    

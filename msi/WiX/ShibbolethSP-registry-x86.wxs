@@ -19,10 +19,11 @@
 <?include Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <!-- This is where we put all the architecture neutral bits of the
-       Shibboleth install.  It turns out that it may not be all the
-       architecture insenstive stuff since some GUIDS may have moved
-       -->
+  <!--
+    This is where we put all the architecture neutral bits of the
+    Shibboleth install.  It turns out that it may not be all the
+    architecture insenstive stuff since some GUIDS may have moved
+  -->
   <Fragment>
     <!-- Previous version search -->
     <Property Id='SHIB_OLDVERSION' Value='none' Secure='yes'>
@@ -72,15 +73,10 @@
       </Component>
 
       <Component Id='shib.ico' Guid='{FA0F86A1-0731-4D66-8216-BC74D231B598}'>
-        <File KeyPath='yes' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\shib.ico' />
+        <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-sp\msi\shib.ico' />
         <RegistryValue Root='HKLM' Key='Software\Microsoft\Windows\CurrentVersion\Uninstall\[ProductCode]' 
                        Name='DisplayIcon' Value='[#shib.ico],0' Type='string' />
       </Component>
     </DirectoryRef>
-  <!--
-     <ComponentRef Id='file_extension'/>
-     <ComponentRef Id='shib.ico' />
-     -->
-
   </Fragment>
 </Wix>

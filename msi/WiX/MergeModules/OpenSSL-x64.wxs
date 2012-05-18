@@ -29,23 +29,23 @@
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out64dll\' >
               <Component Id='libeay32.dll' Guid='{49ED7AFD-EB3D-4296-84BC-E40C0E40DE5D}' Win64='yes'>
-                <File KeyPath='yes' Name='libeay32_$(var.OpenSSLFileVersion).dll' />
+                <File KeyPath='yes' Checksum='yes' Name='libeay32_$(var.OpenSSLFileVersion).dll' />
               </Component>
               <Component Id='ssleay32.dll' Guid='{649A8C33-1F00-40BD-BBA4-0D8FD7C258CD}' Win64='yes'>
-                <File KeyPath='yes' Name='ssleay32_$(var.OpenSSLFileVersion).dll' />
+                <File KeyPath='yes' Checksum='yes' Name='ssleay32_$(var.OpenSSLFileVersion).dll' />
               </Component>
               <Component Id='openssl.exe' Guid='{AF6DBF01-02E0-4CA4-9466-2E95EAC1200E}' Win64='yes'>
-                <File KeyPath='yes' Name='openssl.exe' />
+                <File KeyPath='yes' Checksum='yes' Name='openssl.exe' />
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out64dll.dbg\'>
-                <Component Id='libeay32.dll_debug' Guid='{77010CF4-1367-4E42-86EA-C29D72EDAEC5}' Win64='yes'>
-                  <File Id='libeay32.dll_debug' KeyPath='yes' Name='libeay32_$(var.OpenSSLFileVersion)D.dll' />
+                <Component Id='libeay32D.dll' Guid='{77010CF4-1367-4E42-86EA-C29D72EDAEC5}' Win64='yes'>
+                  <File KeyPath='yes' Checksum='yes' Name='libeay32_$(var.OpenSSLFileVersion)D.dll' />
                 </Component>
-                <Component Id='ssleay32.dll_debug' Guid='{52C30BD0-3769-4021-85F7-4AE539DCED41}' Win64='yes'>
-                  <File Id='ssleay32.dll_debug' KeyPath='yes' Name='ssleay32_$(var.OpenSSLFileVersion)D.dll' />
+                <Component Id='ssleay32D.dll' Guid='{52C30BD0-3769-4021-85F7-4AE539DCED41}' Win64='yes'>
+                  <File KeyPath='yes' Checksum='yes' Name='ssleay32_$(var.OpenSSLFileVersion)D.dll' />
                 </Component>
                 <Component Id='openssl.exe_debug' Guid='{3555958C-C30D-4829-BC17-936D2EEC3EA4}' Win64='yes'>
-                  <File Id='openssl.exe_debug' KeyPath='yes' Name='openssl.exe' />
+                  <File Id='openssl.exe_debug' KeyPath='yes' Checksum='yes' Name='openssl.exe' />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->

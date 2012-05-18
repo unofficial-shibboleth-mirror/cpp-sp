@@ -18,135 +18,142 @@
 <?include Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <!-- This is where we put all the architecture neutral bits of the
-       Shibboleth install.  It turns out that it may not be all the
-       architecture insenstive stuff since some GUIDS may have moved
-    -->
+  <!--
+    This is where we put all the architecture neutral bits of the
+    Shibboleth install.  It turns out that it may not be all the
+    architecture insenstive stuff since some GUIDS may have moved
+  -->
   <Fragment>
     <!-- Files First -->
     <!-- Configuration, licenses and documentation -->
 
     <DirectoryRef Id='INSTALLDIR'>
       <Directory Id='doc' Name='doc' >
-        <Directory Id='doc_shibboleth' Name='shibboleth' 
-                   FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc' >
+        <Directory Id='doc_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\doc' >
           <Component Id='main.css' Guid='{EA1366EE-0FD1-42E7-9F3F-C19E6C0D12D6}'>
-            <File Name='main.css' KeyPath='yes'/>
+            <File KeyPath='yes' Name='main.css' />
           </Component>
           <Component Id='logo.jpg' Guid='{7F05E91A-A390-4A72-B4DC-1A4FE950B30A}'>
-            <File Name='logo.jpg' />
+            <File KeyPath='yes' Name='logo.jpg' />
           </Component>
           <Component Id='CREDITS.txt' Guid='{9A792E0C-61F1-4D08-9672-BE82FFB6B7F1}'>
-            <File Name='CREDITS.txt' />
+            <File KeyPath='yes' Name='CREDITS.txt' />
           </Component>
           <Component Id='LICENSE.txt' Guid='{404E7A3C-22C2-4A02-8DC0-7D5C0B25DED1}'>
-            <File Name='LICENSE.txt' />
+            <File KeyPath='yes' Name='LICENSE.txt' />
           </Component>
           <Component Id='NOTICE.txt' Guid='{80619251-6754-480A-AFAA-D7398482053C}'>
-            <File Name='NOTICE.txt' />
+            <File KeyPath='yes' Name='NOTICE.txt' />
           </Component>
           <Component Id='README.txt' Guid='{2E5A28EE-B70B-402B-8E6F-72E8EC1EEF0D}'>
-            <File Name='README.txt'/>
+            <File KeyPath='yes' Name='README.txt'/>
           </Component>
           <Component Id='RELEASE.txt' Guid='{5822AF4E-BE53-4952-B662-6BE2D3913D31}'>
-            <File Name='RELEASE.txt' />
+            <File KeyPath='yes' Name='RELEASE.txt' />
           </Component>
         </Directory><!-- doc_shibboleth -->
       </Directory><!-- doc -->
       <Directory Id='etc' Name='etc' >
-        <Directory Id='etc_shibboleth' Name='shibboleth' 
-                   FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs' >
+        <Directory Id='etc_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs' >
           <Component Id='openssl.cnf' Guid='{1F1B9F9B-6437-46F1-ACE8-8D135612336C}' Permanent='yes'>
-            <File KeyPath='yes' 
-                  Source='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\apps\openssl.cnf' />
+            <File KeyPath='yes' Source='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\apps\openssl.cnf' />
           </Component>
           <Component Id='upgrade.xsl' Guid='{D8D1270C-2F85-4465-8EC0-F5F30A2B3EDD}' Permanent='yes'>
-            <File Name='upgrade.xsl' />
+            <File KeyPath='yes' Name='upgrade.xsl' />
           </Component>
-          <Component Id='examplemetadata.xml' Guid='{D9852008-249D-405D-8059-5DAD307D2723}' 
-                     Permanent='yes'>
-            <File Name='example-metadata.xml' />
+          <Component Id='example_metadata.xml' Guid='{D9852008-249D-405D-8059-5DAD307D2723}' Permanent='yes'>
+            <File KeyPath='yes' Name='example-metadata.xml' />
           </Component>
-          <Component Id='exampleshibboleth2.xml' Guid='{85415A41-2B4E-406F-9CFC-63CFC360A9C7}' 
-                     Permanent='yes'>
-            <File Name='example-shibboleth2.xml' />
+          <Component Id='example_shibboleth2.xml' Guid='{85415A41-2B4E-406F-9CFC-63CFC360A9C7}' Permanent='yes'>
+            <File KeyPath='yes' Name='example-shibboleth2.xml' />
           </Component>
           <Component Id='keygen.bat' Guid='{A5BBCB8B-42B3-4402-B66D-66D2971F509F}'  Permanent='yes'>
-            <File Name='keygen.bat' KeyPath='yes' Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs\keygen.bat-wix'/>
+            <File KeyPath='yes' Name='keygen.bat' Source='$(var.SPBuildDirectory)\cpp-sp\configs\keygen.bat-wix'/>
           </Component>
           <Component Id='xsltproc.js' Guid='{B87F4A53-3C37-45DA-BE6F-C46790FA7C2D}'  Permanent='yes'>
-            <File Name='xsltproc.js' />
+            <File KeyPath='yes' Name='xsltproc.js' />
           </Component>
-          <Directory Id='etc_shibboleth_dist' Name='dist' 
-                     FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs' >
-            <Component Id='dist_noperm' Guid='{6AEBA525-8F52-4D14-BAEE-0292A2E214D1}'>
-
-              <File Name='apache22.config.in' KeyPath='yes' />
+          <Directory Id='etc_shibboleth_dist' Name='dist' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs' >
+            <Component Id='apache.config.in' Guid='{AF4EB2B1-2489-4E39-A89E-1CA7AC2B7483}'>
+              <File KeyPath='yes' Name='apache.config.in' />
+            </Component>
+            <Component Id='apache2.config.in' Guid='{85BF72A1-FBA8-4955-ACCF-ABC83B1292C9}'>
+              <File KeyPath='yes' Name='apache2.config.in' />
+            </Component>
+            <Component Id='apache22.config.in' Guid='{6AEBA525-8F52-4D14-BAEE-0292A2E214D1}'>
+              <File KeyPath='yes' Name='apache22.config.in' />
+            </Component>
+            <Component Id='apache24.config.in' Guid='{6AEBA525-8F52-4D14-BAEE-0292A2E214D1}'>
+              <File KeyPath='yes' Name='apache24.config.in' />
             </Component>
             <Component Id='sslError.html' Guid='{A74BA230-C49F-4151-BBF4-AA80D554D099}'>
-              <File Name='sslError.html' />
+              <File KeyPath='yes' Name='sslError.html' />
             </Component>
             <Component Id='bindingTemplate.html' Guid='{F5A3A434-9209-43EC-9314-1F705055DDEC}'>
-              <File Name='bindingTemplate.html' />
+              <File KeyPath='yes' Name='bindingTemplate.html' />
             </Component>
             <Component Id='globalLogout.html' Guid='{E65F580D-5489-4D79-A8FC-F9FFED666FC1}'>
-              <File Name='globalLogout.html' />
+              <File KeyPath='yes' Name='globalLogout.html' />
             </Component>
             <Component Id='localLogout.html' Guid='{70FA3A47-A950-4074-BC13-C56D94497BD9}'>
-              <File Name='localLogout.html' />
+              <File KeyPath='yes' Name='localLogout.html' />
             </Component>
-            <Component Id='attributemap' Guid='{878C9456-E65F-4541-A0FA-975379EAC6B6}'>
-              <File Name='attribute-map.xml' />
+            <Component Id='attribute_map.xml' Guid='{878C9456-E65F-4541-A0FA-975379EAC6B6}'>
+              <File KeyPath='yes' Name='attribute-map.xml' />
             </Component>
-            <Component Id='attributepolicy' Guid='{55B88F7B-E2EA-4B70-87B7-33C566B9F992}'>
-              <File Name='attribute-policy.xml'/>
+            <Component Id='attribute_policy.xml' Guid='{55B88F7B-E2EA-4B70-87B7-33C566B9F992}'>
+              <File KeyPath='yes' Name='attribute-policy.xml'/>
             </Component>
             <Component Id='shibboleth2.xml' Guid='{E520FEDE-3F0E-47C6-9345-47223B82825A}'>
-              <File Name='shibboleth2.xml' />
+              <File KeyPath='yes' Name='shibboleth2.xml' Source='$(var.SPBuildDirectory)\cpp-sp\configs\win-shibboleth2.xml' />
             </Component>
             <Component Id='console.logger' Guid='{8AC85980-32B9-4EA2-9245-167FB1AB2570}'>
-              <File Name='console.logger' />
+              <File KeyPath='yes' Name='console.logger' />
             </Component>
             <Component Id='discoveryTemplate.html' Guid='{A9573113-4387-46DD-A636-84482AF2C672}'>
-              <File Name='discoveryTemplate.html' />
+              <File KeyPath='yes' Name='discoveryTemplate.html' />
             </Component>
             <Component Id='postTemplate.html' Guid='{5B7111E8-8E04-42F1-AB02-E47AFB7C3D28}'>
-              <File Name='postTemplate.html' />
+              <File KeyPath='yes' Name='postTemplate.html' />
             </Component>
             <Component Id='partialLogout.html' Guid='{E1F6208B-3C70-4632-B84C-C7D141DC4192}'>
-              <File Name='partialLogout.html' />
+              <File KeyPath='yes' Name='partialLogout.html' />
             </Component>
             <Component Id='protocols.xml' Guid='{B226CAAC-2D18-411A-9FBF-3FE237EBEF4D}'>
-              <File Name='protocols.xml' />
+              <File KeyPath='yes' Name='protocols.xml' />
             </Component>
-            <Component Id='securitypolicy.xml' Guid='{0EC04525-FCCF-4B60-8797-9B0CEC222B8C}'>
-              <File Name='security-policy.xml' />
+            <Component Id='security_policy.xml' Guid='{0EC04525-FCCF-4B60-8797-9B0CEC222B8C}'>
+              <File KeyPath='yes' Name='security-policy.xml' />
             </Component>
             <Component Id='accessError.html' Guid='{6FAA81A0-A020-4E60-A37D-1EC4D0D5FD06}'>
-              <File Name='accessError.html' />
+              <File KeyPath='yes' Name='accessError.html' />
             </Component>
-            <Component Id='apache.config' Guid='{AF4EB2B1-2489-4E39-A89E-1CA7AC2B7483}'>
-              <File Name='apache.config.in' />
-            </Component>
-            <Component Id='apache2.config' Guid='{85BF72A1-FBA8-4955-ACCF-ABC83B1292C9}'>
-              <File Name='apache2.config.in' KeyPath='yes' />
+            <Component Id='attrChecker.html' Guid='{BDF4837C-A887-4F1C-841C-DC13DFF8A46E}'>
+              <File KeyPath='yes' Name='attrChecker.html' />
             </Component>
             <Component Id='metadataError.html' Guid='{8C46D04A-A943-4FA4-AFCB-9B040306C2C0}'>
-              <File  Name='metadataError.html' KeyPath='yes' />
+              <File KeyPath='yes' Name='metadataError.html' />
             </Component>
-            <Component Id='native.logger' Guid='{8586D4C7-E237-4C7F-BC79-DE0B06473395}'>
-              <File Name='native.logger.in' KeyPath='yes' />
+            <Component Id='native.logger.in' Guid='{8586D4C7-E237-4C7F-BC79-DE0B06473395}'>
+              <File KeyPath='yes' Name='native.logger.in' />
             </Component>
             <Component Id='sessionError.html' Guid='{8AA240B3-DC5D-4687-B321-4F5E1BAEA820}'>
-              <File Name='sessionError.html' KeyPath='yes' />
+              <File KeyPath='yes' Name='sessionError.html' />
             </Component>
-            <Component Id='shibd.logger' Guid='{D8DA3D14-F779-4691-A883-4995158D2A74}'>
-              <File Name='shibd.logger.in' KeyPath='yes' />
+            <Component Id='shibd.logger.in' Guid='{D8DA3D14-F779-4691-A883-4995158D2A74}'>
+              <File KeyPath='yes' Name='shibd.logger.in' />
             </Component>
           </Directory><!-- etc_shibboleth_dist -->
         </Directory><!-- etc_shibboleth -->
       </Directory><!-- etc_dist -->
       <Directory Id='var' Name='var'>
+        <Directory Id='var_cache' Name='cache'>
+          <Directory Id='var_cache_shibboleth' Name='shibboleth'>
+            <Component Id='var_cache_shibboleth_folder' Guid='{6C978639-DDCF-40BD-90F8-690B3E05586C}'>
+              <CreateFolder />
+            </Component>
+          </Directory><!-- var_cache_shibboleth -->
+        </Directory><!-- var_cache -->
         <Directory Id='var_log' Name='log'>
           <Directory Id='var_log_shibboleth' Name='shibboleth'>
             <Component Id='var_log_shibboleth_folder' Guid='{2BFC84E4-634B-4D70-910A-D5640739C8C8}'>
@@ -159,12 +166,12 @@
             <Component Id='var_run_shibboleth_folder' Guid='{35E176B1-965A-4571-B24E-E0C8E69B0459}'>
               <CreateFolder />
             </Component>
-          </Directory>
+          </Directory><!-- var_run_shibboleth -->
         </Directory><!-- var_run -->
       </Directory><!-- var -->
     </DirectoryRef>
 
-    <Binary Id='EditConfigFileSrc' SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_edit_config_files.vbs-wix' />
+    <Binary Id='EditConfigFileSrc' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\scripts\shib_edit_config_files.vbs-wix' />
 
     <CustomAction Id='EditConfigFiles' 
                   BinaryKey='EditConfigFileSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
@@ -173,10 +180,10 @@
     <CustomAction Id='KeyGen' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetKeyGen' Property='KeyGen' Value='&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot;' />
 
-    <Binary Id='install_isapi' 
-            SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_install_isapi_filter.vbs-wix'/>
+    <Binary Id='install_isapi'
+            SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\scripts\shib_install_isapi_filter.vbs-wix'/>
     <Binary Id='uninstall_isapi' 
-            SourceFile='$(var.BuildDirectory)\cvs\2.0\cpp-sp\msi\scripts\shib_uninstall_isapi_filter.vbs-wix'/>
+            SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\scripts\shib_uninstall_isapi_filter.vbs-wix'/>
 
     <CustomAction Id='SetShibInstallISAPIFilter32' Property='ShibInstallISAPIFilter' 
                   Value='[INSTALLDIR];@;[INSTALLDIR]lib\shibboleth\isapi_shib.dll;@;[SHIB_FILE_EXTENSION]' />
@@ -185,8 +192,7 @@
     <CustomAction Id='ShibInstallISAPIFilter' BinaryKey='install_isapi' 
                   VBScriptCall='' Execute='deferred' Impersonate='no' />
 
-    <CustomAction Id='SetShibUninstallISAPIFilter' Property='ShibUninstallISAPIFilter' 
-                  Value='[INSTALLDIR]'/>
+    <CustomAction Id='SetShibUninstallISAPIFilter' Property='ShibUninstallISAPIFilter' Value='[INSTALLDIR]'/>
     <CustomAction Id='ShibUninstallISAPIFilter' BinaryKey='uninstall_isapi' 
                   VBScriptCall='' Execute='deferred' Impersonate='no' />
 
@@ -234,54 +240,11 @@
         (NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
       </Custom>
 
-
       <!-- Do not mess with SCM if this is an upgrade -->
 
       <InstallServices>(NOT Installed) AND (NOT ALREADYINSTALLED) AND (INSTALL_SHIBD_SERVICE = "TRUE")</InstallServices>
       <DeleteServices>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</DeleteServices>
 
     </InstallExecuteSequence>
-    
-    <!-- Components
-         <ComponentRef Id='main.css'/>
-         <ComponentRef Id='logo.jpg'/>
-         <ComponentRef Id='CREDITS.txt'/>
-         <ComponentRef Id='LICENSE.txt'/>
-         <ComponentRef Id='NOTICE.txt'/>
-         <ComponentRef Id='README.txt'/>
-         <ComponentRef Id='RELEASE.txt'/>
-         
-         <ComponentRef Id='openssl.cnf'/>
-         <ComponentRef Id='upgrade.xsl'/>
-         <ComponentRef Id='examplemetadata.xml'/>
-         <ComponentRef Id='exampleshibboleth2.xml' 
-         <ComponentRef Id='xsltproc.js'/>
-         <ComponentRef Id='keygen.bat'/>
-
-         <ComponentRef Id='dist_noperm'/>
-         <ComponentRef Id='sslError.html'/>
-         <ComponentRef Id='bindingTemplate.html'/>
-         <ComponentRef Id='globalLogout.html'/>
-         <ComponentRef Id='localLogout.html'/>
-         <ComponentRef Id='attributemap'/>
-         <ComponentRef Id='attributepolicy'/>
-         <ComponentRef Id='shibboleth2.xml'/>
-         <ComponentRef Id='console.logger'/>
-         <ComponentRef Id='discoveryTemplate.html'/>
-         <ComponentRef Id='postTemplate.html'/>
-         <ComponentRef Id='partialLogout.html'/>
-         <ComponentRef Id='protocols.xml'/>
-         <ComponentRef Id='security-policy.xml'
-
-         <ComponentRef Id='accessError.html'/>
-         <ComponentRef Id='apache.config'/>
-         <ComponentRef Id='apache2.config'/>
-         <ComponentRef Id='metadataError.html'/>
-         <ComponentRef Id='native.logger'/>
-         <ComponentRef Id='sessionError.html'/>
-         <ComponentRef Id='shibd.logger'/>
-         <ComponentRef Id='var_log_shibboleth_folder'/>
-         <ComponentRef Id='var_run_shibboleth_folder'/>  
-         -->
   </Fragment>
 </Wix>

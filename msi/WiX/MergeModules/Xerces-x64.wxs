@@ -27,15 +27,14 @@
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
-            
             <Directory Id='lib' Name='lib'>
               <Component Id='xercesc.dll' Guid='{5C2BA2C6-36EC-4EB3-A343-8C1C9D499B9C}' Win64='yes'>
-                <File Id='xercesc.dll' KeyPath='yes'
+                <File KeyPath='yes' Checksum='yes'
                       Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='xercescD.dll' Guid='{236B6A7F-73C0-4EBF-9C06-90C1BE160ACE}' Win64='yes'>
-                  <File Id='xercescD.dll' KeyPath='yes'
+                  <File KeyPath='yes' Checksum='yes'
                         Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
                 </Component>
               </Directory><!-- lib_debug-->
@@ -52,5 +51,3 @@
     </Directory><!-- TARGETDIR -->
   </Module>
 </Wix>
-
-    

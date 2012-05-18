@@ -30,31 +30,33 @@
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Release\'>
               <Component Id='saml.dll' Guid='{B52F8C71-2042-4CDF-A250-BD773985A2AB}'>
-                <File KeyPath='yes' Name='saml$(var.OpenSAMLFileVersion).dll' />
+                <File KeyPath='yes' Checksum='yes' Name='saml$(var.OpenSAMLFileVersion).dll' />
               </Component>
               <Component Id='samlsign.exe' Guid='{3DC7A431-9623-4283-BA07-444DB1C1F864}'>
-                <File KeyPath='yes' Name='samlsign.exe' />
+                <File KeyPath='yes' Checksum='yes' Name='samlsign.exe' />
               </Component>
               <Component Id='xmltooling.dll' Guid='{53533A59-A563-439D-B13D-A4D7090C42D3}'>
-                <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Release\xmltooling$(var.XmlToolingFileVersion).dll' />
+                <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Release\xmltooling$(var.XmlToolingFileVersion).dll' />
               </Component>
-              <Component Id='xmltoolinglite.dll' Guid='{5045A722-D6D6-4E55-9196-CB7C50B4446F}'>
-                <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll' />
+              <Component Id='xmltooling_lite.dll' Guid='{5045A722-D6D6-4E55-9196-CB7C50B4446F}'>
+                <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll' />
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Debug\'>
                 <Component Id='samlD.dll' Guid='{7B934257-5F7F-428E-930E-A793A11573D7}'>
-                  <File KeyPath='yes' Name='saml$(var.OpenSAMLFileVersion)D.dll' />
+                  <File KeyPath='yes' Checksum='yes' Name='saml$(var.OpenSAMLFileVersion)D.dll' />
                 </Component>
                 <Component Id='samlsign.exe_debug' Guid='{EFCAEBC5-242F-416C-8F87-B7DD49C1AE29}'>
-                  <File KeyPath='yes' Id='samlsign.exe_debug' Name='samlsign.exe' />
+                  <File KeyPath='yes' Checksum='yes' Id='samlsign.exe_debug' Name='samlsign.exe' />
                 </Component>
                 <Component Id='xmltoolingD.dll' Guid='{380E59DF-24F8-4F60-97A7-CC67FB76B4CC}'>
-                  <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Debug\xmltooling$(var.XmlToolingFileVersion)D.dll' />
+                  <File KeyPath='yes' Checksum='yes'
+                    Source='$(var.SPBuildDirectory)\cpp-xmltooling\Debug\xmltooling$(var.XmlToolingFileVersion)D.dll' />
                 </Component>
-                <Component Id='xmltoolingliteD.dll' Guid='{DB6D8737-4E3D-4C06-87F1-C59C7D7CB47A}'>
-                  <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.dll' />
+                <Component Id='xmltooling_liteD.dll' Guid='{DB6D8737-4E3D-4C06-87F1-C59C7D7CB47A}'>
+                  <File KeyPath='yes' Checksum='yes'
+                    Source='$(var.SPBuildDirectory)\cpp-xmltooling\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.dll' />
                 </Component>
-              </Directory> <!-- lib_debug -->
+              </Directory><!-- lib_debug -->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='doc' Guid='{EEA99655-7A42-4D5D-AB64-AA7DD5A99409}'>
@@ -62,7 +64,7 @@
                 <File Name='OPENSAML.NOTICE' Source='$(var.SPBuildDirectory)\cpp-opensaml\doc\NOTICE.txt' />
                 <File Name='OPENSAML.README' Source='$(var.SPBuildDirectory)\cpp-opensaml\doc\README.txt' />
               </Component>
-            </Directory> <!-- doc -->
+            </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->

@@ -37,7 +37,6 @@
 
     <Media Id='1' Cabinet='product.cab' EmbedCab='yes' />
 
-
     <?include ShibbolethSP-properties.wxi?>
 
     <!-- NOTE we should not use sys.BUILDARCH since that reflects the candle parameters, *NOT* the architecture -->
@@ -57,6 +56,8 @@
         <Merge Id='CurlMergeModule_x86' Language='1033' SourceFile='MergeModules\Curl-x86.msm' DiskId='1' />
         <Merge Id='FastCGIMergeModule_x86' Language='1033' SourceFile='MergeModules\FastCGI-x86.msm' DiskId='1' />
         <Merge Id='Log4ShibMergeModule_x86' Language='1033' SourceFile='MergeModules\Log4Shib-x86.msm' DiskId='1' />
+        <Merge Id='OpenSAMLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSAML-x86.msm' DiskId='1' />
+        <Merge Id='OpenSAMLMergeModule_schemas' Language='1033' SourceFile='MergeModules\OpenSAML-schemas.msm' DiskId='1' />
         <Merge Id='OpenSSLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSSL-x86.msm' DiskId='1' />
         <Merge Id='ShibbolethMergeModule_x86' Language='1033' SourceFile='MergeModules\Shibboleth-x86.msm' DiskId='1' />
         <Merge Id='ShibbolethMergeModule_schemas' Language='1033' SourceFile='MergeModules\Shibboleth-schemas.msm' DiskId='1' />
@@ -75,6 +76,7 @@
         <Merge Id='CurlMergeModule_x64' Language='1033' SourceFile='MergeModules\Curl-x64.msm' DiskId='1' />
         <Merge Id='FastCGIMergeModule_x64' Language='1033' SourceFile='MergeModules\FastCGI-x64.msm' DiskId='1' />
         <Merge Id='Log4ShibMergeModule_x64' Language='1033' SourceFile='MergeModules\Log4Shib-x64.msm' DiskId='1' />
+        <Merge Id='OpenSAMLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSAML-x64.msm' DiskId='1' />
         <Merge Id='OpenSSLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSSL-x64.msm' DiskId='1' />
         <Merge Id='ShibbolethMergeModule_x64' Language='1033' SourceFile='MergeModules\Shibboleth-x64.msm' DiskId='1' />
         <Merge Id='XercesMergeModule_x64' Language='1033' SourceFile='MergeModules\Xerces-x64.msm' DiskId='1' />
@@ -96,10 +98,9 @@
         <Environment Id='SetPath' Name='PATH' Action='set' Part='last'  System='yes'
                      Value='[ProgramFilesFolder]Shibboleth\SP\lib' />
       </Component>
-
     </Directory><!--TARGETDIR-->
 
-    <DirectoryRef Id='etc_shibboleth' FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\configs'>
+    <DirectoryRef Id='etc_shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs'>
       <Component Id='SetService64' Guid='{8DE75314-84B5-4BD1-ABD2-9FC1DEE399DC}' Permanent='yes'>
         <File KeyPath='yes' Name='SetService64.bat' />
       </Component>
@@ -108,11 +109,12 @@
       </Component>
     </DirectoryRef><!-- etc_shibboleth -->
 
-    <Feature Id='Shibboleth' Title='Shibboleth' Level='1' Display='hidden' 
-             ConfigurableDirectory='INSTALLDIR'>
+    <Feature Id='Shibboleth' Title='Shibboleth' Level='1' Display='hidden' ConfigurableDirectory='INSTALLDIR'>
       <MergeRef Id='CurlMergeModule_x86'/>
       <MergeRef Id='FastCGIMergeModule_x86'/>
       <MergeRef Id='Log4ShibMergeModule_x86'/>
+      <MergeRef Id='OpenSAMLMergeModule_x86'/>
+      <MergeRef Id='OpenSAMLMergeModule_schemas'/>
       <MergeRef Id='OpenSSLMergeModule_x86'/>
       <MergeRef Id='ShibbolethMergeModule_x86'/>
       <MergeRef Id='ShibbolethMergeModule_schemas'/>
@@ -126,6 +128,7 @@
       <MergeRef Id='CurlMergeModule_x64'/>
       <MergeRef Id='FastCGIMergeModule_x64'/>
       <MergeRef Id='Log4ShibMergeModule_x64'/>
+      <MergeRef Id='OpenSAMLMergeModule_x64'/>
       <MergeRef Id='OpenSSLMergeModule_x64'/>
       <MergeRef Id='ShibbolethMergeModule_x64'/>
       <MergeRef Id='XercesMergeModule_x64'/>
@@ -143,23 +146,27 @@
       <ComponentRef Id='mdquery64.exe_debug' />
 
       <ComponentRef Id='adfs64.so'/>
-      <ComponentRef Id='adfslite64.so'/>
+      <ComponentRef Id='adfs_lite64.so'/>
       <ComponentRef Id='isapi_shib64.dll'/>
       <ComponentRef Id='mod_shib_2264.so'/>
-      <ComponentRef Id='odbcstore64.so'/>
+      <ComponentRef Id='mod_shib_2464.so'/>
+      <ComponentRef Id='odbc_store64.so'/>
+      <ComponentRef Id='plugins64.so'/>
       <ComponentRef Id='shibauthorizer64.exe'/>
       <ComponentRef Id='shibresponder64.exe'/>
 
-      <ComponentRef Id='adfsD64.so'/>
-      <ComponentRef Id='adfsliteD64.so'/>
-      <ComponentRef Id='isapi_shibD64.dll'/>
-      <ComponentRef Id='mod_shib_22D64.so'/>
-      <ComponentRef Id='odbcstoreD64.so'/>
-      <ComponentRef Id='shibauthorizerD64.exe'/>
-      <ComponentRef Id='shibresponderD64.exe'/>
+      <ComponentRef Id='adfs64.so_debug'/>
+      <ComponentRef Id='adfs_lite64.so_debug'/>
+      <ComponentRef Id='isapi_shib64.dll_debug'/>
+      <ComponentRef Id='mod_shib_2264.so_debug'/>
+      <ComponentRef Id='mod_shib_2464.so_debug'/>
+      <ComponentRef Id='odbc_store64.so_debug'/>
+      <ComponentRef Id='plugins64.so_debug'/>
+      <ComponentRef Id='shibauthorizer64.exe_debug'/>
+      <ComponentRef Id='shibresponder64.exe_debug'/>
 
       <ComponentRef Id='shibd64.exe'/>
-      <ComponentRef Id='shibdD64.exe'/>
+      <ComponentRef Id='shibd64.exe_debug'/>
 
       <!-- ShibbolethSP-registry-x64 -->
 

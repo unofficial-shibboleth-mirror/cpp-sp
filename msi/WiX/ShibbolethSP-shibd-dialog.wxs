@@ -49,7 +49,7 @@
         <Control Id='ShibdLine2' Type='Text' X='25' Y='79' Width='312' Height='20' 
                  Text='NOTE: This is NOT the web server port and MUST be a valid Windows port number that is NOT in use by any other process!'/>
         <Control Id='ShibdLine3' Type='Text' X='25' Y='108' Width='312' Height='20' 
-                 Text='If a copy of shibboleth.xml already exists in the installation path, it will NOT be updated with this new port number.'/>
+                 Text='If a copy of shibboleth2.xml already exists in the installation path, it will NOT be updated with this new port number.'/>
         <Control Id='InstallShibdCheckBox' Type='CheckBox' X='118' Y='154' Width='96' Height='14' 
                  Property='INSTALL_SHIBD_SERVICE' Text='Install Shibd daemon' 
                  CheckBoxValue='TRUE' TabSkip='yes' />

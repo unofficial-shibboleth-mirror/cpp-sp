@@ -30,20 +30,20 @@
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
               <Component Id='libcurl.dll' Guid='{8F72A198-4D90-47DC-BBAC-123D51DE4192}'>
-                <File KeyPath='yes' 
+                <File KeyPath='yes' Checksum='yes'
                       Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\lib\release-dll-ssl-dll-zlib-dll\libcurl.dll'/>
               </Component>
               <Component Id='curl.exe' Guid='{67A6F011-9715-43C2-92F1-70FE53E935AD}'>
-                <File KeyPath='yes' 
+                <File KeyPath='yes' Checksum='yes'
                       Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\src\release\curl.exe'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='libcurld.dll' Guid='{EFAEA264-C49A-4A91-816F-DD151F094892}'>
-                  <File KeyPath='yes' 
+                  <File KeyPath='yes' Checksum='yes'
                         Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll\libcurld.dll'/>
                 </Component>
                 <Component Id='curl.exe_debug' Guid='{FB6BF939-9744-49ED-ACBF-8956B9C5DE29}'>
-                  <File Id='curl.exe_debug' KeyPath='yes' 
+                  <File Id='curl.exe_debug' KeyPath='yes' Checksum='yes'
                         Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\src\debug\curl.exe'/>
                 </Component>
               </Directory><!-- lib_debug-->

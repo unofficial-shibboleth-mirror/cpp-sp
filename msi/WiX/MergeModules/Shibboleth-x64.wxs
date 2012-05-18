@@ -19,7 +19,7 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='ShibbolethSPMergeModule_x64' Language='1033' Version='$(var.ShibbolethDllVersion)'>
-    <Package Id='{DF6FAD40-5EF8-43F2-BBE1-BD42B9E9ACAB}' Description='Merge Module for Shibboleth DLLs (x64)'
+    <Package Id='{DF6FAD40-5EF8-43F2-BBE1-BD42B9E9ACAB}' Description='Merge Module for Shibboleth SP DLLs (x64)'
              Comments='This module is built by the Shibboleth Consortium.'
              Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
@@ -27,25 +27,28 @@
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib' 
-                       FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Release'>
-              <Component Id='shibsplite.dll' Guid='{2D6A6399-62A6-4BF6-8D58-82E1EFE8C65E}' Win64='yes'>
-                <File Name='shibsp-lite$(var.ShibbolethDllFileVersion).dll' KeyPath='yes' />
-              </Component>
+            <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Release'>
               <Component Id='shibsp.dll' Guid='{B7DE652A-6853-4389-AD47-5DBB5AC89BDB}' Win64='yes'>
-                <File Name='shibsp$(var.ShibbolethDllFileVersion).dll' KeyPath='yes' />
+                <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion).dll' />
               </Component>
-              <Directory Id='lib_debug' Name='debug' 
-                         FileSource='$(var.BuildDirectory)\cvs\2.0\cpp-sp\x64\Debug' >
-                <Component Id='shibspliteD.dll' Guid='{5EF6FF17-0510-484B-9F24-523B29EB416C}' Win64='yes'>
-                  <File Name='shibsp-lite$(var.ShibbolethDllFileVersion)D.dll' KeyPath='yes' />
-                </Component>
+              <Component Id='shibsp_lite.dll' Guid='{2D6A6399-62A6-4BF6-8D58-82E1EFE8C65E}' Win64='yes'>
+                <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion).dll' />
+              </Component>
+              <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Debug' >
                 <Component Id='shibspD.dll' Guid='{222ED92E-DD0B-410E-9A90-D1DD1AA878CF}' Win64='yes'>
-                  <File Name='shibsp$(var.ShibbolethDllFileVersion)D.dll' KeyPath='yes' />
+                  <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion)D.dll' />
+                </Component>
+                <Component Id='shibsp_liteD.dll' Guid='{5EF6FF17-0510-484B-9F24-523B29EB416C}' Win64='yes'>
+                  <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion)D.dll' />
                 </Component>
               </Directory><!-- lib_debug -->
             </Directory><!-- lib -->
-            <Directory Id='doc' Name='doc' />
+            <Directory Id='doc' Name='doc'>
+              <Component Id='doc' Guid='{1ACB430F-7846-4565-93FE-3BE1BC1235C1}' Win64='yes'>
+                <File KeyPath='yes' Name='SHIBBOLETH.LICENSE' Source='$(var.SPBuildDirectory)\cpp-sp\doc\LICENSE.txt' />
+                <File Name='SHIBBOLETH.NOTICE' Source='$(var.SPBuildDirectory)\cpp-sp\doc\NOTICE.txt' />
+              </Component>
+            </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFiles64Folder -->

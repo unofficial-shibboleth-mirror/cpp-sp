@@ -30,54 +30,55 @@
             <Directory Id='lib' Name='lib' 
                        FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan'>
               <Component Id='xsec.dll' Guid='{3EB5B168-1FB1-476D-8E7C-2469D9B55162}' Win64='yes'>
-                <File KeyPath='yes' Name='xsec_$(var.XmlSecFileVersion).dll'/>
+                <File KeyPath='yes' Checksum='yes' Name='xsec_$(var.XmlSecFileVersion).dll'/>
               </Component>
               <Component Id='c14n.exe' Guid='{DE820D93-BC4F-48B5-9C1F-3CD34E34D10C}' Win64='yes'>
-                <File KeyPath='yes' Name='c14n.exe'/>
+                <File KeyPath='yes' Checksum='yes' Name='c14n.exe'/>
               </Component>
               <Component Id='checksig.exe' Guid='{D2145F4D-95FA-4A24-B06C-D37AF36ADDD2}' Win64='yes'>
-                <File KeyPath='yes' Name='checksig.exe'/>
+                <File KeyPath='yes' Checksum='yes' Name='checksig.exe'/>
               </Component>
               <Component Id='cipher.exe' Guid='{192AEEF7-3AE2-4570-AA30-1A2046646A84}' Win64='yes'>
-                <File KeyPath='yes' Name='cipher.exe'/>
+                <File KeyPath='yes' Checksum='yes' Name='cipher.exe'/>
               </Component>
               <Component Id='siginf.exe' Guid='{7C15D545-DDB9-4D02-AE9C-4C9E0229FC72}' Win64='yes'>
-                <File KeyPath='yes' Name='siginf.exe'/>
+                <File KeyPath='yes' Checksum='yes' Name='siginf.exe'/>
               </Component>
               <Component Id='templatesign.exe' Guid='{71B603E6-A54B-4843-A4F8-826AD4CA6A04}' Win64='yes'>
-                <File KeyPath='yes' Name='templatesign.exe'/>
+                <File KeyPath='yes' Checksum='yes' Name='templatesign.exe'/>
               </Component>
               <Component Id='txfmout.exe' Guid='{2D9025EE-D95F-4D3C-B0E7-86D742749D39}' Win64='yes'>
-                <File KeyPath='yes' Name='txfmout.exe'/>
+                <File KeyPath='yes' Checksum='yes' Name='txfmout.exe'/>
               </Component>
               <Directory Id='lib_debug' Name='debug' 
                          FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Debug No Xalan'>
                 <Component Id='xsecD.dll' Guid='{EC1CCD0D-028D-4C92-846D-88C1C24B66E6}' Win64='yes'>
-                  <File KeyPath='yes' Name='xsec_$(var.XmlSecFileVersion)D.dll'/>
+                  <File KeyPath='yes' Checksum='yes' Name='xsec_$(var.XmlSecFileVersion)D.dll'/>
                 </Component>
                 <Component Id='c14n.exe_debug' Guid='{ED9BB341-C5D2-4234-B720-483D86D340F9}' Win64='yes'>
-                  <File Id='c14n.exe_debug' KeyPath='yes' Name='c14n.exe'/>
+                  <File Id='c14n.exe_debug' KeyPath='yes' Checksum='yes' Name='c14n.exe'/>
                 </Component>
                 <Component Id='checksig.exe_debug' Guid='{F6618EE1-A5BD-4EC5-9257-E62015DC3BC4}' Win64='yes'>
-                  <File Id='checksig.exe_debug' KeyPath='yes' Name='checksig.exe'/>
+                  <File Id='checksig.exe_debug' KeyPath='yes' Checksum='yes' Name='checksig.exe'/>
                 </Component>
                 <Component Id='cipher.exe_debug' Guid='{EAB5FF33-9EBD-4C55-8D64-F975E5B11785}' Win64='yes'>
-                  <File Id='cipher.exe_debug' KeyPath='yes' Name='cipher.exe'/>
+                  <File Id='cipher.exe_debug' KeyPath='yes' Checksum='yes' Name='cipher.exe'/>
                 </Component>
                 <Component Id='siginf.exe_debug' Guid='{1EA9ABB6-2B33-4E4C-9210-B89FCC493E78}' Win64='yes'>
-                  <File Id='siginf.exe_debug' KeyPath='yes' Name='siginf.exe'/>
+                  <File Id='siginf.exe_debug' KeyPath='yes' Checksum='yes' Name='siginf.exe'/>
                 </Component>
                 <Component Id='templatesign.exe_debug' Guid='{5AE22CDB-625E-4DC7-9586-77C3DD835100}' Win64='yes'>
-                  <File Id='templatesign.exe_debug' KeyPath='yes' Name='templatesign.exe'/>
+                  <File Id='templatesign.exe_debug' KeyPath='yes' Checksum='yes' Name='templatesign.exe'/>
                 </Component>
                 <Component Id='txfmout.exe_debug' Guid='{373B4E3D-6643-4884-8D0C-324DEF910230}' Win64='yes'>
-                  <File Id='txfmout.exe_debug' KeyPath='yes' Name='txfmout.exe'/>
+                  <File Id='txfmout.exe_debug' KeyPath='yes' Checksum='yes' Name='txfmout.exe'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='SANTUARIO.LICENSE' Guid='{07288B10-ED5A-443F-BC90-CFD987C798C4}'>
-                <File KeyPath='yes' Name='SANTUARIO.LICENSE' Source='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\LICENSE' />
+                <File KeyPath='yes' Name='SANTUARIO.LICENSE'
+                  Source='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\LICENSE.txt' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->
@@ -86,5 +87,3 @@
     </Directory><!-- TARGETDIR -->
   </Module>
 </Wix> 
-
-  

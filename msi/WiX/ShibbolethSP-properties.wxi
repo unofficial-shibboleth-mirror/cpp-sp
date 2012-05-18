@@ -36,16 +36,14 @@
   <Property Id='ARPCONTACT' Value='contact@shibboleth.net' />
   <Property Id='ARPHELPLINK' Value='https://wiki.shibboleth.net/confluence/display/SHIB2/Installation+and+Configuration' />
   <Property Id='ARPURLUPDATEINFO' Value='https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPWindowsUpgrade' />
-  <Property Id='ARPURLINFOABOUT' Value='http://www.shibboleth.net/' />
+  <Property Id='ARPURLINFOABOUT' Value='http://shibboleth.net/' />
 
   <!-- UPGRADINGPRODUCTCODE set in the uninstall if this is an upgrade uninstall -->
   <!-- IISMAJORVERSION if IIS installed -->
   <PropertyRef Id='IISMAJORVERSION' />
 
-
-  <!-- ALREADYINSTALLED if we are doig an upgrade -->
+  <!-- ALREADYINSTALLED if we are doing an upgrade -->
   <Upgrade Id='$(var.ShibbolethUpgradeCode)'>
     <UpgradeVersion ExcludeLanguages='yes' IncludeMaximum='yes' Maximum='127.255.255' Minimum='0.0.1' OnlyDetect='yes' Property='ALREADYINSTALLED'/>
   </Upgrade>
 </Include>
-
