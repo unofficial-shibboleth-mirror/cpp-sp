@@ -50,9 +50,6 @@
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFiles64Folder -->
     </Directory><!-- TARGETDIR -->
-
-    <?include OpenSAML-x64.wxi ?>
-
   </Module>
 </Wix>
 

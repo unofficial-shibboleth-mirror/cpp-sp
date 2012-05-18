@@ -29,7 +29,6 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
-
               <Component Id='libcurl.dll' Guid='{8F72A198-4D90-47DC-BBAC-123D51DE4192}'>
                 <File KeyPath='yes' 
                       Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\lib\release-dll-ssl-dll-zlib-dll\libcurl.dll'/>
@@ -43,12 +42,17 @@
                   <File KeyPath='yes' 
                         Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll\libcurld.dll'/>
                 </Component>
-                <Component Id='curl.exe1' Guid='{FB6BF939-9744-49ED-ACBF-8956B9C5DE29}'>
+                <Component Id='curl.exe_debug' Guid='{FB6BF939-9744-49ED-ACBF-8956B9C5DE29}'>
                   <File Id='curl.exe_debug' KeyPath='yes' 
                         Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\src\debug\curl.exe'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
+            <Directory Id='doc' Name='doc'>
+              <Component Id='CURL.LICENSE' Guid='{54E0C63F-C591-49AF-9D3C-CBBE8281B6DB}'>
+                <File KeyPath='yes' Name='CURL.LICENSE' Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\COPYING' />
+              </Component>
+            </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->

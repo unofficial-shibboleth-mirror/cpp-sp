@@ -27,6 +27,7 @@
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
+            
             <Directory Id='lib' Name='lib'>
               <Component Id='xercesc.dll' Guid='{5C2BA2C6-36EC-4EB3-A343-8C1C9D499B9C}' Win64='yes'>
                 <File Id='xercesc.dll' KeyPath='yes'
@@ -34,11 +35,17 @@
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='xercescD.dll' Guid='{236B6A7F-73C0-4EBF-9C06-90C1BE160ACE}' Win64='yes'>
-                  <File Id='xercescd.dll' KeyPath='yes'
+                  <File Id='xercescD.dll' KeyPath='yes'
                         Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
+            <Directory Id='doc' Name='doc'>
+              <Component Id='XERCES.LICENSE' Guid='{12731F0B-681B-4154-9B02-BEB219954D44}'>
+                <File KeyPath='yes' Name='XERCES.LICENSE'
+                    Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\LICENSE' />
+              </Component>
+            </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->

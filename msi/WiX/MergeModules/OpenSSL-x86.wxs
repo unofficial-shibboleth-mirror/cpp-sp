@@ -45,14 +45,13 @@
                   <File Id='ssleay32.dll_debug' KeyPath='yes' Name='ssleay32_$(var.OpenSSLFileVersion)D.dll' />
                 </Component>
                 <Component Id='openssl.exe_debug' Guid='{D47E4692-F648-4800-BE4A-9D84DAD5DEEA}'>
-                  <File Id='openssl.exe_debug' Name='openssl.exe' />
+                  <File Id='openssl.exe_debug' KeyPath='yes' Name='openssl.exe' />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='OPENSSL.LICENSE' Guid='{CEC1CC66-6D48-475A-8C99-B687B0B901AA}'>
-                <File KeyPath='yes' 
-                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc\OPENSSL.LICENSE' />
+                <File KeyPath='yes' Name='OPENSSL.LICENSE' Source='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\LICENSE' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->

@@ -20,8 +20,8 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XmlSecmergemodule_x64' Language='1033' Version='$(var.XmlSecVersion)'>
-    <Package Id='{B94AFB16-A52E-4C88-9011-FF0C897ABDE1}' Description='Merge Module for XmlSec (x64)'
-             Comments='This module is built by the Shibboleth Consortium. Includes Several excutables.'
+    <Package Id='{B94AFB16-A52E-4C88-9011-FF0C897ABDE1}' Description='Merge Module for Santuario (x64)'
+             Comments='This module is built by the Shibboleth Consortium. Includes several executable utilities.'
              Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
@@ -29,8 +29,7 @@
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib' 
                        FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan'>
-              <!-- GUID taken from 2.4.3 installer -->
-              <Component Id='xsec_1_4_0.dll' Guid='{3EB5B168-1FB1-476D-8E7C-2469D9B55162}' Win64='yes'>
+              <Component Id='xsec.dll' Guid='{3EB5B168-1FB1-476D-8E7C-2469D9B55162}' Win64='yes'>
                 <File KeyPath='yes' Name='xsec_$(var.XmlSecFileVersion).dll'/>
               </Component>
               <Component Id='c14n.exe' Guid='{DE820D93-BC4F-48B5-9C1F-3CD34E34D10C}' Win64='yes'>
@@ -53,29 +52,34 @@
               </Component>
               <Directory Id='lib_debug' Name='debug' 
                          FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Debug No Xalan'>
-                <Component Id='xsec_1_4_0D.dll' Guid='{EC1CCD0D-028D-4C92-846D-88C1C24B66E6}' Win64='yes'>
+                <Component Id='xsecD.dll' Guid='{EC1CCD0D-028D-4C92-846D-88C1C24B66E6}' Win64='yes'>
                   <File KeyPath='yes' Name='xsec_$(var.XmlSecFileVersion)D.dll'/>
                 </Component>
-                <Component Id='c14n.exe2' Guid='{ED9BB341-C5D2-4234-B720-483D86D340F9}' Win64='yes'>
+                <Component Id='c14n.exe_debug' Guid='{ED9BB341-C5D2-4234-B720-483D86D340F9}' Win64='yes'>
                   <File Id='c14n.exe_debug' KeyPath='yes' Name='c14n.exe'/>
                 </Component>
-                <Component Id='checksig.exe6' Guid='{F6618EE1-A5BD-4EC5-9257-E62015DC3BC4}' Win64='yes'>
+                <Component Id='checksig.exe_debug' Guid='{F6618EE1-A5BD-4EC5-9257-E62015DC3BC4}' Win64='yes'>
                   <File Id='checksig.exe_debug' KeyPath='yes' Name='checksig.exe'/>
                 </Component>
-                <Component Id='cipher.exe4' Guid='{EAB5FF33-9EBD-4C55-8D64-F975E5B11785}' Win64='yes'>
+                <Component Id='cipher.exe_debug' Guid='{EAB5FF33-9EBD-4C55-8D64-F975E5B11785}' Win64='yes'>
                   <File Id='cipher.exe_debug' KeyPath='yes' Name='cipher.exe'/>
                 </Component>
-                <Component Id='siginf.exe5' Guid='{1EA9ABB6-2B33-4E4C-9210-B89FCC493E78}' Win64='yes'>
+                <Component Id='siginf.exe_debug' Guid='{1EA9ABB6-2B33-4E4C-9210-B89FCC493E78}' Win64='yes'>
                   <File Id='siginf.exe_debug' KeyPath='yes' Name='siginf.exe'/>
                 </Component>
-                <Component Id='templatesign.exe3' Guid='{5AE22CDB-625E-4DC7-9586-77C3DD835100}' Win64='yes'>
+                <Component Id='templatesign.exe_debug' Guid='{5AE22CDB-625E-4DC7-9586-77C3DD835100}' Win64='yes'>
                   <File Id='templatesign.exe_debug' KeyPath='yes' Name='templatesign.exe'/>
                 </Component>
-                <Component Id='txfmout.exe1' Guid='{373B4E3D-6643-4884-8D0C-324DEF910230}' Win64='yes'>
+                <Component Id='txfmout.exe_debug' Guid='{373B4E3D-6643-4884-8D0C-324DEF910230}' Win64='yes'>
                   <File Id='txfmout.exe_debug' KeyPath='yes' Name='txfmout.exe'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
+            <Directory Id='doc' Name='doc'>
+              <Component Id='SANTUARIO.LICENSE' Guid='{07288B10-ED5A-443F-BC90-CFD987C798C4}'>
+                <File KeyPath='yes' Name='SANTUARIO.LICENSE' Source='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\LICENSE' />
+              </Component>
+            </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->

@@ -29,21 +29,18 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib'>
-              <Component Id='libfcgi.dll21' Guid='{FD6F8E32-CBDF-4662-A39C-8EC713483C51}'>
-                <File KeyPath='yes' 
-                      Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-VC10\Win32\Release\libfcgi.dll' />
+              <Component Id='libfcgi.dll' Guid='{FD6F8E32-CBDF-4662-A39C-8EC713483C51}'>
+                <File KeyPath='yes' Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-VC10\Win32\Release\libfcgi.dll' />
               </Component>
               <Directory Id='lib_debug' Name='debug'>
-                <Component Id='libfcgi.dll' Guid='{682FFA3A-D517-4332-BCC5-EF24252C3528}'>
-                  <File KeyPath='yes' 
-                        Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-VC10\Win32\Debug\libfcgid.dll' />
+                <Component Id='libfcgid.dll' Guid='{682FFA3A-D517-4332-BCC5-EF24252C3528}'>
+                  <File KeyPath='yes' Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-VC10\Win32\Debug\libfcgid.dll' />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='FASTCGI.LICENSE' Guid='{3FB61369-D8A7-4076-B659-DEDA2558A1AF}'>
-                <File KeyPath='yes' 
-                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc\FASTCGI.LICENSE' />
+                <File KeyPath='yes' Name='FASTCGI.LICENSE' Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-VC10\LICENSE.TERMS' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth -->

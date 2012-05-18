@@ -48,6 +48,11 @@
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
+            <Directory Id='doc' Name='doc'>
+              <Component Id='CURL.LICENSE' Guid='{838175A6-8CC3-45D3-9A5E-C4C4147076E9}'>
+                <File KeyPath='yes' Name='CURL.LICENSE' Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\COPYING' />
+              </Component>
+            </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->
         </Directory><!-- shibboleth -->
       </Directory><!-- ProgramFilesFolder -->

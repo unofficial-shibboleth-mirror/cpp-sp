@@ -1,3 +1,5 @@
+PATH=%PATH%;"C:\Program Files (x86)\Windows Installer XML v3.5\bin"
+
 goto current
 :current
  wixcop -indent:2 Curl-x86.wxs
@@ -45,13 +47,13 @@ wixcop -indent:2 OpenSAML-x64.wxs
 
 
 wixcop -indent:2 OpenSSL-x86.wxs
-candle OpenSSL-x86.wxs
-light  OpenSSL-x86.wixobj
-rem smoke  OpenSSL-x86.msm
+ candle OpenSSL-x86.wxs
+ light  OpenSSL-x86.wixobj
+ smoke  OpenSSL-x86.msm
 wixcop -indent:2 OpenSSL-x64.wxs
-candle OpenSSL-x64.wxs
-light  OpenSSL-x64.wixobj
-rem smoke  OpenSSL-x64.msm
+ candle OpenSSL-x64.wxs
+ light  OpenSSL-x64.wixobj
+ smoke  OpenSSL-x64.msm
 
  wixcop -indent:2 Shibboleth-x86.wxs
  candle Shibboleth-x86.wxs

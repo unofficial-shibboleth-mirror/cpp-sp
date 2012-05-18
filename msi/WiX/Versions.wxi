@@ -17,14 +17,15 @@
    permissions and limitations under the License.  -->
 
 <Include xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <?define BuildDirectory='G:\Downloads\shib\' ?>
-
+  <?define BuildDirectory='C:\Users\scantor\Shibboleth\' ?>
+  <?define SPBuildDirectory='C:\Users\scantor\Shibboleth\git\' ?>
+  
   <!-- Do not confuse ShibbolethDllVersion with ShibbolethVersion -->
   <?define ShibbolethVersion='2.4.186'?>
   <!-- DO NOT CHANGE UpgradeCode -->
   <?define ShibbolethUpgradeCode='{28A4EB62-E860-49CA-BE43-44ADEB91DBF6}' ?>
 
-  <?define CurlVersion='7.21.2' ?>
+  <?define CurlVersion='7.21.7' ?>
 
   <?define FastCGIVersion='2.4.0' ?>
 
@@ -35,8 +36,8 @@
   <?define OpenSAMLVersion='2.4.3' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
   <?define OpenSAMLFileVersion='2_4' ?><!-- 'saml$(var.OpenSAMLFileVersion).dll' -->
 
-  <?define OpenSSLVersion='1.0.0.10' ?><!-- 1.0.0a -->
-  <?define OpenSSLDirVersion='1.0.0a' ?><!-- '$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out64dll.dbg\'> -->
+  <?define OpenSSLVersion='1.0.0.9' ?><!-- 1.0.0i -->
+  <?define OpenSSLDirVersion='1.0.0i' ?><!-- '$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out64dll.dbg\'> -->
   <?define OpenSSLFileVersion='1_0_0' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
   <!-- Do not confuse ShibbolethDllVersion with ShibbolethVersion -->
@@ -46,7 +47,7 @@
   <?define XercesVersion='3.1.1' ?><!-- $(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll' -->
   <?define XercesFileVersion='3_1' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
-  <?define XmlSecVersion='1.6.0' ?><!-- '$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan' -->
+  <?define XmlSecVersion='1.6.1' ?><!-- '$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan' -->
   <?define XmlSecFileVersion='1_6' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
   <?define XmlToolingVersion='1.4.2' ?>

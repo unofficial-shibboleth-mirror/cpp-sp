@@ -21,25 +21,51 @@
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='OpenSAMLMergeModule_x64' Language='1033' Version='$(var.OpenSAMLVersion)'>
     <Package Id='{C4A8AAF1-D263-4361-9695-CE0F56B5D3C6}' Description='Merge Module for OpenSAML (x64)'
-             Comments='This module is built by the Shibboleth Consortium. Includes DDLs SAMLSign'
+             Comments='This module is built by the Shibboleth Consortium. Includes XMLTooling library.'
              Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
     <Directory Id='TARGETDIR' Name='SourceDir'>
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
-            <Directory Id='lib' Name='lib'>
-              <Directory Id='lib_debug' Name='debug' />
-            </Directory><!--lib-->
-            <Directory Id='doc' Name='doc' />
+            <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\x64\Release\'>
+              <Component Id='saml.dll' Guid='{9EE0A8D1-A6DC-4E2A-904F-BBEF70A0D67B}' Win64='yes'>
+                <File KeyPath='yes' Name='saml$(var.OpenSAMLFileVersion).dll' />
+              </Component>
+              <Component Id='samlsign.exe' Guid='{B89B1F75-9B8A-4A15-B141-4DC3F132CD47}' Win64='yes'>
+                <File KeyPath='yes' Name='samlsign.exe' />
+              </Component>
+              <Component Id='xmltooling.dll' Guid='{7BBFB3D8-A9F8-429B-96BE-C1B283EBFDFB}' Win64='yes'>
+                <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\x64\Release\xmltooling$(var.XmlToolingFileVersion).dll' />
+              </Component>
+              <Component Id='xmltoolinglite.dll' Guid='{060F61B9-36E9-4F33-9B5B-C59A43709052}' Win64='yes'>
+                <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\x64\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll' />
+              </Component>
+              <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\x64\Debug\'>
+                <Component Id='samlD.dll' Guid='{00836378-7FB9-4A09-AF49-3AA33DEF9BC6}' Win64='yes'>
+                  <File KeyPath='yes' Name='saml$(var.OpenSAMLFileVersion)D.dll' />
+                </Component>
+                <Component Id='samlsign.exe_debug' Guid='{A6588914-93E1-4FAF-B237-39C0240EECB1}' Win64='yes'>
+                  <File KeyPath='yes' Id='samlsign.exe_debug' Name='samlsign.exe' />
+                </Component>
+                <Component Id='xmltoolingD.dll' Guid='{C380627F-9D45-4626-A249-3831FC7C83FC}' Win64='yes'>
+                  <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\x64\Debug\xmltooling$(var.XmlToolingFileVersion)D.dll' />
+                </Component>
+                <Component Id='xmltoolingliteD.dll' Guid='{2786A98E-763C-41A1-A6D5-363DB22F17E9}' Win64='yes'>
+                  <File KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\x64\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.dll' />
+                </Component>
+              </Directory> <!-- lib_debug -->
+            </Directory><!-- lib -->
+            <Directory Id='doc' Name='doc'>
+              <Component Id='doc' Guid='{F858AC39-4C24-4255-A86E-4747FE45624E}' Win64='yes'>
+                <File KeyPath='yes' Name='OPENSAML.LICENSE' Source='$(var.SPBuildDirectory)\cpp-opensaml\doc\LICENSE.txt' />
+                <File Name='OPENSAML.NOTICE' Source='$(var.SPBuildDirectory)\cpp-opensaml\doc\NOTICE.txt' />
+                <File Name='OPENSAML.README' Source='$(var.SPBuildDirectory)\cpp-opensaml\doc\README.txt' />
+              </Component>
+            </Directory> <!-- doc -->
           </Directory><!--shibboleth_SP-->
         </Directory><!--shibboleth-->
       </Directory><!--ProgramFiles64Folder-->
     </Directory>
-
-    <?include OpenSAML-x64.wxi ?>
-
   </Module>
 </Wix>
-
-    

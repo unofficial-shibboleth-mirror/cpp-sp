@@ -45,9 +45,8 @@
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
-              <Component Id='LOG4CPP.LICENSE' Guid='{6332D7BE-90A0-4698-B1E9-06AE8163F5A8}' Win64='yes'>
-                <File KeyPath='yes' 
-                      Source='$(var.BuildDirectory)\cvs\2.0\cpp-sp\doc\LOG4CPP.LICENSE' />
+              <Component Id='LOG4SHIB.LICENSE' Guid='{6332D7BE-90A0-4698-B1E9-06AE8163F5A8}' Win64='yes'>
+                <File KeyPath='yes' Name='LOG4SHIB.LICENSE' Source='$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\COPYING' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->

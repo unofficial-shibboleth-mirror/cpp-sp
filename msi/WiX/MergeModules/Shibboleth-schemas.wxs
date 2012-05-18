@@ -70,8 +70,6 @@
       </Directory><!--CommonAppDataFolder-->
     </Directory><!--TargetDir-->
 
-    <?include OpenSAML-schemas.wxi ?>
-
     <CustomAction Id='EditShibbolethCatalog' BinaryKey='EditCatalogFileSrc' VBScriptCall='' 
                   Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetEditShibbolethCatalog' Property='EditShibbolethCatalog' 
