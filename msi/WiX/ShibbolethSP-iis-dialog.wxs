@@ -45,10 +45,10 @@
                  Property='INSTALL_ISAPI_FILTER' Text='Install ISAPI filter and configure IIS' 
                  CheckBoxValue='TRUE' TabSkip='yes' />
 
-        <Control Id='ShibExtensionBox' Type='GroupBox' X='99' Y='165' Width='175' Height='35' TabSkip='yes' />
-        <Control Id='ShibExtensionText' Type='Text' X='114' Y='180' Width='96' Height='12' 
+        <Control Id='ShibExtensionBox' Type='GroupBox' X='99' Y='145' Width='175' Height='35' TabSkip='yes' />
+        <Control Id='ShibExtensionText' Type='Text' X='114' Y='160' Width='96' Height='12' 
                  Text='Shibboleth File Extension:' TabSkip='yes'/>
-        <Control Id='ShibExtensionEdit' Type='Edit' X='211' Y='177' Width='51' Height='16' 
+        <Control Id='ShibExtensionEdit' Type='Edit' X='211' Y='157' Width='51' Height='16' 
                  Property='SHIB_FILE_EXTENSION' TabSkip='yes'>
           <Condition Action='disable'>INSTALL_ISAPI_FILTER &lt;&gt; "TRUE"</Condition>
           <Condition Action='enable'>INSTALL_ISAPI_FILTER = "TRUE"</Condition>
