@@ -41,7 +41,7 @@
 
         <Control Id='IISLine2' Type='Text' X='25' Y='79' Width='312' Height='20' 
                  Text='This will install the ISAPI filter for IIS, register the specified file extension and create a Web Services Extension entry (IIS 6 and later).'/>
-        <Control Id='InstallISAPICheckBox' Type='CheckBox' X='86' Y='154' Width='180' Height='14' 
+        <Control Id='InstallISAPICheckBox' Type='CheckBox' X='86' Y='120' Width='180' Height='14' 
                  Property='INSTALL_ISAPI_FILTER' Text='Install ISAPI filter and configure IIS' 
                  CheckBoxValue='TRUE' TabSkip='yes' />
 

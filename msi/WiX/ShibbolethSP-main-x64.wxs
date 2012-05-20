@@ -101,10 +101,10 @@
     </Directory><!--TARGETDIR-->
 
     <DirectoryRef Id='etc_shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs'>
-      <Component Id='SetService64' Guid='{8DE75314-84B5-4BD1-ABD2-9FC1DEE399DC}' Permanent='yes'>
+      <Component Id='SetService64' Guid='{8DE75314-84B5-4BD1-ABD2-9FC1DEE399DC}'>
         <File KeyPath='yes' Name='SetService64.bat' />
       </Component>
-      <Component Id='SetService32' Guid='{3332A486-845E-4EE4-975F-3D75757EB941}' Permanent='yes'>
+      <Component Id='SetService32' Guid='{3332A486-845E-4EE4-975F-3D75757EB941}'>
         <File KeyPath='yes' Name='SetService32.bat' />
       </Component>
     </DirectoryRef><!-- etc_shibboleth -->
