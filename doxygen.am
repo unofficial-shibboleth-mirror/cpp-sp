@@ -54,7 +54,7 @@ DX_CLEAN_CHM = @DX_DOCDIR@/chm
 
 if DX_COND_chi
 
-DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
+DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE_NAME@.chi
 
 endif DX_COND_chi
 
@@ -96,13 +96,13 @@ endif DX_COND_xml
 
 if DX_COND_ps
 
-DX_CLEAN_PS = @DX_DOCDIR@/@PACKAGE@.ps
+DX_CLEAN_PS = @DX_DOCDIR@/@PACKAGE_NAME@.ps
 
 DX_PS_GOAL = doxygen-ps
 
-doxygen-ps: @DX_DOCDIR@/@PACKAGE@.ps
+doxygen-ps: @DX_DOCDIR@/@PACKAGE_NAME@.ps
 
-@DX_DOCDIR@/@PACKAGE@.ps: @DX_DOCDIR@/@PACKAGE@.tag
+@DX_DOCDIR@/@PACKAGE_NAME@.ps: @DX_DOCDIR@/@PACKAGE_NAME@.tag
 	cd @DX_DOCDIR@/latex; \
 	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
 	$(DX_LATEX) refman.tex; \
@@ -115,7 +115,7 @@ doxygen-ps: @DX_DOCDIR@/@PACKAGE@.ps
 	    $(DX_LATEX) refman.tex; \
 	    countdown=`expr $$countdown - 1`; \
 	done; \
-	$(DX_DVIPS) -o ../@PACKAGE@.ps refman.dvi
+	$(DX_DVIPS) -o ../@PACKAGE_NAME@.ps refman.dvi
 
 endif DX_COND_ps
 
@@ -125,13 +125,13 @@ endif DX_COND_ps
 
 if DX_COND_pdf
 
-DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE@.pdf
+DX_CLEAN_PDF = @DX_DOCDIR@/@PACKAGE_NAME@.pdf
 
 DX_PDF_GOAL = doxygen-pdf
 
-doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
+doxygen-pdf: @DX_DOCDIR@/@PACKAGE_NAME@.pdf
 
-@DX_DOCDIR@/@PACKAGE@.pdf: @DX_DOCDIR@/@PACKAGE@.tag
+@DX_DOCDIR@/@PACKAGE_NAME@.pdf: @DX_DOCDIR@/@PACKAGE_NAME@.tag
 	cd @DX_DOCDIR@/latex; \
 	rm -f *.aux *.toc *.idx *.ind *.ilg *.log *.out; \
 	$(DX_PDFLATEX) refman.tex; \
@@ -144,7 +144,7 @@ doxygen-pdf: @DX_DOCDIR@/@PACKAGE@.pdf
 	    $(DX_PDFLATEX) refman.tex; \
 	    countdown=`expr $$countdown - 1`; \
 	done; \
-	mv refman.pdf ../@PACKAGE@.pdf
+	mv refman.pdf ../@PACKAGE_NAME@.pdf
 
 endif DX_COND_pdf
 
@@ -162,16 +162,16 @@ endif DX_COND_latex
 
 .INTERMEDIATE: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
-doxygen-run: @DX_DOCDIR@/@PACKAGE@.tag
+doxygen-run: @DX_DOCDIR@/@PACKAGE_NAME@.tag
 
 doxygen-doc: doxygen-run $(DX_PS_GOAL) $(DX_PDF_GOAL)
 
-@DX_DOCDIR@/@PACKAGE@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
+@DX_DOCDIR@/@PACKAGE_NAME@.tag: $(DX_CONFIG) $(pkginclude_HEADERS)
 	rm -rf @DX_DOCDIR@
 	$(DX_ENV) DX_INCLUDE=$(DX_INCLUDE) $(DX_DOXYGEN) $(srcdir)/$(DX_CONFIG)
 
 DX_CLEANFILES = \
-    @DX_DOCDIR@/@PACKAGE@.tag \
+    @DX_DOCDIR@/@PACKAGE_NAME@.tag \
     -r \
     $(DX_CLEAN_HTML) \
     $(DX_CLEAN_CHM) \

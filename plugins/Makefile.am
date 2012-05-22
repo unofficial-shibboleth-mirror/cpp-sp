@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-plugindir = $(libdir)/@PACKAGE@
+plugindir = $(libdir)/@PACKAGE_NAME@
 plugin_LTLIBRARIES = plugins.la
 
 noinst_HEADERS = \
@@ -11,10 +11,10 @@ common_sources = \
 
 plugins_la_SOURCES = \
 	${common_sources} \
-    CaseFoldingAttributeResolver.cpp \
+	CaseFoldingAttributeResolver.cpp \
 	GSSAPIAttributeExtractor.cpp \
-    TemplateAttributeResolver.cpp \
-    TransformAttributeResolver.cpp
+	TemplateAttributeResolver.cpp \
+	TransformAttributeResolver.cpp
 
 #plugins_lite_la_SOURCES = \
 #	${common_sources}
@@ -29,7 +29,7 @@ plugins_la_LDFLAGS = -module -avoid-version
 #plugins_lite_la_LDFLAGS = -module -avoid-version
 #plugins_lite_la_CPPFLAGS = -DSHIBSP_LITE
 
-install-exec-hook:
+install-data-hook:
 	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
 
 EXTRA_DIST = plugins.vcxproj resource.h plugins.rc

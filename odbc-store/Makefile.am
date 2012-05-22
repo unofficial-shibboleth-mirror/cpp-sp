@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-plugindir = $(libdir)/@PACKAGE@
+plugindir = $(libdir)/@PACKAGE_NAME@
 plugin_LTLIBRARIES = odbc-store.la
 
 AM_CFLAGS = $(ODBC_CFLAGS)
@@ -13,7 +13,7 @@ odbc_store_la_SOURCES = \
 
 odbc_store_la_LDFLAGS = -module -avoid-version
 
-install-exec-hook:
+install-data-hook:
 	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
 
 EXTRA_DIST = odbc-store.vcxproj odbc-store.rc resource.h

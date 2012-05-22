@@ -1,7 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
-pkgdocdir = $(datadir)/doc/@PACKAGE@-@PACKAGE_VERSION@
-pkgwebdir = $(datadir)/@PACKAGE@
+pkgdocdir = $(datadir)/doc/@PACKAGE_NAME@-@PACKAGE_VERSION@
+pkgwebdir = $(datadir)/@PACKAGE_NAME@
 
 install-data-hook:
 	if test -d api ; then \

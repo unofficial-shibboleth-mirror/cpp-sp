@@ -2,14 +2,14 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-pkglibdir = ${libdir}/@PACKAGE@
-pkglogdir = ${localstatedir}/log/@PACKAGE@
+pkglibdir = ${libdir}/@PACKAGE_NAME@
+pkglogdir = ${localstatedir}/log/@PACKAGE_NAME@
 shirelogdir = ${localstatedir}/log/httpd
-pkgxmldir = $(datadir)/xml/@PACKAGE@
-pkgwebdir = $(datadir)/@PACKAGE@
-pkgrundir = $(localstatedir)/run/@PACKAGE@
-pkgcachedir = $(localstatedir)/cache/@PACKAGE@
-pkgsysconfdir = $(sysconfdir)/@PACKAGE@
+pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@
+pkgwebdir = $(datadir)/@PACKAGE_NAME@
+pkgrundir = $(localstatedir)/run/@PACKAGE_NAME@
+pkgcachedir = $(localstatedir)/cache/@PACKAGE_NAME@
+pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgsysconf_DATA = \
 	shibd-redhat \
 	shibd-suse \

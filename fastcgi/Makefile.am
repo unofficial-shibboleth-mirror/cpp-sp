@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 
 if BUILD_FASTCGI
 
-fastcgidir = $(libdir)/@PACKAGE@
+fastcgidir = $(libdir)/@PACKAGE_NAME@
 
 fastcgi_PROGRAMS = shibauthorizer shibresponder
 
