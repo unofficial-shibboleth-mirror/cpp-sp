@@ -95,14 +95,12 @@ AccessControl::~AccessControl()
 {
 }
 
-ChainingAccessControl::ChainingAccessControl(const DOMElement* e)
+ChainingAccessControl::ChainingAccessControl(const DOMElement* e) : m_op(OP_AND)
 {
     const XMLCh* op = e ? e->getAttributeNS(nullptr, _operator) : nullptr;
-    if (XMLString::equals(op, AND))
-        m_op = OP_AND;
-    else if (XMLString::equals(op, OR))
+    if (XMLString::equals(op, OR))
         m_op = OP_OR;
-    else
+    else if (op && *op && !XMLString::equals(op, AND))
         throw ConfigurationException("Missing or unrecognized operator in Chaining AccessControl configuration.");
 
     e = XMLHelper::getFirstChildElement(e, _AccessControl);
