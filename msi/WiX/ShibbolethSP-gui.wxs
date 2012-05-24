@@ -17,77 +17,126 @@
      permissions and limitations under the License.  -->
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <!-- This is where we put all executables & so & dlls which make up the SP X86 installer -->
   <Fragment>
 
-    <!-- our local copy of the InstallDir Dialog  from the Wix Sources under CPT.txt -->
     <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
     <WixVariable Id="WixUIBannerBmp" Value="TopBanner.bmp" />
     <WixVariable Id="WixUIDialogBmp" Value="Dialog.bmp" />
+    <WixVariable Id="WixUICostingPopupOptOut" Value="1" />    
 
-    <UI Id="Shib_InstallDir">
-      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
-      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
-      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+    <!-- GUI For Shibboleth installer.  Uses the Wix packages, but linked in
+         blindly by looking at documentation (for sizes and dialog names) 
+         and the generated.msi -->
 
-      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
-      <Property Id="WixUI_Mode" Value="InstallDir" />
-      <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+    <!-- The Banners for the dialog boxes -->
+    <Binary Id='WixUI_Bmp_Dialog' SourceFile='Dialog.bmp' />
+    <Binary Id='WixUI_Bmp_Banner' SourceFile='TopBanner.bmp' />
 
-      <DialogRef Id="BrowseDlg" />
-      <DialogRef Id="DiskCostDlg" />
-      <DialogRef Id="ErrorDlg" />
-      <DialogRef Id="FatalError" />
-      <DialogRef Id="FilesInUse" />
-      <DialogRef Id="MsiRMFilesInUse" />
-      <DialogRef Id="PrepareDlg" />
-      <DialogRef Id="ProgressDlg" />
-      <DialogRef Id="ResumeDlg" />
-      <DialogRef Id="UserExit" />
+    <!-- Banners that WixUI needs (taken from the old installer) -->
+    <Binary Id='WixUI_Ico_Info' SourceFile='Info.bmp' />
+    <Binary Id='WixUI_Ico_Exclam' SourceFile='Info.bmp' />
+    <Binary Id='WixUI_Bmp_Up' SourceFile='Up.bmp' />
+    <Binary Id='WixUI_Bmp_New' SourceFile='New.bmp' />
 
-      <!-- Our dialogs -->
-      <DialogRef Id="ShibdDlg" />
-      <DialogRef Id="IISDlg" />
+    <!-- property that Light complained for -->
+    <Property Id='DefaultUIFont' Value='WixUI_Font_Normal' />
 
-      <Publish Dialog="BrowseDlg" Control="OK" Event="DoAction" Value="WixUIValidatePath" Order="3">1</Publish>
-      <Publish Dialog="BrowseDlg" Control="OK" Event="SpawnDialog" Value="InvalidDirDlg" Order="4"><![CDATA[WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
+    <!-- "You must set a property named WIXUI_INSTALLDIR with a value
+         of the ID of the directory you want the user to be able to specify
+         the location of." -->
 
-      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+    <Property Id='WIXUI_INSTALLDIR' Value='INSTALLDIR' />
 
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg">NOT Installed</Publish>
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+    <UI Id='ShibbolethInstallDir' >
 
-      <Publish Dialog="LicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">1</Publish>
-      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg">LicenseAccepted = "1"</Publish>
+      <!-- "WixUI_InstallDir includes the following dialogs:" -->
+      <DialogRef Id='BrowseDlg' />
+      <DialogRef Id='DiskCostDlg' />
+      <DialogRef Id='InstallDirDlg' />
+      <DialogRef Id='InvalidDirDlg' />
+      <DialogRef Id='LicenseAgreementDlg' />
+      <DialogRef Id='WelcomeDlg' />
 
-      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="LicenseAgreementDlg">1</Publish>
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath" Order="2">NOT WIXUI_DONTVALIDATEPATH</Publish>
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3"><![CDATA[NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID<>"1"]]></Publish>
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ShibdDlg" Order="4">WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"</Publish>
-      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1">1</Publish>
-      <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2">1</Publish>
+      <!-- "In addition, WixUI_InstallDir includes the following common
+           dialogs that appear in all WixUI dialog sets:" -->
+      <DialogRef Id='CancelDlg' />
+      <DialogRef Id='ErrorDlg' />
+      <DialogRef Id='ExitDialog' />
+      <DialogRef Id='FatalError' />
+      <DialogRef Id='FilesInUse' />
+      <DialogRef Id='MaintenanceTypeDlg' />
+      <DialogRef Id='MaintenanceWelcomeDlg' />
+      <DialogRef Id='MsiRMFilesInUse' />
+      <DialogRef Id='OutOfDiskDlg' />
+      <DialogRef Id='OutOfRbDiskDlg' />
+      <DialogRef Id='PrepareDlg' />
+      <DialogRef Id='ProgressDlg' />
+      <DialogRef Id='ResumeDlg' />
+      <DialogRef Id='UserExit' />
+      <DialogRef Id='VerifyReadyDlg' />
+      <DialogRef Id='WaitForCostingDlg' />
 
-      <Publish Dialog="ShibdDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg">1</Publish>
-      <Publish Dialog="ShibdDlg" Control="Next" Event="NewDialog" Value="IISDlg">IISMAJORVERSION</Publish>
-      <Publish Dialog="ShibdDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">NOT IISMAJORVERSION</Publish>
+      <!-- Text Styles (from Orca) -->
+      <TextStyle Id='WixUI_Font_Normal' FaceName='Tahoma' Size='8' />
+      <TextStyle Id='WixUI_Font_Bigger' FaceName='Tahoma' Size='12' />
+      <TextStyle Id='WixUI_Font_Title' FaceName='Tahoma' Size='9' Bold='yes'/>
 
-      <Publish Dialog="IISDlg" Control="Back" Event="NewDialog" Value="ShibdDlg">1</Publish>
-      <Publish Dialog="IISDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <!-- Events (from Orca\ControlEvent and from light's complaints) -->
+      <Publish Dialog='BrowseDlg' Control='OK' Event='DoAction' Value='WixUIValidatePath' Order='3'>1</Publish>
+      <Publish Dialog='BrowseDlg' Control='OK' Event='SpawnDialog' Value='InvalidDirDlg' Order='4'>
+	WIXUI_INSTALLDIR_VALID&lt;&gt;"1"
+      </Publish>
 
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="IISDlg" Order="1">(NOT Installed) AND IISMAJORVERSION </Publish>
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="IISDlg" Order="1">(NOT Installed) AND (NOT IISMAJORVERSION)</Publish>
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">Installed AND PATCH</Publish>
+      <Publish Dialog='LicenseAgreementDlg' Control='Next' Event='NewDialog' Value='InstallDirDlg'>
+	LicenseAccepted = "1"
+      </Publish>
 
-      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+      <Publish Dialog='MaintenanceTypeDlg' Control='RepairButton' Event='NewDialog' Value='VerifyReadyDlg'>1</Publish>
+      <Publish Dialog='MaintenanceTypeDlg' Control='RemoveButton' Event='NewDialog' Value='VerifyReadyDlg'>1</Publish>
 
-      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+
+      <Publish Dialog='MaintenanceWelcomeDlg' Control='Next' Event='NewDialog' Value='MaintenanceTypeDlg'>1</Publish>
+
+      <Publish Dialog='WelcomeDlg' Control='Next' Event='NewDialog' Value='LicenseAgreementDlg'>
+        NOT Installed
+      </Publish>
+      <Publish Dialog='WelcomeDlg' Control='Next' Event='NewDialog' Value='VerifyReadyDlg'>
+        Installed AND PATCH
+      </Publish>
+
+      <Publish Dialog='ExitDialog' Control='Finish' Event='EndDialog' Value='Return'>1</Publish>
+      <Publish Dialog='LicenseAgreementDlg' Control='Back' Event='NewDialog' Value='WelcomeDlg'>1</Publish>
+      <Publish Dialog='MaintenanceTypeDlg' Control='Back' Event='NewDialog' Value='MaintenanceWelcomeDlg'>1</Publish>
+      <Publish Dialog='VerifyReadyDlg' Control='Back' Event='NewDialog' Value='WelcomeDlg'>
+        Installed AND PATCH
+      </Publish>
+      <Publish Dialog='VerifyReadyDlg' Control='Back' Event='NewDialog' Value='InstallDirDlg'>
+        NOT Installed
+      </Publish>
+      <Publish Dialog='VerifyReadyDlg' Control='Back' Event='NewDialog' Value='MaintenanceTypeDlg'>
+        Installed AND NOT PATCH
+      </Publish>
+
+      <!-- Events we need to kill -->
+      <Publish Dialog='InstallDirDlg' Control='Back' Event='NewDialog' Value='LicenseAgreementDlg'>1</Publish>
+
+      <Publish Dialog='InstallDirDlg' Control='Next' Event='NewDialog' Value='VerifyReadyDlg' Order='4'>
+        WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"
+      </Publish>
+
+      <Publish Dialog='InstallDirDlg' Control='Next' Event='SpawnDialog' Value='InvalidDirDlg' Order='3'>
+        NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID&lt;&gt;"1"
+      </Publish>
+
+      <Publish Dialog='InstallDirDlg' Control='Next' Event='DoAction' Value='WixUIValidatePath' Order='2'>
+        NOT WIXUI_DONTVALIDATEPATH
+      </Publish>
+      <Publish Dialog='InstallDirDlg' Control='Next' Event='SetTargetPath' Value='[WIXUI_INSTALLDIR]' Order='1'>1</Publish>
+      <Publish Dialog='InstallDirDlg' Control='ChangeFolder' Event='SpawnDialog' Value='BrowseDlg'>1</Publish>
+      <Publish Dialog='InstallDirDlg' Control='ChangeFolder' Event='[_BrowseProprty]' Value='[WIXUI_INSTALLDIR]' >1</Publish>
+
 
     </UI>
-
-    <UIRef Id="WixUI_Common" />
-
   </Fragment>
 </Wix>
