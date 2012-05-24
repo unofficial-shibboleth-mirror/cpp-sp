@@ -41,29 +41,35 @@ using namespace std;
 #endif
 
 namespace shibsp {
-#ifdef HAVE_GSSAPI_NAMINGEXTS
+    PluginManager<AccessControl,string,const DOMElement*>::Factory TimeAccessControlFactory;
+#ifndef SHIBSP_LITE
+# ifdef HAVE_GSSAPI_NAMINGEXTS
     PluginManager<AttributeExtractor,string,const DOMElement*>::Factory GSSAPIExtractorFactory;
-#endif
+# endif
     PluginManager<AttributeResolver,string,const DOMElement*>::Factory TemplateAttributeResolverFactory;
     PluginManager<AttributeResolver,string,const DOMElement*>::Factory TransformAttributeResolverFactory;
     PluginManager<AttributeResolver,string,const DOMElement*>::Factory UpperCaseAttributeResolverFactory;
     PluginManager<AttributeResolver,string,const DOMElement*>::Factory LowerCaseAttributeResolverFactory;
+#endif
 };
 
 extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
 {
     SPConfig& conf = SPConfig::getConfig();
-#ifdef HAVE_GSSAPI_NAMINGEXTS
+    conf.AccessControlManager.registerFactory("Time", TimeAccessControlFactory);
+#ifndef SHIBSP_LITE
+# ifdef HAVE_GSSAPI_NAMINGEXTS
     conf.AttributeExtractorManager.registerFactory("GSSAPI", GSSAPIExtractorFactory);
     static const XMLCh _GSSAPIName[] = UNICODE_LITERAL_10(G,S,S,A,P,I,N,a,m,e);
     static const XMLCh _GSSAPIContext[] = UNICODE_LITERAL_13(G,S,S,A,P,I,C,o,n,t,e,x,t);
     XMLObjectBuilder::registerBuilder(xmltooling::QName(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _GSSAPIName), new AnyElementBuilder());
     XMLObjectBuilder::registerBuilder(xmltooling::QName(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _GSSAPIContext), new AnyElementBuilder());
-#endif
+# endif
     conf.AttributeResolverManager.registerFactory("Template", TemplateAttributeResolverFactory);
     conf.AttributeResolverManager.registerFactory("Transform", TransformAttributeResolverFactory);
     conf.AttributeResolverManager.registerFactory("UpperCase", UpperCaseAttributeResolverFactory);
     conf.AttributeResolverManager.registerFactory("LowerCase", LowerCaseAttributeResolverFactory);
+#endif
     return 0;   // signal success
 }
 

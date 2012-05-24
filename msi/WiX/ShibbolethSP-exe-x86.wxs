@@ -71,6 +71,9 @@
           <Component Id='plugins.so' Guid='{F738E29B-903B-4C86-BE27-4C72EC69915E}'>
             <File KeyPath='yes' Checksum='yes' Name='plugins.so' />
           </Component>
+          <Component Id='plugins_lite.so' Guid='{FF18A6B4-EDC7-4A9A-8BFE-C166DCE5243E}'>
+            <File KeyPath='yes' Checksum='yes' Name='plugins-lite.so' />
+          </Component>
           <Component Id='shibauthorizer.exe' Guid='{7C7C1C24-902A-4003-AE59-599E79161782}'>
             <File KeyPath='yes' Checksum='yes' Name='shibauthorizer.exe' />
           </Component>
@@ -107,6 +110,9 @@
             </Component>
             <Component Id='plugins.so_debug' Guid='{6D3F2ABC-EFD4-4BF7-889D-3FD0DBE3727C}'>
               <File KeyPath='yes' Checksum='yes' Id='plugins.so_debug' Name='plugins.so' />
+            </Component>
+            <Component Id='plugins_lite.so_debug' Guid='{83A9DA0D-774C-4F96-9446-D5A1B61BB4A2}'>
+              <File KeyPath='yes' Checksum='yes' Id='plugins_lite.so_debug' Name='plugins-lite.so' />
             </Component>
             <Component Id='shibauthorizer.exe_debug' Guid='{83360639-DDC0-4B76-8168-21FB77EE6CD6}'>
               <File KeyPath='yes' Checksum='yes' Id='shibauthorizer.exe_debug' Name='shibauthorizer.exe' />

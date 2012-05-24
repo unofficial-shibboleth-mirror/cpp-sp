@@ -77,7 +77,7 @@ AC_FUNC_STRFTIME
 AC_FUNC_STRERROR_R
 AC_CHECK_HEADERS([sys/utsname.h grp.h pwd.h])
 AC_CHECK_HEADERS([sys/socket.h], [AC_DEFINE([SHIBSP_HAVE_SYS_SOCKET_H],[1],[Define to 1 if you have the <sys/socket> header file.])], [])
-AC_CHECK_FUNCS([strchr strdup strstr timegm gmtime_r strtok_r strcasecmp getpwnam getgrnam])
+AC_CHECK_FUNCS([strchr strdup strstr timegm gmtime_r localtime_r strtok_r strcasecmp getpwnam getgrnam])
 AC_CHECK_TYPES([struct sockaddr_storage], [], [], [[#include <sys/socket.h>]])
 AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [], [[#include <sys/socket.h>]])
 

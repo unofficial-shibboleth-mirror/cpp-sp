@@ -462,7 +462,7 @@ namespace {
         }
         if (t == 0)
             return false;
-#ifndef HAVE_GMTIME_R
+#ifndef HAVE_LOCALTIME_R
         struct tm* ptime=localtime(&t);
 #else
         struct tm res;
@@ -501,7 +501,7 @@ namespace {
         }
         if (t == 0)
             return false;
-#ifndef HAVE_GMTIME_R
+#ifndef HAVE_LOCALTIME_R
         struct tm* ptime=localtime(&t);
 #else
         struct tm res;
@@ -524,7 +524,7 @@ namespace {
         }
         if (t == 0)
             return false;
-#ifndef HAVE_GMTIME_R
+#ifndef HAVE_LOCALTIME_R
         struct tm* ptime=localtime(&t);
 #else
         struct tm res;

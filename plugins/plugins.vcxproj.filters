@@ -6,6 +6,7 @@
     <ClCompile Include="TransformAttributeResolver.cpp" />
     <ClCompile Include="TemplateAttributeResolver.cpp" />
     <ClCompile Include="CaseFoldingAttributeResolver.cpp" />
+    <ClCompile Include="TimeAccessControl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="internal.h" />

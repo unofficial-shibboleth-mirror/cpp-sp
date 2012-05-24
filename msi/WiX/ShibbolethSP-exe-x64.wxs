@@ -45,7 +45,7 @@
             <File KeyPath='yes' Checksum='yes' Id='adfs64.so' Name='adfs.so' />
           </Component>
           <Component Id='adfs_lite64.so' Guid='{1162CDA0-C3F8-4599-B01E-9EDAA73B2C0B}' Win64='yes'>
-            <File KeyPath='yes' Checksum='yes' Id='adfslite64.so' Name='adfs-lite.so' />
+            <File KeyPath='yes' Checksum='yes' Id='adfs_lite64.so' Name='adfs-lite.so' />
           </Component>
           <Component Id='isapi_shib64.dll' Guid='{3BC7260B-D035-4F79-A39E-EDA0181BBB1B}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='isapi_shib64.dll' Name='isapi_shib.dll' />
@@ -61,6 +61,9 @@
           </Component>
           <Component Id='plugins64.so' Guid='{C78105F1-1258-41A4-8505-5437E90FB1B4}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='plugins64.so' Name='plugins.so' />
+          </Component>
+          <Component Id='plugins_lite64.so' Guid='{83CA3D25-2370-426A-9747-B8A74EFC9037}' Win64='yes'>
+            <File KeyPath='yes' Checksum='yes' Id='plugins_lite64.so' Name='plugins-lite.so' />
           </Component>
           <Component Id='shibauthorizer64.exe' Guid='{5A323F4F-AE87-451A-9253-1965E46C9C5F}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='shibauthorizer64.exe' Name='shibauthorizer.exe' />
@@ -89,6 +92,9 @@
             </Component>
             <Component Id='plugins64.so_debug' Guid='{E6E051C8-6C84-4CC9-B718-365E627068B6}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='plugins64.so_debug' Name='plugins.so' />
+            </Component>
+            <Component Id='plugins_lite64.so_debug' Guid='{3A05BDF3-12C8-4502-A30D-7C8B9C7A5855}' Win64='yes'>
+              <File KeyPath='yes' Checksum='yes' Id='plugins_lite64.so_debug' Name='plugins-lite.so' />
             </Component>
             <Component Id='shibauthorizer64.exe_debug' Guid='{642C9137-66C8-4E2E-A76C-4D9F65B17157}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='shibauthorizer64.exe_debug' Name='shibauthorizer.exe' />

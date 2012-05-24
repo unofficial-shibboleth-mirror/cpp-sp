@@ -59,6 +59,7 @@
   <ComponentRef Id='nsapi_shib.dll'/>
   <ComponentRef Id='odbc_store.so'/>
   <ComponentRef Id='plugins.so'/>
+  <ComponentRef Id='plugins_lite.so'/>
   <ComponentRef Id='shibauthorizer.exe'/>
   <ComponentRef Id='shibresponder.exe'/>
 
@@ -72,6 +73,7 @@
   <ComponentRef Id='nsapi_shib.dll_debug'/>
   <ComponentRef Id='odbc_store.so_debug'/>
   <ComponentRef Id='plugins.so_debug'/>
+  <ComponentRef Id='plugins_lite.so_debug'/>
   <ComponentRef Id='shibauthorizer.exe_debug'/>
   <ComponentRef Id='shibresponder.exe_debug'/>
 
