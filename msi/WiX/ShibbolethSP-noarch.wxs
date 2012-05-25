@@ -240,6 +240,7 @@
       <!-- Do not mess with SCM if this is an upgrade -->
 
       <InstallServices>(NOT Installed) AND (NOT ALREADYINSTALLED) AND (INSTALL_SHIBD_SERVICE = "TRUE")</InstallServices>
+      <StartServices>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE")</StartServices>
       <DeleteServices>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</DeleteServices>
 
     </InstallExecuteSequence>

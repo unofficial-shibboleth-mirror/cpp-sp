@@ -29,17 +29,7 @@
          blindly by looking at documentation (for sizes and dialog names) 
          and the generated.msi -->
 
-    <!-- The Banners for the dialog boxes -->
-    <Binary Id='WixUI_Bmp_Dialog' SourceFile='Dialog.bmp' />
-    <Binary Id='WixUI_Bmp_Banner' SourceFile='TopBanner.bmp' />
-
-    <!-- Banners that WixUI needs (taken from the old installer) -->
-    <Binary Id='WixUI_Ico_Info' SourceFile='Info.bmp' />
-    <Binary Id='WixUI_Ico_Exclam' SourceFile='Info.bmp' />
-    <Binary Id='WixUI_Bmp_Up' SourceFile='Up.bmp' />
-    <Binary Id='WixUI_Bmp_New' SourceFile='New.bmp' />
-
-    <!-- property that Light complained for -->
+    <!-- Property that Light complained for -->
     <Property Id='DefaultUIFont' Value='WixUI_Font_Normal' />
 
     <!-- "You must set a property named WIXUI_INSTALLDIR with a value
@@ -88,7 +78,7 @@
 	WIXUI_INSTALLDIR_VALID&lt;&gt;"1"
       </Publish>
 
-      <Publish Dialog='LicenseAgreementDlg' Control='Next' Event='NewDialog' Value='InstallDirDlg'>
+      <Publish Dialog='LicenseAgreementDlg' Control='Next' Event='NewDialog' Value='InstallDirDlgShib'>
 	LicenseAccepted = "1"
       </Publish>
 
@@ -111,14 +101,104 @@
       <Publish Dialog='VerifyReadyDlg' Control='Back' Event='NewDialog' Value='WelcomeDlg'>
         Installed AND PATCH
       </Publish>
-      <Publish Dialog='VerifyReadyDlg' Control='Back' Event='NewDialog' Value='InstallDirDlg'>
+      <Publish Dialog='VerifyReadyDlg' Control='Back' Event='NewDialog' Value='InstallDirDlgShib'>
         NOT Installed
       </Publish>
       <Publish Dialog='VerifyReadyDlg' Control='Back' Event='NewDialog' Value='MaintenanceTypeDlg'>
         Installed AND NOT PATCH
       </Publish>
 
-      <!-- Events we need to kill -->
+      <!-- And now the new dialog that we add.  This sets up:
+           INSTALLDIR
+           INSTALL_SHIBD_SERVICE
+           INSTALL_32BIT (if a 64bit machine)
+           INSTALL_ISAPI_FILTER (if IIS about)
+           SHIB_FILE_EXTENSION (if IIS about)
+        -->
+
+      <Dialog Id='InstallDirDlgShib' Width='370' Height='270' Title='[ProductName] Setup'>
+        <!-- Stuff at the top: picture, some text, a line -->
+        <Control Id='TopBitMap' Type='Bitmap' X='0' Y='0' Width='370' Height='44' Text='WixUI_Bmp_Banner' />
+        <Control Id='TopInfo' Type='Text' X='15' Y='6' Width='150' Height='12' 
+                 Text='{\WixUI_Font_Title}Configure Shibboleth' Transparent='yes'/>
+        <Control Id='TopDetailed' Type='Text' X='25' Y='24' Width='320' Height='12' 
+                 Text='Please choose where to install the Shibboleth SP and other installation options' Transparent='yes'/>
+        <Control Id='TopLine' Type='Line' X='0' Y='44' Width='370' Height='1' />
+
+        <!-- Buttons to control Shibboleth Setup -->
+        <Control Id='DescriptionLine1' Type='Text' X='25' Y='51' Height='12' Width='320' 
+                 Text='The files for [ProductName] will be installed in the following folder.'/>
+
+        <Control Id='DescriptionLine2' Type='Text' X='25' Y='70' Height='12' Width='320' 
+                 Text='To install into a different folder, click the Browse button, and select another folder.'/>
+
+        <Control Id='DescriptionLine3' Type='Text' X='25' Y='90' Height='12' Width='320' 
+                 Text='You can choose not to install [ProductName] by clicking Cancel to exit the installer.' />
+
+        <!-- Where? -->
+        <Control Id='Dest' Type='Edit' X='25' Y='115' Width='228' Height='17' Property='INSTALLDIR' Text='[INSTALLDIR]' />
+        <Control Id='ChangeFolder' Type='PushButton' X='265' Y='115' Height='17' Width='56' Text='B&amp;rowse...'>
+          <Publish Event='SpawnDialog' Value='BrowseDlg' Order='1'>1</Publish>
+          <Publish Event='[_BrowseProperty]' Value='[WIXUI_INSTALLDIR]' Order='1'>1</Publish>
+        </Control>
+
+        <!-- Service? -->
+        <Control Id='InstallShibd' Type='CheckBox' X='25' Y='146' Height='17' Width='160' 
+                 Property='INSTALL_SHIBD_SERVICE' CheckBoxValue='TRUE' 
+                 Text='Install Shibd daemon' />
+
+        <!-- 32 Bits? -->
+        <Control Id='Install32Bit' Type='CheckBox' X='185' Y='146' Height='17' Width='160'
+                 Property='INSTALL_32BIT' CheckBoxValue='TRUE' 
+                 Text='32bit defaults'>
+          <Condition Action='show'>IS64BITINSTALL = "TRUE"</Condition>
+          <Condition Action='hide'>IS64BITINSTALL &lt;&gt; "TRUE"</Condition>
+        </Control>
+
+        <!-- ISAPI? -->
+        <Control Id='InstallISAPI' Type='CheckBox' X='25' Y='175' Height='17' Width='160'
+                 Property='INSTALL_ISAPI_FILTER' CheckBoxValue='TRUE' 
+                 Text='Install ISAPI filter and configure IIS'>
+          <Condition Action='show'>IISMAJORVERSION</Condition>
+          <Condition Action='hide'>NOT IISMAJORVERSION</Condition>
+        </Control>
+        <Control Id='FileExtensionText' Type='Text' X='185' Y='178' Height='17' Width='96'
+                 Text='Shibboleth File Extension'>
+          <Condition Action='show'>IISMAJORVERSION</Condition>
+          <Condition Action='hide'>NOT IISMAJORVERSION</Condition>
+        </Control>
+        <Control Id='FileExtensionEdit' Type='Edit' X='285' Y='175' Height='17' Width='50'
+                 Property='SHIB_FILE_EXTENSION' Text='[SHIB_FILE_EXTENSION]'>
+          <Condition Action='show'>IISMAJORVERSION</Condition>
+          <Condition Action='hide'>NOT IISMAJORVERSION</Condition>
+          <Condition Action='enable'>INSTALL_ISAPI_FILTER = "TRUE"</Condition>
+          <Condition Action='disable'>INSTALL_ISAPI_FILTER &lt;&gt; "TRUE"</Condition>
+        </Control>
+
+        <!-- Stuff at the bottom: line, Back,Next, [space] Cancel -->
+        <Control Id='BottomLine' Type='Line' X='0' Y='234' Width='370' Height='1' />
+        <Control Id='Back' Type='PushButton' X='180' Y='243' Width='56' Height='17' Text='&amp;Back'>
+          <Publish  Event='NewDialog' Value='LicenseAgreementDlg'>1</Publish>
+        </Control>
+
+        <Control Id='Next' Type='PushButton' X='236' Y='243' Width='56' Height='17' Text='&amp;Next' Default='yes'>
+          <Publish Event='SetTargetPath' Value='[WIXUI_INSTALLDIR]'>1</Publish>
+          <Publish Event='DoAction' Value='WixUIValidatePath' >
+            NOT WIXUI_DONTVALIDATEPATH
+          </Publish>
+          <Publish Event='SpawnDialog' Value='InvalidDirDlg' >
+            NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID&lt;&gt;"1"
+          </Publish>
+          <Publish Event='NewDialog' Value='VerifyReadyDlg'>
+            WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID="1"
+          </Publish>
+        </Control>
+
+        <Control Id='Cancel' Type='PushButton' X='304' Y='243' Width='56' Height='17' Text='&amp;Cancel' Cancel='yes'>
+          <Publish  Event='SpawnDialog' Value='CancelDlg'>1</Publish>
+        </Control>
+      </Dialog>
+
       <Publish Dialog='InstallDirDlg' Control='Back' Event='NewDialog' Value='LicenseAgreementDlg'>1</Publish>
 
       <Publish Dialog='InstallDirDlg' Control='Next' Event='NewDialog' Value='VerifyReadyDlg' Order='4'>
@@ -133,8 +213,8 @@
         NOT WIXUI_DONTVALIDATEPATH
       </Publish>
       <Publish Dialog='InstallDirDlg' Control='Next' Event='SetTargetPath' Value='[WIXUI_INSTALLDIR]' Order='1'>1</Publish>
-      <Publish Dialog='InstallDirDlg' Control='ChangeFolder' Event='SpawnDialog' Value='BrowseDlg'>1</Publish>
-      <Publish Dialog='InstallDirDlg' Control='ChangeFolder' Event='[_BrowseProprty]' Value='[WIXUI_INSTALLDIR]' >1</Publish>
+      <Publish Dialog='InstallDirDlg' Control='ChangeFolder' Event='SpawnDialog' Value='BrowseDlg' Order='2'>1</Publish>
+      <Publish Dialog='InstallDirDlg' Control='ChangeFolder' Event='[_BrowseProperty]' Value='[WIXUI_INSTALLDIR]' >1</Publish>
 
 
     </UI>

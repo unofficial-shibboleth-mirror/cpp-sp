@@ -34,7 +34,7 @@
     <Condition Message='Shibboleth requires a Windows NT-based operating system.'>NOT Version9X</Condition>
     <Condition Message='You must uninstall recent versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.'>SHIB_OLDVERSION = "none"</Condition>
 
-    <Condition Message='For a 32 installation on a 64 architecture, install the 64-bit MSI but specify the 32-bit Service'>NOT VersionNT64</Condition>
+    <Condition Message='For a 32-bit installation on a 64-bit architecture, install the 64-bit MSI but specify 32-bit defaults'>NOT VersionNT64</Condition>
 
     <Media Id='1' Cabinet='product.cab' EmbedCab='yes' />
 
@@ -43,7 +43,7 @@
     <!-- NOTE we should not use sys.BUILDARCH since that reflects the candle parameters, *NOT* the architecture -->
     <Property Id='IS64BITINSTALL' Value='FALSE'/>
 
-    <UIRef Id='ShibbolethInstallDir'/> 
+    <UIRef Id='ShibbolethInstallDir'/>
 
     <!-- Files -->
     <Directory Id='TARGETDIR' Name='SourceDir'>
