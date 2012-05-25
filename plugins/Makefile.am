@@ -7,19 +7,18 @@ noinst_HEADERS = \
 	internal.h
 
 common_sources = \
-	plugins.cpp
+	plugins.cpp \
+	TimeAccessControl.cpp
 
 plugins_la_SOURCES = \
 	${common_sources} \
 	CaseFoldingAttributeResolver.cpp \
 	GSSAPIAttributeExtractor.cpp \
 	TemplateAttributeResolver.cpp \
-	TimeAccessControlFactory.cpp \
 	TransformAttributeResolver.cpp
 
 plugins_lite_la_SOURCES = \
-	${common_sources} \
-	TimeAccessControlFactory.cpp
+	${common_sources}
 
 plugins_la_LIBADD = $(XMLSEC_LIBS) \
 	$(top_builddir)/shibsp/libshibsp.la
