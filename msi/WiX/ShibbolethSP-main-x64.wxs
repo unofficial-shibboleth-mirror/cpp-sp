@@ -152,6 +152,7 @@
       <ComponentRef Id='mod_shib_2464.so'/>
       <ComponentRef Id='odbc_store64.so'/>
       <ComponentRef Id='plugins64.so'/>
+      <ComponentRef Id='plugins_lite64.so'/>
       <ComponentRef Id='shibauthorizer64.exe'/>
       <ComponentRef Id='shibresponder64.exe'/>
 
@@ -162,6 +163,7 @@
       <ComponentRef Id='mod_shib_2464.so_debug'/>
       <ComponentRef Id='odbc_store64.so_debug'/>
       <ComponentRef Id='plugins64.so_debug'/>
+      <ComponentRef Id='plugins_lite64.so_debug'/>
       <ComponentRef Id='shibauthorizer64.exe_debug'/>
       <ComponentRef Id='shibresponder64.exe_debug'/>
 
