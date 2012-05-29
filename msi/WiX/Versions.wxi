@@ -17,11 +17,11 @@
    permissions and limitations under the License.  -->
 
 <Include xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <?define BuildDirectory='g:\downloads\shib\' ?>
-  <?define SPBuildDirectory='g:\downloads\shib\cvs\2.0\' ?>
+  <?define BuildDirectory='C:\Users\scantor\Shibboleth\' ?>
+  <?define SPBuildDirectory='C:\Users\scantor\Shibboleth\git\' ?>
   
   <!-- Do not confuse ShibbolethDllVersion with ShibbolethVersion -->
-  <?define ShibbolethVersion='2.5.1'?>
+  <?define ShibbolethVersion='2.5.0'?>
   <!-- DO NOT CHANGE UpgradeCode -->
   <?define ShibbolethUpgradeCode='{28A4EB62-E860-49CA-BE43-44ADEB91DBF6}' ?>
 
@@ -33,7 +33,7 @@
 
   <?define LogForShibFileVersion='1_0' ?> <!-- '$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\msvc10\x64\Release\'> -->
 
-  <?define OpenSAMLVersion='2.5.1' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
+  <?define OpenSAMLVersion='2.5.0' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
   <?define OpenSAMLFileVersion='2_5' ?><!-- 'saml$(var.OpenSAMLFileVersion).dll' -->
 
   <?define OpenSSLVersion='1.0.0.9' ?><!-- 1.0.0i -->
@@ -47,10 +47,10 @@
   <?define XercesVersion='3.1.1' ?><!-- $(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll' -->
   <?define XercesFileVersion='3_1' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
-  <?define XmlSecVersion='1.6.0' ?><!-- '$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan' -->
+  <?define XmlSecVersion='1.6.1' ?><!-- '$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan' -->
   <?define XmlSecFileVersion='1_6' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
-  <?define XmlToolingVersion='1.5.1' ?>
+  <?define XmlToolingVersion='1.5.0' ?>
   <?define XmlToolingFileVersion='1_5' ?><!--'xmltooling$(var.XmlToolingFileVersion)D.dll'-->
 
   <?define ZlibVersion='1.2.5' ?><!--'$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win32_DLL_Release\zlib$(var.ZlibFileVersion).dll'-->

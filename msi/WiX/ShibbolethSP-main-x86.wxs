@@ -19,7 +19,7 @@
 <?include Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Id='{DB1B7660-87DA-4B83-AF31-0449113298BD}' Language='1033' 
+  <Product Id='{EA2259A7-D844-475A-B473-CCE3EEA209D9}' Language='1033' 
            Manufacturer='Shibboleth Consortium' Name='Shibboleth $(var.ShibbolethVersion)' 
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion)'>
     <Package Description='Installer for Shibboleth SP (32-bit only)' Compressed='yes'
