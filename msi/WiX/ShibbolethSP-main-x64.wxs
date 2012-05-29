@@ -19,7 +19,7 @@
 <?include Versions.wxi ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Id='{973D4080-26FC-430B-9BEA-60ADB78C3CD3}' Language='1033' 
+  <Product Id='{0F65D86B-3F47-41DC-9CEC-E20538849A6C}' Language='1033' 
            Manufacturer='Shibboleth Consortium' Name='Shibboleth $(var.ShibbolethVersion)' 
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion)'>
     <Package Description='Installer for Shibboleth SP (x86 and x64)' Compressed='yes'
@@ -152,6 +152,7 @@
       <ComponentRef Id='mod_shib_2464.so'/>
       <ComponentRef Id='odbc_store64.so'/>
       <ComponentRef Id='plugins64.so'/>
+      <ComponentRef Id='plugins_lite64.so'/>
       <ComponentRef Id='shibauthorizer64.exe'/>
       <ComponentRef Id='shibresponder64.exe'/>
 
@@ -162,6 +163,7 @@
       <ComponentRef Id='mod_shib_2464.so_debug'/>
       <ComponentRef Id='odbc_store64.so_debug'/>
       <ComponentRef Id='plugins64.so_debug'/>
+      <ComponentRef Id='plugins_lite64.so_debug'/>
       <ComponentRef Id='shibauthorizer64.exe_debug'/>
       <ComponentRef Id='shibresponder64.exe_debug'/>
 
