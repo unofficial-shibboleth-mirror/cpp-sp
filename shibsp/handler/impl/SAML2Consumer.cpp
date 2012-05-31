@@ -302,7 +302,7 @@ void SAML2Consumer::implementProtocol(
             }
         }
         catch (std::exception& ex) {
-            m_log.error(ex.what());
+            m_log.error("failed to decrypt assertion: %s", ex.what());
         }
         if (!decrypted)
             continue;
@@ -401,7 +401,7 @@ void SAML2Consumer::implementProtocol(
                     }
                 }
                 catch (std::exception& ex) {
-                    m_log.error(ex.what());
+                    m_log.error("failed to decrypt NameID: %s", ex.what());
                 }
             }
         }

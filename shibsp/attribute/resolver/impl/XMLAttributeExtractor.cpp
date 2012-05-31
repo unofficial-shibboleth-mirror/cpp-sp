@@ -990,7 +990,7 @@ void XMLExtractor::extractAttributes(
                 }
             }
             catch (std::exception& ex) {
-                m_log.error("caught exception decrypting Attribute: %s", ex.what());
+                m_log.error("failed to decrypt Attribute: %s", ex.what());
                 return;
             }
         }

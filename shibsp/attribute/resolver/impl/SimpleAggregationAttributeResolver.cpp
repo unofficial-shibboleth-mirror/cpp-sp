@@ -482,11 +482,11 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
                 tokenwrapper.release();
                 newtokenwrapper.reset(newtoken);
                 if (m_log.isDebugEnabled())
-                    m_log.debugStream() << "decrypted Assertion: " << *newtoken << logging::eol;
+                    m_log.debugStream() << "decrypted assertion: " << *newtoken << logging::eol;
             }
         }
         catch (std::exception& ex) {
-            m_log.error(ex.what());
+            m_log.error("failed to decrypt assertion: %s", ex.what());
             throw;
         }
     }

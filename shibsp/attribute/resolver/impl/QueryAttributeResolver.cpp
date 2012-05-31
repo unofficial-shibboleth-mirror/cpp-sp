@@ -578,11 +578,11 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
                 tokenwrapper.release();
                 newtokenwrapper.reset(newtoken);
                 if (m_log.isDebugEnabled())
-                    m_log.debugStream() << "decrypted Assertion: " << *newtoken << logging::eol;
+                    m_log.debugStream() << "decrypted assertion: " << *newtoken << logging::eol;
             }
         }
         catch (exception& ex) {
-            m_log.error(ex.what());
+            m_log.error("failed to decrypt assertion: %s", ex.what());
             throw;
         }
     }
