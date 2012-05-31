@@ -131,7 +131,7 @@
           <ServiceInstall Id='shibd' Name='shibd_Default' 
                           DisplayName='Shibboleth 2 Daemon (Default)' Type='ownProcess' 
                           Start='auto' ErrorControl='ignore' />
-          <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='uninstall'  
+          <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'  
                           Remove='uninstall' Start='install' Wait='no' />
         </Component>
         <Directory Id='sbin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Debug' >

@@ -81,6 +81,9 @@
   <ComponentRef Id='shibd.exe_debug'/>
 
   <!-- ShibbolethSP-registry-x32 -->
+  <ComponentRef Id='TargetDir'/>
+  <ComponentRef Id='InstallShibd'/>
+  <ComponentRef Id='InstallIsapi'/>
   <ComponentRef Id='file_extension'/>
   <ComponentRef Id='shib.ico' />
 </Include>

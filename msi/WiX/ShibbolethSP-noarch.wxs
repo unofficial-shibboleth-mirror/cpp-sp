@@ -168,6 +168,8 @@
       </Directory><!-- var -->
     </DirectoryRef>
 
+    <!-- Stuff to do the editing and copy of the files -->
+
     <Binary Id='EditConfigFileSrc' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\scripts\shib_edit_config_files.vbs-wix' />
 
     <CustomAction Id='EditConfigFiles' 
@@ -176,6 +178,8 @@
 
     <CustomAction Id='KeyGen' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetKeyGen' Property='KeyGen' Value='&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot;' />
+
+    <!-- Stuff to configure IIS.  This is a one-shot (first install/last uninstall) -->
 
     <Binary Id='install_isapi'
             SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\scripts\shib_install_isapi_filter.vbs-wix'/>
@@ -196,6 +200,24 @@
     <CustomAction Id='ServicePath64' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetServicePath64' Property='ServicePath64' Value='&quot;[INSTALLDIR]etc\shibboleth\SetService64.bat&quot;' />
 
+    <!-- Inherit the installation dir if one was set -->
+    <CustomAction Id='InheritInstallDir' Property='INSTALLDIR' Value='[OLD_INSTALLDIR]' />
+    <CustomAction Id='InheritInstallDir64' Property='INSTALLDIR' Value='[OLD_INSTALLDIR64]' />
+
+    <!-- Set INSTALL_SHIBD correctly -->
+    <CustomAction Id='ClearInstallShibd' Property='INSTALL_SHIBD_SERVICE' Value='FALSE' />
+
+    <InstallUISequence>
+      <!-- All we need to sequence here is setting up inherited INSTALLDIR -->
+
+      <!-- inherit installationDir if there is something to inherit -->
+      <Custom Action='InheritInstallDir' After='AppSearch'>
+        OLD_INSTALLDIR
+      </Custom>
+      <Custom Action='InheritInstallDir64' After='InheritInstallDir'>
+        (NOT OLD_INSTALLDIR) AND OLD_INSTALLDIR64
+      </Custom>
+    </InstallUISequence>
 
     <InstallExecuteSequence>
       <Custom Action='SetEditConfigFiles' Before='CostInitialize'>NOT Installed</Custom>
@@ -217,7 +239,7 @@
         (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND IISMAJORVERSION
       </Custom>
       <Custom Action='ShibInstallISAPIFilter' After='InstallFiles'>
-        (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED)  AND IISMAJORVERSION
+        (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND IISMAJORVERSION
       </Custom>
 
       <!-- (try to) Uninstall IIS if
@@ -228,13 +250,31 @@
               After='CostFinalize'>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</Custom>
       <Custom Action='ShibUninstallISAPIFilter' 
               Before='RemoveFiles'>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</Custom>
-      <!-- set service path to 64 bit one if this is an install and if we werre told to -->
+
+      <!-- set service path to 64 bit one if this is an install and if we were told to -->
 
       <Custom Action='SetServicePath64' Before='CostInitialize'>
         (NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
       </Custom>
       <Custom Action='ServicePath64' After='InstallServices'>
         (NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
+      </Custom>
+
+      <!-- Duplicate actions from the UI case -->
+      <Custom Action='InheritInstallDir' After='AppSearch'>
+        OLD_INSTALLDIR
+      </Custom>
+      <Custom Action='InheritInstallDir64' After='InheritInstallDir'>
+        (NOT OLD_INSTALLDIR) AND OLD_INSTALLDIR64
+      </Custom>
+
+      <!-- Clear out INSTALL_SHIBD_SERVICE (Set it to FALSE) if
+           - This is an update
+           - We didn't see an appropriate registryEntry
+           - TODO - we don't need this here I think
+        -->
+      <Custom Action='ClearInstallShibd' After='AppSearch'>
+        ALREADYINSTALLED AND (NOT OLD_SERVICEINSTALLED)
       </Custom>
 
       <!-- Do not mess with SCM if this is an upgrade -->

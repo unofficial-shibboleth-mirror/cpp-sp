@@ -171,7 +171,10 @@
       <ComponentRef Id='shibd64.exe_debug'/>
 
       <!-- ShibbolethSP-registry-x64 -->
-
+      <ComponentRef Id='TargetDir64'/>
+      <ComponentRef Id='InstallShibd64'/>
+      <ComponentRef Id='InstallIsapi64'/>
+      <ComponentRef Id='Install32Bit64'/>
       <ComponentRef Id='file_extension64'/>
       <ComponentRef Id='shib64.ico' />
 

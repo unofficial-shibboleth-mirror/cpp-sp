@@ -57,7 +57,50 @@
                       Name='DisplayVersion' Type='raw' Win64='yes' />
     </Property>
 
+    <Property Id='OLD_INSTALLDIR64' Secure='yes'>
+      <RegistrySearch Id='OldInstallDir64' Root='HKLM' Key='SOFTWARE\Shibboleth' 
+                      Name='InstallDir' Type='directory' Win64='yes'/>
+    </Property>
+
+    <Property Id='OLD_INSTALL_SHIBD_SERVICE64' Secure='yes'>
+      <RegistrySearch Id='OldInstallShibd64' Root='HKLM' Key='SOFTWARE\Shibboleth' 
+                      Name='InstallShibd' Type='raw' Win64='yes'/>
+    </Property>
+
+    <Property Id='OLD_INSTALL_ISAPI_FILTER64' Secure='yes'>
+      <RegistrySearch Id='OldInstallIsapi64' Root='HKLM' Key='SOFTWARE\Shibboleth' 
+                      Name='InstallIsapi' Type='raw' Win64='yes'/>
+    </Property>
+
+    <!-- 64 bit only -->
+    <Property Id='OLD_INSTALL_32BIT' Secure='yes'>
+      <RegistrySearch Id='OldInstall32Bit' Root='HKLM' Key='SOFTWARE\Shibboleth' 
+                      Name='Install32Bit' Type='raw' Win64='yes'/>
+    </Property>
+
     <DirectoryRef Id='bin64'>
+      <!-- Save the Captured parameters into the registry -->
+      <Component Id='TargetDir64' Guid='{E89D3028-5415-4874-9CBC-806A2064C613}' Win64='yes'>
+        <RegistryValue Id='TargetDir64'  Root='HKLM' Key='SOFTWARE\Shibboleth' 
+                       Name='InstallDir' Value='[INSTALLDIR]' Type='string' KeyPath='yes' />
+      </Component>
+
+      <Component Id='InstallShibd64' Guid='{7834C30C-DCAB-4C7E-9C75-396EFB759AC9}' Win64='yes'>
+        <RegistryValue Id='InstallShibd64'  Root='HKLM' Key='SOFTWARE\Shibboleth' 
+                       Name='InstallShibd' Value='[INSTALL_SHIBD_SERVICE]' Type='string' KeyPath='yes' />
+      </Component>
+
+      <Component Id='Install32Bit64' Guid='{9A0181FE-6252-4C2E-8828-70281DCC3825}' Win64='yes'>
+        <RegistryValue Id='Install32Bit64'  Root='HKLM' Key='SOFTWARE\Shibboleth' 
+                       Name='Install32Bit' Value='[INSTALL_32BIT]' Type='string' KeyPath='yes' />
+      </Component>
+
+      <Component Id='InstallIsapi64' Guid='{288F97F5-E2E8-48DB-8291-B8445B77BA45}' Win64='yes'>
+        <Condition>IISMAJORVERSION</Condition>
+        <RegistryValue Id='InstallIsapi64'  Root='HKLM' Key='SOFTWARE\Shibboleth' 
+                       Name='InstallIsapi' Value='[INSTALL_ISAPI_FILTER]' Type='string' KeyPath='yes' />
+      </Component>
+
       <Component Id='file_extension64' Guid='{F17BED16-5988-4F9E-82E0-1D4DCB69EC26}' Win64='yes'>
         <Condition>INSTALL_ISAPI_FILTER = "TRUE"</Condition>
         <RegistryValue Id='FileExtension64' Root='HKLM' Key='SOFTWARE\Shibboleth' 
