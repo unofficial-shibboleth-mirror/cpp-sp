@@ -566,9 +566,9 @@ XMLApplication::XMLApplication(
             else {
                 if (!strcmp(redirectLimit.second, "exact+whitelist"))
                     m_redirectLimit = REDIRECT_LIMIT_EXACT_WHITELIST;
-                else if (!strcmp(redirectLimit.second, "exact+host"))
+                else if (!strcmp(redirectLimit.second, "host+whitelist"))
                     m_redirectLimit = REDIRECT_LIMIT_HOST_WHITELIST;
-                else if (!strcmp(redirectLimit.second, "exact+host"))
+                else if (!strcmp(redirectLimit.second, "whitelist"))
                     m_redirectLimit = REDIRECT_LIMIT_WHITELIST;
                 else
                     throw ConfigurationException("Unrecognized redirectLimit setting ($1)", params(1, redirectLimit.second));
