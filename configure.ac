@@ -736,7 +736,7 @@ if test "$WANT_APACHE_20" = "yes" ; then
         AC_MSG_CHECKING(for user-specified apu-config name/location)
         if test "$withval" != "no" ; then
             if test "$withval" != "yes"; then
-                APR_CONFIG=$withval
+                APU_CONFIG=$withval
                 AC_MSG_RESULT("$withval")
             fi
         fi
@@ -933,6 +933,51 @@ if test "$WANT_APACHE_24" = "yes" ; then
     AC_MSG_RESULT($APXS24)
     AC_SUBST(APXS24)
 
+    # If we haven't done this work already for Apache 2.2
+    if test "$WANT_APACHE_22" != "yes" ; then
+        # APR1 settings
+        AC_ARG_WITH(apr1,
+            AS_HELP_STRING([--with-apr1=PATH],[where apr-1-config is installed]),
+            [
+            AC_MSG_CHECKING(for user-specified apr-1-config name/location)
+            if test "$withval" != "no" ; then
+                if test "$withval" != "yes"; then
+                    APR1_CONFIG=$withval
+                    AC_MSG_RESULT("$withval")
+                fi
+            fi
+            ],
+            [
+            AC_PATH_PROG(APR1_CONFIG, apr-1-config,,[`$APXS22 -q SBINDIR`]:[$PATH])
+            ])
+        if test -f "${APR1_CONFIG}"; then
+            APR1_CFLAGS="`${APR1_CONFIG} --cflags` `${APR1_CONFIG} --cppflags` `${APR1_CONFIG} --includes`"
+        else
+            AC_MSG_ERROR([Unable to locate apr-1-config, may need --with-apr1 option.])
+        fi
+
+        # APU1 settings
+        AC_ARG_WITH(apu1,
+            AS_HELP_STRING([--with-apu1=PATH],[where apu-1-config is installed]),
+            [
+            AC_MSG_CHECKING(for user-specified apu-1-config name/location)
+            if test "$withval" != "no" ; then
+                if test "$withval" != "yes"; then
+                    APU1_CONFIG=$withval
+                    AC_MSG_RESULT("$withval")
+                fi
+            fi
+            ],
+            [
+            AC_PATH_PROG(APU1_CONFIG, apu-1-config,,[`$APXS22 -q SBINDIR`]:[$PATH])
+            ])
+        if test -f "${APU1_CONFIG}"; then
+            APU1_CFLAGS="`${APU1_CONFIG} --includes`"
+        else
+            AC_MSG_ERROR([Unable to locate apu-1-config, may need --with-apu1 option.])
+        fi
+    fi
+    
     # extract settings we need from APXS24 -q
     APXS24_CC="`$APXS24 -q CC`"
     APXS24_CFLAGS="`$APXS24 -q CPPFLAGS` `$APXS24 -q CFLAGS` $APR1_CFLAGS $APU1_CFLAGS"
