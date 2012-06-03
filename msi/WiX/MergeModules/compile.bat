@@ -102,6 +102,4 @@ wixcop -indent:2 OpenSSL-x64.wxs
 
 goto done
 :done
-candle tes.wxs
-light tes.wixobj
-smoke tes.msi
+
