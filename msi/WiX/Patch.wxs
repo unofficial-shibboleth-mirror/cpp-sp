@@ -1,0 +1,57 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+  <PatchCreation
+     Id='{1E09E74F-D547-464B-80B7-1FF63C496BAB}'
+     CleanWorkingFolder='yes'
+     OutputPath='patch.pcp'
+     WholeFilesOnly='yes'
+     >
+    
+    <!-- Information oput into the summary (Details) field -->
+    <PatchInformation 
+       Description='This patch does something' 
+       Comments='comments' 
+       Manufacturer='Shibboleth Consortium'/>
+    
+    <!-- Recommended values for 'Classification' are
+         Critical Update, Hotfix, Security Rollup, Security Update, Service Pack, Update, Update Rollup. 
+
+         DisplayName goes into the Name Column for "View installed updates" in control panel's "Porgram and Feature".
+      -->
+    <PatchMetadata
+       AllowRemoval='yes'
+       Description='This patch does something'
+       ManufacturerName='Shibboleth Consortium'
+       TargetProductName='Shibboleth SP Version'
+       MoreInfoURL='http://www.shibboleth.net/secadv/bla/bla'
+       Classification='Update' 
+       DisplayName='Shibboleth Patch sevadv blabla'/> 
+    
+    <!-- Note:
+         That SequenceStart must be greater than the last
+         sequence in the File table in the target package or the patch
+         will not install. -->
+
+    <Family DiskId='5000'
+            MediaSrcProp='Sample' 
+            Name='Sample'
+            SequenceStart='5000'>
+      <UpgradeImage SourceFile='C:\My Downloads\shib\SPInst\patch\251\admin\ShibbolethSP-main-x64.msi' Id='SampleUpgrade'>
+        <TargetImage SourceFile='C:\My Downloads\shib\SPInst\patch\250\admin\ShibbolethSP-main-x64.msi' Order='2'      
+                     Id='SampleTarget' IgnoreMissingFiles='no' />
+      </UpgradeImage>
+    </Family>
+    
+    <!-- Supersede:  Set this value to 'yes' to indicate that this patch will
+         supersede all previous patches in this patch family.  The
+         default value is 'no'. 
+         
+         PatchFamily is the version of patch - nothing to do with the version of Shibboleth Installed
+      -->
+
+    <PatchSequence PatchFamily='SamplePatchFamily'
+                   Sequence='1.0.0.0'
+                   Supersede='no' />
+    
+  </PatchCreation>
+</Wix>
