@@ -108,6 +108,15 @@ namespace shibsp {
 #ifndef SHIBSP_LITE
         const char* getType() const;
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
+
+        /**
+         * Generates RequestInitiator metadata when instructed. Allows subclasses to decide whether it's
+         * appropriate to do so instead of requiring them to override the method to stop it.
+         *
+         * @param role          role object to inject metadata into
+         * @param handlerURL    base of endpoint to generate metadata with
+         */
+        void doGenerateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
 #endif
     };
     

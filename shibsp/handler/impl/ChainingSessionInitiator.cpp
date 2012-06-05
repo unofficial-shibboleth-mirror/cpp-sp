@@ -57,7 +57,7 @@ namespace shibsp {
 
 #ifndef SHIBSP_LITE
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
-            SessionInitiator::generateMetadata(role, handlerURL);
+            doGenerateMetadata(role, handlerURL);   // assumes all chains support the RequestInitiator protocol
             for_each(m_handlers.begin(), m_handlers.end(), boost::bind(&SessionInitiator::generateMetadata, _1, boost::ref(role), handlerURL));
         }
 #endif

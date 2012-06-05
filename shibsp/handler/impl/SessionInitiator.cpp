@@ -82,6 +82,11 @@ const char* SessionInitiator::getType() const
 
 void SessionInitiator::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const
 {
+    // In case any plugins were directly calling this before, we stub it out.
+}
+
+void SessionInitiator::doGenerateMetadata(SPSSODescriptor& role, const char* handlerURL) const
+{
     if (getParent())
         return;
     const char* loc = getString("Location").second;
