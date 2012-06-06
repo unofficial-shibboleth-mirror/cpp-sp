@@ -47,6 +47,8 @@ BOOL                    bConsole = FALSE;
 char                    szErr[256];
 LPCSTR                  lpszInstall = nullptr;
 LPCSTR                  lpszRemove = nullptr;
+LPCSTR                  lpszStdout = nullptr;
+LPCSTR                  lpszStderr = nullptr;
 
 // internal function prototypes
 VOID WINAPI service_ctrl(DWORD dwCtrlCode);
@@ -99,13 +101,17 @@ int main(int argc, char *argv[])
         }
         else if (_stricmp("stdout", argv[i]+1) == 0)
         {
-            if (argc > ++i)
-                freopen(argv[i++], "a+", stdout);
+            if (argc > ++i) {
+                lpszStdout = argv[i++];
+                freopen(lpszStdout, "a+", stdout);
+            }
         }
         else if (_stricmp("stderr", argv[i]+1) == 0)
         {
-            if (argc > ++i)
-                freopen(argv[i++], "a+", stderr);
+            if (argc > ++i) {
+                lpszStderr = argv[i++];
+                freopen(lpszStderr, "a+", stderr);
+            }
         }
         else if (_stricmp( "console", argv[i]+1) == 0)
         {
@@ -381,6 +387,10 @@ void CmdInstallService(LPCSTR name)
         cmd = cmd + " -config " + shar_config;
     if (shar_schemadir)
         cmd = cmd + " -schemadir " + shar_schemadir;
+    if (lpszStdout)
+        cmd = cmd + " -stdout " + lpszStdout;
+    if (lpszStderr)
+        cmd = cmd + " -stderr " + lpszStderr;
 
     schSCManager = OpenSCManager(
                         nullptr,                   // machine (nullptr == local)
