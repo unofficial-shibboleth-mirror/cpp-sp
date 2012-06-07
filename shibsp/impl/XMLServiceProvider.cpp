@@ -644,7 +644,7 @@ XMLApplication::XMLApplication(
             if (m_metadata)
                 m_metadata->init();
             else if (!m_base)
-                log.crit("no MetadataProvider available, configuration is probably unusable");
+                log.warn("no MetadataProvider available, configure at least one for standard SSO usage");
         }
         catch (std::exception& ex) {
             log.crit("error initializing MetadataProvider: %s", ex.what());
