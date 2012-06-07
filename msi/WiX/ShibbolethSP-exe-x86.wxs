@@ -131,7 +131,7 @@
           <ServiceInstall Id='shibd' Name='shibd_Default' 
                           DisplayName='Shibboleth 2 Daemon (Default)'
                           Display='Manages shared state and offloads SAML processing from Shibboleth web server modules.'
-                          Arguments='-stdout "[INSTALLDIR]\var\log\shibboleth\stdout.log" -stderr "[INSTALLDIR]\var\log\shibboleth\stderr.log"'
+                          Arguments='-stdout "[INSTALLDIR]var\log\shibboleth\stdout.log" -stderr "[INSTALLDIR]var\log\shibboleth\stderr.log"'
                           Type='ownProcess' Start='auto' ErrorControl='ignore' />
           <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'  
                           Remove='uninstall' Start='install' Wait='no' />
