@@ -100,7 +100,7 @@
 #ifdef WIN32
 
 /** Default catalog path on Windows. */
-# define SHIBSP_SCHEMAS "%ALLUSERSPROFILE%/Shibboleth/SP/xml/xmltooling/catalog.xml;%ALLUSERSPROFILE%/Shibboleth/SP/xml/opensaml/saml20-catalog.xml;%ALLUSERSPROFILE%/Shibboleth/SP/xml/opensaml/saml11-catalog.xml;%ALLUSERSPROFILE%/Shibboleth/SP/xml/shibboleth/catalog.xml"
+# define SHIBSP_SCHEMAS "%APPDATA%/Shibboleth/SP/xml/xmltooling/catalog.xml;%APPDATA%/Shibboleth/SP/xml/opensaml/saml20-catalog.xml;%APPDATA%/Shibboleth/SP/xml/opensaml/saml11-catalog.xml;%APPDATA%/Shibboleth/SP/xml/shibboleth/catalog.xml"
 
 /** Default prefix for installation (used to resolve relative paths). */
 #define SHIBSP_PREFIX   "c:/opt/shibboleth-sp"
