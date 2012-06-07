@@ -60,12 +60,12 @@
         <!-- Service? -->
         <Control Id='InstallShibd' Type='CheckBox' X='25' Y='146' Height='17' Width='160' 
                  Property='INSTALL_SHIBD_SERVICE' CheckBoxValue='TRUE' 
-                 Text='Install Shibd daemon' />
+                 Text='Install shibd as Service' />
 
         <!-- 32 Bits? -->
         <Control Id='Install32Bit' Type='CheckBox' X='185' Y='146' Height='17' Width='160'
                  Property='INSTALL_32BIT' CheckBoxValue='TRUE' 
-                 Text='32bit defaults'>
+                 Text='Run as 32-Bit'>
           <Condition Action='show'>IS64BITINSTALL = "TRUE"</Condition>
           <Condition Action='hide'>IS64BITINSTALL &lt;&gt; "TRUE"</Condition>
         </Control>
@@ -73,12 +73,12 @@
         <!-- ISAPI? -->
         <Control Id='InstallISAPI' Type='CheckBox' X='25' Y='175' Height='17' Width='160'
                  Property='INSTALL_ISAPI_FILTER' CheckBoxValue='TRUE' 
-                 Text='Install ISAPI filter and configure IIS'>
+                 Text='Install ISAPI modules into IIS'>
           <Condition Action='show'>IISMAJORVERSION</Condition>
           <Condition Action='hide'>NOT IISMAJORVERSION</Condition>
         </Control>
         <Control Id='FileExtensionText' Type='Text' X='185' Y='178' Height='17' Width='96'
-                 Text='Shibboleth File Extension'>
+                 Text='IIS Script Extension'>
           <Condition Action='show'>IISMAJORVERSION</Condition>
           <Condition Action='hide'>NOT IISMAJORVERSION</Condition>
         </Control>
