@@ -130,7 +130,7 @@
           <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
           <ServiceInstall Id='shibd' Name='shibd_Default' 
                           DisplayName='Shibboleth 2 Daemon (Default)'
-                          Display='Manages shared state and offloads SAML processing from Shibboleth web server modules.'
+                          Description='Manages shared state and offloads SAML processing from Shibboleth web server modules.'
                           Arguments='-stdout "[INSTALLDIR]var\log\shibboleth\stdout.log" -stderr "[INSTALLDIR]var\log\shibboleth\stderr.log"'
                           Type='ownProcess' Start='auto' ErrorControl='ignore' />
           <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'  
