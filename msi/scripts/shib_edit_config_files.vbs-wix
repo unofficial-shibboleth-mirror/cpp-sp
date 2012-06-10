@@ -123,6 +123,17 @@ if (Err = 0) then
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "apache22.config"
 
+  ConfigFile = DistDir & "apache24.config.in"
+  ReplaceInFile ConfigFile, "@-PKGLIBDIR-@", ConvertedDir & "/lib/shibboleth"
+  ReplaceInFile ConfigFile, "@-PKGDOCDIR-@", ConvertedDir & "/share/doc/shibboleth"
+  If (NOT FileSystemObj.FileExists(ConfigDir & "apache24.config")) then
+    FileSystemObj.CopyFile ConfigFile, ConfigDir & "apache24.config", false
+  End If
+  If (FileSystemObj.FileExists(DistDir & "apache24.config")) then
+    FileSystemObj.DeleteFile DistDir & "apache24.config", true
+  End If
+  FileSystemObj.MoveFile ConfigFile, DistDir & "apache24.config"
+
   'Now just copy the other non-edited files over as well (if possible)
 
   If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
