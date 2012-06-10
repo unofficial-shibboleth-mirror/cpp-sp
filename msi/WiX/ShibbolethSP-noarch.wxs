@@ -174,7 +174,7 @@
 
     <CustomAction Id='EditConfigFiles' 
                   BinaryKey='EditConfigFileSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR]' />
+    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[IS64BITINSTALL];@;[INSTALL_32BIT]' />
 
     <CustomAction Id='KeyGen' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetKeyGen' Property='KeyGen' Value='&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot;' />
