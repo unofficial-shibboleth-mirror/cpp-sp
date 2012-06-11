@@ -148,6 +148,9 @@
           <Directory Id='var_cache_shibboleth' Name='shibboleth'>
             <Component Id='var_cache_shibboleth_folder' Guid='{6C978639-DDCF-40BD-90F8-690B3E05586C}'>
               <CreateFolder />
+              <!-- Kill off old env variable from pre 2.5 install.
+                   Do it here so it is in the correct tables -->
+              <Environment Id='SHIBSP_SCHEMAS' Action='remove' Name='SHIBSP_SCHEMAS'/>
             </Component>
           </Directory><!-- var_cache_shibboleth -->
         </Directory><!-- var_cache -->

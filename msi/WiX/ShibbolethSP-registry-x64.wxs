@@ -107,7 +107,7 @@
                        Name='FileExtension' Value='[SHIB_FILE_EXTENSION]' Type='string' KeyPath='yes' />
       </Component>
 
-      <Component Id='shib64.ico' Guid='{AB12F477-E49D-4E52-B130-AF0913AF9EC9}' Win64='yes'>
+      <Component Id='shib64.ico' Guid='{AB12F477-E49D-4E52-B130-AF0913AF9EC9}' Win64='yes'  Permanent='yes'>
         <File Id='shib64.ico' KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-sp\msi\shib.ico'/>
         <RegistryValue Id='DisplayIcon64' Root='HKLM' Key='Software\Microsoft\Windows\CurrentVersion\Uninstall\[ProductCode]' 
                        Name='DisplayIcon' Value='[#shib64.ico],0' Type='string' />
