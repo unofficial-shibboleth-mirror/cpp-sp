@@ -48,9 +48,9 @@ Requires(pre): pwdutils
 
 %define runuser shibd
 %if "%{_vendor}" == "suse"
-%define pkgdocdir %{_docdir}/%{name}
+%define pkgdocdir %{_docdir}/shibboleth
 %else
-%define pkgdocdir %{_docdir}/%{name}-%{version}
+%define pkgdocdir %{_docdir}/shibboleth-%{version}
 %endif
 
 %description
@@ -99,22 +99,22 @@ This package includes files needed for development with Shibboleth.
 
 %if "%{_vendor}" == "suse"
 	%{__sed} -i "s/\/var\/log\/httpd/\/var\/log\/apache2/g" \
-		$RPM_BUILD_ROOT%{_sysconfdir}/%{name}/native.logger
+		$RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/native.logger
 %endif
 
 # Plug the SP into the built-in Apache on a recognized system.
 touch rpm.filelist
 APACHE_CONFIG="no"
-if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_13.so ] ; then
+if [ -f $RPM_BUILD_ROOT%{_libdir}/shibboleth/mod_shib_13.so ] ; then
 	APACHE_CONFIG="apache.config"
 fi
-if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_20.so ] ; then
+if [ -f $RPM_BUILD_ROOT%{_libdir}/shibboleth/mod_shib_20.so ] ; then
 	APACHE_CONFIG="apache2.config"
 fi
-if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_22.so ] ; then
+if [ -f $RPM_BUILD_ROOT%{_libdir}/shibboleth/mod_shib_22.so ] ; then
 	APACHE_CONFIG="apache22.config"
 fi
-if [ -f $RPM_BUILD_ROOT%{_libdir}/%{name}/mod_shib_24.so ] ; then
+if [ -f $RPM_BUILD_ROOT%{_libdir}/shibboleth/mod_shib_24.so ] ; then
 	APACHE_CONFIG="apache24.config"
 fi
 %{?_without_builtinapache:APACHE_CONFIG="no"}
@@ -128,7 +128,7 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
 	fi
 	if [ "$APACHE_CONFD" != "no" ] ; then
 		%{__mkdir} -p $RPM_BUILD_ROOT$APACHE_CONFD
-		%{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/$APACHE_CONFIG $RPM_BUILD_ROOT$APACHE_CONFD/shib.conf 
+		%{__cp} -p $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/$APACHE_CONFIG $RPM_BUILD_ROOT$APACHE_CONFD/shib.conf 
 		echo "%config(noreplace) $APACHE_CONFD/shib.conf" >> rpm.filelist
 	fi
 fi
@@ -169,7 +169,7 @@ fi
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "suse"
 	# %{_initddir} not yet in RHEL5, use deprecated %{_initrddir}
 	install -d -m 0755 $RPM_BUILD_ROOT%{_initrddir}
-	install -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
+	install -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
 %if "%{_vendor}" == "suse"
 	install -d -m 0755 $RPM_BUILD_ROOT/%{_sbindir}
 	%{__ln_s} -f %{_initrddir}/shibd $RPM_BUILD_ROOT%{_sbindir}/rcshibd
@@ -185,7 +185,7 @@ fi
 %pre
 getent group %{runuser} >/dev/null || groupadd -r %{runuser}
 getent passwd %{runuser} >/dev/null || useradd -r -g %{runuser} \
-	-d  %{_localstatedir}/run/%{name} -s /sbin/nologin -c "Shibboleth SP daemon" %{runuser}
+	-d  %{_localstatedir}/run/shibboleth -s /sbin/nologin -c "Shibboleth SP daemon" %{runuser}
 exit 0
 
 %post
@@ -194,7 +194,7 @@ exit 0
 %endif
 
 # Key generation or ownership fix
-cd %{_sysconfdir}/%{name}
+cd %{_sysconfdir}/shibboleth
 if [ -f sp-key.pem ] ; then
 	%{__chown} %{runuser}:%{runuser} sp-key.pem sp-cert.pem 2>/dev/null || :
 else
@@ -202,7 +202,7 @@ else
 fi
 
 # Fix ownership of log files (even on new installs, if they're left from an older one).
-%{__chown} %{runuser}:%{runuser} %{_localstatedir}/log/%{name}/* 2>/dev/null || :
+%{__chown} %{runuser}:%{runuser} %{_localstatedir}/log/shibboleth/* 2>/dev/null || :
 
 %if "%{_vendor}" == "redhat"
 	if [ "$1" -gt "1" ] ; then
@@ -284,8 +284,8 @@ exit 0
 # ugly hack if init script got removed during %postun by upgraded (buggy/2.1) package
 %if "%{_vendor}" == "redhat"
 	if [ ! -f %{_initrddir}/shibd ] ; then
-		if [ -f %{_sysconfdir}/%{name}/shibd-%{_vendor} ] ; then
-			%{__cp} -p %{_sysconfdir}/%{name}/shibd-%{_vendor} %{_initrddir}/shibd
+		if [ -f %{_sysconfdir}/shibboleth/shibd-%{_vendor} ] ; then
+			%{__cp} -p %{_sysconfdir}/shibboleth/shibd-%{_vendor} %{_initrddir}/shibd
 			%{__chmod} 755 %{_initrddir}/shibd
 			/sbin/chkconfig --add shibd
 	fi
@@ -299,32 +299,32 @@ fi
 %{_bindir}/resolvertest
 %{_libdir}/libshibsp.so.*
 %{_libdir}/libshibsp-lite.so.*
-%dir %{_libdir}/%{name}
-%{_libdir}/%{name}/*
-%exclude %{_libdir}/%{name}/*.la
-%attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/%{name}
-%attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/%{name}
-%attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/cache/%{name}
-%dir %{_datadir}/xml/%{name}
-%{_datadir}/xml/%{name}/*
-%dir %{_datadir}/%{name}
-%{_datadir}/%{name}/*
-%dir %{_sysconfdir}/%{name}
-%config(noreplace) %{_sysconfdir}/%{name}/*.xml
-%config(noreplace) %{_sysconfdir}/%{name}/*.html
-%config(noreplace) %{_sysconfdir}/%{name}/*.logger
+%dir %{_libdir}/shibboleth
+%{_libdir}/shibboleth/*
+%exclude %{_libdir}/shibboleth/*.la
+%attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/shibboleth
+%attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/shibboleth
+%attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/cache/shibboleth
+%dir %{_datadir}/xml/shibboleth
+%{_datadir}/xml/shibboleth/*
+%dir %{_datadir}/shibboleth
+%{_datadir}/shibboleth/*
+%dir %{_sysconfdir}/shibboleth
+%config(noreplace) %{_sysconfdir}/shibboleth/*.xml
+%config(noreplace) %{_sysconfdir}/shibboleth/*.html
+%config(noreplace) %{_sysconfdir}/shibboleth/*.logger
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "suse"
 %config %{_initrddir}/shibd
 %endif
 %if "%{_vendor}" == "suse"
 %{_sbindir}/rcshibd
 %endif
-%{_sysconfdir}/%{name}/*.dist
-%{_sysconfdir}/%{name}/apache*.config
-%{_sysconfdir}/%{name}/shibd-*
-%attr(0755,root,root) %{_sysconfdir}/%{name}/keygen.sh
-%attr(0755,root,root) %{_sysconfdir}/%{name}/metagen.sh
-%{_sysconfdir}/%{name}/*.xsl
+%{_sysconfdir}/shibboleth/*.dist
+%{_sysconfdir}/shibboleth/apache*.config
+%{_sysconfdir}/shibboleth/shibd-*
+%attr(0755,root,root) %{_sysconfdir}/shibboleth/keygen.sh
+%attr(0755,root,root) %{_sysconfdir}/shibboleth/metagen.sh
+%{_sysconfdir}/shibboleth/*.xsl
 %doc %{pkgdocdir}
 %exclude %{pkgdocdir}/api
 
