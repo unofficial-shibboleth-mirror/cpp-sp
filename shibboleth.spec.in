@@ -301,7 +301,6 @@ fi
 %{_libdir}/libshibsp-lite.so.*
 %dir %{_libdir}/shibboleth
 %{_libdir}/shibboleth/*
-%exclude %{_libdir}/shibboleth/*.la
 %attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/shibboleth
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/shibboleth
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/cache/shibboleth
