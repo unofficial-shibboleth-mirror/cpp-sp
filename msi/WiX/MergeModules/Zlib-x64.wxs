@@ -30,12 +30,12 @@
             <Directory Id='lib' Name='lib'>
               <Component Id='zlib1.dll' Guid='{792D44C3-3DCE-465D-AAFF-520AB2F20DA2}' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes'
-                      Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win64_DLL_Release\zlib$(var.ZlibFileVersion).dll'/>
+                      Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\x64\Release\zlib$(var.ZlibFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='zlib1d.dll' Guid='{74D67C6F-655E-4E4D-A147-39F32DB6E796}' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes'
-                        Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\projects\visualc6\Win64_DLL_Debug\zlib$(var.ZlibFileVersion)d.dll'/>
+                        Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\x64\Debug\zlib$(var.ZlibFileVersion)d.dll'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
