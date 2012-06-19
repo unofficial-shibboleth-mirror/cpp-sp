@@ -84,6 +84,9 @@ const char* TemplateParameters::getParameter(const char* name) const
         return pch;
 
     if (m_session) {
+        if (!strcmp(name, "entityID"))
+            return m_session->getEntityID();
+
         const multimap<string,const Attribute*>& attrs = m_session->getIndexedAttributes();
         pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> walker;
         for (walker = attrs.equal_range(name); walker.first != walker.second; ++walker.first) {
