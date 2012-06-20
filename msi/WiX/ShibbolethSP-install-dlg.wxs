@@ -47,7 +47,7 @@
         <Control Id='DescriptionLine2' Type='Text' X='25' Y='70' Height='12' Width='320' 
                  Text='To install into a different folder, click the Browse button, and select another folder.'/>
 
-        <Control Id='DescriptionLine3' Type='Text' X='25' Y='90' Height='12' Width='320' 
+        <Control Id='DescriptionLine3' Type='Text' X='25' Y='90' Height='24' Width='320' 
                  Text='You can choose not to install [ProductName] by clicking Cancel to exit the installer.' />
 
         <!-- Where? -->
