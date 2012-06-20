@@ -20,9 +20,9 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Product Id='{973D4080-26FC-430B-9BEA-60ADB78C3CD3}' Language='1033' 
-           Manufacturer='Shibboleth Consortium' Name='Shibboleth $(var.ShibbolethVersion)' 
+           Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider' 
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion)'>
-    <Package Description='Installer for Shibboleth SP (x86 and x64)' Compressed='yes'
+    <Package Description='Shibboleth SP (x86 and x64) V$(var.ShibbolethVersion) Beta 1' Compressed='yes'
              Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." 
