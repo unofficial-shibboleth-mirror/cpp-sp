@@ -419,19 +419,20 @@ pair<bool,long> StatusHandler::processMessage(
             status = "<Partial/>";
         }
 
-        MetadataProvider* m = application.getMetadataProvider();
+        MetadataProvider* m = application.getMetadataProvider(false);
         Locker mlock(m);
 
         const PropertySet* relyingParty = nullptr;
         param=httpRequest.getParameter("entityID");
-        if (param)
+        if (m && param)
             relyingParty = application.getRelyingParty(m->getEntityDescriptor(MetadataProviderCriteria(application, param)).first);
         else
             relyingParty = &application;
 
         s << "<Application id='" << application.getId() << "' entityID='" << relyingParty->getString("entityID").second << "'/>";
 
-        m->outputStatus(s);
+        if (m)
+            m->outputStatus(s);
 
         s << "<Handlers>";
         vector<const Handler*> handlers;
