@@ -245,7 +245,7 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
     if (!strncmp(mech.second, "cookie", 6)) {
         // Here we store the state in a cookie and send a fixed
         // value so we can recognize it on the way back.
-        if (relayState.find("cookie:") != 0) {
+        if (relayState.find("cookie:") != 0 && relayState.find("ss:") != 0) {
             pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibstate_");
             string stateval = XMLToolingConfig::getConfig().getURLEncoder()->encode(relayState.c_str()) + shib_cookie.second;
             // Generate a random key for the cookie name instead of the fixed name.
@@ -258,7 +258,7 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
         }
     }
     else if (!strncmp(mech.second, "ss:", 3)) {
-        if (relayState.find("ss:") != 0) {
+        if (relayState.find("cookie:") != 0 && relayState.find("ss:") != 0) {
             mech.second+=3;
             if (*mech.second) {
                 if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
@@ -302,8 +302,9 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
             }
         }
     }
-    else
+    else {
         throw ConfigurationException("Unsupported relayState mechanism ($1).", params(1,mech.second));
+    }
 }
 
 void Handler::recoverRelayState(
@@ -314,7 +315,7 @@ void Handler::recoverRelayState(
 
     // Look for StorageService-backed state of the form "ss:SSID:key".
     const char* state = relayState.c_str();
-    if (strstr(state,"ss:")==state) {
+    if (strstr(state,"ss:") == state) {
         state += 3;
         const char* key = strchr(state,':');
         if (key) {
@@ -372,7 +373,8 @@ void Handler::recoverRelayState(
     }
 
     // Look for cookie-backed state of the form "cookie:timestamp_key".
-    if (strstr(state,"cookie:")==state) {
+    state = relayState.c_str();
+    if (strstr(state,"cookie:") == state) {
         state += 7;
         if (*state) {
             // Pull the value from the "relay state" cookie.
