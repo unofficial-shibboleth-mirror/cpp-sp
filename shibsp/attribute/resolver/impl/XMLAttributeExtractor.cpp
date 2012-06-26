@@ -352,6 +352,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                 m_log.warn("skipping alias, REMOTE_USER is a reserved name");
                 new_aliases.erase(ru);
             }
+            decl.second.insert(decl.second.end(), new_aliases.begin(), new_aliases.end());
             m_attributeIds.insert(m_attributeIds.end(), new_aliases.begin(), new_aliases.end());
         }
 
