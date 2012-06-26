@@ -13,14 +13,13 @@
 LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_24.so
 
 #
-# Used for example logo and style sheet in error templates.
+# Used for example style sheet in error templates.
 #
 <IfModule mod_alias.c>
   <Location /shibboleth-sp>
     Allow from all
   </Location>
   Alias /shibboleth-sp/main.css @-PKGWEBDIR-@/main.css
-  Alias /shibboleth-sp/logo.jpg @-PKGWEBDIR-@/logo.jpg
 </IfModule>
 
 #

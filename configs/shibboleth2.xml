@@ -67,7 +67,6 @@
         -->
         <Errors supportContact="root@localhost"
             helpLocation="/about.html"
-            logoLocation="/shibboleth-sp/logo.jpg"
             styleSheet="/shibboleth-sp/main.css"/>
         
         <!-- Example of remotely supplied batch of signed metadata. -->

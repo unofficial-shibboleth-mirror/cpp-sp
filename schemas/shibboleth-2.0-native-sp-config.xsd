@@ -2,7 +2,7 @@
 <schema targetNamespace="urn:mace:shibboleth:2.0:native:sp:config"
 	xmlns="http://www.w3.org/2001/XMLSchema"
 	xmlns:conf="urn:mace:shibboleth:2.0:native:sp:config"
-  xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+	xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
 	xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
 	xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
 	xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
@@ -654,10 +654,6 @@
     <attribute name="localLogout" type="anyURI"/>
     <attribute name="globalLogout" type="anyURI"/>
     <attribute name="partialLogout" type="anyURI"/>
-    <attribute name="supportContact" type="conf:string"/>
-    <attribute name="logoLocation" type="anyURI"/>
-    <attribute name="helpLocation" type="anyURI"/>
-    <attribute name="styleSheet" type="anyURI"/>
     <anyAttribute namespace="##any" processContents="lax"/>
   </complexType>
 

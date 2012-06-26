@@ -91,7 +91,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Doc", "Doc", "{6ED5E3E7-1B0
 		doc\FASTCGI.LICENSE = doc\FASTCGI.LICENSE
 		doc\LICENSE.txt = doc\LICENSE.txt
 		doc\LOG4CPP.LICENSE = doc\LOG4CPP.LICENSE
-		doc\logo.jpg = doc\logo.jpg
 		doc\main.css = doc\main.css
 		doc\Makefile.am = doc\Makefile.am
 		doc\NOTICE.txt = doc\NOTICE.txt

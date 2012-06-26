@@ -19,7 +19,7 @@ docfiles = \
 	OPENSSL.LICENSE \
 	LOG4CPP.LICENSE
 
-webfiles = main.css logo.jpg
+webfiles = main.css
 
 pkgdoc_DATA = $(docfiles)
 

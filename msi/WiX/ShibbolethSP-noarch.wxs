@@ -33,9 +33,6 @@
           <Component Id='main.css' Guid='{EA1366EE-0FD1-42E7-9F3F-C19E6C0D12D6}'>
             <File KeyPath='yes' Name='main.css' />
           </Component>
-          <Component Id='logo.jpg' Guid='{7F05E91A-A390-4A72-B4DC-1A4FE950B30A}'>
-            <File KeyPath='yes' Name='logo.jpg' />
-          </Component>
           <Component Id='CREDITS.txt' Guid='{9A792E0C-61F1-4D08-9672-BE82FFB6B7F1}'>
             <File KeyPath='yes' Name='CREDITS.txt' />
           </Component>
