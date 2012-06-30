@@ -63,22 +63,25 @@ const char* Application::getId() const
 pair<string,const char*> Application::getCookieNameProps(const char* prefix, time_t* lifetime) const
 {
     static const char* defProps="; path=/; HttpOnly";
+    static const char* sslProps="; path=/; secure; HttpOnly";
 
     if (lifetime)
         *lifetime = 0;
     if (!prefix)
         prefix = "";
-    const PropertySet* props=getPropertySet("Sessions");
+    const PropertySet* props = getPropertySet("Sessions");
     if (props) {
         if (lifetime) {
             pair<bool,unsigned int> lt = props->getUnsignedInt("cookieLifetime");
             if (lt.first)
                 *lifetime = lt.second;
         }
-        pair<bool,const char*> p=props->getString("cookieProps");
-        if (!p.first)
-            p.second=defProps;
-        pair<bool,const char*> p2=props->getString("cookieName");
+        pair<bool,const char*> p = props->getString("cookieProps");
+        if (!p.first || !strcmp(p.second, "http"))
+            p.second = defProps;
+        else if (!strcmp(p.second, "https"))
+            p.second = sslProps;
+        pair<bool,const char*> p2 = props->getString("cookieName");
         if (p2.first)
             return make_pair(string(prefix) + p2.second, p.second);
         return make_pair(string(prefix) + getHash(), p.second);

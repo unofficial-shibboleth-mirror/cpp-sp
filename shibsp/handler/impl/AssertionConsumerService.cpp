@@ -654,36 +654,39 @@ void AssertionConsumerService::maintainHistory(
     ) const
 {
     static const char* defProps="; path=/";
+    static const char* sslProps="; path=/; secure";
 
-    const PropertySet* sessionProps=application.getPropertySet("Sessions");
-    pair<bool,bool> idpHistory=sessionProps->getBool("idpHistory");
+    const PropertySet* sessionProps = application.getPropertySet("Sessions");
+    pair<bool,bool> idpHistory = sessionProps->getBool("idpHistory");
 
     if (idpHistory.first && idpHistory.second) {
-        pair<bool,const char*> cookieProps=sessionProps->getString("idpHistoryProps");
+        pair<bool,const char*> cookieProps = sessionProps->getString("idpHistoryProps");
         if (!cookieProps.first)
-            cookieProps=sessionProps->getString("cookieProps");
-        if (!cookieProps.first)
-            cookieProps.second=defProps;
+            cookieProps = sessionProps->getString("cookieProps");
+        if (!cookieProps.first || !strcmp(cookieProps.second, "http"))
+            cookieProps.second = defProps;
+        else if (!strcmp(cookieProps.second, "https"))
+            cookieProps.second = sslProps;
 
         // Set an IdP history cookie locally (essentially just a CDC).
         CommonDomainCookie cdc(request.getCookie(CommonDomainCookie::CDCName));
 
         // Either leave in memory or set an expiration.
-        pair<bool,unsigned int> days=sessionProps->getUnsignedInt("idpHistoryDays");
-        if (!days.first || days.second==0) {
+        pair<bool,unsigned int> days = sessionProps->getUnsignedInt("idpHistoryDays");
+        if (!days.first || days.second == 0) {
             string c = string(cdc.set(entityID)) + cookieProps.second;
             response.setCookie(CommonDomainCookie::CDCName, c.c_str());
         }
         else {
-            time_t now=time(nullptr) + (days.second * 24 * 60 * 60);
+            time_t now = time(nullptr) + (days.second * 24 * 60 * 60);
 #ifdef HAVE_GMTIME_R
             struct tm res;
-            struct tm* ptime=gmtime_r(&now,&res);
+            struct tm* ptime = gmtime_r(&now,&res);
 #else
-            struct tm* ptime=gmtime(&now);
+            struct tm* ptime = gmtime(&now);
 #endif
             char timebuf[64];
-            strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT",ptime);
+            strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT", ptime);
             string c = string(cdc.set(entityID)) + cookieProps.second + "; expires=" + timebuf;
             response.setCookie(CommonDomainCookie::CDCName, c.c_str());
         }
