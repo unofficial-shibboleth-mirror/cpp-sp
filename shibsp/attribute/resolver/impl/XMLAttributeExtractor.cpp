@@ -143,6 +143,8 @@ namespace shibsp {
     {
     public:
         XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.XML")) {
+            if (m_local && m_lock)
+                m_log.warn("attribute mappings are reloadable; be sure to restart web server when adding new attribute IDs");
             background_load();
         }
         ~XMLExtractor() {
@@ -343,6 +345,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
 
         name = child->getAttributeNS(nullptr, _aliases);
         if (name && *name) {
+            m_log.warn("attribute mapping rule (%s) uses deprecated aliases feature, consider revising", id.get());
             auto_ptr_char aliases(name);
             string dup(aliases.get());
             set<string> new_aliases;

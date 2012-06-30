@@ -555,26 +555,26 @@ XMLApplication::XMLApplication(
     // to ensure we get only our Sessions element.
     const PropertySet* sessionProps = getPropertySet("Sessions");
     if (sessionProps) {
-        pair<bool,const char*> redirectLimit = sessionProps->getString("redirectLimit");
-        if (redirectLimit.first) {
-            if (!strcmp(redirectLimit.second, "none"))
+        pair<bool,const char*> prop = sessionProps->getString("redirectLimit");
+        if (prop.first) {
+            if (!strcmp(prop.second, "none"))
                 m_redirectLimit = REDIRECT_LIMIT_NONE;
-            else if (!strcmp(redirectLimit.second, "exact"))
+            else if (!strcmp(prop.second, "exact"))
                 m_redirectLimit = REDIRECT_LIMIT_EXACT;
-            else if (!strcmp(redirectLimit.second, "host"))
+            else if (!strcmp(prop.second, "host"))
                 m_redirectLimit = REDIRECT_LIMIT_HOST;
             else {
-                if (!strcmp(redirectLimit.second, "exact+whitelist"))
+                if (!strcmp(prop.second, "exact+whitelist"))
                     m_redirectLimit = REDIRECT_LIMIT_EXACT_WHITELIST;
-                else if (!strcmp(redirectLimit.second, "host+whitelist"))
+                else if (!strcmp(prop.second, "host+whitelist"))
                     m_redirectLimit = REDIRECT_LIMIT_HOST_WHITELIST;
-                else if (!strcmp(redirectLimit.second, "whitelist"))
+                else if (!strcmp(prop.second, "whitelist"))
                     m_redirectLimit = REDIRECT_LIMIT_WHITELIST;
                 else
-                    throw ConfigurationException("Unrecognized redirectLimit setting ($1)", params(1, redirectLimit.second));
-                redirectLimit = sessionProps->getString("redirectWhitelist");
-                if (redirectLimit.first) {
-                    string dup(redirectLimit.second);
+                    throw ConfigurationException("Unrecognized redirectLimit setting ($1)", params(1, prop.second));
+                prop = sessionProps->getString("redirectWhitelist");
+                if (prop.first) {
+                    string dup(prop.second);
                     split(m_redirectWhitelist, dup, is_space(), algorithm::token_compress_on);
                 }
             }
@@ -582,6 +582,25 @@ XMLApplication::XMLApplication(
         else {
             m_redirectLimit = base ? REDIRECT_LIMIT_INHERIT : REDIRECT_LIMIT_NONE;
         }
+
+        // Audit some additional settings for logging purposes.
+        prop = sessionProps->getString("cookieProps");
+        if (!prop.first) {
+            log.warn("empty/missing cookieProps setting, set to \"https\" for SSL/TLS-only usage");
+        }
+        else if (!strcmp(prop.second, "http")) {
+            log.warn("insecure cookieProps setting, set to \"https\" for SSL/TLS-only usage");
+        }
+        else if (strcmp(prop.second, "https")) {
+            if (!strstr(prop.second, ";secure") && !strstr(prop.second, "; secure"))
+                log.warn("custom cookieProps setting should include \"; secure\" for SSL/TLS-only usage");
+            else if (!strstr(prop.second, ";HttpOnly") && !strstr(prop.second, "; HttpOnly"))
+                log.warn("custom cookieProps setting should include \"; HttpOnly\", site is vulnerable to client-side cookie theft");
+        }
+
+        pair<bool,bool> handlerSSL = sessionProps->getBool("handlerSSL");
+        if (handlerSSL.first && !handlerSSL.second)
+            log.warn("handlerSSL should be enabled for SSL/TLS-enabled web sites");
     }
     else {
         m_redirectLimit = base ? REDIRECT_LIMIT_INHERIT : REDIRECT_LIMIT_NONE;
