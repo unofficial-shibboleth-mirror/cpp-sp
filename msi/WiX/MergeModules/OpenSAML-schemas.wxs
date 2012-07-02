@@ -185,6 +185,9 @@
                 <Component Id='xenc_schema.xsd' Guid='{2197D645-3AA3-46F1-B250-0F964B901A94}'>
                   <File KeyPath='yes' Name='xenc-schema.xsd' />
                 </Component>
+                <Component Id='xenc11_schema.xsd' Guid='{DC61F4FB-03BB-4ED4-9552-6BE33CE3DF80}'>
+                  <File KeyPath='yes' Name='xenc11-schema.xsd' />
+                </Component>
                 <Component Id='xmldsig.xsd' Guid='{72871706-1D8F-4695-B573-AF2EB0635281}'>
                   <File KeyPath='yes' Name='xmldsig-core-schema.xsd' />
                 </Component>
