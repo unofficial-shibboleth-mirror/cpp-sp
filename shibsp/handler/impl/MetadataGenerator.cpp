@@ -45,12 +45,14 @@
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataProvider.h>
 # include <xmltooling/XMLToolingConfig.h>
+# include <xmltooling/encryption/Encryption.h>
 # include <xmltooling/security/Credential.h>
 # include <xmltooling/security/CredentialCriteria.h>
 # include <xmltooling/security/SecurityHelper.h>
 # include <xmltooling/signature/Signature.h>
 # include <xmltooling/util/ParserPool.h>
 # include <xmltooling/util/PathResolver.h>
+# include <xsec/dsig/DSIGConstants.hpp>
 # include <xercesc/framework/LocalFileInputSource.hpp>
 # include <xercesc/framework/Wrapper4InputSource.hpp>
 #endif
@@ -61,6 +63,8 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmlsignature;
+using xmlencryption::EncryptionMethod;
+using xmlencryption::EncryptionMethodBuilder;
 #endif
 using namespace xmltooling;
 using namespace boost;
@@ -91,6 +95,39 @@ namespace shibsp {
             ) const;
 
 #ifndef SHIBSP_LITE
+        void registerEncryptionMethod(const XMLCh* alg) {
+            if (XMLToolingConfig::getConfig().isXMLAlgorithmSupported(alg, XMLToolingConfig::ALGTYPE_ENCRYPT) ||
+                XMLToolingConfig::getConfig().isXMLAlgorithmSupported(alg, XMLToolingConfig::ALGTYPE_KEYENCRYPT) ||
+                XMLToolingConfig::getConfig().isXMLAlgorithmSupported(alg, XMLToolingConfig::ALGTYPE_KEYAGREE)) {
+                // Non-default builder needed to override namespace/prefix.
+                if (!m_encryptionBuilder)
+                    m_encryptionBuilder = XMLObjectBuilder::getBuilder(xmltooling::QName(samlconstants::SAML20MD_NS, EncryptionMethod::LOCAL_NAME));
+                EncryptionMethod* em = dynamic_cast<EncryptionMethod*>(
+                    m_encryptionBuilder->buildObject(
+                        samlconstants::SAML20MD_NS, EncryptionMethod::LOCAL_NAME, samlconstants::SAML20MD_PREFIX
+                        )
+                    );
+                em->setAlgorithm(alg);
+                m_encryptions.push_back(em);
+            }
+        }
+
+        void registerDigestMethod(const XMLCh* alg) {
+            if (XMLToolingConfig::getConfig().isXMLAlgorithmSupported(alg, XMLToolingConfig::ALGTYPE_DIGEST)) {
+                DigestMethod* dm = DigestMethodBuilder::buildDigestMethod();
+                dm->setAlgorithm(alg);
+                m_digests.push_back(dm);
+            }
+        }
+
+        void registerSigningMethod(const XMLCh* alg) {
+            if (XMLToolingConfig::getConfig().isXMLAlgorithmSupported(alg, XMLToolingConfig::ALGTYPE_SIGN)) {
+                SigningMethod* sm = SigningMethodBuilder::buildSigningMethod();
+                sm->setAlgorithm(alg);
+                m_signings.push_back(sm);
+            }
+        }
+
         string m_salt;
         short m_http,m_https;
         vector<string> m_bases;
@@ -101,6 +138,10 @@ namespace shibsp {
         ptr_vector<NameIDFormat> m_formats;
         ptr_vector<RequestedAttribute> m_reqAttrs;
         ptr_vector<AttributeConsumingService> m_attrConsumers;
+        ptr_vector<EncryptionMethod> m_encryptions;
+        ptr_vector<DigestMethod> m_digests;
+        ptr_vector<SigningMethod> m_signings;
+        const XMLObjectBuilder* m_encryptionBuilder;
 #endif
     };
 
@@ -118,7 +159,7 @@ namespace shibsp {
 MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".MetadataGenerator"))
 #ifndef SHIBSP_LITE
-        ,m_http(0), m_https(0)
+        ,m_http(0), m_https(0), m_encryptionBuilder(nullptr)
 #endif
 {
     string address(appId);
@@ -126,7 +167,7 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     setAddress(address.c_str());
 
 #ifndef SHIBSP_LITE
-    static XMLCh EndpointBase[] = UNICODE_LITERAL_12(E,n,d,p,o,i,n,t,B,a,s,e);
+    static XMLCh EndpointBase[] =           UNICODE_LITERAL_12(E,n,d,p,o,i,n,t,B,a,s,e);
 
     pair<bool,const char*> salt = getString("salt");
     if (salt.first)
@@ -205,6 +246,27 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
                                             m_log.warn("skipping duplicate EntityAttributes element");
                                         }
                                     }
+                                    else {
+                                        EncryptionMethod* em = dynamic_cast<EncryptionMethod*>(child.get());
+                                        if (em) {
+                                            m_encryptions.push_back(em);
+                                            child.release();
+                                        }
+                                        else {
+                                            DigestMethod* dm = dynamic_cast<DigestMethod*>(child.get());
+                                            if (dm) {
+                                                m_digests.push_back(dm);
+                                                child.release();
+                                            }
+                                            else {
+                                                SigningMethod* sm = dynamic_cast<SigningMethod*>(child.get());
+                                                if (sm) {
+                                                    m_signings.push_back(sm);
+                                                    child.release();
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -213,6 +275,58 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
             }
         }
         e = XMLHelper::getNextSiblingElement(e);
+    }
+
+    // Default in precedence rules for various algorithms.
+    if (m_encryptions.empty()) {
+#ifdef XSEC_OPENSSL_HAVE_GCM
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIAES128_GCM);
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIAES192_GCM);
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIAES256_GCM);
+#endif
+#ifdef XSEC_OPENSSL_HAVE_AES
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIAES128_CBC);
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIAES192_CBC);
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIAES256_CBC);
+#endif
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURI3DES_CBC);
+#ifdef URI_ID_RSA_OAEP
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIRSA_OAEP);
+#endif
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIRSA_OAEP_MGFP1);
+        registerEncryptionMethod(DSIGConstants::s_unicodeStrURIRSA_1_5);
+    }
+
+    if (m_digests.empty()) {
+        registerDigestMethod(DSIGConstants::s_unicodeStrURISHA512);
+        registerDigestMethod(DSIGConstants::s_unicodeStrURISHA384);
+        registerDigestMethod(DSIGConstants::s_unicodeStrURISHA256);
+        registerDigestMethod(DSIGConstants::s_unicodeStrURISHA224);
+        registerDigestMethod(DSIGConstants::s_unicodeStrURISHA1);
+    }
+
+    if (m_signings.empty()) {
+#ifdef XSEC_OPENSSL_HAVE_EC
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA512);
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA384);
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA256);
+# ifdef URI_ID_ECDSA_SHA224
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA224);
+# endif
+#endif
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIRSA_SHA512);
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIRSA_SHA384);
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIRSA_SHA256);
+
+#ifdef URI_ID_DSA_SHA256
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIDSA_SHA256);
+#endif
+
+#ifdef XSEC_OPENSSL_HAVE_EC
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA1);
+#endif
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIRSA_SHA1);
+        registerSigningMethod(DSIGConstants::s_unicodeStrURIDSA_SHA1);
     }
 #endif
 }
@@ -316,6 +430,12 @@ pair<bool,long> MetadataGenerator::processMessage(
         entity.reset(EntityDescriptorBuilder::buildEntityDescriptor());
     }
 
+    // We always have extensions for algorithm support.
+    if (!entity->getExtensions()) {
+        entity->setExtensions(ExtensionsBuilder::buildExtensions());
+        entity->getExtensions()->addNamespace(Namespace(samlconstants::SAML20MD_ALGSUPPORT_NS, samlconstants::SAML20MD_ALGSUPPORT_PREFIX));
+    }
+
     if (!entity->getID()) {
         string hashinput = m_salt + relyingParty->getString("entityID").second;
         string hashed = '_' + SecurityHelper::doHash("SHA1", hashinput.c_str(), hashinput.length());
@@ -339,8 +459,6 @@ pair<bool,long> MetadataGenerator::processMessage(
         entity->getContactPersons().push_back(cp->cloneContactPerson());
 
     if (m_entityAttrs) {
-        if (!entity->getExtensions())
-            entity->setExtensions(ExtensionsBuilder::buildExtensions());
         entity->getExtensions()->getUnknownXMLObjects().push_back(m_entityAttrs->cloneEntityAttributes());
     }
 
@@ -360,6 +478,13 @@ pair<bool,long> MetadataGenerator::processMessage(
         if (!role->getExtensions())
             role->setExtensions(ExtensionsBuilder::buildExtensions());
         role->getExtensions()->getUnknownXMLObjects().push_back(m_uiinfo->cloneUIInfo());
+    }
+
+    if (!m_digests.empty() || !m_signings.empty()) {
+        for (ptr_vector<DigestMethod>::const_iterator dm = m_digests.begin(); dm != m_digests.end(); ++dm)
+            entity->getExtensions()->getUnknownXMLObjects().push_back(dm->cloneDigestMethod());
+        for (ptr_vector<SigningMethod>::const_iterator sm = m_signings.begin(); sm != m_signings.end(); ++sm)
+            entity->getExtensions()->getUnknownXMLObjects().push_back(sm->cloneSigningMethod());
     }
 
     for (ptr_vector<AttributeConsumingService>::const_iterator acs = m_attrConsumers.begin(); acs != m_attrConsumers.end(); ++acs)
@@ -458,6 +583,10 @@ pair<bool,long> MetadataGenerator::processMessage(
                     }
                 }
                 kd->setUse(use);
+                if (!use) {
+                    for (ptr_vector<EncryptionMethod>::const_iterator em = m_encryptions.begin(); em != m_encryptions.end(); ++em)
+                        kd->getEncryptionMethods().push_back(em->cloneEncryptionMethod());
+                }
                 role->getKeyDescriptors().push_back(kd);
             }
         }
@@ -468,6 +597,8 @@ pair<bool,long> MetadataGenerator::processMessage(
                 KeyDescriptor* kd = KeyDescriptorBuilder::buildKeyDescriptor();
                 kd->setUse(KeyDescriptor::KEYTYPE_ENCRYPTION);
                 kd->setKeyInfo(kinfo);
+                for (ptr_vector<EncryptionMethod>::const_iterator em = m_encryptions.begin(); em != m_encryptions.end(); ++em)
+                    kd->getEncryptionMethods().push_back(em->cloneEncryptionMethod());
                 role->getKeyDescriptors().push_back(kd);
             }
         }
