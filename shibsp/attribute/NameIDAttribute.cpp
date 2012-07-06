@@ -29,6 +29,7 @@
 #include "attribute/NameIDAttribute.h"
 #include "remoting/ListenerService.h"
 
+#include <boost/algorithm/string/trim.hpp>
 #include <xmltooling/exceptions.h>
 #include <xmltooling/security/SecurityHelper.h>
 
@@ -139,16 +140,19 @@ const vector<string>& NameIDAttribute::getSerializedValues() const
                 );
             if (m_hashAlg.empty()) {
                 m_serialized.push_back(e.what());
+                boost::trim(m_serialized.back());
             }
             else {
+                string trimmed(e.what());
+                boost::trim(trimmed);
 #ifndef SHIBSP_LITE
-                m_serialized.push_back(SecurityHelper::doHash(m_hashAlg.c_str(), e.what(), strlen(e.what())));
+                m_serialized.push_back(SecurityHelper::doHash(m_hashAlg.c_str(), trimmed.c_str(), strlen(e.what())));
 #else
                 try {
                     DDF out, in("hash");
                     DDFJanitor jin(in), jout(out);
                     in.addmember("alg").string(m_hashAlg.c_str());
-                    in.addmember("data").unsafe_string(e.what());
+                    in.addmember("data").unsafe_string(trimmed.c_str());
                     out = SPConfig::getConfig().getServiceProvider()->getListenerService()->send(in);
                     if (out.isstring() && out.string())
                         m_serialized.push_back(out.string());

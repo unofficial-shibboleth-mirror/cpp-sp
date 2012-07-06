@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <boost/shared_ptr.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <shibsp/exceptions.h>
 #include <shibsp/SessionCache.h>
@@ -232,10 +233,12 @@ void TransformAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
                         if (dest) {
                             // Modify in place.
                             dest->getValues()[i] = narrow.get();
+                            trim(dest->getValues()[i]);
                         }
                         else {
                             // Add to new object.
                             destwrapper->getValues().push_back(narrow.get());
+                            trim(destwrapper->getValues().back());
                         }
                     }
                 }

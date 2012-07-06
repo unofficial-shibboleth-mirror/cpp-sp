@@ -213,6 +213,7 @@ void TemplateAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
         if (start != string::npos && start < m_template.length())
             processed += m_template.substr(start, i);    // append rest of string
 
+        trim(processed);
         if (processed.empty())
             dest->getValues().pop_back();
     }
