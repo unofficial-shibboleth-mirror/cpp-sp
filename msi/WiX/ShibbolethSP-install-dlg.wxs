@@ -25,7 +25,6 @@
 
       <!-- This Dialog sets up:
            - INSTALLDIR
-           - INSTALL_SHIBD_SERVICE
            - INSTALL_32BIT (if a 64bit machine)
            - INSTALL_ISAPI_FILTER (if IIS about)
            - SHIB_FILE_EXTENSION (if IIS about)
@@ -58,12 +57,11 @@
         </Control>
 
         <!-- Service? -->
-        <Control Id='InstallShibd' Type='CheckBox' X='25' Y='146' Height='17' Width='160' 
-                 Property='INSTALL_SHIBD_SERVICE' CheckBoxValue='TRUE' 
-                 Text='Install shibd as Service' />
+        <Control Id='InstallShibd' Type='Text' X='25' Y='148' Height='17' Width='235' 
+                 Text='The Shibboleth daemon will be installed as service shibd_default.' />
 
         <!-- 32 Bits? -->
-        <Control Id='Install32Bit' Type='CheckBox' X='185' Y='146' Height='17' Width='160'
+        <Control Id='Install32Bit' Type='CheckBox' X='265' Y='146' Height='17' Width='80'
                  Property='INSTALL_32BIT' CheckBoxValue='TRUE' 
                  Text='Run as 32-Bit'>
           <Condition Action='show'>IS64BITINSTALL = "TRUE"</Condition>

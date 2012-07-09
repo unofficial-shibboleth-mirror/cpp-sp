@@ -204,9 +204,6 @@
     <CustomAction Id='InheritInstallDir' Property='INSTALLDIR' Value='[OLD_INSTALLDIR]' />
     <CustomAction Id='InheritInstallDir64' Property='INSTALLDIR' Value='[OLD_INSTALLDIR64]' />
 
-    <!-- Set INSTALL_SHIBD correctly -->
-    <CustomAction Id='ClearInstallShibd' Property='INSTALL_SHIBD_SERVICE' Value='FALSE' />
-
     <InstallUISequence>
       <!-- All we need to sequence here is setting up inherited INSTALLDIR -->
 
@@ -254,10 +251,10 @@
       <!-- set service path to 64 bit one if this is an install and if we were told to -->
 
       <Custom Action='SetServicePath64' Before='CostInitialize'>
-        (NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
+        (NOT Installed) AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
       </Custom>
       <Custom Action='ServicePath64' After='InstallServices'>
-        (NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE") AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
+        (NOT Installed) AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
       </Custom>
 
       <!-- Duplicate actions from the UI case -->
@@ -268,19 +265,10 @@
         (NOT OLD_INSTALLDIR) AND OLD_INSTALLDIR64
       </Custom>
 
-      <!-- Clear out INSTALL_SHIBD_SERVICE (Set it to FALSE) if
-           - This is an update
-           - We didn't see an appropriate registryEntry
-           - TODO - we don't need this here I think
-        -->
-      <Custom Action='ClearInstallShibd' After='AppSearch'>
-        ALREADYINSTALLED AND (NOT OLD_SERVICEINSTALLED)
-      </Custom>
-
       <!-- Do not mess with SCM if this is an upgrade -->
 
-      <InstallServices>(NOT Installed) AND (NOT ALREADYINSTALLED) AND (INSTALL_SHIBD_SERVICE = "TRUE")</InstallServices>
-      <StartServices>(NOT Installed) AND (INSTALL_SHIBD_SERVICE = "TRUE")</StartServices>
+      <InstallServices>(NOT Installed) AND (NOT ALREADYINSTALLED)</InstallServices>
+      <StartServices>(NOT Installed)</StartServices>
       <DeleteServices>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</DeleteServices>
 
     </InstallExecuteSequence>

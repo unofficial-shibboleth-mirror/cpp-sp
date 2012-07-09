@@ -3,7 +3,6 @@
   <!-- ShibbolethSP-noarch -->
 
   <ComponentRef Id='main.css'/>
-  <ComponentRef Id='logo.jpg'/>
   <ComponentRef Id='CREDITS.txt'/>
   <ComponentRef Id='LICENSE.txt'/>
   <ComponentRef Id='NOTICE.txt'/>
@@ -82,7 +81,6 @@
 
   <!-- ShibbolethSP-registry-x32 -->
   <ComponentRef Id='TargetDir'/>
-  <ComponentRef Id='InstallShibd'/>
   <ComponentRef Id='InstallIsapi'/>
   <ComponentRef Id='file_extension'/>
   <ComponentRef Id='shib.ico' />

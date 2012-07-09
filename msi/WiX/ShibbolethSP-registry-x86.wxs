@@ -70,11 +70,6 @@
                       Name='InstallDir' Type='directory' />
     </Property>
 
-    <Property Id='OLD_INSTALL_SHIBD_SERVICE' Secure='yes'>
-      <RegistrySearch Id='OldInstallShibd' Root='HKLM' Key='SOFTWARE\Shibboleth' 
-                      Name='InstallShibd' Type='raw' />
-    </Property>
-
     <Property Id='OLD_INSTALL_ISAPI_FILTER' Secure='yes'>
       <RegistrySearch Id='OldInstallIsapi' Root='HKLM' Key='SOFTWARE\Shibboleth' 
                       Name='InstallIsapi' Type='raw' />
@@ -91,11 +86,6 @@
       <Component Id='TargetDir' Guid='{F02FB6E5-1146-4EC5-9D59-07BA6732C4DD}' >
         <RegistryValue Id='TargetDir'  Root='HKLM' Key='SOFTWARE\Shibboleth' 
                        Name='InstallDir' Value='[INSTALLDIR]' Type='string' KeyPath='yes' />
-      </Component>
-
-      <Component Id='InstallShibd' Guid='{67ABE9AB-5ACF-44FE-8620-AEA676E88187}' >
-        <RegistryValue Id='InstallShibd'  Root='HKLM' Key='SOFTWARE\Shibboleth' 
-                       Name='InstallShibd' Value='[INSTALL_SHIBD_SERVICE]' Type='string' KeyPath='yes' />
       </Component>
 
       <Component Id='InstallIsapi' Guid='{4F81E47D-B406-42B6-A702-90ACA666075E}' >
