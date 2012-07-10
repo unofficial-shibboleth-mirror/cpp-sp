@@ -530,7 +530,7 @@ auto_ptr<LogoutRequest> SAML2LogoutInitiator::buildRequest(
     msg->setID(SAMLConfig::getConfig().generateIdentifier());
     msg->setIssueInstant(time(nullptr));
 
-    if (m_async) {
+    if (m_async && encoder) {
         msg->setExtensions(saml2p::ExtensionsBuilder::buildExtensions());
         msg->getExtensions()->getUnknownXMLObjects().push_back(AsynchronousBuilder::buildAsynchronous());
     }
