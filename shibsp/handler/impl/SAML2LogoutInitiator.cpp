@@ -101,6 +101,7 @@ namespace shibsp {
             return e;
         }
 
+        bool m_async;
         vector<string> m_bindings;
         map< string,boost::shared_ptr<MessageEncoder> > m_encoders;
 #endif
@@ -119,6 +120,9 @@ namespace shibsp {
 
 SAML2LogoutInitiator::SAML2LogoutInitiator(const DOMElement* e, const char* appId)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator.SAML2")), m_appId(appId), m_protocol(samlconstants::SAML20P_NS)
+#ifndef SHIBSP_LITE
+        ,m_async(true)
+#endif
 {
     // If Location isn't set, defer initialization until the setParent call.
     pair<bool,const char*> loc = getString("Location");
@@ -146,6 +150,9 @@ void SAML2LogoutInitiator::init(const char* location)
 
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        pair<bool,bool> async = getBool("asynchronous");
+        m_async = !async.first || async.second;
+
         string dupBindings;
         pair<bool,const char*> outgoing = getString("outgoingBindings");
         if (outgoing.first) {
@@ -522,6 +529,11 @@ auto_ptr<LogoutRequest> SAML2LogoutInitiator::buildRequest(
 
     msg->setID(SAMLConfig::getConfig().generateIdentifier());
     msg->setIssueInstant(time(nullptr));
+
+    if (m_async) {
+        msg->setExtensions(saml2p::ExtensionsBuilder::buildExtensions());
+        msg->getExtensions()->getUnknownXMLObjects().push_back(AsynchronousBuilder::buildAsynchronous());
+    }
 
     return msg;
 }

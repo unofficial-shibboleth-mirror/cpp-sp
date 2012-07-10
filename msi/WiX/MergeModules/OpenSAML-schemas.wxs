@@ -180,6 +180,9 @@
                 <Component Id='protocol_ext_thirdparty.xsd' Guid='{EEFDA0C0-F1F4-4C09-82CD-873F037A4296}'>
                   <File KeyPath='yes' Id='protocol_ext_thirdparty.xsd' Name='sstc-saml-protocol-ext-thirdparty.xsd' />
                 </Component>
+                <Component Id='async_slo_v1.0.xsd' Guid='{C3209C47-3F6D-4C20-B004-C85DDC4AD7E7}'>
+                  <File KeyPath='yes' Id='async_slo_v1.0.xsd' Name='saml-async-slo-v1.0.xsd' />
+                </Component>
               </Directory><!-- opensaml -->
               <Directory Id='xmltooling' Name='xmltooling' FileSource='$(var.SPBuildDirectory)\cpp-xmltooling\schemas\' >
                 <Component Id='xenc_schema.xsd' Guid='{2197D645-3AA3-46F1-B250-0F964B901A94}'>
