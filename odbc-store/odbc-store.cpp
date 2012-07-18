@@ -112,13 +112,15 @@ namespace {
     struct ODBCConn {
         ODBCConn(SQLHDBC conn) : handle(conn), autoCommit(true) {}
         ~ODBCConn() {
-            SQLRETURN sr = SQL_SUCCESS;
-            if (!autoCommit)
-                sr = SQLSetConnectAttr(handle, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0);
-            SQLDisconnect(handle);
-            SQLFreeHandle(SQL_HANDLE_DBC,handle);
-            if (!SQL_SUCCEEDED(sr))
-                throw IOException("Failed to commit connection and return to auto-commit mode.");
+            if (handle != SQL_NULL_HDBC) {
+                SQLRETURN sr = SQL_SUCCESS;
+                if (!autoCommit)
+                    sr = SQLSetConnectAttr(handle, SQL_ATTR_AUTOCOMMIT, (SQLPOINTER)SQL_AUTOCOMMIT_ON, 0);
+                SQLDisconnect(handle);
+                SQLFreeHandle(SQL_HANDLE_DBC, handle);
+                if (!SQL_SUCCEEDED(sr))
+                    throw IOException("Failed to commit connection and return to auto-commit mode.");
+            }
         }
         operator SQLHDBC() {return handle;}
         SQLHDBC handle;
@@ -269,7 +271,7 @@ namespace {
 ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::getInstance("XMLTooling.StorageService")),
     m_caps(XMLHelper::getAttrInt(e, 255, contextSize), XMLHelper::getAttrInt(e, 255, keySize), XMLHelper::getAttrInt(e, 255, stringSize)),
     m_cleanupInterval(XMLHelper::getAttrInt(e, 900, cleanupInterval)),
-    cleanup_thread(nullptr), shutdown(false), m_henv(SQL_NULL_HANDLE), m_isolation(SQL_TXN_SERIALIZABLE)
+    cleanup_thread(nullptr), shutdown(false), m_henv(SQL_NULL_HENV), m_isolation(SQL_TXN_SERIALIZABLE)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("ODBCStorageService");
@@ -286,7 +288,7 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
     else
         throw XMLToolingException("Unknown transaction isolationLevel property.");
 
-    if (m_henv == SQL_NULL_HANDLE) {
+    if (m_henv == SQL_NULL_HENV) {
         // Enable connection pooling.
         SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0);
 
@@ -374,33 +376,37 @@ SQLHDBC ODBCStorageService::getHDBC()
 #endif
 
     // Get a handle.
-    SQLHDBC handle;
-    SQLRETURN sr=SQLAllocHandle(SQL_HANDLE_DBC, m_henv, &handle);
-    if (!SQL_SUCCEEDED(sr)) {
+    SQLHDBC handle = SQL_NULL_HDBC;
+    SQLRETURN sr = SQLAllocHandle(SQL_HANDLE_DBC, m_henv, &handle);
+    if (!SQL_SUCCEEDED(sr) || handle == SQL_NULL_HDBC) {
         m_log.error("failed to allocate connection handle");
         log_error(m_henv, SQL_HANDLE_ENV);
         throw IOException("ODBC StorageService failed to allocate a connection handle.");
     }
 
-    sr=SQLDriverConnect(handle,nullptr,(SQLCHAR*)m_connstring.c_str(),m_connstring.length(),nullptr,0,nullptr,SQL_DRIVER_NOPROMPT);
+    sr = SQLDriverConnect(handle,nullptr,(SQLCHAR*)m_connstring.c_str(),m_connstring.length(),nullptr,0,nullptr,SQL_DRIVER_NOPROMPT);
     if (!SQL_SUCCEEDED(sr)) {
         m_log.error("failed to connect to database");
         log_error(handle, SQL_HANDLE_DBC);
+        SQLFreeHandle(SQL_HANDLE_DBC, handle);
         throw IOException("ODBC StorageService failed to connect to database.");
     }
 
     sr = SQLSetConnectAttr(handle, SQL_ATTR_TXN_ISOLATION, (SQLPOINTER)m_isolation, 0);
-    if (!SQL_SUCCEEDED(sr))
+    if (!SQL_SUCCEEDED(sr)) {
+        SQLDisconnect(handle);
+        SQLFreeHandle(SQL_HANDLE_DBC, handle);
         throw IOException("ODBC StorageService failed to set transaction isolation level.");
+    }
 
     return handle;
 }
 
 SQLHSTMT ODBCStorageService::getHSTMT(SQLHDBC conn)
 {
-    SQLHSTMT hstmt;
+    SQLHSTMT hstmt = SQL_NULL_HSTMT;
     SQLRETURN sr = SQLAllocHandle(SQL_HANDLE_STMT, conn, &hstmt);
-    if (!SQL_SUCCEEDED(sr)) {
+    if (!SQL_SUCCEEDED(sr) || hstmt == SQL_NULL_HSTMT) {
         m_log.error("failed to allocate statement handle");
         log_error(conn, SQL_HANDLE_DBC);
         throw IOException("ODBC StorageService failed to allocate a statement handle.");
