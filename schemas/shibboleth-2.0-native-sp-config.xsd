@@ -444,7 +444,7 @@
     <attribute name="unsetHeaders" type="conf:listOfStrings"/>
     <attribute name="metadataAttributePrefix" type="conf:string"/>
     <attribute name="attributePrefix" type="conf:string"/>
-    <attribute name="requireAuthenticatedCipher" type="boolean"/>
+    <attribute name="requireAuthenticatedEncryption" type="boolean"/>
   </attributeGroup>
 
   <attributeGroup name="RelyingPartyGroup">

@@ -465,7 +465,7 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
 
         // With this flag on, we block unauthenticated ciphertext when decrypting,
         // unless the protocol was authenticated.
-        pair<bool,bool> authenticatedCipher = application.getBool("requireAuthenticatedCipher");
+        pair<bool,bool> authenticatedCipher = application.getBool("requireAuthenticatedEncryption");
         if (policy->isAuthenticated())
             authenticatedCipher.second = false;
 

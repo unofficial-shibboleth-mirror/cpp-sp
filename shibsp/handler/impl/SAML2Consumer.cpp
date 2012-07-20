@@ -170,9 +170,9 @@ void SAML2Consumer::implementProtocol(
 
     // With this flag on, we block unauthenticated ciphertext when decrypting,
     // unless the protocol was authenticated.
-    pair<bool,bool> requireAuthenticatedCipher = application.getBool("requireAuthenticatedCipher");
+    pair<bool,bool> requireAuthenticatedEncryption = application.getBool("requireAuthenticatedEncryption");
     if (alreadySecured)
-        requireAuthenticatedCipher.second = false;
+        requireAuthenticatedEncryption.second = false;
 
     // With this flag on, we ignore any unsigned assertions.
     const EntityDescriptor* entity = nullptr;
@@ -291,7 +291,7 @@ void SAML2Consumer::implementProtocol(
                     *cr,
                     application.getRelyingParty(entity)->getXMLString("entityID").second,
                     mcc.get(),
-                    requireAuthenticatedCipher.first && requireAuthenticatedCipher.second
+                    requireAuthenticatedEncryption.first && requireAuthenticatedEncryption.second
                     )
                 );
             decrypted = dynamic_pointer_cast<saml2::Assertion>(wrapper);
