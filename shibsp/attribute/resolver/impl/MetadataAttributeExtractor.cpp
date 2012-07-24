@@ -173,11 +173,10 @@ void MetadataExtractor::getAttributeIds(vector<string>& attributes) const
         attributes.push_back(m_orgDisplayName);
     if (!m_orgURL.empty())
         attributes.push_back(m_orgURL);
-    static void (vector<string>::* push_back)(const string&) = &vector<string>::push_back;
-    static const string& (contact_tuple_t::* tget)() const = &contact_tuple_t::get<0>;
-    static const string& (logo_tuple_t::* tget2)() const = &logo_tuple_t::get<0>;
-    for_each(m_contacts.begin(), m_contacts.end(), boost::bind(push_back, boost::ref(attributes), boost::bind(tget, _1)));
-    for_each(m_logos.begin(), m_logos.end(), boost::bind(push_back, boost::ref(attributes), boost::bind(tget2, _1)));
+    for (vector<contact_tuple_t>::const_iterator c = m_contacts.begin(); c != m_contacts.end(); ++c)
+        attributes.push_back(c->get<0>());
+    for (vector<logo_tuple_t>::const_iterator l = m_logos.begin(); l != m_logos.end(); ++l)
+        attributes.push_back(l->get<0>());
 }
 
 void MetadataExtractor::extractAttributes(
