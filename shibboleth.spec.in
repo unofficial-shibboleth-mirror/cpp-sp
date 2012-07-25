@@ -65,6 +65,7 @@ daemon, default plugins, and Apache module(s).
 Summary:	Shibboleth Development Headers
 Group:		Development/Libraries/C and C++
 Requires:	%{name} = %{version}-%{release}
+Obsoletes:	shibboleth-devel < %{version}-%{release}
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 Requires:	libXerces-c-devel >= 2.8.0
 %else
