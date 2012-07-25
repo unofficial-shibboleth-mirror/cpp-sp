@@ -3,9 +3,9 @@ Version:	@PACKAGE_VERSION@
 Release:	1
 Summary:	Open source system for attribute-based Web SSO
 Group:		Productivity/Networking/Security
-Vendor:		Internet2
+Vendor:		Shibboleth Consortium
 License:	Apache 2.0
-URL:		http://shibboleth.internet2.edu/
+URL:		http://shibboleth.net/
 Source:		%{name}-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root
 Obsoletes:	@PACKAGE_NAME@ < %{version}-%{release}
