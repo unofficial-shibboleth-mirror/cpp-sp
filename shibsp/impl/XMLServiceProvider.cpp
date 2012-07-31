@@ -2097,22 +2097,32 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
     }
 
     if (first) {
-        if (!m_policy->getAlgorithmBlacklist().empty()) {
+        if (!m_policy->getAlgorithmWhitelist().empty()) {
 #ifdef SHIBSP_XMLSEC_WHITELISTING
-            for_each(
-                m_policy->getAlgorithmBlacklist().begin(), m_policy->getAlgorithmBlacklist().end(),
-                boost::bind(&XSECPlatformUtils::blacklistAlgorithm, boost::bind(&xstring::c_str, _1))
-                );
+            for (vector<xstring>::const_iterator white = m_policy->getAlgorithmWhitelist().begin();
+                    white != m_policy->getAlgorithmWhitelist().end(); ++white) {
+                XSECPlatformUtils::whitelistAlgorithm(white->c_str());
+                auto_ptr_char whitelog(white->c_str());
+                log.info("explicitly whitelisting security algorithm (%s)", whitelog.get());
+            }
 #else
             log.crit("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
 #endif
         }
-        else if (!m_policy->getAlgorithmWhitelist().empty()) {
+        else if (!m_policy->getDefaultAlgorithmBlacklist().empty() || !m_policy->getAlgorithmBlacklist().empty()) {
 #ifdef SHIBSP_XMLSEC_WHITELISTING
-            for_each(
-                m_policy->getAlgorithmWhitelist().begin(), m_policy->getAlgorithmWhitelist().end(),
-                boost::bind(&XSECPlatformUtils::whitelistAlgorithm, boost::bind(&xstring::c_str, _1))
-                );
+            for (vector<xstring>::const_iterator black = m_policy->getDefaultAlgorithmBlacklist().begin();
+                    black != m_policy->getDefaultAlgorithmBlacklist().end(); ++black) {
+                XSECPlatformUtils::blacklistAlgorithm(black->c_str());
+                auto_ptr_char blacklog(black->c_str());
+                log.info("automatically blacklisting security algorithm (%s)", blacklog.get());
+            }
+            for (vector<xstring>::const_iterator black = m_policy->getAlgorithmBlacklist().begin();
+                    black != m_policy->getAlgorithmBlacklist().end(); ++black) {
+                XSECPlatformUtils::blacklistAlgorithm(black->c_str());
+                auto_ptr_char blacklog(black->c_str());
+                log.info("explicitly blacklisting security algorithm (%s)", blacklog.get());
+            }
 #else
             log.crit("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
 #endif

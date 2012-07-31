@@ -710,7 +710,15 @@
         </element>
         <choice minOccurs="0">
           <element name="AlgorithmWhitelist" type="conf:listOfURIs"/>
-          <element name="AlgorithmBlacklist" type="conf:listOfURIs"/>
+          <element name="AlgorithmBlacklist">
+            <complexType>
+              <simpleContent>
+                <extension base="conf:listOfURIs">
+                  <attribute name="includeDefaultBlacklist" type="boolean"/>
+                </extension>
+              </simpleContent>
+            </complexType>
+          </element>
         </choice>
       </sequence>
     </complexType>
