@@ -7,6 +7,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utilities", "Utilities", "{FED80230-119E-4B2F-9F53-D2660A5F022B}"
 	ProjectSection(SolutionItems) = preProject
 		util\Makefile.am = util\Makefile.am
+		util\resource.h = util\resource.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "fastcgi", "fastcgi", "{8E1AF2CF-24E1-4983-8681-394D89DF9AD2}"
