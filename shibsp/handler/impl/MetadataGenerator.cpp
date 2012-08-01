@@ -63,8 +63,7 @@ using namespace shibsp;
 using namespace opensaml::saml2md;
 using namespace opensaml;
 using namespace xmlsignature;
-using xmlencryption::EncryptionMethod;
-using xmlencryption::EncryptionMethodBuilder;
+using namespace xmlencryption;
 #endif
 using namespace xmltooling;
 using namespace boost;
@@ -109,6 +108,30 @@ namespace shibsp {
                     );
                 em->setAlgorithm(alg);
                 m_encryptions.push_back(em);
+
+                if (XMLString::equals(alg, DSIGConstants::s_unicodeStrURIRSA_OAEP) ||
+                        XMLString::equals(alg, DSIGConstants::s_unicodeStrURIRSA_OAEP_MGFP1)) {
+                    // Check for non-support of SHA-256. This is a reasonable guess as to whether
+                    // "all" standard digests and MGF variants will be supported or not, and if not, we
+                    // explicitly advertise only SHA-1.
+                    if (!XMLToolingConfig::getConfig().isXMLAlgorithmSupported(DSIGConstants::s_unicodeStrURISHA256, XMLToolingConfig::ALGTYPE_DIGEST)) {
+                        if (!m_digestBuilder)
+                            m_digestBuilder = XMLObjectBuilder::getBuilder(xmltooling::QName(samlconstants::SAML20MD_ALGSUPPORT_NS, DigestMethod::LOCAL_NAME));
+                        
+                        // Add MGF for new OAEP variant.
+                        if (XMLString::equals(alg, DSIGConstants::s_unicodeStrURIRSA_OAEP)) {
+                            MGF* mgf = MGFBuilder::buildMGF();
+                            mgf->setAlgorithm(DSIGConstants::s_unicodeStrURIMGF1_SHA1);
+                            em->getUnknownXMLObjects().push_back(mgf);
+                        }
+
+                        DigestMethod* dm = dynamic_cast<DigestMethod*>(
+                            m_digestBuilder->buildObject(xmlconstants::XMLSIG_NS, DigestMethod::LOCAL_NAME, xmlconstants::XMLSIG_PREFIX)
+                            );
+                        dm->setAlgorithm(DSIGConstants::s_unicodeStrURISHA1);
+                        em->getUnknownXMLObjects().push_back(dm);
+                    }
+                }
             }
         }
 
@@ -142,6 +165,7 @@ namespace shibsp {
         ptr_vector<DigestMethod> m_digests;
         ptr_vector<SigningMethod> m_signings;
         const XMLObjectBuilder* m_encryptionBuilder;
+        const XMLObjectBuilder* m_digestBuilder;
 #endif
     };
 
@@ -159,7 +183,7 @@ namespace shibsp {
 MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".MetadataGenerator"))
 #ifndef SHIBSP_LITE
-        ,m_http(0), m_https(0), m_encryptionBuilder(nullptr)
+        ,m_http(0), m_https(0), m_encryptionBuilder(nullptr), m_digestBuilder(nullptr)
 #endif
 {
     string address(appId);
