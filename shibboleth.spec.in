@@ -227,15 +227,6 @@ fi
 
 	# This adds the proper /etc/rc*.d links for the script
 	/sbin/chkconfig --add shibd
-
-	# On upgrade, restart components if they're already running.
-	# This gets repeated now down in %postun, and the next release
-	# should remove this copy. If we yank it now, we'll break upgrades.
-	if [ "$1" -gt "1" ] ; then
-		/etc/init.d/shibd status 1>/dev/null && /etc/init.d/shibd restart 1>/dev/null
-		%{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
-		exit 0
-	fi
 %endif
 %if "%{_vendor}" == "suse"
 	# This adds the proper /etc/rc*.d links for the script
