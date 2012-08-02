@@ -527,7 +527,9 @@ auto_ptr<LogoutRequest> SAML2LogoutInitiator::buildRequest(
         msg->setNameID(nameid->cloneNameID());
     }
 
-    msg->setID(SAMLConfig::getConfig().generateIdentifier());
+    XMLCh* msgid = SAMLConfig::getConfig().generateIdentifier();
+    msg->setID(msgid);
+    XMLString::release(&msgid);
     msg->setIssueInstant(time(nullptr));
 
     if (m_async && encoder) {

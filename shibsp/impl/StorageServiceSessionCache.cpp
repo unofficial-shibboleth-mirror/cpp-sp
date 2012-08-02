@@ -891,7 +891,9 @@ SSCache::~SSCache()
 
 void SSCache::test()
 {
-    auto_ptr_char temp(SAMLConfig::getConfig().generateIdentifier());
+    XMLCh* wide = SAMLConfig::getConfig().generateIdentifier();
+    auto_ptr_char temp(wide);
+    XMLString::release(&wide);
     m_storage->createString("SessionCacheTest", temp.get(), "Test", time(nullptr) + 60);
     m_storage->deleteString("SessionCacheTest", temp.get());
 }

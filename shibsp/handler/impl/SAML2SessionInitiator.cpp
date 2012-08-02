@@ -713,7 +713,9 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         }
     }
 
-    req->setID(SAMLConfig::getConfig().generateIdentifier());
+    XMLCh* genid = SAMLConfig::getConfig().generateIdentifier();
+    req->setID(genid);
+    XMLString::release(&genid);
     req->setIssueInstant(time(nullptr));
 
     scoped_ptr<AuthnRequestEvent> ar_event(newAuthnRequestEvent(app, httpRequest));

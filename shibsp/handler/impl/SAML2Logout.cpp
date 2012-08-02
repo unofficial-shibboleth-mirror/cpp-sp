@@ -679,7 +679,9 @@ pair<bool,long> SAML2Logout::sendResponse(
     logout->setIssuer(issuer);
     issuer->setName(application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role->getParent()))->getXMLString("entityID").second);
     fillStatus(*logout, code, subcode, msg);
-    logout->setID(SAMLConfig::getConfig().generateIdentifier());
+    XMLCh* msgid = SAMLConfig::getConfig().generateIdentifier();
+    logout->setID(msgid);
+    XMLString::release(&msgid);
     logout->setIssueInstant(time(nullptr));
 
     if (logoutEvent) {
