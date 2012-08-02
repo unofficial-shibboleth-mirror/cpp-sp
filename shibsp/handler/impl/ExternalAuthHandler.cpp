@@ -94,7 +94,11 @@ namespace shibsp {
 
     private:
         pair<bool,long> processMessage(
-            const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse, const DDF* respDDF=nullptr
+            const Application& application,
+            HTTPRequest& httpRequest,
+            HTTPResponse& httpResponse,
+            DDF& reqDDF,
+            const DDF* respDDF=nullptr
             ) const;
 #ifndef SHIBSP_LITE
         LoginEvent* newLoginEvent(const Application& application, const HTTPRequest& request) const;
@@ -174,8 +178,18 @@ pair<bool,long> ExternalAuth::run(SPRequest& request, bool isHandler) const
 
     try {
         if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-            // When out of process, we run natively and directly process the message.
-            return processMessage(request.getApplication(), request, request);
+            // When out of process, we run natively and directly process the message, except that we
+            // have to indirect the request anyway in order to override the client address. This is
+            // the simplest way to get a delegated HTTPRequest object, and since this code path is
+            // not really one we expect to use, it's good enough.
+            vector<string> headers(1, "User-Agent");
+            headers.push_back("Accept");
+            headers.push_back("Accept-Language");
+            headers.push_back("Cookie");
+            DDF in = wrap(request, &headers);
+            DDFJanitor jin(in);
+            scoped_ptr<HTTPRequest> fakedreq(getRequest(in));
+            return processMessage(request.getApplication(), *fakedreq, request, in);
         }
         else {
             // When not out of process, we remote all the message processing.
@@ -219,7 +233,7 @@ void ExternalAuth::receive(DDF& in, ostream& out)
     // which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
     try {
-        processMessage(*app, *req, *resp, &ret);
+        processMessage(*app, *req, *resp, in, &ret);
     }
     catch (std::exception& ex) {
         m_log.error("raising exception: %s", ex.what());
@@ -229,7 +243,7 @@ void ExternalAuth::receive(DDF& in, ostream& out)
 }
 
 pair<bool,long> ExternalAuth::processMessage(
-    const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse, const DDF* respDDF
+    const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse, DDF& reqDDF, const DDF* respDDF
     ) const
 {
 #ifndef SHIBSP_LITE
@@ -238,9 +252,19 @@ pair<bool,long> ExternalAuth::processMessage(
     MetadataProvider* m = application.getMetadataProvider(false);
     Locker mocker(m);
 
+    scoped_ptr<TransactionLog::Event> event;
+    LoginEvent* login_event = nullptr;
+    if (SPConfig::getConfig().isEnabled(SPConfig::Logging)) {
+        event.reset(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
+        login_event = dynamic_cast<LoginEvent*>(event.get());
+        if (login_event)
+            login_event->m_app = &application;
+        else
+            m_log.warn("unable to audit event, log event object was of an incorrect type");
+    }
+
     string ctype(httpRequest.getContentType());
     if (ctype == "text/xml" || ctype == "application/samlassertion+xml") {
-        // Body should contain an assertion.
         const char* body = httpRequest.getRequestBody();
         if (!body)
             throw FatalProfileException("Request body was empty.");
@@ -324,6 +348,14 @@ pair<bool,long> ExternalAuth::processMessage(
             authncontext_decl = authnContext->getAuthnContextDeclRef() ? authnContext->getAuthnContextDeclRef()->getReference() : nullptr;
         }
 
+        // Extract client address.
+        reqDDF.addmember("client_addr").string((const char*)nullptr);
+        if (ssoStatement->getSubjectLocality() && ssoStatement->getSubjectLocality()->getAddress()) {
+            auto_ptr_char addr(ssoStatement->getSubjectLocality()->getAddress());
+            if (addr.get())
+                reqDDF.getmember("client_addr").string(addr.get());
+        }
+
         // The context will handle deleting attributes and tokens.
         vector<const Assertion*> tokens(1, token);
         scoped_ptr<ResolutionContext> ctx(
@@ -362,6 +394,24 @@ pair<bool,long> ExternalAuth::processMessage(
             &tokens,
             &ctx->getResolvedAttributes()
             );
+
+        if (login_event) {
+            login_event->m_binding = "ExternalAuth/XML";
+            login_event->m_sessionID = session_id.c_str();
+            login_event->m_peer = issuer.first;
+            auto_ptr_char prot(protocol);
+            login_event->m_protocol = prot.get();
+            login_event->m_nameID = nameid;
+            login_event->m_saml2AuthnStatement = ssoStatement;
+            if (ctx)
+                login_event->m_attributes = &ctx->getResolvedAttributes();
+            try {
+                application.getServiceProvider().getTransactionLog()->write(*login_event);
+            }
+            catch (std::exception& ex) {
+                m_log.warn("exception auditing event: %s", ex.what());
+            }
+        }
     }
     else if (ctype == "application/x-www-form-urlencoded") {
         auto_ptr_XMLCh protocol(httpRequest.getParameter("protocol"));
@@ -446,6 +496,9 @@ pair<bool,long> ExternalAuth::processMessage(
             }
         }
 
+        // Get actual client address.
+        reqDDF.addmember("client_addr").string(httpRequest.getParameter("address"));
+
         scoped_ptr<ResolutionContext> ctx(
             resolveAttributes(
                 application,
@@ -483,6 +536,22 @@ pair<bool,long> ExternalAuth::processMessage(
             &tokens,
             &ctx->getResolvedAttributes()
             );
+
+        if (login_event) {
+            login_event->m_binding = "ExternalAuth/POST";
+            login_event->m_sessionID = session_id.c_str();
+            login_event->m_peer = issuer.first;
+            login_event->m_protocol = httpRequest.getParameter("protocol");
+            login_event->m_nameID = nameid.get();
+            if (ctx)
+                login_event->m_attributes = &ctx->getResolvedAttributes();
+            try {
+                application.getServiceProvider().getTransactionLog()->write(*login_event);
+            }
+            catch (std::exception& ex) {
+                m_log.warn("exception auditing event: %s", ex.what());
+            }
+        }
     }
     else {
         throw FatalProfileException("Submission was not in a recognized SAML assertion or form-encoded format.");
