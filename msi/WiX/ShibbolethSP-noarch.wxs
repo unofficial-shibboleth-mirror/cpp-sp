@@ -238,6 +238,10 @@
       <Custom Action='ShibInstallISAPIFilter' After='InstallFiles'>
         (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND IISMAJORVERSION
       </Custom>
+      <ScheduleReboot>
+        (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND IISMAJORVERSION
+      </ScheduleReboot>
+
 
       <!-- (try to) Uninstall IIS if
            - this is an uninstall
