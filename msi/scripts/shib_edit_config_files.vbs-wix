@@ -74,6 +74,9 @@ if (Err = 0) then
   Set WshShell = CreateObject("WScript.Shell")
   WshShell.RegWrite "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\SHIBSP_PREFIX", ConvertedDir, "REG_SZ"
 
+  'Blow away any old SHIBSPP_SCHEMAS variable we find
+  WshShell.RegDelete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\SHIBSP_SCHEMAS"
+
   'Perform actual Substitutions
   'Afterwards, if the config file doesn't already exist, copy up to etc/shibboleth
   'Also strip *.in for files in dist
