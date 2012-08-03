@@ -41,6 +41,7 @@
 
     <!-- NOTE we should not use sys.BUILDARCH since that reflects the candle parameters, *NOT* the architecture -->
     <Property Id='IS64BITINSTALL' Value='TRUE'/>
+    <Property Id='INSTALL_32BIT' Secure='yes' />
     <UIRef Id='ShibbolethInstallDir'/>
 
 

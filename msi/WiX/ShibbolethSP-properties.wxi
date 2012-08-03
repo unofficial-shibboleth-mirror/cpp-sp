@@ -29,7 +29,6 @@
   </Property>
   
   <!-- On 64 bit systems: 64 bit or 32bit service and DLLS, also used to swap in the 64 bit service -->
-  <Property Id='INSTALL_32BIT' Secure='yes' />
 
   <Property Id='ARPCONTACT' Value='contact@shibboleth.net' />
   <Property Id='ARPHELPLINK' Value='https://wiki.shibboleth.net/confluence/display/SHIB2/Installation+and+Configuration' />
