@@ -238,7 +238,7 @@
       <Custom Action='ShibInstallISAPIFilter' After='InstallFiles'>
         (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND IISMAJORVERSION
       </Custom>
-      <ScheduleReboot>
+      <ScheduleReboot Before='InstallFinalize'>
         (NOT Installed) AND (INSTALL_ISAPI_FILTER = "TRUE") AND (NOT ALREADYINSTALLED) AND IISMAJORVERSION
       </ScheduleReboot>
 
