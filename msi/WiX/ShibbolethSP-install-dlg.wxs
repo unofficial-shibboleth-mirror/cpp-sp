@@ -58,7 +58,7 @@
 
         <!-- Service? -->
         <Control Id='InstallShibd' Type='Text' X='25' Y='148' Height='17' Width='235' 
-                 Text='The Shibboleth daemon will be installed as service shibd_default.' />
+                 Text='The Shibboleth Daemon will be installed as a service.' />
 
         <!-- 32 Bits? -->
         <Control Id='Install32Bit' Type='CheckBox' X='265' Y='146' Height='17' Width='80'
