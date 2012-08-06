@@ -22,11 +22,11 @@
   <Product Id='{973D4080-26FC-430B-9BEA-60ADB78C3CD3}' Language='1033' 
            Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider' 
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion)'>
-    <Package Description='Shibboleth SP (x86 and x64) V$(var.ShibbolethVersion) RC 1' Compressed='yes'
+    <Package Description='Shibboleth SP (x86 and x64) V$(var.ShibbolethVersion)' Compressed='yes'
            Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
 
     <MajorUpgrade DowngradeErrorMessage='A later version of [ProductName] is already installed. Setup will now exit.'
-           AllowSameVersionUpgrades='yes' MigrateFeatures='yes' Schedule='afterInstallExecute' />
+           MigrateFeatures='yes' Schedule='afterInstallExecute' />
 
     <PropertyRef Id='SHIB_OLDVERSION_64'/>
     <PropertyRef Id='SHIB_OLDVERSION'/>
