@@ -10,53 +10,47 @@ Shibboleth Implementation Team
 
    Derek Atkins
    IHTFP Consulting, Inc
-   derek@ihtfp.com
 
    Scott Cantor
    The Ohio State University
-   cantor.2@osu.edu
 
    Jim Fox
    University of Washington
-   fox@washington.edu
 
    Walter Hoehn
    The University of Memphis
-   wassa@memphis.edu
 
    Chad LaJoie
    Itumi, LLC.
-   lajoie@itumi.biz
 
    Derek Morr
    Penn State University
-   dvm105@psu.edu
 
    Will Norris
-   will@willnorris.com
    
    Brent Putman
    Georgetown University
-   putmanb@georgetown.edu
    
    Rod Widdowson
    Steading Software, Inc.
-   rdw@steadingsoftware.com
    
  Project Management
 
-   RL "Bob" Morgan
-   University of Washington
-   rlmorgan@washington.edu
-
    Steven Carmody
    Brown University
-   Steven_Carmody@brown.edu
+
+   Nicole Harris
+   TERENA
 
    Ken Klingenstein
    Internet2
-   kjk@internet2.edu
 
+   Thomas Lenggenhager
+   SWITCH
+
+   RL "Bob" Morgan
+   University of Washington
+   http://shibboleth.net/community/news/20120717.html
 
 Thanks to: 
 

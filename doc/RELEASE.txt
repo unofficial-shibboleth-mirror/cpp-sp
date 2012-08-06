@@ -1,9 +1,21 @@
-Release Notes
+Shibboleth Native SP Release Notes
 
-Shibboleth Native SP
+---------------------------------------------------------------------
+This release is dedicated to our friend RL 'Bob' Morgan, who passed
+in 2012, and without which the Shibboleth Project would not have come
+into being.
 
-Fix/enhancement lists:
+http://shibboleth.net/community/news/20120717.html
+---------------------------------------------------------------------
+
+Fix/Enhancement Lists:
 https://wiki.shibboleth.net/confluence/display/DEV/SPRoadmap
+
+Important Changes:
+https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPConfigurationChanges
+
+Feature Highlights:
+https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPInterestingFeatures
 
 NOTE: The shibboleth2.xml configuration format in this release
 is fully compatible with the 2.x releases, but there are significant
@@ -76,6 +88,7 @@ Fully Supported
 - General Security
     - Black/whitelisting of XML security algorithms (with xml-security 1.6+)
     - RSA and ECDSA signatures (EC requires xml-security 1.6+ and support from openssl)
+    - AES-GCM encryption (requires xml-security 1.7+ and support from openssl)
     - Metadata-based algorithm selection 
 
 - Attributes
@@ -120,7 +133,8 @@ Fully Supported
     - Support on Apache for preserving URL-encoded form data across SSO 
 
 - Apache module enhancements
-    - "OR" coexistence with other authorization modules
+    - Apache 2.4 support including authz 
+    - "OR" coexistence with other authz modules on older Apache
     - htaccess-based override of any valid RequestMap property
     - htaccess support for external access control plugins
 
