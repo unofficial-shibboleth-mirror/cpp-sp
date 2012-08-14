@@ -109,8 +109,11 @@ namespace shibsp {
                 em->setAlgorithm(alg);
                 m_encryptions.push_back(em);
 
-                if (XMLString::equals(alg, DSIGConstants::s_unicodeStrURIRSA_OAEP) ||
-                        XMLString::equals(alg, DSIGConstants::s_unicodeStrURIRSA_OAEP_MGFP1)) {
+                if (
+#ifdef URI_ID_RSA_OAEP
+                    XMLString::equals(alg, DSIGConstants::s_unicodeStrURIRSA_OAEP) ||
+#endif
+                    XMLString::equals(alg, DSIGConstants::s_unicodeStrURIRSA_OAEP_MGFP1)) {
                     // Check for non-support of SHA-256. This is a reasonable guess as to whether
                     // "all" standard digests and MGF variants will be supported or not, and if not, we
                     // explicitly advertise only SHA-1.
@@ -118,12 +121,14 @@ namespace shibsp {
                         if (!m_digestBuilder)
                             m_digestBuilder = XMLObjectBuilder::getBuilder(xmltooling::QName(samlconstants::SAML20MD_ALGSUPPORT_NS, DigestMethod::LOCAL_NAME));
                         
+#ifdef URI_ID_RSA_OAEP
                         // Add MGF for new OAEP variant.
                         if (XMLString::equals(alg, DSIGConstants::s_unicodeStrURIRSA_OAEP)) {
                             MGF* mgf = MGFBuilder::buildMGF();
                             mgf->setAlgorithm(DSIGConstants::s_unicodeStrURIMGF1_SHA1);
                             em->getUnknownXMLObjects().push_back(mgf);
                         }
+#endif
 
                         DigestMethod* dm = dynamic_cast<DigestMethod*>(
                             m_digestBuilder->buildObject(xmlconstants::XMLSIG_NS, DigestMethod::LOCAL_NAME, xmlconstants::XMLSIG_PREFIX)
