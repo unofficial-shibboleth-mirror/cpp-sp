@@ -208,14 +208,10 @@ ArtifactResponse* ArtifactResolver::resolve(
                             XercesJanitor<DOMDocument> docjanitor(doc);
 
                             if (log.isDebugEnabled()) {
-#ifdef XMLTOOLING_LOG4SHIB
-                                log.debugStream() << "received XML:\n" << *(doc->getDocumentElement()) << logging::eol;
-#else
                                 string buf;
                                 XMLHelper::serialize(doc->getDocumentElement(), buf);
                                 log.debugStream() << "received XML:\n" << buf << logging::eol;
-#endif
-    }
+                            }
                             xmlObject.reset(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
                             docjanitor.release();
                         }
