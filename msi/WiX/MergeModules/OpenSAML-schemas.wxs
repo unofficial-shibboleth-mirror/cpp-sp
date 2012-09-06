@@ -225,13 +225,13 @@
     <CustomAction Id='EditCatalogSAML20' BinaryKey='EditCatalogFileSrc' VBScriptCall=''
       Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetEditXMLToolingCatalog' Property='EditXMLToolingCatalog'
-      Value='[CommonAppDataFolder]Shibboleth\SP\xml\xmltooling\;@;catalog.xml' />
+      Value='%PROGRAMDATA%\Shibboleth\SP\xml\xmltooling\;@;catalog.xml' />
     <CustomAction Id='SetEditCatalogSAML10' Property='EditCatalogSAML10'
-      Value='[CommonAppDataFolder]Shibboleth\SP\xml\opensaml\;@;saml10-catalog.xml' />
+      Value='%PROGRAMDATA%\Shibboleth\SP\xml\opensaml\;@;saml10-catalog.xml' />
     <CustomAction Id='SetEditCatalogSAML11' Property='EditCatalogSAML11'
-      Value='[CommonAppDataFolder]Shibboleth\SP\xml\opensaml\;@;saml11-catalog.xml' />
+      Value='%PROGRAMDATA%\Shibboleth\SP\xml\opensaml\;@;saml11-catalog.xml' />
     <CustomAction Id='SetEditCatalogSAML20' Property='EditCatalogSAML20'
-      Value='[CommonAppDataFolder]Shibboleth\SP\xml\opensaml\;@;saml20-catalog.xml' />
+      Value='%PROGRAMDATA%\Shibboleth\SP\xml\opensaml\;@;saml20-catalog.xml' />
     <InstallExecuteSequence>
       <Custom Action='SetEditXMLToolingCatalog' Before='CostInitialize'>NOT Installed</Custom>
       <Custom Action='SetEditCatalogSAML10' Before='CostInitialize'>NOT Installed</Custom>

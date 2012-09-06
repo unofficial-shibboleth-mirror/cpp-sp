@@ -50,7 +50,7 @@
   <?define XmlSecVersion='1.7.0' ?><!-- '$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan' -->
   <?define XmlSecFileVersion='1_7' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
-  <?define XmlToolingVersion='1.5.0' ?>
+  <?define XmlToolingVersion='1.5.1' ?>
   <?define XmlToolingFileVersion='1_5' ?><!--'xmltooling$(var.XmlToolingFileVersion)D.dll'-->
 
   <?define ZlibVersion='1.2.7' ?><!--'$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\Release\zlib$(var.ZlibFileVersion).dll'-->
