@@ -72,7 +72,7 @@
     <CustomAction Id='EditShibbolethCatalog' BinaryKey='EditCatalogFileSrc' VBScriptCall='' 
                   Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetEditShibbolethCatalog' Property='EditShibbolethCatalog' 
-                  Value='%PROGRAMDATA%\Shibboleth\SP\xml\shibboleth\;@;catalog.xml' />
+                  Value='%PROGRAMDATA%\Shibboleth\SP\xml\shibboleth\;@;[CommonAppDataFolder]Shibboleth\SP\xml\shibboleth\catalog.xml' />
     <InstallExecuteSequence>
       <Custom Action='SetEditShibbolethCatalog' Before='CostInitialize'>NOT Installed</Custom>
       <Custom Action='EditShibbolethCatalog' After='InstallFiles'>NOT Installed</Custom>

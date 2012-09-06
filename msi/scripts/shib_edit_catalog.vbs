@@ -45,9 +45,8 @@ if (Err = 0) then
   customData = Session.Property("CustomActionData")
   msiProperties = split(customData,";@;")
   XMLDir = msiProperties(0) ' \programdata\shibboleth\sp\xml\opensaml\
-  ConfigFileName = msiProperties(1) 'catalog
+  ConfigFile = msiProperties(1) 'catalog
 
-  ConfigFile = XMLDir & ConfigFileName
   ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
 
 'Last End If
