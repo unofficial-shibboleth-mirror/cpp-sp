@@ -550,6 +550,7 @@ need_default=yes
 Peek(enable,apache_13,need_default=no)
 Peek(enable,apache_20,need_default=no)
 Peek(enable,apache_22,need_default=no)
+Peek(enable,apache_24,need_default=no)
 AC_MSG_RESULT($need_default)
 
 if test "$need_default" = "yes"; then
@@ -558,9 +559,10 @@ if test "$need_default" = "yes"; then
   Peek(with,apxs,xs="$peekval")
   Peek(with,apxs2,xs="$peekval")
   Peek(with,apxs22,xs="$peekval")
+  Peek(with,apxs24,xs="$peekval")
   if test "x$xs" = "x"; then
      AC_PATH_PROGS(xs, apxs2 apxs,
-        AC_MSG_ERROR(No apxs, no apache found.  Try --with-apxs),
+        AC_MSG_ERROR(No apxs, no Apache found. Try --with-apxs, --with-apxs2, etc.),
         [/usr/local/apache2/bin:/usr/local/apache/bin:/usr/sbin:$PATH])
   fi
   # ask the daemon for the version and set parameters
@@ -581,10 +583,14 @@ if test "$need_default" = "yes"; then
                [with_apxs22]=$xs
                AC_MSG_RESULT(2.2)
                ;;
-       *)      AC_MSG_ERROR(unusable apache versions: $v. Try setting --with-apxs)
+       2.4*)   [enable_apache_24]=yes
+               [with_apxs24]=$xs
+               AC_MSG_RESULT(2.4)
+               ;;
+       *)      AC_MSG_ERROR(unusable Apache versions: $v. Try setting --with-apxs, --with=apxs2, etc.)
      esac
   else 
-     AC_MSG_RESULT(cannot determine version.  Try setting --with-apxs)
+     AC_MSG_RESULT(cannot determine Apache version. Try setting --with-apxs, --with-apxs2, etc.)
   fi
 fi
 
@@ -650,7 +656,7 @@ AC_SUBST(APXS_INCLUDE)
 # Apache 2.0 (mod_shib_20)
 #   --enable-apache-20
 #   --with-apxs2      (DSO build, the normal way, uses apxs to derive build flags)
-#	--with-apr        (DSO build, APR development package installed separately)
+#   --with-apr        (DSO build, APR development package installed separately)
 #   --with-apu        (DSO build, APR-UTIL development package installed separately)
 
 AC_ARG_ENABLE(apache-20,
@@ -763,7 +769,7 @@ AC_SUBST(APXS2_INCLUDE)
 # Apache 2.2 (mod_shib_22)
 #   --enable-apache-22
 #   --with-apxs22     (DSO build, the normal way, uses apxs to derive build flags)
-#	--with-apr1       (DSO build, APR development package installed separately)
+#   --with-apr1       (DSO build, APR development package installed separately)
 #   --with-apu1       (DSO build, APR-UTIL development package installed separately)
 
 AC_ARG_ENABLE(apache-22,
@@ -875,7 +881,7 @@ AC_SUBST(APXS22_INCLUDE)
 # Apache 2.4 (mod_shib_24)
 #   --enable-apache-24
 #   --with-apxs24     (DSO build, the normal way, uses apxs to derive build flags)
-#	--with-apr1       (DSO build, APR development package installed separately)
+#   --with-apr1       (DSO build, APR development package installed separately)
 #   --with-apu1       (DSO build, APR-UTIL development package installed separately)
 
 AC_ARG_ENABLE(apache-24,
@@ -948,7 +954,7 @@ if test "$WANT_APACHE_24" = "yes" ; then
             fi
             ],
             [
-            AC_PATH_PROG(APR1_CONFIG, apr-1-config,,[`$APXS22 -q SBINDIR`]:[$PATH])
+            AC_PATH_PROG(APR1_CONFIG, apr-1-config,,[`$APXS24 -q SBINDIR`]:[$PATH])
             ])
         if test -f "${APR1_CONFIG}"; then
             APR1_CFLAGS="`${APR1_CONFIG} --cflags` `${APR1_CONFIG} --cppflags` `${APR1_CONFIG} --includes`"
@@ -969,7 +975,7 @@ if test "$WANT_APACHE_24" = "yes" ; then
             fi
             ],
             [
-            AC_PATH_PROG(APU1_CONFIG, apu-1-config,,[`$APXS22 -q SBINDIR`]:[$PATH])
+            AC_PATH_PROG(APU1_CONFIG, apu-1-config,,[`$APXS24 -q SBINDIR`]:[$PATH])
             ])
         if test -f "${APU1_CONFIG}"; then
             APU1_CFLAGS="`${APU1_CONFIG} --includes`"
