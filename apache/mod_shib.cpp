@@ -708,8 +708,9 @@ extern "C" int shib_check_user(request_rec* r)
 #else
         shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
         if (!rc || !rc->sta) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user found no per-request structure");
-            return SERVER_ERROR;
+            ap_log_rerror(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, SH_AP_R(r), "shib_check_user found no per-request structure");
+            shib_post_read(r);  // ensures objects are created if post_read hook didn't run
+            rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
         }
         ShibTargetApache* psta = rc->sta;
 #endif
@@ -1539,15 +1540,21 @@ const xercesc::DOMElement* ApacheRequestMapper::getElement() const
 }
 
 // Authz callbacks for Apache 2.4
+// For some reason, these get run twice for each request, once before hooks like check_user, etc.
+// and once after. The first time through, the request object exists, but isn't initialized.
+// The other case is subrequests of some kinds: then post_read doesn't run, and the objects
+// themselves don't exist. We do deferred creation of the objects in check_user to fix that case.
+// In each screwed up case, we return "denied" so that nothing bad happens.
 #ifdef SHIB_APACHE_24
 pair<ShibTargetApache*,authz_status> shib_base_check_authz(request_rec* r)
 {
     shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
     if (!rc || !rc->sta) {
-        ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_base_check_authz found no per-request structure");
-        return make_pair((ShibTargetApache*)nullptr, AUTHZ_GENERAL_ERROR);
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_base_check_authz found no per-request structure");
+        return make_pair((ShibTargetApache*)nullptr, AUTHZ_DENIED_NO_USER);
     }
     else if (!rc->sta->isInitialized()) {
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "shib_base_check_authz found uninitialized request object");
         return make_pair((ShibTargetApache*)nullptr, AUTHZ_DENIED_NO_USER);
     }
     return make_pair(rc->sta, AUTHZ_GRANTED);
