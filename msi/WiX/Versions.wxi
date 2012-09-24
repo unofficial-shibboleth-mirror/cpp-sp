@@ -17,8 +17,8 @@
    permissions and limitations under the License.  -->
 
 <Include xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <?define BuildDirectory='G:\Downloads\shib\' ?>
-  <?define SPBuildDirectory='G:\Downloads\shib\cvs\2.0\' ?>
+  <?define BuildDirectory='C:\Users\Administrator\Shibboleth\' ?>
+  <?define SPBuildDirectory='C:\Users\Administrator\Shibboleth\svn\2.5\' ?>
   
   <!-- Do not confuse ShibbolethDllVersion with ShibbolethVersion -->
   <?define ShibbolethVersion='2.5.0'?>
@@ -47,8 +47,8 @@
   <?define XercesVersion='3.1.1' ?><!-- $(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll' -->
   <?define XercesFileVersion='3_1' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
-  <?define XmlSecVersion='1.6.0' ?><!-- '$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan' -->
-  <?define XmlSecFileVersion='1_6' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
+  <?define XmlSecVersion='1.7.0' ?><!-- '$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan' -->
+  <?define XmlSecFileVersion='1_7' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
 
   <?define XmlToolingVersion='1.5.1' ?>
   <?define XmlToolingFileVersion='1_5' ?><!--'xmltooling$(var.XmlToolingFileVersion)D.dll'-->
