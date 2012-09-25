@@ -46,8 +46,17 @@ ScopedAttribute::ScopedAttribute(DDF& in) : Attribute(in), m_delimeter('@')
     if (val.isint())
         m_delimeter = static_cast<char>(val.integer());
     val = in.first().first();
-    while (val.name() && val.string()) {
-        m_values.push_back(make_pair(string(val.name()), string(val.string())));
+    while (!val.isnull()) {
+        // There are two serializations supported. The new one is in 2.5.1 and fixes SPPCPP-504.
+        // The original is the second branch and was vulnerable to non-ASCII characters in the value.
+        // Supporting both means at least minimal support for rolling upgrades if a shibd instance is
+        // shared.
+        if (val.islist() && val.integer() == 2) {
+            m_values.push_back(make_pair(string(val.first().string()), string(val.last().string())));
+        }
+        else if (val.name() && val.string()) {
+            m_values.push_back(make_pair(string(val.name()), string(val.string())));
+        }
         val = in.first().next();
     }
 }
@@ -110,7 +119,11 @@ DDF ScopedAttribute::marshall() const
         ddf.addmember("_delimeter").integer(m_delimeter);
     DDF vlist = ddf.first();
     for (vector< pair<string,string> >::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
-        DDF val = DDF(i->first.c_str()).string(i->second.c_str());
+        DDF one = DDF(nullptr).string(i->first.c_str());
+        DDF two = DDF(nullptr).string(i->second.c_str());
+        DDF val = DDF(nullptr).list();
+        val.add(one);
+        val.add(two);
         vlist.add(val);
     }
     return ddf;
