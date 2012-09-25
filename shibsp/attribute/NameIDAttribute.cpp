@@ -61,10 +61,21 @@ NameIDAttribute::NameIDAttribute(DDF& in) : Attribute(in)
         m_hashAlg = val.string();
     const char* pch;
     val = in.first().first();
-    while (val.name()) {
+    while (!val.isnull()) {
         m_values.push_back(Value());
         Value& v = m_values.back();
-        v.m_Name = val.name();
+        // There are two serializations supported. The new one is in 2.5.1 and fixes SPPCPP-504.
+        // The original is the first branch and was vulnerable to non-ASCII characters in the value.
+        // Supporting both means at least minimal support for rolling upgrades if a shibd instance is
+        // shared.
+        if (val.name()) {
+            v.m_Name = val.name();
+        }
+        else {
+            pch = val["Name"].string();
+            if (pch)
+                v.m_Name = pch;
+        }
         pch = val["Format"].string();
         if (pch)
             v.m_Format = pch;
@@ -176,7 +187,8 @@ DDF NameIDAttribute::marshall() const
         ddf.addmember("_hashalg").string(m_hashAlg.c_str());
     DDF vlist = ddf.first();
     for (vector<Value>::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {
-        DDF val = DDF(i->m_Name.c_str()).structure();
+        DDF val = DDF(nullptr).structure();
+        val.addmember("Name").string(i->m_Name.c_str());
         if (!i->m_Format.empty())
             val.addmember("Format").string(i->m_Format.c_str());
         if (!i->m_NameQualifier.empty())
