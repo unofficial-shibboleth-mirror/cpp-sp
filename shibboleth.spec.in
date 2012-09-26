@@ -1,4 +1,4 @@
-Name:		shibboleth-sp
+Name:		shibboleth
 Version:	@PACKAGE_VERSION@
 Release:	1
 Summary:	Open source system for attribute-based Web SSO
@@ -6,11 +6,15 @@ Group:		Productivity/Networking/Security
 Vendor:		Shibboleth Consortium
 License:	Apache 2.0
 URL:		http://shibboleth.net/
-Source:		%{name}-%{version}.tar.gz
-BuildRoot:	%{_tmppath}/%{name}-%{version}-root
-Obsoletes:	@PACKAGE_NAME@ < %{version}-%{release}
+Source:		%{name}-sp-%{version}.tar.gz
+BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
+Obsoletes:	shibboleth-sp = 2.5.0
 Requires:	openssl
-PreReq:		xmltooling-schemas, opensaml-schemas
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+PreReq:		xmltooling-schemas%{?_isa} >= 1.5.0, opensaml-schemas%{?_isa} >= 2.5.0
+%else
+PreReq:         xmltooling-schemas >= 1.5.0, opensaml-schemas >= 2.5.0
+%endif
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:		%{insserv_prereq} %{fillup_prereq}
 BuildRequires:	libXerces-c-devel >= 2.8.0
@@ -23,7 +27,7 @@ BuildRequires:	libsaml-devel >= 2.5
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.4}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
-Requires:		libcurl-openssl >= 7.21.7
+Requires:	libcurl-openssl%{?_isa} >= 7.21.7
 BuildRequires:	chrpath
 %endif
 BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
@@ -65,7 +69,7 @@ daemon, default plugins, and Apache module(s).
 Summary:	Shibboleth Development Headers
 Group:		Development/Libraries/C and C++
 Requires:	%{name} = %{version}-%{release}
-Obsoletes:	shibboleth-devel < %{version}-%{release}
+Obsoletes:	shibboleth-sp-devel = 2.5.0
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 Requires:	libXerces-c-devel >= 2.8.0
 %else
@@ -85,7 +89,7 @@ exchange of rich attributes subject to privacy controls.
 This package includes files needed for development with Shibboleth.
 
 %prep
-%setup -q
+%setup -n %{name}-sp-%{version}
 
 %build
 %if 0%{?centos_version} >= 600
@@ -190,7 +194,7 @@ getent passwd %{runuser} >/dev/null || useradd -r -g %{runuser} \
 exit 0
 
 %post
-%ifnos solaris2.8 solaris2.9 solaris2.10
+%ifnos solaris2.8 solaris2.9 solaris2.10 solaris2.11
 /sbin/ldconfig
 %endif
 
@@ -254,7 +258,7 @@ fi
 exit 0
 
 %postun
-%ifnos solaris2.8 solaris2.9 solaris2.10
+%ifnos solaris2.8 solaris2.9 solaris2.10 solaris2.11
 /sbin/ldconfig
 %endif
 %if "%{_vendor}" == "redhat"
@@ -327,7 +331,15 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
-* Thu Mar 1 2012  Scott Cantor  <cantor.2@osu.edu>  - 2.5-1
+* Tue Sep 25 2012  Scott Cantor  <cantor.2@osu.edu>  - 2.5.1-1
+- Merge back various changes used in released packages
+- Prep for 2.5.1 by pulling extra restart out
+
+* Tue Aug 7 2012  Scott Cantor  <cantor.2@osu.edu>  - 2.5.0-2
+- Changed package name back to shibboleth because of upgrade bugs
+- Put back extra restart for this release only.
+
+* Thu Mar 1 2012  Scott Cantor  <cantor.2@osu.edu>  - 2.5.0-1
 - Move logo and stylesheet to version-independent tree
 - Make shib.conf noreplace
 - Post-fixup of Alias commands in older shib.conf
