@@ -54,7 +54,7 @@ END
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 2,5,0,0
- PRODUCTVERSION 2,5,0,0
+ PRODUCTVERSION 2,5,1,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -75,8 +75,8 @@ BEGIN
             VALUE "InternalName", "memcache-store\0"
             VALUE "LegalCopyright", "Copyright © 2012 UCAID\0"
             VALUE "OriginalFilename", "memcache-store.so\0"
-            VALUE "ProductName", "Shibboleth 2.5.0\0"
-            VALUE "ProductVersion", "2, 5, 0, 0\0"
+            VALUE "ProductName", "Shibboleth 2.5.1\0"
+            VALUE "ProductVersion", "2, 5, 1, 0\0"
         END
     END
     BLOCK "VarFileInfo"
