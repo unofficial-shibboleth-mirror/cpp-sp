@@ -21,7 +21,7 @@
   <?define SPBuildDirectory='C:\Users\Administrator\Shibboleth\svn\2.5\' ?>
   
   <!-- Do not confuse ShibbolethDllVersion with ShibbolethVersion -->
-  <?define ShibbolethVersion='2.5.0'?>
+  <?define ShibbolethVersion='2.5.1'?>
   <!-- DO NOT CHANGE UpgradeCode -->
   <?define ShibbolethUpgradeCode='{28A4EB62-E860-49CA-BE43-44ADEB91DBF6}' ?>
 
@@ -42,7 +42,7 @@
 
   <!-- Do not confuse ShibbolethDllVersion with ShibbolethVersion -->
   <?define ShibbolethDllFileVersion='1_5' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
-  <?define ShibbolethDllVersion='1.5.0' ?>
+  <?define ShibbolethDllVersion='1.5.1' ?>
 
   <?define XercesVersion='3.1.1' ?><!-- $(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll' -->
   <?define XercesFileVersion='3_1' ?><!-- DON'T FORGET TO CHANGE THE COMPONENT-->
