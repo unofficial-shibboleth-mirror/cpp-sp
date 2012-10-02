@@ -16,13 +16,15 @@
      implied.  See the License for the specific language governing
      permissions and limitations under the License.  -->
 
+<?include Versions.wxi ?>
+
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <!-- This file controls the dispaying of the GUI dialogs (both WiX and custom) -->
   <Fragment>
 
-    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
-    <WixVariable Id="WixUIBannerBmp" Value="TopBanner.bmp" />
-    <WixVariable Id="WixUIDialogBmp" Value="Dialog.bmp" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.SPBuildDirectory)\cpp-sp\msi\wix\license.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.SPBuildDirectory)\cpp-sp\msi\wix\TopBanner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.SPBuildDirectory)\cpp-sp\msi\wix\Dialog.bmp" />
     <WixVariable Id="WixUICostingPopupOptOut" Value="1" />    
 
     <!-- GUI For Shibboleth installer.  Uses the Wix packages, but linked in

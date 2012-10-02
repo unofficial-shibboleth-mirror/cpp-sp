@@ -55,17 +55,17 @@
 
       <Directory Id='ProgramFilesFolder' Name='PFiles'>
         <!-- 32 bit merge modules -notionally go to "Program Files (x86)" -->
-        <Merge Id='CurlMergeModule_x86' Language='1033' SourceFile='MergeModules\Curl-x86.msm' DiskId='1' />
-        <Merge Id='FastCGIMergeModule_x86' Language='1033' SourceFile='MergeModules\FastCGI-x86.msm' DiskId='1' />
-        <Merge Id='Log4ShibMergeModule_x86' Language='1033' SourceFile='MergeModules\Log4Shib-x86.msm' DiskId='1' />
-        <Merge Id='OpenSAMLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSAML-x86.msm' DiskId='1' />
-        <Merge Id='OpenSAMLMergeModule_schemas' Language='1033' SourceFile='MergeModules\OpenSAML-schemas.msm' DiskId='1' />
-        <Merge Id='OpenSSLMergeModule_x86' Language='1033' SourceFile='MergeModules\OpenSSL-x86.msm' DiskId='1' />
-        <Merge Id='ShibbolethMergeModule_x86' Language='1033' SourceFile='MergeModules\Shibboleth-x86.msm' DiskId='1' />
-        <Merge Id='ShibbolethMergeModule_schemas' Language='1033' SourceFile='MergeModules\Shibboleth-schemas.msm' DiskId='1' />
-        <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='MergeModules\Xerces-x86.msm' DiskId='1' />
-        <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='MergeModules\XmlSec-x86.msm' DiskId='1' />
-        <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='MergeModules\Zlib-x86.msm' DiskId='1' />
+        <Merge Id='CurlMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Curl-x86.msm' DiskId='1' />
+        <Merge Id='FastCGIMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\FastCGI-x86.msm' DiskId='1' />
+        <Merge Id='Log4ShibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Log4Shib-x86.msm' DiskId='1' />
+        <Merge Id='OpenSAMLMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-x86.msm' DiskId='1' />
+        <Merge Id='OpenSAMLMergeModule_schemas' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-schemas.msm' DiskId='1' />
+        <Merge Id='OpenSSLMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSSL-x86.msm' DiskId='1' />
+        <Merge Id='ShibbolethMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-x86.msm' DiskId='1' />
+        <Merge Id='ShibbolethMergeModule_schemas' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-schemas.msm' DiskId='1' />
+        <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm' DiskId='1' />
+        <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm' DiskId='1' />
+        <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm' DiskId='1' />
 
         <Merge Id='Microsoft_VC100_DebugCRT_x86' Language='1033' 
                SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_DebugCRT_x86.msm' DiskId='1' />
