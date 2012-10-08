@@ -248,10 +248,11 @@ static long gstdin(FCGX_Request* request, char** content)
         if (clen > STDIN_MAX)
             clen = STDIN_MAX;
 
-        *content = new char[clen];
+        *content = new char[clen + 1];
 
         cin.read(*content, clen);
         clen = cin.gcount();
+        (*content)[clen] = 0;
     }
     else {
         // *never* read stdin when CONTENT_LENGTH is missing or unparsable
