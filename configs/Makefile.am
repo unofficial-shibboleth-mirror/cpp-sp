@@ -18,6 +18,7 @@ pkgsysconf_DATA = \
 	apache.config \
 	apache2.config \
 	apache22.config \
+	apache24.config \
 	keygen.sh \
 	metagen.sh \
 	upgrade.xsl
