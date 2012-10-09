@@ -133,7 +133,9 @@ namespace shibsp {
             const set<string>* indexes,
             time_t expires,
             vector<string>& sessions
-            );
+            ) {
+            return _logout(app, issuer, nameid, indexes, expires, sessions, 0);
+        }
         bool matches(
             const Application& app,
             const HTTPRequest& request,
@@ -203,7 +205,16 @@ namespace shibsp {
     private:
 #ifndef SHIBSP_LITE
         // maintain back-mappings of NameID/SessionIndex -> session key
-        void insert(const char* key, time_t expires, const char* name, const char* index);
+        void insert(const char* key, time_t expires, const char* name, const char* index, short attempts=0);
+        vector<string>::size_type _logout(
+            const Application& app,
+            const EntityDescriptor* issuer,
+            const saml2::NameID& nameid,
+            const set<string>* indexes,
+            time_t expires,
+            vector<string>& sessions,
+            short attempts
+            );
         bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::NameID& n1, const saml2::NameID& n2) const;
         LogoutEvent* newLogoutEvent(const Application& app) const;
 
@@ -560,6 +571,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
 
         // We may need to write back a new address into the session using a versioned update loop.
         if (client_addr) {
+            short attempts = 0;
             do {
                 const char* saddr = nullptr;
                 if (strchr(client_addr, ':'))
@@ -608,6 +620,10 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
                 }
                 else if (ver < 0) {
                     // Out of sync.
+                    if (++attempts > 10) {
+                        m_cache->m_log.error("failed to bind client address, update attempts exceeded limit");
+                        throw IOException("Unable to update stored session, exceeded retry limit.");
+                    }
                     m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
                     ver = m_cache->m_storage->readText(getID(), "session", &record, nullptr);
                     if (!ver) {
@@ -654,6 +670,7 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
     m_cache->m_log.debug("adding attributes to session (%s)", getID());
 
     int ver;
+    short attempts = 0;
     do {
         DDF attr;
         DDF attrs = m_obj["attributes"];
@@ -696,6 +713,10 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
         }
         else if (ver < 0) {
             // Out of sync.
+            if (++attempts > 10) {
+                m_cache->m_log.error("failed to update stored session, update attempts exceeded limit");
+                throw IOException("Unable to update stored session, exceeded retry limit.");
+            }
             m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
             ver = m_cache->m_storage->readText(getID(), "session", &record, nullptr);
             if (!ver) {
@@ -781,6 +802,7 @@ void StoredSession::addAssertion(Assertion* assertion)
         throw IOException("Attempted to insert duplicate assertion ID into session.");
 
     int ver;
+    short attempts = 0;
     do {
         DDF token = DDF(nullptr).string(id.get());
         m_obj["assertions"].add(token);
@@ -814,6 +836,10 @@ void StoredSession::addAssertion(Assertion* assertion)
         }
         else if (ver < 0) {
             // Out of sync.
+            if (++attempts > 10) {
+                m_cache->m_log.error("failed to update stored session, update attempts exceeded limit");
+                throw IOException("Unable to update stored session, exceeded retry limit.");
+            }
             m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
             ver = m_cache->m_storage->readText(getID(), "session", &record, nullptr);
             if (!ver) {
@@ -1018,8 +1044,11 @@ void SSCache::test()
     m_storage->deleteString("SessionCacheTest", temp.get());
 }
 
-void SSCache::insert(const char* key, time_t expires, const char* name, const char* index)
+void SSCache::insert(const char* key, time_t expires, const char* name, const char* index, short attempts)
 {
+    if (attempts > 10)
+        throw IOException("Exceeded retry limit.");
+
     string dup;
     unsigned int storageLimit = m_storage_lite->getCapabilities().getKeySize();
     if (strlen(name) > storageLimit) {
@@ -1061,12 +1090,12 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
         ver = m_storage_lite->updateText("NameID", name, out.str().c_str(), max(expires, recordexp), ver);
         if (ver <= 0) {
             // Out of sync, or went missing, so retry.
-            return insert(key, expires, name, index);
+            return insert(key, expires, name, index, attempts + 1);
         }
     }
     else if (!m_storage_lite->createText("NameID", name, out.str().c_str(), expires)) {
         // Hit a dup, so just retry, hopefully hitting the other branch.
-        return insert(key, expires, name, index);
+        return insert(key, expires, name, index, attempts + 1);
     }
 }
 
@@ -1293,13 +1322,14 @@ bool SSCache::matches(
     return false;
 }
 
-vector<string>::size_type SSCache::logout(
+vector<string>::size_type SSCache::_logout(
     const Application& app,
     const saml2md::EntityDescriptor* issuer,
     const saml2::NameID& nameid,
     const set<string>* indexes,
     time_t expires,
-    vector<string>& sessionsKilled
+    vector<string>& sessionsKilled,
+    short attempts
     )
 {
 #ifdef _DEBUG
@@ -1308,6 +1338,8 @@ vector<string>::size_type SSCache::logout(
 
     if (!m_storage)
         throw ConfigurationException("SessionCache logout requires a StorageService.");
+    else if (attempts > 10)
+        throw IOException("Exceeded retry limit.");
 
     auto_ptr_char entityID(issuer ? issuer->getEntityID() : nullptr);
     auto_ptr_char name(nameid.getName());
@@ -1363,12 +1395,12 @@ vector<string>::size_type SSCache::logout(
             ver = m_storage_lite->updateText("Logout", name.get(), lout.str().c_str(), max(expires, oldexp), ver);
             if (ver <= 0) {
                 // Out of sync, or went missing, so retry.
-                return logout(app, issuer, nameid, indexes, expires, sessionsKilled);
+                return _logout(app, issuer, nameid, indexes, expires, sessionsKilled, attempts + 1);
             }
         }
         else if (!m_storage_lite->createText("Logout", name.get(), lout.str().c_str(), expires)) {
             // Hit a dup, so just retry, hopefully hitting the other branch.
-            return logout(app, issuer, nameid, indexes, expires, sessionsKilled);
+            return _logout(app, issuer, nameid, indexes, expires, sessionsKilled, attempts + 1);
         }
 
         obj.destroy();
@@ -1996,6 +2028,7 @@ void SSCache::receive(DDF& in, ostream& out)
 
         // We may need to write back a new address into the session using a versioned update loop.
         if (client_addr) {
+            short attempts = 0;
             m_log.info("binding session (%s) to new client address (%s)", key, client_addr);
             do {
                 // We have to reconstitute the session object ourselves.
@@ -2043,6 +2076,10 @@ void SSCache::receive(DDF& in, ostream& out)
                 }
                 if (ver < 0) {
                     // Out of sync.
+                    if (++attempts > 10) {
+                        m_log.error("failed to bind client address, update attempts exceeded limit");
+                        throw IOException("Unable to update stored session, exceeded retry limit.");
+                    }
                     m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
                     sessionobj["version"].integer(sessionobj["version"].integer() - 1);
                     ver = m_storage->readText(key, "session", &record);

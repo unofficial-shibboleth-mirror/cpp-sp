@@ -63,7 +63,7 @@ using namespace boost;
 using namespace std;
 
 #define PLUGIN_VER_MAJOR 1
-#define PLUGIN_VER_MINOR 0
+#define PLUGIN_VER_MINOR 1
 
 #define LONGDATA_BUFLEN 16384
 
@@ -84,7 +84,7 @@ CREATE TABLE strings (
     context varchar(255) not null,
     id varchar(255) not null,
     expires datetime not null,
-    version smallint not null,
+    version int not null,
     value varchar(255) not null,
     PRIMARY KEY (context, id)
     )
@@ -93,7 +93,7 @@ CREATE TABLE texts (
     context varchar(255) not null,
     id varchar(255) not null,
     expires datetime not null,
-    version smallint not null,
+    version int not null,
     value text not null,
     PRIMARY KEY (context, id)
     )
@@ -207,6 +207,7 @@ namespace {
         SQLHENV m_henv;
         string m_connstring;
         long m_isolation;
+        bool m_wideVersion;
         vector<SQLINTEGER> m_retries;
     };
 
@@ -271,7 +272,7 @@ namespace {
 ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::getInstance("XMLTooling.StorageService")),
     m_caps(XMLHelper::getAttrInt(e, 255, contextSize), XMLHelper::getAttrInt(e, 255, keySize), XMLHelper::getAttrInt(e, 255, stringSize)),
     m_cleanupInterval(XMLHelper::getAttrInt(e, 900, cleanupInterval)),
-    cleanup_thread(nullptr), shutdown(false), m_henv(SQL_NULL_HENV), m_isolation(SQL_TXN_SERIALIZABLE)
+    cleanup_thread(nullptr), shutdown(false), m_henv(SQL_NULL_HENV), m_isolation(SQL_TXN_SERIALIZABLE), m_wideVersion(false)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("ODBCStorageService");
@@ -320,6 +321,11 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
         SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
         m_log.crit("unknown database version: %d.%d", v.first, v.second);
         throw XMLToolingException("Unknown database version for ODBC StorageService.");
+    }
+    
+    if (v.first > 1 || v.second > 0) {
+        m_log.info("using 32-bit int type for version fields in tables");
+        m_wideVersion = true;
     }
 
     // Load any retry errors to check.
@@ -542,20 +548,30 @@ int ODBCStorageService::readRow(const char *table, const char* context, const ch
     }
 
     SQLSMALLINT ver;
+    SQLINTEGER widever;
     SQL_TIMESTAMP_STRUCT expiration;
 
-    SQLBindCol(stmt, 1, SQL_C_SSHORT, &ver, 0, nullptr);
+    if (m_wideVersion)
+        SQLBindCol(stmt, 1, SQL_C_SLONG, &widever, 0, nullptr);
+    else
+        SQLBindCol(stmt, 1, SQL_C_SSHORT, &ver, 0, nullptr);
     if (pexpiration)
         SQLBindCol(stmt, 2, SQL_C_TYPE_TIMESTAMP, &expiration, 0, nullptr);
 
-    if ((sr = SQLFetch(stmt)) == SQL_NO_DATA)
+    if ((sr = SQLFetch(stmt)) == SQL_NO_DATA) {
+        if (m_log.isDebugEnabled())
+            m_log.debug("search returned no data (t=%s, c=%s, k=%s)", table, context, key);
         return 0;
+    }
 
     if (pexpiration)
         *pexpiration = timeFromTimestamp(expiration);
 
-    if (version == ver)
+    if (version == (m_wideVersion ? widever : ver)) {
+        if (m_log.isDebugEnabled())
+            m_log.debug("versioned search detected no change (t=%s, c=%s, k=%s)", table, context, key);
         return version; // nothing's changed, so just echo back the version
+    }
 
     if (pvalue) {
         SQLLEN len;
@@ -570,7 +586,7 @@ int ODBCStorageService::readRow(const char *table, const char* context, const ch
         }
     }
     
-    return ver;
+    return (m_wideVersion ? widever : ver);
 }
 
 int ODBCStorageService::updateRow(const char *table, const char* context, const char* key, const char* value, time_t expiration, int version)
@@ -608,14 +624,22 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
     }
 
     SQLSMALLINT ver;
-    SQLBindCol(stmt, 1, SQL_C_SSHORT, &ver, 0, nullptr);
+    SQLINTEGER widever;
+    if (m_wideVersion)
+        SQLBindCol(stmt, 1, SQL_C_SLONG, &widever, 0, nullptr);
+    else
+        SQLBindCol(stmt, 1, SQL_C_SSHORT, &ver, 0, nullptr);
     if ((sr = SQLFetch(stmt)) == SQL_NO_DATA) {
         return 0;
     }
 
     // Check version?
-    if (version > 0 && version != ver) {
+    if (version > 0 && version != (m_wideVersion ? widever : ver)) {
         return -1;
+    }
+    else if ((m_wideVersion && widever == INT_MAX) || (!m_wideVersion && ver == 32767)) {
+        m_log.error("record version overflow (t=%s, c=%s, k=%s)", table, context, key);
+        throw IOException("Version overflow, record in ODBC StorageService could not be updated.");
     }
 
     SQLFreeHandle(SQL_HANDLE_STMT, stmt);
@@ -651,11 +675,11 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
         else
             sr = SQLBindParam(stmt, 1, SQL_C_CHAR, SQL_VARCHAR, 255, 0, const_cast<char*>(value), &b_ind);
         if (!SQL_SUCCEEDED(sr)) {
-            m_log.error("SQLBindParam failed (context = %s)", context);
+            m_log.error("SQLBindParam failed (value = %s)", value);
             log_error(stmt, SQL_HANDLE_STMT);
             throw IOException("ODBC StorageService failed to update record.");
         }
-        m_log.debug("SQLBindParam succeeded (context = %s)", context);
+        m_log.debug("SQLBindParam succeeded (value = %s)", value);
     }
 
     int attempts = 3;
@@ -668,10 +692,10 @@ int ODBCStorageService::updateRow(const char *table, const char* context, const 
             return 0;   // went missing?
         else if (SQL_SUCCEEDED(sr)) {
             m_log.debug("SQLExecute of update succeeded");
-            return ver + 1;
+            return (m_wideVersion ? widever : ver) + 1;
         }
 
-        m_log.error("update of record failed (t=%s, c=%s, k=%s", table, context, key);
+        m_log.error("update of record failed (t=%s, c=%s, k=%s)", table, context, key);
         logres = log_error(stmt, SQL_HANDLE_STMT);
     } while (attempts && logres.first);
 
