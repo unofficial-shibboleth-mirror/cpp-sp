@@ -305,13 +305,19 @@ struct shib_request_config
 #endif
 };
 
-// create a request record
-static shib_request_config* init_request_config(request_rec *r)
+// create or return a request record
+static shib_request_config* get_request_config(request_rec *r)
 {
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "init_request_config");
-    shib_request_config* rc = (shib_request_config*)ap_pcalloc(r->pool,sizeof(shib_request_config));
-    memset(rc, 0, sizeof(shib_request_config));
-    ap_set_module_config(r->request_config, &mod_shib, rc);
+    shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
+    if (rc) {
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "get_request_config called redundantly");
+    }
+    else {
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, SH_AP_R(r), "get_request_config created per-request structure");
+        rc = (shib_request_config*)ap_pcalloc(r->pool,sizeof(shib_request_config));
+        memset(rc, 0, sizeof(shib_request_config));
+        ap_set_module_config(r->request_config, &mod_shib, rc);
+    }
     return rc;
 }
 
@@ -536,7 +542,7 @@ public:
        if (!m_rc) {
           // this happens on subrequests
           // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,SH_AP_R(m_req), "shib_setheader: no_m_rc\n");
-          m_rc = init_request_config(m_req);
+          m_rc = get_request_config(m_req);
        }
        if (!m_rc->env)
            m_rc->env = ap_make_table(m_req->pool, 10);
@@ -592,7 +598,7 @@ public:
 #ifdef SHIB_DEFERRED_HEADERS
    if (!m_rc)
       // this happens on subrequests
-      m_rc = init_request_config(m_req);
+      m_rc = get_request_config(m_req);
     if (m_handler) {
         if (!m_rc->hdr_out)
             m_rc->hdr_out = ap_make_table(m_req->pool, 5);
@@ -667,21 +673,25 @@ public:
 // Apache hooks
 
 #ifndef SHIB_APACHE_13
-extern "C" apr_status_t shib_request_cleanup(void* r)
+extern "C" apr_status_t shib_request_cleanup(void* rc)
 {
-    if (r)
-        delete reinterpret_cast<ShibTargetApache*>(r);
+    if (rc && reinterpret_cast<shib_request_config*>(rc)->sta) {
+        delete reinterpret_cast<ShibTargetApache*>(reinterpret_cast<shib_request_config*>(rc)->sta);
+        reinterpret_cast<shib_request_config*>(rc)->sta = nullptr;
+    }
     return APR_SUCCESS;
 }
 #endif
 
-// Initial look at a request - create the per-request structure
+// Initial look at a request - create the per-request structure if need be
 static int shib_post_read(request_rec *r)
 {
-    shib_request_config* rc = init_request_config(r);
+    shib_request_config* rc = get_request_config(r);
 #ifdef SHIB_APACHE_24
-    rc->sta = new ShibTargetApache(r);
-    apr_pool_cleanup_register(r->pool, rc->sta, shib_request_cleanup, apr_pool_cleanup_null);
+    if (!rc->sta) {
+        rc->sta = new ShibTargetApache(r);
+        apr_pool_cleanup_register(r->pool, rc, shib_request_cleanup, apr_pool_cleanup_null);
+    }
 #endif
     return DECLINED;
 }
