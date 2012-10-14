@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -59,6 +59,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <Import Project="..\..\BuildPath.props" />
+  <Import Project="..\MsBuild\Versions.props" />
+  <Import Project="..\MsBuild\Includes.props" />
+
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
@@ -81,6 +85,8 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+    <IncludePath>$(BuildRoot)\$(openssl)\inc64;$(BuildRoot)\$(curl)\include;$(BuildRoot)\$(log4shib)\include;$(BuildRoot)\$(xerces)\include;$(BuildRoot)\$(xmlsec);$(BuildRoot)\nsapi\include;$(BuildRoot)\$(fcgi)\include;$(BuildRoot)\cxxtest;$(BuildRoot)\$(zlib);$(BuildRoot)\$(boost);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BuildRoot)\$(openssl)\out64dll;$(BuildRoot)\$(openssl)\out64dll.dbg;$(BuildRoot)\$(curl)\lib\debug-dll-ssl-dll-zlib-dll.x64;$(BuildRoot)\$(curl)\lib\release-dll-ssl-dll-zlib-dll.x64;$(BuildRoot)\$(log4shib)\msvc10\x64\Debug;$(BuildRoot)\$(log4shib)\msvc10\x64\Release;$(BuildRoot)\$(xerces)\lib;$(BuildRoot)\$(xmlsec)\Build\x64\VC10\Debug No Xalan;$(BuildRoot)\$(xmlsec)\Build\x64\VC10\Release No Xalan;$(BuildRoot)\$(fcgi)\Win32\x64\Debug;$(BuildRoot)\$(fcgi)\Win32\x64\Release;$(BuildRoot)\$(zlib)\x64\Debug;$(BuildRoot)\$(zlib)\x64\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
