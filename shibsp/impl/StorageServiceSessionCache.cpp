@@ -75,7 +75,16 @@ using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
-namespace shibsp {
+namespace {
+
+    // Allows the cache to bind sessions to multiple client address
+    // families based on whatever this function returns.
+    static const char* getAddressFamily(const char* addr) {
+        if (strchr(addr, ':'))
+            return "6";
+        else
+            return "4";
+    }
 
     class StoredSession;
     class SSCache : public SessionCacheEx
@@ -247,10 +256,7 @@ namespace shibsp {
                 const char* saddr = m_obj["client_addr"].string();
                 DDF addrobj = m_obj["client_addr"].structure();
                 if (saddr && *saddr) {
-                    if (strchr(saddr, ':'))
-                        addrobj.addmember("6").string(saddr);
-                    else
-                        addrobj.addmember("4").string(saddr);
+                    addrobj.addmember(getAddressFamily(saddr)).string(saddr);
                 }
             }
 
@@ -304,20 +310,16 @@ namespace shibsp {
             return m_obj["client_addr"].first().string();
         }
 
-        const char* getClientAddressV4() const {
-            return m_obj["client_addr"]["4"].string();
-        }
-        const char* getClientAddressV6() const {
-            return m_obj["client_addr"]["6"].string();
+        const char* getClientAddress(const char* family) const {
+            if (family)
+                return m_obj["client_addr"][family].string();
+            return nullptr;
         }
         void setClientAddress(const char* client_addr) {
             DDF obj = m_obj["client_addr"];
             if (!obj.isstruct())
                 obj = m_obj.addmember("client_addr").structure();
-            if (strchr(client_addr, ':'))
-                obj.addmember("6").string(client_addr);
-            else
-                obj.addmember("4").string(client_addr);
+            obj.addmember(getAddressFamily(client_addr)).string(client_addr);
         }
 
         const char* getEntityID() const {
@@ -459,11 +461,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
 
     // Address check?
     if (client_addr) {
-        const char* saddr = nullptr;
-        if (strchr(client_addr, ':'))
-            saddr = getClientAddressV6();
-        else
-            saddr = getClientAddressV4();
+        const char* saddr = getClientAddress(getAddressFamily(client_addr));
         if (saddr && *saddr) {
             if (!XMLString::equals(saddr, client_addr)) {
                 m_cache->m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, saddr);
@@ -573,13 +571,9 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         if (client_addr) {
             short attempts = 0;
             do {
-                const char* saddr = nullptr;
-                if (strchr(client_addr, ':'))
-                    saddr = getClientAddressV6();
-                else
-                    saddr = getClientAddressV4();
-                // Something snuck in and bound the session to this address type, so it better match what we have.
+                const char* saddr = getClientAddress(getAddressFamily(client_addr));
                 if (saddr) {
+                    // Something snuck in and bound the session to this address type, so it better match what we have.
                     if (!XMLString::equals(saddr, client_addr)) {
                         m_cache->m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, saddr);
                         throw RetryableProfileException(
@@ -1182,10 +1176,7 @@ void SSCache::insert(
     string caddr(httpRequest.getRemoteAddr());
     if (!caddr.empty()) {
         DDF addrobj = obj.addmember("client_addr").structure();
-        if (caddr.find(':') != string::npos)
-            addrobj.addmember("6").string(caddr.c_str());
-        else
-            addrobj.addmember("4").string(caddr.c_str());
+        addrobj.addmember(getAddressFamily(caddr.c_str())).string(caddr.c_str());
     }
 
     if (issuer)
@@ -2037,11 +2028,7 @@ void SSCache::receive(DDF& in, ostream& out)
                 istringstream src(record);
                 src >> sessionobj;
                 ver = sessionobj["version"].integer();
-                const char* saddr = nullptr;
-                if (strchr(client_addr, ':'))
-                    saddr = sessionobj["client_addr"]["6"].string();
-                else
-                    saddr = sessionobj["client_addr"]["4"].string();
+                const char* saddr = sessionobj["client_addr"][getAddressFamily(client_addr)].string();
                 if (saddr) {
                     // Something snuck in and bound the session to this address type, so it better match what we have.
                     if (!XMLString::equals(saddr, client_addr)) {
@@ -2055,10 +2042,7 @@ void SSCache::receive(DDF& in, ostream& out)
                 }
                 else {
                     // Bind it into the session.
-                    if (strchr(client_addr, ':'))
-                        sessionobj["client_addr"].addmember("6").string(client_addr);
-                    else
-                        sessionobj["client_addr"].addmember("4").string(client_addr);
+                    sessionobj["client_addr"].addmember(getAddressFamily(client_addr)).string(client_addr);
                 }
 
                 // Tentatively increment the version.
