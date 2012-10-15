@@ -38,8 +38,9 @@ dist-hook:
 GENFILES = @PACKAGE_NAME@.spec
 
 EXTRA_DIST = $(DX_CONFIG) \
-    isapi_shib \
-    Shibboleth.sln \
-    config_win32.h \
-    $(GENFILES) \
-    $(GENFILES:%=%.in)
+	isapi_shib \
+	Shibboleth.sln \
+	config_win32.h \
+	msbuild \
+	$(GENFILES) \
+	$(GENFILES:%=%.in)
