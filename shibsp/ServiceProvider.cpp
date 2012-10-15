@@ -287,7 +287,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 
         Session* session = nullptr;
         try {
-            session = request.getSession();
+            session = request.getSession(true, false, false);   // don't cache it
         }
         catch (exception& e) {
             log.warn("error during session lookup: %s", e.what());
@@ -296,6 +296,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 throw;
         }
 
+        Locker slocker(session, false); // pop existing lock on exit
         if (session) {
             // Check for logout interception.
             if (requireLogoutWith.first) {
@@ -370,7 +371,8 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
     const Application* app = nullptr;
-    const Session* session = nullptr;
+    Session* session = nullptr;
+    Locker slocker;
     string targetURL = request.getRequestURL();
 
     try {
@@ -392,7 +394,9 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         // Do we have an access control plugin?
         if (settings.second) {
             try {
-                session = request.getSession(false);
+                session = request.getSession(false, false, false);  // ignore timeout and do not cache
+                if (session)
+                    slocker.assign(session, false); // assign to lock popper
             }
             catch (exception& e) {
                 log.warn("unable to obtain session to pass to access control provider: %s", e.what());
@@ -437,7 +441,8 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
 
     const Application* app = nullptr;
-    const Session* session = nullptr;
+    Session* session = nullptr;
+    Locker slocker;
     string targetURL = request.getRequestURL();
 
     try {
@@ -445,7 +450,9 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         app = &(request.getApplication());
 
         try {
-            session = request.getSession(false);
+            session = request.getSession(false, false, false);  // ignore timeout and do not cache
+            if (session)
+                slocker.assign(session, false); // assign to lock popper
         }
         catch (exception& e) {
             log.warn("unable to obtain session to export to request: %s", e.what());
@@ -665,12 +672,13 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
     }
     catch (exception& e) {
         request.log(SPRequest::SPError, e.what());
-        const Session* session = nullptr;
+        Session* session = nullptr;
         try {
-            session = request.getSession(false, true);
+            session = request.getSession(false, true, false);   // do not cache
         }
         catch (exception&) {
         }
+        Locker slocker(session, false); // pop existing lock on exit
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0, targetURL.find('?'));
         tp.m_request = &request;
