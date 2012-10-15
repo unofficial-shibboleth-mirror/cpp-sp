@@ -674,6 +674,8 @@ pair<bool,long> MetadataGenerator::processMessage(
             // Sign while marshalling.
             vector<Signature*> sigs(1,sig);
             prettyentity->marshall(prettydoc,&sigs,cred);
+            s << "<!--" << endl << "This is example metadata only. Do *NOT* supply it as is without review,"
+                << endl << "and do *NOT* provide it in real time to your partners." << endl << " -->" << endl;
             s << *prettyentity;
         }
         else {
@@ -682,6 +684,8 @@ pair<bool,long> MetadataGenerator::processMessage(
     }
     else {
         // Pretty-print it directly to client.
+        s << "<!--" << endl << "This is example metadata only. Do *NOT* supply it as is without review,"
+            << endl << "and do *NOT* provide it in real time to your partners." << endl << " -->";
         XMLHelper::serialize(entity->marshall(), s, true);
     }
 
