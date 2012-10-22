@@ -86,6 +86,7 @@ OpenSAML-x64.wixobj: OpenSAML-x64.wxs $(SolutionDir)..\cpp-xmltooling\x64\Releas
 
 OpenSAML-schemas.msm: OpenSAML-schemas.wixobj
 	light OpenSAML-schemas.wixobj
+	del ..\*.msi
 
 OpenSAML-schemas.wixobj: OpenSAML-schemas.wxs
 	candle OpenSAML-schemas.wxs -dSPBuildDirectory=$(SolutionDir).. -dOpenSAMLVersion=$(OpenSAMLVersion) 
@@ -95,9 +96,11 @@ OpenSAML-schemas.wixobj: OpenSAML-schemas.wxs
 #
 OpenSSL-x86.msm: OpenSSL-x86.wixobj
 	light OpenSSL-x86.wixobj
+	del ..\*.msi
 
 OpenSSL-x64.msm: OpenSSL-x64.wixobj
 	light OpenSSL-x64.wixobj
+	del ..\*.msi
 
 OpenSSL-x86.wixobj: OpenSSL-x86.wxs  $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\libeay32_$(OpenSSLFileVersion).dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\ssleay32_$(OpenSSLFileVersion).dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\openssl.exe $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\libeay32_$(OpenSSLFileVersion)d.dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\ssleay32_$(OpenSSLFileVersion)d.dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\openssl.exe
 	candle OpenSSL-x86.wxs -dBuildDirectory=$(BuildSP) -dOpenSSLVersion=$(OpenSSLVersion) -dOpenSSLDirVersion=$(OpenSSLDirVersion) -dOpenSSLFileVersion=$(OpenSSLFileVersion) -dLibEay32Component=$(LibEay32Component) -dSSlEay32Component=$(SSlEay32Component) -dLibEay32Componentd=$(LibEay32Componentd) -dSSlEay32Componentd=$(SSlEay32Componentd)
@@ -110,9 +113,11 @@ OpenSSL-x64.wixobj: OpenSSL-x64.wxs  $(BuildSP)\openssl-$(OpenSSLDirVersion)\out
 #
 Shibboleth-x86.msm: Shibboleth-x86.wixobj
 	light Shibboleth-x86.wixobj
+	del ..\*.msi
 
 Shibboleth-x64.msm: Shibboleth-x64.wixobj
 	light Shibboleth-x64.wixobj
+	del ..\*.msi
 
 Shibboleth-x86.wixobj: Shibboleth-x86.wxs $(SolutionDir)\Release\shibsp$(ShibbolethDllFileVersion).dll $(SolutionDir)\Release\shibsp-lite$(ShibbolethDllFileVersion).dll $(SolutionDir)\Debug\shibsp$(ShibbolethDllFileVersion)d.dll $(SolutionDir)\Debug\shibsp-lite$(ShibbolethDllFileVersion)d.dll
 	candle Shibboleth-x86.wxs -dSPBuildDirectory=$(SolutionDir).. -dShibbolethDllVersion=$(ShibbolethDllVersion) -dShibbolethDllFileVersion=$(ShibbolethDllFileVersion) -dShibDll32Component=$(ShibDll32Component) -dShibDllLite32Component=$(ShibDllLite32Component) -dShibDll32Componentd=$(ShibDll32Componentd) -dShibDllLite32Componentd=$(ShibDllLite32Componentd)
@@ -122,6 +127,7 @@ Shibboleth-x64.wixobj: Shibboleth-x64.wxs $(SolutionDir)\x64\Release\shibsp$(Shi
 
 Shibboleth-schemas.msm: Shibboleth-schemas.wixobj
 	light Shibboleth-schemas.wixobj
+	del ..\*.msi
 
 Shibboleth-schemas.wixobj: Shibboleth-schemas.wxs
 	candle Shibboleth-schemas.wxs -dSPBuildDirectory=$(SolutionDir).. -dShibbolethDllVersion=$(ShibbolethDllVersion) 
@@ -132,9 +138,11 @@ Shibboleth-schemas.wixobj: Shibboleth-schemas.wxs
 #
 Xerces-x86.msm: Xerces-x86.wixobj
 	light Xerces-x86.wixobj
+	del ..\*.msi
 
 Xerces-x64.msm: Xerces-x64.wixobj
 	light Xerces-x64.wixobj
+	del ..\*.msi
 
 Xerces-x86.wixobj: Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(XercesFileVersion).dll Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(XercesFileVersion)D.dll
 	candle Xerces-x86.wxs -dBuildDirectory=$(BuildSP) -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) -dXerces32Component=$(Xerces32Component) -dXerces32Componentd=$(Xerces32Componentd)
@@ -148,9 +156,11 @@ Xerces-x64.wixobj: Xerces-x64.wxs $(BuildSP)\xerces-c-$(XercesVersion)-x86_64-wi
 #
 XmlSec-x86.msm: XmlSec-x86.wixobj
 	light XmlSec-x86.wixobj
+	del ..\*.msi
 
 XmlSec-x64.msm: XmlSec-x64.wixobj
 	light XmlSec-x64.wixobj
+	del ..\*.msi
 
 XmlSec-x86.wixobj: XmlSec-x86.wxs "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\xsec_$(XmlSecFileVersion).dll" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\c14n.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\checksig.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\cipher.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\siginf.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\templatesign.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\txfmout.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\xsec_$(XmlSecFileVersion)D.dll" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\c14n.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\checksig.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\cipher.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\siginf.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\templatesign.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\txfmout.exe" 
 	candle XmlSec-x86.wxs -dBuildDirectory=$(BuildSP) -dXmlSecVersion=$(XmlSecVersion) -dXmlSecFileVersion=$(XmlSecFileVersion) -dXmlSec32Component=$(XmlSec32Component) -dXmlSec32Componentd=$(XmlSec32Componentd)
@@ -164,9 +174,11 @@ XmlSec-x64.wixobj: XmlSec-x64.wxs "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Bu
 
 zlib-x86.msm: zlib-x86.wixobj
 	light zlib-x86.wixobj
+	del ..\*.msi
 
 zlib-x64.msm: zlib-x64.wixobj
 	light zlib-x64.wixobj
+	del ..\*.msi
 
 zlib-x86.wixobj: zlib-x86.wxs $(BuildSP)\zlib-$(ZlibVersion)\Release\zlib$(ZlibFileVersion).dll $(BuildSP)\zlib-$(ZlibVersion)\Debug\zlib$(ZlibFileVersion)d.dll
 	candle zlib-x86.wxs -dBuildDirectory=$(BuildSP) -dZlibVersion=$(ZlibVersion) -dZlibFileVersion=$(ZlibFileVersion) -dZlib32Component=$(Zlib32Component) -dZlib32Componentd=$(Zlib32Componentd)
