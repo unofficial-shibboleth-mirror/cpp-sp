@@ -17,6 +17,8 @@
    permissions and limitations under the License.  -->
 
 <?include ..\Versions.wxi ?>
+<?define Log4ShibComponent64d='{792E6762-70FE-418A-9336-39DDF1A6BAE7}'?>
+<?define Log4ShibComponent64='{DA7E5213-363E-4E13-B05D-90905BE9FB94}'?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='Log4ShibMergeModule_x86' Language='1033' Version='$(var.LogForShibVersion)'>
@@ -29,14 +31,14 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\msvc10\x64\Release\'>
-              <Component Id='log4shib.dll' Guid='{DA7E5213-363E-4E13-B05D-90905BE9FB94}' Win64='yes'>
+              <Component Id='log4shib.dll' Guid='$(var.Log4ShibComponent64)' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.LogForShibFileVersion).dll'/>
               </Component>
               <Component Id='NTEventLogAppender.dll' Guid='{1A559035-DCA4-4297-AE94-C3E6ABB37662}' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='NTEventLogAppender.dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\msvc10\x64\Debug\'>
-                <Component Id='log4shibD.dll' Guid='{792E6762-70FE-418A-9336-39DDF1A6BAE7}' Win64='yes'>
+                <Component Id='log4shibD.dll' Guid='$(var.Log4ShibComponent64d)' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.LogForShibFileVersion)D.dll'/>
                 </Component>
                 <Component Id='NTEventLogAppender.dll_debug' Guid='{6C23C432-EA11-4313-9F5F-DBB09A8752E8}' Win64='yes'>

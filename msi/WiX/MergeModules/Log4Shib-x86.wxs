@@ -18,6 +18,9 @@
 
 <?include ..\Versions.wxi ?>
 
+<?define Log4ShibComponent32d={B8D2E797-F5A8-4E0D-B57F-9A7D4E699942} ?>
+<?define Log4ShibComponent32={2FDE8ED0-774A-4F44-88D5-C7089350D895} ?>
+
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='Log4ShibMergeModule_x86' Language='1033' Version='$(var.LogForShibVersion)'>
     <Package Id='1AD64745-CA05-41AF-B5E9-A59AA4A1C134' Description='Merge Module for Log4Shib (x86)'
@@ -29,14 +32,14 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\msvc10\Release\'>
-              <Component Id='log4shib.dll' Guid='{2FDE8ED0-774A-4F44-88D5-C7089350D895}'>
+              <Component Id='log4shib.dll' Guid='$(var.Log4ShibComponent32)'>
                 <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.LogForShibFileVersion).dll'/>
               </Component>
               <Component Id='NTEventLogAppender.dll' Guid='{43B944CB-E42A-4D17-A601-AC4E14DA2217}'>
                 <File KeyPath='yes' Checksum='yes' Name='NTEventLogAppender.dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\msvc10\Debug\'>
-                <Component Id='log4shibD.dll' Guid='{B8D2E797-F5A8-4E0D-B57F-9A7D4E699942}'>
+                <Component Id='log4shibD.dll' Guid='$(var.Log4ShibComponent32d)'>
                   <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.LogForShibFileVersion)D.dll'/>
                 </Component>
                 <Component Id='NTEventLogAppender.dll_debug' Guid='{5501F9FA-C6EC-48A7-8318-EA8C918DC8BF}'>

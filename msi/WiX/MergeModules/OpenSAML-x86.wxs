@@ -17,6 +17,12 @@
    permissions and limitations under the License.  -->
 
 <?include ..\Versions.wxi ?>
+<?define SamlComponent32='{B52F8C71-2042-4CDF-A250-BD773985A2AB}' ?>
+<?define XMLToolingComponent32='{53533A59-A563-439D-B13D-A4D7090C42D3}' ?>
+<?define XMLToolingLiteComponent32='{5045A722-D6D6-4E55-9196-CB7C50B4446F}' ?>
+<?define SamlComponent32d='{7B934257-5F7F-428E-930E-A793A11573D7}' ?>
+<?define XMLToolingComponent32d='{380E59DF-24F8-4F60-97A7-CC67FB76B4CC}' ?>
+<?define XMLToolingLiteComponent32d='{DB6D8737-4E3D-4C06-87F1-C59C7D7CB47A}' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='OpenSAMLMergeModule_x86' Language='1033' Version='$(var.OpenSAMLVersion)'>
@@ -29,30 +35,30 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Release\'>
-              <Component Id='saml.dll' Guid='{B52F8C71-2042-4CDF-A250-BD773985A2AB}'>
+              <Component Id='saml.dll' Guid='$(var.SamlComponent32)'>
                 <File KeyPath='yes' Checksum='yes' Name='saml$(var.OpenSAMLFileVersion).dll' />
               </Component>
               <Component Id='samlsign.exe' Guid='{3DC7A431-9623-4283-BA07-444DB1C1F864}'>
                 <File KeyPath='yes' Checksum='yes' Name='samlsign.exe' />
               </Component>
-              <Component Id='xmltooling.dll' Guid='{53533A59-A563-439D-B13D-A4D7090C42D3}'>
+              <Component Id='xmltooling.dll' Guid='$(var.XMLToolingComponent32)'>
                 <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Release\xmltooling$(var.XmlToolingFileVersion).dll' />
               </Component>
-              <Component Id='xmltooling_lite.dll' Guid='{5045A722-D6D6-4E55-9196-CB7C50B4446F}'>
+              <Component Id='xmltooling_lite.dll' Guid='$(var.XMLToolingLiteComponent32)'>
                 <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll' />
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Debug\'>
-                <Component Id='samlD.dll' Guid='{7B934257-5F7F-428E-930E-A793A11573D7}'>
+                <Component Id='samlD.dll' Guid='$(var.SamlComponent32d)'>
                   <File KeyPath='yes' Checksum='yes' Name='saml$(var.OpenSAMLFileVersion)D.dll' />
                 </Component>
                 <Component Id='samlsign.exe_debug' Guid='{EFCAEBC5-242F-416C-8F87-B7DD49C1AE29}'>
                   <File KeyPath='yes' Checksum='yes' Id='samlsign.exe_debug' Name='samlsign.exe' />
                 </Component>
-                <Component Id='xmltoolingD.dll' Guid='{380E59DF-24F8-4F60-97A7-CC67FB76B4CC}'>
+                <Component Id='xmltoolingD.dll' Guid='$(var.XMLToolingComponent32d)'>
                   <File KeyPath='yes' Checksum='yes'
                     Source='$(var.SPBuildDirectory)\cpp-xmltooling\Debug\xmltooling$(var.XmlToolingFileVersion)D.dll' />
                 </Component>
-                <Component Id='xmltooling_liteD.dll' Guid='{DB6D8737-4E3D-4C06-87F1-C59C7D7CB47A}'>
+                <Component Id='xmltooling_liteD.dll' Guid='$(var.XMLToolingLiteComponent32d)'>
                   <File KeyPath='yes' Checksum='yes'
                     Source='$(var.SPBuildDirectory)\cpp-xmltooling\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.dll' />
                 </Component>
