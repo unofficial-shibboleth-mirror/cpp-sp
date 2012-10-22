@@ -17,6 +17,8 @@
    permissions and limitations under the License.  -->
 
 <?include ..\Versions.wxi ?>
+<?define Xerces64Component='{5C2BA2C6-36EC-4EB3-A343-8C1C9D499B9C}' ?>
+<?define Xerces64Componentd='{236B6A7F-73C0-4EBF-9C06-90C1BE160ACE}' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XercesMergeModule_x86' Language='1033' Version='$(var.XercesVersion)'>
@@ -28,12 +30,12 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
-              <Component Id='xercesc.dll' Guid='{5C2BA2C6-36EC-4EB3-A343-8C1C9D499B9C}' Win64='yes'>
+              <Component Id='xercesc.dll' Guid='$(var.Xerces64Component)' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes'
                       Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
-                <Component Id='xercescD.dll' Guid='{236B6A7F-73C0-4EBF-9C06-90C1BE160ACE}' Win64='yes'>
+                <Component Id='xercescD.dll' Guid='$(var.Xerces64Componentd)' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes'
                         Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
                 </Component>

@@ -16,6 +16,10 @@
    permissions and limitations under the License.  -->
 
 <?include ..\Versions.wxi ?>
+<?define ShibDll64Component='{B7DE652A-6853-4389-AD47-5DBB5AC89BDB}' ?>
+<?define ShibDllLite64Component='{2D6A6399-62A6-4BF6-8D58-82E1EFE8C65E}' ?>
+<?define ShibDll64Componentd='{222ED92E-DD0B-410E-9A90-D1DD1AA878CF}' ?>
+<?define ShibDllLite64Componentd='{5EF6FF17-0510-484B-9F24-523B29EB416C}' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='ShibbolethSPMergeModule_x64' Language='1033' Version='$(var.ShibbolethDllVersion)'>
@@ -28,17 +32,17 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Release'>
-              <Component Id='shibsp.dll' Guid='{B7DE652A-6853-4389-AD47-5DBB5AC89BDB}' Win64='yes'>
+              <Component Id='shibsp.dll' Guid='$(var.ShibDll64Component)' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion).dll' />
               </Component>
-              <Component Id='shibsp_lite.dll' Guid='{2D6A6399-62A6-4BF6-8D58-82E1EFE8C65E}' Win64='yes'>
+              <Component Id='shibsp_lite.dll' Guid='$(var.ShibDllLite64Component)' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion).dll' />
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Debug' >
-                <Component Id='shibspD.dll' Guid='{222ED92E-DD0B-410E-9A90-D1DD1AA878CF}' Win64='yes'>
+                <Component Id='shibspD.dll' Guid='$(var.ShibDll64Componentd)' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion)D.dll' />
                 </Component>
-                <Component Id='shibsp_liteD.dll' Guid='{5EF6FF17-0510-484B-9F24-523B29EB416C}' Win64='yes'>
+                <Component Id='shibsp_liteD.dll' Guid='$(var.ShibDllLite64Componentd)' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion)D.dll' />
                 </Component>
               </Directory><!-- lib_debug -->

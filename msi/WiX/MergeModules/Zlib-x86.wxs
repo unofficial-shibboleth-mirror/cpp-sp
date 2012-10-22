@@ -16,6 +16,8 @@
    permissions and limitations under the License.  -->
 
 <?include ..\Versions.wxi ?>
+<?define Zlib32Component='{059557A8-7311-47BB-8A5F-CC85F72AE495}' ?>
+<?define Zlib32Componentd='{3DA71CD4-F204-49D5-A689-7B1B4C2D395A}' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='ZlibMergeModule_x86' Language='1033' Version='$(var.ZlibVersion)'>
@@ -28,12 +30,12 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
-              <Component Id='zlib1.dll' Guid='{059557A8-7311-47BB-8A5F-CC85F72AE495}'>
+              <Component Id='zlib1.dll' Guid='$(var.Zlib32Component)'>
                 <File KeyPath='yes' Checksum='yes'
                       Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\Release\zlib$(var.ZlibFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
-                <Component Id='zlib1d.dll' Guid='{3DA71CD4-F204-49D5-A689-7B1B4C2D395A}'>
+                <Component Id='zlib1d.dll' Guid='$(var.Zlib32Componentd)'>
                   <File KeyPath='yes' Checksum='yes'
                         Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\Debug\zlib$(var.ZlibFileVersion)d.dll'/>
                 </Component>

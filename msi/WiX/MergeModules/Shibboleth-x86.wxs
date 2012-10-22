@@ -16,6 +16,10 @@
    permissions and limitations under the License.  -->
 
 <?include ..\Versions.wxi ?>
+<?define ShibDll32Component='{9DE384BF-C286-4A72-AED9-AA34384005C0}' ?>
+<?define ShibDllLite32Component='{10475E33-434D-4805-B983-195092549BED}' ?>
+<?define ShibDll32Componentd='{4196D799-1162-4D62-9F7A-1F59E90F19F1}' ?>
+<?define ShibDllLite32Componentd='{8E070220-2992-4D45-BF98-459022CD268F}' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='ShibbolethSPMergeModule_x86' Language='1033' Version='$(var.ShibbolethDllVersion)'>
@@ -28,17 +32,17 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-sp\Release'>
-              <Component Id='shibsp.dll' Guid='{9DE384BF-C286-4A72-AED9-AA34384005C0}'>
+              <Component Id='shibsp.dll' Guid='$(var.ShibDll32Component)'>
                 <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion).dll' />
               </Component>
-              <Component Id='shibsp_lite.dll' Guid='{10475E33-434D-4805-B983-195092549BED}'>
+              <Component Id='shibsp_lite.dll' Guid='$(var.ShibDllLite32Component)'>
                 <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion).dll' />
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Debug' >
-                <Component Id='shibspD.dll' Guid='{4196D799-1162-4D62-9F7A-1F59E90F19F1}'>
+                <Component Id='shibspD.dll' Guid='$(var.ShibDll32Componentd)'>
                   <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion)D.dll' />
                 </Component>
-                <Component Id='shibsp_liteD.dll' Guid='{8E070220-2992-4D45-BF98-459022CD268F}'>
+                <Component Id='shibsp_liteD.dll' Guid='$(var.ShibDllLite32Componentd)'>
                   <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion)D.dll' />
                 </Component>
               </Directory><!-- lib_debug -->

@@ -17,6 +17,8 @@
      permissions and limitations under the License.  -->
 
 <?include ..\Versions.wxi ?>
+<?define XmlSec64Component='{DF5FEFC9-9B95-42B1-A6BD-053E0D0BD8E8}' ?>
+<?define XmlSec64Componentd='{D97E1B5C-B020-4621-94CE-F10FCFF765C5}' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XmlSecmergemodule_x64' Language='1033' Version='$(var.XmlSecVersion)'>
@@ -29,7 +31,7 @@
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib' 
                        FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Release No Xalan'>
-              <Component Id='xsec.dll' Guid='{DF5FEFC9-9B95-42B1-A6BD-053E0D0BD8E8}' Win64='yes'>
+              <Component Id='xsec.dll' Guid='$(var.XmlSec64Component)' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='xsec_$(var.XmlSecFileVersion).dll'/>
               </Component>
               <Component Id='c14n.exe' Guid='{DE820D93-BC4F-48B5-9C1F-3CD34E34D10C}' Win64='yes'>
@@ -52,7 +54,7 @@
               </Component>
               <Directory Id='lib_debug' Name='debug' 
                          FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\VC10\Debug No Xalan'>
-                <Component Id='xsecD.dll' Guid='{D97E1B5C-B020-4621-94CE-F10FCFF765C5}' Win64='yes'>
+                <Component Id='xsecD.dll' Guid='$(var.XmlSec64Componentd)' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes' Name='xsec_$(var.XmlSecFileVersion)D.dll'/>
                 </Component>
                 <Component Id='c14n.exe_debug' Guid='{ED9BB341-C5D2-4234-B720-483D86D340F9}' Win64='yes'>

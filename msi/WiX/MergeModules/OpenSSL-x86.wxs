@@ -17,6 +17,10 @@
    permissions and limitations under the License.  -->
 
 <?include ..\Versions.wxi ?>
+<?define LibEay32Component='{1DE4C235-0F1E-41EF-B7B8-9F3FD03A8F26}' ?>
+<?define SSlEay32Component='{9D0D75C3-69B6-4A29-9890-EF3DD939B6CA}' ?>
+<?define LibEay32Componentd='{53BCB6F4-77DC-4B6C-9798-EC10796D3C59}' ?>
+<?define SSlEay32Componentd='{A9583DF6-F075-4F43-991C-3611B31036DF}' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='OpenSSLMergeModule_x86' Language='1033' Version='$(var.OpenSSLVersion)'>
@@ -28,20 +32,20 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out32dll\'>
-              <Component Id='libeay32.dll' Guid='{1DE4C235-0F1E-41EF-B7B8-9F3FD03A8F26}'>
+              <Component Id='libeay32.dll' Guid='$(var.LibEay32Component)'>
                 <File KeyPath='yes' Checksum='yes' Name='libeay32_$(var.OpenSSLFileVersion).dll' />
               </Component>
-              <Component Id='ssleay32.dll' Guid='{9D0D75C3-69B6-4A29-9890-EF3DD939B6CA}'>
+              <Component Id='ssleay32.dll' Guid='$(var.SSlEay32Component)'>
                 <File KeyPath='yes' Checksum='yes' Name='ssleay32_$(var.OpenSSLFileVersion).dll' />
               </Component>
               <Component Id='openssl.exe' Guid='{886F0254-AD10-45C6-A723-37C7FA466651}'>
                 <File KeyPath='yes' Checksum='yes' Name='openssl.exe' />
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\out32dll.dbg\' >
-                <Component Id='libeay32D.dll' Guid='{53BCB6F4-77DC-4B6C-9798-EC10796D3C59}'>
+                <Component Id='libeay32D.dll' Guid='$(var.LibEay32Componentd)'>
                   <File KeyPath='yes' Checksum='yes' Name='libeay32_$(var.OpenSSLFileVersion)D.dll' />
                 </Component>
-                <Component Id='ssleay32D.dll' Guid='{A9583DF6-F075-4F43-991C-3611B31036DF}'>
+                <Component Id='ssleay32D.dll' Guid='$(var.SSlEay32Componentd)'>
                   <File KeyPath='yes' Checksum='yes' Name='ssleay32_$(var.OpenSSLFileVersion)D.dll' />
                 </Component>
                 <Component Id='openssl.exe_debug' Guid='{D47E4692-F648-4800-BE4A-9D84DAD5DEEA}'>
