@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C2B1BB79-C88B-42B4-9AEC-170F91910F70}</ProjectGuid>
+    <Keyword>MakeFileProj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <Import Project="..\..\..\BuildPath.props" />
+  <Import Project="..\..\MsBuild\Versions.props" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <NMakeBuildCommandLine>nmake /f Installer.make clean</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>del *.wixobj *.msi *.wixlib</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>nmake /f Installer.make clean</NMakeReBuildCommandLine>
+    <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <NMakeBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) all32</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>del *86.wixobj
+del *86.msi
+del *.wixlib
+del *x86.wixpdb</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) rebuild32</NMakeReBuildCommandLine>
+    <NMakePreprocessorDefinitions>
+    </NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <NMakeBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) all64</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>del *64.wixobj
+del *64.msmi
+del *.wixlib
+del *64.wixpdb</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) rebuild64</NMakeReBuildCommandLine>
+    <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -17,8 +17,8 @@
    permissions and limitations under the License.  -->
 
 <Include xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <?define BuildDirectory='C:\Users\Administrator\Shibboleth\' ?>
-  <?define SPBuildDirectory='C:\Users\Administrator\Shibboleth\svn\2.5\' ?>
+  <?define BuildDirectory='C:\perforce\ShibbolethBuild\' ?>
+  <?define SPBuildDirectory='C:\Users\rdw\ShibbolethSp\' ?>
   
   <!-- Do not confuse ShibbolethDllVersion with ShibbolethVersion -->
   <?define ShibbolethVersion='2.5.1'?>

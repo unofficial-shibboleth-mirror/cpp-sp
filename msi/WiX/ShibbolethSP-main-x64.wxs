@@ -17,9 +17,10 @@
    permissions and limitations under the License.  -->
 
 <?include Versions.wxi ?>
+<?define ShibbolethId64='{65F34F66-573F-432D-A6F4-B5E1D417A6DA}' ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Id='{65F34F66-573F-432D-A6F4-B5E1D417A6DA}' Language='1033' 
+  <Product Id='$(var.ShibbolethId64)' Language='1033' 
            Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider' 
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion)'>
     <Package Description='Shibboleth SP (x86 and x64) V$(var.ShibbolethVersion)' Compressed='yes'
