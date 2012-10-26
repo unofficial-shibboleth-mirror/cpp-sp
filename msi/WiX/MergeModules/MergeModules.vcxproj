@@ -73,7 +73,6 @@ del OpenSAML-schemas.msm</NMakeCleanCommandLine>
   <ItemGroup>
     <None Include="Curl-x64.wxs" />
     <None Include="Curl-x86.wxs" />
-    <None Include="Curl.vcxproj.user" />
     <None Include="FastCGI-x86.wxs" />
     <None Include="FastCGI-x64.wxs" />
     <None Include="MergeModules.make" />
