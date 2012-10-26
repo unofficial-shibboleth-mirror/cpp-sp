@@ -53,7 +53,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,5,0,0
+ FILEVERSION 2,5,1,0
  PRODUCTVERSION 2,5,1,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
@@ -71,7 +71,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Shibboleth Consortium\0"
             VALUE "FileDescription", "Shibboleth Memcache Storage Service Plugin\0"
-            VALUE "FileVersion", "2, 5, 0, 0\0"
+            VALUE "FileVersion", "2, 5, 1, 0\0"
             VALUE "InternalName", "memcache-store\0"
             VALUE "LegalCopyright", "Copyright © 2012 UCAID\0"
             VALUE "OriginalFilename", "memcache-store.so\0"
