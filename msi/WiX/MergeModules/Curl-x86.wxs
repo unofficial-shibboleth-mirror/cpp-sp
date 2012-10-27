@@ -16,8 +16,6 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='CurlMergeModule_x86' Language='1033' Version='$(var.CurlVersion)'>
     <Package Id='10467105-6375-49E1-AC35-045084BD8FA4' Description='Merge Module for CURL (x86)'

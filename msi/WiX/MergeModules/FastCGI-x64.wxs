@@ -16,8 +16,6 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='FastCGIMergeModule_x64' Language='1033' Version='$(var.FastCGIVersion)'>
     <Package Id='{4820855A-68B9-4EBB-94CD-4C1F9DA6EB02}' Description='Merge Module for FastCGI (x64)'

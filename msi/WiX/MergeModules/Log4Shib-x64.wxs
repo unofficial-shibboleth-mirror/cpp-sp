@@ -16,12 +16,8 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-<?define Log4ShibComponent64d='{792E6762-70FE-418A-9336-39DDF1A6BAE7}'?>
-<?define Log4ShibComponent64='{DA7E5213-363E-4E13-B05D-90905BE9FB94}'?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='Log4ShibMergeModule_x86' Language='1033' Version='$(var.LogForShibVersion)'>
+  <Module Id='Log4ShibMergeModule_x86' Language='1033' Version='$(var.Log4ShibVersion)'>
     <Package Id='{A2D51A0D-847A-4941-80FC-C8C8E697565F}' Description='Merge Module for Log4Shib (x64)'
              Comments='This module is built by the Shibboleth Consortium. Includes log4cpp/shib and NTEventLogAppender.'
              Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
@@ -30,16 +26,16 @@
       <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\msvc10\x64\Release\'>
+            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\log4shib-$(var.Log4ShibVersion)\msvc10\x64\Release\'>
               <Component Id='log4shib.dll' Guid='$(var.Log4ShibComponent64)' Win64='yes'>
-                <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.LogForShibFileVersion).dll'/>
+                <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.Log4ShibFileVersion).dll'/>
               </Component>
               <Component Id='NTEventLogAppender.dll' Guid='{1A559035-DCA4-4297-AE94-C3E6ABB37662}' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='NTEventLogAppender.dll'/>
               </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\msvc10\x64\Debug\'>
+              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\log4shib-$(var.Log4ShibVersion)\msvc10\x64\Debug\'>
                 <Component Id='log4shibD.dll' Guid='$(var.Log4ShibComponent64d)' Win64='yes'>
-                  <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.LogForShibFileVersion)D.dll'/>
+                  <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.Log4ShibFileVersion)D.dll'/>
                 </Component>
                 <Component Id='NTEventLogAppender.dll_debug' Guid='{6C23C432-EA11-4313-9F5F-DBB09A8752E8}' Win64='yes'>
                   <File Id='NTEventLogAppender.dll_debug' KeyPath='yes' Checksum='yes' Name='NTEventLogAppender.dll'/>
@@ -48,7 +44,7 @@
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='LOG4SHIB.LICENSE' Guid='{6332D7BE-90A0-4698-B1E9-06AE8163F5A8}' Win64='yes'>
-                <File KeyPath='yes' Name='LOG4SHIB.LICENSE' Source='$(var.BuildDirectory)\log4shib-$(var.LogForShibVersion)\COPYING' />
+                <File KeyPath='yes' Name='LOG4SHIB.LICENSE' Source='$(var.BuildDirectory)\log4shib-$(var.Log4ShibVersion)\COPYING' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->

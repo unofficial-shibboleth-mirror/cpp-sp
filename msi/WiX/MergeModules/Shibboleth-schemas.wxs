@@ -15,8 +15,6 @@
      implied.  See the License for the specific language governing
      permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='ShibbolethSPSchemasMergeModule' Language='1033' Version='$(var.ShibbolethDllVersion)'>
     <Package Id='{5AC5161D-114D-4BFB-AF7C-4E8E7F964965}' Description='Merge Module for Shibboleth SP schemas'

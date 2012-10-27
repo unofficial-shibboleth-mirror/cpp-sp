@@ -16,10 +16,6 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-<?define Xerces64Component='{5C2BA2C6-36EC-4EB3-A343-8C1C9D499B9C}' ?>
-<?define Xerces64Componentd='{236B6A7F-73C0-4EBF-9C06-90C1BE160ACE}' ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XercesMergeModule_x86' Language='1033' Version='$(var.XercesVersion)'>
     <Package Id='{72CA15B1-CEB8-4C9B-A5CB-5254759E4B3A}' Description='Merge Module for Xerces (x64)'

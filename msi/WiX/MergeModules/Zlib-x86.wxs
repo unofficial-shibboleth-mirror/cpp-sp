@@ -15,10 +15,6 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-<?define Zlib32Component='{059557A8-7311-47BB-8A5F-CC85F72AE495}' ?>
-<?define Zlib32Componentd='{3DA71CD4-F204-49D5-A689-7B1B4C2D395A}' ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='ZlibMergeModule_x86' Language='1033' Version='$(var.ZlibVersion)'>
     <Package Id='{F5C689A2-A72F-417E-B0F8-CF9B1450EE97}' Description='Merge Module for Zlib (x86)'

@@ -16,14 +16,6 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-<?define XMLToolingComponent64='{7BBFB3D8-A9F8-429B-96BE-C1B283EBFDFB}' ?>
-<?define XMLToolingComponent64d='{C380627F-9D45-4626-A249-3831FC7C83FC}' ?>
-<?define XMLToolingLiteComponent64='{060F61B9-36E9-4F33-9B5B-C59A43709052}' ?> 
-<?define XMLToolingLiteComponent64d='{2786A98E-763C-41A1-A6D5-363DB22F17E9}' ?>
-<?define SamlComponent64='{9EE0A8D1-A6DC-4E2A-904F-BBEF70A0D67B}' ?>
-<?define SamlComponent64d='{00836378-7FB9-4A09-AF49-3AA33DEF9BC6}' ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='OpenSAMLMergeModule_x64' Language='1033' Version='$(var.OpenSAMLVersion)'>
     <Package Id='{C4A8AAF1-D263-4361-9695-CE0F56B5D3C6}' Description='Merge Module for OpenSAML (x64)'

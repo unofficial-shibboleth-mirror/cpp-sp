@@ -15,12 +15,6 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-<?define ShibDll32Component='{9DE384BF-C286-4A72-AED9-AA34384005C0}' ?>
-<?define ShibDllLite32Component='{10475E33-434D-4805-B983-195092549BED}' ?>
-<?define ShibDll32Componentd='{4196D799-1162-4D62-9F7A-1F59E90F19F1}' ?>
-<?define ShibDllLite32Componentd='{8E070220-2992-4D45-BF98-459022CD268F}' ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='ShibbolethSPMergeModule_x86' Language='1033' Version='$(var.ShibbolethDllVersion)'>
     <Package Id='{AD8C7CB1-94D5-4C8E-88D0-040F817E1802}' Description='Merge Module for Shibboleth SP DLLs (x86)'

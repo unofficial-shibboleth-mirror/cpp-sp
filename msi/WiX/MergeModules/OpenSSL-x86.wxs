@@ -16,12 +16,6 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-<?define LibEay32Component='{1DE4C235-0F1E-41EF-B7B8-9F3FD03A8F26}' ?>
-<?define SSlEay32Component='{9D0D75C3-69B6-4A29-9890-EF3DD939B6CA}' ?>
-<?define LibEay32Componentd='{53BCB6F4-77DC-4B6C-9798-EC10796D3C59}' ?>
-<?define SSlEay32Componentd='{A9583DF6-F075-4F43-991C-3611B31036DF}' ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='OpenSSLMergeModule_x86' Language='1033' Version='$(var.OpenSSLVersion)'>
     <Package Id='11FD68EE-607E-4755-98AA-1C7EE5E03652' Description='Merge Module for OpenSSL (x86)'

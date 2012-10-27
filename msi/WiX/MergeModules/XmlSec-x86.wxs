@@ -16,10 +16,6 @@
      implied.  See the License for the specific language governing
      permissions and limitations under the License.  -->
 
-<?include ..\Versions.wxi ?>
-<?define XmlSec32Component='{761CE697-2701-4149-ACD5-A693EBB45B33}' ?>
-<?define XmlSec32Componentd='{34D437A1-3008-433F-A86F-F69E4852069F}' ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XmlSecMergeModule_x86' Language='1033' Version='$(var.XmlSecVersion)'>
     <Package Id='{D1678DAE-81D9-4756-ABE6-7D1218F0D350}' Description='Merge Module for Santuario (x64)'
