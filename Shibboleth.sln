@@ -144,6 +144,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Installers", "Installers", "{BF389E01-8F97-4ECA-8C62-2DBB8F0480DD}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MergeModules", "msi\WiX\MergeModules\MergeModules.vcxproj", "{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Installer", "msi\WiX\Installer.vcxproj", "{C2B1BB79-C88B-42B4-9AEC-170F91910F70}"
 	ProjectSection(ProjectDependencies) = postProject
