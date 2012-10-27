@@ -16,9 +16,6 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?include Versions.wxi ?>
-<?define ShibbolethId32='{68D3C057-1C6D-4C3C-9E5B-7A6A8CA0BA74}' ?>
-
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Product Id='$(var.ShibbolethId32)' Language='1033' 
            Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider' 

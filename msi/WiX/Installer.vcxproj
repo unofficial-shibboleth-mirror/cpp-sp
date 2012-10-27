@@ -67,6 +67,21 @@ del *64.wixpdb</NMakeCleanCommandLine>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="Dialog.bmp" />
+    <None Include="license.rtf" />
+    <None Include="ShibbolethSP-defs-x86.wxi" />
+    <None Include="ShibbolethSP-exe-x64.wxs" />
+    <None Include="ShibbolethSP-exe-x86.wxs" />
+    <None Include="ShibbolethSP-gui.wxs" />
+    <None Include="ShibbolethSP-install-dlg.wxs" />
+    <None Include="ShibbolethSP-main-x64.wxs" />
+    <None Include="ShibbolethSP-main-x86.wxs" />
+    <None Include="ShibbolethSP-noarch.wxs" />
+    <None Include="ShibbolethSP-properties.wxi" />
+    <None Include="ShibbolethSP-registry-x64.wxs" />
+    <None Include="ShibbolethSP-registry-x86.wxs" />
+    <None Include="ShibbolethSP-update-dlg.wxs" />
+    <None Include="TopBanner.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -41,7 +41,7 @@ ShibbolethSP-exe-x64.wixobj: ShibbolethSP-exe-x64.wxs ..\..\x64\Release\shibd.ex
 
 ShibbolethSP-registry-x64.wixobj: ShibbolethSP-registry-x64.wxs
 	wixcop -indent:2 ShibbolethSP-registry-x64.wxs
-	candle ShibbolethSP-registry-x64.wxs
+	candle -dSPBuildDirectory=$(SolutionDir).. ShibbolethSP-registry-x64.wxs
 
 ShibbolethSP-noarch.wixobj: ShibbolethSP-noarch.wxs
 	wixcop -indent:2 ShibbolethSP-noarch.wxs
@@ -53,11 +53,11 @@ ShibbolethSP-exe-x86.wixobj: ShibbolethSP-exe-x86.wxs  ..\..\Release\shibd.exe .
 
 ShibbolethSP-registry-x86.wixobj: ShibbolethSP-registry-x86.wxs
 	wixcop -indent:2 ShibbolethSP-registry-x86.wxs
-	candle ShibbolethSP-registry-x86.wxs
+	candle -dSPBuildDirectory=$(SolutionDir).. ShibbolethSP-registry-x86.wxs
 
 ShibbolethSP-gui.wixobj: ShibbolethSP-gui.wxs
 	wixcop -indent:2 ShibbolethSP-gui.wxs
-	candle ShibbolethSP-gui.wxs
+	candle -dSPBuildDirectory=$(SolutionDir).. ShibbolethSP-gui.wxs
 
 ShibbolethSP-update-dlg.wixobj: ShibbolethSP-update-dlg.wxs
 	wixcop -indent:2 ShibbolethSP-update-dlg.wxs
@@ -69,7 +69,7 @@ ShibbolethSP-install-dlg.wixobj: ShibbolethSP-install-dlg.wxs
 
 ShibbolethSP-main-x64.wixobj: ShibbolethSP-main-x64.wxs MergeModules\Curl-x86.msm MergeModules\FastCGI-x86.msm MergeModules\Log4Shib-x86.msm MergeModules\OpenSAML-x86.msm MergeModules\OpenSAML-schemas.msm MergeModules\OpenSSL-x86.msm MergeModules\Shibboleth-x86.msm MergeModules\Shibboleth-schemas.msm MergeModules\Xerces-x86.msm MergeModules\XmlSec-x86.msm MergeModules\Zlib-x86.msm MergeModules\Curl-x64.msm MergeModules\FastCGI-x64.msm MergeModules\Log4Shib-x64.msm MergeModules\OpenSAML-x64.msm MergeModules\OpenSSL-x64.msm MergeModules\Shibboleth-x64.msm MergeModules\Xerces-x64.msm MergeModules\XmlSec-x64.msm MergeModules\Zlib-x64.msm
 	wixcop -indent:2 ShibbolethSP-main-x64.wxs
-	candle -dSPBuildDirectory=$(SolutionDir)..-dShibbolethVersion=$(ShibbolethVersion) -dShibbolethId64=$(ShibbolethId64) -dShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethSP-main-x64.wxs
+	candle -dSPBuildDirectory=$(SolutionDir).. -dShibbolethVersion=$(ShibbolethVersion) -dShibbolethId64=$(ShibbolethId64) -dShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethSP-main-x64.wxs
 
 ShibbolethSP-main-x86.wixobj: ShibbolethSP-main-x86.wxs MergeModules\Curl-x86.msm MergeModules\FastCGI-x86.msm MergeModules\Log4Shib-x86.msm MergeModules\OpenSAML-x86.msm MergeModules\OpenSAML-schemas.msm MergeModules\OpenSSL-x86.msm MergeModules\Shibboleth-x86.msm MergeModules\Shibboleth-schemas.msm MergeModules\Xerces-x86.msm MergeModules\XmlSec-x86.msm MergeModules\Zlib-x86.msm
 	wixcop -indent:2 ShibbolethSP-main-x86.wxs
