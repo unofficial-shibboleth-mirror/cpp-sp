@@ -176,6 +176,9 @@
                 <Component Id='metadata_ui_v1.0.xsd' Guid='{C203B8C4-0056-46F6-96DE-E831933437D3}'>
                   <File KeyPath='yes' Id='metadata_ui_v1.0.xsd' Name='sstc-saml-metadata-ui-v1.0.xsd' />
                 </Component>
+                <Component Id='metadata_rpi_v1.0.xsd' Guid='{51C2294E-A180-4309-AEE2-DC6BEE203DA9}'>
+                  <File KeyPath='yes' Id='metadata_rpi_v1.0.xsd' Name='saml-metadata-rpi-v1.0.xsd' />
+                </Component>
                 <Component Id='protocol_ext_thirdparty.xsd' Guid='{EEFDA0C0-F1F4-4C09-82CD-873F037A4296}'>
                   <File KeyPath='yes' Id='protocol_ext_thirdparty.xsd' Name='sstc-saml-protocol-ext-thirdparty.xsd' />
                 </Component>
