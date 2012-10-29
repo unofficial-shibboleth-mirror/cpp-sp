@@ -305,7 +305,9 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 if (!qstr || !strstr(qstr, "shiblogoutdone=1")) {
                     // First leg of circuit, so we redirect to the logout endpoint specified with this URL as a return location.
                     string selfurl = request.getRequestURL();
-                    if (!qstr)
+                    if (qstr)
+                        selfurl += '&';
+                    else
                         selfurl += '?';
                     selfurl += "shiblogoutdone=1";
                     string loc = requireLogoutWith.second;
