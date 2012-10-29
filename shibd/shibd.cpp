@@ -110,9 +110,14 @@ int MyAllocHook(int nAllocType, void *pvData,
 
 int real_main(int preinit)
 {
-    SPConfig& conf=SPConfig::getConfig();
-    if (preinit) {
+    if (shar_version) {
+        if (preinit)
+            fprintf(stdout, PACKAGE_STRING"\n");
+        return 0;
+    }
 
+    SPConfig& conf = SPConfig::getConfig();
+    if (preinit) {
         // Initialize the SP library.
         conf.setFeatures(
             SPConfig::Listener |
