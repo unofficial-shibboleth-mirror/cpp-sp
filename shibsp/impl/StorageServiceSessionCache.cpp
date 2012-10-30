@@ -946,7 +946,7 @@ SSCache::SSCache(const DOMElement* e)
             if (m_storage)
                 m_log.info("bound to StorageService (%s)", ssid.c_str());
             else
-                m_log.warn("specified StorageService (%s) not found", ssid.c_str());
+                throw ConfigurationException("SessionCache unable to locate StorageService ($1), check configuration.", params(1, ssid.c_str()));
         }
         if (!m_storage) {
             m_storage = conf.getServiceProvider()->getStorageService(nullptr);
@@ -962,7 +962,7 @@ SSCache::SSCache(const DOMElement* e)
             if (m_storage_lite)
                 m_log.info("bound to 'lite' StorageService (%s)", ssid.c_str());
             else
-                m_log.warn("specified 'lite' StorageService (%s) not found", ssid.c_str());
+                throw ConfigurationException("SessionCache unable to locate 'lite' StorageService ($1), check configuration.", params(1, ssid.c_str()));
         }
         if (!m_storage_lite) {
             m_log.info("StorageService for 'lite' use not set, using standard StorageService");
