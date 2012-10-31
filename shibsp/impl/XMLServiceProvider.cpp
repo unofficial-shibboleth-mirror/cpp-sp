@@ -503,6 +503,7 @@ namespace {
     static const XMLCh _option[] =              UNICODE_LITERAL_6(o,p,t,i,o,n);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
+    static const XMLCh _policyId[] =            UNICODE_LITERAL_8(p,o,l,i,c,y,I,d);
     static const XMLCh _ProtocolProvider[] =    UNICODE_LITERAL_16(P,r,o,t,o,c,o,l,P,r,o,v,i,d,e,r);
     static const XMLCh _provider[] =            UNICODE_LITERAL_8(p,r,o,v,i,d,e,r);
     static const XMLCh RelyingParty[] =         UNICODE_LITERAL_12(R,e,l,y,i,n,g,P,a,r,t,y);
@@ -1125,6 +1126,8 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                     if (index / 10)
                         indexbuf = (XMLCh)(chDigit_1 + (index / 10)) + indexbuf;
                     acsdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
+                    if (e->hasAttributeNS(nullptr, _policyId))
+                        acsdom->setAttributeNS(shibspconstants::SHIB2SPCONFIG_NS, _policyId, e->getAttributeNS(nullptr, _policyId));
 
                     log.info("adding AssertionConsumerService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
@@ -1243,6 +1246,8 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
                     DOMElement* slodom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _SingleLogoutService);
                     slodom->setAttributeNS(nullptr, Binding, idprop.second);
                     slodom->setAttributeNS(nullptr, Location, pathprop.second);
+                    if (e->hasAttributeNS(nullptr, _policyId))
+                        slodom->setAttributeNS(shibspconstants::SHIB2SPCONFIG_NS, _policyId, e->getAttributeNS(nullptr, _policyId));
 
                     log.info("adding SingleLogoutService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
@@ -1309,6 +1314,8 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
                     DOMElement* nimdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _ManageNameIDService);
                     nimdom->setAttributeNS(nullptr, Binding, idprop.second);
                     nimdom->setAttributeNS(nullptr, Location, pathprop.second);
+                    if (e->hasAttributeNS(nullptr, _policyId))
+                        nimdom->setAttributeNS(shibspconstants::SHIB2SPCONFIG_NS, _policyId, e->getAttributeNS(nullptr, _policyId));
 
                     log.info("adding ManageNameIDService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
