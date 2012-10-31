@@ -383,21 +383,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         }
 
         // Message from IdP to logout one or more sessions.
-
-        // If this is front-channel, we have to have a session_id to use already.
-        if (m_decoder->isUserAgentPresent() && session_id.empty()) {
-            m_log.error("no active session");
-            return sendResponse(
-                logout_event.get(),
-                logoutRequest->getID(),
-                StatusCode::REQUESTER, StatusCode::UNKNOWN_PRINCIPAL, "No active session found in request.",
-                relayState.c_str(),
-                policy->getIssuerMetadata(),
-                application,
-                response,
-                true
-                );
-        }
+        // Extract the NameID from the request, decrypting it if needed.
 
         scoped_ptr<XMLObject> decryptedID;
         NameID* nameid = logoutRequest->getNameID();
@@ -449,7 +435,8 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
 
         // Suck indexes out of the request for next steps.
         set<string> indexes;
-        EntityDescriptor* entity = policy->getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy->getIssuerMetadata()->getParent()) : nullptr;
+        EntityDescriptor* entity =
+            policy->getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy->getIssuerMetadata()->getParent()) : nullptr;
         const vector<SessionIndex*> sindexes = logoutRequest->getSessionIndexs();
         for (indirect_iterator<vector<SessionIndex*>::const_iterator> i = make_indirect_iterator(sindexes.begin());
                 i != make_indirect_iterator(sindexes.end()); ++i) {
@@ -458,7 +445,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         }
 
         // For a front-channel LogoutRequest, we have to match the information in the request
-        // against the current session.
+        // against the current session, if one is known/available.
         if (!session_id.empty()) {
             if (!cache->matches(application, request, entity, *nameid, &indexes)) {
                 return sendResponse(
@@ -472,7 +459,9 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
                     true
                     );
             }
-
+        }
+        else if (m_decoder->isUserAgentPresent()) {
+            m_log.info("processing front channel logout request with no active session");
         }
 
         // Now we perform "logout" by finding the matching sessions.
@@ -515,22 +504,27 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         }
 
         if (m_decoder->isUserAgentPresent()) {
-            // Pass control to the first front channel notification point, if any.
-            map<string,string> parammap;
-            if (!relayState.empty())
-                parammap["RelayState"] = relayState;
-            auto_ptr_char entityID(entity ? entity->getEntityID() : nullptr);
-            if (entityID.get())
-                parammap["entityID"] = entityID.get();
-            auto_ptr_char reqID(logoutRequest->getID());
-            if (reqID.get())
-                parammap["ID"] = reqID.get();
-            pair<bool,long> result = notifyFrontChannel(application, request, response, &parammap);
-            if (result.first)
-                return result;
+            if (!session_id.empty()) {
+                // Pass control to the first front channel notification point, if any.
+                map<string,string> parammap;
+                if (!relayState.empty())
+                    parammap["RelayState"] = relayState;
+                auto_ptr_char entityID(entity ? entity->getEntityID() : nullptr);
+                if (entityID.get())
+                    parammap["entityID"] = entityID.get();
+                auto_ptr_char reqID(logoutRequest->getID());
+                if (reqID.get())
+                    parammap["ID"] = reqID.get();
+                pair<bool,long> result = notifyFrontChannel(application, request, response, &parammap);
+                if (result.first)
+                    return result;
+            }
+            else {
+                m_log.info("client's session isn't available, skipping front-channel notifications");
+            }
         }
 
-        // For back-channel requests, or if no front-channel notification is needed...
+        // For back-channel requests, or if no front-channel notification is needed or possible...
         bool worked1 = notifyBackChannel(application, request.getRequestURL(), sessions, false);
         bool worked2 = true;
         if (!session_id.empty()) {
