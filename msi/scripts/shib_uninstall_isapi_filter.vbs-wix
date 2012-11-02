@@ -2,8 +2,17 @@ Sub DeleteISAPIFilters(IISPath,dllPath)
 
   Dim filter, FiltersObj, LoadOrder, FilterArray, FilterItem
 
+  On Error Resume Next
   Set FiltersObj = GetObject(IISPath & "/Filters")
+  if IsNull(FiltersObj) then
+    exit sub
+  end if
+
+  On Error Resume Next
   LoadOrder = FiltersObj.FilterLoadOrder
+  if IsNull(LoadOrder) then
+    exit sub
+  end if
 
   for each filter in FiltersObj
     if (filter.Class = "IIsFilter") then
@@ -48,7 +57,11 @@ Dim line, lineArray, lineIndex
 Dim fileExtension
 Dim existsFlag
 
+  On Error Resume Next
   ScriptMaps = siteObj.ScriptMaps
+  if IsNull(ScriptMaps) then
+    exit sub
+  end if
   redim newScriptMaps(0)
   lineIndex = 0
   'copy each entry from the old ScriptMaps to newScriptMaps
@@ -71,38 +84,38 @@ Dim existsFlag
 
 End Sub
 
+Sub PerformUninstall()
 
 '*** Begin Main Code ***
 Dim WebObj
 Dim InstallDir
-Dim FileSystemObj
 Dim ShibISAPIPath
-Dim site, siteObj, sitePath, LogFile
+Dim site, siteObj, sitePath
+
+On Error Resume Next
 
 ' First of all look for the FileExtension
 Set WshShell = CreateObject("WScript.Shell")
+if (Err <> 0) then
+  exit sub
+End if
+
 
 'Get the INSTALLDIR value via CustomActionData
+On Error Resume Next
 InstallDir = Session.Property("CustomActionData")
-
-Set FileSystemObj = CreateObject("Scripting.FileSystemObject")
-
-'Set LogFile = FileSystemObj.OpenTextFile(InstallDir & "\var\log\shibboleth\Installer.log", 8, true)
+if (Err <> 0) then
+  exit sub
+End if
 
 On Error Resume Next
 regValue = WshShell.RegRead("HKLM\SOFTWARE\Shibboleth\FileExtension")
 if (Err = 0) then
 
- ' If (LogFile) then
-  '   LogFile.WriteLine "Uninstall IIS plugin - upgrade detected by uninstall script, skipping"
-  'End If
   ' Registry key is still there - this is an upgrade, so exit
 
 else 
   ' Key is gone - a pure uninstall
-  'If (LogFile) then
-   '  LogFile.WriteLine "Uninstall IIS plugin"
-  'End If
  
   'Don't show errors, we'll handle anything important
   On Error Resume Next
@@ -145,3 +158,7 @@ else
   End If
 ' Sense whether this is an upgrade
 end if
+
+End Sub
+
+PerformUninstall()
