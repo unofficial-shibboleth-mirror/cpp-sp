@@ -227,7 +227,10 @@ void TransformAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
                 try {
                     auto_arrayptr<XMLCh> srcval(fromUTF8((*a)->getSerializedValues()[i].c_str()));
                     XMLCh* destval = r->get<1>()->replace(srcval.get(), r->get<2>());
-                    if (destval) {
+                    if (!destval)
+                        continue;
+                    // For some reason, it returns the source string if the match doesn't succeed.
+                    if (!XMLString::equals(destval, srcval.get())) {
                         auto_arrayptr<char> narrow(toUTF8(destval));
                         XMLString::release(&destval);
                         if (dest) {
@@ -240,6 +243,9 @@ void TransformAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
                             destwrapper->getValues().push_back(narrow.get());
                             trim(destwrapper->getValues().back());
                         }
+                    }
+                    else {
+                        XMLString::release(&destval);
                     }
                 }
                 catch (XMLException& ex) {
