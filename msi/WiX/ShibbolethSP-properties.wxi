@@ -35,6 +35,9 @@
   <Property Id='ARPURLUPDATEINFO' Value='https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPWindowsUpgrade' />
   <Property Id='ARPURLINFOABOUT' Value='http://shibboleth.net/' />
 
+  <!-- Do we want to force the ServiceStart to happen? -->
+  <Property Id='ALWAYS_START_SERVICE' Value='TRUE' Secure='yes' />
+
   <!-- UPGRADINGPRODUCTCODE set in the uninstall if this is an upgrade uninstall -->
   <!-- IISMAJORVERSION if IIS installed -->
   <PropertyRef Id='IISMAJORVERSION' />

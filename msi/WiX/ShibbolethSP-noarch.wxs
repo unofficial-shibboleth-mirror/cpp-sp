@@ -270,7 +270,7 @@
       <!-- Do not mess with SCM if this is an upgrade -->
 
       <InstallServices>(NOT Installed) AND (NOT ALREADYINSTALLED)</InstallServices>
-      <StartServices>(NOT Installed)</StartServices>
+      <StartServices>(NOT Installed) AND (ALWAYS_START_SERVICE = "TRUE")</StartServices>
       <DeleteServices>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</DeleteServices>
 
     </InstallExecuteSequence>
