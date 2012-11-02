@@ -43,7 +43,7 @@ ShibbolethSP-registry-x64.wixobj: ShibbolethSP-registry-x64.wxs
 	wixcop -indent:2 ShibbolethSP-registry-x64.wxs
 	candle -dSPBuildDirectory=$(SolutionDir).. ShibbolethSP-registry-x64.wxs
 
-ShibbolethSP-noarch.wixobj: ShibbolethSP-noarch.wxs
+ShibbolethSP-noarch.wixobj: ShibbolethSP-noarch.wxs ..\scripts\shib_install_isapi_filter.vbs-wix ..\scripts\shib_uninstall_isapi_filter.vbs-wix ..\scripts\shib_edit_config_files.vbs-wix
 	wixcop -indent:2 ShibbolethSP-noarch.wxs
 	candle -dSPBuildDirectory=$(SolutionDir).. ShibbolethSP-noarch.wxs
 
