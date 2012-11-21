@@ -363,6 +363,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                         logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_UNKNOWN;
                         logout_event->m_saml2Request = msg.get();
                         application.getServiceProvider().getTransactionLog()->write(*logout_event);
+                        logout_event->m_saml2Request = nullptr;
                     }
 
                     auto_ptr_char dest(epit->getLocation());
