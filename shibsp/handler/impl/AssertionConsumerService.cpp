@@ -161,7 +161,9 @@ pair<bool,long> AssertionConsumerService::processMessage(
 {
 #ifndef SHIBSP_LITE
     // Locate policy key.
-    pair<bool,const char*> prop = getString("policyId", m_configNS.get());  // namespace-qualified if inside handler element
+    pair<bool,const char*> prop = getString("policyId", m_configNS.get());  // may be namespace-qualified if inside handler element
+    if (!prop.first)
+        prop = getString("policyId");   // try unqualified
     if (!prop.first)
         prop = application.getString("policyId");   // unqualified in Application(s) element
 
@@ -226,24 +228,31 @@ pair<bool,long> AssertionConsumerService::processMessage(
         return finalizeResponse(application, httpRequest, httpResponse, relayState);
     }
     catch (XMLToolingException& ex) {
-        // Check for isPassive error condition.
-        const char* sc2 = ex.getProperty("statusCode2");
-        if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
-            pair<bool,bool> ignore = getBool("ignoreNoPassive", m_configNS.get());  // namespace-qualified if inside handler element
-            if (ignore.first && ignore.second && !relayState.empty()) {
-                m_log.debug("ignoring SAML status of NoPassive and redirecting to resource...");
-                return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
-            }
-        }
+        // Recover relay state.
         if (!relayState.empty()) {
             try {
                 recoverRelayState(application, httpRequest, httpResponse, relayState, false);
             }
             catch (std::exception& rsex) {
                 m_log.warn("error recovering relay state: %s", rsex.what());
+                relayState.erase();
+                recoverRelayState(application, httpRequest, httpResponse, relayState, false);
             }
-            ex.addProperty("RelayState", relayState.c_str());
         }
+
+        // Check for isPassive error condition.
+        const char* sc2 = ex.getProperty("statusCode2");
+        if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
+            pair<bool,bool> ignore = getBool("ignoreNoPassive", m_configNS.get());  // may be namespace-qualified inside handler element
+            if (!ignore.first)
+                ignore = getBool("ignoreNoPassive");    // try unqualified
+            if (ignore.first && ignore.second && !relayState.empty()) {
+                m_log.debug("ignoring SAML status of NoPassive and redirecting to resource...");
+                return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+            }
+        }
+
+        ex.addProperty("RelayState", relayState.c_str());
 
         // Log the error.
         try {

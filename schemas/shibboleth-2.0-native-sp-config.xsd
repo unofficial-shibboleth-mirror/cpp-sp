@@ -9,7 +9,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="2.5">
+	version="2.5.1">
 
   <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
   <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
@@ -480,6 +480,8 @@
           </annotation>
           <simpleContent>
             <extension base="conf:listOfStrings">
+              <attribute name="policyId" type="conf:string"/>
+              <attribute name="ignoreNoPassive" type="boolean"/>
               <attribute name="discoveryProtocol" type="conf:string"/>
               <attribute name="discoveryURL" type="anyURI"/>
               <attributeGroup ref="conf:SessionInitiatorGroup"/>
@@ -494,15 +496,23 @@
           </annotation>
           <simpleContent>
             <extension base="conf:listOfStrings">
+              <attribute name="policyId" type="conf:string"/>
               <attributeGroup ref="conf:LogoutInitiatorGroup"/>
             </extension>
           </simpleContent>
         </complexType>
       </element>
-      <element name="NameIDMgmt" type="conf:listOfStrings" minOccurs="0">
-        <annotation>
-          <documentation>Implicitly configures ManageNameIDService handlers</documentation>
-        </annotation>
+      <element name="NameIDMgmt" minOccurs="0">
+        <complexType>
+          <annotation>
+            <documentation>Implicitly configures ManageNameIDService handlers</documentation>
+          </annotation>
+          <simpleContent>
+            <extension base="conf:listOfStrings">
+              <attribute name="policyId" type="conf:string"/>
+            </extension>
+          </simpleContent>
+        </complexType>
       </element>
       <choice minOccurs="0" maxOccurs="unbounded">
         <element ref="conf:SessionInitiator"/>
@@ -546,6 +556,12 @@
     </annotation>
   </attribute>
 
+  <attribute name="ignoreNoPassive" type="boolean">
+    <annotation>
+      <documentation>Used to ignore NoPassive errors in AssertionConsumerService endpoints</documentation>
+    </annotation>
+  </attribute>
+  
   <attributeGroup name="SessionInitiatorGroup">
     <annotation>
       <documentation>Options common to explicit and implicit SessionInitiators</documentation>

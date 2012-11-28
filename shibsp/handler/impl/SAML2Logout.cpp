@@ -354,7 +354,9 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
     // If we get here, it's an external protocol message to decode.
 
     // Locate policy key.
-    pair<bool,const char*> policyId = getString("policyId", m_configNS.get());  // namespace-qualified if inside handler element
+    pair<bool,const char*> policyId = getString("policyId", m_configNS.get());  // may be namespace-qualified inside handler element
+    if (!policyId.first)
+        policyId = getString("policyId");   // try unqualified
     if (!policyId.first)
         policyId = application.getString("policyId");   // unqualified in Application(s) element
 

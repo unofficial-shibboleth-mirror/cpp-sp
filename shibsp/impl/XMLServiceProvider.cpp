@@ -1080,6 +1080,8 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
 {
     if (!e->hasChildNodes())
         return;
+    DOMNamedNodeMap* ssoprops = e->getAttributes();
+    XMLSize_t ssopropslen = ssoprops ? ssoprops->getLength() : 0;
 
     SPConfig& conf = SPConfig::getConfig();
 
@@ -1120,14 +1122,26 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                 pathprop = (*b)->getXMLString("path");
                 if (idprop.first && pathprop.first) {
                     DOMElement* acsdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _AssertionConsumerService);
+
+                    // Copy in any attributes from the <SSO> element so they can be accessed as properties in the ACS handler.
+                    for (XMLSize_t p = 0; p < ssopropslen; ++p) {
+                        DOMNode* ssoprop = ssoprops->item(p);
+                        if (ssoprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
+                            acsdom->setAttributeNS(
+                                ((DOMAttr*)ssoprop)->getNamespaceURI(),
+                                ((DOMAttr*)ssoprop)->getLocalName(),
+                                ((DOMAttr*)ssoprop)->getValue()
+                                );
+                        }
+                    }
+
+                    // Set necessary properties based on context.
                     acsdom->setAttributeNS(nullptr, Binding, idprop.second);
                     acsdom->setAttributeNS(nullptr, Location, pathprop.second);
                     xstring indexbuf(1, chDigit_1 + (index % 10));
                     if (index / 10)
                         indexbuf = (XMLCh)(chDigit_1 + (index / 10)) + indexbuf;
                     acsdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
-                    if (e->hasAttributeNS(nullptr, _policyId))
-                        acsdom->setAttributeNS(shibspconstants::SHIB2SPCONFIG_NS, _policyId, e->getAttributeNS(nullptr, _policyId));
 
                     log.info("adding AssertionConsumerService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
@@ -1204,6 +1218,8 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
 {
     if (!e->hasChildNodes())
         return;
+    DOMNamedNodeMap* sloprops = e->getAttributes();
+    XMLSize_t slopropslen = sloprops ? sloprops->getLength() : 0;
 
     SPConfig& conf = SPConfig::getConfig();
 
@@ -1244,6 +1260,20 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
                 pathprop = (*b)->getXMLString("path");
                 if (idprop.first && pathprop.first) {
                     DOMElement* slodom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _SingleLogoutService);
+
+                    // Copy in any attributes from the <Logout> element so they can be accessed as properties in the SLO handler.
+                    for (XMLSize_t p = 0; p < slopropslen; ++p) {
+                        DOMNode* sloprop = sloprops->item(p);
+                        if (sloprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
+                            slodom->setAttributeNS(
+                                ((DOMAttr*)sloprop)->getNamespaceURI(),
+                                ((DOMAttr*)sloprop)->getLocalName(),
+                                ((DOMAttr*)sloprop)->getValue()
+                                );
+                        }
+                    }
+
+                    // Set necessary properties based on context.
                     slodom->setAttributeNS(nullptr, Binding, idprop.second);
                     slodom->setAttributeNS(nullptr, Location, pathprop.second);
                     if (e->hasAttributeNS(nullptr, _policyId))
@@ -1294,6 +1324,8 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
 {
     if (!e->hasChildNodes())
         return;
+    DOMNamedNodeMap* nimprops = e->getAttributes();
+    XMLSize_t nimpropslen = nimprops ? nimprops->getLength() : 0;
 
     SPConfig& conf = SPConfig::getConfig();
 
@@ -1312,6 +1344,20 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
                 pathprop = (*b)->getXMLString("path");
                 if (idprop.first && pathprop.first) {
                     DOMElement* nimdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _ManageNameIDService);
+
+                    // Copy in any attributes from the <NameIDMgmt> element so they can be accessed as properties in the NIM handler.
+                    for (XMLSize_t p = 0; p < nimpropslen; ++p) {
+                        DOMNode* nimprop = nimprops->item(p);
+                        if (nimprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
+                            nimdom->setAttributeNS(
+                                ((DOMAttr*)nimprop)->getNamespaceURI(),
+                                ((DOMAttr*)nimprop)->getLocalName(),
+                                ((DOMAttr*)nimprop)->getValue()
+                                );
+                        }
+                    }
+
+                    // Set necessary properties based on context.
                     nimdom->setAttributeNS(nullptr, Binding, idprop.second);
                     nimdom->setAttributeNS(nullptr, Location, pathprop.second);
                     if (e->hasAttributeNS(nullptr, _policyId))
