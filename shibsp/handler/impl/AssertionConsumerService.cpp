@@ -251,8 +251,10 @@ pair<bool,long> AssertionConsumerService::processMessage(
                 return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
             }
         }
-
-        ex.addProperty("RelayState", relayState.c_str());
+        
+        if (!relayState.empty()) {
+            ex.addProperty("RelayState", relayState.c_str());
+        }
 
         // Log the error.
         try {
