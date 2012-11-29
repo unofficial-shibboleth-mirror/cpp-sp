@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/usr/bin/env bash
 
 DECLS=1
 
@@ -23,13 +23,14 @@ SAML20PAOS="urn:oasis:names:tc:SAML:2.0:bindings:PAOS"
 SAML1POST="urn:oasis:names:tc:SAML:1.0:profiles:browser-post"
 SAML1ART="urn:oasis:names:tc:SAML:1.0:profiles:artifact-01"
 
-while getopts a:c:e:f:h:n:o:s:t:u:12ADLNO c
+while getopts a:c:e:f:h:l:n:o:s:t:u:12ADLNO c
      do
          case $c in
            c)   CERTS[${#CERTS[*]}]=$OPTARG;;
            e)   ENTITYID=$OPTARG;;
            f)   FORMATS[${#FORMATS[*]}]=$OPTARG;;
            h)   HOSTS[${#HOSTS[*]}]=$OPTARG;;
+           l)   HOSTLIST=$OPTARG;;
            n)   NAKEDHOSTS[${#NAKEDHOSTS[*]}]=$OPTARG;;
            o)   ORGNAME=$OPTARG;;
            a)   ADMIN[${#ADMIN[*]}]=$OPTARG;;
@@ -71,6 +72,16 @@ if [ -z $ENTITYID ] ; then
     else
         ENTITYID=https://${HOSTS[0]}/shibboleth
     fi
+fi
+
+if [ -s $HOSTLIST ] ; then
+    while read h
+    do
+        HOSTS[${#HOSTS[@]}]=$h
+    done <$HOSTLIST
+else
+    echo File with list of hostnames $l does not exist! 
+    exit 2
 fi
 
 # Establish protocols and bindings.
