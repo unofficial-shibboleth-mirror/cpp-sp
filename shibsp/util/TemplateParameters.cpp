@@ -63,6 +63,8 @@ void TemplateParameters::setPropertySet(const PropertySet* props)
 #else
     m_map["now"] = ctime(&now);
 #endif
+    string& s = m_map["now"];
+    s.erase(s.begin() + s.size() - 1);
 }
 
 const XMLToolingException* TemplateParameters::getRichException() const
