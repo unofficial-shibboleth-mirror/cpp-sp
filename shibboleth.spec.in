@@ -22,8 +22,8 @@ BuildRequires:	libXerces-c-devel >= 2.8.0
 BuildRequires:	libxerces-c-devel >= 2.8.0
 %endif
 BuildRequires:	libxml-security-c-devel >= 1.4.0
-BuildRequires:	libxmltooling-devel >= 1.5
-BuildRequires:	libsaml-devel >= 2.5
+BuildRequires:	libxmltooling-devel >= 1.5.0
+BuildRequires:	libsaml-devel >= 2.5.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.4}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
@@ -39,7 +39,11 @@ BuildRequires:	libmemcached-devel
 %endif
 %{?_with_memcached:BuildRequires: libmemcached-devel}
 %if "%{_vendor}" == "redhat"
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+%{!?_without_builtinapache:BuildRequires: httpd-devel%{?_isa}}
+%else
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
+%endif
 BuildRequires: redhat-rpm-config
 Requires(pre): shadow-utils
 Requires(post): chkconfig
@@ -76,8 +80,8 @@ Requires:	libXerces-c-devel >= 2.8.0
 Requires: 	libxerces-c-devel >= 2.8.0
 %endif
 Requires: 	libxml-security-c-devel >= 1.4.0
-Requires: 	libxmltooling-devel >= 1.5
-Requires: 	libsaml-devel >= 2.5
+Requires: 	libxmltooling-devel >= 1.5.0
+Requires: 	libsaml-devel >= 2.5.0
 %{?_with_log4cpp:Requires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:Requires: liblog4shib-devel >= 1.0.4}
 
