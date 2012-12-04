@@ -31,10 +31,6 @@ else
 all-local:
 endif
 
-dist-hook:
-	rm -rf `find $(distdir)/isapi_shib -name .svn`
-	rm -rf `find $(distdir)/doc/api -name .svn`
-
 GENFILES = @PACKAGE_NAME@.spec
 
 EXTRA_DIST = $(DX_CONFIG) \
