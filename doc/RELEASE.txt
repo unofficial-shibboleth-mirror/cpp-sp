@@ -1,13 +1,5 @@
 Shibboleth Native SP Release Notes
 
----------------------------------------------------------------------
-This release is dedicated to our friend RL 'Bob' Morgan, who passed
-in 2012, and without which the Shibboleth Project would not have come
-into being.
-
-http://shibboleth.net/community/news/20120717.html
----------------------------------------------------------------------
-
 Fix/Enhancement Lists:
 https://wiki.shibboleth.net/confluence/display/DEV/SPRoadmap
 

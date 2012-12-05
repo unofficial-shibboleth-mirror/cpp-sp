@@ -1,58 +1,58 @@
-Shibboleth Implementation Team
-
- Documentation
-
-   Nate Klingenstein
-   Internet2
-   ndk@internet2.edu
-
- Design and Programming
-
-   Derek Atkins
-   IHTFP Consulting, Inc
+ Current Development Team
 
    Scott Cantor
    The Ohio State University
 
-   Jim Fox
-   University of Washington
-
-   Walter Hoehn
-   The University of Memphis
-
-   Chad LaJoie
-   Itumi, LLC.
-
-   Derek Morr
-   Penn State University
-
-   Will Norris
-   
    Brent Putman
    Georgetown University
    
    Rod Widdowson
    Steading Software, Inc.
+
+   Ian Young
+
+   Tom Zeller
+   Dragonacea, LLC
    
  Project Management
+
+   Nicole Harris
+   JISC Advance
+
+ Emeritus Developers
+
+   Derek Atkins
+
+   Jim Fox
+
+   Walter Hoehn
+
+   Chad LaJoie
+
+   Derek Morr
+
+   Will Norris
+  
+ Emeritus Contributors
 
    Steven Carmody
    Brown University
 
-   Nicole Harris
-   TERENA
+   Marlena Erdos
 
    Ken Klingenstein
    Internet2
 
-   Thomas Lenggenhager
-   SWITCH
+   Nate Klingenstein
+   Internet2
 
    RL "Bob" Morgan
    University of Washington
    http://shibboleth.net/community/news/20120717.html
 
-Thanks to: 
+   Many others!
+   
+Additional thanks to:
 
     Internet2
 
@@ -62,14 +62,14 @@ Thanks to:
 
     Barbara Jenson (CMU), Parviz Dousti (CMU), Tom Dopirak (CMU), 
       and Sridhar Muppidi (IBM/Tivoli); for helping to develop 
-      the initial shibboleth prototype
+      the initial Shibboleth prototype
 
     Brian Pittman (WebAssign), Mark Earnest (PSU), James Shvarts (Columbia), 
       Ryan Muldoon (Wisconsin), John Hopkins (PSU), Noah Levitt (Columbia), 
       and David Walker (UCOP); for much help with testing
       
     Dave Dearman (NRCC), for contributing a SQL Data Connector for the AA 
-      resolver
+      resolver back in the 1.x release
 
     Noah Levitt (Columbia), for simplifying the  logging configuration.
 
