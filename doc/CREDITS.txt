@@ -10,6 +10,7 @@
    Steading Software, Inc.
 
    Ian Young
+   Independent
 
    Tom Zeller
    Dragonacea, LLC
