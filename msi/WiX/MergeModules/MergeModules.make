@@ -23,7 +23,7 @@ Curl-x64.msm: Curl-x64.wixobj
 	light Curl-x64.wixobj
 	del ..\*.msi
 
-Curl-x64.wixobj: Curl-x64.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl-dll-zlib-dll.x64\libcurl.dll $(BuildSP)\curl-$(CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll.x64\libcurld.dll
+Curl-x64.wixobj: Curl-x64.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl-dll-zlib-dll.x64\libcurl5.dll $(BuildSP)\curl-$(CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll.x64\libcurl5d.dll
 	wixcop -indent:2 Curl-x64.wxs 
 	candle Curl-x64.wxs -dBuildDirectory=$(BuildSP) -dCurlVersion=$(CurlVersion)
 
@@ -31,7 +31,7 @@ Curl-x86.msm: Curl-x86.wixobj
 	light Curl-x86.wixobj
 	del ..\*.msi
 
-Curl-x86.wixobj: Curl-x86.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl-dll-zlib-dll\libcurl.dll $(BuildSP)\curl-$(CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll\libcurld.dll 
+Curl-x86.wixobj: Curl-x86.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl-dll-zlib-dll\libcurl5.dll $(BuildSP)\curl-$(CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll\libcurl5d.dll 
 	wixcop -indent:2 Curl-x86.wxs 
 	candle Curl-x86.wxs -dBuildDirectory=$(BuildSP) -dCurlVersion=$(CurlVersion)
 
