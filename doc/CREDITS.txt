@@ -83,3 +83,7 @@ Additional thanks to:
       Shibboleth versions
     
     Kaspar Brand for assisting in the development of CRL-related functionality
+
+    The community at large for helping with end user support, particularly
+      Peter Schober, Paul Hethmon, Kevin Foote, Russell Beall, and Christopher
+      Bongaarts
