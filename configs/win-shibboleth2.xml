@@ -79,11 +79,11 @@
                   checkAddress="false" handlerSSL="false" cookieProps="http">
 
             <!--
-              Configures SSO for a default IdP. To allow for >1 IdP, remove
-              entityID property and adjust discoveryURL to point to discovery service.
-              (Set discoveryProtocol to "WAYF" for legacy Shibboleth WAYF support.)
-              You can also override entityID on /Login query string, or in RequestMap/htaccess.
-              -->
+            Configures SSO for a default IdP. To allow for >1 IdP, remove
+            entityID property and adjust discoveryURL to point to discovery service.
+            (Set discoveryProtocol to "WAYF" for legacy Shibboleth WAYF support.)
+            You can also override entityID on /Login query string, or in RequestMap/htaccess.
+            -->
             <SSO entityID="https://idp.example.org/idp/shibboleth"
                  discoveryProtocol="SAMLDS" discoveryURL="https://ds.example.org/DS/WAYF">
               SAML2 SAML1
