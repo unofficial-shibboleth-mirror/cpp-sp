@@ -115,7 +115,7 @@ void Application::clearAttributeHeaders(SPRequest& request) const
                 &SPRequest::clearHeader,
                 boost::ref(request),
                 boost::bind(&string::c_str, boost::bind(&pair<string,string>::first, _1)),
-                boost::bind(&string::c_str, boost::bind(&pair<string,string>::first, _1))
+                boost::bind(&string::c_str, boost::bind(&pair<string,string>::second, _1))
                 )
             );
         return;
@@ -154,7 +154,7 @@ void Application::clearAttributeHeaders(SPRequest& request) const
             &SPRequest::clearHeader,
             boost::ref(request),
             boost::bind(&string::c_str, boost::bind(&pair<string,string>::first, _1)),
-            boost::bind(&string::c_str, boost::bind(&pair<string,string>::first, _1))
+            boost::bind(&string::c_str, boost::bind(&pair<string,string>::second, _1))
             )
         );
 }
