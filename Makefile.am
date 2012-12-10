@@ -5,6 +5,9 @@ include doxygen.am
 
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 
+dist-hook:
+	rm -rf `find $(distdir)/msbuild -name .svn`
+
 WANT_SUBDIRS = @WANT_SUBDIRS@
 
 SUBDIRS = $(WANT_SUBDIRS)
