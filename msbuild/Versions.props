@@ -5,13 +5,16 @@
 
     <ShibbolethVersion>2.5.1</ShibbolethVersion>
 
-    <!-- Change the Ids below AT LEAST on every change to ShibbolethVersion -->
-    <ShibbolethId32>{DE927001-90B8-44B8-9F89-A8317FCC0EEE}</ShibbolethId32>
-    <ShibbolethId64>{5E572502-FF6E-4B57-8E99-513157DB2C57}</ShibbolethId64>
+    <!--
+    Change the Ids below AT LEAST on every change to ShibbolethVersion
+    and whenever producing a new installer for patch generation.
+     -->
+    <ShibbolethId32>{58EFC8C2-7421-48C0-ACF1-E83952A1A5EE}</ShibbolethId32>
+    <ShibbolethId64>{F72E99D8-3A70-44B5-9716-DB85A7FBA79E}</ShibbolethId64>
     <!-- NEVER CHANGE THE UPGRADE CODE UNLESS YOU REALLY REALLY KNOW WHAT YOU ARE DOING -->
     <ShibbolethUpgradeCode>{28A4EB62-E860-49CA-BE43-44ADEB91DBF6}</ShibbolethUpgradeCode>
 
-    <CurlVersion>7.28.1</CurlVersion>
+    <CurlVersion>7.29.0</CurlVersion>
     <curl>curl-$(CurlVersion)</curl>
 
     <boost>boost_1_52_0</boost>
@@ -45,8 +48,8 @@
     <XMLToolingComponent64d>{C380627F-9D45-4626-A249-3831FC7C83FC}</XMLToolingComponent64d>
     <XMLToolingLiteComponent64d>{2786A98E-763C-41A1-A6D5-363DB22F17E9}</XMLToolingLiteComponent64d>
 
-    <OpenSSLVersion>1.0.1.3</OpenSSLVersion>
-    <OpenSSLDirVersion>1.0.1c</OpenSSLDirVersion>
+    <OpenSSLVersion>1.0.1.5</OpenSSLVersion>
+    <OpenSSLDirVersion>1.0.1e</OpenSSLDirVersion>
     <openssl>openssl-$(OpenSSLDirVersion)</openssl>
     <OpenSSLFileVersion>1_0</OpenSSLFileVersion>
     <!-- Change the 8 components below if OpenSSLFileVersion changes -->
