@@ -74,14 +74,16 @@ if [ -z $ENTITYID ] ; then
     fi
 fi
 
-if [ -s $HOSTLIST ] ; then
-    while read h
-    do
-        HOSTS[${#HOSTS[@]}]=$h
-    done <$HOSTLIST
-else
-    echo File with list of hostnames $l does not exist! 
-    exit 2
+if [ ! -z $HOSTLIST ] ; then
+    if [ -s $HOSTLIST ] ; then
+        while read h
+        do
+            HOSTS[${#HOSTS[@]}]=$h
+        done <$HOSTLIST
+    else
+        echo File with list of hostnames $l does not exist! 
+        exit 2
+    fi
 fi
 
 # Establish protocols and bindings.
