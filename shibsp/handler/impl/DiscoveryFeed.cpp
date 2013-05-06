@@ -171,7 +171,7 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
                         string etag = '"' + s + '"';
                         request.setResponseHeader("ETag", etag.c_str());
                     }
-                    request.setContentType("application/json");
+                    request.setContentType("application/json; charset=UTF-8");
                     return make_pair(true, request.sendResponse(buf));
                 }
             }
@@ -197,7 +197,7 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
                 }
                 if (out["feed"].string()) {
                     istringstream buf(out["feed"].string());
-                    request.setContentType("application/json");
+                    request.setContentType("application/json; charset=UTF-8");
                     return make_pair(true, request.sendResponse(buf));
                 }
                 throw ConfigurationException("Discovery feed was empty.");
@@ -223,7 +223,7 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
             string etag = '"' + s + '"';
             request.setResponseHeader("ETag", etag.c_str());
         }
-        request.setContentType("application/json");
+        request.setContentType("application/json; charset=UTF-8");
         return make_pair(true, request.sendResponse(feed));
     }
     catch (std::exception& ex) {
