@@ -809,8 +809,9 @@ extern "C" int shib_handler(request_rec* r)
 #else
         shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
         if (!rc || !rc->sta) {
-            ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(r), "shib_handler found no per-request structure");
-            return SERVER_ERROR;
+            ap_log_rerror(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, SH_AP_R(r), "shib_handler found no per-request structure");
+            shib_post_read(r);  // ensures objects are created if post_read hook didn't run
+            rc = (shib_request_config*)ap_get_module_config(r->request_config, &mod_shib);
         }
         ShibTargetApache* psta = rc->sta;
 #endif
