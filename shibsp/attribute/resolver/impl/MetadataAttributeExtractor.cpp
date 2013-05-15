@@ -288,7 +288,7 @@ template <class T> void MetadataExtractor::doLangSensitive(
     if (!match)
         match = objects.front();
 
-    auto_ptr_char temp(match->getTextContent());
+    auto_arrayptr<char> temp(toUTF8(match->getTextContent()));
     if (temp.get() && *temp.get()) {
         auto_ptr<SimpleAttribute> attr(new SimpleAttribute(vector<string>(1, id)));
         attr->getValues().push_back(temp.get());
@@ -314,7 +314,7 @@ void MetadataExtractor::doLogo(
                     sizediff = 0;
                     if (h > 0) {
                         dim = (*i)->getHeight();
-                        sizediff = abs(h - dim.second);
+                        sizediff += abs(h - dim.second);
                     }
                     if (w > 0) {
                         dim = (*i)->getWidth();
@@ -337,7 +337,7 @@ void MetadataExtractor::doLogo(
             sizediff = 0;
             if (h > 0) {
                 dim = (*i)->getHeight();
-                sizediff = abs(h - dim.second);
+                sizediff += abs(h - dim.second);
             }
             if (w > 0) {
                 dim = (*i)->getWidth();
