@@ -310,7 +310,7 @@ void MetadataExtractor::doLogo(
     if (request && request->startLangMatching()) {
         do {
             for (vector<Logo*>::const_iterator i = logos.begin(); i != logos.end(); ++i) {
-                if (request->matchLang((*i)->getLang())) {
+                if (!(*i)->getLang() || request->matchLang((*i)->getLang())) {
                     sizediff = 0;
                     if (h > 0) {
                         dim = (*i)->getHeight();
