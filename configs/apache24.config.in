@@ -13,11 +13,24 @@
 LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_24.so
 
 #
+# Ensures handler will be accessible.
+#
+<Location /Shibboleth.sso>
+  Satisfy Any
+  Allow from all
+  AuthType None
+  Require all granted
+</Location>
+
+#
 # Used for example style sheet in error templates.
 #
 <IfModule mod_alias.c>
   <Location /shibboleth-sp>
+    Satisfy Any
     Allow from all
+    AuthType None
+    Require all granted
   </Location>
   Alias /shibboleth-sp/main.css @-PKGWEBDIR-@/main.css
 </IfModule>

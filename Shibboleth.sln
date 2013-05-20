@@ -36,6 +36,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		configs\accessError.html = configs\accessError.html
 		configs\apache.config.in = configs\apache.config.in
 		configs\apache2.config.in = configs\apache2.config.in
+		configs\apache22.config.in = configs\apache22.config.in
 		configs\apache24.config.in = configs\apache24.config.in
 		configs\attrChecker.html = configs\attrChecker.html
 		configs\attribute-map.xml = configs\attribute-map.xml
