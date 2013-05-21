@@ -5,9 +5,6 @@ include doxygen.am
 
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 
-dist-hook:
-	rm -rf `find $(distdir)/msbuild -name .svn`
-
 WANT_SUBDIRS = @WANT_SUBDIRS@
 
 SUBDIRS = $(WANT_SUBDIRS)
@@ -40,6 +37,5 @@ EXTRA_DIST = $(DX_CONFIG) \
 	isapi_shib \
 	Shibboleth.sln \
 	config_win32.h \
-	msbuild \
 	$(GENFILES) \
 	$(GENFILES:%=%.in)
