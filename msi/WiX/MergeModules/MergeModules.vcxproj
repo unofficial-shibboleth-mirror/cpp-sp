@@ -37,7 +37,7 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <Import Project="..\..\..\..\BuildPath.props" />
-  <Import Project="..\..\..\MsBuild\Versions.props" />
+  <Import Project="$(ParentRoot)\Versions.props" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <NMakeBuildCommandLine>nmake /f MergeModules.make clean</NMakeBuildCommandLine>
