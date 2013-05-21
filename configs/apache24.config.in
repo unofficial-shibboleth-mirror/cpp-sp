@@ -16,8 +16,6 @@ LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_24.so
 # Ensures handler will be accessible.
 #
 <Location /Shibboleth.sso>
-  Satisfy Any
-  Allow from all
   AuthType None
   Require all granted
 </Location>
@@ -27,8 +25,6 @@ LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_24.so
 #
 <IfModule mod_alias.c>
   <Location /shibboleth-sp>
-    Satisfy Any
-    Allow from all
     AuthType None
     Require all granted
   </Location>
