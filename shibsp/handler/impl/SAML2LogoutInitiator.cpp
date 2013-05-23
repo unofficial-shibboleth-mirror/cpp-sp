@@ -87,6 +87,7 @@ namespace shibsp {
             ) const;
 
         string m_appId;
+        auto_ptr_char m_protocol;
 #ifndef SHIBSP_LITE
         auto_ptr<LogoutRequest> buildRequest(
             const Application& application, const Session& session, const RoleDescriptor& role, const MessageEncoder* encoder=nullptr
@@ -105,7 +106,6 @@ namespace shibsp {
         vector<string> m_bindings;
         map< string,boost::shared_ptr<MessageEncoder> > m_encoders;
 #endif
-        auto_ptr_char m_protocol;
     };
 
 #if defined (_MSC_VER)
