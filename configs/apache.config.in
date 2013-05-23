@@ -25,8 +25,8 @@ LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_13.so
 # Ensures handler will be accessible.
 #
 <Location /Shibboleth.sso>
+  Satisfy Any
   Allow from all
-  AuthType None
 </Location>
 
 #
@@ -35,8 +35,8 @@ LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_13.so
 <IfModule mod_alias.c>
   Alias /shibboleth-sp/main.css @-PKGWEBDIR-@/main.css
   <Location /shibboleth-sp>
+    Satisfy Any
     Allow from all
-    AuthType None
   </Location>
 </IfModule>
 
