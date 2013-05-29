@@ -53,6 +53,7 @@
 #include <sys/stat.h>		/* for chmod() */
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <errno.h>
 
 using namespace shibsp;
@@ -181,10 +182,15 @@ bool TCPListener::setup_tcp_sockaddr()
 
 bool TCPListener::create(ShibSocket& s) const
 {
+    int type = SOCK_STREAM;
+#ifdef HAVE_SOCK_CLOEXEC
+    type |= SOCK_CLOEXEC;
+#endif
+
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE
-    s = socket(m_sockaddr.ss_family, SOCK_STREAM, 0);
+    s = socket(m_sockaddr.ss_family, type, 0);
 #else
-    s = socket(m_sockaddr.sin_family, SOCK_STREAM, 0);
+    s = socket(m_sockaddr.sin_family, type, 0);
 #endif
 #ifdef WIN32
     if(s == INVALID_SOCKET)
@@ -192,6 +198,15 @@ bool TCPListener::create(ShibSocket& s) const
     if (s < 0)
 #endif
         return log_error("socket");
+
+#if !defined(HAVE_SOCK_CLOEXEC) && defined(HAVE_FD_CLOEXEC)
+    int fdflags = fcntl(s, F_GETFD);
+    if (fdflags != -1) {
+        fdflags |= FD_CLOEXEC;
+        fcntl(s, F_SETFD, fdflags);
+    }
+#endif
+
     return true;
 }
 

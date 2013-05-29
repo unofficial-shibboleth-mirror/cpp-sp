@@ -81,6 +81,18 @@ AC_CHECK_FUNCS([strchr strdup strstr timegm gmtime_r localtime_r strtok_r strcas
 AC_CHECK_TYPES([struct sockaddr_storage], [], [], [[#include <sys/socket.h>]])
 AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [], [[#include <sys/socket.h>]])
 
+AC_CACHE_CHECK([for SOCK_CLOEXEC support], [shib_cv_sock_cloexec],
+[AC_TRY_RUN([
+#include <sys/types.h>
+#include <sys/socket.h>
+int main()
+{
+return socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0) == -1;
+}], [shib_cv_sock_cloexec=yes], [shib_cv_sock_cloexec=no], [shib_cv_sock_cloexec=no])])
+
+if test "$shib_cv_sock_cloexec" = "yes"; then
+	AC_DEFINE([HAVE_SOCK_CLOEXEC], 1, [Define if the SOCK_CLOEXEC flag is supported])
+fi
 
 # checks for pthreads
 ACX_PTHREAD([enable_threads="pthread"],[enable_threads="no"])

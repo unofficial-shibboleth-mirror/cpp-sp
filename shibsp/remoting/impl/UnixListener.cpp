@@ -44,6 +44,7 @@
 #include <sys/stat.h>		/* for chmod() */
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <errno.h>
 
 using namespace shibsp;
@@ -98,11 +99,24 @@ UnixListener::UnixListener(const DOMElement* e)
 #define UNIX_PATH_MAX 100
 #endif
 
-bool UnixListener::create(ShibSocket& sock) const
+bool UnixListener::create(ShibSocket& s) const
 {
-    sock = socket(PF_UNIX, SOCK_STREAM, 0);
-    if (sock < 0)
+    int type = SOCK_STREAM;
+#ifdef HAVE_SOCK_CLOEXEC
+    type |= SOCK_CLOEXEC;
+#endif
+    s = socket(PF_UNIX, type, 0);
+    if (s < 0)
         return log_error("socket");
+
+#if !defined(HAVE_SOCK_CLOEXEC) && defined(HAVE_FD_CLOEXEC)
+    int fdflags = fcntl(s, F_GETFD);
+    if (fdflags != -1) {
+        fdflags |= FD_CLOEXEC;
+        fcntl(s, F_SETFD, fdflags);
+    }
+#endif
+
     return true;
 }
 
