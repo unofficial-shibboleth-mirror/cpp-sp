@@ -13,6 +13,13 @@
 LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_24.so
 
 #
+# Turn this on to support "require valid-user" rules from other
+# mod_authn_* modules, and use "require shib-session" for anonymous
+# session-based authorization in mod_shib.
+#
+ShibCompatValidUser Off
+
+#
 # Ensures handler will be accessible.
 #
 <Location /Shibboleth.sso>
