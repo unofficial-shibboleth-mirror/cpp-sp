@@ -1620,7 +1620,7 @@ extern "C" authz_status shib_validuser_check_authz(request_rec* r, const char* r
         return shib_session_check_authz(r, require_line, nullptr);
     }
 
-    if (!r->user || !*r->user) {
+    if (!r->user) {
         return AUTHZ_DENIED_NO_USER;
     }
 
