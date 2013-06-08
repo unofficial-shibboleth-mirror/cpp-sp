@@ -31,6 +31,7 @@ Requires:	libcurl-openssl%{?_isa} >= 7.21.7
 BuildRequires:	chrpath
 %endif
 BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
+%{!?_without_gssapi:BuildRequires: krb5-devel}
 %{!?_without_doxygen:BuildRequires: doxygen}
 %{!?_without_odbc:BuildRequires:unixODBC-devel}
 %{?_with_fastcgi:BuildRequires: fcgi-devel}
@@ -97,9 +98,9 @@ This package includes files needed for development with Shibboleth.
 
 %build
 %if 0%{?centos_version} >= 600
-	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_memcached:--with-memcached} %{?shib_options}
+	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_memcached:--with-memcached} %{?shib_options}
 %else
-	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{?_with_memcached} %{?shib_options}
+	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{?_with_memcached} %{?shib_options}
 %endif
 %{__make} pkgdocdir=%{pkgdocdir}
 
@@ -335,6 +336,9 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
+* Sat Jun 8 2013   Scott Cantor  <cantor.2@osu.edu>  - 2.5.2-1
+- Add --with-gssapi using MIT K5 by default
+
 * Tue Sep 25 2012  Scott Cantor  <cantor.2@osu.edu>  - 2.5.1-1
 - Merge back various changes used in released packages
 - Prep for 2.5.1 by pulling extra restart out
