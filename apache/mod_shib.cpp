@@ -1620,6 +1620,8 @@ extern "C" authz_status shib_validuser_check_authz(request_rec* r, const char* r
         return shib_session_check_authz(r, require_line, nullptr);
     }
 
+    // Reproduce mod_authz_user version...
+
     if (!r->user) {
         return AUTHZ_DENIED_NO_USER;
     }
@@ -1627,10 +1629,8 @@ extern "C" authz_status shib_validuser_check_authz(request_rec* r, const char* r
     return AUTHZ_GRANTED;
 }
 
-extern "C" authz_status shib_user_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_ext_user_check_authz(request_rec* r, const char* require_line, const void*)
 {
-    if (!r->user || !*(r->user))
-        return AUTHZ_DENIED_NO_USER;
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
         return sta.second;
@@ -1638,6 +1638,43 @@ extern "C" authz_status shib_user_check_authz(request_rec* r, const char* requir
     const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
     if (hta.doUser(*sta.first, require_line) == AccessControl::shib_acl_true)
         return AUTHZ_GRANTED;
+    return AUTHZ_DENIED;
+}
+
+extern "C" authz_status shib_user_check_authz(request_rec* r, const char* require_line, const void*)
+{
+    // Shouldn't have actually ever hooked this, and now we're in conflict with mod_authz_user over the meaning.
+    // For now, added a command to restore "normal" semantics for user rules so that combined deployments can
+    // use user for non-Shibboleth cases and shib-user for the Shibboleth semantic.
+
+    // In future, we may want to expose the AuthType set to honor down at this level so we can differentiate
+    // based on AuthType. Unfortunately we allow overriding the AuthType to honor and we don't have access to
+    // that setting from the ServiceProvider class..
+
+    shib_server_config* sc = (shib_server_config*)ap_get_module_config(r->server->module_config, &mod_shib);
+    if (sc->bCompatValidUser != 1) {
+        return shib_ext_user_check_authz(r, require_line, nullptr);
+    }
+
+    // Reproduce mod_authz_user version...
+
+    if (!r->user) {
+        return AUTHZ_DENIED_NO_USER;
+    }
+ 	
+    const char* t = require_line;
+    const char *w;
+    while ((w = ap_getword_conf(r->pool, &t)) && w[0]) {
+        if (!strcmp(r->user, w)) {
+            return AUTHZ_GRANTED;
+        }
+    }
+ 	
+    ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r, APLOGNO(01663)
+        "access to %s failed, reason: user '%s' does not meet "
+        "'require'ments for user to be allowed access",
+        r->uri, r->user);
+ 	
     return AUTHZ_DENIED;
 }
 
@@ -2115,6 +2152,7 @@ extern "C" const authz_provider shib_authz_shibboleth_provider = { &shib_shibbol
 extern "C" const authz_provider shib_authz_validuser_provider = { &shib_validuser_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_session_provider = { &shib_session_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_user_provider = { &shib_user_check_authz, nullptr };
+extern "C" const authz_provider shib_authz_ext_user_provider = { &shib_ext_user_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_acclass_provider = { &shib_acclass_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_acdecl_provider = { &shib_acdecl_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_attr_provider = { &shib_attr_check_authz, nullptr };
@@ -2160,6 +2198,7 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "valid-user", AUTHZ_PROVIDER_VERSION, &shib_authz_validuser_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shib-session", AUTHZ_PROVIDER_VERSION, &shib_authz_session_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "user", AUTHZ_PROVIDER_VERSION, &shib_authz_user_provider, AP_AUTH_INTERNAL_PER_CONF);
+    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shib-user", AUTHZ_PROVIDER_VERSION, &shib_authz_ext_user_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "authnContextClassRef", AUTHZ_PROVIDER_VERSION, &shib_authz_acclass_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "authnContextDeclRef", AUTHZ_PROVIDER_VERSION, &shib_authz_acdecl_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shib-attr", AUTHZ_PROVIDER_VERSION, &shib_authz_attr_provider, AP_AUTH_INTERNAL_PER_CONF);
