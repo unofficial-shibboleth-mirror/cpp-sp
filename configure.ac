@@ -358,7 +358,7 @@ AC_SUBST(XMLTOOLINGXMLDIR)
 AC_ARG_WITH(saml,
     AS_HELP_STRING([--with-saml=PATH],[where opensaml is installed]),,
     [with_saml=/usr])
-if test x_$with_xmltooling != x_/usr; then
+if test x_$with_saml != x_/usr; then
     CPPFLAGS="-I${with_saml}/include $CPPFLAGS"
     DX_INCLUDE="$DX_INCLUDE ${with_saml}/include"
     XMLSEC_LIBS="-L${with_saml}/lib -lsaml $XMLSEC_LIBS"
@@ -485,14 +485,23 @@ AC_ARG_WITH(fastcgi,
 AC_MSG_RESULT($WANT_FASTCGI)
 
 if test "$WANT_FASTCGI" != "no"; then
+
     if test "$WANT_FASTCGI" != "yes"; then
         if test x_$WANT_FASTCGI != x_/usr; then
             FASTCGI_INCLUDE="-I$WANT_FASTCGI/include"
             FASTCGI_LDFLAGS="-L$WANT_FASTCGI/lib"
         fi
     fi
+
+    # save and append master flags
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$FASTCGI_INCLUDE $CFLAGS"
+
     AC_CHECK_HEADER([fcgio.h],,AC_MSG_ERROR([unable to find FastCGI header files]))
     FASTCGI_LIBS="-lfcgi -lfcgi++"
+
+    # restore standard flags
+    CFLAGS="$save_CFLAGS"
 fi
 
 AC_SUBST(FASTCGI_INCLUDE)
@@ -517,18 +526,27 @@ AC_ARG_WITH(memcached,
 AC_MSG_RESULT($WANT_MEMCACHED)
 
 if test "$WANT_MEMCACHED" != "no"; then
+
     if test "$WANT_MEMCACHED" != "yes"; then
         if test x_$WANT_MEMCACHED != x_/usr; then
             MEMCACHED_INCLUDE="-I$WANT_MEMCACHED/include"
             MEMCACHED_LDFLAGS="-L$WANT_MEMCACHED/lib"
         fi
     fi
+
+    # save and append master flags
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$MEMCACHED_INCLUDE $CFLAGS"    
+
     AC_CHECK_HEADER([libmemcached/memcached.h],,
         AC_MSG_ERROR([unable to find Memcached header files]))
     AC_CHECK_DECL([memcached_last_error_message],
         [AC_DEFINE([HAVE_MEMCACHED_LAST_ERROR_MESSAGE],[1],[Define to 1 if libmemcached supports error handling function.])],,
         [#include <libmemcached/memcached.h>])
     MEMCACHED_LIBS="-lmemcached"
+
+    # restore standard flags
+    CFLAGS="$save_CFLAGS"
 fi
 
 AC_SUBST(MEMCACHED_INCLUDE)
