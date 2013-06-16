@@ -494,14 +494,14 @@ if test "$WANT_FASTCGI" != "no"; then
     fi
 
     # save and append master flags
-    save_CFLAGS="$CFLAGS"
-    CFLAGS="$FASTCGI_INCLUDE $CFLAGS"
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$FASTCGI_INCLUDE $CPPFLAGS"
 
     AC_CHECK_HEADER([fcgio.h],,AC_MSG_ERROR([unable to find FastCGI header files]))
     FASTCGI_LIBS="-lfcgi -lfcgi++"
 
     # restore standard flags
-    CFLAGS="$save_CFLAGS"
+    CPPFLAGS="$save_CPPFLAGS"
 fi
 
 AC_SUBST(FASTCGI_INCLUDE)
@@ -535,8 +535,8 @@ if test "$WANT_MEMCACHED" != "no"; then
     fi
 
     # save and append master flags
-    save_CFLAGS="$CFLAGS"
-    CFLAGS="$MEMCACHED_INCLUDE $CFLAGS"    
+    save_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="$MEMCACHED_INCLUDE $CPPFLAGS"    
 
     AC_CHECK_HEADER([libmemcached/memcached.h],,
         AC_MSG_ERROR([unable to find Memcached header files]))
@@ -546,7 +546,7 @@ if test "$WANT_MEMCACHED" != "no"; then
     MEMCACHED_LIBS="-lmemcached"
 
     # restore standard flags
-    CFLAGS="$save_CFLAGS"
+    CPPFLAGS="$save_CPPFLAGS"
 fi
 
 AC_SUBST(MEMCACHED_INCLUDE)
