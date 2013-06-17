@@ -1291,11 +1291,18 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
                 status = true;
             }
         }
-        else if ((!strcmp(w,"valid-user") || !strcmp(w,"shib-session")) && session) {
-            request.log(SPRequest::SPDebug, "htaccess: accepting shib-session/valid-user based on active session");
+        else if (!strcmp(w,"valid-user") && session) {
+            request.log(SPRequest::SPDebug, "htaccess: accepting valid-user based on active session");
+            status = true;
+        }
+        else if (sta->m_dc->bCompatWith24 == 1 && !strcmp(w,"shib-session") && session) {
+            request.log(SPRequest::SPDebug, "htaccess: accepting shib-session based on active session");
             status = true;
         }
         else if (!strcmp(w,"user") && !remote_user.empty()) {
+            status = (doUser(*sta, t) == shib_acl_true);
+        }
+        else if (sta->m_dc->bCompatWith24 == 1 && !strcmp(w,"shib-user") && !remote_user.empty()) {
             status = (doUser(*sta, t) == shib_acl_true);
         }
         else if (!strcmp(w,"group")  && !remote_user.empty()) {
