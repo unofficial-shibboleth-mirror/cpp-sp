@@ -28,7 +28,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,5,1,0
+ FILEVERSION 1,5,2,0
  PRODUCTVERSION 2,5,2,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -51,7 +51,7 @@ BEGIN
 #else
             VALUE "FileDescription", "Shibboleth SP Library\0"
 #endif
-            VALUE "FileVersion", "1, 5, 1, 0\0"
+            VALUE "FileVersion", "1, 5, 2, 0\0"
 #ifdef SHIBSP_LITE
 #ifdef _DEBUG
             VALUE "InternalName", "shibsp-lite1_5D\0"
