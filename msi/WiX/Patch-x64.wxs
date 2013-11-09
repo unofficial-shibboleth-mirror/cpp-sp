@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <PatchCreation
-        Id="{B49B7607-87C9-4E2A-A3F2-13CED629B37A}"
+        Id="{688837CE-C1B0-438B-B540-FAD14CEC8E21}"
         CleanWorkingFolder="yes"
         OutputPath="patch.pcp"
         WholeFilesOnly="yes"
@@ -10,8 +10,8 @@
     <!-- Information oput into the summary (Details) field -->
  
         <PatchInformation 
-            Description="Security Patch for Shibboleth SP 2.5.1 (x64)"
-            Comments="Provides OpenSAML 2.5.2, curl 7.29.0, OpenSSL 1.0.1e"
+            Description="Security Patch for Shibboleth SP 2.5.2 (x64)"
+            Comments="Provides curl 7.33.0"
             ShortNames="no" 
             Languages="1033" 
             Compressed="yes" 
@@ -25,12 +25,12 @@
 
         <PatchMetadata
             AllowRemoval="yes"
-            Description="Security Patch for Shibboleth SP 2.5.1 (x64)"
+            Description="Security Patch for Shibboleth SP 2.5.2 (x64)"
             ManufacturerName="Shibboleth Consortium"
             TargetProductName="Shibboleth SP"
-            MoreInfoURL="http://www.shibboleth.net/"
+            MoreInfoURL="http://shibboleth.net/"
             Classification="Security Rollup"
-            DisplayName="Security Patch for Shibboleth SP 2.5.1 28-Feb-2013"/>
+            DisplayName="2013-11-15 Security Patch for Shibboleth SP 2.5.2"/>
  
     <!-- Note:
          That SequenceStart must be greater than the last
@@ -42,11 +42,12 @@
             MediaSrcProp="Sample" 
             Name="Sample"
             SequenceStart="5000">
-            <UpgradeImage SourceFile="C:\Users\Administrator\Shibboleth\AdminInstalls\Original-2.5.1-x64\shibboleth-sp-2.5.1-win64.msi" Id="Upgrade">
-                <TargetImage SourceFile="C:\Users\Administrator\Shibboleth\AdminInstalls\Patched-2.5.1-x64\shibboleth-sp-2.5.1-win64.msi" Order="2"      
+            <UpgradeImage SourceFile="C:\Users\Administrator\Shibboleth\AdminInstalls\Original-2.5.2-x64\shibboleth-sp-2.5.2-win64.msi" Id="Upgrade">
+                <TargetImage SourceFile="C:\Users\Administrator\Shibboleth\AdminInstalls\Patched-2.5.2-x64\shibboleth-sp-2.5.2-win64.msi" Order="2"      
                     Id="Target" IgnoreMissingFiles="no" />
             </UpgradeImage>
-        </Family> 
+        </Family>
+
     <!-- Supersede:  Set this value to 'yes' to indicate that this patch will
          supersede all previous patches in this patch family.  The
          default value is 'no'. 
@@ -54,7 +55,7 @@
          PatchFamily is the version of patch - nothing to do with the version of Shibboleth Installed
       -->
 
-        <PatchSequence PatchFamily="ShibbolethSPPatchFamily"
+        <PatchSequence PatchFamily="ShibbolethSP2.5.2PatchFamily"
             Sequence="1.0.0.0"
             Supersede="yes" />
  
