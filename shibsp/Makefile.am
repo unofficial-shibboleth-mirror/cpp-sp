@@ -215,11 +215,11 @@ libshibsp_la_SOURCES = \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
 	attribute/resolver/impl/SimpleAggregationAttributeResolver.cpp \
-    attribute/resolver/impl/AssertionAttributeExtractor.cpp \
+	attribute/resolver/impl/AssertionAttributeExtractor.cpp \
 	attribute/resolver/impl/ChainingAttributeExtractor.cpp \
 	attribute/resolver/impl/DelegationAttributeExtractor.cpp \
 	attribute/resolver/impl/KeyDescriptorAttributeExtractor.cpp \
-    attribute/resolver/impl/MetadataAttributeExtractor.cpp \
+	attribute/resolver/impl/MetadataAttributeExtractor.cpp \
 	attribute/resolver/impl/XMLAttributeExtractor.cpp \
 	binding/impl/ArtifactResolver.cpp \
 	binding/impl/SOAPClient.cpp \
@@ -234,9 +234,9 @@ libshibsp_la_SOURCES = \
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshibsp_la_LDFLAGS = -version-info 6:2:0
+libshibsp_la_LDFLAGS = -version-info 6:3:0
 libshibsp_la_LIBADD = $(XMLSEC_LIBS)
-libshibsp_lite_la_LDFLAGS = -version-info 6:2:0
+libshibsp_lite_la_LDFLAGS = -version-info 6:3:0
 libshibsp_lite_la_LIBADD = $(LITE_LIBS)
 libshibsp_lite_la_CPPFLAGS = -DSHIBSP_LITE
 
