@@ -49,5 +49,5 @@ ShibCompatValidUser Off
 <Location /secure>
   AuthType shibboleth
   ShibRequestSetting requireSession 1
-  require valid-user
+  require shib-session
 </Location>

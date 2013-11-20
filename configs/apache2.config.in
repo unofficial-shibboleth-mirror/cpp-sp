@@ -41,6 +41,7 @@ LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_20.so
 #
 <Location /secure>
   AuthType shibboleth
+  ShibCompatWith24 On
   ShibRequestSetting requireSession 1
-  require valid-user
+  require shib-session
 </Location>
