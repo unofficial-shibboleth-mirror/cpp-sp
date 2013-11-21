@@ -449,7 +449,7 @@ void AbstractHandler::checkError(const XMLObject* response, const saml2md::RoleD
             const saml2p::StatusCode* sc = status->getStatusCode();
             const XMLCh* code = sc ? sc->getValue() : nullptr;
             if (code && !XMLString::equals(code,saml2p::StatusCode::SUCCESS)) {
-                FatalProfileException ex("SAML response contained an error.");
+                FatalProfileException ex("SAML response reported an IdP error.");
                 annotateException(&ex, role, status);   // throws it
             }
         }
@@ -462,7 +462,7 @@ void AbstractHandler::checkError(const XMLObject* response, const saml2md::RoleD
             const saml1p::StatusCode* sc = status->getStatusCode();
             const xmltooling::QName* code = sc ? sc->getValue() : nullptr;
             if (code && *code != saml1p::StatusCode::SUCCESS) {
-                FatalProfileException ex("SAML response contained an error.");
+                FatalProfileException ex("SAML response reported an IdP error.");
                 annotateException(&ex, role, status);   // throws it
             }
         }
