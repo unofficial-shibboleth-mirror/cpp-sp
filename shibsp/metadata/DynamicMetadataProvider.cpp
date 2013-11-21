@@ -40,6 +40,7 @@
 #include <saml/binding/SAMLArtifact.h>
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/DynamicMetadataProvider.h>
+
 #include <xmltooling/logging.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/Credential.h>
@@ -299,6 +300,12 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
 
         // Wrap the document for now.
         XercesJanitor<DOMDocument> docjanitor(doc);
+
+        // Check root element.
+        if (!doc->getDocumentElement() || !XMLHelper::isNodeNamed(doc->getDocumentElement(),
+                samlconstants::SAML20MD_NS, saml2md::EntityDescriptor::LOCAL_NAME)) {
+            throw saml2md::MetadataException("Root of metadata instance was not an EntityDescriptor");
+        }
 
         // Unmarshall objects, binding the document.
         auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
