@@ -233,13 +233,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         return false;
     }
 #endif
-    if (!catalog_path)
-        catalog_path = getenv("SHIBSP_SCHEMAS");
-    if (!catalog_path || !*catalog_path)
-        catalog_path = SHIBSP_SCHEMAS;
-    if (!XMLToolingConfig::getConfig().getValidatingParser().loadCatalogs(catalog_path)) {
-        log.warn("failed to load schema catalogs into validating parser");
-    }
 
     PathResolver* pr = XMLToolingConfig::getConfig().getPathResolver();
     pr->setDefaultPackageName(PACKAGE_NAME);
@@ -265,6 +258,14 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_XMLDIR;
     pr->setXMLDir(inst_prefix);
+
+    if (!catalog_path)
+        catalog_path = getenv("SHIBSP_SCHEMAS");
+    if (!catalog_path || !*catalog_path)
+        catalog_path = SHIBSP_SCHEMAS;
+    if (!XMLToolingConfig::getConfig().getValidatingParser().loadCatalogs(catalog_path)) {
+        log.warn("failed to load schema catalogs into validating parser");
+    }
 
     XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
     XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
