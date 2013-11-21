@@ -415,7 +415,11 @@ public:
     return type ? type : "";
   }
   long getContentLength() const {
-      return m_gotBody ? m_body.length() : m_req->remaining;
+      // Apache won't expose content length until the body's read.
+      if (!m_gotBody) {
+          getRequestBody();
+      }
+      return m_body.length();
   }
   string getRemoteAddr() const {
     string ret = AbstractSPRequest::getRemoteAddr();
