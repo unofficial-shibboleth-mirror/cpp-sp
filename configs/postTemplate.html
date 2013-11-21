@@ -6,14 +6,14 @@
         function submitOnce() {
           if (location.hash.length>0) {
              if (confirm("Are you sure you want to resubmit this form information a second time?")) {
-                document.forms[0].submit();
+                document.getElementById("shib_continue").click();
              } else {
                 document.body.innerHTML="<html>Form information was not resubmitted.</html>";
              }
           } else {
              var loc = window.location;
              window.location = loc + "#submitted";
-             document.forms[0].submit();
+             document.getElementById("shib_continue").click();
           }
         }
         // -->
@@ -31,11 +31,7 @@
         <shibmlpfor PostedData>
             <input type="hidden" name="<shibmlp $name/>" value="<shibmlp $value/>"/>
         </shibmlpfor>
-        <noscript>
-        <div>
-        <input type="submit" name="_shib_continue_" value="Continue"/>
-        </div>
-        </noscript>
+        <input type="submit" id="shib_continue" name="_shib_continue_" value="Continue"/>
         </form>
     </body>
 </html>
