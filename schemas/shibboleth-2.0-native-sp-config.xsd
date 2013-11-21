@@ -9,7 +9,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="2.5.1">
+	version="2.5.3">
 
   <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
   <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
@@ -533,6 +533,7 @@
     <attribute name="cookieLifetime" type="unsignedInt"/>
     <attribute name="idpHistory" type="boolean"/>
     <attribute name="idpHistoryDays" type="unsignedInt"/>
+    <attribute name="idpHistoryProps" type="conf:string"/>
     <attribute name="lifetime" type="unsignedInt"/>
     <attribute name="timeout" type="unsignedInt"/>
     <attribute name="maxTimeSinceAuthn" type="unsignedInt"/>
