@@ -1369,6 +1369,4 @@ if test -n "$APXS24_CC" && test "$APXS24_CC" != "$CC" ; then
   echo "=================================================================="
 fi
 
-LIBTOOL="$LIBTOOL --silent"
-
 AC_OUTPUT
