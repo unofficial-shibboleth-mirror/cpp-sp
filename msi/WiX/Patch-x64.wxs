@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <PatchCreation
-        Id="{FE38D447-D9B5-48BE-96E3-A620ACC0D266}"
+        Id="{17B36DC5-D54C-4484-9735-0E57B2866153}"
         CleanWorkingFolder="yes"
-        OutputPath="openssl-on-2.5.3-patch-win64.pcp"
+        OutputPath="openssl-101h-on-2.5.3-patch-win64.pcp"
         WholeFilesOnly="yes"
         >
  
@@ -11,7 +11,7 @@
 
         <PatchInformation 
             Description="Security Patch for Shibboleth SP 2.5.3 (x64)"
-            Comments="Provides OpenSSL 1.0.1g"
+            Comments="Provides OpenSSL 1.0.1h"
             ShortNames="no" 
             Languages="1033" 
             Compressed="yes" 
@@ -30,7 +30,7 @@
             TargetProductName="Shibboleth SP"
             MoreInfoURL="http://shibboleth.net/"
             Classification="Security Rollup"
-            DisplayName="2014-04-08 Security Patch for Shibboleth SP 2.5.3"/>
+            DisplayName="2014-06-08 Security Patch for Shibboleth SP 2.5.3"/>
  
     <!-- Note:
          That SequenceStart must be greater than the last
@@ -55,7 +55,7 @@
       -->
 
         <PatchSequence PatchFamily="ShibbolethSP2.5.3PatchFamily"
-            Sequence="1.0.0.0"
+            Sequence="2.0.0.0"
             Supersede="yes" />
  
     </PatchCreation>
