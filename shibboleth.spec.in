@@ -17,12 +17,12 @@ PreReq:         xmltooling-schemas >= 1.5.0, opensaml-schemas >= 2.5.0
 %endif
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:		%{insserv_prereq} %{fillup_prereq}
-BuildRequires:  libXerces-c-devel >= 2.8.0
+BuildRequires:	libXerces-c-devel >= 2.8.0
 %else
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
-BuildRequires:  xerces-c-devel >= 2.8.0
+BuildRequires:	xerces-c-devel >= 2.8.0
 %else
-BuildRequires:  libxerces-c-devel >= 2.8.0
+BuildRequires:	libxerces-c-devel >= 2.8.0
 %endif
 %endif
 BuildRequires:	libxml-security-c-devel >= 1.4.0
@@ -35,7 +35,7 @@ Requires:	libcurl-openssl%{?_isa} >= 7.21.7
 BuildRequires:	chrpath
 %endif
 %if 0%{?suse_version} > 1300
-BuildRequires: libtool
+BuildRequires:	libtool
 %endif
 BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
 %{!?_without_gssapi:BuildRequires: krb5-devel}
@@ -83,12 +83,12 @@ Group:		Development/Libraries/C and C++
 Requires:	%{name} = %{version}-%{release}
 Obsoletes:	shibboleth-sp-devel = 2.5.0
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
-Requires:       libXerces-c-devel >= 2.8.0
+Requires:	libXerces-c-devel >= 2.8.0
 %else
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
-Requires:  xerces-c-devel >= 2.8.0
+Requires:	xerces-c-devel >= 2.8.0
 %else
-Requires:       libxerces-c-devel >= 2.8.0
+Requires:	libxerces-c-devel >= 2.8.0
 %endif
 %endif
 Requires: 	libxml-security-c-devel >= 1.4.0
@@ -314,7 +314,7 @@ fi
 %dir %{_libdir}/shibboleth
 %{_libdir}/shibboleth/*
 %attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/shibboleth
-%if 0%{?suse_version} > 1300
+%if 0%{?suse_version} < 1300
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/shibboleth
 %endif
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/cache/shibboleth
@@ -349,6 +349,10 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
+* Mon Nov 17 2014 Scott Cantor <cantor.2@osu.edu> - 2.5.3-2
+- Add libtool dep for OpenSUSE 13
+- Remove /var/run/shibboleth for OpenSUSE 13
+
 * Tue May 13 2014 Ian Young <ian@iay.org.uk> - 2.5.3-1.2
 - Update package dependencies for RHEL/CentOS 7
 - Fix bogus dates in changelog
