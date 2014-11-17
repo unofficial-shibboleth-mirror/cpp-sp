@@ -34,6 +34,9 @@ BuildRequires:	libsaml-devel >= 2.5.0
 Requires:	libcurl-openssl%{?_isa} >= 7.21.7
 BuildRequires:	chrpath
 %endif
+%if 0%{?suse_version} > 1300
+BuildRequires: libtool
+%endif
 BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
 %{!?_without_gssapi:BuildRequires: krb5-devel}
 %{!?_without_doxygen:BuildRequires: doxygen}
@@ -311,7 +314,9 @@ fi
 %dir %{_libdir}/shibboleth
 %{_libdir}/shibboleth/*
 %attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/shibboleth
+%if 0%{?suse_version} > 1300
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/shibboleth
+%endif
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/cache/shibboleth
 %dir %{_datadir}/xml/shibboleth
 %{_datadir}/xml/shibboleth/*
