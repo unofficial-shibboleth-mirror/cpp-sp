@@ -602,19 +602,23 @@ public:
       m_req->content_type = ap_psprintf(m_req->pool, "%s", type);
   }
   void setResponseHeader(const char* name, const char* value) {
-   HTTPResponse::setResponseHeader(name, value);
+    HTTPResponse::setResponseHeader(name, value);
+    if (name) {
 #ifdef SHIB_DEFERRED_HEADERS
-   if (!m_rc)
-      // this happens on subrequests
-      m_rc = get_request_config(m_req);
-    if (m_handler) {
-        if (!m_rc->hdr_out)
-            m_rc->hdr_out = ap_make_table(m_req->pool, 5);
-        ap_table_add(m_rc->hdr_out, name, value);
-    }
-    else
+        if (!m_rc) {
+            // this happens on subrequests
+            m_rc = get_request_config(m_req);
+        }
+        if (m_handler) {
+            if (!m_rc->hdr_out) {
+                m_rc->hdr_out = ap_make_table(m_req->pool, 5);
+            }
+            ap_table_add(m_rc->hdr_out, name, value);
+        }
+        else
 #endif
-    ap_table_add(m_req->err_headers_out, name, value);
+            ap_table_add(m_req->err_headers_out, name, value);
+    }
   }
   long sendResponse(istream& in, long status) {
     if (status != XMLTOOLING_HTTP_STATUS_OK)

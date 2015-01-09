@@ -150,11 +150,13 @@ public:
 
     void setResponseHeader(const char* name, const char* value) {
         HTTPResponse::setResponseHeader(name, value);
-        // Set for later.
-        if (value)
-            m_headers.insert(make_pair(name,value));
-        else
-            m_headers.erase(name);
+        if (name) {
+            // Set for later.
+            if (value)
+                m_headers.insert(make_pair(name,value));
+            else
+                m_headers.erase(name);
+        }
     }
 
     const char* getQueryString() const {

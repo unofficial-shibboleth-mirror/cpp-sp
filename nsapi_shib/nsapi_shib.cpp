@@ -427,7 +427,9 @@ public:
   }
   void setResponseHeader(const char* name, const char* value) {
     HTTPResponse::setResponseHeader(name, value);
-    pblock_nvinsert(name, value, m_rq->srvhdrs);
+    if (name) {
+        pblock_nvinsert(name, value, m_rq->srvhdrs);
+    }
   }
 
   long sendResponse(istream& in, long status) {

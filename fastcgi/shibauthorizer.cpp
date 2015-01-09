@@ -198,11 +198,13 @@ public:
     }
     void setResponseHeader(const char* name, const char* value) {
         HTTPResponse::setResponseHeader(name, value);
-        // Set for later.
-        if (value)
-            m_response_headers.insert(make_pair(name,value));
-        else
-            m_response_headers.erase(name);
+        if (name) {
+            // Set for later.
+            if (value)
+                m_response_headers.insert(make_pair(name,value));
+            else
+                m_response_headers.erase(name);
+        }
     }
     const char* getQueryString() const {
         return FCGX_GetParam("QUERY_STRING", m_req->envp);
