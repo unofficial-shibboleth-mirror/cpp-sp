@@ -150,6 +150,7 @@ TemplateAttributeResolver::TemplateAttributeResolver(const DOMElement* e)
         throw ConfigurationException("Template AttributeResolver requires dest attribute.");
 
     string s(XMLHelper::getAttrString(e, nullptr, _sources));
+    trim(s);
     split(m_sources, s, is_space(), algorithm::token_compress_on);
     if (m_sources.empty())
         throw ConfigurationException("Template AttributeResolver requires sources attribute.");

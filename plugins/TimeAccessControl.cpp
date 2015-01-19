@@ -114,6 +114,7 @@ Rule::Rule(const DOMElement* e)
     
     auto_ptr_char temp(e->getTextContent());
     string s(temp.get() ? temp.get() : "");
+    trim(s);
     vector<string> tokens;
     if (split(tokens, s, is_space(), algorithm::token_compress_on).size() != 2)
         throw ConfigurationException("Time-based rule requires element content of the form \"LT|LE|EQ|GE|GT value\".");

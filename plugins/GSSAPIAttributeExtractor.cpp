@@ -206,6 +206,7 @@ GSSAPIExtractorImpl::GSSAPIExtractorImpl(const DOMElement* e, Category& log)
         if (name && *name) {
             auto_ptr_char aliases(name);
             string dup(aliases.get());
+            trim(dup);
             set<string> new_aliases;
             split(new_aliases, dup, is_space(), algorithm::token_compress_on);
             set<string>::iterator ru = new_aliases.find("REMOTE_USER");
