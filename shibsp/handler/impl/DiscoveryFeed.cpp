@@ -143,7 +143,7 @@ DiscoveryFeed::~DiscoveryFeed()
         // Anything left will be orphaned, but that shouldn't happen too often.
         time_t now = time(nullptr);
         while (!m_feedQueue.empty() && now - m_feedQueue.front().second > 120) {
-            string fname = m_dir + '/' + m_feedQueue.front().first;
+            string fname = m_dir + '/' + m_feedQueue.front().first + ".json";
             remove(fname.c_str());
             m_feedQueue.pop();
         }
@@ -295,7 +295,7 @@ void DiscoveryFeed::feedToFile(const Application& application, string& cacheTag)
 
     // Clean up any old files.
     while (m_feedQueue.size() > 1 && (now - m_feedQueue.front().second > 120)) {
-        string fname = m_dir + '/' + m_feedQueue.front().first;
+        string fname = m_dir + '/' + m_feedQueue.front().first + ".json";
         remove(fname.c_str());
         m_feedQueue.pop();
     }
