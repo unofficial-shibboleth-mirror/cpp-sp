@@ -135,6 +135,7 @@ SAMLDSSessionInitiator::SAMLDSSessionInitiator(const DOMElement* e, const char* 
     pair<bool,const char*> options = getString("preservedOptions");
     if (options.first) {
         string opt = options.second;
+        trim(opt);
         split(m_preservedOptions, opt, is_space(), algorithm::token_compress_on);
     }
     else {

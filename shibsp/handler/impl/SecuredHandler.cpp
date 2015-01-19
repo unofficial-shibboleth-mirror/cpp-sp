@@ -71,6 +71,7 @@ SecuredHandler::SecuredHandler(
         }
         if (acl.first) {
             string aclbuf(acl.second);
+            trim(aclbuf);
             vector<string> aclarray;
             split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
             for_each(aclarray.begin(), aclarray.end(), boost::bind(&SecuredHandler::parseACL, this, _1));

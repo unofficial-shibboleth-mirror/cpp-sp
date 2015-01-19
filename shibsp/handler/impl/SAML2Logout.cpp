@@ -174,6 +174,7 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
             pair<bool,const char*> outgoing = getString("outgoingBindings", m_configNS.get());
             if (outgoing.first) {
                 dupBindings = outgoing.second;
+                trim(dupBindings);
             }
             else {
                 // No override, so we'll install a default binding precedence.

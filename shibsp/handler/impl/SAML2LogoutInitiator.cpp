@@ -157,6 +157,7 @@ void SAML2LogoutInitiator::init(const char* location)
         pair<bool,const char*> outgoing = getString("outgoingBindings");
         if (outgoing.first) {
             dupBindings = outgoing.second;
+            trim(dupBindings);
         }
         else {
             // No override, so we'll install a default binding precedence.

@@ -123,6 +123,7 @@ AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char
 
     string attrs(XMLHelper::getAttrString(e, nullptr, attributes));
     if (!attrs.empty()) {
+        trim(attrs);
         split(m_attributes, attrs, is_space(), algorithm::token_compress_on);
         if (m_attributes.empty())
             throw ConfigurationException("AttributeChecker unable to parse attributes setting.");

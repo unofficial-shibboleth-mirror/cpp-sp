@@ -168,6 +168,7 @@ Rule::Rule(const DOMElement* e) : m_alias(XMLHelper::getAttrString(e, nullptr, r
     }
 
     string temp(vals.get());
+    trim(temp);
     split(m_vals, temp, boost::is_space(), algorithm::token_compress_on);
     if (m_vals.empty())
         throw ConfigurationException("Rule did not contain any usable values.");

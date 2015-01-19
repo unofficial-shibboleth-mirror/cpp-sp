@@ -576,6 +576,7 @@ XMLApplication::XMLApplication(
                 prop = sessionProps->getString("redirectWhitelist");
                 if (prop.first) {
                     string dup(prop.second);
+                    trim(dup);
                     split(m_redirectWhitelist, dup, is_space(), algorithm::token_compress_on);
                 }
             }
@@ -832,6 +833,7 @@ void XMLApplication::doAttributeInfo()
     pair<bool,const char*> attributes = getString("REMOTE_USER");
     if (attributes.first) {
         string dup(attributes.second);
+        trim(dup);
         split(m_remoteUsers, dup, is_space(), algorithm::token_compress_on);
     }
 
@@ -851,6 +853,7 @@ void XMLApplication::doAttributeInfo()
             }
 
             string dup(attributes.second);
+            trim(dup);
             vector<string> headerNames;
             split(headerNames, dup, is_space(), algorithm::token_compress_on);
             for (vector<string>::const_iterator h = headerNames.begin(); h != headerNames.end(); ++h) {
@@ -2068,6 +2071,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         if (unsafe.first) {
             HTTPResponse::getAllowedSchemes().clear();
             string schemes(unsafe.second);
+            trim(schemes);
             split(HTTPResponse::getAllowedSchemes(), schemes, is_space(), algorithm::token_compress_on);
         }
 
@@ -2237,6 +2241,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             pair<bool,const char*> extraAuthTypes = inprocs->getString("extraAuthTypes");
             if (extraAuthTypes.first) {
                 string types(extraAuthTypes.second);
+                trim(types);
                 split(outer->m_authTypes, types, is_space(), algorithm::token_compress_on);
                 outer->m_authTypes.insert("shibboleth");
             }

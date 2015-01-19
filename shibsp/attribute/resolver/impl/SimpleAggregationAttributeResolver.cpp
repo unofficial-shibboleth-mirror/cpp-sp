@@ -256,6 +256,7 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
     if (aid && *aid) {
         auto_ptr_char dup(aid);
         string sdup(dup.get());
+        trim(sdup);
         split(m_attributeIds, sdup, is_space(), algorithm::token_compress_on);
 
         aid = e->getAttributeNS(nullptr, format);

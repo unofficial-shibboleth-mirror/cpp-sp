@@ -125,6 +125,7 @@ TCPListener::TCPListener(const DOMElement* e)
 
     vector<string> rawacls;
     string aclbuf = XMLHelper::getAttrString(e, "127.0.0.1", acl);
+    boost::trim(aclbuf);
     boost::split(rawacls, aclbuf, boost::is_space(), algorithm::token_compress_on);
     for (vector<string>::const_iterator i = rawacls.begin();  i < rawacls.end();  ++i) {
         try {

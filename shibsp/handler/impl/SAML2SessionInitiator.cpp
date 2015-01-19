@@ -214,6 +214,7 @@ void SAML2SessionInitiator::init(const char* location)
         pair<bool,const char*> outgoing = getString("outgoingBindings");
         if (outgoing.first) {
             dupBindings = outgoing.second;
+            trim(dupBindings);
         }
         else {
             // No override, so we'll install a default binding precedence.
@@ -664,6 +665,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         if (authnContextClassRef) {
             reqContext->getAuthnContextDeclRefs().clear();
             string dup(authnContextClassRef);
+            trim(dup);
             vector<string> contexts;
             split(contexts, dup, is_space(), algorithm::token_compress_on);
             for (vector<string>::const_iterator ac = contexts.begin(); ac != contexts.end(); ++ac) {
