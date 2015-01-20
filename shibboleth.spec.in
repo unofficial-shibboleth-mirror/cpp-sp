@@ -10,7 +10,7 @@ Source:		%{name}-sp-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
 Requires:	openssl
-%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 PreReq:		xmltooling-schemas%{?_isa} >= 1.5.0, opensaml-schemas%{?_isa} >= 2.5.0
 %else
 PreReq:         xmltooling-schemas >= 1.5.0, opensaml-schemas >= 2.5.0
@@ -30,7 +30,7 @@ BuildRequires:	libxmltooling-devel >= 1.5.0
 BuildRequires:	libsaml-devel >= 2.5.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.4}
-%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 Requires:	libcurl-openssl%{?_isa} >= 7.21.7
 BuildRequires:	chrpath
 %endif
@@ -46,8 +46,8 @@ BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
 BuildRequires:	libmemcached-devel
 %endif
 %{?_with_memcached:BuildRequires: libmemcached-devel}
-%if "%{_vendor}" == "redhat"
-%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 %{!?_without_builtinapache:BuildRequires: httpd-devel%{?_isa}}
 %else
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
@@ -156,7 +156,7 @@ fi
 
 # Establish location of sysconfig file, if any.
 SYSCONFIG_SHIBD="no"
-%if "%{_vendor}" == "redhat"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
 	%{__mkdir} -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 	echo "%config(noreplace) %{_sysconfdir}/sysconfig/shibd" >> rpm.filelist
 	SYSCONFIG_SHIBD="$RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/shibd"
@@ -174,7 +174,7 @@ if [ "$SYSCONFIG_SHIBD" != "no" ] ; then
 # User account for shibd
 SHIBD_USER=%{runuser}
 EOF
-	%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+	%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 		cat >> $SYSCONFIG_SHIBD <<EOF
 
 # Override OS-supplied libcurl
@@ -187,7 +187,7 @@ EOF
 	%endif
 fi
 
-%if "%{_vendor}" == "redhat" || "%{_vendor}" == "suse"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon" || "%{_vendor}" == "suse"
 	# %{_initddir} not yet in RHEL5, use deprecated %{_initrddir}
 	install -d -m 0755 $RPM_BUILD_ROOT%{_initrddir}
 	install -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
@@ -225,7 +225,7 @@ fi
 # Fix ownership of log files (even on new installs, if they're left from an older one).
 %{__chown} %{runuser}:%{runuser} %{_localstatedir}/log/shibboleth/* 2>/dev/null || :
 
-%if "%{_vendor}" == "redhat"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
 	if [ "$1" -gt "1" ] ; then
 		# On Red Hat with shib.conf installed, clean up old Alias commands
 		# by pointing them at new version-independent /usr/share/share tree.
@@ -258,7 +258,7 @@ fi
 
 %preun
 # On final removal, stop shibd and remove service, restart Apache if running.
-%if "%{_vendor}" == "redhat"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
 	if [ "$1" -eq 0 ] ; then
 		/sbin/service shibd stop >/dev/null 2>&1
 		/sbin/chkconfig --del shibd
@@ -277,7 +277,7 @@ exit 0
 %ifnos solaris2.8 solaris2.9 solaris2.10 solaris2.11
 /sbin/ldconfig
 %endif
-%if "%{_vendor}" == "redhat"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
 	# On upgrade, restart components if they're already running.
 	if [ "$1" -ge "1" ] ; then
 		/etc/init.d/shibd status 1>/dev/null && /etc/init.d/shibd restart 1>/dev/null
@@ -294,7 +294,7 @@ exit 0
 
 %posttrans
 # ugly hack if init script got removed during %postun by upgraded (buggy/2.1) package
-%if "%{_vendor}" == "redhat"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
 	if [ ! -f %{_initrddir}/shibd ] ; then
 		if [ -f %{_sysconfdir}/shibboleth/shibd-%{_vendor} ] ; then
 			%{__cp} -p %{_sysconfdir}/shibboleth/shibd-%{_vendor} %{_initrddir}/shibd
@@ -326,7 +326,7 @@ fi
 %config(noreplace) %{_sysconfdir}/shibboleth/*.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/*.html
 %config(noreplace) %{_sysconfdir}/shibboleth/*.logger
-%if "%{_vendor}" == "redhat" || "%{_vendor}" == "suse"
+%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon" || "%{_vendor}" == "suse"
 %config %{_initrddir}/shibd
 %endif
 %if "%{_vendor}" == "suse"
@@ -349,6 +349,9 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
+* Mon Jan 19 2015 Scott Cantor <cantor.2@osu.edu> - 2.5.4-1
+- Add Amazon VM support
+
 * Mon Nov 17 2014 Scott Cantor <cantor.2@osu.edu> - 2.5.3-2
 - Add libtool dep for OpenSUSE 13
 - Remove /var/run/shibboleth for OpenSUSE 13
