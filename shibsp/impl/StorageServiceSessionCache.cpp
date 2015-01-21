@@ -1040,8 +1040,14 @@ void SSCache::test()
 
 void SSCache::insert(const char* key, time_t expires, const char* name, const char* index, short attempts)
 {
-    if (attempts > 10)
+    if (attempts > 10) {
         throw IOException("Exceeded retry limit.");
+    }
+
+    if (!name || !*name) {
+        m_log.warn("NameID value was empty or null, ignoring request to store for logout");
+        return;
+    }
 
     string dup;
     unsigned int storageLimit = m_storage_lite->getCapabilities().getKeySize();
