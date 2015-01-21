@@ -44,6 +44,7 @@
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/io/HTTPRequest.h>
 # include <xmltooling/util/DateTime.h>
+# include <xmltooling/validation/ValidatorSuite.h>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
@@ -311,6 +312,9 @@ void SAML2Consumer::implementProtocol(
             // Skip unsigned assertion?
             if (!decrypted->getSignature() && requireSignedAssertions.first && requireSignedAssertions.second)
                 throw SecurityPolicyException("The incoming assertion was unsigned, violating local security policy.");
+
+            // Run the schema validators against the assertion, since it was hidden by encryption.
+            SchemaValidators.validate(decrypted.get());
 
             // We clear the security flag, so we can tell whether the token was secured on its own.
             policy.setAuthenticated(false);

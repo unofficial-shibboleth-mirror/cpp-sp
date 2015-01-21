@@ -1233,7 +1233,8 @@ void SSCache::insert(
         throw FatalProfileException("Attempted to create a session with a duplicate key.");
 
     // Store the reverse mapping for logout.
-    if (nameid && m_reverseIndex && (m_excludedNames.size() == 0 || m_excludedNames.count(nameid->getName()) == 0)) {
+    if (name.get() && *name.get() && m_reverseIndex
+            && (m_excludedNames.size() == 0 || m_excludedNames.count(nameid->getName()) == 0)) {
         try {
             insert(key.get(), expires, name.get(), index.get());
         }
