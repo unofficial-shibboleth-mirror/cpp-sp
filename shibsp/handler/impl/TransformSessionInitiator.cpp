@@ -109,7 +109,7 @@ namespace shibsp {
                             auto_ptr_char m(e->getAttributeNS(nullptr, match));
                             auto_ptr_char repl(e->getTextContent());
                             if (m.get() && *m.get() && repl.get() && *repl.get())
-                                m_regex.push_back(tuple<bool,string,string>(flag, m.get(), repl.get()));
+                                m_regex.push_back(boost::tuple<bool,string,string>(flag, m.get(), repl.get()));
                         }
                         else {
                             m_log.warn("Unknown element found in Transform SessionInitiator configuration, check for errors.");
@@ -133,7 +133,7 @@ namespace shibsp {
 #ifndef SHIBSP_LITE
         bool m_alwaysRun;
         vector< pair<bool, string> > m_subst;
-        vector< tuple<bool,string,string> > m_regex;
+        vector< boost::tuple<bool,string,string> > m_regex;
 #endif
     };
 
@@ -254,7 +254,7 @@ void TransformSessionInitiator::doRequest(const Application& application, string
     }
 
     // Now try regexs.
-    for (vector< tuple<bool,string,string> >::const_iterator r = m_regex.begin(); r != m_regex.end(); ++r) {
+    for (vector< boost::tuple<bool,string,string> >::const_iterator r = m_regex.begin(); r != m_regex.end(); ++r) {
         try {
             RegularExpression exp(r->get<1>().c_str());
             XMLCh* temp = exp.replace(entityID.c_str(), r->get<2>().c_str());
