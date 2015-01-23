@@ -75,7 +75,7 @@ namespace shibsp {
 DOMAttributeDecoder::DOMAttributeDecoder(const DOMElement* e)
     : AttributeDecoder(e), m_formatter(XMLHelper::getAttrString(e, nullptr, formatter))
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.DOM");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".AttributeDecoder.DOM");
 
     e = XMLHelper::getFirstChildElement(e, Mapping);
     while (e) {
@@ -101,7 +101,7 @@ Attribute* DOMAttributeDecoder::decode(
     const GenericRequest* request, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.DOM");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".AttributeDecoder.DOM");
 
     if (!xmlObject)
         return nullptr;

@@ -109,7 +109,7 @@ Attribute* KeyInfoAttributeDecoder::decode(
     const GenericRequest*, const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty, const char* relyingParty
     ) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.KeyInfo");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".AttributeDecoder.KeyInfo");
 
     if (!xmlObject || !XMLString::equals(saml1::Attribute::LOCAL_NAME, xmlObject->getElementQName().getLocalPart())) {
         log.warn("XMLObject type not recognized by KeyInfoAttributeDecoder, no values returned");

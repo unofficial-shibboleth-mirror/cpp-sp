@@ -335,7 +335,7 @@ namespace {
 #endif
     {
     public:
-        XMLConfig(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".Config")) {}
+        XMLConfig(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".Config")) {}
 
         void init() {
             background_load();
@@ -544,7 +544,7 @@ XMLApplication::XMLApplication(
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
 #endif
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".Application");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Application");
 
     // First load any property sets.
     map<string,string> remapper;
@@ -1796,7 +1796,7 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
                 boost::bind(startsWithI, url, boost::bind(&string::c_str, _1))) != m_redirectWhitelist.end()) {
             return;
         }
-        Category::getInstance(SHIBSP_LOGCAT".Application").warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
+        Category::getInstance(SHIBSP_LOGCAT ".Application").warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
         throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
     }
 }
@@ -2271,7 +2271,7 @@ void XMLConfig::receive(DDF& in, ostream& out)
             }
         }
         else {
-            Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
+            Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").error(
                 "Storage-backed RelayState with invalid StorageService ID (%s)", id
                 );
         }
@@ -2298,7 +2298,7 @@ void XMLConfig::receive(DDF& in, ostream& out)
                 storage->createText("RelayState", rsKey.c_str(), value, time(nullptr) + 600);
         }
         else {
-            Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
+            Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").error(
                 "Storage-backed RelayState with invalid StorageService ID (%s)", id
                 );
         }
@@ -2322,7 +2322,7 @@ void XMLConfig::receive(DDF& in, ostream& out)
             }
         }
         else {
-            Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
+            Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").error(
                 "Storage-backed PostData with invalid StorageService ID (%s)", id
                 );
         }
@@ -2352,7 +2352,7 @@ void XMLConfig::receive(DDF& in, ostream& out)
             storage->createText("PostData", rsKey.c_str(), params.str().c_str(), time(nullptr) + 600);
         }
         else {
-            Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").error(
+            Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").error(
                 "Storage-backed PostData with invalid StorageService ID (%s)", id
                 );
         }

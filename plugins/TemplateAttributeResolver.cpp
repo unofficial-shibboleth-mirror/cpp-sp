@@ -143,7 +143,7 @@ namespace shibsp {
 vector<opensaml::Assertion*> TemplateContext::m_assertions;
 
 TemplateAttributeResolver::TemplateAttributeResolver(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Template")),
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver.Template")),
         m_dest(1, XMLHelper::getAttrString(e, nullptr, dest))
 {
     if (m_dest.front().empty())

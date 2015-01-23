@@ -210,10 +210,10 @@ const std::vector<XSECCryptoX509*>& RemotedRequest::getClientCertificates() cons
             }
             catch(XSECException& e) {
                 auto_ptr_char temp(e.getMsg());
-                Category::getInstance(SHIBSP_LOGCAT".SPRequest").error("XML-Security exception loading client certificate: %s", temp.get());
+                Category::getInstance(SHIBSP_LOGCAT ".SPRequest").error("XML-Security exception loading client certificate: %s", temp.get());
             }
             catch(XSECCryptoException& e) {
-                Category::getInstance(SHIBSP_LOGCAT".SPRequest").error("XML-Security exception loading client certificate: %s", e.getMsg());
+                Category::getInstance(SHIBSP_LOGCAT ".SPRequest").error("XML-Security exception loading client certificate: %s", e.getMsg());
             }
             cert = certs.next();
         }
@@ -334,7 +334,7 @@ void RemotedHandler::setAddress(const char* address)
         if (listener)
             listener->regListener(m_address.c_str(), this);
         else
-            Category::getInstance(SHIBSP_LOGCAT".Handler").info("no ListenerService available, handler remoting disabled");
+            Category::getInstance(SHIBSP_LOGCAT ".Handler").info("no ListenerService available, handler remoting disabled");
     }
 }
 

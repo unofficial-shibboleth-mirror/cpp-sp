@@ -55,7 +55,7 @@ namespace shibsp {
     {
     public:
         CookieSessionInitiator(const DOMElement* e, const char* appId)
-            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.Cookie")),
+            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.Cookie")),
               m_followMultiple(getBool("followMultiple").second) {
             m_supportedOptions.insert("isPassive");
         }

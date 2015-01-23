@@ -165,7 +165,7 @@ void SocketPool::put(SocketListener::ShibSocket s)
 }
 
 SocketListener::SocketListener(const DOMElement* e)
-    : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT".Listener")),
+    : m_catchAll(false), log(&Category::getInstance(SHIBSP_LOGCAT ".Listener")),
         m_shutdown(nullptr), m_stackSize(0), m_socket((ShibSocket)0)
 {
     // Are we a client?
@@ -499,7 +499,7 @@ void ServerThread::run()
 
 int ServerThread::job()
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".Listener");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Listener");
 
     bool incomingError = true;  // set false once incoming message is received
     ostringstream sink;

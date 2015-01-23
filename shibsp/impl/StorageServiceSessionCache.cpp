@@ -481,7 +481,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         return;
 
     if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        DDF in("touch::"STORAGESERVICE_SESSION_CACHE"::SessionCache"), out;
+        DDF in("touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache"), out;
         DDFJanitor jin(in);
         in.structure();
         in.addmember("key").string(getID());
@@ -906,7 +906,7 @@ SessionCacheEx::~SessionCacheEx()
 }
 
 SSCache::SSCache(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".SessionCache")), inproc(true),
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache")), inproc(true),
 #ifndef SHIBSP_LITE
       m_storage(nullptr), m_storage_lite(nullptr), m_cacheAssertions(true), m_reverseIndex(true),
 #endif
@@ -991,9 +991,9 @@ SSCache::SSCache(const DOMElement* e)
 #ifndef SHIBSP_LITE
     else {
         if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
-            listener->regListener("find::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
-            listener->regListener("remove::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
-            listener->regListener("touch::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
+            listener->regListener("find::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
+            listener->regListener("remove::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
+            listener->regListener("touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
         }
         else {
             m_log.info("no ListenerService available, cache remoting disabled");
@@ -1019,9 +1019,9 @@ SSCache::~SSCache()
         SPConfig& conf = SPConfig::getConfig();
         ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
         if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
-            listener->unregListener("find::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
-            listener->unregListener("remove::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
-            listener->unregListener("touch::"STORAGESERVICE_SESSION_CACHE"::SessionCache",this);
+            listener->unregListener("find::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
+            listener->unregListener("remove::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
+            listener->unregListener("touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
         }
     }
 #endif
@@ -1578,7 +1578,7 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
         if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
             m_log.debug("session not found locally, remoting the search");
             // Remote the request.
-            DDF in("find::"STORAGESERVICE_SESSION_CACHE"::SessionCache"), out;
+            DDF in("find::" STORAGESERVICE_SESSION_CACHE "::SessionCache"), out;
             DDFJanitor jin(in);
             in.structure();
             in.addmember("key").string(key);
@@ -1800,7 +1800,7 @@ void SSCache::remove(const Application& app, const char* key)
     }
     else {
         // Remote the request.
-        DDF in("remove::"STORAGESERVICE_SESSION_CACHE"::SessionCache");
+        DDF in("remove::" STORAGESERVICE_SESSION_CACHE "::SessionCache");
         DDFJanitor jin(in);
         in.structure();
         in.addmember("key").string(key);
@@ -1928,7 +1928,7 @@ void SSCache::receive(DDF& in, ostream& out)
     if (!app)
         throw ListenerException("Application not found, check configuration?");
 
-    if (!strcmp(in.name(),"find::"STORAGESERVICE_SESSION_CACHE"::SessionCache")) {
+    if (!strcmp(in.name(),"find::" STORAGESERVICE_SESSION_CACHE "::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameters missing for session lookup.");
@@ -1981,7 +1981,7 @@ void SSCache::receive(DDF& in, ostream& out)
         // Send the record back.
         out << record;
     }
-    else if (!strcmp(in.name(),"touch::"STORAGESERVICE_SESSION_CACHE"::SessionCache")) {
+    else if (!strcmp(in.name(),"touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameters missing for session check.");
@@ -2093,7 +2093,7 @@ void SSCache::receive(DDF& in, ostream& out)
             out << ret;
         }
     }
-    else if (!strcmp(in.name(),"remove::"STORAGESERVICE_SESSION_CACHE"::SessionCache")) {
+    else if (!strcmp(in.name(),"remove::" STORAGESERVICE_SESSION_CACHE "::SessionCache")) {
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameter missing for session removal.");

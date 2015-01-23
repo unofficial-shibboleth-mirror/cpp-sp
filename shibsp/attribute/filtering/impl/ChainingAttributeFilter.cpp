@@ -79,7 +79,7 @@ ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
     while (e) {
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
-            Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Chaining").info("building AttributeFilter of type (%s)...", t.c_str());
+            Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.Chaining").info("building AttributeFilter of type (%s)...", t.c_str());
             auto_ptr<AttributeFilter> np(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), e));
             m_filters.push_back(np.get());
             np.release();

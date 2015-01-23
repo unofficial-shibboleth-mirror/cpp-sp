@@ -225,11 +225,11 @@ AuthnRequestEvent* SessionInitiator::newAuthnRequestEvent(const Application& app
             return ar_event;
         }
         else {
-            Category::getInstance(SHIBSP_LOGCAT".SessionInitiator").warn("unable to audit event, log event object was of an incorrect type");
+            Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator").warn("unable to audit event, log event object was of an incorrect type");
         }
     }
     catch (exception& ex) {
-        Category::getInstance(SHIBSP_LOGCAT".SessionInitiator").warn("exception auditing event: %s", ex.what());
+        Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator").warn("exception auditing event: %s", ex.what());
     }
     return nullptr;
 }

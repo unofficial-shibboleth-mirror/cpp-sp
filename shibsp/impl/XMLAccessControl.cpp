@@ -111,7 +111,7 @@ namespace shibsp {
     {
     public:
         XMLAccessControl(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AccessControl.XML")) {
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML")) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 

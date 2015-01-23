@@ -85,7 +85,7 @@ void DOMPropertySet::load(
         return;
     m_root=e;
     if (!log)
-        log = &Category::getInstance(SHIBSP_LOGCAT".PropertySet");
+        log = &Category::getInstance(SHIBSP_LOGCAT ".PropertySet");
 
     // Process each attribute as a property.
     DOMNamedNodeMap* attrs=m_root->getAttributes();

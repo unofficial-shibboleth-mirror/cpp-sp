@@ -163,7 +163,7 @@ ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.Chaining").info(
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.Chaining").info(
                     "building AttributeExtractor of type (%s)...", t.c_str()
                     );
                 auto_ptr<AttributeExtractor> np(conf.AttributeExtractorManager.newPlugin(t.c_str(), e));
@@ -171,7 +171,7 @@ ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
                 np.release();
             }
             catch (exception& ex) {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.Chaining").error(
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.Chaining").error(
                     "caught exception processing embedded AttributeExtractor element: %s", ex.what()
                     );
             }

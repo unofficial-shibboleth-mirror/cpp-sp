@@ -142,7 +142,7 @@ namespace shibsp {
     class XMLExtractor : public AttributeExtractor, public ReloadableXMLFile
     {
     public:
-        XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.XML")) {
+        XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.XML")) {
             if (m_local && m_lock)
                 m_log.warn("attribute mappings are reloadable; be sure to restart web server when adding new attribute IDs");
             background_load();

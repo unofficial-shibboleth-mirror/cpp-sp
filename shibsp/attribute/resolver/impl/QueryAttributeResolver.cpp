@@ -249,7 +249,7 @@ namespace shibsp {
 };
 
 QueryResolver::QueryResolver(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Query")),
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver.Query")),
         m_policyId(XMLHelper::getAttrString(e, nullptr, policyId)),
         m_subjectMatch(XMLHelper::getAttrBool(e, false, subjectMatch))
 {

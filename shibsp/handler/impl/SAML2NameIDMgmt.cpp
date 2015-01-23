@@ -136,7 +136,7 @@ namespace shibsp {
 };
 
 SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".NameIDMgmt.SAML2"))
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".NameIDMgmt.SAML2"))
 {
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {

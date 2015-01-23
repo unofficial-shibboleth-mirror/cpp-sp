@@ -128,7 +128,7 @@ int main(int argc,char* argv[])
     ServiceProvider* sp=conf.getServiceProvider();
     sp->lock();
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".Utility.MDQuery");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Utility.MDQuery");
 
     const Application* app = sp->getApplication(appID);
     if (!app) {

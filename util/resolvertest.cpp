@@ -73,7 +73,7 @@ class ResolverTest : public shibsp::AssertionConsumerService
 {
 public:
     ResolverTest(const DOMElement* e, const char* appId)
-        : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".Utilities.ResolverTest")) {
+        : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".Utilities.ResolverTest")) {
     }
     virtual ~ResolverTest() {}
     
@@ -181,7 +181,7 @@ int main(int argc,char* argv[])
     ServiceProvider* sp=conf.getServiceProvider();
     sp->lock();
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".Utility.ResolverTest");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Utility.ResolverTest");
 
     const Application* app = sp->getApplication(a_param);
     if (!app) {

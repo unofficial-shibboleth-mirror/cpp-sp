@@ -169,7 +169,7 @@ const vector<string>& NameIDAttribute::getSerializedValues() const
                         m_serialized.push_back(out.string());
                 }
                 catch (exception& ex) {
-                    Category::getInstance(SHIBSP_LOGCAT".Attribute.NameID").error("exception remoting hash operation: %s", ex.what());
+                    Category::getInstance(SHIBSP_LOGCAT ".Attribute.NameID").error("exception remoting hash operation: %s", ex.what());
                 }
 #endif
             }

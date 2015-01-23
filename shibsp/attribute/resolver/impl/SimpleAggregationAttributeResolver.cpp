@@ -244,7 +244,7 @@ namespace shibsp {
 };
 
 SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.SimpleAggregation")),
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver.SimpleAggregation")),
         m_policyId(XMLHelper::getAttrString(e, nullptr, policyId)),
         m_subjectMatch(XMLHelper::getAttrBool(e, false, subjectMatch))
 {

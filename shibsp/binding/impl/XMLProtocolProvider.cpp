@@ -94,7 +94,7 @@ namespace shibsp {
     {
     public:
         XMLProtocolProvider(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".ProtocolProvider.XML")) {
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".ProtocolProvider.XML")) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 

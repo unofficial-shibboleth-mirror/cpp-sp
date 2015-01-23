@@ -76,7 +76,7 @@ Remoted* ListenerService::regListener(const char* address, Remoted* listener)
     if (i!=m_listenerMap.end())
         ret=i->second;
     m_listenerMap[address]=listener;
-    Category::getInstance(SHIBSP_LOGCAT".Listener").info("registered remoted message endpoint (%s)",address);
+    Category::getInstance(SHIBSP_LOGCAT ".Listener").info("registered remoted message endpoint (%s)",address);
     return ret;
 }
 
@@ -88,7 +88,7 @@ bool ListenerService::unregListener(const char* address, Remoted* current, Remot
             m_listenerMap[address]=restore;
         else
             m_listenerMap.erase(address);
-        Category::getInstance(SHIBSP_LOGCAT".Listener").info("unregistered remoted message endpoint (%s)",address);
+        Category::getInstance(SHIBSP_LOGCAT ".Listener").info("unregistered remoted message endpoint (%s)",address);
         return true;
     }
     return false;

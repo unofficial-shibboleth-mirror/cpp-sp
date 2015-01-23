@@ -122,7 +122,7 @@ namespace shibsp {
 };
 
 SAMLDSSessionInitiator::SAMLDSSessionInitiator(const DOMElement* e, const char* appId)
-        : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAMLDS")), m_url(nullptr), m_returnParam(nullptr)
+        : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAMLDS")), m_url(nullptr), m_returnParam(nullptr)
 {
     pair<bool,const char*> url = getString("URL");
     if (!url.first)

@@ -333,7 +333,7 @@ class ShibTargetIsapiF : public AbstractSPRequest
 
 public:
   ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
-      : AbstractSPRequest(SHIBSP_LOGCAT".ISAPI"), m_pfc(pfc), m_pn(pn), m_allhttp(4096), m_firsttime(true) {
+      : AbstractSPRequest(SHIBSP_LOGCAT ".ISAPI"), m_pfc(pfc), m_pn(pn), m_allhttp(4096), m_firsttime(true) {
 
     // URL path always come from IIS.
     dynabuf var(256);
@@ -724,7 +724,7 @@ class ShibTargetIsapiE : public AbstractSPRequest
 
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
-      : AbstractSPRequest(SHIBSP_LOGCAT".ISAPI"), m_lpECB(lpECB), m_gotBody(false) {
+      : AbstractSPRequest(SHIBSP_LOGCAT ".ISAPI"), m_lpECB(lpECB), m_gotBody(false) {
     dynabuf ssl(5);
     GetServerVariable("HTTPS",ssl,5);
     bool SSL=(ssl=="on" || ssl=="ON");

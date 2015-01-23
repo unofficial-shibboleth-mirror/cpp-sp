@@ -152,7 +152,7 @@ namespace shibsp {
 vector<opensaml::Assertion*> TransformContext::m_assertions;
 
 TransformAttributeResolver::TransformAttributeResolver(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.Transform")),
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver.Transform")),
         m_source(XMLHelper::getAttrString(e, nullptr, source))
 {
     if (m_source.empty())

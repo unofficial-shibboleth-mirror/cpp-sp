@@ -49,7 +49,7 @@ namespace shibsp {
         }
         
         void filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const {
-            Category::getInstance(SHIBSP_LOGCAT".AttributeFilter.Dummy").warn("filtering out all attributes");
+            Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.Dummy").warn("filtering out all attributes");
             for_each(attributes.begin(), attributes.end(), xmltooling::cleanup<Attribute>());
             attributes.clear();
         }

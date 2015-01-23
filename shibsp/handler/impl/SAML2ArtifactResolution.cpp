@@ -142,7 +142,7 @@ namespace shibsp {
 };
 
 SAML2ArtifactResolution::SAML2ArtifactResolution(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".ArtifactResolution.SAML2"))
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".ArtifactResolution.SAML2"))
 {
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {

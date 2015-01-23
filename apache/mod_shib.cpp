@@ -345,7 +345,7 @@ public:
   shib_server_config* m_sc;
   shib_request_config* m_rc;
 
-  ShibTargetApache(request_rec* req) : AbstractSPRequest(SHIBSP_LOGCAT".Apache"),
+  ShibTargetApache(request_rec* req) : AbstractSPRequest(SHIBSP_LOGCAT ".Apache"),
         m_gotBody(false),m_firsttime(true),
 #if defined(SHIBSP_HAVE_GSSAPI) && !defined(SHIB_APACHE_13)
         m_gssname(GSS_C_NO_NAME),

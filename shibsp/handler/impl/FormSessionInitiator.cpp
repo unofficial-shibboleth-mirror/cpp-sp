@@ -52,7 +52,7 @@ namespace shibsp {
     {
     public:
         FormSessionInitiator(const DOMElement* e, const char* appId)
-            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.Form")), m_template(getString("template").second) {
+            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.Form")), m_template(getString("template").second) {
             if (!m_template)
                 throw ConfigurationException("Form SessionInitiator requires a template property.");
         }

@@ -73,7 +73,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
     vector<string>& dest = simple->getValues();
     pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> valrange;
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.Base64");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".AttributeDecoder.Base64");
 
     if (xmlObject && XMLString::equals(opensaml::saml1::Attribute::LOCAL_NAME,xmlObject->getElementQName().getLocalPart())) {
         const opensaml::saml2::Attribute* saml2attr = dynamic_cast<const opensaml::saml2::Attribute*>(xmlObject);

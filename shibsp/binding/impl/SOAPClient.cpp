@@ -119,11 +119,11 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
                 }
             }
             else {
-                Category::getInstance(SHIBSP_LOGCAT".SOAPClient").warn("no signing credential resolved, leaving message unsigned");
+                Category::getInstance(SHIBSP_LOGCAT ".SOAPClient").warn("no signing credential resolved, leaving message unsigned");
             }
         }
         else {
-            Category::getInstance(SHIBSP_LOGCAT".SOAPClient").warn("no CredentialResolver available, leaving unsigned");
+            Category::getInstance(SHIBSP_LOGCAT ".SOAPClient").warn("no CredentialResolver available, leaving unsigned");
         }
     }
     
@@ -135,7 +135,7 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
 #ifdef _DEBUG
     xmltooling::NDC("prepareTransport");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".SOAPClient");
+    Category& log=Category::getInstance(SHIBSP_LOGCAT ".SOAPClient");
     log.debug("prepping SOAP transport for use by application (%s)", m_app.getId());
 
     pair<bool,bool> flag = m_relyingParty->getBool("requireConfidentiality");

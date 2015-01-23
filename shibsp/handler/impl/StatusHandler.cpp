@@ -251,7 +251,7 @@ namespace shibsp {
 };
 
 StatusHandler::StatusHandler(const DOMElement* e, const char* appId)
-    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".StatusHandler"))
+    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".StatusHandler"))
 {
     string address(appId);
     address += getString("Location").second;

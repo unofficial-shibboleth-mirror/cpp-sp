@@ -63,7 +63,7 @@ namespace shibsp {
                 throw ConfigurationException("AttributeValueString MatchFunctor requires non-empty value attribute.");
             }
             if (e && e->hasAttributeNS(nullptr, ignoreCase)) {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
                     "ignoreCase property ignored by AttributeValueString MatchFunctor in favor of attribute's caseSensitive property"
                     );
             }

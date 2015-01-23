@@ -119,7 +119,7 @@ namespace shibsp {
 };
 
 SAML2LogoutInitiator::SAML2LogoutInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator.SAML2")), m_appId(appId), m_protocol(samlconstants::SAML20P_NS)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.SAML2")), m_appId(appId), m_protocol(samlconstants::SAML20P_NS)
 #ifndef SHIBSP_LITE
         ,m_async(true)
 #endif

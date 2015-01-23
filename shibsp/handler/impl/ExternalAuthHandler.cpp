@@ -164,7 +164,7 @@ namespace {
 };
 
 ExternalAuth::ExternalAuth(const DOMElement* e, const char* appId)
-    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".ExternalAuth"), "acl", "127.0.0.1 ::1")
+    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".ExternalAuth"), "acl", "127.0.0.1 ::1")
 {
     setAddress("run::ExternalAuth");
 }

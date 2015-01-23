@@ -140,7 +140,7 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
 #ifdef _DEBUG
     xmltooling::NDC("resolve");
 #endif
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".MetadataProvider.Dynamic");
+    Category& log=Category::getInstance(SHIBSP_LOGCAT ".MetadataProvider.Dynamic");
 
     string name;
     if (criteria.entityID_ascii) {

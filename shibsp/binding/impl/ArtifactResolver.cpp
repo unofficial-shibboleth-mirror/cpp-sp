@@ -113,7 +113,7 @@ saml1p::Response* ArtifactResolver::resolve(
             response = client.receiveSAML();
         }
         catch (std::exception& ex) {
-            Category::getInstance(SHIBSP_LOGCAT".ArtifactResolver").error("exception resolving SAML 1.x artifact(s): %s", ex.what());
+            Category::getInstance(SHIBSP_LOGCAT ".ArtifactResolver").error("exception resolving SAML 1.x artifact(s): %s", ex.what());
             soaper.reset();
         }
     }
@@ -140,7 +140,7 @@ ArtifactResponse* ArtifactResolver::resolve(
     opensaml::SecurityPolicy& policy
     ) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".ArtifactResolver");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ArtifactResolver");
 
     MetadataCredentialCriteria mcc(ssoDescriptor);
     shibsp::SecurityPolicy& sppolicy = dynamic_cast<shibsp::SecurityPolicy&>(policy);

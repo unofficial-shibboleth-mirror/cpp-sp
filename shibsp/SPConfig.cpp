@@ -201,7 +201,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     std::string lc(logconf);
     XMLToolingConfig::getConfig().log_config(localpr.resolve(lc, PathResolver::XMLTOOLING_CFG_FILE, PACKAGE_NAME).c_str());
 
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
+    Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
     log.debug("%s library initialization started", PACKAGE_STRING);
 
 #ifndef SHIBSP_LITE
@@ -341,7 +341,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 
 void SPConfig::term()
 {
-    Category& log=Category::getInstance(SHIBSP_LOGCAT".Config");
+    Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
     log.info("%s library shutting down", PACKAGE_STRING);
 
     setServiceProvider(nullptr);
@@ -450,7 +450,7 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
     catch (exception& ex) {
         if (rethrow)
             throw;
-        Category::getInstance(SHIBSP_LOGCAT".Config").fatal("caught exception while loading configuration: %s", ex.what());
+        Category::getInstance(SHIBSP_LOGCAT ".Config").fatal("caught exception while loading configuration: %s", ex.what());
     }
     return false;
 }
@@ -464,7 +464,7 @@ bool SPInternalConfig::init(const char* catalog_path, const char* inst_prefix)
     Lock initLock(m_lock);
 
     if (m_initCount == INT_MAX) {
-        Category::getInstance(SHIBSP_LOGCAT".Config").crit("library initialized too many times");
+        Category::getInstance(SHIBSP_LOGCAT ".Config").crit("library initialized too many times");
         return false;
     }
 
@@ -489,7 +489,7 @@ void SPInternalConfig::term()
     
     Lock initLock(m_lock);
     if (m_initCount == 0) {
-        Category::getInstance(SHIBSP_LOGCAT".Config").crit("term without corresponding init");
+        Category::getInstance(SHIBSP_LOGCAT ".Config").crit("term without corresponding init");
         return;
     }
     else if (--m_initCount > 0) {

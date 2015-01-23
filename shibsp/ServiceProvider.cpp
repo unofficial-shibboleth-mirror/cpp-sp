@@ -193,7 +193,7 @@ Remoted* ServiceProvider::regListener(const char* address, Remoted* listener)
     if (i != m_listenerMap.end())
         ret = i->second;
     m_listenerMap[address] = listener;
-    Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").info("registered remoted message endpoint (%s)",address);
+    Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").info("registered remoted message endpoint (%s)",address);
     return ret;
 }
 
@@ -205,7 +205,7 @@ bool ServiceProvider::unregListener(const char* address, Remoted* current, Remot
             m_listenerMap[address] = restore;
         else
             m_listenerMap.erase(address);
-        Category::getInstance(SHIBSP_LOGCAT".ServiceProvider").info("unregistered remoted message endpoint (%s)",address);
+        Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").info("unregistered remoted message endpoint (%s)",address);
         return true;
     }
     return false;
@@ -222,7 +222,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 #ifdef _DEBUG
     xmltooling::NDC ndc("doAuthentication");
 #endif
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
     string targetURL = request.getRequestURL();
@@ -370,7 +370,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 #ifdef _DEBUG
     xmltooling::NDC ndc("doAuthorization");
 #endif
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
     Session* session = nullptr;
@@ -440,7 +440,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 #ifdef _DEBUG
     xmltooling::NDC ndc("doExport");
 #endif
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
     Session* session = nullptr;
@@ -605,7 +605,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 #ifdef _DEBUG
     xmltooling::NDC ndc("doHandler");
 #endif
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".ServiceProvider");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
     string targetURL = request.getRequestURL();

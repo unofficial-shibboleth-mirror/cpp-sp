@@ -77,7 +77,7 @@ namespace shibsp {
 };
 
 LocalLogoutInitiator::LocalLogoutInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator.Local")), m_appId(appId)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.Local")), m_appId(appId)
 {
     pair<bool,const char*> loc = getString("Location");
     if (loc.first) {

@@ -89,7 +89,7 @@ shibsp::Attribute* NameIDAttributeDecoder::decode(
     vector<NameIDAttribute::Value>& dest = nameid->getValues();
     vector<XMLObject*>::const_iterator v,stop;
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.NameID");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".AttributeDecoder.NameID");
 
     if (xmlObject && XMLString::equals(opensaml::saml1::Attribute::LOCAL_NAME,xmlObject->getElementQName().getLocalPart())) {
         const opensaml::saml2::Attribute* saml2attr = dynamic_cast<const opensaml::saml2::Attribute*>(xmlObject);

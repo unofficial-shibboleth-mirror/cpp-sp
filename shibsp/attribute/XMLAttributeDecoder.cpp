@@ -75,7 +75,7 @@ Attribute* XMLAttributeDecoder::decode(
     if (!xmlObject)
         return nullptr;
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeDecoder.XML");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".AttributeDecoder.XML");
 
     auto_ptr<XMLAttribute> attr(new XMLAttribute(ids));
     vector<string>& dest = attr->getValues();

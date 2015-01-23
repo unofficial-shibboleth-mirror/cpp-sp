@@ -107,7 +107,7 @@ void DelegationExtractor::extractAttributes(
     if (!assertion || !assertion->getConditions())
         return;
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.Delegation");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.Delegation");
 
     const vector<saml2::Condition*>& conditions = const_cast<const saml2::Conditions*>(assertion->getConditions())->getConditions();
     for (vector<saml2::Condition*>::const_iterator c = conditions.begin(); c != conditions.end(); ++c) {

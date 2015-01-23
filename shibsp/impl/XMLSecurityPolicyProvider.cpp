@@ -88,7 +88,7 @@ namespace shibsp {
     {
     public:
         XMLSecurityPolicyProvider(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".SecurityPolicyProvider.XML")) {
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".SecurityPolicyProvider.XML")) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 

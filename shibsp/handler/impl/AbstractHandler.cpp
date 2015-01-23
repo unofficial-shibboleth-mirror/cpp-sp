@@ -168,7 +168,7 @@ const XMLCh* Handler::getProtocolFamily() const
 
 void Handler::log(SPRequest::SPLogLevel level, const string& msg) const
 {
-    Category::getInstance(SHIBSP_LOGCAT".Handler").log(
+    Category::getInstance(SHIBSP_LOGCAT ".Handler").log(
         (level == SPRequest::SPDebug ? Priority::DEBUG :
         (level == SPRequest::SPInfo ? Priority::INFO :
         (level == SPRequest::SPWarn ? Priority::WARN :

@@ -107,7 +107,7 @@ ChainingAccessControl::ChainingAccessControl(const DOMElement* e) : m_op(OP_AND)
     while (e) {
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
-            Category::getInstance(SHIBSP_LOGCAT".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", t.c_str());
+            Category::getInstance(SHIBSP_LOGCAT ".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", t.c_str());
             auto_ptr<AccessControl> np(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e));
             m_ac.push_back(np.get());
             np.release();

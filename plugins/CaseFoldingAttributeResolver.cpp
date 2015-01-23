@@ -150,7 +150,7 @@ namespace shibsp {
 vector<opensaml::Assertion*> FoldingContext::m_assertions;
 
 CaseFoldingAttributeResolver::CaseFoldingAttributeResolver(const DOMElement* e, case_t direction)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT".AttributeResolver.CaseFolding")),
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver.CaseFolding")),
         m_direction(direction),
         m_source(XMLHelper::getAttrString(e, nullptr, source)),
         m_dest(1, XMLHelper::getAttrString(e, nullptr, dest))

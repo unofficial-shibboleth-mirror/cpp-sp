@@ -105,7 +105,7 @@ bool NameIDQualifierStringFunctor::matches(const FilteringContext& filterContext
 {
     const NameIDAttribute* nameattr = dynamic_cast<const NameIDAttribute*>(&attribute);
     if (!nameattr) {
-        Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+        Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
             "NameIDQualifierString MatchFunctor applied to non-NameID-valued attribute (%s)", attribute.getId()
             );
         return false;
@@ -117,7 +117,7 @@ bool NameIDQualifierStringFunctor::matches(const FilteringContext& filterContext
             auto_ptr_char issuer(filterContext.getAttributeIssuer());
             if (issuer.get() && *issuer.get()) {
                 if (val.m_NameQualifier != issuer.get()) {
-                    Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+                    Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
                         "NameIDQualifierString MatchFunctor rejecting NameQualifier (%s), should be (%s)",
                         val.m_NameQualifier.c_str(), issuer.get()
                         );
@@ -125,7 +125,7 @@ bool NameIDQualifierStringFunctor::matches(const FilteringContext& filterContext
                 }
             }
             else {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
                     "NameIDQualifierString MatchFunctor rejecting NameQualifier (%s), attribute issuer unknown",
                     val.m_NameQualifier.c_str()
                     );
@@ -133,7 +133,7 @@ bool NameIDQualifierStringFunctor::matches(const FilteringContext& filterContext
             }
         }
         else if (m_matchNameQualifier != val.m_NameQualifier) {
-            Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+            Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
                 "NameIDQualifierString MatchFunctor rejecting NameQualifier (%s), should be (%s)",
                 val.m_NameQualifier.c_str(), m_matchNameQualifier.c_str()
                 );
@@ -145,7 +145,7 @@ bool NameIDQualifierStringFunctor::matches(const FilteringContext& filterContext
             auto_ptr_char req(filterContext.getAttributeRequester());
             if (req.get() && *req.get()) {
                 if (val.m_SPNameQualifier != req.get()) {
-                    Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+                    Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
                         "NameIDQualifierString MatchFunctor rejecting SPNameQualifier (%s), should be (%s)",
                         val.m_SPNameQualifier.c_str(), req.get()
                         );
@@ -153,7 +153,7 @@ bool NameIDQualifierStringFunctor::matches(const FilteringContext& filterContext
                 }
             }
             else {
-                Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
                     "NameIDQualifierString MatchFunctor rejecting SPNameQualifier (%s), attribute requester unknown",
                     val.m_SPNameQualifier.c_str()
                     );
@@ -161,7 +161,7 @@ bool NameIDQualifierStringFunctor::matches(const FilteringContext& filterContext
             }
         }
         else if (m_matchSPNameQualifier != val.m_SPNameQualifier) {
-            Category::getInstance(SHIBSP_LOGCAT".AttributeFilter").warn(
+            Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
                 "NameIDQualifierString MatchFunctor rejecting SPNameQualifier (%s), should be (%s)",
                 val.m_SPNameQualifier.c_str(), m_matchSPNameQualifier.c_str()
                 );

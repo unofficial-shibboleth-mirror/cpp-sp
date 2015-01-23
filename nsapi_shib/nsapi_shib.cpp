@@ -227,7 +227,7 @@ public:
   Request* m_rq;
 
   ShibTargetNSAPI(pblock* pb, ::Session* sn, Request* rq)
-      : AbstractSPRequest(SHIBSP_LOGCAT".NSAPI"),
+      : AbstractSPRequest(SHIBSP_LOGCAT ".NSAPI"),
         m_gotBody(false), m_firsttime(true), m_security_active(false), m_server_portnum(0), m_pb(pb), m_sn(sn), m_rq(rq) {
 
     // To determine whether SSL is active or not, we're supposed to rely

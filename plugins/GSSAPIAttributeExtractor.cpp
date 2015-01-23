@@ -111,7 +111,7 @@ namespace shibsp {
     {
     public:
         GSSAPIExtractor(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT".AttributeExtractor.GSSAPI")) {
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.GSSAPI")) {
             background_load();
         }
         ~GSSAPIExtractor() {

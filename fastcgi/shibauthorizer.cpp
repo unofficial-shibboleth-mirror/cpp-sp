@@ -72,7 +72,7 @@ public:
     map<string,string> m_request_headers;
 
     ShibTargetFCGIAuth(FCGX_Request* req, const char* scheme=nullptr, const char* hostname=nullptr, int port=0)
-            : AbstractSPRequest(SHIBSP_LOGCAT".FastCGI"), m_req(req) {
+            : AbstractSPRequest(SHIBSP_LOGCAT ".FastCGI"), m_req(req) {
         const char* server_name_str = hostname;
         if (!server_name_str || !*server_name_str)
             server_name_str = FCGX_GetParam("SERVER_NAME", req->envp);

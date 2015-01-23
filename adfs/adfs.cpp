@@ -124,7 +124,7 @@ namespace {
     {
     public:
         ADFSSessionInitiator(const DOMElement* e, const char* appId)
-            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.ADFS"), nullptr, &m_remapper), m_appId(appId), m_binding(WSFED_NS) {
+            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.ADFS"), nullptr, &m_remapper), m_appId(appId), m_binding(WSFED_NS) {
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -179,7 +179,7 @@ namespace {
         auto_ptr_XMLCh m_protocol;
     public:
         ADFSConsumer(const DOMElement* e, const char* appId)
-            : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT".SSO.ADFS")), m_protocol(WSFED_NS) {}
+            : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".SSO.ADFS")), m_protocol(WSFED_NS) {}
         virtual ~ADFSConsumer() {}
 
 #ifndef SHIBSP_LITE
@@ -208,7 +208,7 @@ namespace {
     {
     public:
         ADFSLogoutInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".LogoutInitiator.ADFS")), m_appId(appId), m_binding(WSFED_NS) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.ADFS")), m_appId(appId), m_binding(WSFED_NS) {
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -248,7 +248,7 @@ namespace {
     {
     public:
         ADFSLogout(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".Logout.ADFS")), m_login(e, appId) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Logout.ADFS")), m_login(e, appId) {
             m_initiator = false;
 #ifndef SHIBSP_LITE
             m_preserve.push_back("wreply");
@@ -566,7 +566,7 @@ XMLObject* ADFSDecoder::decode(string& relayState, const GenericRequest& generic
 #ifdef _DEBUG
     xmltooling::NDC ndc("decode");
 #endif
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".MessageDecoder.ADFS");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".MessageDecoder.ADFS");
 
     log.debug("validating input");
     const HTTPRequest* httpRequest=dynamic_cast<const HTTPRequest*>(&genericRequest);

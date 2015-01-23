@@ -108,7 +108,7 @@ bool IPRange::contains(const char* address) const
 bool IPRange::contains(const struct sockaddr* address) const
 {
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT".IPRange");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".IPRange");
 
     if (address->sa_family == AF_INET) {
         if (m_addressLength != 32)

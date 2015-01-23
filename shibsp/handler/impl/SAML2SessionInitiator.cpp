@@ -149,7 +149,7 @@ namespace shibsp {
 };
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT".SessionInitiator.SAML2"), &g_SINFilter, &m_remapper), m_appId(appId),
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAML2"), &g_SINFilter, &m_remapper), m_appId(appId),
         m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS)
 #ifdef SHIBSP_LITE
         ,m_ecp(false)
