@@ -124,7 +124,7 @@ namespace shibsp {
         typedef map< pair<xstring,xstring>,pair< boost::shared_ptr<AttributeDecoder>,vector<string> > > attrmap_t;
         attrmap_t m_attrMap;
         vector<string> m_attributeIds;
-        vector< tuple<xstring,xstring,bool> > m_requestedAttrs;
+        vector< boost::tuple<xstring,xstring,bool> > m_requestedAttrs;
 
         // settings for embedded assertions in metadata
         string m_policyId;
@@ -341,7 +341,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         bool requested = XMLHelper::getAttrBool(child, false, isRequested);
         bool required = XMLHelper::getAttrBool(child, false, RequestedAttribute::ISREQUIRED_ATTRIB_NAME);
         if (required || requested)
-            m_requestedAttrs.push_back(tuple<xstring,xstring,bool>(name,format,required));
+            m_requestedAttrs.push_back(boost::tuple<xstring,xstring,bool>(name,format,required));
 
         name = child->getAttributeNS(nullptr, _aliases);
         if (name && *name) {
@@ -387,7 +387,7 @@ void XMLExtractorImpl::generateMetadata(SPSSODescriptor& role) const
     static const XMLCh english[] = UNICODE_LITERAL_2(e,n);
     sn->setLang(english);
 
-    for (vector< tuple<xstring,xstring,bool> >::const_iterator i = m_requestedAttrs.begin(); i != m_requestedAttrs.end(); ++i) {
+    for (vector< boost::tuple<xstring,xstring,bool> >::const_iterator i = m_requestedAttrs.begin(); i != m_requestedAttrs.end(); ++i) {
         RequestedAttribute* req = RequestedAttributeBuilder::buildRequestedAttribute();
         svc->getRequestedAttributes().push_back(req);
         req->setName(i->get<0>().c_str());

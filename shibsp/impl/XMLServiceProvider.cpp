@@ -304,7 +304,7 @@ namespace {
 #ifndef SHIBSP_LITE
         scoped_ptr<TransactionLog> m_tranLog;
         scoped_ptr<SecurityPolicyProvider> m_policy;
-        vector< tuple<string,string,string> > m_transportOptions;
+        vector< boost::tuple<string,string,string> > m_transportOptions;
 #endif
         scoped_ptr<RequestMapper> m_requestMapper;
         map< string,boost::shared_ptr<Application> > m_appmap;
@@ -439,7 +439,7 @@ namespace {
 
         bool setTransportOptions(SOAPTransport& transport) const {
             bool ret = true;
-            for (vector< tuple<string,string,string> >::const_iterator opt = m_impl->m_transportOptions.begin();
+            for (vector< boost::tuple<string,string,string> >::const_iterator opt = m_impl->m_transportOptions.begin();
                     opt != m_impl->m_transportOptions.end(); ++opt) {
                 if (!transport.setProviderOption(opt->get<0>().c_str(), opt->get<1>().c_str(), opt->get<2>().c_str())) {
                     m_log.error("failed to set SOAPTransport option (%s)", opt->get<1>().c_str());
@@ -2194,7 +2194,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             string option(XMLHelper::getAttrString(child, nullptr, _option));
             auto_ptr_char value(child->getFirstChild()->getNodeValue());
             if (!provider.empty() && !option.empty() && value.get() && *value.get()) {
-                m_transportOptions.push_back(make_tuple(provider, option, string(value.get())));
+                m_transportOptions.push_back(boost::make_tuple(provider, option, string(value.get())));
             }
         }
         child = XMLHelper::getPreviousSiblingElement(child, TransportOption);

@@ -94,7 +94,7 @@ namespace shibsp {
         bool m_unicodeAware;
         map< string,boost::shared_ptr<Override> > m_map;
         vector< pair< boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > > m_regexps;
-        vector< tuple< string,boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > > m_queries;
+        vector< boost::tuple< string,boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > > m_queries;
 
     private:
         scoped_ptr<AccessControl> m_acl;
@@ -346,7 +346,7 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
         try {
             boost::shared_ptr<Override> o(new Override(m_unicodeAware, path, log, this));
             boost::shared_ptr<RegularExpression> re((v && *v) ? new RegularExpression(v) : nullptr);
-            m_queries.push_back(make_tuple(string(ntemp.get()), re, o));
+            m_queries.push_back(boost::make_tuple(string(ntemp.get()), re, o));
         }
         catch (XMLException& ex) {
             auto_ptr_char tmp(ex.getMessage());
@@ -418,7 +418,7 @@ const Override* Override::locate(const HTTPRequest& request) const
         CGIParser cgi(request, true);
         do {
             descended = false;
-            for (vector< tuple< string,boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > >::const_iterator q = o->m_queries.begin(); !descended && q != o->m_queries.end(); ++q) {
+            for (vector< boost::tuple< string,boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > >::const_iterator q = o->m_queries.begin(); !descended && q != o->m_queries.end(); ++q) {
                 pair<CGIParser::walker,CGIParser::walker> vals = cgi.getParameters(q->get<0>().c_str());
                 if (vals.first != vals.second) {
                     if (q->get<1>()) {

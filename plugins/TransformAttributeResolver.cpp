@@ -132,7 +132,7 @@ namespace shibsp {
         Category& m_log;
         string m_source;
         // dest id, regex to apply, replacement string
-        typedef tuple<string,boost::shared_ptr<RegularExpression>,const XMLCh*> regex_t;
+        typedef boost::tuple<string,boost::shared_ptr<RegularExpression>,const XMLCh*> regex_t;
         vector<regex_t> m_regex;
     };
 
@@ -168,7 +168,7 @@ TransformAttributeResolver::TransformAttributeResolver(const DOMElement* e)
                 try {
                     static XMLCh options[] = { chLatin_i, chNull };
                     boost::shared_ptr<RegularExpression> re(new RegularExpression(e->getAttributeNS(nullptr, match), (caseflag ? &chNull : options)));
-                    m_regex.push_back(make_tuple(destId, re, repl));
+                    m_regex.push_back(boost::make_tuple(destId, re, repl));
                 }
                 catch (XMLException& ex) {
                     auto_ptr_char msg(ex.getMessage());

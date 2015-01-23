@@ -233,7 +233,7 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
-                Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver."CHAINING_ATTRIBUTE_RESOLVER).info(
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver." CHAINING_ATTRIBUTE_RESOLVER).info(
                     "building AttributeResolver of type (%s)...", t.c_str()
                     );
                 auto_ptr<AttributeResolver> np(conf.AttributeResolverManager.newPlugin(t.c_str(), e));
@@ -241,7 +241,7 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
                 np.release();
             }
             catch (exception& ex) {
-                Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver."CHAINING_ATTRIBUTE_RESOLVER).error(
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver." CHAINING_ATTRIBUTE_RESOLVER).error(
                     "caught exception processing embedded AttributeResolver element: %s", ex.what()
                     );
             }
@@ -275,7 +275,7 @@ void ChainingAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
             context->getResolvedAssertions().clear();
         }
         catch (exception& ex) {
-            Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver."CHAINING_ATTRIBUTE_RESOLVER).error(
+            Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver." CHAINING_ATTRIBUTE_RESOLVER).error(
                 "caught exception applying AttributeResolver in chain: %s", ex.what()
                 );
         }

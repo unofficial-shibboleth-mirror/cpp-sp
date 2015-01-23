@@ -96,8 +96,8 @@ namespace shibsp {
             m_orgName,
             m_orgDisplayName,
             m_orgURL;
-        typedef tuple< string,xstring,boost::shared_ptr<AttributeDecoder> > contact_tuple_t;
-        typedef tuple< string,int,int,boost::shared_ptr<AttributeDecoder> > logo_tuple_t;
+        typedef boost::tuple< string,xstring,boost::shared_ptr<AttributeDecoder> > contact_tuple_t;
+        typedef boost::tuple< string,int,int,boost::shared_ptr<AttributeDecoder> > logo_tuple_t;
         vector<contact_tuple_t> m_contacts; // tuple is attributeID, contact type, decoder
         vector<logo_tuple_t> m_logos;       // tuple is attributeID, height, width, decoder
 

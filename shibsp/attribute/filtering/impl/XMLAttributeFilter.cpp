@@ -90,14 +90,14 @@ namespace shibsp {
         MatchFunctor* buildFunctor(
             const DOMElement* e, const FilterPolicyContext& functorMap, const char* logname, bool standalone
             );
-        tuple<string,const MatchFunctor*,const MatchFunctor*> buildAttributeRule(
+        boost::tuple<string,const MatchFunctor*,const MatchFunctor*> buildAttributeRule(
             const DOMElement* e, const FilterPolicyContext& permMap, const FilterPolicyContext& denyMap, bool standalone
             );
 
         Category& m_log;
         DOMDocument* m_document;
         vector<Policy> m_policies;
-        map< string,tuple<string,const MatchFunctor*,const MatchFunctor*> > m_attrRules;
+        map< string,boost::tuple<string,const MatchFunctor*,const MatchFunctor*> > m_attrRules;
         multimap<string,MatchFunctor*> m_policyReqRules;
         multimap<string,MatchFunctor*> m_permitValRules;
         multimap<string,MatchFunctor*> m_denyValRules;
@@ -194,14 +194,14 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
                 e = XMLHelper::getNextSiblingElement(e);
                 while (e) {
                     if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, AttributeRule)) {
-                        tuple<string,const MatchFunctor*,const MatchFunctor*> rule = buildAttributeRule(e, permFunctors, denyFunctors, false);
+                        boost::tuple<string,const MatchFunctor*,const MatchFunctor*> rule = buildAttributeRule(e, permFunctors, denyFunctors, false);
                         if (rule.get<1>() || rule.get<2>())
                             m_policies.back().m_rules.insert(Policy::rules_t::value_type(rule.get<0>(), make_pair(rule.get<1>(), rule.get<2>())));
                     }
                     else if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, AttributeRuleReference)) {
                         string ref(XMLHelper::getAttrString(e, nullptr, _ref));
                         if (!ref.empty()) {
-                            map< string,tuple<string,const MatchFunctor*,const MatchFunctor*> >::const_iterator ar = m_attrRules.find(ref);
+                            map< string,boost::tuple<string,const MatchFunctor*,const MatchFunctor*> >::const_iterator ar = m_attrRules.find(ref);
                             if (ar != m_attrRules.end()) {
                                 m_policies.back().m_rules.insert(
                                     Policy::rules_t::value_type(ar->second.get<0>(), make_pair(ar->second.get<1>(), ar->second.get<2>()))
@@ -261,7 +261,7 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
     return nullptr;
 }
 
-tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(
+boost::tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(
     const DOMElement* e, const FilterPolicyContext& permMap, const FilterPolicyContext& denyMap, bool standalone
     )
 {
@@ -269,12 +269,12 @@ tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buildAttrib
 
     if (standalone && id.empty()) {
         m_log.warn("skipping stand-alone AttributeRule with no id");
-        return tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
+        return boost::tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
     }
     else if (!id.empty() && m_attrRules.count(id)) {
         if (standalone) {
             m_log.warn("skipping duplicate stand-alone AttributeRule with id (%s)", id.c_str());
-            return tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
+            return boost::tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
         }
         else
             id.clear();
@@ -314,11 +314,11 @@ tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buildAttrib
 
     if (perm || deny) {
         if (!id.empty()) {
-            m_attrRules[id] = make_tuple(attrID, perm, deny);
+            m_attrRules[id] = boost::make_tuple(attrID, perm, deny);
             return m_attrRules[id];
         }
         else {
-            return make_tuple(attrID, perm, deny);
+            return boost::make_tuple(attrID, perm, deny);
         }
     }
 
@@ -326,7 +326,7 @@ tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buildAttrib
         m_log.warn("skipping AttributeRule (%s), permit and denial rule(s) invalid or missing", id.c_str());
     else
         m_log.warn("skipping AttributeRule, permit and denial rule(s) invalid or missing");
-    return tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
+    return boost::tuple<string,const MatchFunctor*,const MatchFunctor*>(string(),nullptr,nullptr);
 }
 
 void XMLFilterImpl::filterAttributes(const FilteringContext& context, vector<Attribute*>& attributes) const
