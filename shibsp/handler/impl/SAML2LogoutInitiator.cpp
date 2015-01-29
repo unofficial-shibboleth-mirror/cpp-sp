@@ -335,7 +335,8 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         const MessageEncoder* encoder = nullptr;
         for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
             auto_ptr_XMLCh wideb(b->c_str());
-            if (ep = EndpointManager<SingleLogoutService>(role->getSingleLogoutServices()).getByBinding(wideb.get())) {
+            ep = EndpointManager<SingleLogoutService>(role->getSingleLogoutServices()).getByBinding(wideb.get());
+            if (ep) {
                 map< string,boost::shared_ptr<MessageEncoder> >::const_iterator enc = m_encoders.find(*b);
                 if (enc != m_encoders.end())
                     encoder = enc->second.get();
