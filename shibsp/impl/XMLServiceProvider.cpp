@@ -594,10 +594,15 @@ XMLApplication::XMLApplication(
             log.warn("insecure cookieProps setting, set to \"https\" for SSL/TLS-only usage");
         }
         else if (strcmp(prop.second, "https")) {
-            if (!strstr(prop.second, ";secure") && !strstr(prop.second, "; secure"))
+            if (!strstr(prop.second, "secure"))
                 log.warn("custom cookieProps setting should include \"; secure\" for SSL/TLS-only usage");
-            else if (!strstr(prop.second, ";HttpOnly") && !strstr(prop.second, "; HttpOnly"))
+            else if (!strstr(prop.second, "HttpOnly"))
                 log.warn("custom cookieProps setting should include \"; HttpOnly\", site is vulnerable to client-side cookie theft");
+
+            while (*prop.second && isspace(*prop.second))
+                ++prop.second;
+            if (*prop.second != ';')
+                log.warn("custom cookieProps setting must begin with a semicolon (;) as a delimiter");
         }
 
         pair<bool,bool> handlerSSL = sessionProps->getBool("handlerSSL");
