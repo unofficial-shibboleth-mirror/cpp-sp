@@ -320,7 +320,13 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             format = &chNull;  // ignore default Format/Namespace values
 
         // Fetch/create the map entry and see if it's a duplicate rule.
-        pair< boost::shared_ptr<AttributeDecoder>,vector<string> >& decl = m_attrMap[pair<xstring,xstring>(name,format)];
+        // Trim the format and the name only if the format is the default (URI).
+        pair<xstring,xstring> entryKey(name,format);
+        if (*format == chNull) {
+            trim(entryKey.first);
+        }
+        trim(entryKey.second);
+        pair< boost::shared_ptr<AttributeDecoder>,vector<string> >& decl = m_attrMap[entryKey];
         if (decl.first) {
             m_log.warn("skipping duplicate Attribute mapping (same name and nameFormat)");
             child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
@@ -328,8 +334,8 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         }
 
         if (m_log.isInfoEnabled()) {
-            auto_ptr_char n(name);
-            auto_ptr_char f(format);
+            auto_ptr_char n(entryKey.first.c_str());
+            auto_ptr_char f(entryKey.second.c_str());
             m_log.info("creating mapping for Attribute %s%s%s", n.get(), *f.get() ? ", Format/Namespace:" : "", f.get());
         }
 
@@ -340,8 +346,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         // Check for isRequired/isRequested.
         bool requested = XMLHelper::getAttrBool(child, false, isRequested);
         bool required = XMLHelper::getAttrBool(child, false, RequestedAttribute::ISREQUIRED_ATTRIB_NAME);
-        if (required || requested)
-            m_requestedAttrs.push_back(boost::tuple<xstring,xstring,bool>(name,format,required));
+        if (required || requested) {
+            m_requestedAttrs.push_back(boost::tuple<xstring,xstring,bool>(entryKey.first, entryKey.second, required));
+        }
 
         name = child->getAttributeNS(nullptr, _aliases);
         if (name && *name) {
