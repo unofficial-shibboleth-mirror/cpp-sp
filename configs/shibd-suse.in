@@ -57,6 +57,9 @@ case "$1" in
         # Handle transition from root to non-root packages.
         chown -R $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@ 2>/dev/null || :
 		
+        # Adjust native logging directory permission so log roll-over works
+        chown wwwrun:www @-SHIRELOGDIR-@
+		
         echo -n "Starting $DESC ($NAME)"
         ## Start daemon with startproc(8). If this fails
         ## the echo return value is set appropriate.
