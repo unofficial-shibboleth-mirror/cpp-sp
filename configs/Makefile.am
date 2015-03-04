@@ -69,7 +69,8 @@ do-build-file:
 		-e 's:@-PKGWEBDIR-@:${pkgwebdir}:g' \
 		-e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
 		-e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
-		-e 's:@-PKGRUNDIR-@:${pkgrundir}:g'
+		-e 's:@-PKGRUNDIR-@:${pkgrundir}:g' \
+		-e 's:@-PKGCACHEDIR-@:${pkgcachedir}:g'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
 

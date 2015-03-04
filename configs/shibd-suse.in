@@ -55,7 +55,7 @@ case "$1" in
         [ -d @-PKGRUNDIR-@ ] || mkdir @-PKGRUNDIR-@
 
         # Handle transition from root to non-root packages.
-        chown -R $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@ 2>/dev/null || :
+        chown -R $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@ @-PKGCACHEDIR-@ 2>/dev/null || :
 		
         # Adjust native logging directory permission so log roll-over works
         chown wwwrun:www @-SHIRELOGDIR-@

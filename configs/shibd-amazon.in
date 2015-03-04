@@ -53,7 +53,7 @@ start() {
 	chown $SHIBD_USER:$SHIBD_USER $pidfile
 
 	# Handle transition from root to non-root packages.
-	chown -R $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@ 2>/dev/null || :
+    chown -R $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@ @-PKGCACHEDIR-@ 2>/dev/null || :
 	daemon --user $SHIBD_USER $shibd -p $pidfile -f -w 30
 
     # Adjust native logging directory permission so log roll-over works
