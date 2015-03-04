@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign dist-zip dist-bzip2
 ACLOCAL_AMFLAGS = -I m4
 
 include doxygen.am
