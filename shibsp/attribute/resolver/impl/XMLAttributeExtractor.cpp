@@ -320,12 +320,16 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             format = &chNull;  // ignore default Format/Namespace values
 
         // Fetch/create the map entry and see if it's a duplicate rule.
-        // Trim the format and the name only if the format is the default (URI).
-        pair<xstring,xstring> entryKey(name,format);
+        // Trim the format, or the name only if the format is the default (URI).
+        pair<xstring,xstring> entryKey;
         if (*format == chNull) {
-            trim(entryKey.first);
+            auto_ptr_XMLCh copyName(name);
+            entryKey.first = copyName.get();
+        } else {
+            entryKey.first = name;
+            auto_ptr_XMLCh copyFormat(format);
+            entryKey.second = copyFormat.get();
         }
-        trim(entryKey.second);
         pair< boost::shared_ptr<AttributeDecoder>,vector<string> >& decl = m_attrMap[entryKey];
         if (decl.first) {
             m_log.warn("skipping duplicate Attribute mapping (same name and nameFormat)");
@@ -355,7 +359,6 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             m_log.warn("attribute mapping rule (%s) uses deprecated aliases feature, consider revising", id.get());
             auto_ptr_char aliases(name);
             string dup(aliases.get());
-            trim(dup);
             set<string> new_aliases;
             split(new_aliases, dup, is_space(), algorithm::token_compress_on);
             set<string>::iterator ru = new_aliases.find("REMOTE_USER");
