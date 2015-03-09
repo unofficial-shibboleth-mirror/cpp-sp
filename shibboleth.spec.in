@@ -6,14 +6,14 @@ Group:		Productivity/Networking/Security
 Vendor:		Shibboleth Consortium
 License:	Apache 2.0
 URL:		http://shibboleth.net/
-Source:		%{name}-sp-%{version}.tar.gz
+Source:		%{name}-sp-%{version}.tar.bz2
 BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
 Requires:	openssl
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 PreReq:		xmltooling-schemas%{?_isa} >= 1.5.0, opensaml-schemas%{?_isa} >= 2.5.0
 %else
-PreReq:         xmltooling-schemas >= 1.5.0, opensaml-schemas >= 2.5.0
+PreReq:		xmltooling-schemas >= 1.5.0, opensaml-schemas >= 2.5.0
 %endif
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:		%{insserv_prereq} %{fillup_prereq}
@@ -258,13 +258,13 @@ fi
 	if [ "$1" -eq 0 ] ; then
 		/sbin/service shibd stop >/dev/null 2>&1
 		/sbin/chkconfig --del shibd
-		%{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
+		%{!?_without_builtinapache:/sbin/service httpd status 1>/dev/null && /sbin/service httpd restart 1>/dev/null}
 	fi
 %endif
 %if "%{_vendor}" == "suse"
 	%stop_on_removal shibd
 	if [ "$1" -eq 0 ] ; then
-		%{!?_without_builtinapache:/etc/init.d/apache2 status 1>/dev/null && /etc/init.d/apache2 restart 1>/dev/null}
+		%{!?_without_builtinapache:/sbin/service apache2 status 1>/dev/null && /sbin/service apache2 restart 1>/dev/null}
 	fi
 %endif
 exit 0
@@ -276,8 +276,8 @@ exit 0
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
 	# On upgrade, restart components if they're already running.
 	if [ "$1" -ge "1" ] ; then
-		/etc/init.d/shibd status 1>/dev/null && /etc/init.d/shibd restart 1>/dev/null
-		%{!?_without_builtinapache:/etc/init.d/httpd status 1>/dev/null && /etc/init.d/httpd restart 1>/dev/null}
+		/sbin/service shibd status 1>/dev/null && /sbin/service shibd restart 1>/dev/null
+		%{!?_without_builtinapache:/sbin/service httpd status 1>/dev/null && /sbin/service httpd restart 1>/dev/null}
 		exit 0
 	fi
 %endif
@@ -355,9 +355,11 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
-* Wed Feb 25 2015 Scott Cantor <cantor.2@osu.edu> - 2.5.4-1
+* Mon Mar 9 2015 Scott Cantor <cantor.2@osu.edu> - 2.5.4-1
 - Add Amazon VM support
 - Add a separate native logging directory
+- Remove hard-coded init.d usage
+- Switch to bz2 sources to prevent future issues with SuSE
 
 * Mon Nov 17 2014 Scott Cantor <cantor.2@osu.edu> - 2.5.3-2
 - Add libtool dep for OpenSUSE 13
