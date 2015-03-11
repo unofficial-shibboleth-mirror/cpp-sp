@@ -28,19 +28,19 @@
             <Directory Id='lib' Name='lib'>
               <Component Id='xercesc.dll' Guid='$(var.Xerces64Component)' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes'
-                      Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion).dll'/>
+                      Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)\Build\Win64\VC10\Release\xerces-c_$(var.XercesFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='xercescD.dll' Guid='$(var.Xerces64Componentd)' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes'
-                        Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(var.XercesFileVersion)D.dll'/>
+                        Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)\Build\Win64\VC10\Debug\xerces-c_$(var.XercesFileVersion)D.dll'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='XERCES.LICENSE' Guid='{12731F0B-681B-4154-9B02-BEB219954D44}' Win64='yes'>
                 <File KeyPath='yes' Name='XERCES.LICENSE'
-                    Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)-x86_64-windows-vc-10.0\LICENSE' />
+                    Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)\LICENSE' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->
