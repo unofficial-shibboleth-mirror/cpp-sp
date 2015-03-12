@@ -21,7 +21,7 @@ rebuild64: clean64 all64
 #
 Curl-x64.msm: Curl-x64.wixobj 
 	light Curl-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
 Curl-x64.wixobj: Curl-x64.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl-dll-zlib-dll.x64\libcurl5.dll $(BuildSP)\curl-$(CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll.x64\libcurl5d.dll
 	wixcop -indent:2 Curl-x64.wxs 
@@ -29,7 +29,7 @@ Curl-x64.wixobj: Curl-x64.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl
 
 Curl-x86.msm: Curl-x86.wixobj 
 	light Curl-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 Curl-x86.wixobj: Curl-x86.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl-dll-zlib-dll\libcurl5.dll $(BuildSP)\curl-$(CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll\libcurl5d.dll 
 	wixcop -indent:2 Curl-x86.wxs 
@@ -40,7 +40,7 @@ Curl-x86.wixobj: Curl-x86.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl
 #
 FastCGI-x86.msm: FastCGI-x86.wixobj 
 	light FastCGI-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 FastCGI-x86.wixobj: FastCGI-x86.wxs $(BuildSP)\fcgi-$(FastCGIVersion)-VC10\Win32\Release\libfcgi.dll  $(BuildSP)\fcgi-$(FastCGIVersion)-VC10\Win32\Debug\libfcgid.dll 
 	wixcop -indent:2 FastCGI-x86.wxs 
@@ -48,7 +48,7 @@ FastCGI-x86.wixobj: FastCGI-x86.wxs $(BuildSP)\fcgi-$(FastCGIVersion)-VC10\Win32
 
 FastCGI-x64.msm: FastCGI-x64.wixobj 
 	light FastCGI-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
 FastCGI-x64.wixobj: FastCGI-x64.wxs $(BuildSP)\fcgi-$(FastCGIVersion)-VC10\Win32\x64\Release\libfcgi.dll  $(BuildSP)\fcgi-$(FastCGIVersion)-VC10\Win32\x64\Debug\libfcgid.dll
 	wixcop -indent:2 FastCGI-x64.wxs 
@@ -59,11 +59,11 @@ FastCGI-x64.wixobj: FastCGI-x64.wxs $(BuildSP)\fcgi-$(FastCGIVersion)-VC10\Win32
 #
 Log4Shib-x64.msm: Log4Shib-x64.wixobj
 	light Log4Shib-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
 Log4Shib-x86.msm: Log4Shib-x86.wixobj
 	light Log4Shib-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 Log4Shib-x86.wixobj: Log4Shib-x86.wxs $(BuildSP)\log4shib-$(Log4ShibVersion)\msvc10\Debug\log4shib$(Log4ShibFileVersion)D.dll $(BuildSP)\log4shib-$(Log4ShibVersion)\msvc10\Release\log4shib$(Log4ShibFileVersion).dll
 	wixcop -indent:2 Log4Shib-x86.wxs 
@@ -78,11 +78,11 @@ Log4Shib-x64.wixobj: Log4Shib-x64.wxs $(BuildSP)\log4shib-$(Log4ShibVersion)\msv
 #
 OpenSAML-x86.msm: OpenSAML-x86.wixobj
 	light OpenSAML-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 OpenSAML-x64.msm: OpenSAML-x64.wixobj
 	light OpenSAML-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
 OpenSAML-x86.wixobj: OpenSAML-x86.wxs $(SolutionDir)..\cpp-xmltooling\Release\xmltooling$(XmlToolingFileVersion).dll  $(SolutionDir)..\cpp-xmltooling\Release\xmltooling-lite$(XmlToolingFileVersion).dll  $(SolutionDir)..\cpp-OpenSaml\Release\saml$(OpenSAMLFileVersion).dll $(SolutionDir)..\cpp-xmltooling\Debug\xmltooling$(XmlToolingFileVersion)d.dll  $(SolutionDir)..\cpp-xmltooling\Debug\xmltooling-lite$(XmlToolingFileVersion)d.dll  $(SolutionDir)..\cpp-OpenSaml\Debug\saml$(OpenSAMLFileVersion)d.dll
 	wixcop -indent:2 OpenSAML-x86.wxs 
@@ -105,11 +105,11 @@ OpenSAML-schemas.wixobj: OpenSAML-schemas.wxs
 #
 OpenSSL-x86.msm: OpenSSL-x86.wixobj
 	light OpenSSL-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 OpenSSL-x64.msm: OpenSSL-x64.wixobj
 	light OpenSSL-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
 OpenSSL-x86.wixobj: OpenSSL-x86.wxs  $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\libeay32_$(OpenSSLFileVersion).dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\ssleay32_$(OpenSSLFileVersion).dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\openssl.exe $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\libeay32_$(OpenSSLFileVersion)d.dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\ssleay32_$(OpenSSLFileVersion)d.dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\openssl.exe
 	wixcop -indent:2 OpenSSL-x86.wxs 
@@ -124,11 +124,11 @@ OpenSSL-x64.wixobj: OpenSSL-x64.wxs  $(BuildSP)\openssl-$(OpenSSLDirVersion)\out
 #
 Shibboleth-x86.msm: Shibboleth-x86.wixobj
 	light Shibboleth-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 Shibboleth-x64.msm: Shibboleth-x64.wixobj
 	light Shibboleth-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
 Shibboleth-x86.wixobj: Shibboleth-x86.wxs $(SolutionDir)\Release\shibsp$(ShibbolethDllFileVersion).dll $(SolutionDir)\Release\shibsp-lite$(ShibbolethDllFileVersion).dll $(SolutionDir)\Debug\shibsp$(ShibbolethDllFileVersion)d.dll $(SolutionDir)\Debug\shibsp-lite$(ShibbolethDllFileVersion)d.dll
 	wixcop -indent:2 Shibboleth-x86.wxs 
@@ -140,7 +140,6 @@ Shibboleth-x64.wixobj: Shibboleth-x64.wxs $(SolutionDir)\x64\Release\shibsp$(Shi
 
 Shibboleth-schemas.msm: Shibboleth-schemas.wixobj
 	light Shibboleth-schemas.wixobj
-	del ..\*.msi
 
 Shibboleth-schemas.wixobj: Shibboleth-schemas.wxs
 	wixcop -indent:2 Shibboleth-schemas.wxs 
@@ -152,17 +151,17 @@ Shibboleth-schemas.wixobj: Shibboleth-schemas.wxs
 #
 Xerces-x86.msm: Xerces-x86.wixobj
 	light Xerces-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 Xerces-x64.msm: Xerces-x64.wixobj
 	light Xerces-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
-Xerces-x86.wixobj: Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(XercesFileVersion).dll Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)-x86-windows-vc-10.0\bin\xerces-c_$(XercesFileVersion)D.dll
+Xerces-x86.wixobj: Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)\Build\Win32\VC10\Release\xerces-c_$(XercesFileVersion).dll Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)\Build\Win32\VC10\Debug\xerces-c_$(XercesFileVersion)D.dll
 	wixcop -indent:2 Xerces-x86.wxs 
 	candle Xerces-x86.wxs -dBuildDirectory=$(BuildSP) -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) -dXerces32Component=$(Xerces32Component) -dXerces32Componentd=$(Xerces32Componentd)
 
-Xerces-x64.wixobj: Xerces-x64.wxs $(BuildSP)\xerces-c-$(XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(XercesFileVersion).dll Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)-x86_64-windows-vc-10.0\bin\xerces-c_$(XercesFileVersion)D.dll
+Xerces-x64.wixobj: Xerces-x64.wxs $(BuildSP)\xerces-c-$(XercesVersion)\Build\Win64\VC10\Release\xerces-c_$(XercesFileVersion).dll Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)\Build\Win64\VC10\Debug\xerces-c_$(XercesFileVersion)D.dll
 	wixcop -indent:2 Xerces-x64.wxs 
 	candle Xerces-x64.wxs -dBuildDirectory=$(BuildSP) -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) -dXerces64Component=$(Xerces64Component) -dXerces64Componentd=$(Xerces64Componentd)
 
@@ -172,11 +171,11 @@ Xerces-x64.wixobj: Xerces-x64.wxs $(BuildSP)\xerces-c-$(XercesVersion)-x86_64-wi
 #
 XmlSec-x86.msm: XmlSec-x86.wixobj
 	light XmlSec-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 XmlSec-x64.msm: XmlSec-x64.wixobj
 	light XmlSec-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
 XmlSec-x86.wixobj: XmlSec-x86.wxs "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\xsec_$(XmlSecFileVersion).dll" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\c14n.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\checksig.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\cipher.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\siginf.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\templatesign.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Release No Xalan\txfmout.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\xsec_$(XmlSecFileVersion)D.dll" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\c14n.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\checksig.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\cipher.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\siginf.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\templatesign.exe" "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\VC10\Debug No Xalan\txfmout.exe" 
 	wixcop -indent:2 XmlSec-x86.wxs 
@@ -192,11 +191,11 @@ XmlSec-x64.wixobj: XmlSec-x64.wxs "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Bu
 
 zlib-x86.msm: zlib-x86.wixobj
 	light zlib-x86.wixobj
-	del ..\*.msi
+	del ..\*32*.msi
 
 zlib-x64.msm: zlib-x64.wixobj
 	light zlib-x64.wixobj
-	del ..\*.msi
+	del ..\*64*.msi
 
 zlib-x86.wixobj: zlib-x86.wxs $(BuildSP)\zlib-$(ZlibVersion)\Release\zlib$(ZlibFileVersion).dll $(BuildSP)\zlib-$(ZlibVersion)\Debug\zlib$(ZlibFileVersion)d.dll
 	wixcop -indent:2 zlib-x86.wxs 
