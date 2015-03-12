@@ -12,7 +12,7 @@ pkgcachedir = $(localstatedir)/cache/@PACKAGE_NAME@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgsysconf_DATA = \
 	shibd-redhat \
-    shibd-amazon \
+	shibd-amazon \
 	shibd-suse \
 	shibd-debian \
 	shibd-osx.plist \
@@ -143,7 +143,7 @@ CLEANFILES = \
 	apache22.config \
 	apache24.config \
 	shibd-redhat \
-    shibd-amazon \
+	shibd-amazon \
 	shibd-suse \
 	shibd-debian \
 	shibd-osx.plist \
@@ -158,7 +158,7 @@ EXTRA_DIST = \
 	apache22.config.in \
 	apache24.config.in \
 	shibd-redhat.in \
-    shibd-amazon.in \
+	shibd-amazon.in \
 	shibd-suse.in \
 	shibd-debian.in \
 	shibd-osx.plist.in \
