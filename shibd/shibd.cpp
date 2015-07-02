@@ -349,6 +349,13 @@ int main(int argc, char *argv[])
             fprintf(stderr, "getpwnam failed, check -u option\n");
             return -1;
         }
+#ifdef HAVE_INITGROUPS
+        // w/out initgroups/setgroups process retains supplementary groups
+        if (initgroups(pwd->pw_name, pwd->pw_gid) != 0) {
+            fprintf(stderr, "initgroups failed, check -u option\n");
+            return -1;
+        }
+#endif
         if (setuid(pwd->pw_uid) != 0) {
             fprintf(stderr, "setuid failed, check -u option\n");
             return -1;
