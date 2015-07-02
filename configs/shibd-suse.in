@@ -25,6 +25,7 @@ DAEMON=@-PREFIX-@/sbin/$NAME
 SCRIPTNAME=/etc/init.d/$NAME
 PID_FILE=@-PKGRUNDIR-@/shibd.pid
 SHIBD_USER=root
+SHIBD_UMASK=022
 DAEMON_OPTS=""
 
 # Force removal of socket
@@ -40,7 +41,9 @@ DAEMON_OPTS="$DAEMON_OPTS -p $PID_FILE"
 DAEMON_OPTS="$DAEMON_OPTS -w 30"
 
 [ -e /etc/sysconfig/$NAME ] && . /etc/sysconfig/$NAME
- 
+
+umask $SHIBD_UMASK
+
 # Exit if the package is not installed.
 test -x "$DAEMON" || exit 5
  

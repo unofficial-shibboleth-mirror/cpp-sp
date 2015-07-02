@@ -25,11 +25,14 @@
 
 shibd="@-PREFIX-@/sbin/shibd"
 SHIBD_USER=root
+SHIBD_UMASK=022
 prog=shibd
 pidfile=@-PKGRUNDIR-@/shibd.pid
 lockfile=/var/lock/subsys/$prog
 
 [ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
+
+umask $SHIBD_UMASK
 
 start() {
 	echo -n $"Starting $prog: "
