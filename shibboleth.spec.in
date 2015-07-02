@@ -20,6 +20,7 @@ PreReq:		%{insserv_prereq} %{fillup_prereq}
 BuildRequires:	libxerces-c-devel >= 3.1
 %else
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
+BuildRequires:	systemd
 BuildRequires:	xerces-c-devel >= 3.1
 %else
 BuildRequires:	libxerces-c-devel >= 3.1
@@ -60,6 +61,10 @@ Requires(preun): chkconfig, initscripts
 %if "%{_vendor}" == "suse"
 Requires(pre): pwdutils
 %{!?_without_builtinapache:BuildRequires: apache2-devel}
+%if 0%{?suse_version} >= 1210
+Requires: %{?systemd_requires}
+BuildRequires: systemd-rpm-macros
+%endif
 %endif
 
 %define runuser shibd
@@ -104,10 +109,18 @@ This package includes files needed for development with Shibboleth.
 %setup -n %{name}-sp-%{version}
 
 %build
+%if 0%{?suse_version} >= 1210
+	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_systemd:--enable-systemd} %{?shib_options}
+%else
+%if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
+	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_memcached:--with-memcached} %{!?_without_systemd:--enable-systemd} %{?shib_options}
+%else
 %if 0%{?centos_version} >= 600
 	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_memcached:--with-memcached} %{?shib_options}
 %else
 	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{?_with_memcached} %{?shib_options}
+%endif
+%endif
 %endif
 %{__make} pkgdocdir=%{pkgdocdir}
 
@@ -150,8 +163,17 @@ if [ "$APACHE_CONFIG" != "no" ] ; then
 	fi
 fi
 
-# Establish location of sysconfig file, if any.
+# Establish location of systemd file, if any.
+SYSTEMD_SHIBD="no"
+%if 0%{?suse_version} >= 1210 || 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
+	%{__mkdir} -p $RPM_BUILD_ROOT%{_unitdir}
+	echo "%attr(0444,-,-) %{_unitdir}/shibd.service >> rpm.filelist
+	SYSTEMD_SHIBD="$RPM_BUILD_ROOT%{_unitdir}/shibd.service"
+%endif
+
+# Otherwise, establish location of sysconfig file, if any.
 SYSCONFIG_SHIBD="no"
+if [ "$SYSTEMD_SHIBD" == "no" ] ; then
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
 	%{__mkdir} -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 	echo "%config(noreplace) %{_sysconfdir}/sysconfig/shibd" >> rpm.filelist
@@ -162,7 +184,36 @@ SYSCONFIG_SHIBD="no"
 	echo "%{_localstatedir}/adm/fillup-templates/sysconfig.shibd" >> rpm.filelist
 	SYSCONFIG_SHIBD="$RPM_BUILD_ROOT%{_localstatedir}/adm/fillup-templates/sysconfig.shibd"
 %endif
-if [ "$SYSCONFIG_SHIBD" != "no" ] ; then
+fi
+
+if [ "$SYSTEMD_SHIBD" != "no" ] ; then
+	# Populate the systemd file
+	cat > $SYSTEMD_SHIBD <<EOF
+[Unit]
+Description=Shibboleth Service Provider Daemon
+After=network.target
+Before=httpd.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=%{runuser}
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
+Environment=LD_LIBRARY_PATH=/opt/shibboleth/%{_lib}
+%endif
+ExecStart=%{_sbindir}/shibd -f -F
+StandardInput=null
+StandardOutput=null
+StandardError=journal
+TimeoutStopSec=5s
+TimeoutStartSec=90s
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+elif [ "$SYSCONFIG_SHIBD" != "no" ] ; then
 	# Populate the sysconfig file.
 	cat > $SYSCONFIG_SHIBD <<EOF
 # Shibboleth SP init script customization
@@ -182,14 +233,18 @@ EOF
 # Override OS-supplied libcurl
 export LD_LIBRARY_PATH=/opt/shibboleth/%{_lib}
 EOF
-		# Strip existing rpath to libcurl.
-		chrpath -d $RPM_BUILD_ROOT%{_sbindir}/shibd
-		chrpath -d $RPM_BUILD_ROOT%{_bindir}/mdquery
-		chrpath -d $RPM_BUILD_ROOT%{_bindir}/resolvertest
 	%endif
 fi
 
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
+	# Strip existing rpath to libcurl.
+	chrpath -d $RPM_BUILD_ROOT%{_sbindir}/shibd
+	chrpath -d $RPM_BUILD_ROOT%{_bindir}/mdquery
+	chrpath -d $RPM_BUILD_ROOT%{_bindir}/resolvertest
+%endif
+
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon" || "%{_vendor}" == "suse"
+if [ "$SYSTEMD_SHIBD" == "no" ] ; then
 	# %{_initddir} not yet in RHEL5, use deprecated %{_initrddir}
 	install -d -m 0755 $RPM_BUILD_ROOT%{_initrddir}
 	install -m 0755 $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibd-%{_vendor} $RPM_BUILD_ROOT%{_initrddir}/shibd
@@ -197,6 +252,7 @@ fi
 	install -d -m 0755 $RPM_BUILD_ROOT/%{_sbindir}
 	%{__ln_s} -f %{_initrddir}/shibd $RPM_BUILD_ROOT%{_sbindir}/rcshibd
 %endif
+fi
 %endif
 
 %check
@@ -209,6 +265,9 @@ fi
 getent group %{runuser} >/dev/null || groupadd -r %{runuser}
 getent passwd %{runuser} >/dev/null || useradd -r -g %{runuser} \
 	-d  %{_localstatedir}/run/shibboleth -s /sbin/nologin -c "Shibboleth SP daemon" %{runuser}
+%if 0%{?suse_version} >= 1210
+	%service_add_pre shibd.service
+%endif
 exit 0
 
 %post
@@ -221,14 +280,14 @@ cd %{_sysconfdir}/shibboleth
 if [ -f sp-key.pem ] ; then
 	%{__chown} %{runuser}:%{runuser} sp-key.pem sp-cert.pem 2>/dev/null || :
 else
-	sh ./keygen.sh -b -u %{runuser} -g %{runuser}
+	/bin/sh ./keygen.sh -b -u %{runuser} -g %{runuser}
 fi
 
 # Fix ownership of log files (even on new installs, if they're left from an older one).
 %{__chown} %{runuser}:%{runuser} %{_localstatedir}/log/shibboleth/* 2>/dev/null || :
 
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
-	if [ "$1" -gt "1" ] ; then
+	if [ $1 -gt 1 ] ; then
 		# On Red Hat with shib.conf installed, clean up old Alias commands
 		# by pointing them at new version-independent /usr/share/share tree.
 		# Any Aliases we didn't create we assume are custom files.
@@ -247,29 +306,48 @@ fi
 		fi
 	fi
 
-	# This adds the proper /etc/rc*.d links for the script
+%if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
+	# Initial prep for systemd
+	%systemd_post shibd.service
+%else
+	# Add the proper /etc/rc*.d links for the script
 	/sbin/chkconfig --add shibd
 %endif
+%endif
 %if "%{_vendor}" == "suse"
+%if 0%{?suse_version} >= 1210
+	%service_add_post shibd.service
+%else
 	# This adds the proper /etc/rc*.d links for the script
 	# and populates the sysconfig/shibd file.
 	cd /
 	%{fillup_only -n shibd}
 	%insserv_force_if_yast shibd
 %endif
+%endif
 
 %preun
 # On final removal, stop shibd and remove service, restart Apache if running.
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
-	if [ "$1" -eq 0 ] ; then
+%if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
+	%systemd_preun shibd.service
+%else
+	if [ $1 -eq 0 ] ; then
 		/sbin/service shibd stop >/dev/null 2>&1
 		/sbin/chkconfig --del shibd
+	fi
+%endif
+	if [ $1 -eq 0 ] ; then
 		%{!?_without_builtinapache:/sbin/service httpd status 1>/dev/null && /sbin/service httpd restart 1>/dev/null}
 	fi
 %endif
 %if "%{_vendor}" == "suse"
+%if 0%{?suse_version} >= 1210
+        %service_del_preun shibd.service
+%else
 	%stop_on_removal shibd
-	if [ "$1" -eq 0 ] ; then
+%endif
+	if [ $1 -eq 0 ] ; then
 		%{!?_without_builtinapache:/sbin/service apache2 status 1>/dev/null && /sbin/service apache2 restart 1>/dev/null}
 	fi
 %endif
@@ -281,22 +359,33 @@ exit 0
 %endif
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
 	# On upgrade, restart components if they're already running.
-	if [ "$1" -ge "1" ] ; then
+%if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
+	%systemd_postun_with_restart shibd.service
+%else
+	if [ $1 -ge 1 ] ; then
 		/sbin/service shibd status 1>/dev/null && /sbin/service shibd restart 1>/dev/null
+	fi
+%endif
+	if [ $1 -ge 1 ] ; then
 		%{!?_without_builtinapache:/sbin/service httpd status 1>/dev/null && /sbin/service httpd restart 1>/dev/null}
 		exit 0
 	fi
 %endif
 %if "%{_vendor}" == "suse"
+%if 0%{?suse_version} >= 1210
+	%service_del_postun shibd.service
+%else
 	cd / 
 	%restart_on_update shibd
-	%{!?_without_builtinapache:%restart_on_update apache2}
 	%{insserv_cleanup}
+%endif
+	%{!?_without_builtinapache:%restart_on_update apache2}
 %endif
 
 %posttrans
 # ugly hack if init script got removed during %postun by upgraded (buggy/2.1) package
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
+if [ -f %{_sysconfdir}/sysconfig/shibd ] ; then
 	if [ ! -f %{_initrddir}/shibd ] ; then
 		if [ -f %{_sysconfdir}/shibboleth/shibd-%{_vendor} ] ; then
 			%{__cp} -p %{_sysconfdir}/shibboleth/shibd-%{_vendor} %{_initrddir}/shibd
@@ -338,10 +427,17 @@ fi
 %config(noreplace) %{_sysconfdir}/shibboleth/*.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/*.html
 %config(noreplace) %{_sysconfdir}/shibboleth/*.logger
-%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon" || "%{_vendor}" == "suse"
+%if "%{_vendor}" == "redhat"
+%if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
+%else
 %config %{_initrddir}/shibd
 %endif
-%if "%{_vendor}" == "suse"
+%endif
+%if "%{_vendor}" == "amazon"
+%config %{_initrddir}/shibd
+%endif
+%if "%{_vendor}" == "suse" && 0%{?suse_version} < 1210
+%config %{_initrddir}/shibd
 %{_sbindir}/rcshibd
 %endif
 %{_sysconfdir}/shibboleth/*.dist
@@ -361,6 +457,9 @@ fi
 %doc %{pkgdocdir}/api
 
 %changelog
+* Thu Jul 2 2015 Scott Cantor <cantor.2@osu.edu> - 2.5.5-1
+- Revamp with systemd support for RH/CentOS 7+ and SUSE 12.1+
+
 * Mon Mar 9 2015 Scott Cantor <cantor.2@osu.edu> - 2.5.4-1
 - Add Amazon VM support
 - Add a separate native logging directory

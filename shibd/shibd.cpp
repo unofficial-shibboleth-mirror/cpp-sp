@@ -56,6 +56,19 @@
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 
+#ifdef HAVE_SD_NOTIFY
+#include <systemd/sd-daemon.h>
+#else
+#define SD_EMERG   ""
+#define SD_ALERT   ""
+#define SD_CRIT    ""
+#define SD_ERR     ""
+#define SD_WARNING ""
+#define SD_NOTICE  ""
+#define SD_INFO    ""
+#define SD_DEBUG   ""
+#endif
+
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
@@ -380,7 +393,7 @@ int main(int argc, char *argv[])
         (shar_checkonly ? SPConfig::RequestMapping : SPConfig::Logging)
         );
     if (!conf.init(shar_schemadir, shar_prefix)) {
-        fprintf(stderr, "configuration is invalid, check console for specific problems\n");
+        fprintf(stderr, SD_ERR "configuration is invalid, check console for specific problems\n");
         return -1;
     }
 
@@ -400,7 +413,7 @@ int main(int argc, char *argv[])
     }
 
     if (!conf.instantiate(shar_config)) {
-        fprintf(stderr, "configuration is invalid, check console for specific problems\n");
+        fprintf(stderr, SD_ERR "configuration is invalid, check console for specific problems\n");
         conf.term();
         return -2;
     }
@@ -411,7 +424,7 @@ int main(int argc, char *argv[])
         // Init the listener.
         ListenerService* listener = conf.getServiceProvider()->getListenerService();
         if (!listener->init(unlink_socket)) {
-            fprintf(stderr, "listener failed to initialize\n");
+            fprintf(stderr, SD_ERR "listener failed to initialize\n");
             conf.term();
             return -3;
         }
@@ -446,8 +459,11 @@ int main(int argc, char *argv[])
         }
 
         // Run the listener.
+#ifdef HAVE_SD_NOTIFY
+        sd_notify(0, "READY=1");
+#endif
         if (!listener->run(&shibd_shutdown)) {
-            fprintf(stderr, "listener failure during service\n");
+            fprintf(stderr, SD_ERR "listener failure during service\n");
             listener->term();
             conf.term();
             if (daemonize && pidfile)
@@ -456,7 +472,9 @@ int main(int argc, char *argv[])
         }
         listener->term();
     }
-
+#ifdef HAVE_SD_NOTIFY
+    sd_notify(0, "STOPPING=1");
+#endif
     conf.term();
     if (daemonize && pidfile)
         unlink(pidfile);

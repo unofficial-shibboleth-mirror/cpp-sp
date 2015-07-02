@@ -1,0 +1,21 @@
+[Unit]
+Description=Shibboleth Service Provider Daemon
+After=network.target
+Before=httpd.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=shibd
+#Environment=LD_LIBRARY_PATH=/opt/shibboleth/lib
+ExecStart=@-PREFIX-@/sbin/shibd -f -F
+StandardInput=null
+StandardOutput=null
+StandardError=journal
+TimeoutStopSec=5s
+TimeoutStartSec=90s
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
