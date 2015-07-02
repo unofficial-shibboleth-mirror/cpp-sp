@@ -26,7 +26,10 @@ SCRIPTNAME=/etc/init.d/$NAME
 PID_FILE=@-PKGRUNDIR-@/shibd.pid
 SHIBD_USER=root
 SHIBD_UMASK=022
+SHIBD_WAIT=30
 DAEMON_OPTS=""
+
+[ -e /etc/sysconfig/$NAME ] && . /etc/sysconfig/$NAME
 
 # Force removal of socket
 DAEMON_OPTS="$DAEMON_OPTS -f"
@@ -38,9 +41,7 @@ DAEMON_OPTS="$DAEMON_OPTS -c $SHIB_CONFIG"
 DAEMON_OPTS="$DAEMON_OPTS -p $PID_FILE"
 
 # Specify wait time to use
-DAEMON_OPTS="$DAEMON_OPTS -w 30"
-
-[ -e /etc/sysconfig/$NAME ] && . /etc/sysconfig/$NAME
+DAEMON_OPTS="$DAEMON_OPTS -w $SHIBD_WAIT"
 
 umask $SHIBD_UMASK
 

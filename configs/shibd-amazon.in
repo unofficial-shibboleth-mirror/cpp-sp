@@ -26,6 +26,7 @@
 shibd="@-PREFIX-@/sbin/shibd"
 SHIBD_USER=root
 SHIBD_UMASK=022
+SHIBD_WAIT=30
 prog=shibd
 pidfile=@-PKGRUNDIR-@/shibd.pid
 lockfile=/var/lock/subsys/$prog
@@ -57,7 +58,7 @@ start() {
 
 	# Handle transition from root to non-root packages.
 	chown -R $SHIBD_USER:$SHIBD_USER @-PKGRUNDIR-@ @-PKGCACHEDIR-@ 2>/dev/null || :
-	daemon --user $SHIBD_USER $shibd -p $pidfile -f -w 30
+	daemon --user $SHIBD_USER $shibd -p $pidfile -f -w $SHIBD_WAIT
 
 	RETVAL=$?
 	echo

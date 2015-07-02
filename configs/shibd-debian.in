@@ -24,11 +24,15 @@ DESC="Shibboleth 2 daemon"
 NAME=shibd
 SHIB_HOME=@-PREFIX-@
 SHIBSP_CONFIG=@-PKGSYSCONFDIR-@/shibboleth2.xml
+SHIBD_WAIT=30
 LD_LIBRARY_PATH=@-PREFIX-@/lib
 DAEMON=@-PREFIX-@/sbin/$NAME
 SCRIPTNAME=/etc/init.d/$NAME
 PIDFILE=@-PKGRUNDIR-@/$NAME.pid
 DAEMON_OPTS=""
+
+# Read configuration if it is present.
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 # Force removal of socket
 DAEMON_OPTS="$DAEMON_OPTS -f"
@@ -40,13 +44,10 @@ DAEMON_OPTS="$DAEMON_OPTS -c $SHIBSP_CONFIG"
 DAEMON_OPTS="$DAEMON_OPTS -p $PIDFILE"
 
 # Specify wait time to use
-DAEMON_OPTS="$DAEMON_OPTS -w 30"
+DAEMON_OPTS="$DAEMON_OPTS -w $SHIBD_WAIT"
 
 # Exit if the package is not installed.
 [ -x "$DAEMON" ] || exit 0
-
-# Read configuration if it is present.
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 # Get the setting of VERBOSE and other rcS variables.
 [ -f /etc/default/rcS ] && . /etc/default/rcS

@@ -169,6 +169,12 @@ if [ "$SYSCONFIG_SHIBD" != "no" ] ; then
 
 # User account for shibd
 SHIBD_USER=%{runuser}
+
+# Umask for shibd
+# SHIBD_UMASK=022
+
+# Wait period (secs) for configuration (and metadata) to load
+SHIBD_WAIT=30
 EOF
 	%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 		cat >> $SYSCONFIG_SHIBD <<EOF
