@@ -1860,10 +1860,16 @@ void* SSCache::cleanup_fn(void* p)
 
     // Load our configuration details...
     static const XMLCh cleanupInterval[] = UNICODE_LITERAL_15(c,l,e,a,n,u,p,I,n,t,e,r,v,a,l);
-    const XMLCh* tag=pcache->m_root ? pcache->m_root->getAttributeNS(nullptr, cleanupInterval) : nullptr;
+    const XMLCh* tag = pcache->m_root ? pcache->m_root->getAttributeNS(nullptr, cleanupInterval) : nullptr;
     int rerun_timer = 900;
     if (tag && *tag) {
-        rerun_timer = XMLString::parseInt(tag);
+        try {
+            rerun_timer = XMLString::parseInt(tag);
+        }
+        catch (XMLException&) {
+            pcache->m_log.error("cleanupInterval setting was not a numeric value");
+            rerun_timer = 0;
+        }
         if (rerun_timer <= 0)
             rerun_timer = 900;
     }

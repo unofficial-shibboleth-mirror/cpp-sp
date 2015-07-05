@@ -332,8 +332,14 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
     e = XMLHelper::getNextSiblingElement(e, RetryOnError);
     while (e) {
         if (e->hasChildNodes()) {
-            m_retries.push_back(XMLString::parseInt(e->getTextContent()));
-            m_log.info("will retry operations when native ODBC error (%ld) is returned", m_retries.back());
+            try {
+                int code = XMLString::parseInt(e->getTextContent());
+                m_retries.push_back(code);
+                m_log.info("will retry operations when native ODBC error (%d) is returned", code);
+            }
+            catch (XMLException&) {
+                m_log.error("skipping non-numeric ODBC retry code");
+            }
         }
         e = XMLHelper::getNextSiblingElement(e, RetryOnError);
     }
