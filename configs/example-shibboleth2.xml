@@ -225,7 +225,8 @@
 
         <!-- Example of remotely supplied batch of signed metadata. -->
         <!--
-        <MetadataProvider type="XML" uri="http://federation.org/federation-metadata.xml"
+        <MetadataProvider type="XML" validate="true"
+	      uri="http://federation.org/federation-metadata.xml"
               backingFilePath="federation-metadata.xml" reloadInterval="7200">
             <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
             <MetadataFilter type="Signature" certificate="fedsigner.pem"/>
@@ -238,7 +239,7 @@
 
         <!-- Example of locally maintained metadata. -->
         <!--
-        <MetadataProvider type="XML" file="partner-metadata.xml"/>
+        <MetadataProvider type="XML" validate="true" file="partner-metadata.xml"/>
         -->
 
         <!-- TrustEngines run in order to evaluate peer keys and certificates. -->
