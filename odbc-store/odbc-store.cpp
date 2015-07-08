@@ -513,8 +513,15 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
         }
         m_log.error("insert record failed (t=%s, c=%s, k=%s)", table, context, key);
         logres = log_error(stmt, SQL_HANDLE_STMT, "23000");
-        if (logres.second)
-            return false;   // supposedly integrity violation?
+        if (logres.second) {
+            // Supposedly integrity violation.
+            // Try and delete any expired record still hanging around until the final attempt.
+            if (attempts > 0) {
+                reap(table, context);
+                continue;
+            }
+            return false;
+        }
     } while (attempts && logres.first);
 
     throw IOException("ODBC StorageService failed to insert record.");
