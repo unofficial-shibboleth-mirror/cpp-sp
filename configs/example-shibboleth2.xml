@@ -244,7 +244,7 @@
 
         <!-- TrustEngines run in order to evaluate peer keys and certificates. -->
         <TrustEngine type="ExplicitKey"/>
-        <TrustEngine type="PKIX"/>
+        <!-- <TrustEngine type="PKIX"/> -->
 
         <!-- Map to extract attributes from SAML assertions. -->
         <AttributeExtractor type="XML" validate="true" reloadChanges="false" path="attribute-map.xml"/>
