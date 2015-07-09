@@ -6,7 +6,6 @@ pkgwebdir = $(datadir)/@PACKAGE_NAME@
 install-data-hook:
 	if test -d api ; then \
 		cp -r api $(DESTDIR)$(pkgdocdir); \
-		rm -rf `find $(DESTDIR)$(pkgdocdir)/api -name .svn`; \
 	fi;
 
 docfiles = \
@@ -25,4 +24,4 @@ pkgdoc_DATA = $(docfiles)
 
 pkgweb_DATA = $(webfiles)
 
-EXTRA_DIST = $(docfiles) $(webfiles) api
+EXTRA_DIST = $(docfiles) $(webfiles)
