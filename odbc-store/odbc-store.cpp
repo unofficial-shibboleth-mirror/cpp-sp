@@ -518,6 +518,7 @@ bool ODBCStorageService::createRow(const char* table, const char* context, const
             // Try and delete any expired record still hanging around until the final attempt.
             if (attempts > 0) {
                 reap(table, context);
+                logres.first = true;    // force it to treat as a retryable error
                 continue;
             }
             return false;
