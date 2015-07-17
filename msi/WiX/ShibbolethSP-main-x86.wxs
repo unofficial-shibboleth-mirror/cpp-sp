@@ -24,7 +24,7 @@
            Manufacturer='Shibboleth Consortium' InstallerVersion='300'/>
 
     <MajorUpgrade DowngradeErrorMessage='A later version of [ProductName] is already installed. Setup will now exit.'
-           MigrateFeatures='yes' Schedule='afterInstallExecute' />
+           MigrateFeatures='yes' Schedule='afterInstallExecute' AllowSameVersionUpgrades='yes'/>
 
     <PropertyRef Id='SHIB_OLDVERSION'/>
 
