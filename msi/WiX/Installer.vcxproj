@@ -46,22 +46,22 @@
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <NMakeBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) all32</NMakeBuildCommandLine>
+    <NMakeBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) all32</NMakeBuildCommandLine>
     <NMakeCleanCommandLine>del *86.wixobj
 del *86.msi
 del *.wixlib
 del *x86.wixpdb</NMakeCleanCommandLine>
-    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) rebuild32</NMakeReBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) rebuild32</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>
     </NMakePreprocessorDefinitions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NMakeBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) all64</NMakeBuildCommandLine>
+    <NMakeBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) all64</NMakeBuildCommandLine>
     <NMakeCleanCommandLine>del *64.wixobj
 del *64.msmi
 del *.wixlib
 del *64.wixpdb</NMakeCleanCommandLine>
-    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) rebuild64</NMakeReBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) rebuild64</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
   </PropertyGroup>
   <ItemDefinitionGroup>
