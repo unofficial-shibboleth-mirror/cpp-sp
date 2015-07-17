@@ -11,24 +11,24 @@ BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
 Requires:	openssl
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
-PreReq:		xmltooling-schemas%{?_isa} >= 1.5.0, opensaml-schemas%{?_isa} >= 2.5.0
+PreReq:		xmltooling-schemas%{?_isa} >= 1.5.5, opensaml-schemas%{?_isa} >= 2.5.5
 %else
-PreReq:		xmltooling-schemas >= 1.5.0, opensaml-schemas >= 2.5.0
+PreReq:		xmltooling-schemas >= 1.5.5, opensaml-schemas >= 2.5.5
 %endif
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:		%{insserv_prereq} %{fillup_prereq}
 BuildRequires:	libxerces-c-devel >= 3.1
 %else
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
-BuildRequires:	systemd
+BuildRequires:	systemd-devel, pkgconfig
 BuildRequires:	xerces-c-devel >= 3.1
 %else
 BuildRequires:	libxerces-c-devel >= 3.1
 %endif
 %endif
-BuildRequires:	libxml-security-c-devel >= 1.4.0
-BuildRequires:	libxmltooling-devel >= 1.5.0
-BuildRequires:	libsaml-devel >= 2.5.0
+BuildRequires:	libxml-security-c-devel >= 1.7.3
+BuildRequires:	libxmltooling-devel >= 1.5.5
+BuildRequires:	libsaml-devel >= 2.5.5
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.4}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
@@ -61,9 +61,9 @@ Requires(preun): chkconfig, initscripts
 %if "%{_vendor}" == "suse"
 Requires(pre): pwdutils
 %{!?_without_builtinapache:BuildRequires: apache2-devel}
+%{?systemd_requires}
 %if 0%{?suse_version} >= 1210
-Requires: %{?systemd_requires}
-BuildRequires: systemd-rpm-macros
+BuildRequires: systemd-rpm-macros, systemd-devel, pkgconfig
 %endif
 %endif
 
@@ -167,7 +167,7 @@ fi
 SYSTEMD_SHIBD="no"
 %if 0%{?suse_version} >= 1210 || 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
 	%{__mkdir} -p $RPM_BUILD_ROOT%{_unitdir}
-	echo "%attr(0444,-,-) %{_unitdir}/shibd.service >> rpm.filelist
+	echo "%attr(0444,-,-) %{_unitdir}/shibd.service" >> rpm.filelist
 	SYSTEMD_SHIBD="$RPM_BUILD_ROOT%{_unitdir}/shibd.service"
 %endif
 
@@ -309,6 +309,9 @@ fi
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
 	# Initial prep for systemd
 	%systemd_post shibd.service
+	if [ $1 -gt 1 ] ; then
+		systemctl daemon-reload
+	fi
 %else
 	# Add the proper /etc/rc*.d links for the script
 	/sbin/chkconfig --add shibd
@@ -383,17 +386,15 @@ exit 0
 %endif
 
 %posttrans
-# ugly hack if init script got removed during %postun by upgraded (buggy/2.1) package
-%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
-if [ -f %{_sysconfdir}/sysconfig/shibd ] ; then
-	if [ ! -f %{_initrddir}/shibd ] ; then
-		if [ -f %{_sysconfdir}/shibboleth/shibd-%{_vendor} ] ; then
-			%{__cp} -p %{_sysconfdir}/shibboleth/shibd-%{_vendor} %{_initrddir}/shibd
-			%{__chmod} 755 %{_initrddir}/shibd
-			/sbin/chkconfig --add shibd
-	fi
-fi
+# One-time extra restart of shibd and Apache to work around
+# SUSE bug that breaks old %restart_on_update macro.
+# If we remove, upgrades from pre-systemd to post-systemd
+# will stop doing the final restart.
+%if "%{_vendor}" == "suse" && 0%{?suse_version} >= 1210
+	/usr/bin/systemctl try-restart shibd >/dev/null 2>&1 || :
+	/usr/bin/systemctl try-restart apache2 >/dev/null 2>&1 || :
 %endif
+exit 0
 
 %files -f rpm.filelist
 %defattr(-,root,root,-)
