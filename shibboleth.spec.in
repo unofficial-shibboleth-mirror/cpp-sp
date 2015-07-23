@@ -67,6 +67,8 @@ BuildRequires: systemd-rpm-macros, systemd-devel, pkgconfig
 %endif
 %endif
 
+%{!?_tmpfilesdir:%global _tmpfilesdir /usr/lib/tmpfiles.d}
+
 %define runuser shibd
 %if "%{_vendor}" == "suse"
 %define pkgdocdir %{_docdir}/shibboleth
@@ -169,6 +171,13 @@ SYSTEMD_SHIBD="no"
 	%{__mkdir} -p $RPM_BUILD_ROOT%{_unitdir}
 	echo "%attr(0444,-,-) %{_unitdir}/shibd.service" >> rpm.filelist
 	SYSTEMD_SHIBD="$RPM_BUILD_ROOT%{_unitdir}/shibd.service"
+
+	# Get run directory created at boot time.
+	%{__mkdir} -p $RPM_BUILD_ROOT%{_tmpfilesdir}
+	echo "%attr(0444,-,-) %{_tmpfilesdir}/%{name}.conf" >> rpm.filelist
+	cat > $RPM_BUILD_ROOT%{_tmpfilesdir}/%{name}.conf <<EOF
+d /run/%{name} 755 %{runuser} %{runuser} -
+EOF
 %endif
 
 # Otherwise, establish location of sysconfig file, if any.
@@ -320,6 +329,7 @@ fi
 %if "%{_vendor}" == "suse"
 %if 0%{?suse_version} >= 1210
 	%service_add_post shibd.service
+	systemd-tmpfiles --create %{_tmpfilesdir}/%{name}.conf
 %else
 	# This adds the proper /etc/rc*.d links for the script
 	# and populates the sysconfig/shibd file.
@@ -441,6 +451,9 @@ exit 0
 %config %{_initrddir}/shibd
 %{_sbindir}/rcshibd
 %endif
+%if 0%{?suse_version} >= 1210 || 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
+%{_tmpfilesdir}/%{name}.conf
+%endif
 %{_sysconfdir}/shibboleth/*.dist
 %{_sysconfdir}/shibboleth/apache*.config
 %{_sysconfdir}/shibboleth/shibd-*
@@ -458,6 +471,9 @@ exit 0
 %doc %{pkgdocdir}/api
 
 %changelog
+* Thu Jul 23 2015 Scott Cantor <cantor.2@osu.edu> - 2.5.5-2
+- Fix use of /var/run/shibboleth on newer tmpfs platforms
+
 * Thu Jul 2 2015 Scott Cantor <cantor.2@osu.edu> - 2.5.5-1
 - Revamp with systemd support for RH/CentOS 7+ and SUSE 12.1+
 
