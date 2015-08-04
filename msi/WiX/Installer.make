@@ -1,8 +1,8 @@
 all: all32 all64
 
-all32: shibboleth-sp-$(ShibbolethVersion)-win32.msi
+all32: shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win32.msi
 
-all64: shibboleth-sp-$(ShibbolethVersion)-win64.msi
+all64: shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win64.msi
 
 clean32: 
 	del *-x86.msi *-x86.wixobj *-x86.wixpdb *schemas.wixobj Shibboleth.wixlib
@@ -19,12 +19,12 @@ rebuild64: clean64 all64
 #
 # MSI
 #
-shibboleth-sp-$(ShibbolethVersion)-win32.msi: ShibbolethSP-main-x86.wixobj Shibboleth.wixlib
-	light -sw1055 -sice:ICE82 -o shibboleth-sp-$(ShibbolethVersion)-win32.msi ShibbolethSP-main-x86.wixobj Shibboleth.wixlib -ext WixUtilExtension.dll -ext WixUIExtension  -ext WixIISExtension
+shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win32.msi: ShibbolethSP-main-x86.wixobj Shibboleth.wixlib
+	light -sw1055 -sice:ICE82 -o shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win32.msi ShibbolethSP-main-x86.wixobj Shibboleth.wixlib -ext WixUtilExtension.dll -ext WixUIExtension  -ext WixIISExtension
 	del shibboleth-sp-$(ShibbolethVersion)-win64.msi
 
-shibboleth-sp-$(ShibbolethVersion)-win64.msi: ShibbolethSP-main-x64.wixobj ShibbolethSP-exe-x64.wixobj ShibbolethSP-registry-x64.wixobj  Shibboleth.wixlib
-	light -sw1055 -sice:ICE82 -o shibboleth-sp-$(ShibbolethVersion)-win64.msi ShibbolethSP-main-x64.wixobj ShibbolethSP-exe-x64.wixobj ShibbolethSP-registry-x64.wixobj  Shibboleth.wixlib -ext WixUtilExtension.dll -ext WixUIExtension -ext WixIISExtension
+shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win64.msi: ShibbolethSP-main-x64.wixobj ShibbolethSP-exe-x64.wixobj ShibbolethSP-registry-x64.wixobj  Shibboleth.wixlib
+	light -sw1055 -sice:ICE82 -o shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win64.msi ShibbolethSP-main-x64.wixobj ShibbolethSP-exe-x64.wixobj ShibbolethSP-registry-x64.wixobj  Shibboleth.wixlib -ext WixUtilExtension.dll -ext WixUIExtension -ext WixIISExtension
 
 #
 # Library
