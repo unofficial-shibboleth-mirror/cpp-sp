@@ -14,6 +14,9 @@
 *.#*
 .*.swp
 .DS_store
+Debug
+Release
+x64
 # Simulated Subversion default ignores end here
 # The contents of the svn:ignore property on the branch root.
 /aclocal.m4
@@ -38,10 +41,6 @@
 /.cproject
 /.project
 /*.suo
-/Debug
-/debug
-/Release
-/x64
 /Portfile
 /pkginfo
 /*.gz
