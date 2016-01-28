@@ -1168,7 +1168,7 @@ bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* 
             auto_arrayptr<XMLCh> trans(fromUTF8(v->c_str()));
             if (re->matches(trans.get())) {
                 if (request.isPriorityEnabled(SPRequest::SPDebug))
-                    request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": acccepted");
+                    request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": accepted");
                 return true;
             }
         }

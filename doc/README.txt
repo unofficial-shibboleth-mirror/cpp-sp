@@ -14,7 +14,7 @@ IdP in Java and the SP (this software) in C++.
 Source and binary distributions are available from
 http://shibboleth.net/downloads/
 
-The source is available in Subversion, as described in the Shibboleth
+The source is available in Git, as described in the Shibboleth
 site. Mailing lists and a bug database (https://issues.shibboleth.net/) are
 also available.
 

@@ -1030,7 +1030,7 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
         if (!strcmp(param, "wsignin1.0"))
             return m_login.run(request, isHandler);
         else if (strcmp(param, "wsignout1.0") && strcmp(param, "wsignoutcleanup1.0"))
-            throw FatalProfileException("Unsupported WS-Federation action paremeter ($1).", params(1, param));
+            throw FatalProfileException("Unsupported WS-Federation action parameter ($1).", params(1, param));
     }
     else if (strcmp(request.getMethod(),"GET") || !request.getParameter("notifying"))
         throw FatalProfileException("Unsupported request to ADFS protocol endpoint.");
