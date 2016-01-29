@@ -344,18 +344,28 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
         e = XMLHelper::getNextSiblingElement(e, RetryOnError);
     }
 
-    // Initialize the cleanup thread
-    shutdown_wait.reset(CondWait::create());
-    cleanup_thread = Thread::create(&cleanup_fn, (void*)this);
+    if (m_cleanupInterval > 0) {
+        // Initialize the cleanup thread
+        shutdown_wait.reset(CondWait::create());
+        cleanup_thread = Thread::create(&cleanup_fn, (void*)this);
+    }
+    else {
+        m_log.info("no cleanup interval configured, no cleanup thread will be started");
+    }
 }
 
 ODBCStorageService::~ODBCStorageService()
 {
     shutdown = true;
-    shutdown_wait->signal();
-    cleanup_thread->join(nullptr);
-    if (m_henv != SQL_NULL_HANDLE)
+    if (shutdown_wait.get()) {
+        shutdown_wait->signal();
+    }
+    if (cleanup_thread) {
+        cleanup_thread->join(nullptr);
+    }
+    if (m_henv != SQL_NULL_HANDLE) {
         SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
+    }
 }
 
 pair<bool,bool> ODBCStorageService::log_error(SQLHANDLE handle, SQLSMALLINT htype, const char* checkfor)
