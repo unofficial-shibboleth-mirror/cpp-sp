@@ -587,20 +587,20 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         }
 
         // If relay state is set, recover the original return URL.
-        if (!relayState.empty())
+        if (!relayState.empty()) {
             recoverRelayState(application, request, response, relayState);
+        }
 
         // Check for partial logout.
+        bool wasPartial = false;
         const StatusCode* sc = logoutResponse->getStatus() ? logoutResponse->getStatus()->getStatusCode() : nullptr;
         sc = sc ? sc->getStatusCode() : nullptr;
         if (sc && XMLString::equals(sc->getValue(), StatusCode::PARTIAL_LOGOUT)) {
-            if (logout_event)
-                application.getServiceProvider().getTransactionLog()->write(*logout_event);
-            return sendLogoutPage(application, request, response, "partial");
+            wasPartial = true;
         }
 
         if (logout_event) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_GLOBAL;
+            logout_event->m_logoutType = wasPartial ? LogoutEvent::LOGOUT_EVENT_PARTIAL : LogoutEvent::LOGOUT_EVENT_GLOBAL;
             application.getServiceProvider().getTransactionLog()->write(*logout_event);
         }
 
@@ -610,7 +610,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         }
 
         // Return template for completion of logout.
-        return sendLogoutPage(application, request, response, "global");
+        return sendLogoutPage(application, request, response, wasPartial ? "partial" : "global");
     }
 
     FatalProfileException ex("Incoming message was not a samlp:LogoutRequest or samlp:LogoutResponse.");
