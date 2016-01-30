@@ -92,9 +92,10 @@ namespace shibsp {
         string m_dir;
         bool m_cacheToClient;
 #ifndef SHIBSP_LITE
-        // A queue of feed files, linked to the last time of "access".
+        // Application-specific queues of feed files, linked to the last time of "access".
         // Each filename is also a cache tag.
-        mutable queue< pair<string,time_t> > m_feedQueue;
+        typedef queue< pair<string, time_t> > feedqueue_t;
+        mutable map<string,feedqueue_t> m_feedQueues;
         scoped_ptr<Mutex> m_feedLock;
 #endif
     };
@@ -142,10 +143,12 @@ DiscoveryFeed::~DiscoveryFeed()
         // Remove any files unused for more than a couple of minutes.
         // Anything left will be orphaned, but that shouldn't happen too often.
         time_t now = time(nullptr);
-        while (!m_feedQueue.empty() && now - m_feedQueue.front().second > 120) {
-            string fname = m_dir + '/' + m_feedQueue.front().first + ".json";
-            remove(fname.c_str());
-            m_feedQueue.pop();
+        for (map<string, feedqueue_t>::iterator i = m_feedQueues.begin(); i != m_feedQueues.end(); ++i) {
+            while (!i->second.empty() && now - i->second.front().second > 120) {
+                string fname = m_dir + '/' + i->second.front().first + ".json";
+                remove(fname.c_str());
+                i->second.pop();
+            }
         }
     }
 #endif
@@ -157,8 +160,9 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
         SPConfig& conf = SPConfig::getConfig();
 
         string s;
-        if (m_cacheToClient)
+        if (m_cacheToClient) {
             s = request.getHeader("If-None-Match");
+        }
 
         if (conf.isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
@@ -215,7 +219,7 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
             return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_NOTMODIFIED));
         }
 
-        string fname = m_dir + '/' + s + ".json";
+        string fname = m_dir + '/' + request.getApplication().getHash() + '_' + s + ".json";
         ifstream feed(fname.c_str());
         if (!feed)
             throw ConfigurationException("Unable to access cached feed in ($1).", params(1,fname.c_str()));
@@ -294,15 +298,16 @@ void DiscoveryFeed::feedToFile(const Application& application, string& cacheTag)
     time_t now = time(nullptr);
 
     // Clean up any old files.
-    while (m_feedQueue.size() > 1 && (now - m_feedQueue.front().second > 120)) {
-        string fname = m_dir + '/' + m_feedQueue.front().first + ".json";
+    feedqueue_t q = m_feedQueues[application.getId()];
+    while (q.size() > 1 && (now - q.front().second > 120)) {
+        string fname = m_dir + '/' + application.getHash() + '_' + q.front().first + ".json";
         remove(fname.c_str());
-        m_feedQueue.pop();
+        q.pop();
     }
 
-    if (m_feedQueue.empty() || m_feedQueue.back().first != feedTag) {
+    if (q.empty() || q.back().first != feedTag) {
         // We're out of date.
-        string fname = m_dir + '/' + feedTag + ".json";
+        string fname = m_dir + '/' + application.getHash() + '_' + feedTag + ".json";
         ofstream ofile(fname.c_str());
         if (!ofile)
             throw ConfigurationException("Unable to create feed in ($1).", params(1,fname.c_str()));
@@ -312,11 +317,11 @@ void DiscoveryFeed::feedToFile(const Application& application, string& cacheTag)
         else
             ofile << "[\n]";
         ofile.close();
-        m_feedQueue.push(make_pair(feedTag, now));
+        q.push(make_pair(feedTag, now));
     }
     else {
         // Update the back of the queue.
-        m_feedQueue.back().second = now;
+        q.back().second = now;
     }
 #else
     throw ConfigurationException("Build does not support discovery feed.");
