@@ -191,26 +191,11 @@ dnl Systemd will be disabled by default and requires you to run configure with
 dnl --enable-systemd to look for and enable systemd.
 AC_ARG_ENABLE(systemd,
     AS_HELP_STRING([--enable-systemd],[Build with systemd (Default = no)]),
-	[if test "x$enableval" = "x" ; then
-         WANT_SYSTEMD=no
-	 else
-	     WANT_SYSTEMD="$enableval"
-	 fi
-	],[ WANT_SYSTEMD=no ])
-AC_MSG_CHECKING(whether to build with systemd)
-
-AC_MSG_RESULT($WANT_SYSTEMD)
-if test "$WANT_SYSTEMD" = "yes" ; then
-	AC_CHECK_HEADER([systemd/sd-daemon.h], [
-	    AC_CHECK_LIB([systemd-daemon], [sd_notify], [hassdnotify="y"])])
-	AS_IF([test "x$hassdnotify=" = x], [
-	   AC_MSG_ERROR([Unable to find a suitable libsystemd-daemon library])
-	])
-	AC_DEFINE([HAVE_SD_NOTIFY],[1],[Define to 1 if you have the sd_notify function.])
-	PKG_CHECK_MODULES([SYSTEMD], [libsystemd-daemon])
-	AC_SUBST([SYSTEMD_CFLAGS])
-	AC_SUBST([SYSTEMD_LIBS])
-fi
+    [AS_IF([test "x$enableval" != xno],
+        [PKG_CHECK_MODULES([SYSTEMD],[libsystemd],,[PKG_CHECK_MODULES([SYSTEMD],[libsystemd-daemon])])
+	 # because in systemd 209 the libraries were merged into a single libsystemd.
+	 # sd_notify() is always present, no need to check for it:
+         AC_DEFINE([HAVE_SD_NOTIFY],[1],[Define to 1 if you have the sd_notify function.])])])
 
 #
 # Build NSAPI module?
