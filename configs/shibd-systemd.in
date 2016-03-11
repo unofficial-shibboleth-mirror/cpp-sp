@@ -1,5 +1,7 @@
 [Unit]
 Description=Shibboleth Service Provider Daemon
+Documentation=man:shibd(8)
+Documentation=https://wiki.shibboleth.net/confluence/display/SP3/Home
 After=network.target
 Before=httpd.service
 
