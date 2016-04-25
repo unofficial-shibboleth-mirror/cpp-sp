@@ -1,7 +1,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-# VisualStudioVersion = 14.0.24720.0
-# MinimumVisualStudioVersion = 10.0.40219.1
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server Modules", "Server Modules", "{26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Extensions", "Extensions", "{96AE4FC9-45EF-4C18-9F3B-EDA439E26E4C}"
@@ -328,14 +328,17 @@ Global
 		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Debug|Win32.ActiveCfg = Debug|Win32
 		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Debug|Win32.Build.0 = Debug|Win32
 		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Debug|x64.ActiveCfg = Debug|x64
-		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Debug|x64.Build.0 = Debug|Win32
+		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Debug|x64.Build.0 = Debug|x64
 		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Release|Win32.ActiveCfg = Release|Win32
 		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Release|Win32.Build.0 = Release|Win32
 		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Release|x64.ActiveCfg = Release|x64
+		{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}.Release|x64.Build.0 = Release|x64
 		{C2B1BB79-C88B-42B4-9AEC-170F91910F70}.Debug|Win32.ActiveCfg = Debug|Win32
 		{C2B1BB79-C88B-42B4-9AEC-170F91910F70}.Debug|Win32.Build.0 = Debug|Win32
 		{C2B1BB79-C88B-42B4-9AEC-170F91910F70}.Debug|x64.ActiveCfg = Debug|x64
+		{C2B1BB79-C88B-42B4-9AEC-170F91910F70}.Debug|x64.Build.0 = Debug|x64
 		{C2B1BB79-C88B-42B4-9AEC-170F91910F70}.Release|Win32.ActiveCfg = Release|Win32
+		{C2B1BB79-C88B-42B4-9AEC-170F91910F70}.Release|Win32.Build.0 = Release|Win32
 		{C2B1BB79-C88B-42B4-9AEC-170F91910F70}.Release|x64.ActiveCfg = Release|x64
 		{C2B1BB79-C88B-42B4-9AEC-170F91910F70}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
