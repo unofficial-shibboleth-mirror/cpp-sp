@@ -10,10 +10,16 @@
 *.pyc
 *.pyo
 *.rej
+*.msm
+*.wixobj
+*.wixpdb
+*.msi
+*.wixlib
 *~
 *.#*
 .*.swp
 .DS_store
+*.vcxproj.user
 Debug
 Release
 x64
