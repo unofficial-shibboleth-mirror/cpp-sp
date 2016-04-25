@@ -71,7 +71,9 @@ del *64.wixpdb</NMakeCleanCommandLine>
     <None Include="Installer.make" />
     <None Include="license.rtf" />
     <None Include="ShibbolethSP-defs-x86.wxi" />
-    <None Include="ShibbolethSP-exe-x64.wxs" />
+    <None Include="ShibbolethSP-exe-x64.wxs">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="ShibbolethSP-exe-x86.wxs" />
     <None Include="ShibbolethSP-gui.wxs" />
     <None Include="ShibbolethSP-install-dlg.wxs" />

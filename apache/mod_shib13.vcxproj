@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -117,7 +117,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>xerces-c_3.lib;ApacheCore.lib;xmltooling-lite1.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\$(Configuration);$(Apache13Root)\libexec;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\Build\VC10\$(Configuration);$(Apache13Root)\libexec;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -149,7 +149,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>xerces-c_3.lib;ApacheCore.lib;xmltooling-lite1.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -181,7 +181,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>xerces-c_3D.lib;ApacheCore.lib;xmltooling-lite1D.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\$(Configuration);$(Apache13Root)\libexec;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\Build\VC10\$(Configuration);$(Apache13Root)\libexec;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -213,7 +213,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>xerces-c_3D.lib;ApacheCore.lib;xmltooling-lite1D.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
