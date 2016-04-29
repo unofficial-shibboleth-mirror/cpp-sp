@@ -104,7 +104,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>log4shib1.lib;saml2.lib;xmltooling1.lib;xerces-c_3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-opensaml\$(Configuration);..\..\cpp-xmltooling\Build\VC10\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\cpp-opensaml\Build\VC10\$(Configuration);..\..\cpp-xmltooling\Build\VC10\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -133,7 +133,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>log4shib1.lib;saml2.lib;xmltooling1.lib;xerces-c_3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-opensaml\$(Platform)\$(Configuration);..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\cpp-opensaml\Build\VC10\$(Platform)\$(Configuration);..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
@@ -161,7 +161,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>log4shib1D.lib;saml2D.lib;xmltooling1D.lib;xerces-c_3D.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-opensaml\$(Configuration);..\..\cpp-xmltooling\Build\VC10\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\cpp-opensaml\Build\VC10\$(Configuration);..\..\cpp-xmltooling\Build\VC10\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
@@ -190,7 +190,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>log4shib1D.lib;saml2D.lib;xmltooling1D.lib;xerces-c_3D.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-opensaml\$(Platform)\$(Configuration);..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\cpp-opensaml\Build\VC10\$(Platform)\$(Configuration);..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>

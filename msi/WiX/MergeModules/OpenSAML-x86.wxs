@@ -26,7 +26,7 @@
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Release\'>
+            <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Build\$(var.ShibbolethMsVersion)\Release\'>
               <Component Id='saml.dll' Guid='$(var.SamlComponent32)'>
                 <File KeyPath='yes' Checksum='yes' Name='saml$(var.OpenSAMLFileVersion).dll' />
               </Component>
@@ -39,7 +39,7 @@
               <Component Id='xmltooling_lite.dll' Guid='$(var.XMLToolingLiteComponent32)'>
                 <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll' />
               </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Debug\'>
+              <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Build\$(var.ShibbolethMsVersion)\Debug\'>
                 <Component Id='samlD.dll' Guid='$(var.SamlComponent32d)'>
                   <File KeyPath='yes' Checksum='yes' Name='saml$(var.OpenSAMLFileVersion)D.dll' />
                 </Component>
