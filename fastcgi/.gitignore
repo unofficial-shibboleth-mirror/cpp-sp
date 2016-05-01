@@ -1,9 +1,3 @@
-/*.user
-/shibauthorizer-Release
-/shibresponder-Release
-/shibresponder-Debug
-/shibauthorizer-Debug
-/x64
 /.deps
 /Makefile.in
 /Makefile

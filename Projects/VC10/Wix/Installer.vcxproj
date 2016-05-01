@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -36,55 +36,59 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <Import Project="..\..\..\BuildPath.props" />
+  <Import Project="..\..\..\..\BuildPath.props" />
   <Import Project="$(ParentRoot)\Versions.props" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <NMakeBuildCommandLine>nmake /f Installer.make clean</NMakeBuildCommandLine>
+    <NMakeBuildCommandLine>cd ..\..\..\msi\Wix\
+nmake /f Installer.make clean</NMakeBuildCommandLine>
     <NMakeCleanCommandLine>del *.wixobj *.msi *.wixlib</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>nmake /f Installer.make clean</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;_DEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <NMakeBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) all32</NMakeBuildCommandLine>
-    <NMakeCleanCommandLine>del *86.wixobj
+    <NMakeBuildCommandLine>cd ..\..\..\msi\Wix\
+nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir)..\..\ ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) all32</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>cd ..\..\..\msi\Wix\
+del *86.wixobj
 del *86.msi
 del *.wixlib
 del *x86.wixpdb</NMakeCleanCommandLine>
-    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) rebuild32</NMakeReBuildCommandLine>
+    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir)..\..\ ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId32=$(ShibbolethId32) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId32=$(ShibbolethId32) rebuild32</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>
     </NMakePreprocessorDefinitions>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NMakeBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) all64</NMakeBuildCommandLine>
-    <NMakeCleanCommandLine>del *64.wixobj
+    <NMakeBuildCommandLine>cd ..\..\..\msi\Wix\
+nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir)..\..\ ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) all64</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>cd ..\..\..\msi\Wix\
+del *64.wixobj
 del *64.msmi
 del *.wixlib
 del *64.wixpdb</NMakeCleanCommandLine>
-    <NMakeReBuildCommandLine>nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir) ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) rebuild64</NMakeReBuildCommandLine>
+    <NMakeReBuildCommandLine>cd ..\..\..\msi\Wix\
+nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir)..\..\ ShibbolethVersion=$(ShibbolethVersion) ShibbolethPatchVersion=$(ShibbolethPatchVersion) ShibbolethId64=$(ShibbolethId64) ShibbolethUpgradeCode=$(ShibbolethUpgradeCode) ShibbolethId64=$(ShibbolethId64) rebuild64</NMakeReBuildCommandLine>
     <NMakePreprocessorDefinitions>WIN32;NDEBUG;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
   </PropertyGroup>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="Dialog.bmp" />
-    <None Include="Installer.make" />
-    <None Include="license.rtf" />
-    <None Include="ShibbolethSP-defs-x86.wxi" />
-    <None Include="ShibbolethSP-exe-x64.wxs">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="ShibbolethSP-exe-x86.wxs" />
-    <None Include="ShibbolethSP-gui.wxs" />
-    <None Include="ShibbolethSP-install-dlg.wxs" />
-    <None Include="ShibbolethSP-main-x64.wxs" />
-    <None Include="ShibbolethSP-main-x86.wxs" />
-    <None Include="ShibbolethSP-noarch.wxs" />
-    <None Include="ShibbolethSP-properties.wxi" />
-    <None Include="ShibbolethSP-registry-x64.wxs" />
-    <None Include="ShibbolethSP-registry-x86.wxs" />
-    <None Include="ShibbolethSP-update-dlg.wxs" />
-    <None Include="TopBanner.bmp" />
+    <None Include="H:\Perforce\devel\cpp-sp\msi\wix\Dialog.bmp" />
+    <None Include="..\..\..\msi\wix\Installer.make" />
+    <None Include="..\..\..\msi\wix\license.rtf" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-defs-x86.wxi" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-exe-x64.wxs"/>
+    <None Include="..\..\..\msi\wix\ShibbolethSP-exe-x86.wxs" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-gui.wxs" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-install-dlg.wxs" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-main-x64.wxs" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-main-x86.wxs" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-noarch.wxs" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-properties.wxi" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-registry-x64.wxs" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-registry-x86.wxs" />
+    <None Include="..\..\..\msi\wix\ShibbolethSP-update-dlg.wxs" />
+    <None Include="..\..\..\msi\wix\TopBanner.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -7,10 +7,6 @@
 /*.plg
 /testclient___Win32_Debug
 /testclient___Win32_Release
-/Debug
-/Release
 /*.dep
 /*.mak
-/*.user
 /*.aps
-/x64

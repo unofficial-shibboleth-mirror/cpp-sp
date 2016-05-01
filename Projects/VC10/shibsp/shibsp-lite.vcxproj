@@ -58,19 +58,22 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <Import Project="..\..\BuildPath.props" />
+  <Import Project="..\..\..\..\BuildPath.props" />
   <Import Project="$(ParentRoot)\Versions.props" />
   <Import Project="$(ParentRoot)\Includes.props" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)-$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)\..\..\Build\VC10\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)\..\..\Build\VC10\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\..\..\Build\VC10\\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\..\..\Build\VC10\\$(Configuration)\</OutDir>
+
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(ProjectName)-$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)-$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(ProjectName)-$(Configuration)\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
@@ -93,7 +96,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;..;..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\;..\..\..\shibsp;..\..\..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;WANT_TCP_SHAR;SHIBSP_LITE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <BrowseInformation>true</BrowseInformation>
@@ -105,7 +108,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xmltooling-lite1D.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\Build\VC10\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\..\cpp-xmltooling\Build\VC10\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <DataExecutionPrevention>
@@ -119,7 +122,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;..;..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\shibsp;..\..\..\;..\..\..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;WANT_TCP_SHAR;SHIBSP_LITE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <BrowseInformation>true</BrowseInformation>
@@ -131,7 +134,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xmltooling-lite1D.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <DataExecutionPrevention>
@@ -141,7 +144,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\shibsp;..\..\..\;..\..\..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;WANT_TCP_SHAR;SHIBSP_LITE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
@@ -150,7 +153,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xmltooling-lite1.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\Build\VC10\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\..\cpp-xmltooling\Build\VC10\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -165,7 +168,7 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\shibsp\;..\..\..;..\..\..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;WANT_TCP_SHAR;SHIBSP_LITE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
@@ -174,7 +177,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xmltooling-lite1.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\..\cpp-xmltooling\Build\VC10\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
@@ -185,118 +188,118 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AbstractSPRequest.cpp" />
-    <ClCompile Include="Application.cpp" />
-    <ClCompile Include="binding\impl\XMLProtocolProvider.cpp" />
-    <ClCompile Include="handler\impl\AttributeCheckerHandler.cpp" />
-    <ClCompile Include="handler\impl\DiscoveryFeed.cpp" />
-    <ClCompile Include="handler\impl\ExternalAuthHandler.cpp" />
-    <ClCompile Include="handler\impl\LogoutInitiator.cpp" />
-    <ClCompile Include="handler\impl\SecuredHandler.cpp" />
-    <ClCompile Include="ServiceProvider.cpp" />
-    <ClCompile Include="SPConfig.cpp" />
-    <ClCompile Include="util\CGIParser.cpp" />
-    <ClCompile Include="util\DOMPropertySet.cpp" />
-    <ClCompile Include="util\IPRange.cpp" />
-    <ClCompile Include="util\SPConstants.cpp" />
-    <ClCompile Include="util\TemplateParameters.cpp" />
-    <ClCompile Include="remoting\impl\ddf.cpp" />
-    <ClCompile Include="remoting\impl\ListenerService.cpp" />
-    <ClCompile Include="remoting\impl\SocketListener.cpp" />
-    <ClCompile Include="remoting\impl\TCPListener.cpp" />
-    <ClCompile Include="impl\ChainingAccessControl.cpp" />
-    <ClCompile Include="impl\StorageServiceSessionCache.cpp" />
-    <ClCompile Include="impl\XMLAccessControl.cpp" />
-    <ClCompile Include="impl\XMLRequestMapper.cpp" />
-    <ClCompile Include="impl\XMLServiceProvider.cpp" />
-    <ClCompile Include="attribute\Attribute.cpp" />
-    <ClCompile Include="attribute\BinaryAttribute.cpp" />
-    <ClCompile Include="attribute\ExtensibleAttribute.cpp" />
-    <ClCompile Include="attribute\NameIDAttribute.cpp" />
-    <ClCompile Include="attribute\ScopedAttribute.cpp" />
-    <ClCompile Include="attribute\SimpleAttribute.cpp" />
-    <ClCompile Include="attribute\XMLAttribute.cpp" />
-    <ClCompile Include="handler\impl\AbstractHandler.cpp" />
-    <ClCompile Include="handler\impl\AssertionConsumerService.cpp" />
-    <ClCompile Include="handler\impl\AssertionLookup.cpp" />
-    <ClCompile Include="handler\impl\ChainingLogoutInitiator.cpp" />
-    <ClCompile Include="handler\impl\ChainingSessionInitiator.cpp" />
-    <ClCompile Include="handler\impl\CookieSessionInitiator.cpp" />
-    <ClCompile Include="handler\impl\FormSessionInitiator.cpp" />
-    <ClCompile Include="handler\impl\LocalLogoutInitiator.cpp" />
-    <ClCompile Include="handler\impl\LogoutHandler.cpp" />
-    <ClCompile Include="handler\impl\MetadataGenerator.cpp" />
-    <ClCompile Include="handler\impl\RemotedHandler.cpp" />
-    <ClCompile Include="handler\impl\SAML1Consumer.cpp" />
-    <ClCompile Include="handler\impl\SAML2ArtifactResolution.cpp" />
-    <ClCompile Include="handler\impl\SAML2Consumer.cpp" />
-    <ClCompile Include="handler\impl\SAML2Logout.cpp" />
-    <ClCompile Include="handler\impl\SAML2LogoutInitiator.cpp" />
-    <ClCompile Include="handler\impl\SAML2NameIDMgmt.cpp" />
-    <ClCompile Include="handler\impl\SAML2SessionInitiator.cpp" />
-    <ClCompile Include="handler\impl\SAMLDSSessionInitiator.cpp" />
-    <ClCompile Include="handler\impl\SessionHandler.cpp" />
-    <ClCompile Include="handler\impl\SessionInitiator.cpp" />
-    <ClCompile Include="handler\impl\Shib1SessionInitiator.cpp" />
-    <ClCompile Include="handler\impl\StatusHandler.cpp" />
-    <ClCompile Include="handler\impl\TransformSessionInitiator.cpp" />
-    <ClCompile Include="handler\impl\WAYFSessionInitiator.cpp" />
-    <ClCompile Include="lite\CommonDomainCookie.cpp" />
-    <ClCompile Include="lite\SAMLConstants.cpp" />
-    <ClCompile Include="version.cpp" />
+    <ClCompile Include="..\..\..\shibsp\AbstractSPRequest.cpp" />
+    <ClCompile Include="..\..\..\shibsp\Application.cpp" />
+    <ClCompile Include="..\..\..\shibsp\binding\impl\XMLProtocolProvider.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\DiscoveryFeed.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\ExternalAuthHandler.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\LogoutInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SecuredHandler.cpp" />
+    <ClCompile Include="..\..\..\shibsp\ServiceProvider.cpp" />
+    <ClCompile Include="..\..\..\shibsp\SPConfig.cpp" />
+    <ClCompile Include="..\..\..\shibsp\util\CGIParser.cpp" />
+    <ClCompile Include="..\..\..\shibsp\util\DOMPropertySet.cpp" />
+    <ClCompile Include="..\..\..\shibsp\util\IPRange.cpp" />
+    <ClCompile Include="..\..\..\shibsp\util\SPConstants.cpp" />
+    <ClCompile Include="..\..\..\shibsp\util\TemplateParameters.cpp" />
+    <ClCompile Include="..\..\..\shibsp\remoting\impl\ddf.cpp" />
+    <ClCompile Include="..\..\..\shibsp\remoting\impl\ListenerService.cpp" />
+    <ClCompile Include="..\..\..\shibsp\remoting\impl\SocketListener.cpp" />
+    <ClCompile Include="..\..\..\shibsp\remoting\impl\TCPListener.cpp" />
+    <ClCompile Include="..\..\..\shibsp\impl\ChainingAccessControl.cpp" />
+    <ClCompile Include="..\..\..\shibsp\impl\StorageServiceSessionCache.cpp" />
+    <ClCompile Include="..\..\..\shibsp\impl\XMLAccessControl.cpp" />
+    <ClCompile Include="..\..\..\shibsp\impl\XMLRequestMapper.cpp" />
+    <ClCompile Include="..\..\..\shibsp\impl\XMLServiceProvider.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\Attribute.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\BinaryAttribute.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\ExtensibleAttribute.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\NameIDAttribute.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\ScopedAttribute.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\SimpleAttribute.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\XMLAttribute.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\AbstractHandler.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\AssertionConsumerService.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\AssertionLookup.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\ChainingLogoutInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\ChainingSessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\CookieSessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\FormSessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\LocalLogoutInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\LogoutHandler.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\MetadataGenerator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\RemotedHandler.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SAML1Consumer.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SAML2ArtifactResolution.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SAML2Consumer.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SAML2Logout.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SAML2LogoutInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SAML2NameIDMgmt.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SAML2SessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SAMLDSSessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SessionHandler.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\SessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\Shib1SessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\StatusHandler.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\TransformSessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\WAYFSessionInitiator.cpp" />
+    <ClCompile Include="..\..\..\shibsp\lite\CommonDomainCookie.cpp" />
+    <ClCompile Include="..\..\..\shibsp\lite\SAMLConstants.cpp" />
+    <ClCompile Include="..\..\..\shibsp\version.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="binding\ProtocolProvider.h" />
-    <ClInclude Include="GSSRequest.h" />
-    <ClInclude Include="handler\LogoutInitiator.h" />
-    <ClInclude Include="handler\SecuredHandler.h" />
-    <ClInclude Include="remoting\impl\SocketListener.h" />
-    <ClInclude Include="AbstractSPRequest.h" />
-    <ClInclude Include="AccessControl.h" />
-    <ClInclude Include="Application.h" />
-    <ClInclude Include="base.h" />
-    <ClInclude Include="config_pub_win32.h" />
-    <ClInclude Include="exceptions.h" />
-    <ClInclude Include="internal.h" />
-    <ClInclude Include="RequestMapper.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="ServiceProvider.h" />
-    <ClInclude Include="SessionCache.h" />
-    <ClInclude Include="SessionCacheEx.h" />
-    <ClInclude Include="SPConfig.h" />
-    <ClInclude Include="SPRequest.h" />
-    <ClInclude Include="version.h" />
-    <ClInclude Include="util\CGIParser.h" />
-    <ClInclude Include="util\DOMPropertySet.h" />
-    <ClInclude Include="util\IPRange.h" />
-    <ClInclude Include="util\PropertySet.h" />
-    <ClInclude Include="util\SPConstants.h" />
-    <ClInclude Include="util\TemplateParameters.h" />
-    <ClInclude Include="remoting\ddf.h" />
-    <ClInclude Include="remoting\ListenerService.h" />
-    <ClInclude Include="attribute\Attribute.h" />
-    <ClInclude Include="attribute\BinaryAttribute.h" />
-    <ClInclude Include="attribute\ExtensibleAttribute.h" />
-    <ClInclude Include="attribute\NameIDAttribute.h" />
-    <ClInclude Include="attribute\ScopedAttribute.h" />
-    <ClInclude Include="attribute\SimpleAttribute.h" />
-    <ClInclude Include="attribute\XMLAttribute.h" />
-    <ClInclude Include="handler\AbstractHandler.h" />
-    <ClInclude Include="handler\AssertionConsumerService.h" />
-    <ClInclude Include="handler\Handler.h" />
-    <ClInclude Include="handler\LogoutHandler.h" />
-    <ClInclude Include="handler\RemotedHandler.h" />
-    <ClInclude Include="handler\SessionInitiator.h" />
-    <ClInclude Include="lite\CommonDomainCookie.h" />
-    <ClInclude Include="lite\SAMLConstants.h" />
+    <ClInclude Include="..\..\..\shibsp\binding\ProtocolProvider.h" />
+    <ClInclude Include="..\..\..\shibsp\GSSRequest.h" />
+    <ClInclude Include="..\..\..\shibsp\handler\LogoutInitiator.h" />
+    <ClInclude Include="..\..\..\shibsp\handler\SecuredHandler.h" />
+    <ClInclude Include="..\..\..\shibsp\remoting\impl\SocketListener.h" />
+    <ClInclude Include="..\..\..\shibsp\AbstractSPRequest.h" />
+    <ClInclude Include="..\..\..\shibsp\AccessControl.h" />
+    <ClInclude Include="..\..\..\shibsp\Application.h" />
+    <ClInclude Include="..\..\..\shibsp\base.h" />
+    <ClInclude Include="..\..\..\shibsp\config_pub_win32.h" />
+    <ClInclude Include="..\..\..\shibsp\exceptions.h" />
+    <ClInclude Include="..\..\..\shibsp\internal.h" />
+    <ClInclude Include="..\..\..\shibsp\RequestMapper.h" />
+    <ClInclude Include="..\..\..\shibsp\resource.h" />
+    <ClInclude Include="..\..\..\shibsp\ServiceProvider.h" />
+    <ClInclude Include="..\..\..\shibsp\SessionCache.h" />
+    <ClInclude Include="..\..\..\shibsp\SessionCacheEx.h" />
+    <ClInclude Include="..\..\..\shibsp\SPConfig.h" />
+    <ClInclude Include="..\..\..\shibsp\SPRequest.h" />
+    <ClInclude Include="..\..\..\shibsp\version.h" />
+    <ClInclude Include="..\..\..\shibsp\util\CGIParser.h" />
+    <ClInclude Include="..\..\..\shibsp\util\DOMPropertySet.h" />
+    <ClInclude Include="..\..\..\shibsp\util\IPRange.h" />
+    <ClInclude Include="..\..\..\shibsp\util\PropertySet.h" />
+    <ClInclude Include="..\..\..\shibsp\util\SPConstants.h" />
+    <ClInclude Include="..\..\..\shibsp\util\TemplateParameters.h" />
+    <ClInclude Include="..\..\..\shibsp\remoting\ddf.h" />
+    <ClInclude Include="..\..\..\shibsp\remoting\ListenerService.h" />
+    <ClInclude Include="..\..\..\shibsp\attribute\Attribute.h" />
+    <ClInclude Include="..\..\..\shibsp\attribute\BinaryAttribute.h" />
+    <ClInclude Include="..\..\..\shibsp\attribute\ExtensibleAttribute.h" />
+    <ClInclude Include="..\..\..\shibsp\attribute\NameIDAttribute.h" />
+    <ClInclude Include="..\..\..\shibsp\attribute\ScopedAttribute.h" />
+    <ClInclude Include="..\..\..\shibsp\attribute\SimpleAttribute.h" />
+    <ClInclude Include="..\..\..\shibsp\attribute\XMLAttribute.h" />
+    <ClInclude Include="..\..\..\shibsp\handler\AbstractHandler.h" />
+    <ClInclude Include="..\..\..\shibsp\handler\AssertionConsumerService.h" />
+    <ClInclude Include="..\..\..\shibsp\handler\Handler.h" />
+    <ClInclude Include="..\..\..\shibsp\handler\LogoutHandler.h" />
+    <ClInclude Include="..\..\..\shibsp\handler\RemotedHandler.h" />
+    <ClInclude Include="..\..\..\shibsp\handler\SessionInitiator.h" />
+    <ClInclude Include="..\..\..\shibsp\lite\CommonDomainCookie.h" />
+    <ClInclude Include="..\..\..\shibsp\lite\SAMLConstants.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="shibsp.rc" />
+    <ResourceCompile Include="..\..\..\shibsp\shibsp.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Makefile.am" />
-    <None Include="paths.h.in" />
-    <None Include="config_pub.h.in" />
+    <None Include="..\..\..\shibsp\Makefile.am" />
+    <None Include="..\..\..\shibsp\paths.h.in" />
+    <None Include="..\..\..\shibsp\config_pub.h.in" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

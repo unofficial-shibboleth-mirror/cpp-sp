@@ -1,6 +1,4 @@
 /*.plg
-/Release
-/Debug
 /*.dep
 /*.mak
 /*.aps
@@ -8,4 +6,3 @@
 /.deps
 /Makefile.in
 /Makefile
-/*.user
