@@ -22,8 +22,7 @@ pkgsysconf_DATA = \
 	apache22.config \
 	apache24.config \
 	keygen.sh \
-	metagen.sh \
-	upgrade.xsl
+	metagen.sh
 
 # The config files are installed "special".  Unlike the entries in
 # pkgsysconf_DATA, these files are installed as "foo.dist" and only
@@ -173,6 +172,4 @@ EXTRA_DIST = \
 	metagen.sh \
 	SetService32.bat \
 	SetService64.bat \
-	upgrade.xsl \
-	xsltproc.js \
 	$(CONFIGFILES)
