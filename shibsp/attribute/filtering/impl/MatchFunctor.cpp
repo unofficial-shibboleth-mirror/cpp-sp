@@ -92,10 +92,13 @@ namespace shibsp {
     static const XMLCh NumberOfAttributeValues[] =      UNICODE_LITERAL_23(N,u,m,b,e,r,O,f,A,t,t,r,i,b,u,t,e,V,a,l,u,e,s);
     static const XMLCh AttributeIssuerInEntityGroup[] = UNICODE_LITERAL_28(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,I,n,E,n,t,i,t,y,G,r,o,u,p);
     static const XMLCh AttributeRequesterInEntityGroup[] = UNICODE_LITERAL_31(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,I,n,E,n,t,i,t,y,G,r,o,u,p);
+    static const XMLCh InEntityGroup[] = 				UNICODE_LITERAL_13(I,n,E,n,t,i,t,y,G,r,o,u,p);
     static const XMLCh AttributeIssuerEntityAttributeExactMatch[] = UNICODE_LITERAL_40(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,E,n,t,i,t,y,A,t,t,r,i,b,u,t,e,E,x,a,c,t,M,a,t,c,h);
     static const XMLCh AttributeRequesterEntityAttributeExactMatch[] = UNICODE_LITERAL_43(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,E,n,t,i,t,y,A,t,t,r,i,b,u,t,e,E,x,a,c,t,M,a,t,c,h);
+    static const XMLCh EntityAttributeExactMatch[] = 	UNICODE_LITERAL_25(E,n,t,i,t,y,A,t,t,r,i,b,u,t,e,E,x,a,c,t,M,a,t,c,h);
     static const XMLCh AttributeIssuerEntityAttributeRegexMatch[] = UNICODE_LITERAL_40(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,E,n,t,i,t,y,A,t,t,r,i,b,u,t,e,R,e,g,e,x,M,a,t,c,h);
     static const XMLCh AttributeRequesterEntityAttributeRegexMatch[] = UNICODE_LITERAL_43(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,E,n,t,i,t,y,A,t,t,r,i,b,u,t,e,R,e,g,e,x,M,a,t,c,h);
+    static const XMLCh EntityAttributeRegexMatch[] = 	UNICODE_LITERAL_25(E,n,t,i,t,y,A,t,t,r,i,b,u,t,e,R,e,g,e,x,M,a,t,c,h);
     static const XMLCh AttributeIssuerEntityMatcher[] = UNICODE_LITERAL_28(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,E,n,t,i,t,y,M,a,t,c,h,e,r);
     static const XMLCh AttributeRequesterEntityMatcher[] = UNICODE_LITERAL_31(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,E,n,t,i,t,y,M,a,t,c,h,e,r);
     static const XMLCh AttributeScopeMatchesShibMDScope[] = UNICODE_LITERAL_32(A,t,t,r,i,b,u,t,e,S,c,o,p,e,M,a,t,c,h,e,s,S,h,i,b,M,D,S,c,o,p,e);
@@ -119,10 +122,13 @@ DECL_BASIC_QNAME(AttributeScopeRegex, AttributeScopeRegex);
 DECL_BASIC_QNAME(NumberOfAttributeValues, NumberOfAttributeValues);
 DECL_SAML_QNAME(AttributeIssuerInEntityGroup, AttributeIssuerInEntityGroup);
 DECL_SAML_QNAME(AttributeRequesterInEntityGroup, AttributeRequesterInEntityGroup);
+DECL_SAML_QNAME(InEntityGroup, InEntityGroup);
 DECL_SAML_QNAME(AttributeIssuerEntityAttributeExactMatch, AttributeIssuerEntityAttributeExactMatch);
 DECL_SAML_QNAME(AttributeRequesterEntityAttributeExactMatch, AttributeRequesterEntityAttributeExactMatch);
+DECL_SAML_QNAME(EntityAttributeExactMatch, EntityAttributeExactMatch);
 DECL_SAML_QNAME(AttributeIssuerEntityAttributeRegexMatch, AttributeIssuerEntityAttributeRegexMatch);
 DECL_SAML_QNAME(AttributeRequesterEntityAttributeRegexMatch, AttributeRequesterEntityAttributeRegexMatch);
+DECL_SAML_QNAME(EntityAttributeRegexMatch, EntityAttributeRegexMatch);
 DECL_SAML_QNAME(AttributeIssuerEntityMatcher, AttributeIssuerEntityMatcher);
 DECL_SAML_QNAME(AttributeRequesterEntityMatcher, AttributeRequesterEntityMatcher);
 DECL_SAML_QNAME(AttributeScopeMatchesShibMDScope, AttributeScopeMatchesShibMDScope);
@@ -157,6 +163,10 @@ void SHIBSP_API shibsp::registerMatchFunctors()
     REGISTER_FACTORY(AttributeRequesterEntityMatcher);
     REGISTER_FACTORY(AttributeScopeMatchesShibMDScope);
     REGISTER_FACTORY(NameIDQualifierString);
+
+    mgr.registerFactory(EntityAttributeExactMatchType, AttributeRequesterEntityAttributeExactMatchFactory);
+    mgr.registerFactory(EntityAttributeRegexMatchType, AttributeRequesterEntityAttributeRegexMatchFactory);
+    mgr.registerFactory(InEntityGroup, AttributeRequesterInEntityGroupFactory);
 }
 
 MatchFunctor::MatchFunctor()
