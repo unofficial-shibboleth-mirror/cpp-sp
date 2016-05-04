@@ -91,4 +91,5 @@ x64
 /shibsp/stamp-h2
 /util/mdquery
 /util/resolvertest
-/*/.deps
+.deps
+.dirstamp

@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 lib_LTLIBRARIES = libshibsp.la libshibsp-lite.la
 
