@@ -146,8 +146,11 @@ namespace shibsp {
     /** Matches based on requester and pluggable criteria. */
     extern SHIBSP_API xmltooling::QName AttributeRequesterEntityMatcherType;
 
-    /** Matches based on metadata Scope extensions. */
+    /** Matches scope based on metadata Scope extensions. */
     extern SHIBSP_API xmltooling::QName AttributeScopeMatchesShibMDScopeType;
+
+    /** Matches value based on metadata Scope extensions. */
+    extern SHIBSP_API xmltooling::QName AttributeValueMatchesShibMDScopeType;
 
     /** Matches based on NameID NameQualifiers. */
     extern SHIBSP_API xmltooling::QName NameIDQualifierStringType;

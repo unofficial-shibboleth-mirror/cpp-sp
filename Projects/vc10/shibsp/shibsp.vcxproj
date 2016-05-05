@@ -251,7 +251,7 @@
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterInEntityGroupFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterRegexFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterStringFunctor.cpp" />
-    <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeScopeMatchesShibMDScopeFunctor.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeMatchesShibMDScopeFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeScopeRegexFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeScopeStringFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeValueRegexFunctor.cpp" />

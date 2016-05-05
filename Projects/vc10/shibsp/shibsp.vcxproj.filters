@@ -141,9 +141,6 @@
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterStringFunctor.cpp">
       <Filter>Source Files\attribute\filtering\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeScopeMatchesShibMDScopeFunctor.cpp">
-      <Filter>Source Files\attribute\filtering\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeScopeRegexFunctor.cpp">
       <Filter>Source Files\attribute\filtering\impl</Filter>
     </ClCompile>
@@ -427,6 +424,9 @@
       <Filter>Source Files\security</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\RegistrationAuthorityFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeMatchesShibMDScopeFunctor.cpp">
       <Filter>Source Files\attribute\filtering\impl</Filter>
     </ClCompile>
   </ItemGroup>

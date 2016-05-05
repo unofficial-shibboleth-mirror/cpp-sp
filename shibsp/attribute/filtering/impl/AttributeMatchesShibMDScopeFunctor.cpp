@@ -42,12 +42,10 @@ using namespace std;
 
 namespace shibsp {
 
-    static const XMLCh groupID[] = UNICODE_LITERAL_7(g,r,o,u,p,I,D);
-
     /**
-     * A match function that ensures that an attributes value's scope matches a scope given in metadata for the entity or role.
+     * A match function that ensures that a string matches a scope given in metadata for the entity or role.
      */
-    class SHIBSP_DLLLOCAL AttributeScopeMatchesShibMDScopeFunctor : public MatchFunctor
+    class SHIBSP_DLLLOCAL AbstractAttributeMatchesShibMDScopeFunctor : public MatchFunctor
     {
     public:
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
@@ -59,10 +57,10 @@ namespace shibsp {
             if (!issuer)
                 return false;
 
-            const char* scope = attribute.getScope(index);
-            if (!scope || !*scope)
+            const char* s = getStringToMatch(attribute, index);
+            if (!s || !*s)
                 return false;
-            auto_arrayptr<XMLCh> widescope(fromUTF8(scope));
+            auto_arrayptr<XMLCh> widestr(fromUTF8(s));
 
             const Scope* rule;
             const Extensions* ext = issuer->getExtensions();
@@ -70,7 +68,7 @@ namespace shibsp {
                 const vector<XMLObject*>& exts = ext->getUnknownXMLObjects();
                 for (vector<XMLObject*>::const_iterator e = exts.begin(); e != exts.end(); ++e) {
                     rule = dynamic_cast<const Scope*>(*e);
-                    if (rule && matches(*rule, widescope)) {
+                    if (rule && matches(*rule, widestr)) {
                         return true;
                     }
                 }
@@ -81,7 +79,7 @@ namespace shibsp {
                 const vector<XMLObject*>& exts = ext->getUnknownXMLObjects();
                 for (vector<XMLObject*>::const_iterator e = exts.begin(); e != exts.end(); ++e) {
                     rule = dynamic_cast<const Scope*>(*e);
-                    if (rule && matches(*rule, widescope)) {
+                    if (rule && matches(*rule, widestr)) {
                         return true;
                     }
                 }
@@ -89,6 +87,9 @@ namespace shibsp {
 
             return false;
         }
+
+    protected:
+        virtual const char* getStringToMatch(const Attribute& attribute, size_t index) const = 0;
 
     private:
         bool matches(const Scope& rule, auto_arrayptr<XMLCh>& scope) const {
@@ -106,9 +107,30 @@ namespace shibsp {
         }
     };
 
+    class AttributeScopeMatchesShibMDScopeFunctor : public AbstractAttributeMatchesShibMDScopeFunctor
+    {
+    protected:
+        const char* getStringToMatch(const Attribute& attribute, size_t index) const {
+            return attribute.getScope(index);
+        }
+    };
+
+    class AttributeValueMatchesShibMDScopeFunctor : public AbstractAttributeMatchesShibMDScopeFunctor
+    {
+    protected:
+        const char* getStringToMatch(const Attribute& attribute, size_t index) const {
+            return attribute.getString(index);
+        }
+    };
+
     MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
     {
         return new AttributeScopeMatchesShibMDScopeFunctor();
+    }
+
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
+    {
+        return new AttributeValueMatchesShibMDScopeFunctor();
     }
 
 };
