@@ -152,6 +152,12 @@ namespace shibsp {
     /** Matches based on NameID NameQualifiers. */
     extern SHIBSP_API xmltooling::QName NameIDQualifierStringType;
 
+    /** Matches based on RegistrationAuthority extension in issuer's metadata. */
+    extern SHIBSP_API xmltooling::QName AttributeIssuerRegistrationAuthorityType;
+
+    /** Matches based on RegistrationAuthority extension in requester's metadata. */
+    extern SHIBSP_API xmltooling::QName RegistrationAuthorityType;
+
     /**
      * Registers MatchFunctor classes into the runtime.
      */

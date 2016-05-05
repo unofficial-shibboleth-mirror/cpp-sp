@@ -73,6 +73,8 @@ namespace shibsp {
     DECL_FACTORY(AttributeRequesterEntityMatcher);
     DECL_FACTORY(AttributeScopeMatchesShibMDScope);
     DECL_FACTORY(NameIDQualifierString);
+    DECL_FACTORY(AttributeIssuerRegistrationAuthority);
+    DECL_FACTORY(RegistrationAuthority);
 
 
     static const XMLCh ANY[] =                          UNICODE_LITERAL_3(A,N,Y);
@@ -103,6 +105,8 @@ namespace shibsp {
     static const XMLCh AttributeRequesterEntityMatcher[] = UNICODE_LITERAL_31(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,E,n,t,i,t,y,M,a,t,c,h,e,r);
     static const XMLCh AttributeScopeMatchesShibMDScope[] = UNICODE_LITERAL_32(A,t,t,r,i,b,u,t,e,S,c,o,p,e,M,a,t,c,h,e,s,S,h,i,b,M,D,S,c,o,p,e);
     static const XMLCh NameIDQualifierString[] =        UNICODE_LITERAL_21(N,a,m,e,I,D,Q,u,a,l,i,f,i,e,r,S,t,r,i,n,g);
+    static const XMLCh AttributeIssuerRegistrationAuthority[] = UNICODE_LITERAL_36(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,R,e,g,i,s,t,r,a,t,i,o,n,A,u,t,h,o,r,i,t,y);
+    static const XMLCh RegistrationAuthority[] =        UNICODE_LITERAL_21(R,e,g,i,s,t,r,a,t,i,o,n,A,u,t,h,o,r,i,t,y);
 };
 
 DECL_BASIC_QNAME(AnyMatchFunctor, ANY);
@@ -133,6 +137,8 @@ DECL_SAML_QNAME(AttributeIssuerEntityMatcher, AttributeIssuerEntityMatcher);
 DECL_SAML_QNAME(AttributeRequesterEntityMatcher, AttributeRequesterEntityMatcher);
 DECL_SAML_QNAME(AttributeScopeMatchesShibMDScope, AttributeScopeMatchesShibMDScope);
 DECL_SAML_QNAME(NameIDQualifierString, NameIDQualifierString);
+DECL_SAML_QNAME(AttributeIssuerRegistrationAuthority, AttributeIssuerRegistrationAuthority);
+DECL_SAML_QNAME(RegistrationAuthority, RegistrationAuthority);
 
 void SHIBSP_API shibsp::registerMatchFunctors()
 {
@@ -163,6 +169,8 @@ void SHIBSP_API shibsp::registerMatchFunctors()
     REGISTER_FACTORY(AttributeRequesterEntityMatcher);
     REGISTER_FACTORY(AttributeScopeMatchesShibMDScope);
     REGISTER_FACTORY(NameIDQualifierString);
+    REGISTER_FACTORY(AttributeIssuerRegistrationAuthority);
+    REGISTER_FACTORY(RegistrationAuthority);
 
     mgr.registerFactory(EntityAttributeExactMatchType, AttributeRequesterEntityAttributeExactMatchFactory);
     mgr.registerFactory(EntityAttributeRegexMatchType, AttributeRequesterEntityAttributeRegexMatchFactory);

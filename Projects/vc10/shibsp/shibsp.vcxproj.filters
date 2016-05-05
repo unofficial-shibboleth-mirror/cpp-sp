@@ -426,6 +426,9 @@
     <ClCompile Include="..\..\..\shibsp\security\SecurityPolicy.cpp">
       <Filter>Source Files\security</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\RegistrationAuthorityFunctor.cpp">
+      <Filter>Source Files\attribute\filtering\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\shibsp\GSSRequest.h">
