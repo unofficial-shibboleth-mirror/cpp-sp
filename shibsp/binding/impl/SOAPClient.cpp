@@ -61,8 +61,8 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
 {
     // Check for message signing requirements.   
     m_relyingParty = m_app.getRelyingParty(dynamic_cast<const EntityDescriptor*>(to.getRole().getParent()));
-    pair<bool, const char*> flag = m_relyingParty->getString("signing");
-    if (SPConfig::shouldSignOrEncrypt(flag.first ? flag.second : "conditional", endpoint, false)) {
+    pair<bool, const char*> signing = m_relyingParty->getString("signing");
+    if (SPConfig::shouldSignOrEncrypt(signing.first ? signing.second : "conditional", endpoint, false)) {
         m_credResolver=m_app.getCredentialResolver();
         if (m_credResolver) {
             m_credResolver->lock();
@@ -126,7 +126,18 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
             Category::getInstance(SHIBSP_LOGCAT ".SOAPClient").warn("no CredentialResolver available, leaving unsigned");
         }
     }
-    
+
+    pair<bool,bool> flag = m_relyingParty->getBool("requireTransportAuth");
+    if (flag.first) {
+        forceTransportAuthentication(flag.second);
+    }
+    else {
+        // If not set, toggle transport authentication requirement inversely to conditional signing/encryption.
+        // That is, if we would force on signing, we probably expect the IdP to sign, and allow the transport layer
+        // to be ignored. This allows us to ignore regular certificates on standard ports.
+        forceTransportAuthentication(!SPConfig::shouldSignOrEncrypt("conditional", endpoint, false));
+    }
+
     opensaml::SOAPClient::send(env, from, to, endpoint);
 }
 
@@ -143,8 +154,6 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
         throw opensaml::BindingException("Transport confidentiality required, but not available."); 
 
     setValidating(getPolicy().getValidating());
-    flag = m_relyingParty->getBool("requireTransportAuth");
-    forceTransportAuthentication(!flag.first || flag.second);
 
     opensaml::SOAPClient::prepareTransport(transport);
 
