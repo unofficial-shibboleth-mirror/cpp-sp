@@ -498,3 +498,50 @@ void SPInternalConfig::term()
 
     SPConfig::term();
 }
+
+#ifndef SHIBSP_LITE
+bool SPConfig::shouldSignOrEncrypt(const char* setting, const char* endpoint, bool isUserAgentPresent)
+{
+    if (setting && (!strcmp(setting, "true") || !strcmp(setting, isUserAgentPresent ? "front" : "back"))) {
+        return true;
+    }
+    else if (!setting || !strcmp(setting, "conditional")) {
+        if (isUserAgentPresent || !endpoint) {
+            return true;
+        }
+
+        // Conditional on the back channel means to sign if TLS isn't used or if on port 443.
+        // This compensates for the fact that using the default TLS port likely implies no use
+        // of client TLS by the server, allowing us to migrate off of the back channel with no
+        // configuration changes.
+#ifdef HAVE_STRCASECMP
+        if (strncasecmp(endpoint, "http://", 7) == 0) {
+#else
+        if (strnicmp(endpoint, "http://", 7) == 0) {
+#endif
+            return true;
+        }
+#ifdef HAVE_STRCASECMP
+        else if (strncasecmp(endpoint, "https://", 8) == 0) {
+#else
+        else if (strnicmp(endpoint, "https://", 8) == 0) {
+#endif
+            const char* colon = strchr(endpoint + 8, ':');
+            if (colon) {
+#ifdef HAVE_STRCASECMP
+                if (strncasecmp(colon, ":443/", 5) == 0) {
+#else
+                if (strnicmp(colon, ":443/", 5) == 0) {
+#endif
+                    return true;
+                }
+            }
+            else {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+#endif

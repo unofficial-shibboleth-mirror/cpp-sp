@@ -756,7 +756,14 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     }
 
     long ret = sendMessage(
-        *encoder, req.get(), relayState.c_str(), dest.get(), role, app, httpResponse, role ? role->WantAuthnRequestsSigned() : false
+        *encoder,
+        req.get(),
+        relayState.c_str(),
+        dest.get(),
+        role,
+        app,
+        httpResponse,
+        (role && role->WantAuthnRequestsSigned()) ? "true" : "false"
         );
     req.release();  // freed by encoder
     return make_pair(true, ret);

@@ -90,7 +90,11 @@ namespace shibsp {
         auto_ptr_char m_protocol;
 #ifndef SHIBSP_LITE
         auto_ptr<LogoutRequest> buildRequest(
-            const Application& application, const Session& session, const RoleDescriptor& role, const MessageEncoder* encoder=nullptr
+            const Application& application,
+            const Session& session,
+            const RoleDescriptor& role,
+            const XMLCh* endpoint,
+            const MessageEncoder* encoder=nullptr
             ) const;
 
         LogoutEvent* newLogoutEvent(
@@ -358,7 +362,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                 try {
                     if (!XMLString::equals(epit->getBinding(), binding.get()))
                         continue;
-                    auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role));
+                    auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, epit->getLocation()));
 
                     // Log the request.
                     if (logout_event) {
@@ -368,8 +372,8 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                         logout_event->m_saml2Request = nullptr;
                     }
 
-                    auto_ptr_char dest(epit->getLocation());
                     SAML2SOAPClient client(soaper, false);
+                    auto_ptr_char dest(epit->getLocation());
                     client.sendSAML(msg.release(), application.getId(), mcc, dest.get());
                     srt.reset(client.receiveSAML());
                     if (!(logoutResponse = dynamic_cast<LogoutResponse*>(srt.get()))) {
@@ -456,7 +460,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             preserveRelayState(application, httpResponse, relayState);
         }
 
-        auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, encoder));
+        auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, ep->getLocation(), encoder));
         msg->setDestination(ep->getLocation());
 
         // Log the request.
@@ -467,7 +471,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         }
 
         auto_ptr_char dest(ep->getLocation());
-        ret.second = sendMessage(*encoder, msg.get(), relayState.c_str(), dest.get(), role, application, httpResponse, true);
+        ret.second = sendMessage(*encoder, msg.get(), relayState.c_str(), dest.get(), role, application, httpResponse, "true");
         ret.first = true;
         msg.release();  // freed by encoder
 
@@ -494,8 +498,11 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
 #ifndef SHIBSP_LITE
 
 auto_ptr<LogoutRequest> SAML2LogoutInitiator::buildRequest(
-    const Application& application, const Session& session, const RoleDescriptor& role, const MessageEncoder* encoder
-    ) const
+    const Application& application,
+    const Session& session,
+    const RoleDescriptor& role,
+    const XMLCh* endpoint,
+    const MessageEncoder* encoder) const
 {
     const PropertySet* relyingParty = application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role.getParent()));
 
@@ -512,22 +519,37 @@ auto_ptr<LogoutRequest> SAML2LogoutInitiator::buildRequest(
 
     const NameID* nameid = session.getNameID();
     pair<bool,const char*> flag = relyingParty->getString("encryption");
-    if (flag.first &&
-        (!strcmp(flag.second, "true") || (encoder && !strcmp(flag.second, "front")) || (!encoder && !strcmp(flag.second, "back")))) {
-        auto_ptr<EncryptedID> encrypted(EncryptedIDBuilder::buildEncryptedID());
-        MetadataCredentialCriteria mcc(role);
-        encrypted->encrypt(
-            *nameid,
-            *(application.getMetadataProvider()),
-            mcc,
-            encoder ? encoder->isCompact() : false,
-            relyingParty->getXMLString("encryptionAlg").second
+    auto_ptr_char dest(endpoint);
+    if (SPConfig::shouldSignOrEncrypt(flag.first ? flag.second : "conditional", dest.get(), encoder != nullptr)) {
+        try {
+            auto_ptr<EncryptedID> encrypted(EncryptedIDBuilder::buildEncryptedID());
+            MetadataCredentialCriteria mcc(role);
+            encrypted->encrypt(
+                *nameid,
+                *(application.getMetadataProvider()),
+                mcc,
+                encoder ? encoder->isCompact() : false,
+                relyingParty->getXMLString("encryptionAlg").second
             );
-        msg->setEncryptedID(encrypted.get());
-        encrypted.release();
+            msg->setEncryptedID(encrypted.get());
+            encrypted.release();
+        }
+        catch (std::exception& ex) {
+            // If we're encrypting deliberately, failure should be fatal.
+            if (flag.first && strcmp(flag.second, "conditional")) {
+                throw;
+            }
+            // If opportunistically, just log and move on.
+            m_log.info("Conditional encryption of NameID in LogoutRequest failed: %s", ex.what());
+            auto_ptr<NameID> namewrapper(nameid->cloneNameID());
+            msg->setNameID(namewrapper.get());
+            namewrapper.release();
+        }
     }
     else {
-        msg->setNameID(nameid->cloneNameID());
+        auto_ptr<NameID> namewrapper(nameid->cloneNameID());
+        msg->setNameID(namewrapper.get());
+        namewrapper.release();
     }
 
     XMLCh* msgid = SAMLConfig::getConfig().generateIdentifier();

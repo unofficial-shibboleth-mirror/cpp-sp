@@ -328,7 +328,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         payload.release();
 
         long ret = sendMessage(
-            *m_encoder, resp.get(), relayState.c_str(), nullptr, policy->getIssuerMetadata(), application, httpResponse, "signResponses"
+            *m_encoder, resp.get(), relayState.c_str(), nullptr, policy->getIssuerMetadata(), application, httpResponse, "conditional"
             );
         resp.release();  // freed by encoder
         return make_pair(true, ret);

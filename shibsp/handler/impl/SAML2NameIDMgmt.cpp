@@ -512,7 +512,7 @@ pair<bool,long> SAML2NameIDMgmt::sendResponse(
 
     auto_ptr_char dest(nim->getDestination());
 
-    long ret = sendMessage(*encoder, nim.get(), relayState, dest.get(), role, application, httpResponse);
+    long ret = sendMessage(*encoder, nim.get(), relayState, dest.get(), role, application, httpResponse, "conditional");
     nim.release();  // freed by encoder
     return make_pair(true, ret);
 }

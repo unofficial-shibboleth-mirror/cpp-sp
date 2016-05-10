@@ -9,7 +9,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="2.5.3">
+	version="2.6">
 
   <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
   <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
@@ -43,6 +43,7 @@
       <enumeration value="false"/>
       <enumeration value="front"/>
       <enumeration value="back"/>
+      <enumeration value="conditional" />
     </restriction>
   </simpleType>
 

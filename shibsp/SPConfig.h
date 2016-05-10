@@ -299,6 +299,18 @@ namespace shibsp {
          */
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > SingleLogoutServiceManager;
 
+#ifndef SHIBSP_LITE
+        /**
+        * Determine whether messages should be digitally signed or encrypted based on the setting and endpoint.
+        *
+        * @param setting the applicable "signing" or "encryption" property in effect
+        * @param isUserAgentPresent true iff the user agent is mediating the exchange
+        * @param URL of endpoint to receive message
+        * @return whether requests should be digitally signed or encrypted
+        */
+        static bool shouldSignOrEncrypt(const char* setting, const char* endpoint, bool isUserAgentPresent);
+#endif
+
     protected:
         /** Global ServiceProvider instance. */
         ServiceProvider* m_serviceProvider;

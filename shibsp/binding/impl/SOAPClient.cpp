@@ -61,8 +61,8 @@ void SOAPClient::send(const soap11::Envelope& env, const char* from, MetadataCre
 {
     // Check for message signing requirements.   
     m_relyingParty = m_app.getRelyingParty(dynamic_cast<const EntityDescriptor*>(to.getRole().getParent()));
-    pair<bool,const char*> flag = m_relyingParty->getString("signing");
-    if (flag.first && (!strcmp(flag.second, "true") || !strcmp(flag.second, "back"))) {
+    pair<bool, const char*> flag = m_relyingParty->getString("signing");
+    if (SPConfig::shouldSignOrEncrypt(flag.first ? flag.second : "conditional", endpoint, false)) {
         m_credResolver=m_app.getCredentialResolver();
         if (m_credResolver) {
             m_credResolver->lock();

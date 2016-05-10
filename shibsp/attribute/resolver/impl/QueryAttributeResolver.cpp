@@ -484,17 +484,30 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
             auto_ptr<saml2::Subject> subject(saml2::SubjectBuilder::buildSubject());
 
             // Encrypt the NameID?
-            if (encryption.first && (!strcmp(encryption.second, "true") || !strcmp(encryption.second, "back"))) {
-                auto_ptr<EncryptedID> encrypted(EncryptedIDBuilder::buildEncryptedID());
-                encrypted->encrypt(
-                    *ctx.getNameID(),
-                    *(application.getMetadataProvider()),
-                    mcc,
-                    false,
-                    relyingParty->getXMLString("encryptionAlg").second
-                    );
-                subject->setEncryptedID(encrypted.get());
-                encrypted.release();
+            if (SPConfig::shouldSignOrEncrypt(encryption.first ? encryption.second : "conditional", loc.get(), false)) {
+                try {
+                    auto_ptr<EncryptedID> encrypted(EncryptedIDBuilder::buildEncryptedID());
+                    encrypted->encrypt(
+                        *ctx.getNameID(),
+                        *(application.getMetadataProvider()),
+                        mcc,
+                        false,
+                        relyingParty->getXMLString("encryptionAlg").second
+                        );
+                    subject->setEncryptedID(encrypted.get());
+                    encrypted.release();
+                }
+                catch (std::exception& ex) {
+                    // If we're encrypting deliberately, failure should be fatal.
+                    if (encryption.first && strcmp(encryption.second, "conditional")) {
+                        throw;
+                    }
+                    // If opportunistically, just log and move on.
+                    m_log.info("Conditional encryption of NameID in AttributeQuery failed: %s", ex.what());
+                    auto_ptr<NameID> namewrapper(ctx.getNameID()->cloneNameID());
+                    subject->setNameID(namewrapper.get());
+                    namewrapper.release();
+                }
             }
             else {
                 auto_ptr<NameID> namewrapper(ctx.getNameID()->cloneNameID());
