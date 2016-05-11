@@ -532,7 +532,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         int curver = m_obj["version"].integer();
         int ver = m_cache->m_storage->readText(getID(), "session", &record, &lastAccess, curver);
         if (ver == 0) {
-            m_cache->m_log.warn("unsuccessful versioned read of session (ID: %s), cache out of sync?", getID());
+            m_cache->m_log.info("session (ID: %s) no longer in storage", getID());
             throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
         }
 
@@ -1999,7 +1999,7 @@ void SSCache::receive(DDF& in, ostream& out)
         int curver = in["version"].integer();
         int ver = m_storage->readText(key, "session", &record, &lastAccess, client_addr ? 0 : curver);
         if (ver == 0) {
-            m_log.warn("unsuccessful read of session (ID: %s), caches out of sync?", key);
+            m_log.info("session (ID: %s) no longer in storage", key);
             throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
         }
 
