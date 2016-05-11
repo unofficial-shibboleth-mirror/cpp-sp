@@ -518,7 +518,9 @@ auto_ptr<LogoutRequest> SAML2LogoutInitiator::buildRequest(
     }
 
     const NameID* nameid = session.getNameID();
-    pair<bool,const char*> flag = relyingParty->getString("encryption");
+    pair<bool, const char*> flag = getString("encryption");
+    if (!flag.first)
+        flag = relyingParty->getString("encryption");
     auto_ptr_char dest(endpoint);
     if (SPConfig::shouldSignOrEncrypt(flag.first ? flag.second : "conditional", dest.get(), encoder != nullptr)) {
         try {

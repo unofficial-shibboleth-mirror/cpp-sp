@@ -563,6 +563,18 @@
       <documentation>Used to ignore NoPassive errors in AssertionConsumerService endpoints</documentation>
     </annotation>
   </attribute>
+
+  <attribute name="signing" type="conf:bindingBoolean">
+    <annotation>
+      <documentation>Used to override signing property in SingleLogoutService/etc endpoints</documentation>
+    </annotation>
+  </attribute>
+
+  <attribute name="encryption" type="conf:bindingBoolean">
+    <annotation>
+      <documentation>Used to override encryption property in SingleLogoutService/etc endpoints</documentation>
+    </annotation>
+  </attribute>
   
   <attributeGroup name="SessionInitiatorGroup">
     <annotation>
@@ -586,6 +598,8 @@
     <attribute name="requestDelegation" type="boolean"/>
     <attribute name="target" type="anyURI"/>
     <attribute name="discoveryPolicy" type="conf:string"/>
+    <attribute name="signing" type="conf:bindingBoolean"/>
+    <attribute name="encryption" type="conf:bindingBoolean"/>    
     <anyAttribute namespace="##any" processContents="lax"/>
   </attributeGroup>
 
@@ -619,6 +633,8 @@
     <attribute name="outgoingBindings" type="conf:listOfURIs"/>
     <attribute name="template" type="anyURI"/>
     <attribute name="postArtifact" type="boolean"/>
+    <attribute name="signing" type="conf:bindingBoolean"/>
+    <attribute name="encryption" type="conf:bindingBoolean"/>    
     <anyAttribute namespace="##any" processContents="lax"/>
   </attributeGroup>
 
