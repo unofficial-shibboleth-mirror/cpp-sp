@@ -7,12 +7,13 @@ set FQDN=
 set ENTITYID=
 set TEMP_DOMAIN_NAME=
 set PARAM=
-
-set PREFIX=%~dp0
+set PREFIX=
 
 :opt_start
 set PARAM=%1
 if not defined PARAM goto opt_end
+if %1==-o goto opt_out
+if %1==-n goto opt_prefix
 if %1==-h goto opt_fqdn
 if %1==-e goto opt_entityid
 if %1==-y goto opt_years
@@ -20,8 +21,11 @@ if %1==-f goto opt_force
 goto usage
 :opt_end
 
-if exist "%PREFIX%sp-key.pem" goto protect
-if exist "%PREFIX%sp-cert.pem" goto protect
+if not defined OUT set OUT=%~dp0
+if not defined PREFIX set PREFIX=sp
+
+if exist "%OUT%\%PREFIX%-key.pem" goto protect
+if exist "%OUT%\%PREFIX%-cert.pem" goto protect
 
 if not defined YEARS set YEARS=10
 set /a DAYS=%YEARS%*365
@@ -30,7 +34,7 @@ if not defined FQDN goto guess_fqdn
 
 :generate
 set PATH=%PATH%;%ProgramFiles%\Shibboleth\SP\lib\
-set CNF="%PREFIX%sp-cert.cnf"
+set CNF="%OUT%\%PREFIX%-cert.cnf"
 echo # OpenSSL configuration file for creating keypair       >%CNF%
 echo [req]                                                   >>%CNF%
 echo prompt=no                                               >>%CNF%
@@ -46,18 +50,30 @@ echo CN=%FQDN%                                               >>%CNF%
 echo [ext]                                                   >>%CNF%
 if defined ENTITYID (echo subjectAltName=DNS:%FQDN%,URI:%ENTITYID% >>%CNF%) else (echo subjectAltName=DNS:%FQDN% >>%CNF%)
 echo subjectKeyIdentifier=hash                               >>%CNF%
-openssl.exe req -config %CNF% -new -x509 -days %DAYS% -keyout "%PREFIX%sp-key.pem" -out "%PREFIX%sp-cert.pem"
+openssl.exe req -config %CNF% -new -x509 -days %DAYS% -keyout "%OUT%\%PREFIX%-key.pem" -out "%OUT%\%PREFIX%-cert.pem"
 del %CNF%
 exit /b
 
 :protect
-echo The files sp-key.pem and/or sp-cert.pem already exist!
+echo The files %OUT%\%PREFIX%-key.pem and/or %OUT%\%PREFIX%-cert.pem already exist!
 echo Use -f option to force recreation of keypair.
 exit /b
 
+:opt_out
+set OUT=%2
+shift
+shift
+goto opt_start
+
+:opt_prefix
+set PREFIX=%2
+shift
+shift
+goto opt_start
+
 :opt_force
-if exist "%PREFIX%sp-key.pem" del "%PREFIX%sp-key.pem"
-if exist "%PREFIX%sp-cert.pem" del "%PREFIX%sp-cert.pem"
+if exist "%OUT%\%PREFIX%-key.pem" del "%OUT%\%PREFIX%-key.pem"
+if exist "%OUT%\%PREFIX%-cert.pem" del "%OUT%\%PREFIX%-cert.pem"
 shift
 goto opt_start
 
@@ -80,7 +96,7 @@ shift
 goto opt_start
 
 :usage
-echo usage: keygen [-h hostname for cert] [-y years to issue cert] [-e entityID to embed in cert]
+echo usage: keygen [-h hostname for cert] [-y years to issue cert] [-e entityID to embed in cert] [-n filename prefix] [-o output dir]
 exit /b
 
 :guess_fqdn
