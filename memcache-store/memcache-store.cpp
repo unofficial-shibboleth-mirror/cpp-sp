@@ -429,7 +429,7 @@ bool MemcacheStorageService::createString(const char* context, const char* key, 
 {
     m_log.debug("createString ctx: %s - key: %s", context, key);
 
-    string final_key = string(context) + ":" + string(key);
+    string final_key = string(context) + ':' + string(key);
 
     mc_record rec(value, expiration);
     string final_value;
@@ -535,7 +535,7 @@ int MemcacheStorageService::updateString(const char* context, const char* key, c
     }
 
     // Proceding with update
-    string final_key = string(context) + ":" + string(key);
+    string final_key = string(context) + ':' + string(key);
     mc_record rec(value, final_exp);
     string final_value;
     serialize(rec, final_value);
@@ -548,7 +548,7 @@ bool MemcacheStorageService::deleteString(const char* context, const char* key)
 {
     m_log.debug("deleteString ctx: %s - key: %s", context, key);
   
-    string final_key = string(context) + ":" + string(key);
+    string final_key = string(context) + ':' + string(key);
 
     // Not updating context map, if there is one. There is no need.
     return deleteMemcache(final_key.c_str(), 0);
@@ -612,7 +612,7 @@ void MemcacheStorageService::deleteContext(const char* context)
     
         m_log.debug("Iterating retrieved session map...");
         for (list<string>::const_iterator iter = contents.begin(); iter != contents.end(); ++iter) {
-            string final_key = map_name + *iter;
+            string final_key = map_name + ':' + *iter;
             deleteMemcache(final_key.c_str(), 0);
         }
     
