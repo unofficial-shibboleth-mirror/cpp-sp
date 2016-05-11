@@ -31,12 +31,12 @@ if not defined FQDN goto guess_fqdn
 :generate
 set PATH=%PATH%;%ProgramFiles%\Shibboleth\SP\lib\
 set CNF="%PREFIX%sp-cert.cnf"
-echo # OpenSSL configuration file for creating sp-cert.pem    >%CNF%
+echo # OpenSSL configuration file for creating keypair       >%CNF%
 echo [req]                                                   >>%CNF%
 echo prompt=no                                               >>%CNF%
-echo default_bits=2048                                       >>%CNF%
+echo default_bits=3072                                       >>%CNF%
 echo encrypt_key=no                                          >>%CNF%
-echo default_md=sha1                                         >>%CNF%
+echo default_md=sha256                                       >>%CNF%
 echo distinguished_name=dn                                   >>%CNF%
 echo # PrintableStrings only                                 >>%CNF%
 echo string_mask=MASK:0002                                   >>%CNF%

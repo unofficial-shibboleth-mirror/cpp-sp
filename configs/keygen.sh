@@ -50,12 +50,12 @@ fi
 
 SSLCNF=$OUT/sp-cert.cnf
 cat >$SSLCNF <<EOF
-# OpenSSL configuration file for creating sp-cert.pem
+# OpenSSL configuration file for creating keypair
 [req]
 prompt=no
-default_bits=2048
+default_bits=3072
 encrypt_key=no
-default_md=sha1
+default_md=sha256
 distinguished_name=dn
 # PrintableStrings only
 string_mask=MASK:0002
