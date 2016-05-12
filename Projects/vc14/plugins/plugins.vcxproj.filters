@@ -1,21 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="GSSAPIAttributeExtractor.cpp" />
-    <ClCompile Include="plugins.cpp" />
-    <ClCompile Include="TransformAttributeResolver.cpp" />
-    <ClCompile Include="TemplateAttributeResolver.cpp" />
-    <ClCompile Include="CaseFoldingAttributeResolver.cpp" />
-    <ClCompile Include="TimeAccessControl.cpp" />
+    <ClCompile Include="..\..\..\plugins\CaseFoldingAttributeResolver.cpp" />
+    <ClCompile Include="..\..\..\plugins\GSSAPIAttributeExtractor.cpp" />
+    <ClCompile Include="..\..\..\plugins\plugins.cpp" />
+    <ClCompile Include="..\..\..\plugins\TemplateAttributeResolver.cpp" />
+    <ClCompile Include="..\..\..\plugins\TimeAccessControl.cpp" />
+    <ClCompile Include="..\..\..\plugins\TransformAttributeResolver.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="internal.h" />
-    <ClInclude Include="resource.h" />
+    <ClInclude Include="..\..\..\plugins\internal.h" />
+    <ClInclude Include="..\..\..\plugins\resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Makefile.am" />
+    <None Include="..\..\..\plugins\Makefile.am" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="plugins.rc" />
+    <ResourceCompile Include="..\..\..\plugins\plugins.rc" />
   </ItemGroup>
 </Project>
