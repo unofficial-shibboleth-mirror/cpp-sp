@@ -11,9 +11,9 @@ BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
 Requires:	openssl
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
-PreReq:		xmltooling-schemas%{?_isa} >= 1.5.5, opensaml-schemas%{?_isa} >= 2.6.0
+PreReq:		xmltooling-schemas%{?_isa} >= 1.6.0, opensaml-schemas%{?_isa} >= 2.6.0
 %else
-PreReq:		xmltooling-schemas >= 1.5.5, opensaml-schemas >= 2.6.0
+PreReq:		xmltooling-schemas >= 1.6.0, opensaml-schemas >= 2.6.0
 %endif
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:		%{insserv_prereq} %{fillup_prereq}
@@ -27,7 +27,7 @@ BuildRequires:	libxerces-c-devel >= 3.1
 %endif
 %endif
 BuildRequires:	libxml-security-c-devel >= 1.7.3
-BuildRequires:	libxmltooling-devel >= 1.5.5
+BuildRequires:	libxmltooling-devel >= 1.6.0
 BuildRequires:	libsaml-devel >= 2.6.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.4}
@@ -95,7 +95,7 @@ Requires:	xerces-c-devel >= 3.1
 Requires:	libxerces-c-devel >= 3.1
 %endif
 Requires: 	libxml-security-c-devel >= 1.7.3
-Requires: 	libxmltooling-devel >= 1.5.5
+Requires: 	libxmltooling-devel >= 1.6.0
 Requires: 	libsaml-devel >= 2.6.0
 %{?_with_log4cpp:Requires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:Requires: liblog4shib-devel >= 1.0.4}

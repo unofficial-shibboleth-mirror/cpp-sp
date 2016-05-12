@@ -38,6 +38,7 @@
 #include <xmltooling/signature/Signature.h>
 #include <xmltooling/soap/SOAP.h>
 #include <xmltooling/soap/HTTPSOAPTransport.h>
+#include <xmltooling/soap/OpenSSLSOAPTransport.h>
 #include <xmltooling/util/NDC.h>
 
 using namespace shibsp;
@@ -218,6 +219,14 @@ void SOAPClient::prepareTransport(SOAPTransport& transport)
         flag = m_relyingParty->getBool("chunkedEncoding");
         http->useChunkedEncoding(flag.first && flag.second);
         http->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION);
+    }
+
+    OpenSSLSOAPTransport* openssl = dynamic_cast<OpenSSLSOAPTransport*>(&transport);
+    if (openssl) {
+        pair<bool, const char*> ciphers = m_relyingParty->getString("cipherSuites");
+        if (ciphers.first) {
+            openssl->setCipherSuites(ciphers.second);
+        }
     }
 }
 

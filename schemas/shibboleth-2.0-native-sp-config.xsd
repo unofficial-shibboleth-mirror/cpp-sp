@@ -462,6 +462,7 @@
     <attribute name="chunkedEncoding" type="boolean"/>
     <attribute name="connectTimeout" type="unsignedShort"/>
     <attribute name="timeout" type="unsignedShort"/>
+    <attribute name="cipherSuites" type="string"/>
     <attribute name="requireConfidentiality" type="boolean"/>
     <attribute name="requireTransportAuth" type="boolean"/>
     <attribute name="requireSignedAssertions" type="boolean"/>
