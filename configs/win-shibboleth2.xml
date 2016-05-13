@@ -64,7 +64,8 @@
     points into to this section (or to the defaults here).
     -->
     <ApplicationDefaults entityID="https://sp.example.org/shibboleth"
-                         REMOTE_USER="eppn persistent-id targeted-id">
+                         REMOTE_USER="eppn persistent-id targeted-id"
+                         cipherSuites="ECDHE+AESGCM:ECDHE:!aNULL:!eNULL:!LOW:!EXPORT:!RC4:!SHA:!SSLv2">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
