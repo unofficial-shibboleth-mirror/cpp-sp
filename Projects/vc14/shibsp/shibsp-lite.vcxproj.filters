@@ -242,16 +242,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\shibsp\binding\ProtocolProvider.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\shibsp\GSSRequest.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\handler\LogoutInitiator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\handler\SecuredHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\remoting\impl\SocketListener.h">
@@ -302,74 +293,83 @@
     <ClInclude Include="..\..\..\shibsp\version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\util\CGIParser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\util\DOMPropertySet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\util\IPRange.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\util\PropertySet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\util\SPConstants.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\util\TemplateParameters.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\remoting\ddf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\remoting\ListenerService.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\shibsp\attribute\Attribute.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\attribute</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\attribute\BinaryAttribute.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\attribute</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\attribute\ExtensibleAttribute.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\attribute</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\attribute\NameIDAttribute.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\attribute</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\attribute\ScopedAttribute.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\attribute\SimpleAttribute.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\attribute</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\attribute\XMLAttribute.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\attribute\SimpleAttribute.h">
+      <Filter>Header Files\attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\binding\ProtocolProvider.h">
+      <Filter>Header Files\binding</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\handler\AbstractHandler.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\handler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\handler\AssertionConsumerService.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\handler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\handler\Handler.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\handler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\handler\LogoutHandler.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\handler\LogoutInitiator.h">
+      <Filter>Header Files\handler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\handler\RemotedHandler.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\handler\SecuredHandler.h">
+      <Filter>Header Files\handler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\handler\SessionInitiator.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\handler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\lite\CommonDomainCookie.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\lite</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\lite\SAMLConstants.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\lite</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\remoting\ddf.h">
+      <Filter>Header Files\remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\remoting\ListenerService.h">
+      <Filter>Header Files\remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\util\CGIParser.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\util\DOMPropertySet.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\util\IPRange.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\util\PropertySet.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\util\SPConstants.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\util\TemplateParameters.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
