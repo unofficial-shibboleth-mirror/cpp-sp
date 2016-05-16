@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -103,6 +103,7 @@
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_UNICODE;UNICODE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -129,6 +130,7 @@
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_UNICODE;UNICODE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -148,6 +150,7 @@
       <AdditionalIncludeDirectories>..\..\..\shibsp;..\..\..;..\..\..\..\cpp-opensaml;..\..\..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;WANT_TCP_SHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_1.lib;saml2.lib;xmltooling1.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -169,6 +172,7 @@
       <AdditionalIncludeDirectories>..\..\..\shibsp\;..\..\..\;..\..\..\..\cpp-opensaml;..\..\..\..\cpp-xmltooling;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;WANT_TCP_SHAR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_1.lib;saml2.lib;xmltooling1.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -188,6 +192,7 @@
     <ClCompile Include="..\..\..\shibsp\attribute\Base64AttributeDecoder.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeIssuerEntityAttributeFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeIssuerEntityMatcherFunctor.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeMatchesShibMDScopeFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterEntityAttributeFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterEntityMatcherFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\DummyAttributeFilter.cpp" />
@@ -254,7 +259,6 @@
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterInEntityGroupFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterRegexFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterStringFunctor.cpp" />
-    <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeScopeMatchesShibMDScopeFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeScopeRegexFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeScopeStringFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeValueRegexFunctor.cpp" />
