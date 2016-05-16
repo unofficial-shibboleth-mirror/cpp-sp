@@ -230,6 +230,8 @@ namespace {
         t.tm_isdst=0;
 #if defined(HAVE_TIMEGM)
         ret = timegm(&t);
+#elif defined(WIN32)
+        ret = mktime(&t) - _timezone;
 #else
         ret = mktime(&t) - timezone;
 #endif
