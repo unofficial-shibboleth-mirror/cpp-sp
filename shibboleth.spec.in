@@ -215,7 +215,7 @@ StandardInput=null
 StandardOutput=null
 StandardError=journal
 TimeoutStopSec=5s
-TimeoutStartSec=90s
+TimeoutStartSec=150s
 Restart=on-failure
 RestartSec=30s
 
@@ -473,6 +473,7 @@ exit 0
 %changelog
 * Tue May 03 2016 Scott Cantor <cantor.2@osu.edu> - 2.6.0-1
 - Bump opensaml dependency version
+- Bump max wait time for shibd systemd unit file
 
 * Thu Jul 23 2015 Scott Cantor <cantor.2@osu.edu> - 2.5.5-2
 - Fix use of /var/run/shibboleth on newer tmpfs platforms
