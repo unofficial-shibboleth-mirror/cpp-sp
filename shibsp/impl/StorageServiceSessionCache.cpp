@@ -528,7 +528,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
 
         // Versioned read, since we already have the data in hand if it's current.
         string record;
-        time_t lastAccess;
+        time_t lastAccess = 0;
         int curver = m_obj["version"].integer();
         int ver = m_cache->m_storage->readText(getID(), "session", &record, &lastAccess, curver);
         if (ver == 0) {
@@ -537,6 +537,10 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         }
 
         if (timeout) {
+            if (lastAccess == 0) {
+                m_cache->m_log.error("session (ID: %s) did not report time of last access", getID());
+                throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            }
             // Adjust for expiration to recover last access time and check timeout.
             unsigned long cacheTimeout = m_cache->getCacheTimeout(app);
             lastAccess -= cacheTimeout;
@@ -619,7 +623,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
                         throw IOException("Unable to update stored session, exceeded retry limit.");
                     }
                     m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
-                    ver = m_cache->m_storage->readText(getID(), "session", &record, nullptr);
+                    ver = m_cache->m_storage->readText(getID(), "session", &record);
                     if (!ver) {
                         m_cache->m_log.error("readText failed on StorageService for session (%s)", getID());
                         throw IOException("Unable to read back stored session.");
@@ -712,7 +716,7 @@ void StoredSession::addAttributes(const vector<Attribute*>& attributes)
                 throw IOException("Unable to update stored session, exceeded retry limit.");
             }
             m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
-            ver = m_cache->m_storage->readText(getID(), "session", &record, nullptr);
+            ver = m_cache->m_storage->readText(getID(), "session", &record);
             if (!ver) {
                 m_cache->m_log.error("readText failed on StorageService for session (%s)", getID());
                 throw IOException("Unable to read back stored session.");
@@ -749,7 +753,7 @@ const Assertion* StoredSession::getAssertion(const char* id) const
         return i->second.get();
 
     string tokenstr;
-    if (!m_cache->m_storage->readText(getID(), id, &tokenstr, nullptr))
+    if (!m_cache->m_storage->readText(getID(), id, &tokenstr))
         throw FatalProfileException("Assertion not found in cache.");
 
     // Parse and bind the document into an XMLObject.
@@ -786,8 +790,8 @@ void StoredSession::addAssertion(Assertion* assertion)
 
     m_cache->m_log.debug("adding assertion (%s) to session (%s)", id.get(), getID());
 
-    time_t exp;
-    if (!m_cache->m_storage->readText(getID(), "session", nullptr, &exp))
+    time_t exp = 0;
+    if (!m_cache->m_storage->readText(getID(), "session", nullptr, &exp) || exp == 0)
         throw IOException("Unable to load expiration time for stored session.");
 
     ostringstream tokenstr;
@@ -835,7 +839,7 @@ void StoredSession::addAssertion(Assertion* assertion)
                 throw IOException("Unable to update stored session, exceeded retry limit.");
             }
             m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
-            ver = m_cache->m_storage->readText(getID(), "session", &record, nullptr);
+            ver = m_cache->m_storage->readText(getID(), "session", &record);
             if (!ver) {
                 m_cache->m_log.error("readText failed on StorageService for session (%s)", getID());
                 m_cache->m_storage->deleteText(getID(), id.get());
@@ -1061,7 +1065,7 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
 
     // Since we can't guarantee uniqueness, check for an existing record.
     string record;
-    time_t recordexp;
+    time_t recordexp = 0;
     int ver = m_storage_lite->readText("NameID", name, &record, &recordexp);
     if (ver > 0) {
         // Existing record, so we need to unmarshall it.
@@ -1623,11 +1627,16 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
             m_log.debug("searching for session (%s)", key);
 
             DDF obj;
-            time_t lastAccess;
+            time_t lastAccess = 0;
             string record;
             int ver = m_storage->readText(key, "session", &record, &lastAccess);
             if (!ver)
                 return nullptr;
+
+            if (lastAccess = 0) {
+                m_log.error("session (ID: %s) did not report time of last access", key);
+                throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            }
 
             m_log.debug("reconstituting session and checking validity");
 
@@ -1941,13 +1950,17 @@ void SSCache::receive(DDF& in, ostream& out)
 
         // Do an unversioned read.
         string record;
-        time_t lastAccess;
+        time_t lastAccess = 0;
         if (!m_storage->readText(key, "session", &record, &lastAccess)) {
             m_log.debug("session not found in cache (%s)", key);
             DDF ret(nullptr);
             DDFJanitor jan(ret);
             out << ret;
             return;
+        }
+        else if (lastAccess == 0) {
+            m_log.error("session (ID: %s) did not report time of last access", key);
+            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
         }
 
         // Adjust for expiration to recover last access time and check timeout.
@@ -1995,11 +2008,15 @@ void SSCache::receive(DDF& in, ostream& out)
 
         // Do a read. May be unversioned if we need to bind a new client address.
         string record;
-        time_t lastAccess;
+        time_t lastAccess = 0;
         int curver = in["version"].integer();
         int ver = m_storage->readText(key, "session", &record, &lastAccess, client_addr ? 0 : curver);
         if (ver == 0) {
             m_log.info("session (ID: %s) no longer in storage", key);
+            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+        }
+        else if (lastAccess == 0) {
+            m_log.error("session (ID: %s) did not report time of last access", key);
             throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
         }
 

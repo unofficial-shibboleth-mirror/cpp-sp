@@ -496,20 +496,19 @@ int MemcacheStorageService::readString(const char* context, const char* key, str
     if (!found)
         return 0;
 
+    mc_record rec;
+    if (pexpiration || pvalue)
+        deserialize(value, rec);
+    
+    if (pexpiration)
+        *pexpiration = rec.expiration;
+
     if (version && rec_version <= (uint32_t)version)
         return version;
 
-    if (pexpiration || pvalue) {
-        mc_record rec;
-        deserialize(value, rec);
-    
-        if (pexpiration)
-            *pexpiration = rec.expiration;
-    
-        if (pvalue)
-            *pvalue = rec.value;
-    }
-  
+    if (pvalue)
+        *pvalue = rec.value;
+
     return rec_version;
 }
 
