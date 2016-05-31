@@ -158,6 +158,7 @@ namespace shibsp {
         app.clearHeader(request, "Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
         app.clearHeader(request, "Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
         app.clearHeader(request, "Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
+        app.clearHeader(request, "Shib-Handler", "HTTP_SHIB_HANDLER");
         app.clearAttributeHeaders(request);
         request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
     }
@@ -320,11 +321,14 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                     return make_pair(true, request.sendRedirect(loc.c_str()));
                 }
             }
+            app->setHeader(request, "Shib-Handler", handlerURL);
         }
         else {
             // No session.  Maybe that's acceptable?
-            if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first)
+            if ((!requireSession.first || !requireSession.second) && !requireSessionWith.first) {
+                app->setHeader(request, "Shib-Handler", handlerURL);
                 return make_pair(true, request.returnOK());
+            }
 
             // No session, but we require one. Initiate a new session using the indicated method.
             const SessionInitiator* initiator=nullptr;
