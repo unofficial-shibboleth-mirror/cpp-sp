@@ -785,14 +785,14 @@
         <choice minOccurs="0">
           <element name="UnixListener">
             <complexType>
-              <attribute name="address" type="conf:string" use="required"/>
+              <attribute name="address" type="conf:string"/>
               <attribute name="stackSize" type="unsignedInt"/>
             </complexType>
           </element>
           <element name="TCPListener">
             <complexType>
-              <attribute name="address" type="conf:string" use="required"/>
-              <attribute name="port" type="unsignedInt" use="required"/>
+              <attribute name="address" type="conf:string"/>
+              <attribute name="port" type="unsignedInt"/>
               <attribute name="acl" type="conf:listOfStrings"/>
               <attribute name="stackSize" type="unsignedInt"/>
             </complexType>

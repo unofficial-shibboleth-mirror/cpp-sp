@@ -112,15 +112,19 @@ TCPListener::TCPListener(const DOMElement* e)
       m_address(XMLHelper::getAttrString(e, getenv("SHIBSP_LISTENER_ADDRESS"), address)),
       m_port(XMLHelper::getAttrInt(e, 0, port))
 {
-    if (m_address.empty())
+    if (m_address.empty()) {
         m_address = "127.0.0.1";
+        log->info("defaulting socket address to %s", m_address.c_str());
+    }
 
     if (m_port == 0) {
         const char* p = getenv("SHIBSP_LISTENER_PORT");
         if (p && *p)
             m_port = atoi(p);
-        if (m_port == 0)
+        if (m_port == 0) {
             m_port = 1600;
+            log->info("defaulting socket port to %u", m_port);
+        }
     }
 
     vector<string> rawacls;

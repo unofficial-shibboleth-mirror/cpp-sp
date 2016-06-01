@@ -90,8 +90,10 @@ namespace shibsp {
 UnixListener::UnixListener(const DOMElement* e)
     : SocketListener(e), m_address(XMLHelper::getAttrString(e, getenv("SHIBSP_LISTENER_ADDRESS"), address)), m_bound(false)
 {
-    if (m_address.empty())
+    if (m_address.empty()) {
         m_address = "shibd.sock";
+        m_log->info("defaulting socket address to %s", m_address.c_str());
+    }
     XMLToolingConfig::getConfig().getPathResolver()->resolve(m_address, PathResolver::XMLTOOLING_RUN_FILE);
 }
 
