@@ -668,13 +668,18 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         if (!handler)
             throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
 
-        pair<bool,long> hret = handler->run(request);
-
-        // Did the handler run successfully?
-        if (hret.first)
-            return hret;
-
-        throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
+        try {
+            pair<bool, long> hret = handler->run(request);
+            // Did the handler run successfully?
+            if (hret.first)
+                return hret;
+            throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
+        }
+        catch (XMLToolingException& ex) {
+            if (!ex.getProperty("eventType") && handler->getEventType())
+                ex.addProperty("eventType", handler->getEventType());
+            throw;
+        }
     }
     catch (exception& e) {
         request.log(SPRequest::SPError, e.what());

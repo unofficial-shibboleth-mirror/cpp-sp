@@ -152,6 +152,13 @@ namespace shibsp {
          */
         virtual const char* getType() const;
 #endif
+
+        /**
+         * Get the type of event, as input to error handling in response to errors raised by this handler.
+         *
+         * @return an event type for error handling
+         */
+        virtual const char* getEventType() const;
     };
     
     /** Registers Handler implementations. */

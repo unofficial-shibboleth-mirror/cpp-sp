@@ -53,6 +53,10 @@ LogoutHandler::~LogoutHandler()
 {
 }
 
+const char* LogoutHandler::getEventType() const {
+    return LOGOUT_EVENT;
+}
+
 pair<bool,long> LogoutHandler::sendLogoutPage(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, bool local, const char* status
     ) const

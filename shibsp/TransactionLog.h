@@ -24,8 +24,10 @@
  * Formatted event record logging.
  */
 
-#if !defined (__shibsp_txlog_h__) && !defined(SHIBSP_LITE)
+#if !defined (__shibsp_txlog_h__)
 #define __shibsp_txlog_h__
+
+#ifndef SHIBSP_LITE
 
 #include <shibsp/base.h>
 #include <xmltooling/logging.h>
@@ -257,15 +259,20 @@ namespace shibsp {
      * Registers Event classes into the runtime.
      */
     void SHIBSP_API registerEvents();
-
-    /** Login event. */
-    #define LOGIN_EVENT         "Login"
-
-    /** Logout event. */
-    #define LOGOUT_EVENT        "Logout"
-
-    /** AuthnRequest event. */
-    #define AUTHNREQUEST_EVENT  "AuthnRequest"
 };
+
+#endif
+
+/** Login event. */
+#define LOGIN_EVENT         "Login"
+
+/** Logout event. */
+#define LOGOUT_EVENT        "Logout"
+
+/** AuthnRequest event. */
+#define AUTHNREQUEST_EVENT  "AuthnRequest"
+
+/** NameIDMgmt event. */
+#define NAMEIDMGMT_EVENT    "NameIDMgmt"
 
 #endif /* __shibsp_txlog_h__ */

@@ -234,7 +234,7 @@ namespace shibsp {
             ) const;
 
         /**
-         * Creates a new AuthnRequestEvent for the event log.
+         * Creates a new LoginEvent for the event log.
          *
          * @param application   the Application associated with the event
          * @param request       the HTTP client request associated with the event
@@ -246,6 +246,7 @@ namespace shibsp {
         const char* getType() const;
         const XMLCh* getProtocolFamily() const;
 #endif
+        const char* getEventType() const;
     private:
         std::pair<bool,long> processMessage(
             const Application& application, const xmltooling::HTTPRequest& httpRequest, xmltooling::HTTPResponse& httpResponse

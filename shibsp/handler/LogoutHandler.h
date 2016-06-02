@@ -75,6 +75,8 @@ namespace shibsp {
          */
         void receive(DDF& in, std::ostream& out);
 
+        const char* getEventType() const;
+
     protected:
         LogoutHandler();
         
