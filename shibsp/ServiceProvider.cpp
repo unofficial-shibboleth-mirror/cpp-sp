@@ -348,10 +348,17 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 
             // Dispatch to SessionInitiator. This MUST handle the request, or we want to fail here.
             // Used to fall through into doExport, but this is a cleaner exit path.
-            pair<bool,long> ret = initiator->run(request, false);
-            if (ret.first)
-                return ret;
-            throw ConfigurationException("Session initiator did not handle request for a new session, check configuration.");
+            try {
+                pair<bool, long> ret = initiator->run(request, false);
+                if (ret.first)
+                    return ret;
+                throw ConfigurationException("Session initiator did not handle request for a new session, check configuration.");
+            }
+            catch (XMLToolingException& ex) {
+                if (!ex.getProperty("eventType") && initiator->getEventType())
+                    ex.addProperty("eventType", initiator->getEventType());
+                throw;
+            }
         }
 
         request.setAuthType(authType.second);
