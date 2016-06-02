@@ -786,6 +786,7 @@
           <element name="UnixListener">
             <complexType>
               <attribute name="address" type="conf:string"/>
+              <attribute name="clientAddress" type="conf:string"/>
               <attribute name="stackSize" type="unsignedInt"/>
             </complexType>
           </element>
@@ -793,6 +794,8 @@
             <complexType>
               <attribute name="address" type="conf:string"/>
               <attribute name="port" type="unsignedInt"/>
+              <attribute name="clientAddress" type="conf:string"/>
+              <attribute name="clientPort" type="unsignedInt"/>
               <attribute name="acl" type="conf:listOfStrings"/>
               <attribute name="stackSize" type="unsignedInt"/>
             </complexType>

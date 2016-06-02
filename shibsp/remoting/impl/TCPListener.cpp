@@ -105,27 +105,42 @@ namespace shibsp {
     static const XMLCh address[] = UNICODE_LITERAL_7(a,d,d,r,e,s,s);
     static const XMLCh port[] = UNICODE_LITERAL_4(p,o,r,t);
     static const XMLCh acl[] = UNICODE_LITERAL_3(a,c,l);
+    static const XMLCh clientAddress[] = UNICODE_LITERAL_13(c,l,i,e,n,t,A,d,d,r,e,s,s);
+    static const XMLCh clientPort[] = UNICODE_LITERAL_10(c,l,i,e,n,t,P,o,r,t);
 };
 
-TCPListener::TCPListener(const DOMElement* e)
-    : SocketListener(e),
-      m_address(XMLHelper::getAttrString(e, getenv("SHIBSP_LISTENER_ADDRESS"), address)),
-      m_port(XMLHelper::getAttrInt(e, 0, port))
+TCPListener::TCPListener(const DOMElement* e) : SocketListener(e), m_port(0)
 {
-    if (m_address.empty()) {
-        m_address = "127.0.0.1";
-        log->info("defaulting socket address to %s", m_address.c_str());
+    // In-process, check the clientAddress/clientPort settings first.
+    if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+        m_address = XMLHelper::getAttrString(e, nullptr, clientAddress);
+        m_port = XMLHelper::getAttrInt(e, 0, clientPort);
     }
 
-    if (m_port == 0) {
-        const char* p = getenv("SHIBSP_LISTENER_PORT");
-        if (p && *p)
-            m_port = atoi(p);
-        if (m_port == 0) {
-            m_port = 1600;
-            log->info("defaulting socket port to %u", m_port);
+    // Back-off to address setting, environment, or default.
+    if (m_address.empty()) {
+        m_address = XMLHelper::getAttrString(e, getenv("SHIBSP_LISTENER_ADDRESS"), address);
+        if (m_address.empty()) {
+            m_address = "127.0.0.1";
         }
     }
+
+    log->info("using socket address: %s", m_address.c_str());
+
+    // Back-off to port setting, environment, or default.
+    if (m_port == 0) {
+        m_port = XMLHelper::getAttrInt(e, 0, port);
+        if (m_port == 0) {
+            const char* p = getenv("SHIBSP_LISTENER_PORT");
+            if (p && *p)
+                m_port = atoi(p);
+            if (m_port == 0) {
+                m_port = 1600;
+            }
+        }
+    }
+
+    log->info("using socket port: %u", m_port);
 
     vector<string> rawacls;
     string aclbuf = XMLHelper::getAttrString(e, "127.0.0.1", acl);

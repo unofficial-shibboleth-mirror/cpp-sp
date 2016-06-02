@@ -85,15 +85,26 @@ namespace shibsp {
     }
 
     static const XMLCh address[] = UNICODE_LITERAL_7(a,d,d,r,e,s,s);
+    static const XMLCh clientAddress[] = UNICODE_LITERAL_13(c,l,i,e,n,t,A,d,d,r,e,s,s);
 };
 
-UnixListener::UnixListener(const DOMElement* e)
-    : SocketListener(e), m_address(XMLHelper::getAttrString(e, getenv("SHIBSP_LISTENER_ADDRESS"), address)), m_bound(false)
+UnixListener::UnixListener(const DOMElement* e) : SocketListener(e), m_bound(false)
 {
-    if (m_address.empty()) {
-        m_address = "shibd.sock";
-        m_log->info("defaulting socket address to %s", m_address.c_str());
+    // In-process, check the clientAddress/clientPort settings first.
+    if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+        m_address = XMLHelper::getAttrString(e, nullptr, clientAddress);
     }
+
+    // Back-off to address setting, environment, or default.
+    if (m_address.empty()) {
+        m_address = XMLHelper::getAttrString(e, getenv("SHIBSP_LISTENER_ADDRESS"), address);
+        if (m_address.empty()) {
+            m_address = "shibd.sock";
+        }
+    }
+
+    log->info("using socket address: %s", m_address.c_str());
+
     XMLToolingConfig::getConfig().getPathResolver()->resolve(m_address, PathResolver::XMLTOOLING_RUN_FILE);
 }
 
