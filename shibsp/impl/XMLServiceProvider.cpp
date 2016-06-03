@@ -1760,11 +1760,19 @@ const Handler* XMLApplication::getHandler(const char* path) const
 void XMLApplication::getHandlers(vector<const Handler*>& handlers) const
 {
     static void (vector<const Handler*>::* pb)(const Handler* const&) = &vector<const Handler*>::push_back;
+    // Copy all of the override's handlers.
     for_each(m_handlers.begin(), m_handlers.end(), boost::bind(pb, boost::ref(handlers), boost::bind(&boost::shared_ptr<Handler>::get, _1)));
     if (m_base) {
-        for (map<string,const Handler*>::const_iterator h = m_base->m_handlerMap.begin(); h != m_base->m_handlerMap.end(); ++h) {
-            if (m_handlerMap.count(h->first) == 0)
-                handlers.push_back(h->second);
+        if (handlers.empty()) {
+            // If the override doesn't supply any handlers, copy the parent's in normal order.
+            for_each(m_base->m_handlers.begin(), m_base->m_handlers.end(), boost::bind(pb, boost::ref(handlers), boost::bind(&boost::shared_ptr<Handler>::get, _1)));
+        }
+        else {
+            // This unfortunately distorts the usual ordering when it comes to metadata generation, but avoiding that would be a lot of code.
+            for (map<string, const Handler*>::const_iterator h = m_base->m_handlerMap.begin(); h != m_base->m_handlerMap.end(); ++h) {
+                if (m_handlerMap.count(h->first) == 0)
+                    handlers.push_back(h->second);
+            }
         }
     }
 }
