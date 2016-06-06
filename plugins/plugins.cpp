@@ -42,6 +42,8 @@ using namespace std;
 
 namespace shibsp {
     PluginManager<AccessControl,string,const DOMElement*>::Factory TimeAccessControlFactory;
+    PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory AttributeResolverHandlerFactory;
+    
 #ifndef SHIBSP_LITE
 # ifdef HAVE_GSSAPI_NAMINGEXTS
     PluginManager<AttributeExtractor,string,const DOMElement*>::Factory GSSAPIExtractorFactory;
@@ -57,6 +59,7 @@ extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
 {
     SPConfig& conf = SPConfig::getConfig();
     conf.AccessControlManager.registerFactory("Time", TimeAccessControlFactory);
+    conf.HandlerManager.registerFactory("AttributeResolver", AttributeResolverHandlerFactory);
 #ifndef SHIBSP_LITE
 # ifdef HAVE_GSSAPI_NAMINGEXTS
     conf.AttributeExtractorManager.registerFactory("GSSAPI", GSSAPIExtractorFactory);

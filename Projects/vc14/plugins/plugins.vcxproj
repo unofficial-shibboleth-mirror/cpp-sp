@@ -188,6 +188,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\plugins\AttributeResolverHandler.cpp" />
     <ClCompile Include="..\..\..\plugins\CaseFoldingAttributeResolver.cpp" />
     <ClCompile Include="..\..\..\plugins\GSSAPIAttributeExtractor.cpp" />
     <ClCompile Include="..\..\..\plugins\plugins.cpp" />

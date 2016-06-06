@@ -8,6 +8,7 @@ noinst_HEADERS = \
 
 common_sources = \
 	plugins.cpp \
+    AttributeResolverHandler.cpp \
 	TimeAccessControl.cpp
 
 plugins_la_SOURCES = \

@@ -61,6 +61,8 @@ Additional thanks to:
     
     National Research Council of Canada
 
+    National Institute of Informatics in Japan
+
     Barbara Jenson (CMU), Parviz Dousti (CMU), Tom Dopirak (CMU), 
       and Sridhar Muppidi (IBM/Tivoli); for helping to develop 
       the initial Shibboleth prototype

@@ -190,6 +190,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\plugins\AttributeResolverHandler.cpp" />
     <ClCompile Include="..\..\..\plugins\plugins.cpp" />
     <ClCompile Include="..\..\..\plugins\TimeAccessControl.cpp" />
   </ItemGroup>
