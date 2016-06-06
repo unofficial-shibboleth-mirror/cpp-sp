@@ -2071,6 +2071,13 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 
     // Much of the processing can only occur on the first instantiation.
     if (first) {
+        // Disable DTD processing by default if Xerces happens to be new enough,
+        // but not so new that we can control it with parser settings.
+        pair<bool,bool> disableDTD = getBool("disableDTD");
+        if (!disableDTD.first || disableDTD.second) {
+            putenv("XERCES_DISABLE_DTD=1");
+        }
+
         // Set clock skew.
         pair<bool,unsigned int> skew=getUnsignedInt("clockSkew");
         if (skew.first)
