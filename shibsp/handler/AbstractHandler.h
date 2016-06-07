@@ -236,7 +236,7 @@ namespace shibsp {
          * @param type      bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,bool> getBool(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,bool> getBool(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /**
          * Returns a string-valued property.
@@ -246,7 +246,7 @@ namespace shibsp {
          * @param type      bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,const char*> getString(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,const char*> getString(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /**
          * Returns an unsigned integer-valued property.
@@ -256,7 +256,7 @@ namespace shibsp {
          * @param type      bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /**
          * Returns an integer-valued property.
@@ -266,7 +266,7 @@ namespace shibsp {
          * @param type      bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,int> getInt(const char* name, const SPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,int> getInt(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /** Logging object. */
         xmltooling::logging::Category& m_log;

@@ -822,7 +822,7 @@ DDF AbstractHandler::getPostData(const Application& application, const HTTPReque
     return DDF();
 }
 
-pair<bool,bool> AbstractHandler::getBool(const char* name, const SPRequest& request, unsigned int type) const
+pair<bool,bool> AbstractHandler::getBool(const char* name, const HTTPRequest& request, unsigned int type) const
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
@@ -830,8 +830,9 @@ pair<bool,bool> AbstractHandler::getBool(const char* name, const SPRequest& requ
             return make_pair(true, (*param=='t' || *param=='1'));
     }
     
-    if (type & HANDLER_PROPERTY_MAP) {
-        pair<bool,bool> ret = request.getRequestSettings().first->getBool(name);
+    const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
+    if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
+        pair<bool,bool> ret = sprequest->getRequestSettings().first->getBool(name);
         if (ret.first)
             return ret;
     }
@@ -843,7 +844,7 @@ pair<bool,bool> AbstractHandler::getBool(const char* name, const SPRequest& requ
     return make_pair(false,false);
 }
 
-pair<bool,const char*> AbstractHandler::getString(const char* name, const SPRequest& request, unsigned int type) const
+pair<bool,const char*> AbstractHandler::getString(const char* name, const HTTPRequest& request, unsigned int type) const
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
@@ -851,8 +852,9 @@ pair<bool,const char*> AbstractHandler::getString(const char* name, const SPRequ
             return make_pair(true, param);
     }
     
-    if (type & HANDLER_PROPERTY_MAP) {
-        pair<bool,const char*> ret = request.getRequestSettings().first->getString(name);
+    const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
+    if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
+        pair<bool,const char*> ret = sprequest->getRequestSettings().first->getString(name);
         if (ret.first)
             return ret;
     }
@@ -864,7 +866,7 @@ pair<bool,const char*> AbstractHandler::getString(const char* name, const SPRequ
     return pair<bool,const char*>(false,nullptr);
 }
 
-pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const SPRequest& request, unsigned int type) const
+pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const HTTPRequest& request, unsigned int type) const
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
@@ -878,8 +880,9 @@ pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const 
         }
     }
     
-    if (type & HANDLER_PROPERTY_MAP) {
-        pair<bool,unsigned int> ret = request.getRequestSettings().first->getUnsignedInt(name);
+    const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
+    if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
+        pair<bool,unsigned int> ret = sprequest->getRequestSettings().first->getUnsignedInt(name);
         if (ret.first)
             return ret;
     }
@@ -891,7 +894,7 @@ pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const 
     return pair<bool,unsigned int>(false,0);
 }
 
-pair<bool,int> AbstractHandler::getInt(const char* name, const SPRequest& request, unsigned int type) const
+pair<bool,int> AbstractHandler::getInt(const char* name, const HTTPRequest& request, unsigned int type) const
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
@@ -899,8 +902,9 @@ pair<bool,int> AbstractHandler::getInt(const char* name, const SPRequest& reques
             return pair<bool,int>(true, atoi(param));
     }
     
-    if (type & HANDLER_PROPERTY_MAP) {
-        pair<bool,int> ret = request.getRequestSettings().first->getInt(name);
+    const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
+    if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
+        pair<bool,int> ret = sprequest->getRequestSettings().first->getInt(name);
         if (ret.first)
             return ret;
     }
