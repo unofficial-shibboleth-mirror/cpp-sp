@@ -24,12 +24,6 @@
  * Handler that runs the attribute resolver machinery and outputs the results directly.
  */
 
-#if defined (_MSC_VER) || defined(__BORLANDC__)
-# include "config_win32.h"
-#else
-# include "config.h"
-#endif
-
 #include "internal.h"
 
 #include <shibsp/Application.h>
@@ -65,13 +59,13 @@
 
 using namespace std;
 using namespace shibsp;
+using namespace opensaml;
 using namespace xmltooling;
 using namespace xercesc;
 using namespace boost;
 
 #ifndef SHIBSP_LITE
 using namespace opensaml::saml2md;
-using namespace opensaml;
 #endif
 
 namespace shibsp {
@@ -93,23 +87,24 @@ namespace shibsp {
     private:
         pair<bool,long> processMessage(
             const Application& application,
-            const HTTPRequest& httpRequest,
+            const char* protocol,
+            const char* entityID,
+            const char* format,
+            const char* nameID,
+            const char* encoding,
             HTTPResponse& httpResponse
             ) const;
 
 #ifndef SHIBSP_LITE
         ResolutionContext* resolveAttributes(
             const Application& application,
-            const GenericRequest* request,
             const RoleDescriptor* issuer,
             const XMLCh* protocol,
             const saml1::NameIdentifier* v1nameid,
             const saml2::NameID* nameid
             ) const;
 
-        ostream& buildJSON(ostream& os, vector<shibsp::Attribute*>& attributes) const;
-
-        string m_encoding;
+        ostream& buildJSON(ostream& os, vector<shibsp::Attribute*>& attributes, const char* encoding) const;
 #endif
     };
 
@@ -196,11 +191,6 @@ AttributeResolverHandler::AttributeResolverHandler(const DOMElement* e, const ch
     string address(appId);
     address += prop.second;
     setAddress(address.c_str());
-
-#ifndef SHIBSP_LITE
-    pair<bool, const char*> encoding = getString("encoding");
-    m_encoding = encoding.first ? encoding.second : "";
-#endif
 }
 
 pair<bool,long> AttributeResolverHandler::run(SPRequest& request, bool isHandler) const
@@ -213,15 +203,45 @@ pair<bool,long> AttributeResolverHandler::run(SPRequest& request, bool isHandler
     request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
     request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
     request.setContentType("application/json; charset=utf-8");
+
+    pair<bool,const char*> param_protocol = getString("protocol", request, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
+    pair<bool,const char*> param_issuer = getString("entityID", request, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
+    pair<bool,const char*> param_format = getString("format", request, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
+    pair<bool,const char*> param_nameid = getString("nameId", request, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
+    pair<bool,const char*> param_encoding = getString("encoding", request, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
+
+    if (!param_nameid.first) {
+        m_log.error("AttributResolver handler requires nameId parameter");
+        istringstream msg("{}");
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_BADREQUEST));
+    }
+
     try {
         if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
-            return processMessage(request.getApplication(), request, request);
+            return processMessage(
+                request.getApplication(),
+                param_protocol.second,
+                param_issuer.second,
+                param_format.second,
+                param_nameid.second,
+                param_encoding.second,
+                request);
         }
         else {
             // When not out of process, we remote all the message processing.
-            DDF out,in = wrap(request);
+            DDF out,in = DDF(m_address.c_str()).structure();
             DDFJanitor jin(in), jout(out);
+            in.addmember("application_id").string(request.getApplication().getId());
+            if (param_protocol.first)
+                in.addmember("protocol").string(param_protocol.second);
+            if (param_issuer.first)
+                in.addmember("entityID").string(param_issuer.second);
+            if (param_format.first)
+                in.addmember("format").string(param_format.second);
+            in.addmember("nameID").string(param_nameid.second);
+            if (param_encoding.first)
+                in.addmember("encoding").string(param_encoding.second);
             out=request.getServiceProvider().getListenerService()->send(in);
             return unwrap(request, out);
         }
@@ -240,21 +260,34 @@ void AttributeResolverHandler::receive(DDF& in, ostream& out)
     const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
     if (!app) {
         // Something's horribly wrong.
-        m_log.error("couldn't find application (%s) for AttributeQuery request", aid ? aid : "(missing)");
+        m_log.error("couldn't find application (%s) for AttributeResolver request", aid ? aid : "(missing)");
         throw ConfigurationException("Unable to locate application for request, deleted?");
+    }
+
+    const char* nameID = in["nameID"].string();
+    if (!nameID) {
+        // Something's horribly wrong.
+        m_log.error("no nameId parameter supplied for request");
+        throw FatalProfileException("Required nameId parameter not found");
     }
 
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPRequest> req(getRequest(in));
     scoped_ptr<HTTPResponse> resp(getResponse(ret));
 
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
     try {
-        processMessage(*app, *req, *resp);
+        processMessage(
+            *app,
+            in["protocol"].string(),
+            in["entityID"].string(),
+            in["format"].string(),
+            in["nameID"].string(),
+            in["encoding"].string(),
+            *resp);
     }
     catch (std::exception& ex) {
         m_log.error("raising exception: %s", ex.what());
@@ -264,45 +297,34 @@ void AttributeResolverHandler::receive(DDF& in, ostream& out)
 }
 
 pair<bool,long> AttributeResolverHandler::processMessage(
-    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse
+    const Application& application,
+    const char* protocol,
+    const char* entityID,
+    const char* format,
+    const char* nameID,
+    const char* encoding,
+    HTTPResponse& httpResponse
     ) const
 {
 #ifndef SHIBSP_LITE
-    m_log.debug("processing status request");
-    m_log.debug("request URL: %s", httpRequest.getRequestURL());
-
-    const char* param_protocol = httpRequest.getParameter("protocol");
-    const char* param_issuer   = httpRequest.getParameter("entityID");
-    const char* param_format   = httpRequest.getParameter("format");
-    const char* param_nameid   = httpRequest.getParameter("nameId");
-
-    m_log.debug("protocol = %s, entityID = %s, format = %s, name = %s",
-                param_protocol, param_issuer, param_format, param_nameid);
-
     stringstream msg;
 
-    if (!param_nameid || !*param_nameid) {
-        m_log.error("AttributeQuery Handler requires nameId parameter");
-        msg << "{}";
-        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_BADREQUEST));
-    }
+    const auto_ptr_XMLCh w_entityID(entityID);
+    const auto_ptr_XMLCh w_nameID(nameID);
+    const auto_ptr_XMLCh w_format(format);
 
-    const auto_ptr_XMLCh issuer(param_issuer);
-    const auto_ptr_XMLCh nameid(param_nameid);
-    const auto_ptr_XMLCh format(param_format);
-
-    if (param_protocol) {
-        if (strcmp(param_protocol, "SAML2.0") == 0)
-            param_protocol = "urn:oasis:names:tc:SAML:2.0:protocol"; // samlconstants::SAML20P_NS;
-        else if (strcmp(param_protocol, "SAML1.1") == 0)
-            param_protocol = "urn:oasis:names:tc:SAML:1.1:protocol"; // samlconstants::SAML11_PROTOCOL_ENUM;
-        else if (strcmp(param_protocol, "SAML1.0") == 0)
-            param_protocol = "urn:oasis:names:tc:SAML:1.0:protocol"; // samlconstants::SAML10_PROTOCOL_ENUM;
+    if (protocol) {
+        if (!strcmp(protocol, "SAML2.0"))
+            protocol = "urn:oasis:names:tc:SAML:2.0:protocol"; // samlconstants::SAML20P_NS;
+        else if (!strcmp(protocol, "SAML1.1"))
+            protocol = "urn:oasis:names:tc:SAML:1.1:protocol"; // samlconstants::SAML11_PROTOCOL_ENUM;
+        else if (!strcmp(protocol, "SAML1.0"))
+            protocol = "urn:oasis:names:tc:SAML:1.0:protocol"; // samlconstants::SAML10_PROTOCOL_ENUM;
     }
     else {
-        param_protocol = "urn:oasis:names:tc:SAML:2.0:protocol"; // samlconstants::SAML20P_NS;
+        protocol = "urn:oasis:names:tc:SAML:2.0:protocol"; // samlconstants::SAML20P_NS;
     }
-    const auto_ptr_XMLCh protocol(param_protocol);
+    const auto_ptr_XMLCh w_protocol(protocol);
 
     try {
         scoped_ptr<ResolutionContext> ctx;
@@ -310,28 +332,28 @@ pair<bool,long> AttributeResolverHandler::processMessage(
         MetadataProvider* m = application.getMetadataProvider();
         Locker mlock(m);
 
-        MetadataProviderCriteria mc(application, param_issuer, &IDPSSODescriptor::ELEMENT_QNAME, protocol.get());
+        MetadataProviderCriteria mc(application, entityID, &IDPSSODescriptor::ELEMENT_QNAME, w_protocol.get());
         pair<const EntityDescriptor*,const RoleDescriptor*> site = m->getEntityDescriptor(mc);
         if (!site.first)
-            m_log.info("Unable to locate metadata for IdP (%s).", param_issuer);
+            m_log.info("Unable to locate metadata for IdP (%s).", entityID);
 
         // Build NameID(s).
         scoped_ptr<saml1::NameIdentifier> v1name;
         scoped_ptr<saml2::NameID> v2name(saml2::NameIDBuilder::buildNameID());
-        v2name->setName(nameid.get());
-        v2name->setFormat(format.get());
-        v2name->setNameQualifier(issuer.get());
+        v2name->setName(w_nameID.get());
+        v2name->setFormat(w_format.get());
+        v2name->setNameQualifier(w_entityID.get());
         v2name->setSPNameQualifier(application.getRelyingParty(site.first)->getXMLString("entityID").second);
-        if (!XMLString::equals(protocol.get(), samlconstants::SAML20P_NS)) {
+        if (!XMLString::equals(w_protocol.get(), samlconstants::SAML20P_NS)) {
             v1name.reset(saml1::NameIdentifierBuilder::buildNameIdentifier());
-            v1name->setName(nameid.get());
-            v1name->setFormat(format.get());
-            v1name->setNameQualifier(issuer.get());
+            v1name->setName(w_nameID.get());
+            v1name->setFormat(w_format.get());
+            v1name->setNameQualifier(w_entityID.get());
         }
 
-        ctx.reset(resolveAttributes(application, &httpRequest, site.second, protocol.get(), v1name.get(), v2name.get()));
+        ctx.reset(resolveAttributes(application, site.second, w_protocol.get(), v1name.get(), v2name.get()));
 
-        buildJSON(msg, ctx->getResolvedAttributes());
+        buildJSON(msg, ctx->getResolvedAttributes(), encoding);
     }
     catch (std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
@@ -347,7 +369,6 @@ pair<bool,long> AttributeResolverHandler::processMessage(
 #ifndef SHIBSP_LITE
 ResolutionContext* AttributeResolverHandler::resolveAttributes(
     const Application& application,
-    const GenericRequest* request,
     const RoleDescriptor* issuer,
     const XMLCh* protocol,
     const saml1::NameIdentifier* v1nameid,
@@ -365,7 +386,7 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
                 m_log.debug("extracting metadata-derived attributes...");
                 try {
                     // We pass nullptr for "issuer" because the IdP isn't the one asserting metadata-based attributes.
-                    extractor->extractAttributes(application, request, nullptr, *issuer, resolvedAttributes);
+                    extractor->extractAttributes(application, nullptr, nullptr, *issuer, resolvedAttributes);
                     for (indirect_iterator<vector<Attribute*>::iterator> a = make_indirect_iterator(resolvedAttributes.begin());
                             a != make_indirect_iterator(resolvedAttributes.end()); ++a) {
                         vector<string>& ids = a->getAliases();
@@ -384,9 +405,9 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
         if (v1nameid || nameid) {
             try {
                 if (v1nameid)
-                    extractor->extractAttributes(application, request, issuer, *v1nameid, resolvedAttributes);
+                    extractor->extractAttributes(application, nullptr, issuer, *v1nameid, resolvedAttributes);
                 else
-                    extractor->extractAttributes(application, request, issuer, *nameid, resolvedAttributes);
+                    extractor->extractAttributes(application, nullptr, issuer, *nameid, resolvedAttributes);
             }
             catch (std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
@@ -418,7 +439,7 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
             auto_ptr<ResolutionContext> ctx(
                 resolver->createResolutionContext(
                     application,
-                    request,
+                    nullptr,
                     issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : nullptr,
                     protocol,
                     nameid,
@@ -452,7 +473,7 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
     return nullptr;
 }
 
-ostream& AttributeResolverHandler::buildJSON(ostream& os, vector<shibsp::Attribute*>& attributes) const
+ostream& AttributeResolverHandler::buildJSON(ostream& os, vector<shibsp::Attribute*>& attributes, const char* encoding) const
 {
     m_log.debug("building JSON from attributes..");
 
@@ -473,7 +494,7 @@ ostream& AttributeResolverHandler::buildJSON(ostream& os, vector<shibsp::Attribu
             json_safe(os, s->c_str());
             os << " : ";
 
-            if (m_encoding.empty() || m_encoding == "JSON") {
+            if (!encoding || !strcmp(encoding,"JSON")) {
                 os << '[' << endl;
                 vector<string>::const_iterator vhead = a->getSerializedValues().begin();
                 for (vector<string>::const_iterator v = vhead; v != a->getSerializedValues().end(); ++v) {
@@ -484,7 +505,7 @@ ostream& AttributeResolverHandler::buildJSON(ostream& os, vector<shibsp::Attribu
                 }
                 os << endl << "    ]";
             }
-            else if (m_encoding == "JSON/CGI") {
+            else if (!strcmp(encoding,"JSON/CGI")) {
                 string attrValues;
                 vector<string>::const_iterator vhead = a->getSerializedValues().begin();
                 for (vector<string>::const_iterator v = vhead; v != a->getSerializedValues().end(); ++v) {
