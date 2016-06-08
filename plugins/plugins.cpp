@@ -42,7 +42,7 @@ using namespace std;
 
 namespace shibsp {
     PluginManager<AccessControl,string,const DOMElement*>::Factory TimeAccessControlFactory;
-    PluginManager<Handler,string,pair<const DOMElement*,const char*>>::Factory AttributeResolverHandlerFactory;
+    PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AttributeResolverHandlerFactory;
     
 #ifndef SHIBSP_LITE
 # ifdef HAVE_GSSAPI_NAMINGEXTS
