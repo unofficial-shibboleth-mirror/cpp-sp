@@ -31,6 +31,7 @@
 #include "util/SPConstants.h"
 
 #include <map>
+#include <fstream>
 #include <boost/shared_ptr.hpp>
 #include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/util/NDC.h>
@@ -197,6 +198,19 @@ pair<bool,DOMElement*> XMLProtocolProvider::load(bool backup)
 {
     // Load from source using base class.
     pair<bool,DOMElement*> raw = ReloadableXMLFile::load(backup);
+
+    if (!backup && !m_backing.empty()) {
+        m_log.debug("backing up remote resource to (%s)", m_backing.c_str());
+        try {
+            Locker locker(getBackupLock());
+            ofstream backer(m_backing.c_str());
+            backer << *(raw.second->getOwnerDocument());
+            preserveCacheTag();
+        }
+        catch (std::exception& ex) {
+            m_log.crit("exception while backing up resource: %s", ex.what());
+        }
+    }
 
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
