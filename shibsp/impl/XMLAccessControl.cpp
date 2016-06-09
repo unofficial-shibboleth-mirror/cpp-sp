@@ -137,17 +137,16 @@ namespace shibsp {
         return new XMLAccessControl(e);
     }
 
-    static const XMLCh _AccessControl[] =   UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
-    static const XMLCh _Handler[] =         UNICODE_LITERAL_7(H,a,n,d,l,e,r);
-    static const XMLCh ignoreCase[] =       UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
-    static const XMLCh ignoreOption[] =     UNICODE_LITERAL_1(i);
-    static const XMLCh _list[] =            UNICODE_LITERAL_4(l,i,s,t);
-    static const XMLCh require[] =          UNICODE_LITERAL_7(r,e,q,u,i,r,e);
-    static const XMLCh NOT[] =              UNICODE_LITERAL_3(N,O,T);
-    static const XMLCh AND[] =              UNICODE_LITERAL_3(A,N,D);
-    static const XMLCh OR[] =               UNICODE_LITERAL_2(O,R);
-    static const XMLCh _Rule[] =            UNICODE_LITERAL_4(R,u,l,e);
-    static const XMLCh _RuleRegex[] =       UNICODE_LITERAL_9(R,u,l,e,R,e,g,e,x);
+    static const XMLCh _AccessControl[] =        UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
+    static const XMLCh _Handler[] =              UNICODE_LITERAL_7(H,a,n,d,l,e,r);
+    static const XMLCh caseInsensitiveOption[] = UNICODE_LITERAL_1(i);
+    static const XMLCh _list[] =                 UNICODE_LITERAL_4(l,i,s,t);
+    static const XMLCh require[] =               UNICODE_LITERAL_7(r,e,q,u,i,r,e);
+    static const XMLCh NOT[] =                   UNICODE_LITERAL_3(N,O,T);
+    static const XMLCh AND[] =                   UNICODE_LITERAL_3(A,N,D);
+    static const XMLCh OR[] =                    UNICODE_LITERAL_2(O,R);
+    static const XMLCh _Rule[] =                 UNICODE_LITERAL_4(R,u,l,e);
+    static const XMLCh _RuleRegex[] =            UNICODE_LITERAL_9(R,u,l,e,R,e,g,e,x);
 }
 
 Rule::Rule(const DOMElement* e) : m_alias(XMLHelper::getAttrString(e, nullptr, require))
@@ -253,9 +252,9 @@ RuleRegex::RuleRegex(const DOMElement* e)
     if (m_alias.empty() || !m_exp.get() || !*m_exp.get())
         throw ConfigurationException("Access control rule missing require attribute or element content.");
 
-    bool ignore = XMLHelper::getAttrBool(e, false, ignoreCase);
+    bool caseSensitive = XMLHelper::getCaseSensitive(e, true);
     try {
-        m_re.reset(new RegularExpression(e->getFirstChild()->getNodeValue(), (ignore ? ignoreOption : &chNull)));
+        m_re.reset(new RegularExpression(e->getFirstChild()->getNodeValue(), (caseSensitive ? &chNull: caseInsensitiveOption )));
     }
     catch (XMLException& ex) {
         auto_ptr_char tmp(ex.getMessage());
