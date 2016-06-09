@@ -73,7 +73,6 @@ namespace shibsp {
         chLatin_D, chLatin_e, chLatin_c, chLatin_o, chLatin_d, chLatin_e, chLatin_r, chNull
     };
 
-    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
     static const XMLCh hashAlg[] =          UNICODE_LITERAL_7(h,a,s,h,A,l,g);
     static const XMLCh internal[] =         UNICODE_LITERAL_8(i,n,t,e,r,n,a,l);
     static const XMLCh langAware[] =        UNICODE_LITERAL_9(l,a,n,g,A,w,a,r,e);
@@ -104,7 +103,7 @@ void shibsp::registerAttributeDecoders()
 }
 
 AttributeDecoder::AttributeDecoder(const DOMElement *e)
-    : m_caseSensitive(XMLHelper::getAttrBool(e, true, caseSensitive)),
+    : m_caseSensitive(XMLHelper::getCaseSensitive(e, true)),
         m_internal(XMLHelper::getAttrBool(e, false, internal)),
         m_langAware(XMLHelper::getAttrBool(e, false, langAware)),
         m_hashAlg(XMLHelper::getAttrString(e, nullptr, hashAlg))
