@@ -157,7 +157,6 @@ namespace shibsp {
     static const XMLCh _AccessControl[] =           UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
     static const XMLCh AccessControlProvider[] =    UNICODE_LITERAL_21(A,c,c,e,s,s,C,o,n,t,r,o,l,P,r,o,v,i,d,e,r);
     static const XMLCh caseInsensitiveOption[] =    UNICODE_LITERAL_1(i);
-    static const XMLCh caseSensitiveAttr[] =        UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
     static const XMLCh Host[] =                     UNICODE_LITERAL_4(H,o,s,t);
     static const XMLCh HostRegex[] =                UNICODE_LITERAL_9(H,o,s,t,R,e,g,e,x);
     static const XMLCh htaccess[] =                 UNICODE_LITERAL_8(h,t,a,c,c,e,s,s);
@@ -319,9 +318,12 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
 
             bool caseSensitive;
             if (path && path->hasAttributeNS(nullptr, ignoreCase)) {
-                log.error("Legacy interpretation of PathRegex ignoreCase attribute has incorrect sense.  Use caseSensitive");
+                // In this one case, we've left ignoreCase reversed (true means case sensitive, false means insensitive).
+                // This was to protect people who followed the security advisory for SSPCPP-691 and reversed their setting.
+                log.error("Deprecated ignoreCase attribute in PathRegex element will be interpreted backwards. Replace with caseSensitive");
                 caseSensitive = XMLHelper::getAttrBool(path, true, ignoreCase);
             } else {
+                // If the old ignoreCase setting isn't set, then we just process normally.
                 caseSensitive = XMLHelper::getCaseSensitive(path, false);
             }
             try {
