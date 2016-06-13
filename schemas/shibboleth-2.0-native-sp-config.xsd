@@ -471,6 +471,11 @@
     <attribute name="requireSignedAssertions" type="boolean"/>
     <attribute name="sessionHook" type="anyURI"/>
     <attribute name="artifactByFilesystem" type="boolean"/>
+    <attribute name="authnContextClassRef" type="conf:listOfURIs"/>
+    <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
+    <attribute name="NameIDFormat" type="anyURI"/>
+    <attribute name="SPNameQualifier" type="conf:string"/>
+    <attribute name="requestDelegation" type="boolean"/>
   </attributeGroup>
     
   <complexType name="SessionsType">

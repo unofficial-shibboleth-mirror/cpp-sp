@@ -619,6 +619,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
 
     preserveRelayState(app, httpResponse, relayState);
 
+    const PropertySet* relyingParty = app.getRelyingParty(entity.first);
+
     auto_ptr<AuthnRequest> req(m_requestTemplate ? m_requestTemplate->cloneAuthnRequest() : AuthnRequestBuilder::buildAuthnRequest());
     if (m_requestTemplate) {
         // Freshen TS and ID.
@@ -643,21 +645,43 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     if (!req->getIssuer()) {
         Issuer* issuer = IssuerBuilder::buildIssuer();
         req->setIssuer(issuer);
-        issuer->setName(app.getRelyingParty(entity.first)->getXMLString("entityID").second);
+        issuer->setName(relyingParty->getXMLString("entityID").second);
     }
     if (!req->getNameIDPolicy()) {
         NameIDPolicy* namepol = NameIDPolicyBuilder::buildNameIDPolicy();
         req->setNameIDPolicy(namepol);
         namepol->AllowCreate(true);
     }
+
+    // Format may be specified, or inferred from RelyingParty.
     if (NameIDFormat && *NameIDFormat) {
         auto_ptr_XMLCh wideform(NameIDFormat);
         req->getNameIDPolicy()->setFormat(wideform.get());
     }
+    else {
+        pair<bool,const XMLCh*> rpFormat = relyingParty->getXMLString("NameIDFormat");
+        if (rpFormat.first)
+            req->getNameIDPolicy()->setFormat(rpFormat.second);
+    }
+
+    // SPNameQualifier may be specified, or inferred from RelyingParty.
     if (SPNameQualifier && *SPNameQualifier) {
         auto_ptr_XMLCh widequal(SPNameQualifier);
         req->getNameIDPolicy()->setSPNameQualifier(widequal.get());
     }
+    else {
+        pair<bool,const XMLCh*> rpQual = relyingParty->getXMLString("SPNameQualifier");
+        if (rpQual.first)
+            req->getNameIDPolicy()->setSPNameQualifier(rpQual.second);
+    }
+
+    // If no specified AC class, infer from RelyingParty.
+    if (!authnContextClassRef || !*authnContextClassRef) {
+        pair<bool,const char*> rpContextClassRef = relyingParty->getString("authnContextClassRef");
+        if (rpContextClassRef.first)
+            authnContextClassRef = rpContextClassRef.second;
+    }
+
     if (authnContextClassRef || authnContextComparison) {
         RequestedAuthnContext* reqContext = req->getRequestedAuthnContext();
         if (!reqContext) {
@@ -685,10 +709,17 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         else if (authnContextComparison) {
             auto_ptr_XMLCh widecomp(authnContextComparison);
             reqContext->setComparison(widecomp.get());
+        } else {
+            pair<bool,const XMLCh*> rpComp = relyingParty->getXMLString("authnContextComparison");
+            if (rpComp.first)
+                reqContext->setComparison(rpComp.second);
         }
     }
 
     pair<bool,bool> requestDelegation = getBool("requestDelegation");
+    if (!requestDelegation.first)
+        requestDelegation = relyingParty->getBool("requestDelegation");
+
     if (requestDelegation.first && requestDelegation.second) {
         if (entity.first) {
             // Request delegation by including the IdP as an Audience.
