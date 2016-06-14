@@ -287,19 +287,25 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         recoverRelayState(app, request, request, target, false);
         app.limitRedirect(request, target.c_str());
 
-        pair<bool,bool> flag = getBool("isPassive", request);
+        // Default is to allow externally supplied settings.
+        pair<bool,bool> externalInput = getBool("externalInput");
+        unsigned int settingMask = HANDLER_PROPERTY_MAP | HANDLER_PROPERTY_FIXED;
+        if (!externalInput.first || externalInput.second)
+            settingMask |= HANDLER_PROPERTY_REQUEST;
+
+        pair<bool,bool> flag = getBool("isPassive", request, settingMask);
         isPassive = (flag.first && flag.second);
 
         if (!isPassive) {
-            flag = getBool("forceAuthn", request);
+            flag = getBool("forceAuthn", request, settingMask);
             forceAuthn = (flag.first && flag.second);
         }
 
         // Populate via parameter, map, or property.
-        acClass = getString("authnContextClassRef", request);
-        acComp = getString("authnContextComparison", request);
-        nidFormat = getString("NameIDFormat", request);
-        spQual = getString("SPNameQualifier", request);
+        acClass = getString("authnContextClassRef", request, settingMask);
+        acComp = getString("authnContextComparison", request, settingMask);
+        nidFormat = getString("NameIDFormat", request, settingMask);
+        spQual = getString("SPNameQualifier", request, settingMask);
     }
     else {
         // Check for a hardwired target value in the map or handler.

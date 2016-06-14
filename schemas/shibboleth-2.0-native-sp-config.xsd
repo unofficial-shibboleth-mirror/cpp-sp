@@ -608,7 +608,8 @@
     <attribute name="target" type="anyURI"/>
     <attribute name="discoveryPolicy" type="conf:string"/>
     <attribute name="signing" type="conf:bindingBoolean"/>
-    <attribute name="encryption" type="conf:bindingBoolean"/>    
+    <attribute name="encryption" type="conf:bindingBoolean"/>
+    <attribute name="externalInput" type="boolean"/>
     <anyAttribute namespace="##any" processContents="lax"/>
   </attributeGroup>
 

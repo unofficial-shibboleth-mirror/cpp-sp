@@ -368,7 +368,13 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
         recoverRelayState(app, request, request, target, false);
         app.limitRedirect(request, target.c_str());
 
-        acClass = getString("authnContextClassRef", request);
+        // Default is to allow externally supplied settings.
+        pair<bool,bool> externalInput = getBool("externalInput");
+        unsigned int settingMask = HANDLER_PROPERTY_MAP | HANDLER_PROPERTY_FIXED;
+        if (!externalInput.first || externalInput.second)
+            settingMask |= HANDLER_PROPERTY_REQUEST;
+
+        acClass = getString("authnContextClassRef", request, settingMask);
     }
     else {
         // Check for a hardwired target value in the map or handler.
