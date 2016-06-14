@@ -541,8 +541,15 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     auto_ptr_char dest(ep->getLocation());
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
 
+    const PropertySet* relyingParty = app.getRelyingParty(entity.first);
+
     string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "wa=wsignin1.0&wreply=" + urlenc->encode(acsLocation) +
-        "&wct=" + urlenc->encode(timebuf) + "&wtrealm=" + urlenc->encode(app.getString("entityID").second);
+        "&wct=" + urlenc->encode(timebuf) + "&wtrealm=" + urlenc->encode(relyingParty->getString("entityID").second);
+    if (!authnContextClassRef) {
+        pair<bool,const char*> rpClass = relyingParty->getString("authnContextClassRef");
+        if (rpClass.first)
+            authnContextClassRef = rpClass.second;
+    }
     if (authnContextClassRef)
         req += "&wauth=" + urlenc->encode(authnContextClassRef);
     if (!relayState.empty())
