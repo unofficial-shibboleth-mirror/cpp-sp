@@ -25,14 +25,14 @@
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\cpp-sp\Release'>
+            <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\Release'>
               <Component Id='shibsp.dll' Guid='$(var.ShibDll32Component)'>
                 <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion).dll' />
               </Component>
               <Component Id='shibsp_lite.dll' Guid='$(var.ShibDllLite32Component)'>
                 <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion).dll' />
               </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Debug' >
+              <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\Debug' >
                 <Component Id='shibspD.dll' Guid='$(var.ShibDll32Componentd)'>
                   <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion)D.dll' />
                 </Component>
@@ -43,8 +43,8 @@
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='doc' Guid='{6FB48AD9-2D14-46F5-A826-2DB2E604B5BB}'>
-                <File KeyPath='yes' Name='SHIBBOLETH.LICENSE' Source='$(var.SPBuildDirectory)\cpp-sp\doc\LICENSE.txt' />
-                <File Name='SHIBBOLETH.NOTICE' Source='$(var.SPBuildDirectory)\cpp-sp\doc\NOTICE.txt' />
+                <File KeyPath='yes' Name='SHIBBOLETH.LICENSE' Source='$(var.SPBuildDirectory)\doc\LICENSE.txt' />
+                <File Name='SHIBBOLETH.NOTICE' Source='$(var.SPBuildDirectory)\doc\NOTICE.txt' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->
