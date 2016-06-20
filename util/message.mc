@@ -31,12 +31,53 @@ FacilityNames=(Shibboleth=0x231:FACILITY_SYSTEM
 MessageId=100
 Severity=Error
 Facility=Shibboleth
-SymbolicName=SHIBD_MESSAGE
+SymbolicName=SHIBD_GENERIC_MESSAGE
 Language=English
-Shibboleth Daemon: %1!s!:  %2!s! %3!s! (%1!*x! : %2!x! '%3!ld!')  (%1!4d! : %2!I32d! '%3!3D!')
+Shibboleth Daemon: %1!s!
 .
 
 MessageId=
+Severity=Error
+Facility=Shibboleth
+SymbolicName=SHIBD_STARTUP_FAILED
+Language=English
+Shibboleth Daemon startup failed.
+.
+
+MessageId=
+Severity=Error
+Facility=Shibboleth
+SymbolicName=SHIBD_SERVICE_START_FAILED
+Language=English
+Shibboleth Daemon startup: StartServiceCtrlDispatcher failed.
+.
+
+MessageId=
+Severity=Error
+Facility=Shibboleth
+SymbolicName=SHIBD_SET_SERVICE_STATUS_FAILED
+Language=English
+Shibboleth Daemon startup: SetServiceStatus failed.
+.
+
+MessageId=
+Severity=Informational
+Facility=Shibboleth
+SymbolicName=SHIBD_SERVICE_STARTED
+Language=English
+Shibboleth Daemon started successfully.
+.
+
+MessageId=
+Severity=Informational
+Facility=Shibboleth
+SymbolicName=SHIBD_SERVICE_STOPPING
+Language=English
+Shibboleth Daemon stopping...
+.
+
+
+MessageId=200
 Severity=Error
 Facility=ShibbolethISAPI
 SymbolicName=SHIBISAPI_MESSAGE

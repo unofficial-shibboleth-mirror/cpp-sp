@@ -100,6 +100,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Doc", "Doc", "{6ED5E3E7-1B0
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isapi_shib", "isapi_shib\isapi_shib.vcxproj", "{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{303291A1-C542-49E4-80B3-9304B7B6F8BC} = {303291A1-C542-49E4-80B3-9304B7B6F8BC}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib_13", "apache\mod_shib13.vcxproj", "{D243B43E-728E-4F32-BDFF-B3A897037C6D}"
 EndProject
@@ -114,6 +117,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibsp", "shibsp\shibsp.vcxproj", "{81F0F7A6-DC36-46EF-957F-F9E81D4403F6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibd", "shibd\shibd.vcxproj", "{F13141B5-6C87-40BB-8D4E-5CC56EBB4C59}"
+	ProjectSection(ProjectDependencies) = postProject
+		{303291A1-C542-49E4-80B3-9304B7B6F8BC} = {303291A1-C542-49E4-80B3-9304B7B6F8BC}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibsp-lite", "shibsp\shibsp-lite.vcxproj", "{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}"
 EndProject
