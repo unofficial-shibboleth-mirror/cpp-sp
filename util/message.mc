@@ -80,7 +80,104 @@ Shibboleth Daemon stopping...
 MessageId=200
 Severity=Error
 Facility=ShibbolethISAPI
-SymbolicName=SHIBISAPI_MESSAGE
+SymbolicName=SHIB_ISAPI_GENERIC_MESSAGE
 Language=English
-Shibboleth ISAPI plugin: %1
+Shibboleth ISAPI filter: %1
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_CANNOT_LOAD
+Language=English
+Shibboleth ISAPI filter: Extension mode startup not possible, is the DLL loaded as a filter?
+.
+
+MessageId=
+Severity=Warning
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_REENTRANT_INIT
+Language=English
+Shibboleth ISAPI filter: Reentrant filter initialization, ignoring...
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_STARTUP_FAILED
+Language=English
+Shibboleth ISAPI filter: Startup failed during library initialization, check native log for help.
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_STARTUP_FAILED_EXCEPTION
+Language=English
+Shibboleth ISAPI filter: Startup failed during library initialization: %1!s!, check native log for help.
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_CANNOT_CREATE_ANTISPOOF
+Language=English
+Shibboleth ISAPI filter: Failed to generate a random anti-spoofing key (if this is Windows 2000 set one manually).
+.
+
+MessageId=
+Severity=Informational
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_INITIALIZED
+Language=English
+Shibboleth ISAPI filter: Initialized...
+.
+
+MessageId=
+Severity=Informational
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_SHUTDOWN
+Language=English
+Shibboleth ISAPI filter: Shutdown...
+.
+
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_CRITICAL
+Language=English
+Shibboleth ISAPI filter: Critical Error: %0!s!
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_CLIENT_ERROR
+Language=English
+Shibboleth ISAPI filter: Client Error: %0!s!
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_MISSING_VARIABLE
+Language=English
+Shibboleth ISAPI filter: Missing Variable %0!s!
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_EXCEPTION
+Language=English
+Shibboleth ISAPI filter: Caught an Exception %0!s!
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethISAPI
+SymbolicName=SHIB_ISAPI_UNKNOWN_EXCEPTION
+Language=English
+Shibboleth ISAPI filter: Caught an Unknown Exception.
 .
