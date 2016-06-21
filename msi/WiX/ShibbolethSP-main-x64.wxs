@@ -185,6 +185,27 @@
 
       <?include ShibbolethSP-defs-x86.wxi ?>
 
+      <!-- We put in the messages for Isapi and Shibd in this module since all
+           others are shared with x86
+        -->
+      <Component Id='messageFile' Guid='{3FF89632-9F39-4B1B-AA3E-3AF6C8155B92}' Win64='yes' Directory='bin64'>
+        <File Id='Messages' KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\x64\Release\Messages.dll'/>
+        <RegistryKey Root='HKLM' Key='SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth Daemon'>
+          <RegistryValue Name='CategoryCount' Type='integer' Value='2'/>
+          <RegistryValue Name='TypeSupported' Type='integer' Value='15'/>
+          <RegistryValue Name='CategoryMessageFile' Type='string' Value='[#Messages]'/>
+          <RegistryValue Name='EventMessageFile' Type='string' Value='[#Messages]'/>
+          <RegistryValue Name='ParameterMessageFile' Type='string' Value='[#Messages]'/>
+        </RegistryKey>
+        <RegistryKey Root='HKLM' Key='SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth ISAPI Filter'>
+          <RegistryValue Name='CategoryCount' Type='integer' Value='2'/>
+          <RegistryValue Name='TypeSupported' Type='integer' Value='15'/>
+          <RegistryValue Name='CategoryMessageFile' Type='string' Value='[#Messages]'/>
+          <RegistryValue Name='EventMessageFile' Type='string' Value='[#Messages]'/>
+          <RegistryValue Name='ParameterMessageFile' Type='string' Value='[#Messages]'/>
+        </RegistryKey>
+      </Component>
+
     </Feature>
   </Product>
 </Wix>
