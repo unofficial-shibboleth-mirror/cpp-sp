@@ -247,6 +247,7 @@
     <attribute name="exportAssertion" type="boolean"/>
     <attribute name="exportStdVars" type="boolean"/>
     <attribute name="exportCookie" type="boolean"/>
+    <attribute name="exportDuplicateValues" type="boolean"/>
     <attribute name="redirectToSSL" type="unsignedInt"/>
     <attribute name="entityID" type="anyURI"/>
     <attribute name="discoveryURL" type="anyURI"/>
