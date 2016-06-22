@@ -46,6 +46,7 @@
 #include <xmltooling/security/Credential.h>
 #include <xmltooling/security/CredentialCriteria.h>
 #include <xmltooling/security/CredentialResolver.h>
+#include <xmltooling/security/SecurityHelper.h>
 #include <xmltooling/security/X509TrustEngine.h>
 #include <xmltooling/soap/HTTPSOAPTransport.h>
 #include <xmltooling/util/NDC.h>
@@ -71,8 +72,8 @@ namespace shibsp {
         saml2md::EntityDescriptor* resolve(const saml2md::MetadataProvider::Criteria& criteria) const;
 
     private:
-        bool m_verifyHost,m_ignoreTransport,m_encoded;
-        string m_subst, m_match, m_regex;
+        bool m_verifyHost, m_ignoreTransport, m_encoded;
+        string m_subst, m_match, m_regex, m_hashed;
         boost::scoped_ptr<X509TrustEngine> m_trust;
         boost::scoped_ptr<CredentialResolver> m_dummyCR;
     };
@@ -83,6 +84,7 @@ namespace shibsp {
     }
 
     static const XMLCh encoded[] =          UNICODE_LITERAL_7(e,n,c,o,d,e,d);
+    static const XMLCh hashed[] =           UNICODE_LITERAL_6(h,a,s,h,e,d);
     static const XMLCh ignoreTransport[] =  UNICODE_LITERAL_15(i,g,n,o,r,e,T,r,a,n,s,p,o,r,t);
     static const XMLCh match[] =            UNICODE_LITERAL_5(m,a,t,c,h);
     static const XMLCh Regex[] =            UNICODE_LITERAL_5(R,e,g,e,x);
@@ -104,6 +106,7 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
         if (s.get() && *s.get()) {
             m_subst = s.get();
             m_encoded = XMLHelper::getAttrBool(child, true, encoded);
+            m_hashed = XMLHelper::getAttrString(child, nullptr, hashed);
         }
     }
 
@@ -158,8 +161,12 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
 
     // Possibly transform the input into a different URL to use.
     if (!m_subst.empty()) {
-        string name2 = boost::replace_first_copy(m_subst, "$entityID",
-            m_encoded ? XMLToolingConfig::getConfig().getURLEncoder()->encode(name.c_str()) : name);
+        string name2(name);
+        if (!m_hashed.empty()) {
+            name2 = SecurityHelper::doHash(m_hashed.c_str(), name.c_str(), name.length());
+        }
+        name2 = boost::replace_first_copy(m_subst, "$entityID",
+            m_encoded ? XMLToolingConfig::getConfig().getURLEncoder()->encode(name2.c_str()) : name2);
         log.info("transformed location from (%s) to (%s)", name.c_str(), name2.c_str());
         name = name2;
     }
@@ -182,6 +189,11 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
             auto_ptr_char msg(ex.getMessage());
             log.error("caught error applying regular expression: %s", msg.get());
         }
+    }
+
+    if (XMLString::startsWithI(name.c_str(), "file://")) {
+        MetadataProvider::Criteria baseCriteria(name.c_str());
+        return saml2md::DynamicMetadataProvider::resolve(baseCriteria);
     }
 
     // Establish networking properties based on calling application.
