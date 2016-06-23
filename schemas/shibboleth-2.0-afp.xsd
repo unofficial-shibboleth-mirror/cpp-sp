@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:afp="urn:mace:shibboleth:2.0:afp"
+        xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+        targetNamespace="urn:mace:shibboleth:2.0:afp"
+        version="2.6.0"
+        elementFormDefault="qualified">
 
-<schema targetNamespace="urn:mace:shibboleth:2.0:afp"
-    xmlns="http://www.w3.org/2001/XMLSchema"
-    xmlns:afp="urn:mace:shibboleth:2.0:afp"
-    xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
-    elementFormDefault="qualified">
-
-    <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="classpath:/schema/xmldsig-core-schema.xsd" />
+    <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="http://www.w3.org/TR/2002/REC-xmldsig-core-20020212/xmldsig-core-schema.xsd"/>
 
     <annotation>
         <documentation>Schema for the attribute filter policies.</documentation>
@@ -155,6 +155,11 @@
                 <attribute name="attributeID" type="string" use="required">
                     <annotation>
                         <documentation>The ID of the attribute to which this rule applies.</documentation>
+                    </annotation>
+                </attribute>
+                <attribute name="permitAny" type="string">
+                    <annotation>
+                        <documentation>If present, and true injects an implicit permit value rule of type ANY</documentation>
                     </annotation>
                 </attribute>
             </extension>
