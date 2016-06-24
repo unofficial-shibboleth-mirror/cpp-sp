@@ -24,9 +24,7 @@ endif
 
 EXTRA_DIST = \
     shibauthorizer.cpp \
-    shibauthorizer.vcxproj \
     shibauthorizer.rc \
     shibresponder.cpp \
-    shibresponder.vcxproj \
     shibresponder.rc \
     resource.h

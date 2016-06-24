@@ -16,4 +16,4 @@ odbc_store_la_LDFLAGS = -module -avoid-version
 install-data-hook:
 	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
 
-EXTRA_DIST = odbc-store.vcxproj odbc-store.rc resource.h
+EXTRA_DIST = odbc-store.rc resource.h

@@ -28,9 +28,21 @@
 							</tool>
 							<tool id="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.autogen.2032266339" name="autogen.sh" superClass="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.autogen"/>
 							<tool id="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.gcc.1463032246" name="GCC C Compiler" superClass="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.gcc">
+								<option id="gnu.c.compiler.option.include.paths.1713868061" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-log4shib}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-opensaml}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-xmltooling}&quot;"/>
+									<listOptionValue builtIn="false" value="/opt/local/include"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1052808883" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.gpp.2007465323" name="GCC C++ Compiler" superClass="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.gpp">
+								<option id="gnu.cpp.compiler.option.include.paths.1885895501" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-log4shib}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-opensaml}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpp-xmltooling}&quot;"/>
+									<listOptionValue builtIn="false" value="/opt/local/include"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1677006691" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 						</toolChain>
@@ -43,8 +55,15 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="cpp-sp.org.eclipse.linuxtools.cdt.autotools.core.projectType.1899903148" name="GNU Autotools" projectType="org.eclipse.linuxtools.cdt.autotools.core.projectType"/>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="org.eclipse.linuxtools.cdt.autotools.core.configuration.build.1301536861;org.eclipse.linuxtools.cdt.autotools.core.configuration.build.1301536861.;org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.gpp.2007465323;cdt.managedbuild.tool.gnu.cpp.compiler.input.1677006691">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="org.eclipse.linuxtools.cdt.autotools.core.configuration.build.1301536861;org.eclipse.linuxtools.cdt.autotools.core.configuration.build.1301536861.;org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.gcc.1463032246;cdt.managedbuild.tool.gnu.c.compiler.input.1052808883">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 </cproject>

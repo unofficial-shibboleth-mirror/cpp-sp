@@ -35,7 +35,7 @@ GENFILES = @PACKAGE_NAME@.spec
 
 EXTRA_DIST = $(DX_CONFIG) \
 	isapi_shib \
-	Shibboleth.sln \
+	Projects \
 	config_win32.h \
 	$(GENFILES) \
 	$(GENFILES:%=%.in)

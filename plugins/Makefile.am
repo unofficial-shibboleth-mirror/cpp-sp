@@ -34,4 +34,4 @@ plugins_lite_la_CPPFLAGS = -DSHIBSP_LITE
 install-data-hook:
 	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
 
-EXTRA_DIST = plugins.vcxproj resource.h plugins.rc
+EXTRA_DIST = resource.h plugins.rc

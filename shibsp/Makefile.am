@@ -269,13 +269,10 @@ install-exec-hook:
 	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
 
 EXTRA_DIST = \
-	shibsp.vcxproj \
-	shibsp-lite.vcxproj \
-	shibsp.vcxproj.filters \
-	shibsp-lite.vcxproj.filters \
 	config_pub.h.in \
 	config_pub_win32.h\
 	paths.h.in \
 	resource.h \
 	shibsp.rc
+
 BUILT_SOURCES = paths.h

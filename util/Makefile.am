@@ -12,8 +12,7 @@ mdquery_SOURCES = mdquery.cpp
 mdquery_LDADD = $(XMLSEC_LIBS) \
 	$(top_builddir)/shibsp/libshibsp.la
 
-EXTRA_DIST = mdquery.vcxproj \
-	resolvertest.vcxproj \
+EXTRA_DIST = \
 	resource.h \
 	mdquery.rc \
 	resolvertest.rc
