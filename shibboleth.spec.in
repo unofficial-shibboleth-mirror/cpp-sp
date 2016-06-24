@@ -459,7 +459,6 @@ exit 0
 %{_sysconfdir}/shibboleth/shibd-*
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/keygen.sh
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/metagen.sh
-%{_sysconfdir}/shibboleth/*.xsl
 %doc %{pkgdocdir}
 %exclude %{pkgdocdir}/api
 
