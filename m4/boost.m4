@@ -225,9 +225,9 @@ AC_LANG_POP([C++])dnl
   AC_CACHE_CHECK([for Boost's header version],
     [boost_cv_lib_version],
     [m4_pattern_allow([^BOOST_LIB_VERSION$])dnl
-     _BOOST_SED_CPP([[/^boost-lib-version = /{s///;s/[\" ]//g;p;q;}]],
+     _BOOST_SED_CPP([[/^boost_lib_version = /{s///;s/[\" ]//g;p;q;}]],
                     [#include <boost/version.hpp>
-boost-lib-version = BOOST_LIB_VERSION],
+boost_lib_version = BOOST_LIB_VERSION],
     [boost_cv_lib_version=`cat conftest.i`])])
     # e.g. "134" for 1_34_1 or "135" for 1_35
     boost_major_version=`echo "$boost_cv_lib_version" | sed 's/_//;s/_.*//'`
