@@ -15,4 +15,4 @@ memcache_store_la_SOURCES = \
 install-data-hook:
 	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
 
-EXTRA_DIST = memcache-store.vcxproj memcache-store.rc resource.h
+EXTRA_DIST = memcache-store.rc resource.h
