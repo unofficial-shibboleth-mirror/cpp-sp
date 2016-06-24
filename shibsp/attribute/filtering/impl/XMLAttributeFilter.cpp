@@ -290,7 +290,7 @@ boost::tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buil
 
     if (XMLHelper::getAttrBool(e, false, permitAny)) {
         m_log.debug("installing implicit ANY permit rule for attribute (%s)", attrID.c_str());
-        perm = SPConfig::getConfig().MatchFunctorManager.newPlugin(AnyMatchFunctorType, make_pair(&permMap,nullptr));
+        perm = SPConfig::getConfig().MatchFunctorManager.newPlugin(AnyMatchFunctorType, make_pair(&permMap,(const DOMElement*)nullptr));
         return boost::make_tuple(attrID, perm, deny);
     }
 
