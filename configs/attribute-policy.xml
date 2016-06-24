@@ -65,9 +65,7 @@
         </afp:AttributeRule>
 
         <!-- Catch-all that passes everything else through unmolested. -->
-        <afp:AttributeRule attributeID="*">
-            <afp:PermitValueRule xsi:type="ANY"/>
-        </afp:AttributeRule>
+        <afp:AttributeRule attributeID="*" permitAny="true"/>
         
     </afp:AttributeFilterPolicy>
 

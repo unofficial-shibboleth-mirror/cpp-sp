@@ -38,12 +38,16 @@
 # include <boost/bind.hpp>
 # include <boost/algorithm/string.hpp>
 # include <boost/iterator/indirect_iterator.hpp>
+# include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/saml2/core/Protocols.h>
 # include <saml/saml2/metadata/EndpointManager.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataCredentialCriteria.h>
 # include <saml/util/SAMLConstants.h>
+# include <xmltooling/XMLToolingConfig.h>
+# include <xmltooling/util/ParserPool.h>
+# include <xercesc/util/Base64.hpp>
 using namespace opensaml::saml2;
 using namespace opensaml::saml2p;
 using namespace opensaml::saml2md;
@@ -106,6 +110,7 @@ namespace shibsp {
             const char* authnContextComparison,
             const char* NameIDFormat,
             const char* SPNameQualifier,
+            const char* requestTemplate,
             string& relayState
             ) const;
 
@@ -261,6 +266,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     pair<bool,const char*> prop;
     const Handler* ACS = nullptr;
     pair<bool,const char*> acClass, acComp, nidFormat, spQual;
+    const char* requestTemplate = nullptr;
     bool isPassive=false,forceAuthn=false;
     const Application& app = request.getApplication();
 
@@ -287,19 +293,28 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         recoverRelayState(app, request, request, target, false);
         app.limitRedirect(request, target.c_str());
 
-        pair<bool,bool> flag = getBool("isPassive", request);
+        // Default is to allow externally supplied settings.
+        pair<bool,bool> externalInput = getBool("externalInput");
+        unsigned int settingMask = HANDLER_PROPERTY_MAP | HANDLER_PROPERTY_FIXED;
+        if (!externalInput.first || externalInput.second) {
+            settingMask |= HANDLER_PROPERTY_REQUEST;
+            requestTemplate = request.getParameter("template");
+        }
+
+        pair<bool,bool> flag = getBool("isPassive", request, settingMask);
         isPassive = (flag.first && flag.second);
 
         if (!isPassive) {
-            flag = getBool("forceAuthn", request);
+            flag = getBool("forceAuthn", request, settingMask);
             forceAuthn = (flag.first && flag.second);
         }
 
         // Populate via parameter, map, or property.
-        acClass = getString("authnContextClassRef", request);
-        acComp = getString("authnContextComparison", request);
-        nidFormat = getString("NameIDFormat", request);
-        spQual = getString("SPNameQualifier", request);
+        acClass = getString("authnContextClassRef", request, settingMask);
+        acComp = getString("authnContextComparison", request, settingMask);
+        nidFormat = getString("NameIDFormat", request, settingMask);
+        spQual = getString("SPNameQualifier", request, settingMask);
+
     }
     else {
         // Check for a hardwired target value in the map or handler.
@@ -391,6 +406,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 acComp.first ? acComp.second : nullptr,
                 nidFormat.first ? nidFormat.second : nullptr,
                 spQual.first ? spQual.second : nullptr,
+                requestTemplate,
                 target
                 );
         }
@@ -420,6 +436,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             acComp.first ? acComp.second : nullptr,
             nidFormat.first ? nidFormat.second : nullptr,
             spQual.first ? spQual.second : nullptr,
+            requestTemplate,
             target
             );
     }
@@ -442,6 +459,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("NameIDFormat").string(nidFormat.second);
     if (spQual.first)
         in.addmember("SPNameQualifier").string(spQual.second);
+    if (requestTemplate)
+        in.addmember("template").string(requestTemplate);
     if (acsByIndex.first && acsByIndex.second) {
         // Determine index to use.
         pair<bool,const char*> ix = pair<bool,const char*>(false,nullptr);
@@ -527,9 +546,13 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         index.get(),
         (in["artifact"].integer() != 0),
         in["acsLocation"].string(), bind.get(),
-        in["isPassive"].integer()==1, in["forceAuthn"].integer()==1,
-        in["authnContextClassRef"].string(), in["authnContextComparison"].string(),
-        in["NameIDFormat"].string(), in["SPNameQualifier"].string(),
+        in["isPassive"].integer() == 1,
+        in["forceAuthn"].integer() == 1,
+        in["authnContextClassRef"].string(),
+        in["authnContextComparison"].string(),
+        in["NameIDFormat"].string(),
+        in["SPNameQualifier"].string(),
+        in["template"].string(),
         relayState
         );
     if (!ret.isstruct())
@@ -553,6 +576,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     const char* authnContextComparison,
     const char* NameIDFormat,
     const char* SPNameQualifier,
+    const char* requestTemplate,
     string& relayState
     ) const
 {
@@ -619,8 +643,38 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
 
     preserveRelayState(app, httpResponse, relayState);
 
-    auto_ptr<AuthnRequest> req(m_requestTemplate ? m_requestTemplate->cloneAuthnRequest() : AuthnRequestBuilder::buildAuthnRequest());
-    if (m_requestTemplate) {
+    const PropertySet* relyingParty = app.getRelyingParty(entity.first);
+
+    auto_ptr<AuthnRequest> req;
+
+    if (requestTemplate) {
+        xsecsize_t x;
+        XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(requestTemplate), &x);
+        if (decoded) {
+            istringstream is(reinterpret_cast<char*>(decoded));
+#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
+            XMLString::release(&decoded);
+#else
+            XMLString::release((char**)&decoded);
+#endif
+            DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(is);
+            XercesJanitor<DOMDocument> docjanitor(doc);
+            auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
+            docjanitor.release();
+            if (!dynamic_cast<AuthnRequest*>(xmlObject.get())) {
+                throw FatalProfileException("Template parameter was not a SAML AuthnRequest");
+            }
+            req.reset(dynamic_cast<AuthnRequest*>(xmlObject.release()));
+        }
+        else {
+            throw FatalProfileException("Unable to base64-eecode AuthnRequest template");
+        }
+    }
+    else {
+        req.reset(m_requestTemplate ? m_requestTemplate->cloneAuthnRequest() : AuthnRequestBuilder::buildAuthnRequest());
+    }
+
+    if (requestTemplate || m_requestTemplate) {
         // Freshen TS and ID.
         req->setID(nullptr);
         req->setIssueInstant(time(nullptr));
@@ -643,21 +697,43 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     if (!req->getIssuer()) {
         Issuer* issuer = IssuerBuilder::buildIssuer();
         req->setIssuer(issuer);
-        issuer->setName(app.getRelyingParty(entity.first)->getXMLString("entityID").second);
+        issuer->setName(relyingParty->getXMLString("entityID").second);
     }
     if (!req->getNameIDPolicy()) {
         NameIDPolicy* namepol = NameIDPolicyBuilder::buildNameIDPolicy();
         req->setNameIDPolicy(namepol);
         namepol->AllowCreate(true);
     }
+
+    // Format may be specified, or inferred from RelyingParty.
     if (NameIDFormat && *NameIDFormat) {
         auto_ptr_XMLCh wideform(NameIDFormat);
         req->getNameIDPolicy()->setFormat(wideform.get());
     }
+    else {
+        pair<bool,const XMLCh*> rpFormat = relyingParty->getXMLString("NameIDFormat");
+        if (rpFormat.first)
+            req->getNameIDPolicy()->setFormat(rpFormat.second);
+    }
+
+    // SPNameQualifier may be specified, or inferred from RelyingParty.
     if (SPNameQualifier && *SPNameQualifier) {
         auto_ptr_XMLCh widequal(SPNameQualifier);
         req->getNameIDPolicy()->setSPNameQualifier(widequal.get());
     }
+    else {
+        pair<bool,const XMLCh*> rpQual = relyingParty->getXMLString("SPNameQualifier");
+        if (rpQual.first)
+            req->getNameIDPolicy()->setSPNameQualifier(rpQual.second);
+    }
+
+    // If no specified AC class, infer from RelyingParty.
+    if (!authnContextClassRef || !*authnContextClassRef) {
+        pair<bool,const char*> rpContextClassRef = relyingParty->getString("authnContextClassRef");
+        if (rpContextClassRef.first)
+            authnContextClassRef = rpContextClassRef.second;
+    }
+
     if (authnContextClassRef || authnContextComparison) {
         RequestedAuthnContext* reqContext = req->getRequestedAuthnContext();
         if (!reqContext) {
@@ -685,10 +761,17 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         else if (authnContextComparison) {
             auto_ptr_XMLCh widecomp(authnContextComparison);
             reqContext->setComparison(widecomp.get());
+        } else {
+            pair<bool,const XMLCh*> rpComp = relyingParty->getXMLString("authnContextComparison");
+            if (rpComp.first)
+                reqContext->setComparison(rpComp.second);
         }
     }
 
     pair<bool,bool> requestDelegation = getBool("requestDelegation");
+    if (!requestDelegation.first)
+        requestDelegation = relyingParty->getBool("requestDelegation");
+
     if (requestDelegation.first && requestDelegation.second) {
         if (entity.first) {
             // Request delegation by including the IdP as an Audience.

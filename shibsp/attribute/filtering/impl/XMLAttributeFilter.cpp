@@ -144,6 +144,7 @@ namespace shibsp {
     static const XMLCh PolicyRequirementRule[] =        UNICODE_LITERAL_21(P,o,l,i,c,y,R,e,q,u,i,r,e,m,e,n,t,R,u,l,e);
     static const XMLCh PolicyRequirementRuleReference[]=UNICODE_LITERAL_30(P,o,l,i,c,y,R,e,q,u,i,r,e,m,e,n,t,R,u,l,e,R,e,f,e,r,e,n,c,e);
     static const XMLCh attributeID[] =                  UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
+    static const XMLCh permitAny[] =                    UNICODE_LITERAL_9(p,e,r,m,i,t,A,n,y);
     static const XMLCh _id[] =                          UNICODE_LITERAL_2(i,d);
     static const XMLCh _ref[] =                         UNICODE_LITERAL_3(r,e,f);
 };
@@ -286,6 +287,12 @@ boost::tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buil
 
     MatchFunctor* perm = nullptr;
     MatchFunctor* deny = nullptr;
+
+    if (XMLHelper::getAttrBool(e, false, permitAny)) {
+        m_log.debug("installing implicit ANY permit rule for attribute (%s)", attrID.c_str());
+        perm = SPConfig::getConfig().MatchFunctorManager.newPlugin(AnyMatchFunctorType, make_pair(&permMap,nullptr));
+        return boost::make_tuple(attrID, perm, deny);
+    }
 
     e = XMLHelper::getFirstChildElement(e);
     if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, PermitValueRule)) {

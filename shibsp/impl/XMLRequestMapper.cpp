@@ -156,11 +156,11 @@ namespace shibsp {
 
     static const XMLCh _AccessControl[] =           UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
     static const XMLCh AccessControlProvider[] =    UNICODE_LITERAL_21(A,c,c,e,s,s,C,o,n,t,r,o,l,P,r,o,v,i,d,e,r);
+    static const XMLCh caseInsensitiveOption[] =    UNICODE_LITERAL_1(i);
     static const XMLCh Host[] =                     UNICODE_LITERAL_4(H,o,s,t);
     static const XMLCh HostRegex[] =                UNICODE_LITERAL_9(H,o,s,t,R,e,g,e,x);
     static const XMLCh htaccess[] =                 UNICODE_LITERAL_8(h,t,a,c,c,e,s,s);
     static const XMLCh ignoreCase[] =               UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
-    static const XMLCh ignoreOption[] =             UNICODE_LITERAL_1(i);
     static const XMLCh Path[] =                     UNICODE_LITERAL_4(P,a,t,h);
     static const XMLCh PathRegex[] =                UNICODE_LITERAL_9(P,a,t,h,R,e,g,e,x);
     static const XMLCh Query[] =                    UNICODE_LITERAL_5(Q,u,e,r,y);
@@ -316,9 +316,18 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
 
             boost::shared_ptr<Override> o(new Override(m_unicodeAware, path, log, this));
 
-            bool flag = XMLHelper::getAttrBool(path, true, ignoreCase);
+            bool caseSensitive;
+            if (path && path->hasAttributeNS(nullptr, ignoreCase)) {
+                // In this one case, we've left ignoreCase reversed (true means case sensitive, false means insensitive).
+                // This was to protect people who followed the security advisory for SSPCPP-691 and reversed their setting.
+                log.error("Deprecated ignoreCase attribute in PathRegex element will be interpreted backwards. Replace with caseSensitive");
+                caseSensitive = XMLHelper::getAttrBool(path, true, ignoreCase);
+            } else {
+                // If the old ignoreCase setting isn't set, then we just process normally.
+                caseSensitive = XMLHelper::getCaseSensitive(path, false);
+            }
             try {
-                boost::shared_ptr<RegularExpression> re(new RegularExpression(n, flag ? &chNull : ignoreOption));
+                boost::shared_ptr<RegularExpression> re(new RegularExpression(n, caseSensitive ? &chNull : caseInsensitiveOption));
                 m_regexps.push_back(make_pair(re, o));
             }
             catch (XMLException& ex) {
@@ -479,10 +488,10 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
 
         boost::shared_ptr<Override> o(new Override(m_unicodeAware, host, log, this));
 
-        const XMLCh* flag = host->getAttributeNS(nullptr,ignoreCase);
+        const bool caseSensitive = XMLHelper::getCaseSensitive(host, false);
         try {
             boost::shared_ptr<RegularExpression> re(
-                new RegularExpression(n, (flag && (*flag==chLatin_f || *flag==chDigit_0)) ? &chNull : ignoreOption)
+                new RegularExpression(n, caseSensitive ? &chNull : caseInsensitiveOption)
                 );
             m_regexps.push_back(make_pair(re, o));
         }

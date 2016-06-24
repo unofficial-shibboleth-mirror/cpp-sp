@@ -9,10 +9,8 @@
   <ComponentRef Id='README.txt'/>
   <ComponentRef Id='RELEASE.txt'/>
 
-  <ComponentRef Id='upgrade.xsl'/>
   <ComponentRef Id='example_metadata.xml'/>
   <ComponentRef Id='example_shibboleth2.xml'/> 
-  <ComponentRef Id='xsltproc.js'/>
   <ComponentRef Id='keygen.bat'/>
   <ComponentRef Id='attrChecker.html'/>
   <ComponentRef Id='sslError.html'/>

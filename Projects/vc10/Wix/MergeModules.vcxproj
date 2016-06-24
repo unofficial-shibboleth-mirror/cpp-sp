@@ -100,7 +100,9 @@ nmake /f MergeModules.make BuildSP=$(BuildRoot) CurlVersion=$(CurlVersion) FastC
     <None Include="..\..\..\msi\Wix\MergeModules\OpenSSL-x64.wxs" />
     <None Include="..\..\..\msi\Wix\MergeModules\OpenSSL-x86.wxs" />
     <None Include="..\..\..\msi\Wix\MergeModules\Shibboleth-schemas.wxs" />
-    <None Include="..\..\..\msi\Wix\MergeModules\Shibboleth-x64.wxs" />
+    <None Include="..\..\..\msi\Wix\MergeModules\Shibboleth-x64.wxs">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="..\..\..\msi\Wix\MergeModules\Shibboleth-x86.wxs" />
     <None Include="..\..\..\msi\Wix\MergeModules\Xerces-x64.wxs" />
     <None Include="..\..\..\msi\Wix\MergeModules\Xerces-x86.wxs" />

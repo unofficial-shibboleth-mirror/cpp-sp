@@ -52,6 +52,7 @@
 #include <windows.h>
 #include <httpfilt.h>
 #include <httpext.h>
+#include <message.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -110,9 +111,10 @@ BOOL LogEvent(
     LPCSTR  message)
 {
     LPCSTR  messages[] = {message, nullptr};
+    DWORD gle = GetLastError();
 
     HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth ISAPI Filter");
-    BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, nullptr);
+    BOOL res = ReportEvent(hElog, wType, CATEGORY_ISAPI, dwEventID, lpUserSid, 1, sizeof(DWORD), messages, &gle);
     return (DeregisterEventSource(hElog) && res);
 }
 
@@ -140,7 +142,7 @@ extern "C" BOOL WINAPI GetExtensionVersion(HSE_VERSION_INFO* pVer)
         return FALSE;
 
     if (!g_Config) {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
+        LogEvent(nullptr, SHIB_ISAPI_CANNOT_LOAD, 2100, nullptr,
                 "Extension mode startup not possible, is the DLL loaded as a filter?");
         return FALSE;
     }
@@ -160,7 +162,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     if (!pVer)
         return FALSE;
     else if (g_Config) {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
+        LogEvent(nullptr, EVENTLOG_WARNING_TYPE, SHIB_ISAPI_REENTRANT_INIT, nullptr,
                 "Reentrant filter initialization, ignoring...");
         return TRUE;
     }
@@ -176,7 +178,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         );
     if (!g_Config->init()) {
         g_Config = nullptr;
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_STARTUP_FAILED, nullptr,
                 "Filter startup failed during library initialization, check native log for help.");
         return FALSE;
     }
@@ -188,9 +190,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     catch (std::exception& ex) {
         g_Config->term();
         g_Config=nullptr;
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, ex.what());
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
-                "Filter startup failed to load configuration, check native log for details.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_STARTUP_FAILED_EXCEPTION, nullptr, ex.what());
         return FALSE;
     }
 
@@ -221,7 +221,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 }
                 else {
                     _set_invalid_parameter_handler(old);
-                    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr,
+                    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_CANNOT_CREATE_ANTISPOOF, nullptr,
                             "Filter failed to generate a random anti-spoofing key (if this is Windows 2000 set one manually).");
                     locker.assign();    // pops lock on SP config
                     g_Config->term();
@@ -254,7 +254,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                    SF_NOTIFY_NONSECURE_PORT |
                    SF_NOTIFY_PREPROC_HEADERS |
                    SF_NOTIFY_LOG);
-    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, 7701, nullptr, "Filter initialized...");
+    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, SHIB_ISAPI_INITIALIZED, nullptr, "Filter initialized...");
     return TRUE;
 }
 
@@ -263,7 +263,7 @@ extern "C" BOOL WINAPI TerminateFilter(DWORD)
     if (g_Config)
         g_Config->term();
     g_Config = nullptr;
-    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, 7701, nullptr, "Filter shut down...");
+    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, SHIB_ISAPI_SHUTDOWN, nullptr, "Filter shut down...");
     return TRUE;
 }
 
@@ -430,7 +430,7 @@ public:
   void log(SPLogLevel level, const string& msg) const {
     AbstractSPRequest::log(level,msg);
     if (level >= SPCrit)
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg.c_str());
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_CRITICAL, nullptr, msg.c_str());
   }
   string makeSafeHeader(const char* rawname) const {
       string hdr;
@@ -588,9 +588,10 @@ public:
   }
 };
 
-DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
+DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg, DWORD eventID=SHIB_ISAPI_CLIENT_ERROR)
 {
-    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg);
+    if (eventID)
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, eventID, nullptr, msg);
     static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(ULONG_PTR)ctype,0);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
@@ -620,8 +621,7 @@ void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s,
             break;
     }
     if (bRequired && s.empty()) {
-        string msg = string("Missing required server variable: ") + lpszVariable;
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg.c_str());
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_MISSING_VARIABLE, nullptr, lpszVariable);
     }
 }
 
@@ -677,16 +677,15 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             return WriteClientError(pfc, "Shibboleth Filter detected unexpected IIS error.");
     }
     catch (std::exception& e) {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, e.what());
-        return WriteClientError(pfc, "Shibboleth Filter caught an exception, check Event Log for details.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_EXCEPTION, nullptr, e.what());
+        return WriteClientError(pfc, "Shibboleth Filter caught an exception, check Event Log for details.", 0);
     }
     catch(...) {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "Shibboleth Filter threw an unknown exception.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_UNKNOWN_EXCEPTION, nullptr, "Shibboleth Filter threw an unknown exception.");
         if (g_catchAll)
-            return WriteClientError(pfc, "Shibboleth Filter threw an unknown exception.");
+            return WriteClientError(pfc, "Shibboleth Filter threw an unknown exception.", 0);
         throw;
     }
-
     return WriteClientError(pfc, "Shibboleth Filter reached unreachable code, save my walrus!");
 }
 
@@ -694,9 +693,10 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 /****************************************************************************/
 // ISAPI Extension
 
-DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
+DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg, DWORD eventID=SHIB_ISAPI_CLIENT_ERROR)
 {
-    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg);
+    if (eventID)
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, eventID, nullptr, msg);
     static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
     lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
     static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
@@ -1025,8 +1025,7 @@ void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dyna
             break;
     }
     if (bRequired && s.empty()) {
-        string msg = string("Missing required server variable: ") + lpszVariable;
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, msg.c_str());
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_MISSING_VARIABLE, nullptr, lpszVariable);
     }
 }
 
@@ -1065,13 +1064,13 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB, "Server detected unexpected IIS error.");
     }
     catch (std::exception& e) {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, e.what());
-        return WriteClientError(lpECB, "Shibboleth Extension caught an exception, check Event Log for details.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_EXCEPTION, nullptr, e.what());
+        return WriteClientError(lpECB, "Shibboleth Extension caught an exception, check Event Log for details.", 0);
     }
     catch(...) {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "Shibboleth Extension threw an unknown exception.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_UNKNOWN_EXCEPTION, nullptr, "Shibboleth Extension threw an unknown exception.");
         if (g_catchAll)
-            return WriteClientError(lpECB, "Shibboleth Extension threw an unknown exception.");
+            return WriteClientError(lpECB, "Shibboleth Extension threw an unknown exception.", 0);
         throw;
     }
 

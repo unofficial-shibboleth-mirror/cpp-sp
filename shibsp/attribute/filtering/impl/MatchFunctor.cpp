@@ -178,7 +178,7 @@ void SHIBSP_API shibsp::registerMatchFunctors()
 
     mgr.registerFactory(EntityAttributeExactMatchType, AttributeRequesterEntityAttributeExactMatchFactory);
     mgr.registerFactory(EntityAttributeRegexMatchType, AttributeRequesterEntityAttributeRegexMatchFactory);
-    mgr.registerFactory(InEntityGroup, AttributeRequesterInEntityGroupFactory);
+    mgr.registerFactory(InEntityGroupType, AttributeRequesterInEntityGroupFactory);
 }
 
 MatchFunctor::MatchFunctor()

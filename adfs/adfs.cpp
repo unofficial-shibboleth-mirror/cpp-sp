@@ -368,7 +368,13 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
         recoverRelayState(app, request, request, target, false);
         app.limitRedirect(request, target.c_str());
 
-        acClass = getString("authnContextClassRef", request);
+        // Default is to allow externally supplied settings.
+        pair<bool,bool> externalInput = getBool("externalInput");
+        unsigned int settingMask = HANDLER_PROPERTY_MAP | HANDLER_PROPERTY_FIXED;
+        if (!externalInput.first || externalInput.second)
+            settingMask |= HANDLER_PROPERTY_REQUEST;
+
+        acClass = getString("authnContextClassRef", request, settingMask);
     }
     else {
         // Check for a hardwired target value in the map or handler.
@@ -541,8 +547,15 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
     auto_ptr_char dest(ep->getLocation());
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
 
+    const PropertySet* relyingParty = app.getRelyingParty(entity.first);
+
     string req=string(dest.get()) + (strchr(dest.get(),'?') ? '&' : '?') + "wa=wsignin1.0&wreply=" + urlenc->encode(acsLocation) +
-        "&wct=" + urlenc->encode(timebuf) + "&wtrealm=" + urlenc->encode(app.getString("entityID").second);
+        "&wct=" + urlenc->encode(timebuf) + "&wtrealm=" + urlenc->encode(relyingParty->getString("entityID").second);
+    if (!authnContextClassRef) {
+        pair<bool,const char*> rpClass = relyingParty->getString("authnContextClassRef");
+        if (rpClass.first)
+            authnContextClassRef = rpClass.second;
+    }
     if (authnContextClassRef)
         req += "&wauth=" + urlenc->encode(authnContextClassRef);
     if (!relayState.empty())

@@ -27,6 +27,7 @@
 #define _CRT_NONSTDC_NO_DEPRECATE 1
 #define _CRT_SECURE_NO_DEPRECATE 1
 
+#include <message.h>
 #include <shibsp/base.h>
 #include <string>
 #include <windows.h>
@@ -158,7 +159,7 @@ int main(int argc, char *argv[])
         SetConsoleCtrlHandler(&BreakHandler,TRUE);
         if ((i=real_main(1))!=0)
         {
-            LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "shibd startup failed, check shibd.log for further details");
+            LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIBD_STARTUP_FAILED, nullptr, "shibd startup failed, check shibd.log for further details");
             return i;
         }
         return real_main(0);
@@ -199,7 +200,7 @@ int main(int argc, char *argv[])
     };
 
     if (!StartServiceCtrlDispatcher(dispatchTable))
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "StartServiceCtrlDispatcher failed.");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIBD_SERVICE_START_FAILED, nullptr, "StartServiceCtrlDispatcher failed.");
     return 0;
 }
 
@@ -214,11 +215,11 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 
     if (real_main(1)!=0)
     {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "shibd startup failed, check shibd.log for further details");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIBD_STARTUP_FAILED, nullptr, "shibd startup failed, check shibd.log for further details");
         return;
     }
 
-    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, 7700, nullptr, "shibd started successfully.");
+    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, SHIBD_SERVICE_STARTED, nullptr, "shibd started successfully.");
 
     if (!ReportStatusToSCMgr(SERVICE_RUNNING, NO_ERROR, 0))
         return;
@@ -235,7 +236,7 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 VOID ServiceStop()
 {
     if (!bConsole)
-        LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, 7701, nullptr, "shibd stopping...");
+        LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, SHIBD_SERVICE_STOPPING, nullptr, "shibd stopping...");
     shibd_shutdown=true;
 }
 
@@ -362,7 +363,7 @@ BOOL ReportStatusToSCMgr(DWORD dwCurrentState,
         // Report the status of the service to the service control manager.
         //
         if (!(fResult = SetServiceStatus(sshStatusHandle, &ssStatus)))
-            LogEvent(nullptr, EVENTLOG_ERROR_TYPE, 2100, nullptr, "SetServiceStatus failed.");
+            LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIBD_SET_SERVICE_STATUS_FAILED, nullptr, "SetServiceStatus failed.");
     }
     return fResult;
 }
@@ -552,8 +553,9 @@ BOOL LogEvent(
     LPCSTR  message)
 {
     LPCSTR  messages[] = {message, nullptr};
+    DWORD gle = {GetLastError()};
     
     HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth Daemon");
-    BOOL res = ReportEvent(hElog, wType, 0, dwEventID, lpUserSid, 1, 0, messages, nullptr);
+    BOOL res = ReportEvent(hElog, wType, CATEGORY_SHIBD, dwEventID, lpUserSid, 1, sizeof(DWORD), messages, &gle);
     return (DeregisterEventSource(hElog) && res);
 }

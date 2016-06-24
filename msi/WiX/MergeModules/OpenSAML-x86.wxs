@@ -34,10 +34,10 @@
                 <File KeyPath='yes' Checksum='yes' Name='samlsign.exe' />
               </Component>
               <Component Id='xmltooling.dll' Guid='$(var.XMLToolingComponent32)'>
-                <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Release\xmltooling$(var.XmlToolingFileVersion).dll' />
+                <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\Release\xmltooling$(var.XmlToolingFileVersion).dll' />
               </Component>
               <Component Id='xmltooling_lite.dll' Guid='$(var.XMLToolingLiteComponent32)'>
-                <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll' />
+                <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll' />
               </Component>
               <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-opensaml\Build\$(var.ShibbolethMsVersion)\Debug\'>
                 <Component Id='samlD.dll' Guid='$(var.SamlComponent32d)'>

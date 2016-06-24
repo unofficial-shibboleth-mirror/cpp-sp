@@ -21,14 +21,14 @@
   <Fragment>
     <!-- Configuration, licenses and documentation -->
     <DirectoryRef Id='INSTALLDIR'>
-      <Directory Id='bin64' Name='bin64' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Release' >
+      <Directory Id='bin64' Name='bin64' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\x64\Release' >
         <Component Id='resolvertest64.exe' Guid='{C29672B6-971D-4828-BB51-1190C0877381}' Win64='yes'>
           <File KeyPath='yes' Checksum='yes' Id='resolvertest64.exe' Name='resolvertest.exe' />
         </Component>
         <Component Id='mdquery64.exe' Guid='{3645630B-3991-4693-8664-A49242B9CF05}' Win64='yes'>
           <File KeyPath='yes' Checksum='yes' Id='mdquery64.exe' Name='mdquery.exe' />
         </Component>
-        <Directory Id='bin64_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Debug' >
+        <Directory Id='bin64_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\x64\Debug' >
           <Component Id='resolvertest64.exe_debug' Guid='{58C98426-8C96-41EE-B956-A6BBAEAE5A10}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='resolvertest64.exe_debug' Name='resolvertest.exe' />
           </Component>
@@ -38,7 +38,7 @@
         </Directory><!-- bin_debug -->
       </Directory><!-- bin -->
       <Directory Id='lib64' Name='lib64' >
-        <Directory Id='lib64_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Release' >
+        <Directory Id='lib64_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\x64\Release' >
           <Component Id='adfs64.so' Guid='{2891ECDC-F507-4CEC-8A65-8B20FB93F4B7}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='adfs64.so' Name='adfs.so' />
           </Component>
@@ -69,7 +69,7 @@
           <Component Id='shibresponder64.exe' Guid='{538D6EEC-1AE1-400B-94AF-2B7791BFEBDA}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='shibresponder64.exe' Name='shibresponder.exe' />
           </Component>
-          <Directory Id='lib64_shibboleth_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Debug' >
+          <Directory Id='lib64_shibboleth_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\x64\Debug' >
             <Component Id='adfs64.so_debug' Guid='{BFF58DDD-CF04-49B1-A172-C84087705D2A}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='adfs64.so_debug' Name='adfs.so' />
             </Component>
@@ -104,11 +104,11 @@
         </Directory><!-- lib_shibboleth -->
       </Directory><!-- lib -->
       <!-- the service bin -->
-      <Directory Id='sbin64' Name='sbin64' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Release' >
+      <Directory Id='sbin64' Name='sbin64' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\x64\Release' >
         <Component Id='shibd64.exe' Guid='{707B57A2-CCA0-48A6-9F66-275EB04474AA}' Win64='yes'>
           <File KeyPath='yes' Checksum='yes' Id='shibd64.exe' Name='shibd.exe' />
         </Component>
-        <Directory Id='sbin64_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\x64\Debug' >
+        <Directory Id='sbin64_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\x64\Debug' >
           <Component Id='shibd64.exe_debug' Guid='{657A1902-0104-47C7-84A7-AEB5F736B02F}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='shibd64.exe_debug' Name='shibd.exe' />
           </Component>

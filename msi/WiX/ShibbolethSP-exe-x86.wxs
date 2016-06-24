@@ -21,14 +21,14 @@
   <Fragment>
     <!-- Configuration, licenses and documentation -->
     <DirectoryRef Id='INSTALLDIR'>
-      <Directory Id='bin' Name='bin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Release' >
+      <Directory Id='bin' Name='bin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Release' >
         <Component Id='resolvertest.exe' Guid='{D381B6FA-2971-457B-804E-F08DD517866F}'>
           <File KeyPath='yes' Checksum='yes' Name='resolvertest.exe' />
         </Component>
         <Component Id='mdquery.exe' Guid='{5F322597-3B26-48E5-95BA-CF991CF6D6DB}'>
           <File KeyPath='yes' Checksum='yes' Name='mdquery.exe' />
         </Component>
-        <Directory Id='bin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Debug' >
+        <Directory Id='bin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Debug' >
           <Component Id='resolvertest.exe_debug' Guid='{4FA03A33-961A-42E5-8D7A-5F2E207757DD}'>
             <File KeyPath='yes' Checksum='yes' Id='resolvertest.exe_debug' Name='resolvertest.exe' />
           </Component>
@@ -38,7 +38,7 @@
         </Directory><!-- bin_debug -->
       </Directory><!-- bin -->
       <Directory Id='lib' Name='lib' >
-        <Directory Id='lib_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\Release' >
+        <Directory Id='lib_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Release' >
           <Component Id='adfs.so' Guid='{9C92C803-E905-4B43-8723-05678DC73B88}'>
             <File KeyPath='yes' Checksum='yes' Name='adfs.so' />
           </Component>
@@ -78,7 +78,7 @@
           <Component Id='shibresponder.exe' Guid='{510267D9-61F2-47EF-99D2-CB3D21CB14EB}'>
             <File KeyPath='yes' Checksum='yes' Name='shibresponder.exe' />
           </Component>
-          <Directory Id='lib_shibboleth_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Debug' >
+          <Directory Id='lib_shibboleth_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Debug' >
             <Component Id='adfs.so_debug' Guid='{9B8E071F-B251-4373-A786-8966FD0D22EF}'>
               <File KeyPath='yes' Checksum='yes' Id='adfs.so_debug' Name='adfs.so' />
             </Component>
@@ -122,7 +122,7 @@
         </Directory><!-- lib_shibboleth -->
       </Directory><!-- lib -->
       <!-- the service bin -->
-      <Directory Id='sbin' Name='sbin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Release' >
+      <Directory Id='sbin' Name='sbin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Release' >
         <Component Id='shibd.exe' Guid='{2476BB80-9384-4026-86F5-E1569A685187}'>
           <File KeyPath='yes' Checksum='yes' Name='shibd.exe' />
           <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
@@ -134,7 +134,7 @@
           <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'  
                           Remove='uninstall' Start='install' Wait='no' />
         </Component>
-        <Directory Id='sbin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Debug' >
+        <Directory Id='sbin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Debug' >
           <Component Id='shibd.exe_debug' Guid='{91E9DF13-0940-43E7-9A2F-9571F6FC3DF2}'>
             <File KeyPath='yes' Checksum='yes' Id='shibd.exe_debug' Name='shibd.exe' />
           </Component>

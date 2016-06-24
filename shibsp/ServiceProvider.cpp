@@ -162,6 +162,108 @@ namespace shibsp {
         app.clearAttributeHeaders(request);
         request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
     }
+
+    void SHIBSP_DLLLOCAL exportAttributes(SPRequest& request, const Session* session, RequestMapper::Settings settings) {
+
+        pair<bool,const char*> enc = settings.first->getString("encoding");
+        if (enc.first && strcmp(enc.second, "URL"))
+            throw ConfigurationException("Unsupported value for 'encoding' content setting ($1).", params(1,enc.second));
+
+        const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
+
+        pair<bool,bool> exportDups = settings.first->getBool("exportDuplicateValues");
+        const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
+
+        // Default export strategy will include duplicates.
+        if (!exportDups.first || exportDups.second) {
+            for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
+                if (a->second->isInternal())
+                    continue;
+                string header(request.getApplication().getSecureHeader(request, a->first.c_str()));
+                const vector<string>& vals = a->second->getSerializedValues();
+                for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
+                    if (!header.empty())
+                        header += ';';
+                    if (enc.first) {
+                        // If URL-encoding, any semicolons will get escaped anyway.
+                        header += encoder->encode(v->c_str());
+                    }
+                    else {
+                        string::size_type pos = v->find_first_of(';', string::size_type(0));
+                        if (pos != string::npos) {
+                            string value(*v);
+                            for (; pos != string::npos; pos = value.find_first_of(';', pos)) {
+                                value.insert(pos, "\\");
+                                pos += 2;
+                            }
+                            header += value;
+                        }
+                        else {
+                            header += (*v);
+                        }
+                    }
+                }
+                request.getApplication().setHeader(request, a->first.c_str(), header.c_str());
+            }
+        }
+        else {
+            // Capture values in a map of sets to check for duplicates on the fly.
+            map< string,set<string> > valueMap;
+            for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
+                if (a->second->isInternal())
+                    continue;
+                const vector<string>& vals = a->second->getSerializedValues();
+                valueMap[a->first].insert(vals.begin(), vals.end());
+            }
+
+            // Export the mapped sets to the headers.
+            for (map< string,set<string> >::const_iterator deduped = valueMap.begin(); deduped != valueMap.end(); ++deduped) {
+                string header;
+                for (set<string>::const_iterator v = deduped->second.begin(); v != deduped->second.end(); ++v) {
+                    if (!header.empty())
+                        header += ';';
+                    if (enc.first) {
+                        // If URL-encoding, any semicolons will get escaped anyway.
+                        header += encoder->encode(v->c_str());
+                    }
+                    else {
+                        string::size_type pos = v->find_first_of(';', string::size_type(0));
+                        if (pos != string::npos) {
+                            string value(*v);
+                            for (; pos != string::npos; pos = value.find_first_of(';', pos)) {
+                                value.insert(pos, "\\");
+                                pos += 2;
+                            }
+                            header += value;
+                        }
+                        else {
+                            header += (*v);
+                        }
+                    }
+                }
+                request.getApplication().setHeader(request, deduped->first.c_str(), header.c_str());
+            }
+        }
+
+        // Check for REMOTE_USER.
+        bool remoteUserSet = false;
+        const vector<string>& rmids = request.getApplication().getRemoteUserAttributeIds();
+        for (vector<string>::const_iterator rmid = rmids.begin(); !remoteUserSet && rmid != rmids.end(); ++rmid) {
+            pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> matches =
+                attributes.equal_range(*rmid);
+            for (; matches.first != matches.second; ++matches.first) {
+                const vector<string>& vals = matches.first->second->getSerializedValues();
+                if (!vals.empty()) {
+                    if (enc.first)
+                        request.setRemoteUser(encoder->encode(vals.front().c_str()).c_str());
+                    else
+                        request.setRemoteUser(vals.front().c_str());
+                    remoteUserSet = true;
+                    break;
+                }
+            }
+        }
+    }
 };
 
 void SHIBSP_API shibsp::registerServiceProviders()
@@ -482,12 +584,6 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         		return make_pair(false, 0L);	// just bail silently
         }
 
-		pair<bool,const char*> enc = settings.first->getString("encoding");
-		if (enc.first && strcmp(enc.second, "URL"))
-			throw ConfigurationException("Unsupported value for 'encoding' content setting ($1).", params(1,enc.second));
-
-        const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
-
         app->setHeader(request, "Shib-Application-ID", app->getId());
         app->setHeader(request, "Shib-Session-ID", session->getID());
 
@@ -543,7 +639,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
                     count++;
                     *(exportName.rbegin()) = '0' + (count%10);
                     *(++exportName.rbegin()) = '0' + (count/10);
-                    string fullURL = baseURL + encoder->encode(*tokenids);
+                    string fullURL = baseURL + XMLToolingConfig::getConfig().getURLEncoder()->encode(*tokenids);
                     app->setHeader(request, exportName.c_str(), fullURL.c_str());
                 }
                 app->setHeader(request, "Shib-Assertion-Count", exportName.c_str() + 15);
@@ -551,55 +647,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         }
 
         // Export the attributes.
-        const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
-        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
-            if (a->second->isInternal())
-                continue;
-            string header(app->getSecureHeader(request, a->first.c_str()));
-            const vector<string>& vals = a->second->getSerializedValues();
-            for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
-                if (!header.empty())
-                    header += ";";
-				if (enc.first) {
-					// If URL-encoding, any semicolons will get escaped anyway.
-					header += encoder->encode(v->c_str());
-				}
-				else {
-					string::size_type pos = v->find_first_of(';', string::size_type(0));
-					if (pos != string::npos) {
-						string value(*v);
-						for (; pos != string::npos; pos = value.find_first_of(';', pos)) {
-							value.insert(pos, "\\");
-							pos += 2;
-						}
-						header += value;
-					}
-					else {
-						header += (*v);
-					}
-				}
-            }
-            app->setHeader(request, a->first.c_str(), header.c_str());
-        }
-
-        // Check for REMOTE_USER.
-        bool remoteUserSet = false;
-        const vector<string>& rmids = app->getRemoteUserAttributeIds();
-        for (vector<string>::const_iterator rmid = rmids.begin(); !remoteUserSet && rmid != rmids.end(); ++rmid) {
-            pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> matches =
-                attributes.equal_range(*rmid);
-            for (; matches.first != matches.second; ++matches.first) {
-                const vector<string>& vals = matches.first->second->getSerializedValues();
-                if (!vals.empty()) {
-					if (enc.first)
-						request.setRemoteUser(encoder->encode(vals.front().c_str()).c_str());
-					else
-						request.setRemoteUser(vals.front().c_str());
-                    remoteUserSet = true;
-                    break;
-                }
-            }
-        }
+        exportAttributes(request, session, settings);
 
         return make_pair(false,0L);
     }
