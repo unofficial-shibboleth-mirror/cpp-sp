@@ -293,7 +293,7 @@ pair<bool,long> AttributeResolverHandler::processMessage(
         MetadataProvider* m = application.getMetadataProvider();
         Locker mlock(m);
 
-        pair<const EntityDescriptor*,const RoleDescriptor*> site = make_pair(nullptr, nullptr);
+        pair<const EntityDescriptor*,const RoleDescriptor*> site = pair<const EntityDescriptor*,const RoleDescriptor*>(nullptr, nullptr);
         if (entityID.get()) {
             MetadataProviderCriteria mc(application, entityID.get(), &IDPSSODescriptor::ELEMENT_QNAME, protocol.get());
             site = m->getEntityDescriptor(mc);
