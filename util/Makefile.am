@@ -15,6 +15,6 @@ mdquery_LDADD = $(XMLSEC_LIBS) \
 EXTRA_DIST = \
 	resource.h \
 	mdquery.rc \
-	resolvertest.rc
+	resolvertest.rc \
 	messageResource.rc \
 	message.mc
