@@ -18,7 +18,7 @@
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='XmlSecMergeModule_x86' Language='1033' Version='$(var.XmlSecVersion)'>
-    <Package Id='{D1678DAE-81D9-4756-ABE6-7D1218F0D350}' Description='Merge Module for Santuario (x64)'
+    <Package Id='{D1678DAE-81D9-4756-ABE6-7D1218F0D350}' Description='Merge Module for Santuario (x86)'
              Comments='This module is built by the Shibboleth Consortium. Includes Several executable utilities.'
              Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x86'/>
     <Directory Id='TARGETDIR' Name='SourceDir'>
