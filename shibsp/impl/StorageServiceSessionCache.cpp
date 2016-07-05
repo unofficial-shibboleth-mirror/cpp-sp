@@ -1633,7 +1633,7 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
             if (!ver)
                 return nullptr;
 
-            if (lastAccess = 0) {
+            if (0 == lastAccess) {
                 m_log.error("session (ID: %s) did not report time of last access", key);
                 throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
             }
