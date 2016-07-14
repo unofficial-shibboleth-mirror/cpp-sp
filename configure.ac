@@ -100,30 +100,6 @@ ACX_PTHREAD(
     [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])],
     [AC_MSG_ERROR([unable to find pthreads, currently this is required])])
 
-# OpenSSL settings
-AC_ARG_WITH(openssl,
-    AS_HELP_STRING([--with-openssl=PATH],[where openssl is installed]),
-    [if test x_$with_openssl != x_/usr; then
-        SSLFLAGS="-I${with_openssl}/include"
-    fi])
-
-if test "x$with_openssl" = "x" ; then
-    AC_PATH_PROG(PKG_CONFIG, pkg-config)
-    if test "x$PKG_CONFIG" != x && test "x$PKG_CONFIG" != "xno" ; then
-        if pkg-config openssl ; then
-            SSLFLAGS="`$PKG_CONFIG --cflags openssl`"
-        else
-            AC_MSG_WARN([OpenSSL not supported by pkg-config, try --with-openssl instead])
-        fi
-    fi
-fi
-
-AC_MSG_CHECKING(for OpenSSL cflags)
-AC_MSG_RESULT($SSLFLAGS)
-CPPFLAGS="$SSLFLAGS $CPPFLAGS"
-
-AC_CHECK_HEADER([openssl/x509.h],,AC_MSG_ERROR([unable to find openssl header files]))
-
 AC_LANG([C++])
 
 # C++ requirements
