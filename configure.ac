@@ -238,55 +238,14 @@ AC_LINK_IFELSE(
 # restore master libs
 LIBS="$save_LIBS"
 
-#XML-Tooling settings
-AC_ARG_WITH(xmltooling,
-    AS_HELP_STRING([--with-xmltooling=PATH],[where xmltooling is installed]),,
-    [with_xmltooling=/usr])
-if test x_$with_xmltooling != x_/usr; then
-    CPPFLAGS="-I${with_xmltooling}/include $CPPFLAGS"
-    DX_INCLUDE="${with_xmltooling}/include"
-    LITE_LIBS="-L${with_xmltooling}/lib -lxmltooling-lite"
-    XMLSEC_LIBS="-L${with_xmltooling}/lib -lxmltooling $XMLSEC_LIBS"
-else
-    LITE_LIBS="-lxmltooling-lite"
-    XMLSEC_LIBS="-lxmltooling $XMLSEC_LIBS"
-fi
+AX_PKG_CHECK_MODULES([xmltooling],,[xmltooling >= 3],,,
+    [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
+PKG_CHECK_VAR([xmltooling_includedir],[xmltooling],[includedir])
+PKG_CHECK_VAR([XMLTOOLINGXMLDIR],[xmltooling],[pkgxmldir])
+DX_INCLUDE="$DX_INCLUDE $xmltooling_includedir"
 
-AC_CHECK_HEADER([xmltooling/base.h],,AC_MSG_ERROR([unable to find xmltooling header files]))
-
-# save and append master libs
-save_LIBS="$LIBS"
-LIBS="$XMLSEC_LIBS $LIBS"
-
-AC_PREPROC_IFELSE(
-    [AC_LANG_PROGRAM([[#include <xmltooling/version.h>]],
-        [[#if _XMLTOOLING_VERSION >= 30000
-int i = 0;
-#else
-#error Need XMLTooling version 3.0 or higher
-#endif]])],
-    ,[AC_MSG_ERROR([XMLTooling version 3.0.0 or greater is required.])])
-
-# restore master libs
-LIBS="$save_LIBS"
-
-# Establish location of xmltooling catalog.
-XMLTOOLINGXMLDIR=""
-if test "x$with_xmltooling" = "x" ; then
-   with_xmltooling="/usr"
-fi
-if test -f $with_xmltooling/share/xml/xmltooling/catalog.xml ; then
-    XMLTOOLINGXMLDIR="$with_xmltooling"
-elif test -f $with_xerces/share/xml/xmltooling/catalog.xml ; then
-    XMLTOOLINGXMLDIR="$with_xerces"
-elif test -f $with_log4shib/share/xml/xmltooling/catalog.xml ; then
-    XMLTOOLINGXMLDIR="$with_log4shib"
-fi
-if test "x$XMLTOOLINGXMLDIR" = "x" ; then
-    AC_MSG_ERROR([xmltooling XML catalog not found, may need to use --with-xmltooling option])
-fi
-XMLTOOLINGXMLDIR="$XMLTOOLINGXMLDIR/share/xml/xmltooling"
-AC_SUBST(XMLTOOLINGXMLDIR)
+AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite],,,
+    [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
 # OpenSAML settings
 AC_ARG_WITH(saml,
@@ -338,7 +297,6 @@ fi
 OPENSAMLXMLDIR="$OPENSAMLXMLDIR/share/xml/opensaml"
 AC_SUBST(OPENSAMLXMLDIR)
 
-AC_SUBST(LITE_LIBS)
 AC_SUBST(XMLSEC_LIBS)
 
 # output the underlying makefiles

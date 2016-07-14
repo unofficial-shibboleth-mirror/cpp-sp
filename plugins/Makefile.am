@@ -21,14 +21,19 @@ plugins_la_SOURCES = \
 plugins_lite_la_SOURCES = \
 	${common_sources}
 
+plugins_la_CXXFLAGS = \
+	$(xmltooling_CFLAGS)
 plugins_la_LIBADD = $(XMLSEC_LIBS) \
-	$(top_builddir)/shibsp/libshibsp.la
+	$(top_builddir)/shibsp/libshibsp.la \
+	$(xmltooling_LIBS)
 
-plugins_lite_la_LIBADD = $(LITE_LIBS) \
-	$(top_builddir)/shibsp/libshibsp-lite.la
+plugins_lite_la_LIBADD = \
+	$(top_builddir)/shibsp/libshibsp-lite.la \
+	$(xmltooling_lite_LIBS)
 
 plugins_la_LDFLAGS = -module -avoid-version
 plugins_lite_la_LDFLAGS = -module -avoid-version
-plugins_lite_la_CPPFLAGS = -DSHIBSP_LITE
+plugins_lite_la_CXXFLAGS = -DSHIBSP_LITE \
+	$(xmltooling_lite_CFLAGS)
 
 EXTRA_DIST = resource.h plugins.rc

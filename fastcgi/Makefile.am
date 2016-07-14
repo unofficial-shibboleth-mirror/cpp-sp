@@ -7,18 +7,20 @@ fastcgidir = $(libdir)/@PACKAGE_NAME@
 fastcgi_PROGRAMS = shibauthorizer shibresponder
 
 shibauthorizer_SOURCES = shibauthorizer.cpp
-shibauthorizer_CXXFLAGS = $(FASTCGI_INCLUDE)
+shibauthorizer_CXXFLAGS = $(FASTCGI_INCLUDE) \
+  $(xmltooling_lite_CFLAGS)
 shibauthorizer_LDFLAGS = $(FASTCGI_LDFLAGS)
 shibauthorizer_LDADD = $(FASTCGI_LIBS) \
   $(top_builddir)/shibsp/libshibsp-lite.la \
-  $(LITE_LIBS)
+  $(xmltooling_lite_LIBS)
 
 shibresponder_SOURCES = shibresponder.cpp
-shibresponder_CXXFLAGS = $(FASTCGI_INCLUDE)
+shibresponder_CXXFLAGS = $(FASTCGI_INCLUDE) \
+  $(xmltooling_lite_CFLAGS)
 shibresponder_LDFLAGS = $(FASTCGI_LDFLAGS)
 shibresponder_LDADD = $(FASTCGI_LIBS) \
   $(top_builddir)/shibsp/libshibsp-lite.la \
-  $(LITE_LIBS)
+  $(xmltooling_lite_LIBS)
 
 endif
 

@@ -7,7 +7,10 @@ AM_CFLAGS = $(MEMCACHED_INCLUDE)
 AM_CXXFLAGS = $(MEMCACHED_INCLUDE)
 
 memcache_store_la_LDFLAGS = $(MEMCACHED_LDFLAGS) -module -avoid-version
-memcache_store_la_LIBADD = $(XMLSEC_LIBS) $(MEMCACHED_LIBS)
+memcache_store_la_CXXFLAGS = \
+	$(xmltooling_CFLAGS)
+memcache_store_la_LIBADD = $(XMLSEC_LIBS) $(MEMCACHED_LIBS) \
+	$(xmltooling_LIBS)
 
 memcache_store_la_SOURCES = \
 	memcache-store.cpp
