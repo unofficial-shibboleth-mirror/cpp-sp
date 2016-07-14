@@ -23,15 +23,18 @@ plugins_lite_la_SOURCES = \
 
 plugins_la_CXXFLAGS = \
 	$(PTHREAD_CFLAGS) \
+	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
 plugins_la_LIBADD = $(XMLSEC_LIBS) \
 	$(top_builddir)/shibsp/libshibsp.la \
 	$(PTHREAD_LIBS) \
+	$(xerces_LIBS) \
 	$(xmltooling_LIBS)
 
 plugins_lite_la_LIBADD = \
 	$(top_builddir)/shibsp/libshibsp-lite.la \
 	$(PTHREAD_LIBS) \
+	$(xerces_LIBS) \
 	$(xmltooling_lite_LIBS)
 
 plugins_la_LDFLAGS = -module -avoid-version
@@ -39,6 +42,7 @@ plugins_lite_la_LDFLAGS = -module -avoid-version
 plugins_lite_la_CXXFLAGS = -DSHIBSP_LITE \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
+	$(xerces_CFLAGS) \
 	$(xmltooling_lite_CFLAGS)
 
 EXTRA_DIST = resource.h plugins.rc

@@ -144,33 +144,8 @@ AX_PKG_CHECK_MODULES([log4shib],,[log4shib],
         [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])],,
     [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
-# Xerces settings
-AC_ARG_WITH(xerces,
-    AS_HELP_STRING([--with-xerces=PATH],[where xerces-c is installed]),,
-    [with_xerces=/usr])
-if test x_$with_xerces != x_/usr; then
-    CPPFLAGS="-I${with_xerces}/include $CPPFLAGS"
-    LIBS="-L${with_xerces}/lib -lxerces-c $LIBS"
-else
-    LIBS="-lxerces-c $LIBS"
-fi
-
-AC_CHECK_HEADER([xercesc/dom/DOM.hpp],,AC_MSG_ERROR([unable to find xerces header files]))
-AC_MSG_CHECKING([Xerces version])
-
-AC_PREPROC_IFELSE(
-    [AC_LANG_PROGRAM([#include <xercesc/util/XercesVersion.hpp>],
-[#if  _XERCES_VERSION >= 30000
-int i = 0;
-#else
-#error cannot use version 1.x or 2.x
-#endif])],
-    [AC_MSG_RESULT(OK)],
-    [AC_MSG_FAILURE([Xerces-C 3.x is required])])
-
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([[#include <xercesc/util/PlatformUtils.hpp>]],[[xercesc::XMLPlatformUtils::Initialize()]])],
-    ,[AC_MSG_ERROR([unable to link with Xerces])])
+AX_PKG_CHECK_MODULES([xerces],,[xerces-c >= 3.2],,,
+    [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
 # XML-Security settings
 AC_ARG_WITH(xmlsec,

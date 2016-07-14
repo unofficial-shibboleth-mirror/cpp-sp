@@ -7,10 +7,12 @@ resolvertest_SOURCES = resolvertest.cpp
 resolvertest_CXXFLAGS = \
 	$(BOOST_CPPFLAGS) \
 	$(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
+	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
 resolvertest_LDADD = \
 	$(top_builddir)/shibsp/libshibsp.la \
 	$(log4shib_LIBS) $(log4cpp_LIBS) \
+	$(xerces_LIBS) \
 	$(xmltooling_LIBS) \
 	$(XMLSEC_LIBS)
 
@@ -23,9 +25,11 @@ EXTRA_DIST = \
 
 mdquery_CXXFLAGS = \
 	$(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
+	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
 mdquery_LDADD = \
 	$(top_builddir)/shibsp/libshibsp.la \
 	$(log4shib_LIBS) $(log4cpp_LIBS) \
+	$(xerces_LIBS) \
 	$(xmltooling_LIBS) \
 	$(XMLSEC_LIBS)

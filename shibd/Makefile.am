@@ -7,11 +7,13 @@ shibd_SOURCES = shibd.cpp
 shibd_CXXFLAGS = \
   $(PTHREAD_CFLAGS) \
   $(SYSTEMD_CFLAGS) \
+  $(xerces_CFLAGS) \
   $(xmltooling_CFLAGS)
 shibd_LDADD = $(XMLSEC_LIBS) \
   $(top_builddir)/shibsp/libshibsp.la \
   $(PTHREAD_LIBS) \
   $(SYSTEMD_LIBS) \
+  $(xerces_LIBS) \
   $(xmltooling_LIBS)
 
 EXTRA_DIST = shibd_win32.cpp resource.h shibd.rc

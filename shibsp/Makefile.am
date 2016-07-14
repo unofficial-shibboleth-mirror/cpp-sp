@@ -247,10 +247,12 @@ libshibsp_la_CXXFLAGS = \
     $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
+    $(xerces_CFLAGS) \
     $(xmltooling_CFLAGS)
 libshibsp_la_LIBADD = \
     $(PTHREAD_LIBS) \
     $(log4shib_LIBS) $(log4cpp_LIBS) \
+    $(xerces_LIBS) \
     $(xmltooling_LIBS) \
     $(XMLSEC_LIBS)
 libshibsp_lite_la_LDFLAGS = -version-info 8:0:0
@@ -258,10 +260,12 @@ libshibsp_lite_la_CXXFLAGS = -DSHIBSP_LITE \
     $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
+    $(xerces_CFLAGS) \
     $(xmltooling_lite_CFLAGS)
 libshibsp_lite_la_LIBADD = \
     $(PTHREAD_LIBS) \
     $(log4shib_LIBS) $(log4cpp_LIBS) \
+    $(xerces_LIBS) \
     $(xmltooling_lite_LIBS)
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
