@@ -96,16 +96,9 @@ if test "$shib_cv_sock_cloexec" = "yes"; then
 	AC_DEFINE([HAVE_SOCK_CLOEXEC], 1, [Define if the SOCK_CLOEXEC flag is supported])
 fi
 
-# checks for pthreads
-ACX_PTHREAD([enable_threads="pthread"],[enable_threads="no"])
-if test $enable_threads != "pthread"; then
-    AC_MSG_ERROR([unable to find pthreads, currently this is required])
-else
-    AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])
-    LIBS="$PTHREAD_LIBS $LIBS"
-    CFLAGS="$PTHREAD_CFLAGS $CFLAGS"
-    CXXFLAGS="$PTHREAD_CFLAGS $CXXFLAGS"
-fi
+ACX_PTHREAD(
+    [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])],
+    [AC_MSG_ERROR([unable to find pthreads, currently this is required])])
 
 # OpenSSL settings
 AC_ARG_WITH(openssl,

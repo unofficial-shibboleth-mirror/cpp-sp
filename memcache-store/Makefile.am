@@ -8,8 +8,10 @@ AM_CXXFLAGS = $(MEMCACHED_INCLUDE)
 
 memcache_store_la_LDFLAGS = $(MEMCACHED_LDFLAGS) -module -avoid-version
 memcache_store_la_CXXFLAGS = \
+	$(PTHREAD_CFLAGS) \
 	$(xmltooling_CFLAGS)
 memcache_store_la_LIBADD = $(XMLSEC_LIBS) $(MEMCACHED_LIBS) \
+	$(PTHREAD_LIBS) \
 	$(xmltooling_LIBS)
 
 memcache_store_la_SOURCES = \

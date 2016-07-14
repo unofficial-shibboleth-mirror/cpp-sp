@@ -5,10 +5,12 @@ sbin_PROGRAMS = shibd
 shibd_SOURCES = shibd.cpp
 
 shibd_CXXFLAGS = \
+  $(PTHREAD_CFLAGS) \
   $(SYSTEMD_CFLAGS) \
   $(xmltooling_CFLAGS)
 shibd_LDADD = $(XMLSEC_LIBS) \
   $(top_builddir)/shibsp/libshibsp.la \
+  $(PTHREAD_LIBS) \
   $(SYSTEMD_LIBS) \
   $(xmltooling_LIBS)
 
