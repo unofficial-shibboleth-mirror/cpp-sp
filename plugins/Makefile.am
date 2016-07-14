@@ -37,6 +37,7 @@ plugins_lite_la_LIBADD = \
 plugins_la_LDFLAGS = -module -avoid-version
 plugins_lite_la_LDFLAGS = -module -avoid-version
 plugins_lite_la_CXXFLAGS = -DSHIBSP_LITE \
+	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(xmltooling_lite_CFLAGS)
 

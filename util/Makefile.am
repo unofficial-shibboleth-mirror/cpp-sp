@@ -5,6 +5,7 @@ bin_PROGRAMS = mdquery resolvertest
 resolvertest_SOURCES = resolvertest.cpp
 
 resolvertest_CXXFLAGS = \
+	$(BOOST_CPPFLAGS) \
 	$(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
 	$(xmltooling_CFLAGS)
 resolvertest_LDADD = \

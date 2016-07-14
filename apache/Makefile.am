@@ -7,6 +7,7 @@ mod_shib_13_la_SOURCES = mod_shib_13.cpp
 mod_shib_13_la_LDFLAGS = -module -avoid-version
 mod_shib_13_la_CXXFLAGS = \
   $(APXS_CFLAGS) -I$(APXS_INCLUDE) \
+  $(BOOST_CPPFLAGS) \
   $(PTHREAD_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 mod_shib_13_la_LIBADD = \
@@ -22,6 +23,7 @@ mod_shib_20_la_SOURCES = mod_shib_20.cpp
 mod_shib_20_la_LDFLAGS = -module -avoid-version
 mod_shib_20_la_CXXFLAGS = \
   $(APXS2_CFLAGS) -I$(APXS2_INCLUDE) \
+  $(BOOST_CPPFLAGS) \
   $(PTHREAD_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 mod_shib_20_la_LIBADD = \
@@ -37,6 +39,7 @@ mod_shib_22_la_SOURCES = mod_shib_22.cpp
 mod_shib_22_la_LDFLAGS = -module -avoid-version
 mod_shib_22_la_CXXFLAGS = \
   $(APXS22_CFLAGS) -I$(APXS22_INCLUDE) \
+  $(BOOST_CPPFLAGS) \
   $(PTHREAD_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 mod_shib_22_la_LIBADD = \
@@ -52,6 +55,7 @@ mod_shib_24_la_SOURCES = mod_shib_24.cpp
 mod_shib_24_la_LDFLAGS = -module -avoid-version
 mod_shib_24_la_CXXFLAGS = \
   $(APXS24_CFLAGS) -I$(APXS24_INCLUDE) \
+  $(BOOST_CPPFLAGS) \
   $(PTHREAD_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 mod_shib_24_la_LIBADD = \

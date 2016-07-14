@@ -244,6 +244,7 @@ libshibsp_la_SOURCES = \
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
 libshibsp_la_LDFLAGS = -version-info 8:0:0
 libshibsp_la_CXXFLAGS = \
+    $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
     $(xmltooling_CFLAGS)
@@ -254,6 +255,7 @@ libshibsp_la_LIBADD = \
     $(XMLSEC_LIBS)
 libshibsp_lite_la_LDFLAGS = -version-info 8:0:0
 libshibsp_lite_la_CXXFLAGS = -DSHIBSP_LITE \
+    $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
     $(xmltooling_lite_CFLAGS)
