@@ -147,39 +147,8 @@ AX_PKG_CHECK_MODULES([log4shib],,[log4shib],
 AX_PKG_CHECK_MODULES([xerces],,[xerces-c >= 3.2],,,
     [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
-# XML-Security settings
-AC_ARG_WITH(xmlsec,
-    AS_HELP_STRING([--with-xmlsec=PATH],[where xmlsec is installed]),,
-    [with_xmlsec=/usr])
-if test x_$with_xmlsec != x_/usr; then
-    CPPFLAGS="-I${with_xmlsec}/include $CPPFLAGS"
-    XMLSEC_LIBS="-L${with_xmlsec}/lib -lxml-security-c $XMLSEC_LIBS"
-else
-    XMLSEC_LIBS="-lxml-security-c $XMLSEC_LIBS"
-fi
-
-# save and append master libs
-save_LIBS="$LIBS"
-LIBS="$XMLSEC_LIBS $LIBS"
-
-AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find XML-Security-C header files]))
-AC_MSG_CHECKING([XML-Security-C version])
-AC_PREPROC_IFELSE(
-    [AC_LANG_PROGRAM([#include <xsec/utils/XSECPlatformUtils.hpp>],
-    [#if XSEC_VERSION_MAJOR >= 2
-int i = 0;
-#else
-#error need version 2.0.0 or later
-#endif])],
-    [AC_MSG_RESULT(OK)],
-    [AC_MSG_FAILURE([XML-Security version 2.0.0 or greater is required.])])
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([[#include <xsec/utils/XSECPlatformUtils.hpp>]],
-        [[XSECPlatformUtils::Initialise()]])],,
-    [AC_MSG_ERROR([unable to link with XML-Security])])
-
-# restore master libs
-LIBS="$save_LIBS"
+AX_PKG_CHECK_MODULES([xmlsec],,[xml-security-c >= 2],,,
+    [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
 
 AX_PKG_CHECK_MODULES([xmltooling],,[xmltooling >= 3],,,
     [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
@@ -193,8 +162,6 @@ AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite],,,
 AX_PKG_CHECK_MODULES([opensaml],,[opensaml >= 3],,,
     [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
 PKG_CHECK_VAR([OPENSAMLXMLDIR],[opensaml],[pkgxmldir])
-
-AC_SUBST(XMLSEC_LIBS)
 
 # output the underlying makefiles
 WANT_SUBDIRS="doc schemas configs shibsp plugins shibd util"

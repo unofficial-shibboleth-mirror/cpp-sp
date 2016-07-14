@@ -12,7 +12,8 @@ odbc_store_la_CXXFLAGS = \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
-odbc_store_la_LIBADD = $(XMLSEC_LIBS) $(ODBC_LIBS) \
+odbc_store_la_LIBADD = \
+	$(ODBC_LIBS) \
 	$(PTHREAD_LIBS) \
 	$(opensaml_LIBS) \
 	$(xerces_LIBS) \

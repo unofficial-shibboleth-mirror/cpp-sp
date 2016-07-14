@@ -15,8 +15,7 @@ resolvertest_LDADD = \
 	$(log4shib_LIBS) $(log4cpp_LIBS) \
 	$(opensaml_LIBS) \
 	$(xerces_LIBS) \
-	$(xmltooling_LIBS) \
-	$(XMLSEC_LIBS)
+	$(xmltooling_LIBS)
 
 mdquery_SOURCES = mdquery.cpp
 
@@ -35,5 +34,4 @@ mdquery_LDADD = \
 	$(log4shib_LIBS) $(log4cpp_LIBS) \
 	$(opensaml_LIBS) \
 	$(xerces_LIBS) \
-	$(xmltooling_LIBS) \
-	$(XMLSEC_LIBS)
+	$(xmltooling_LIBS)

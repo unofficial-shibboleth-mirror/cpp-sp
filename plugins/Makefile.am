@@ -26,7 +26,7 @@ plugins_la_CXXFLAGS = \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
-plugins_la_LIBADD = $(XMLSEC_LIBS) \
+plugins_la_LIBADD = \
 	$(top_builddir)/shibsp/libshibsp.la \
 	$(PTHREAD_LIBS) \
 	$(opensaml_LIBS) \

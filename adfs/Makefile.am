@@ -6,7 +6,7 @@ plugin_LTLIBRARIES = adfs.la adfs-lite.la
 adfs_la_CXXFLAGS = \
 	$(opensaml_CFLAGS) \
 	$(xmltooling_CFLAGS)
-adfs_la_LIBADD = $(XMLSEC_LIBS) \
+adfs_la_LIBADD = \
 	$(top_builddir)/shibsp/libshibsp.la \
 	$(opensaml_LIBS) \
 	$(xmltooling_LIBS)

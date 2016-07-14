@@ -12,7 +12,8 @@ memcache_store_la_CXXFLAGS = \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
-memcache_store_la_LIBADD = $(XMLSEC_LIBS) $(MEMCACHED_LIBS) \
+memcache_store_la_LIBADD = \
+	$(MEMCACHED_LIBS) \
 	$(PTHREAD_LIBS) \
 	$(opensaml_LIBS) \
 	$(xerces_LIBS) \

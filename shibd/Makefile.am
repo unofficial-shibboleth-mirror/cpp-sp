@@ -10,7 +10,7 @@ shibd_CXXFLAGS = \
   $(opensaml_CFLAGS) \
   $(xerces_CFLAGS) \
   $(xmltooling_CFLAGS)
-shibd_LDADD = $(XMLSEC_LIBS) \
+shibd_LDADD = \
   $(top_builddir)/shibsp/libshibsp.la \
   $(PTHREAD_LIBS) \
   $(SYSTEMD_LIBS) \

@@ -249,14 +249,15 @@ libshibsp_la_CXXFLAGS = \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
     $(opensaml_CFLAGS) \
     $(xerces_CFLAGS) \
+    $(xmlsec_CFLAGS) \
     $(xmltooling_CFLAGS)
 libshibsp_la_LIBADD = \
     $(PTHREAD_LIBS) \
     $(log4shib_LIBS) $(log4cpp_LIBS) \
     $(opensaml_LIBS) \
     $(xerces_LIBS) \
-    $(xmltooling_LIBS) \
-    $(XMLSEC_LIBS)
+    $(xmlsec_LIBS) \
+    $(xmltooling_LIBS)
 libshibsp_lite_la_LDFLAGS = -version-info 8:0:0
 libshibsp_lite_la_CXXFLAGS = -DSHIBSP_LITE \
     $(BOOST_CPPFLAGS) \
