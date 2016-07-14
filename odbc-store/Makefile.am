@@ -9,10 +9,12 @@ AM_CXXFLAGS = $(ODBC_CFLAGS)
 odbc_store_la_CXXFLAGS = \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
+	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
 odbc_store_la_LIBADD = $(XMLSEC_LIBS) $(ODBC_LIBS) \
 	$(PTHREAD_LIBS) \
+	$(opensaml_LIBS) \
 	$(xerces_LIBS) \
 	$(xmltooling_LIBS)
 

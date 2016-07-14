@@ -247,11 +247,13 @@ libshibsp_la_CXXFLAGS = \
     $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
+    $(opensaml_CFLAGS) \
     $(xerces_CFLAGS) \
     $(xmltooling_CFLAGS)
 libshibsp_la_LIBADD = \
     $(PTHREAD_LIBS) \
     $(log4shib_LIBS) $(log4cpp_LIBS) \
+    $(opensaml_LIBS) \
     $(xerces_LIBS) \
     $(xmltooling_LIBS) \
     $(XMLSEC_LIBS)

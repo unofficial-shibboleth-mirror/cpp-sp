@@ -190,55 +190,9 @@ DX_INCLUDE="$DX_INCLUDE $xmltooling_includedir"
 AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite],,,
     [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
-# OpenSAML settings
-AC_ARG_WITH(saml,
-    AS_HELP_STRING([--with-saml=PATH],[where opensaml is installed]),,
-    [with_saml=/usr])
-if test x_$with_saml != x_/usr; then
-    CPPFLAGS="-I${with_saml}/include $CPPFLAGS"
-    DX_INCLUDE="$DX_INCLUDE ${with_saml}/include"
-    XMLSEC_LIBS="-L${with_saml}/lib -lsaml $XMLSEC_LIBS"
-else
-    XMLSEC_LIBS="-lsaml $XMLSEC_LIBS"
-fi
-
-# save and append master libs
-save_LIBS="$LIBS"
-LIBS="$XMLSEC_LIBS $LIBS"
-
-AC_CHECK_HEADER([saml/saml2/metadata/Metadata.h],,AC_MSG_ERROR([unable to find OpenSAML header files]))
-AC_PREPROC_IFELSE(
-    [AC_LANG_PROGRAM([[#include <saml/version.h>]],
-[[#if _OPENSAML_VERSION >= 30000
-int i = 0;
-#else
-#error Need OpenSAML version 3.0 or higher
-#endif]])],
-    ,[AC_MSG_ERROR([OpenSAML version 3.0.0 or greater is required.])
-	])
-
-# restore master libs
-LIBS="$save_LIBS"
-
-# Establish location of opensaml catalogs.
-OPENSAMLXMLDIR=""
-if test "x$with_saml" = "x" ; then
-    with_saml="/usr"
-fi
-if test -f $with_saml/share/xml/opensaml/saml20-catalog.xml ; then
-    OPENSAMLXMLDIR="$with_saml"
-elif test -f $with_xmltooling/share/xml/opensaml/saml20-catalog.xml ; then
-    OPENSAMLXMLDIR="$with_xmltooling"
-elif test -f $with_xerces/share/xml/opensaml/saml20-catalog.xml ; then
-    OPENSAMLXMLDIR="$with_xerces"
-elif test -f $with_log4shib/share/xml/opensaml/saml20-catalog.xml ; then
-    OPENSAMLXMLDIR="$with_log4shib"
-fi
-if test "x$OPENSAMLXMLDIR" = "x" ; then
-    AC_MSG_ERROR([opensaml XML catalogs not found, may need to use --with-saml option])
-fi
-OPENSAMLXMLDIR="$OPENSAMLXMLDIR/share/xml/opensaml"
-AC_SUBST(OPENSAMLXMLDIR)
+AX_PKG_CHECK_MODULES([opensaml],,[opensaml >= 3],,,
+    [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
+PKG_CHECK_VAR([OPENSAMLXMLDIR],[opensaml],[pkgxmldir])
 
 AC_SUBST(XMLSEC_LIBS)
 
