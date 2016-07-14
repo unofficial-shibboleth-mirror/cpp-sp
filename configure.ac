@@ -6,6 +6,7 @@ AC_CONFIG_MACRO_DIR(m4)
 AM_INIT_AUTOMAKE
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
+PKG_INSTALLDIR
 
 # Docygen features
 DX_HTML_FEATURE(ON)
@@ -32,7 +33,7 @@ else
 fi
 
 AC_CONFIG_HEADERS([config.h shibsp/config_pub.h])
-AC_CONFIG_FILES([shibboleth.spec])
+AC_CONFIG_FILES([shibsp.pc shibsp-lite.pc shibboleth.spec])
 
 AC_PROG_CC([gcc gcc3 cc])
 AC_PROG_CXX([g++ g++3 c++ CC])

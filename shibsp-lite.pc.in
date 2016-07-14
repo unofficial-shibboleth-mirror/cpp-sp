@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: @PACKAGE_NAME@ (lite version)
+Description: Shibboleth Service Provider library (lite version)
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lshibsp-lite
+Libs.private: @PTHREAD_LIBS@
+Cflags: -I${includedir} @BOOST_CPPFLAGS@ @PTHREAD_CFLAGS@
+Requires: @SHIBSP_LITE_REQUIRES@
+Requires.private: @SHIBSP_LITE_REQUIRES_PRIVATE@

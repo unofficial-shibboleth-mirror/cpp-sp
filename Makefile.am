@@ -32,6 +32,8 @@ else
 all-local:
 endif
 
+pkgconfig_DATA = shibsp.pc shibsp-lite.pc
+
 GENFILES = @PACKAGE_NAME@.spec
 
 EXTRA_DIST = $(DX_CONFIG) \
