@@ -4,15 +4,23 @@ bin_PROGRAMS = mdquery resolvertest
 
 resolvertest_SOURCES = resolvertest.cpp
 
-resolvertest_LDADD = $(XMLSEC_LIBS) \
-	$(top_builddir)/shibsp/libshibsp.la
+resolvertest_CXXFLAGS = \
+	$(log4shib_CFLAGS) $(log4cpp_CFLAGS)
+resolvertest_LDADD = \
+	$(top_builddir)/shibsp/libshibsp.la \
+	$(log4shib_LIBS) $(log4cpp_LIBS) \
+	$(XMLSEC_LIBS)
 
 mdquery_SOURCES = mdquery.cpp
-
-mdquery_LDADD = $(XMLSEC_LIBS) \
-	$(top_builddir)/shibsp/libshibsp.la
 
 EXTRA_DIST = \
 	resource.h \
 	mdquery.rc \
 	resolvertest.rc
+
+mdquery_CXXFLAGS = \
+	$(log4shib_CFLAGS) $(log4cpp_CFLAGS)
+mdquery_LDADD = \
+	$(top_builddir)/shibsp/libshibsp.la \
+	$(log4shib_LIBS) $(log4cpp_LIBS) \
+	$(XMLSEC_LIBS)

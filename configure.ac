@@ -169,55 +169,12 @@ else
     AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
 fi 
 
-# log4shib settings (favor this version over the log4cpp code)
-AC_PATH_PROG(LOG4SHIB_CONFIG,log4shib-config)
-AC_ARG_WITH(log4shib,
-    AS_HELP_STRING([--with-log4shib=PATH],[where log4shib-config is installed]),
-    [
-    LOG4SHIB_CONFIG="${with_log4shib}"
-    if ! test -f "${LOG4SHIB_CONFIG}"; then
-        LOG4SHIB_CONFIG="${with_log4shib}/bin/log4shib-config"
-    fi
-    ])
-if test -f "${LOG4SHIB_CONFIG}" ; then
-    LIBS="`${LOG4SHIB_CONFIG} --libs` $LIBS"
-    CPPFLAGS="`${LOG4SHIB_CONFIG} --cflags` $CPPFLAGS"
-    AC_CHECK_HEADER([log4shib/CategoryStream.hh],,AC_MSG_ERROR([unable to find log4shib header files]))
-    AC_LINK_IFELSE(
-        [AC_LANG_PROGRAM([[#include <log4shib/Category.hh>
-#include <log4shib/CategoryStream.hh>]],
-            [[log4shib::Category::getInstance("foo").errorStream() << log4shib::eol]])],
-        [AC_DEFINE([SHIBSP_LOG4SHIB],[1],[Define to 1 if log4shib library is used.])],
-        [AC_MSG_ERROR([unable to link with log4shib])])
-else
-    AC_MSG_WARN([log4shib-config not found, may need to use --with-log4shib option])
-    AC_MSG_WARN([will look for original log4cpp library])
-    
-    # log4cpp settings
-    AC_PATH_PROG(LOG4CPP_CONFIG,log4cpp-config)
-    AC_ARG_WITH(log4cpp,
-        AS_HELP_STRING([--with-log4cpp=PATH],[where log4cpp-config is installed]),
-        [
-        LOG4CPP_CONFIG="${with_log4cpp}"
-        if ! test -f "${LOG4CPP_CONFIG}"; then
-            LOG4CPP_CONFIG="${with_log4cpp}/bin/log4cpp-config"
-        fi
-        ])
-    if test -f "${LOG4CPP_CONFIG}"; then
-        AC_MSG_WARN([will try to use log4cpp, note that most non-Internet2 supplied versions are not thread-safe])
-        LIBS="`${LOG4CPP_CONFIG} --libs` $LIBS"
-        CPPFLAGS="`${LOG4CPP_CONFIG} --cflags` $CPPFLAGS"
-        AC_CHECK_HEADER([log4cpp/CategoryStream.hh],,AC_MSG_ERROR([unable to find log4cpp header files]))
-        AC_LINK_IFELSE(
-            [AC_LANG_PROGRAM([[#include <log4cpp/Category.hh>
-#include <log4cpp/CategoryStream.hh>]],
-                [[log4cpp::Category::getInstance("foo").errorStream() << log4cpp::eol]])],
-            [AC_DEFINE([SHIBSP_LOG4CPP],[1],[Define to 1 if log4cpp library is used.])],
-            [AC_MSG_ERROR([unable to link with log4cpp, need version 1.0 or later])])
-    else
-        AC_MSG_ERROR([log4cpp-config not found, may need to use --with-log4cpp option])
-    fi
-fi
+AX_PKG_CHECK_MODULES([log4shib],,[log4shib],
+    [AC_DEFINE([SHIBSP_LOG4SHIB],[1],[Define to 1 if log4shib library is used.])],
+    [AX_PKG_CHECK_MODULES([log4cpp],,[log4cpp],
+        [AC_DEFINE([SHIBSP_LOG4CPP],[1],[Define to 1 if log4cpp library is used.])],,
+        [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])],,
+    [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
 # Xerces settings
 AC_ARG_WITH(xerces,

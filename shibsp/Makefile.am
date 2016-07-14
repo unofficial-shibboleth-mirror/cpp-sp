@@ -243,10 +243,17 @@ libshibsp_la_SOURCES = \
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
 libshibsp_la_LDFLAGS = -version-info 8:0:0
-libshibsp_la_LIBADD = $(XMLSEC_LIBS)
+libshibsp_la_CXXFLAGS = \
+    $(log4shib_CFLAGS) $(log4cpp_CFLAGS)
+libshibsp_la_LIBADD = \
+    $(log4shib_LIBS) $(log4cpp_LIBS) \
+    $(XMLSEC_LIBS)
 libshibsp_lite_la_LDFLAGS = -version-info 8:0:0
-libshibsp_lite_la_LIBADD = $(LITE_LIBS)
-libshibsp_lite_la_CPPFLAGS = -DSHIBSP_LITE
+libshibsp_lite_la_CXXFLAGS = -DSHIBSP_LITE \
+    $(log4shib_CFLAGS) $(log4cpp_CFLAGS)
+libshibsp_lite_la_LIBADD = \
+    $(log4shib_LIBS) $(log4cpp_LIBS) \
+    $(LITE_LIBS)
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@
