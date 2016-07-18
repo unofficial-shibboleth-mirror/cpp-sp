@@ -77,7 +77,6 @@ AC_HEADER_DIRENT
 
 # Checks for library functions.
 AC_FUNC_STRFTIME
-AC_FUNC_STRERROR_R
 AC_CHECK_HEADERS([sys/utsname.h grp.h pwd.h])
 AC_CHECK_HEADERS([sys/socket.h], [AC_DEFINE([SHIBSP_HAVE_SYS_SOCKET_H],[1],[Define to 1 if you have the <sys/socket> header file.])], [])
 AC_CHECK_FUNCS([strchr strdup strstr timegm gmtime_r localtime_r strtok_r strcasecmp getpwnam getgrnam initgroups])
@@ -102,6 +101,12 @@ ACX_PTHREAD(
     [AC_MSG_ERROR([unable to find pthreads, currently this is required])])
 
 AC_LANG([C++])
+
+# On GNU/Linux, g++ always defines the preprocessor macro _GNU_SOURCE
+# because libstdc++ requires it.  This in turn selects the GNU version of
+# strerror_r(), which returns char* and may not use the passed buffer
+# (see https://gcc.gnu.org/onlinedocs/libstdc++/faq.html#faq.predefined).
+AC_FUNC_STRERROR_R
 
 # C++ requirements
 AC_CXX_NAMESPACES

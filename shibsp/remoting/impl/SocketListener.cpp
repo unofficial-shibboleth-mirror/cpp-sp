@@ -402,14 +402,18 @@ bool SocketListener::log_error(const char* fn) const
 #else
     int rc=errno;
 #endif
+    const char *msg;
 #ifdef HAVE_STRERROR_R
     char buf[256];
-    memset(buf,0,sizeof(buf));
-    strerror_r(rc,buf,sizeof(buf));
+#ifdef STRERROR_R_CHAR_P
+    msg = strerror_r(rc,buf,sizeof(buf));
 #else
-    const char* buf=strerror(rc);
+    msg = strerror_r(rc,buf,sizeof(buf)) ? "<translation failed>" : buf;
 #endif
-    log->error("failed socket call (%s), result (%d): %s", fn, rc, isprint(*buf) ? buf : "no message");
+#else
+    msg=strerror(rc);
+#endif
+    log->error("failed socket call (%s), result (%d): %s", fn, rc, isprint(*msg) ? msg : "no message");
     return false;
 }
 
