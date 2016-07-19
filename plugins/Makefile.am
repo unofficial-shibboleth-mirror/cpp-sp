@@ -23,12 +23,14 @@ plugins_lite_la_SOURCES = \
 
 plugins_la_CXXFLAGS = \
 	$(PTHREAD_CFLAGS) \
+	$(gss_CFLAGS) $(gnu_gss_CFLAGS) \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
 plugins_la_LIBADD = \
 	$(top_builddir)/shibsp/libshibsp.la \
 	$(PTHREAD_LIBS) \
+	$(gss_LIBS) $(gnu_gss_LIBS) \
 	$(opensaml_LIBS) \
 	$(xerces_LIBS) \
 	$(xmltooling_LIBS)

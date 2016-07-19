@@ -45,7 +45,7 @@
 # include <xsec/framework/XSECProvider.hpp>
 #endif
 
-#ifdef HAVE_GSSAPI_NAMINGEXTS
+#if HAVE_DECL_GSS_GET_NAME_ATTRIBUTE
 # ifdef SHIBSP_HAVE_GSSMIT
 #  include <gssapi/gssapi_ext.h>
 # endif
@@ -255,7 +255,7 @@ gss_name_t RemotedRequest::getGSSName() const
             importbuf.length = x;
             importbuf.value = decoded;
             OM_uint32 major,minor;
-#ifdef HAVE_GSSAPI_COMPOSITE_NAME
+#if HAVE_DECL_GSS_C_NT_EXPORT_NAME_COMPOSITE
             major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME_COMPOSITE, &m_gssname);
 #else
             major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME, &m_gssname);
@@ -453,7 +453,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
                 request.log(SPRequest::SPError, "error while exporting GSS context");
             }
         }
-#ifdef HAVE_GSSAPI_NAMINGEXTS
+#if HAVE_DECL_GSS_GET_NAME_ATTRIBUTE
         else {
             gss_name_t name = gss->getGSSName();
             if (name != GSS_C_NO_NAME) {

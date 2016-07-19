@@ -45,7 +45,7 @@ namespace shibsp {
     PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AttributeResolverHandlerFactory;
     
 #ifndef SHIBSP_LITE
-# ifdef HAVE_GSSAPI_NAMINGEXTS
+# if HAVE_DECL_GSS_GET_NAME_ATTRIBUTE
     PluginManager<AttributeExtractor,string,const DOMElement*>::Factory GSSAPIExtractorFactory;
 # endif
     PluginManager<AttributeResolver,string,const DOMElement*>::Factory TemplateAttributeResolverFactory;
@@ -61,7 +61,7 @@ extern "C" int PLUGINS_EXPORTS xmltooling_extension_init(void*)
     conf.AccessControlManager.registerFactory("Time", TimeAccessControlFactory);
     conf.HandlerManager.registerFactory("AttributeResolver", AttributeResolverHandlerFactory);
 #ifndef SHIBSP_LITE
-# ifdef HAVE_GSSAPI_NAMINGEXTS
+# if HAVE_DECL_GSS_GET_NAME_ATTRIBUTE
     conf.AttributeExtractorManager.registerFactory("GSSAPI", GSSAPIExtractorFactory);
     static const XMLCh _GSSAPIName[] = UNICODE_LITERAL_10(G,S,S,A,P,I,N,a,m,e);
     static const XMLCh _GSSAPIContext[] = UNICODE_LITERAL_13(G,S,S,A,P,I,C,o,n,t,e,x,t);

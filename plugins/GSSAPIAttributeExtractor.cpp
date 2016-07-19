@@ -26,7 +26,7 @@
 
 #include "internal.h"
 
-#ifdef HAVE_GSSAPI_NAMINGEXTS
+#if HAVE_DECL_GSS_GET_NAME_ATTRIBUTE
 
 #include <shibsp/exceptions.h>
 #include <shibsp/Application.h>
@@ -355,7 +355,7 @@ void GSSAPIExtractor::extractAttributes(
         importbuf.length = x;
         importbuf.value = decoded;
         if (XMLString::equals(xmlObject.getElementQName().getLocalPart(), _GSSAPIName)) {
-#ifdef HAVE_GSSAPI_COMPOSITE_NAME
+#if HAVE_DECL_GSS_C_NT_EXPORT_NAME_COMPOSITE
             major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME_COMPOSITE, &srcname);
 #else
             major = gss_import_name(&minor, &importbuf, GSS_C_NT_EXPORT_NAME, &srcname);

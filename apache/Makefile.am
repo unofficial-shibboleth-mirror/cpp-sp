@@ -27,11 +27,13 @@ mod_shib_20_la_CXXFLAGS = \
   $(APXS2_CFLAGS) -I$(APXS2_INCLUDE) \
   $(BOOST_CPPFLAGS) \
   $(PTHREAD_CFLAGS) \
+  $(gss_CFLAGS) $(gnu_gss_CFLAGS) \
   $(xerces_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 mod_shib_20_la_LIBADD = \
   $(top_builddir)/shibsp/libshibsp-lite.la \
   $(PTHREAD_LIBS) \
+  $(gss_LIBS) $(gnu_gss_LIBS) \
   $(xerces_LIBS) \
   $(xmltooling_lite_LIBS)
 endif
@@ -45,11 +47,13 @@ mod_shib_22_la_CXXFLAGS = \
   $(APXS22_CFLAGS) -I$(APXS22_INCLUDE) \
   $(BOOST_CPPFLAGS) \
   $(PTHREAD_CFLAGS) \
+  $(gss_CFLAGS) $(gnu_gss_CFLAGS) \
   $(xerces_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 mod_shib_22_la_LIBADD = \
   $(top_builddir)/shibsp/libshibsp-lite.la \
   $(PTHREAD_LIBS) \
+  $(gss_LIBS) $(gnu_gss_LIBS) \
   $(xerces_LIBS) \
   $(xmltooling_lite_LIBS)
 endif
@@ -63,11 +67,13 @@ mod_shib_24_la_CXXFLAGS = \
   $(APXS24_CFLAGS) -I$(APXS24_INCLUDE) \
   $(BOOST_CPPFLAGS) \
   $(PTHREAD_CFLAGS) \
+  $(gss_CFLAGS) $(gnu_gss_CFLAGS) \
   $(xerces_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 mod_shib_24_la_LIBADD = \
   $(top_builddir)/shibsp/libshibsp-lite.la \
   $(PTHREAD_LIBS) \
+  $(gss_LIBS) $(gnu_gss_LIBS) \
   $(xerces_LIBS) \
   $(xmltooling_lite_LIBS)
 endif

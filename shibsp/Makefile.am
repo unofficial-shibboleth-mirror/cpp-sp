@@ -246,6 +246,7 @@ libshibsp_la_LDFLAGS = -version-info 8:0:0
 libshibsp_la_CXXFLAGS = \
     $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
+    $(gss_CFLAGS) $(gnu_gss_CFLAGS) \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
     $(opensaml_CFLAGS) \
     $(xerces_CFLAGS) \
@@ -253,6 +254,7 @@ libshibsp_la_CXXFLAGS = \
     $(xmltooling_CFLAGS)
 libshibsp_la_LIBADD = \
     $(PTHREAD_LIBS) \
+    $(gss_LIBS) $(gnu_gss_LIBS) \
     $(log4shib_LIBS) $(log4cpp_LIBS) \
     $(opensaml_LIBS) \
     $(xerces_LIBS) \
@@ -262,11 +264,13 @@ libshibsp_lite_la_LDFLAGS = -version-info 8:0:0
 libshibsp_lite_la_CXXFLAGS = -DSHIBSP_LITE \
     $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
+    $(gss_CFLAGS) $(gnu_gss_CFLAGS) \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
     $(xerces_CFLAGS) \
     $(xmltooling_lite_CFLAGS)
 libshibsp_lite_la_LIBADD = \
     $(PTHREAD_LIBS) \
+    $(gss_LIBS) $(gnu_gss_LIBS) \
     $(log4shib_LIBS) $(log4cpp_LIBS) \
     $(xerces_LIBS) \
     $(xmltooling_lite_LIBS)
