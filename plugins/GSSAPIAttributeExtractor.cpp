@@ -26,8 +26,6 @@
 
 #include "internal.h"
 
-#if HAVE_DECL_GSS_GET_NAME_ATTRIBUTE
-
 #include <shibsp/exceptions.h>
 #include <shibsp/Application.h>
 #include <shibsp/SPConfig.h>
@@ -420,5 +418,3 @@ pair<bool,DOMElement*> GSSAPIExtractor::background_load()
 
     return make_pair(false,(DOMElement*)nullptr);
 }
-
-#endif

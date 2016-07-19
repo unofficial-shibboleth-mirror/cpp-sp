@@ -938,6 +938,7 @@ AS_IF([test "x$with_gssapi" != xno],
 ]])
      ])
   ])
+AM_CONDITIONAL([GSSAPI_NAMINGEXTS],[test "x$ac_cv_have_decl_gss_get_name_attribute" = xyes])
 
 # Check for unit test support
 AC_CONFIG_FILES([unittests/Makefile])
