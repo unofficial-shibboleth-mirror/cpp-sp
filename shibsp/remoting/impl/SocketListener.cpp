@@ -126,7 +126,7 @@ SocketListener::ShibSocket SocketPool::connect()
     if (!connected) {
         m_log.crit("socket server unavailable, failing");
         m_listener->close(sock);
-        throw ListenerException("Cannot connect to shibd process, a site adminstrator should be notified.");
+        throw ListenerException("Cannot connect to shibd process, a site administrator should be notified that this web server has malfunctioned.");
     }
 
     m_log.debug("socket (%u) connected successfully", sock);
