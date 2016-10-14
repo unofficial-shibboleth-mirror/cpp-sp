@@ -14,8 +14,8 @@ ExecStart=@-PREFIX-@/sbin/shibd -f -F
 StandardInput=null
 StandardOutput=null
 StandardError=journal
-TimeoutStopSec=5s
-TimeoutStartSec=90s
+TimeoutStopSec=1min
+TimeoutStartSec=5min
 Restart=on-failure
 RestartSec=30s
 
