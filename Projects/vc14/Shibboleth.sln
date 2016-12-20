@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server Modules", "Server Modules", "{26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}"
 EndProject
@@ -108,14 +108,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isapi_shib", "isapi_shib\is
 		{303291A1-C542-49E4-80B3-9304B7B6F8BC} = {303291A1-C542-49E4-80B3-9304B7B6F8BC}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib_13", "apache\mod_shib13.vcxproj", "{D243B43E-728E-4F32-BDFF-B3A897037C6D}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib_20", "apache\mod_shib20.vcxproj", "{68E9568B-476C-4289-B93C-893432378ADC}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nsapi_shib", "nsapi_shib\nsapi_shib.vcxproj", "{1396D80A-8672-4224-9B02-95F3F4207CDB}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib_22", "apache\mod_shib22.vcxproj", "{B44C0852-83B8-4FB2-A86E-097C9C8256D0}"
-EndProject
+#Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib_13", "apache\mod_shib13.vcxproj", "{D243B43E-728E-4F32-BDFF-B3A897037C6D}"
+#EndProject
+#Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib_20", "apache\mod_shib20.vcxproj", "{68E9568B-476C-4289-B93C-893432378ADC}"
+#EndProject
+#Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nsapi_shib", "nsapi_shib\nsapi_shib.vcxproj", "{1396D80A-8672-4224-9B02-95F3F4207CDB}"
+#EndProject
+#Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_shib_22", "apache\mod_shib22.vcxproj", "{B44C0852-83B8-4FB2-A86E-097C9C8256D0}"
+#EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-store", "odbc-store\odbc-store.vcxproj", "{666A63A7-983F-4C19-8411-207F24305197}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibsp", "shibsp\shibsp.vcxproj", "{81F0F7A6-DC36-46EF-957F-F9E81D4403F6}"
@@ -132,8 +132,14 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "adfs-lite", "adfs\adfs-lite.vcxproj", "{26D4FABF-ACDE-4947-9C4A-7AE1B50CD83B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mdquery", "util\mdquery.vcxproj", "{F13141B6-6C87-40BB-8D4E-5CC56EBB4C5A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{303291A1-C542-49E4-80B3-9304B7B6F8BC} = {303291A1-C542-49E4-80B3-9304B7B6F8BC}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "resolvertest", "util\resolvertest.vcxproj", "{F13141B6-6C87-40BB-8D4E-5CC56EBB4C59}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F13141B6-6C87-40BB-8D4E-5CC56EBB4C5A} = {F13141B6-6C87-40BB-8D4E-5CC56EBB4C5A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibauthorizer", "fastcgi\shibauthorizer.vcxproj", "{8CF7DDFA-EAA0-416E-853E-3DCB210C4AE0}"
 EndProject
