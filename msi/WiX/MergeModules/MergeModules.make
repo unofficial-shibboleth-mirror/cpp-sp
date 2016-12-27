@@ -23,7 +23,7 @@ Curl-x64.msm: Curl-x64.wixobj
 	light Curl-x64.wixobj
 	del ..\*64*.msi
 
-Curl-x64.wixobj: Curl-x64.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl-dll-zlib-dll.x64\libcurl5.dll $(BuildSP)\curl-$(CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll.x64\libcurl5d.dll
+Curl-x64.wixobj: Curl-x64.wxs
 	wixcop -indent:2 Curl-x64.wxs 
 	candle Curl-x64.wxs -dBuildDirectory=$(BuildSP) -dCurlVersion=$(CurlVersion)
 
@@ -31,7 +31,7 @@ Curl-x86.msm: Curl-x86.wixobj
 	light Curl-x86.wixobj
 	del ..\*32*.msi
 
-Curl-x86.wixobj: Curl-x86.wxs $(BuildSP)\curl-$(CurlVersion)\lib\release-dll-ssl-dll-zlib-dll\libcurl5.dll $(BuildSP)\curl-$(CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll\libcurl5d.dll 
+Curl-x86.wixobj: Curl-x86.wxs
 	wixcop -indent:2 Curl-x86.wxs 
 	candle Curl-x86.wxs -dBuildDirectory=$(BuildSP) -dCurlVersion=$(CurlVersion)
 
@@ -111,11 +111,11 @@ OpenSSL-x64.msm: OpenSSL-x64.wixobj
 	light OpenSSL-x64.wixobj
 	del ..\*64*.msi
 
-OpenSSL-x86.wixobj: OpenSSL-x86.wxs  $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\libeay32_$(OpenSSLFileVersion).dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\ssleay32_$(OpenSSLFileVersion).dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll\openssl.exe $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\libeay32_$(OpenSSLFileVersion)d.dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\ssleay32_$(OpenSSLFileVersion)d.dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out32dll.dbg\openssl.exe
+OpenSSL-x86.wixobj: OpenSSL-x86.wxs
 	wixcop -indent:2 OpenSSL-x86.wxs 
 	candle OpenSSL-x86.wxs -dBuildDirectory=$(BuildSP) -dOpenSSLVersion=$(OpenSSLVersion) -dOpenSSLDirVersion=$(OpenSSLDirVersion) -dOpenSSLFileVersion=$(OpenSSLFileVersion) -dLibEay32Component=$(LibEay32Component) -dSSlEay32Component=$(SSlEay32Component) -dLibEay32Componentd=$(LibEay32Componentd) -dSSlEay32Componentd=$(SSlEay32Componentd)
 
-OpenSSL-x64.wixobj: OpenSSL-x64.wxs  $(BuildSP)\openssl-$(OpenSSLDirVersion)\out64dll\libeay32_$(OpenSSLFileVersion).dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out64dll\ssleay32_$(OpenSSLFileVersion).dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out64dll\openssl.exe $(BuildSP)\openssl-$(OpenSSLDirVersion)\out64dll.dbg\libeay32_$(OpenSSLFileVersion)d.dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out64dll.dbg\ssleay32_$(OpenSSLFileVersion)d.dll $(BuildSP)\openssl-$(OpenSSLDirVersion)\out64dll.dbg\openssl.exe
+OpenSSL-x64.wixobj: OpenSSL-x64.wxs
 	wixcop -indent:2 OpenSSL-x64.wxs 
 	candle OpenSSL-x64.wxs -dBuildDirectory=$(BuildSP) -dOpenSSLVersion=$(OpenSSLVersion) -dOpenSSLDirVersion=$(OpenSSLDirVersion) -dOpenSSLFileVersion=$(OpenSSLFileVersion) -dLibEay64Component=$(LibEay64Component) -dSSlEay64Component=$(SSlEay64Component) -dLibEay64Componentd=$(LibEay64Componentd) -dSSlEay64Componentd=$(SSlEay64Componentd)
 
