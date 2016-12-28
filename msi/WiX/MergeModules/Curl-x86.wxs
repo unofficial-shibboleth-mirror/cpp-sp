@@ -16,6 +16,22 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
+<?if $(var.OpenSSLV1Libs) = "1" ?>
+
+<?define ReleaseDllDir="builds\libcurl-vc14-x86-release-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
+<?define ReleaseExeDir="builds\libcurl-vc14-x86-release-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
+<?define DebugDllDir="builds\libcurl-vc14-x86-debug-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
+<?define DebugExeDir="builds\libcurl-vc14-x86-debug-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
+
+<?else ?>
+
+<?define ReleaseDllDir="lib\release-dll-ssl-dll-zlib-dll"?>
+<?define DebugDllDir="lib\debug-dll-ssl-dll-zlib-dll"?>
+<?define ReleaseExeDir="src\release"?>
+<?define DebugExeDir="src\debug"?>
+
+<?endif ?>
+
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='CurlMergeModule_x86' Language='1033' Version='$(var.CurlVersion)'>
     <Package Id='10467105-6375-49E1-AC35-045084BD8FA4' Description='Merge Module for CURL (x86)'
@@ -29,20 +45,20 @@
             <Directory Id='lib' Name='lib'>
               <Component Id='libcurl5.dll' Guid='{2497836C-20B2-4218-A53A-CD9E091FB9AC}'>
                 <File KeyPath='yes' Checksum='yes'
-                      Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\lib\release-dll-ssl-dll-zlib-dll\libcurl5.dll'/>
+                      Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\$(var.ReleaseDllDir)\libcurl5.dll'/>
               </Component>
               <Component Id='curl.exe' Guid='{67A6F011-9715-43C2-92F1-70FE53E935AD}'>
                 <File KeyPath='yes' Checksum='yes'
-                      Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\src\release\curl.exe'/>
+                      Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\$(var.ReleaseExeDir)\curl.exe'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='libcurl5d.dll' Guid='{0F97DFC6-87F4-45DE-81A7-51D189603FCF}'>
                   <File KeyPath='yes' Checksum='yes'
-                        Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\lib\debug-dll-ssl-dll-zlib-dll\libcurl5d.dll'/>
+                        Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\$(var.DebugDllDir)\libcurl5d.dll'/>
                 </Component>
                 <Component Id='curl.exe_debug' Guid='{FB6BF939-9744-49ED-ACBF-8956B9C5DE29}'>
                   <File Id='curl.exe_debug' KeyPath='yes' Checksum='yes'
-                        Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\src\debug\curl.exe'/>
+                        Source='$(var.BuildDirectory)\curl-$(var.CurlVersion)\$(var.DebugExeDir)\curl.exe'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->

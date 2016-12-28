@@ -26,14 +26,14 @@
       <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\log4shib-$(var.Log4ShibVersion)\msvc10\Release\'>
+            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\log4shib-$(var.Log4ShibVersion)\ms$(var.ShibbolethMsVersion)\Release\'>
               <Component Id='log4shib.dll' Guid='$(var.Log4ShibComponent32)'>
                 <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.Log4ShibFileVersion).dll'/>
               </Component>
               <Component Id='NTEventLogAppender.dll' Guid='{43B944CB-E42A-4D17-A601-AC4E14DA2217}'>
                 <File KeyPath='yes' Checksum='yes' Name='NTEventLogAppender.dll'/>
               </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\log4shib-$(var.Log4ShibVersion)\msvc10\Debug\'>
+              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\log4shib-$(var.Log4ShibVersion)\ms$(var.ShibbolethMsVersion)\Debug\'>
                 <Component Id='log4shibD.dll' Guid='$(var.Log4ShibComponent32d)'>
                   <File KeyPath='yes' Checksum='yes' Name='log4shib$(var.Log4ShibFileVersion)D.dll'/>
                 </Component>
