@@ -21,7 +21,7 @@
            Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider' 
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion).$(var.ShibbolethPatchVersion)'>
     <Package Description='Shibboleth SP (x86 and x64) V$(var.ShibbolethVersion) Patch Level $(var.ShibbolethPatchVersion)' Compressed='yes'
-           Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
+           Manufacturer='Shibboleth Consortium' InstallerVersion='301' Platform='x64'/>
 
     <MajorUpgrade DowngradeErrorMessage='A later version of [ProductName] is already installed. Setup will now exit.'
            MigrateFeatures='yes' Schedule='afterInstallExecute' AllowSameVersionUpgrades='yes' />
