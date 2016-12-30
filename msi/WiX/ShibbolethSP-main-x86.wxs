@@ -17,7 +17,7 @@
    permissions and limitations under the License.  -->
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Id='$(var.ShibbolethId32)' Language='1033' 
+  <Product Id='$(var.ShibbolethId32)' Language='1033'
            Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider' 
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion).$(var.ShibbolethPatchVersion)'>
     <Package Description='Shibboleth SP (x86) V$(var.ShibbolethVersion) Patch Level $(var.ShibbolethPatchVersion)' Compressed='yes'
@@ -64,11 +64,10 @@
         <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm' DiskId='1' />
         <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm' DiskId='1' />
-
-        <Merge Id='Microsoft_VC100_DebugCRT_x86' Language='1033' 
-               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_DebugCRT_x86.msm' DiskId='1' />
-        <Merge Id='Microsoft_VC100_CRT_x86' Language='1033' 
-               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_CRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_DebugCRT_x86' Language='1033'
+               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_DebugCRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_CRT_x86' Language='1033'
+               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_CRT_x86.msm' DiskId='1' />
       </Directory><!--ProgramFilesFolder-->
 
       <Component Id='SetPath' Guid='{3300B9CD-67AF-4AAC-801D-8C56E5FB4AF5}'>
@@ -91,8 +90,8 @@
       <MergeRef Id='XmlSecMergeModule_x86'/>
       <MergeRef Id='ZlibMergeModule_x86'/>
 
-      <MergeRef Id='Microsoft_VC100_DebugCRT_x86'/>
-      <MergeRef Id='Microsoft_VC100_CRT_x86' />
+      <MergeRef Id='Microsoft_DebugCRT_x86'/>
+      <MergeRef Id='Microsoft_CRT_x86' />
 
       <!-- ShibbolethSP-main-x86 -->
       <ComponentRef Id='SetPath'/>
@@ -103,7 +102,7 @@
            others are shared with x64
         -->
       <Component Id='messageFile' Guid='{7B81ACC5-B79C-426B-ACB8-346A52E5FF60}' Win64='no' Directory='bin'>
-        <File Id='Messages' KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Release\Messages.dll'/>
+        <File Id='Messages' KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\Messages.dll'/>
         <RegistryKey Root='HKLM' Key='SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth Daemon'>
           <RegistryValue Name='CategoryCount' Type='integer' Value='2'/>
           <RegistryValue Name='TypeSupported' Type='integer' Value='15'/>

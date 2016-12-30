@@ -17,14 +17,14 @@
    permissions and limitations under the License.  -->
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Id='$(var.ShibbolethId64)' Language='1033' 
-           Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider' 
+  <Product Id='$(var.ShibbolethId64)' Language='1033'
+           Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider'
            UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion).$(var.ShibbolethPatchVersion)'>
     <Package Description='Shibboleth SP (x86 and x64) V$(var.ShibbolethVersion) Patch Level $(var.ShibbolethPatchVersion)' Compressed='yes'
            Manufacturer='Shibboleth Consortium' InstallerVersion='301' Platform='x64'/>
 
     <MajorUpgrade DowngradeErrorMessage='A later version of [ProductName] is already installed. Setup will now exit.'
-           MigrateFeatures='yes' Schedule='afterInstallExecute' AllowSameVersionUpgrades='yes' />
+          MigrateFeatures='yes' Schedule='afterInstallExecute' AllowSameVersionUpgrades='yes' />
 
     <PropertyRef Id='SHIB_OLDVERSION_64'/>
     <PropertyRef Id='SHIB_OLDVERSION'/>
@@ -63,11 +63,8 @@
         <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm' DiskId='1' />
         <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm' DiskId='1' />
-
-        <Merge Id='Microsoft_VC100_DebugCRT_x86' Language='1033' 
-               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_DebugCRT_x86.msm' DiskId='1' />
-        <Merge Id='Microsoft_VC100_CRT_x86' Language='1033' 
-               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_CRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_DebugCRT_x86' Language='1033' SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_DebugCRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_CRT_x86' Language='1033' SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_CRT_x86.msm' DiskId='1' />
       </Directory><!--ProgramFilesFolder-->
 
       <Directory Id='ProgramFiles64Folder' Name='PFiles'>
@@ -81,21 +78,16 @@
         <Merge Id='XercesMergeModule_x64' Language='1033' SourceFile='MergeModules\Xerces-x64.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x64' Language='1033' SourceFile='MergeModules\XmlSec-x64.msm' DiskId='1' />
         <Merge Id='ZlibMergeModule_x64' Language='1033' SourceFile='MergeModules\Zlib-x64.msm' DiskId='1' />
-
-        <Merge Id='Microsoft_VC100_DebugCRT_x64' Language='1033' 
-               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_DebugCRT_x64.msm' DiskId='1' />
-        <Merge Id='Microsoft_VC100_CRT_x64' Language='1033' 
-               SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC100_CRT_x64.msm' DiskId='1' />
+        <Merge Id='Microsoft_DebugCRT_x64' Language='1033' SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_DebugCRT_x64.msm' DiskId='1' />
+        <Merge Id='Microsoft_CRT_x64' Language='1033' SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_CRT_x64.msm' DiskId='1' />
       </Directory><!--ProgramFiles64Folder-->
 
       <!-- PATH -->
       <Component Id='SetPath64' Guid='{D3BF9EF4-843A-4D48-BC6C-DC24B063FC35}' Win64='yes'>
-        <Environment Id='SetPath64' Name='PATH' Action='set' Part='last' System='yes'
-                     Value='[ProgramFiles64Folder]Shibboleth\SP\lib' />
+        <Environment Id='SetPath64' Name='PATH' Action='set' Part='last' System='yes' Value='[ProgramFiles64Folder]Shibboleth\SP\lib' />
       </Component>
       <Component Id='SetPath' Guid='{0E8BD571-3A26-4F61-979E-B5807A28634A}'>
-        <Environment Id='SetPath' Name='PATH' Action='set' Part='last'  System='yes'
-                     Value='[ProgramFilesFolder]Shibboleth\SP\lib' />
+        <Environment Id='SetPath' Name='PATH' Action='set' Part='last' System='yes' Value='[ProgramFilesFolder]Shibboleth\SP\lib' />
       </Component>
     </Directory><!--TARGETDIR-->
 
@@ -121,8 +113,8 @@
       <MergeRef Id='XmlSecMergeModule_x86'/>
       <MergeRef Id='ZlibMergeModule_x86'/>
 
-      <MergeRef Id='Microsoft_VC100_DebugCRT_x86'/>
-      <MergeRef Id='Microsoft_VC100_CRT_x86' />
+      <MergeRef Id='Microsoft_DebugCRT_x86'/>
+      <MergeRef Id='Microsoft_CRT_x86'/>
 
       <MergeRef Id='CurlMergeModule_x64'/>
       <MergeRef Id='FastCGIMergeModule_x64'/>
@@ -134,20 +126,22 @@
       <MergeRef Id='XmlSecMergeModule_x64'/>
       <MergeRef Id='ZlibMergeModule_x64'/>
 
-      <MergeRef Id='Microsoft_VC100_DebugCRT_x64'/>
-      <MergeRef Id='Microsoft_VC100_CRT_x64' />
+      <MergeRef Id='Microsoft_DebugCRT_x64'/>
+      <MergeRef Id='Microsoft_CRT_x64'/>
 
       <!-- ShibbolethSP-exe-x64-->
 
       <ComponentRef Id='resolvertest64.exe'/>
       <ComponentRef Id='mdquery64.exe'/>
       <ComponentRef Id='resolvertest64.exe_debug'/>
-      <ComponentRef Id='mdquery64.exe_debug' />
+      <ComponentRef Id='mdquery64.exe_debug'/>
 
       <ComponentRef Id='adfs64.so'/>
       <ComponentRef Id='adfs_lite64.so'/>
       <ComponentRef Id='isapi_shib64.dll'/>
+      <?if $(var.MsVCVersion) != "vc14" ?>
       <ComponentRef Id='mod_shib_2264.so'/>
+      <?endif?>
       <ComponentRef Id='mod_shib_2464.so'/>
       <ComponentRef Id='odbc_store64.so'/>
       <ComponentRef Id='plugins64.so'/>
@@ -158,7 +152,9 @@
       <ComponentRef Id='adfs64.so_debug'/>
       <ComponentRef Id='adfs_lite64.so_debug'/>
       <ComponentRef Id='isapi_shib64.dll_debug'/>
+      <?if $(var.MsVCVersion) != "vc14" ?>
       <ComponentRef Id='mod_shib_2264.so_debug'/>
+      <?endif?>
       <ComponentRef Id='mod_shib_2464.so_debug'/>
       <ComponentRef Id='odbc_store64.so_debug'/>
       <ComponentRef Id='plugins64.so_debug'/>
@@ -174,7 +170,7 @@
       <ComponentRef Id='InstallIsapi64'/>
       <ComponentRef Id='Install32Bit64'/>
       <ComponentRef Id='file_extension64'/>
-      <ComponentRef Id='shib64.ico' />
+      <ComponentRef Id='shib64.ico'/>
 
       <!-- ShibbolethSP-main-x64 -->
       <ComponentRef Id='SetPath'/>
@@ -189,7 +185,7 @@
            others are shared with x86
         -->
       <Component Id='messageFile' Guid='{3FF89632-9F39-4B1B-AA3E-3AF6C8155B92}' Win64='yes' Directory='bin64'>
-        <File Id='Messages' KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\x64\Release\Messages.dll'/>
+        <File Id='Messages' KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\Messages.dll'/>
         <RegistryKey Root='HKLM' Key='SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth Daemon'>
           <RegistryValue Name='CategoryCount' Type='integer' Value='2'/>
           <RegistryValue Name='TypeSupported' Type='integer' Value='15'/>

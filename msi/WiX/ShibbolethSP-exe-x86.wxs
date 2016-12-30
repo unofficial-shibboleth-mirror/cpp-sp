@@ -21,14 +21,14 @@
   <Fragment>
     <!-- Configuration, licenses and documentation -->
     <DirectoryRef Id='INSTALLDIR'>
-      <Directory Id='bin' Name='bin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Release' >
+      <Directory Id='bin' Name='bin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release'>
         <Component Id='resolvertest.exe' Guid='{D381B6FA-2971-457B-804E-F08DD517866F}'>
           <File KeyPath='yes' Checksum='yes' Name='resolvertest.exe' />
         </Component>
         <Component Id='mdquery.exe' Guid='{5F322597-3B26-48E5-95BA-CF991CF6D6DB}'>
           <File KeyPath='yes' Checksum='yes' Name='mdquery.exe' />
         </Component>
-        <Directory Id='bin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Debug' >
+        <Directory Id='bin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Debug'>
           <Component Id='resolvertest.exe_debug' Guid='{4FA03A33-961A-42E5-8D7A-5F2E207757DD}'>
             <File KeyPath='yes' Checksum='yes' Id='resolvertest.exe_debug' Name='resolvertest.exe' />
           </Component>
@@ -37,8 +37,8 @@
           </Component>
         </Directory><!-- bin_debug -->
       </Directory><!-- bin -->
-      <Directory Id='lib' Name='lib' >
-        <Directory Id='lib_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Release' >
+      <Directory Id='lib' Name='lib'>
+        <Directory Id='lib_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release'>
           <Component Id='adfs.so' Guid='{9C92C803-E905-4B43-8723-05678DC73B88}'>
             <File KeyPath='yes' Checksum='yes' Name='adfs.so' />
           </Component>
@@ -48,6 +48,7 @@
           <Component Id='isapi_shib.dll' Guid='{716D6F4F-4185-4219-B1BA-1D15F867926E}'>
             <File KeyPath='yes' Checksum='yes' Name='isapi_shib.dll' />
           </Component>
+          <?if $(var.MsVCVersion) != "vc14" ?>
           <Component Id='mod_shib_13.so' Guid='{5C85940B-7644-4AA4-9948-9EFFC1729EFB}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_13.so' />
           </Component>
@@ -57,12 +58,15 @@
           <Component Id='mod_shib_22.so' Guid='{BB889066-3EF2-43C5-BC4D-CD6B1DC4AE7B}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_22.so' />
           </Component>
+          <?endif ?>
           <Component Id='mod_shib_24.so' Guid='{8CAE4DF0-C8A8-4A48-A213-F4B3AFE6F439}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_24.so' />
           </Component>
+          <?if $(var.MsVCVersion) != "vc14" ?>
           <Component Id='nsapi_shib.dll' Guid='{F199DD8A-292F-4C7D-AACB-7283852D6335}'>
             <File KeyPath='yes' Checksum='yes' Name='nsapi_shib.dll' />
           </Component>
+          <?endif ?>
           <Component Id='odbc_store.so' Guid='{807FBD34-6E59-4BFD-975D-AD7B381F2A7E}'>
             <File KeyPath='yes' Checksum='yes' Name='odbc-store.so' />
           </Component>
@@ -78,7 +82,7 @@
           <Component Id='shibresponder.exe' Guid='{510267D9-61F2-47EF-99D2-CB3D21CB14EB}'>
             <File KeyPath='yes' Checksum='yes' Name='shibresponder.exe' />
           </Component>
-          <Directory Id='lib_shibboleth_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Debug' >
+          <Directory Id='lib_shibboleth_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Debug'>
             <Component Id='adfs.so_debug' Guid='{9B8E071F-B251-4373-A786-8966FD0D22EF}'>
               <File KeyPath='yes' Checksum='yes' Id='adfs.so_debug' Name='adfs.so' />
             </Component>
@@ -88,6 +92,7 @@
             <Component Id='isapi_shib.dll_debug' Guid='{F8212D30-0BA8-4F02-B595-E8E5D312342B}'>
               <File KeyPath='yes' Checksum='yes' Id='isapi_shib.dll_debug' Name='isapi_shib.dll' />
             </Component>
+            <?if $(var.MsVCVersion) != "vc14" ?>
             <Component Id='mod_shib_13.so_debug' Guid='{E8B798AB-D772-428D-8033-2A77CB437CF0}'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_13.so_debug' Name='mod_shib_13.so' />
             </Component>
@@ -97,12 +102,15 @@
             <Component Id='mod_shib_22.so_debug' Guid='{3DA4492F-C0EA-4286-9C37-13F82342FA67}'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_22.so_debug' Name='mod_shib_22.so' />
             </Component>
+            <?endif?>
             <Component Id='mod_shib_24.so_debug' Guid='{E04003DF-8C61-4C9E-87AB-89223C5E65DC}'>
-              <File KeyPath='yes' Checksum='yes' Id='mod_shib_24.so_debug' Name='mod_shib_24.so'/>
+              <File KeyPath='yes' Checksum='yes' Id='mod_shib_24.so_debug' Name='mod_shib_24.so' />
             </Component>
+            <?if $(var.MsVCVersion) != "vc14" ?>
             <Component Id='nsapi_shib.dll_debug' Guid='{492A5D72-4FE0-417E-9023-311E1BF34816}'>
               <File KeyPath='yes' Checksum='yes' Id='nsapi_shib.dll_debug' Name='nsapi_shib.dll' />
             </Component>
+            <?endif?>
             <Component Id='odbc_store.so_debug' Guid='{F217D7CF-91C1-4318-901D-709C710803C6}'>
               <File KeyPath='yes' Checksum='yes' Id='odbc_store.so_debug' Name='odbc-store.so' />
             </Component>
@@ -122,19 +130,19 @@
         </Directory><!-- lib_shibboleth -->
       </Directory><!-- lib -->
       <!-- the service bin -->
-      <Directory Id='sbin' Name='sbin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Release' >
+      <Directory Id='sbin' Name='sbin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release'>
         <Component Id='shibd.exe' Guid='{2476BB80-9384-4026-86F5-E1569A685187}'>
           <File KeyPath='yes' Checksum='yes' Name='shibd.exe' />
           <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
-          <ServiceInstall Id='shibd' Name='shibd_Default' 
+          <ServiceInstall Id='shibd' Name='shibd_Default'
                           DisplayName='Shibboleth 2 Daemon (Default)'
                           Description='Manages shared state and offloads SAML processing from Shibboleth web server modules.'
                           Arguments='-stdout "[INSTALLDIR]var\log\shibboleth\stdout.log" -stderr "[INSTALLDIR]var\log\shibboleth\stderr.log"'
                           Type='ownProcess' Start='auto' ErrorControl='ignore' />
-          <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'  
+          <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'
                           Remove='uninstall' Start='install' Wait='no' />
         </Component>
-        <Directory Id='sbin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.SPMsVCVersion)\Debug' >
+        <Directory Id='sbin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Debug'>
           <Component Id='shibd.exe_debug' Guid='{91E9DF13-0940-43E7-9A2F-9571F6FC3DF2}'>
             <File KeyPath='yes' Checksum='yes' Id='shibd.exe_debug' Name='shibd.exe' />
           </Component>
