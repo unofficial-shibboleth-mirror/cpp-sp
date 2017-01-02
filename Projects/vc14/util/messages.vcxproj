@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -21,6 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{303291A1-C542-49E4-80B3-9304B7B6F8BC}</ProjectGuid>
     <RootNamespace>messages</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -70,24 +71,28 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <OutDir>$(SolutionDir)\..\..\Build\VC14\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\Build\VC14\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <OutDir>$(SolutionDir)\..\..\Build\VC14\$(Configuration)\</OutDir>
     <TargetExt>.dll</TargetExt>
+    <IntDir>$(SolutionDir)..\..\Build\VC14\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <OutDir>$(SolutionDir)\..\..\Build\VC14\x64\$(Configuration)\</OutDir>
     <TargetExt>.dll</TargetExt>
+    <IntDir>$(SolutionDir)..\..\Build\VC14\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <TargetExt>.dll</TargetExt>
     <OutDir>$(SolutionDir)\..\..\Build\VC14\x64\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)..\..\Build\VC14\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
