@@ -86,6 +86,6 @@ if  [ -s $OUT/${PREFIX}-key.pem -a -n "$USER" ] ; then
     chown $USER $OUT/${PREFIX}-key.pem $OUT/${PREFIX}-cert.pem
 fi
 
-if  [ -s $OUT/${PREFIX}key.pem -a -n "$GROUP" ] ; then
+if  [ -s $OUT/${PREFIX}-key.pem -a -n "$GROUP" ] ; then
     chgrp $GROUP $OUT/${PREFIX}-key.pem $OUT/${PREFIX}-cert.pem
 fi
