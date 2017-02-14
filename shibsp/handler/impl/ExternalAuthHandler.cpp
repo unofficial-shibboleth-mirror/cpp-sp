@@ -592,8 +592,10 @@ pair<bool,long> ExternalAuth::processMessage(
             }
         }
         os << " ]";
-        if (!target.empty())
-            os << ", \"RelayState\": "; json_safe(os, target.c_str());
+        if (!target.empty()) {
+            os << ", \"RelayState\": ";
+            json_safe(os, target.c_str());
+        }
         os << " }";
     }
     else {
