@@ -1,11 +1,9 @@
-!If "$(MsVCVersion)" == "vc14"
-APACHE_MODS_X64=..\..\Build\$(MsVCVersion)\x64\Debug\mod_shib_24.so ..\..\Build\$(MsVCVersion)\x64\Release\mod_shib_24.so
-APACHE_MODS_X86=..\..\Build\$(MsVCVersion)\Debug\mod_shib_24.so  ..\..\Build\$(MsVCVersion)\Release\mod_shib_24.so
-!Else
 APACHE_MODS_X64=..\..\Build\$(MsVCVersion)\x64\Debug\mod_shib_22.so ..\..\Build\$(MsVCVersion)\x64\Debug\mod_shib_24.so \
 		..\..\Build\$(MsVCVersion)\x64\Release\mod_shib_22.so ..\..\Build\$(MsVCVersion)\x64\Release\mod_shib_24.so
 APACHE_MODS_X86=..\..\Build\$(MsVCVersion)\Debug\mod_shib_13.so ..\..\Build\$(MsVCVersion)\Debug\mod_shib_20.so ..\..\Build\$(MsVCVersion)\Debug\mod_shib_22.so ..\..\Build\$(MsVCVersion)\Debug\mod_shib_24.so \
 		..\..\Build\$(MsVCVersion)\Release\mod_shib_20.so ..\..\Build\$(MsVCVersion)\Release\mod_shib_22.so ..\..\Build\$(MsVCVersion)\Release\mod_shib_13.so ..\..\Build\$(MsVCVersion)\Release\mod_shib_24.so
+
+!If "$(MsVCVersion)" != "vc14"
 NSAPI_DLLS=..\..\Build\$(MsVCVersion)\Debug\nsapi_shib.dll ..\..\Build\$(MsVCVersion)\Release\nsapi_shib.dll
 !Endif
 

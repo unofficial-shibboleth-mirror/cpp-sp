@@ -48,7 +48,6 @@
           <Component Id='isapi_shib.dll' Guid='{716D6F4F-4185-4219-B1BA-1D15F867926E}'>
             <File KeyPath='yes' Checksum='yes' Name='isapi_shib.dll' />
           </Component>
-          <?if $(var.MsVCVersion) != "vc14" ?>
           <Component Id='mod_shib_13.so' Guid='{5C85940B-7644-4AA4-9948-9EFFC1729EFB}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_13.so' />
           </Component>
@@ -58,7 +57,6 @@
           <Component Id='mod_shib_22.so' Guid='{BB889066-3EF2-43C5-BC4D-CD6B1DC4AE7B}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_22.so' />
           </Component>
-          <?endif ?>
           <Component Id='mod_shib_24.so' Guid='{8CAE4DF0-C8A8-4A48-A213-F4B3AFE6F439}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_24.so' />
           </Component>
@@ -92,7 +90,6 @@
             <Component Id='isapi_shib.dll_debug' Guid='{F8212D30-0BA8-4F02-B595-E8E5D312342B}'>
               <File KeyPath='yes' Checksum='yes' Id='isapi_shib.dll_debug' Name='isapi_shib.dll' />
             </Component>
-            <?if $(var.MsVCVersion) != "vc14" ?>
             <Component Id='mod_shib_13.so_debug' Guid='{E8B798AB-D772-428D-8033-2A77CB437CF0}'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_13.so_debug' Name='mod_shib_13.so' />
             </Component>
@@ -102,7 +99,6 @@
             <Component Id='mod_shib_22.so_debug' Guid='{3DA4492F-C0EA-4286-9C37-13F82342FA67}'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_22.so_debug' Name='mod_shib_22.so' />
             </Component>
-            <?endif?>
             <Component Id='mod_shib_24.so_debug' Guid='{E04003DF-8C61-4C9E-87AB-89223C5E65DC}'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_24.so_debug' Name='mod_shib_24.so' />
             </Component>

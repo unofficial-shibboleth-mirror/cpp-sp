@@ -49,10 +49,10 @@
   <ComponentRef Id="adfs.so" />
   <ComponentRef Id="adfs_lite.so" />
   <ComponentRef Id="isapi_shib.dll" />
-  <?if $(var.MsVCVersion) != "vc14" ?>
   <ComponentRef Id="mod_shib_13.so" />
   <ComponentRef Id="mod_shib_20.so" />
   <ComponentRef Id="mod_shib_22.so" />
+  <?if $(var.MsVCVersion) != "vc14" ?>
   <ComponentRef Id="nsapi_shib.dll" />
   <?endif?>
   <ComponentRef Id="mod_shib_24.so" />
@@ -65,10 +65,10 @@
   <ComponentRef Id="adfs.so_debug" />
   <ComponentRef Id="adfs_lite.so_debug" />
   <ComponentRef Id="isapi_shib.dll_debug" />
-  <?if $(var.MsVCVersion) != "vc14" ?>
   <ComponentRef Id="mod_shib_13.so_debug" />
   <ComponentRef Id="mod_shib_20.so_debug" />
   <ComponentRef Id="mod_shib_22.so_debug" />
+  <?if $(var.MsVCVersion) != "vc14" ?>
   <ComponentRef Id="nsapi_shib.dll_debug" />
   <?endif?>
   <ComponentRef Id="mod_shib_24.so_debug" />

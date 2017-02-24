@@ -139,9 +139,7 @@
       <ComponentRef Id='adfs64.so'/>
       <ComponentRef Id='adfs_lite64.so'/>
       <ComponentRef Id='isapi_shib64.dll'/>
-      <?if $(var.MsVCVersion) != "vc14" ?>
       <ComponentRef Id='mod_shib_2264.so'/>
-      <?endif?>
       <ComponentRef Id='mod_shib_2464.so'/>
       <ComponentRef Id='odbc_store64.so'/>
       <ComponentRef Id='plugins64.so'/>
@@ -152,9 +150,7 @@
       <ComponentRef Id='adfs64.so_debug'/>
       <ComponentRef Id='adfs_lite64.so_debug'/>
       <ComponentRef Id='isapi_shib64.dll_debug'/>
-      <?if $(var.MsVCVersion) != "vc14" ?>
       <ComponentRef Id='mod_shib_2264.so_debug'/>
-      <?endif?>
       <ComponentRef Id='mod_shib_2464.so_debug'/>
       <ComponentRef Id='odbc_store64.so_debug'/>
       <ComponentRef Id='plugins64.so_debug'/>
