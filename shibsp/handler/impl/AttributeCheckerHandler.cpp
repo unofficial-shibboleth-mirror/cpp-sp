@@ -128,6 +128,9 @@ AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char
         if (m_attributes.empty())
             throw ConfigurationException("AttributeChecker unable to parse attributes setting.");
     }
+    else if (nullptr == XMLHelper::getFirstChildElement(e)) {
+        throw ConfigurationException("AttributeChecker requires either the attributes setting or an ACL");
+    }
     else {
         m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, e));
     }
