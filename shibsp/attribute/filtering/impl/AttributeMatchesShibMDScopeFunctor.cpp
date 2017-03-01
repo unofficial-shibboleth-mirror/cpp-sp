@@ -96,8 +96,14 @@ namespace shibsp {
             const XMLCh* val = rule.getValue();
             if (val && *val) {
                 if (rule.Regexp()) {
-                    RegularExpression re(val);
-                    return re.matches(scope.get());
+                    try {
+                        RegularExpression re(val);
+                        return re.matches(scope.get());
+                    }
+                    catch (XMLException& ex) {
+                        xmltooling::auto_ptr_char temp(ex.getMessage());
+                        throw ConfigurationException(temp.get());
+                    }
                 }
                 else {
                     return XMLString::equals(val, scope.get());
