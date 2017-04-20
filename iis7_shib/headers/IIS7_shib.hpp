@@ -1,0 +1,107 @@
+/**
+* Licensed to the University Corporation for Advanced Internet
+* Development, Inc. (UCAID) under one or more contributor license
+* agreements. See the NOTICE file distributed with this work for
+* additional information regarding copyright ownership.
+*
+* UCAID licenses this file to you under the Apache License,
+* Version 2.0 (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the
+* License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific
+* language governing permissions and limitations under the License.
+*/
+#pragma once
+
+// Windows
+#include <Windows.h>
+#include <http.h>
+#include "httpserv.h"
+
+//
+// Miscelanea
+//
+#include <set>
+#include <boost/lexical_cast.hpp>
+#include <string>
+
+// Load Santurio with a bracketed warning off
+#pragma warning(push)
+#pragma warning(disable:4005)
+#include <xsec\framework\XSECDefs.hpp>
+#pragma warning(pop)
+
+// Shibboleth
+#define SHIBSP_LITE
+#include "config_win32.h"
+#include <shibsp/SPConfig.h>
+#include <shibsp/ServiceProvider.h>
+#include <shibsp/util/PropertySet.h>
+
+#include <xmltooling/util/XMLHelper.h>
+#include <xmltooling/Lockable.h>
+
+#include <message.h>
+
+using namespace shibsp;
+using namespace xmltooling;
+using namespace xercesc;
+using namespace boost;
+using namespace std;
+// globals
+namespace Config {
+    static const XMLCh path[] =             UNICODE_LITERAL_4(p, a, t, h);
+    static const XMLCh validate[] =         UNICODE_LITERAL_8(v, a, l, i, d, a, t, e);
+    static const XMLCh name[] =             UNICODE_LITERAL_4(n, a, m, e);
+    static const XMLCh port[] =             UNICODE_LITERAL_4(p, o, r, t);
+    static const XMLCh sslport[] =          UNICODE_LITERAL_7(s, s, l, p, o, r, t);
+    static const XMLCh scheme[] =           UNICODE_LITERAL_6(s, c, h, e, m, e);
+    static const XMLCh id[] =               UNICODE_LITERAL_2(i, d);
+    static const XMLCh Alias[] =            UNICODE_LITERAL_5(A, l, i, a, s);
+    static const XMLCh Site[] =             UNICODE_LITERAL_4(S, i, t, e);
+
+    struct site_t {
+        site_t(const DOMElement* e)
+            : m_name(XMLHelper::getAttrString(e, "", name)),
+            m_scheme(XMLHelper::getAttrString(e, "", scheme)),
+            m_port(XMLHelper::getAttrString(e, "", port)),
+            m_sslport(XMLHelper::getAttrString(e, "", sslport))
+        {
+            e = XMLHelper::getFirstChildElement(e, Alias);
+            while (e) {
+                if (e->hasChildNodes()) {
+                    auto_ptr_char alias(e->getTextContent());
+                    m_aliases.insert(alias.get());
+                }
+                e = XMLHelper::getNextSiblingElement(e, Alias);
+            }
+        }
+        string m_scheme, m_port, m_sslport, m_name;
+        set<string> m_aliases;
+    };
+
+    extern HINSTANCE g_hinstDLL;
+    extern SPConfig* g_Config;
+    extern map<string, site_t> g_Sites;
+    extern bool g_bNormalizeRequest;
+    extern string g_unsetHeaderValue, g_spoofKey;
+    extern bool g_checkSpoofing;
+    extern bool g_catchAll;
+    extern bool g_bSafeHeaderNames;
+    extern bool g_bUseHeaders;
+    extern bool g_bUseVariables;
+    extern vector<string> g_NoCerts;
+}
+
+BOOL LogEvent(
+    LPCSTR  lpUNCServerName,
+    WORD  wType,
+    DWORD  dwEventID,
+    PSID  lpUserSid,
+    LPCSTR  message);

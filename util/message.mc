@@ -14,6 +14,12 @@ Language=Neutral
 Shibboleth Daemon ISAPI plugin
 .
 
+MessageId=
+SymbolicName=CATEGORY_NATIVE
+Language=Neutral
+Shibboleth Daemon Ntaive IIS plugin
+.
+
 
 MessageIdTypedef=DWORD
 
@@ -25,6 +31,7 @@ SeverityNames=(Success=0x0:STATUS_SEVERITY_SUCCESS
 
 FacilityNames=(Shibboleth=0x231:FACILITY_SYSTEM
                ShibbolethISAPI=0x232:FACILITY_RUNTIME
+               ShibbolethNative=0x233:FACILITY_RUNTIME
                )
 
 
@@ -181,3 +188,52 @@ SymbolicName=SHIB_ISAPI_UNKNOWN_EXCEPTION
 Language=Neutral
 Shibboleth ISAPI filter: Caught an Unknown Exception.
 .
+
+MessageId=
+Severity=Warning
+Facility=ShibbolethNative
+SymbolicName=SHIB_NATIVE_REENTRANT_INIT
+Language=Neutral
+Shibboleth Native filter: Reentrant filter initialization, ignoring...
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethNative
+SymbolicName=SHIB_NATIVE_STARTUP_FAILED
+Language=Neutral
+Shibboleth Native filter: Startup failed during library initialization, check native log for help.
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethNative
+SymbolicName=SHIB_NATIVE_STARTUP_FAILED_EXCEPTION
+Language=Neutral
+Shibboleth Native filter: Startup failed during library initialization: %1!s!, check native log for help.
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethNative
+SymbolicName=SHIB_NATIVE_CANNOT_CREATE_ANTISPOOF
+Language=Neutral
+Shibboleth Native filter: Failed to generate a random anti-spoofing key (if this is Windows 2000 set one manually).
+.
+
+MessageId=
+Severity=Informational
+Facility=ShibbolethNative
+SymbolicName=SHIB_NATIVE_INITIALIZED
+Language=Neutral
+Shibboleth ISAPI filter: Initialized...
+.
+
+MessageId=
+Severity=Error
+Facility=ShibbolethNative
+SymbolicName=SHIB_NATIVE_CRITICAL
+Language=Neutral
+Shibboleth ISAPI filter: Critical Error: %0!s!
+.
+

@@ -1,0 +1,69 @@
+/**
+* Licensed to the University Corporation for Advanced Internet
+* Development, Inc. (UCAID) under one or more contributor license
+* agreements. See the NOTICE file distributed with this work for
+* additional information regarding copyright ownership.
+*
+* UCAID licenses this file to you under the Apache License,
+* Version 2.0 (the "License"); you may not use this file except
+* in compliance with the License. You may obtain a copy of the
+* License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+* either express or implied. See the License for the specific
+* language governing permissions and limitations under the License.
+*/
+
+#pragma once
+#include "IIS7_shib.hpp"
+
+class ShibHttpModule : public CHttpModule {
+public:
+    ShibHttpModule()
+    {}
+
+    ~ShibHttpModule()
+    {};
+
+    REQUEST_NOTIFICATION_STATUS
+        OnBeginRequest(
+            _In_ IHttpContext *         pHttpContext,
+            _In_ IHttpEventProvider *   pProvider
+        );
+    REQUEST_NOTIFICATION_STATUS
+        OnPreExecuteRequestHandler(
+            _In_ IHttpContext *         pHttpContext,
+            _In_ IHttpEventProvider *   pProvider
+        );
+
+    // RQ_AUTHENTICATE_REQUEST descriptor
+    REQUEST_NOTIFICATION_STATUS
+        OnAuthenticateRequest(
+            _In_ IHttpContext *             pHttpContext,
+            _In_ IAuthenticationProvider *  pProvider
+        );
+
+    REQUEST_NOTIFICATION_STATUS
+        OnPostAuthenticateRequest(
+            _In_ IHttpContext *             pHttpContext,
+            _In_ IHttpEventProvider *       pProvider
+        );
+
+private:
+    REQUEST_NOTIFICATION_STATUS
+        DoHandler(
+            _In_ IHttpContext *         pHttpContext,
+            _In_ IHttpEventProvider *   pProvider
+        );
+
+    REQUEST_NOTIFICATION_STATUS
+        DoFilter(
+            _In_ IHttpContext *         pHttpContext,
+            _In_ IHttpEventProvider *   pProvider
+        );
+};
+
