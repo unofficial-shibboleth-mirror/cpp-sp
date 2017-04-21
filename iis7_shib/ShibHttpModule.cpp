@@ -38,7 +38,7 @@ ShibHttpModule::DoHandler(
     threadid += lexical_cast<string>(_getpid()) + "] native_shib";
     xmltooling::NDC ndc(threadid.c_str());
 
-    NativeRequest handler(pHttpContext, pProvider);
+    NativeRequest handler(pHttpContext, pProvider, false);
 
     pair<bool, long> res = handler.getServiceProvider().doHandler(handler);
 
@@ -61,15 +61,20 @@ ShibHttpModule::DoFilter(
     xmltooling::NDC ndc(threadid.c_str());
 
     // TODO Different class?
-    NativeRequest filter(pHttpContext, pProvider);
+    NativeRequest filter(pHttpContext, pProvider, true);
 
     pair<bool, long> res = filter.getServiceProvider().doAuthentication(filter);
     if (res.first) {
         return static_cast<REQUEST_NOTIFICATION_STATUS>(res.second);
     }
 
-    if (!g_spoofKey.empty()) {
-        pHttpContext->GetRequest()->SetHeader("ShibSpoofCheck:", const_cast<PCSTR>(g_spoofKey.c_str()), static_cast<USHORT>(g_spoofKey.length()), TRUE);
+    if (!g_spoofKey.empty() && filter.isUseHeaders()) {
+        const string hdr = g_bSafeHeaderNames ? filter.makeSafeHeader(g_spoofKey.c_str()) : (string(g_spoofKey.c_str()) + ':');
+        const HRESULT hr(pHttpContext->GetRequest()->SetHeader(hdr.c_str(), g_spoofKey.c_str(), static_cast<USHORT>(g_spoofKey.length()), TRUE));
+        if (FAILED(hr)) {
+            (void)pHttpContext->GetResponse()->SetStatus(static_cast<USHORT>(filter.XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
+            return RQ_NOTIFICATION_FINISH_REQUEST;
+        }
     }
     res = filter.getServiceProvider().doExport(filter);
     if (res.first) {

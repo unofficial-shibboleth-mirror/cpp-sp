@@ -42,7 +42,9 @@ private:
     string m_allhttp;
 
 public:
-    NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider);
+    NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider, _In_ bool checkUser);
+    string makeSafeHeader(const char* rawname) const;
+    bool isUseHeaders() { return m_useHeaders; }
 
 protected:
     //
@@ -80,7 +82,6 @@ protected:
     long sendRedirect(const char* url);
 
 private:
-    string makeSafeHeader(const char* rawname) const;
     void logFatal(const string& operation, HRESULT hr) const;
     void throwError(const string& operation, HRESULT hr) const;
 

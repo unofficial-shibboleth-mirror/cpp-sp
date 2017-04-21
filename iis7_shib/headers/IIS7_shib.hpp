@@ -66,6 +66,8 @@ namespace Config {
     static const XMLCh Alias[] =            UNICODE_LITERAL_5(A, l, i, a, s);
     static const XMLCh Site[] =             UNICODE_LITERAL_4(S, i, t, e);
 
+    static const char* SpoofHeaderName = "ShibSpoofCheck";
+
     struct site_t {
         site_t(const DOMElement* e)
             : m_name(XMLHelper::getAttrString(e, "", name)),

@@ -34,7 +34,8 @@
 
 using namespace Config;
 
-NativeRequest::NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
+_Use_decl_annotations_
+NativeRequest::NativeRequest(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
     m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
     m_firsttime(true), m_useHeaders(g_bUseHeaders), m_useVariables(g_bUseVariables), m_gotBody(false), m_event(pEventProvider)
 {
@@ -128,13 +129,23 @@ NativeRequest::NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventPro
     else {
         throwError("Get remote user", hr);
     }
+
+    if (checkUser && m_useHeaders && !g_spoofKey.empty()) {
+        const string hdr = getSecureHeader(SpoofHeaderName);
+        if (hdr == g_spoofKey) {
+            m_firsttime = false;
+        }
+        if (!m_firsttime) {
+            log(SPDebug, "shib_check_user running more than once");
+        }
+    }
 }
 
 void NativeRequest::setHeader(const char* name, const char* value)
 {
     if (m_useHeaders) {
         const string hdr = g_bSafeHeaderNames ? makeSafeHeader(name) : (string(name) + ':');
-        const HRESULT hr (m_request->SetHeader(hdr.c_str(), value, static_cast<USHORT>(strlen(value)), true));
+        const HRESULT hr (m_request->SetHeader(hdr.c_str(), value, static_cast<USHORT>(strlen(value)), TRUE));
         if (FAILED(hr)) {
             throwError("setHeader (Header)", hr);
         }
