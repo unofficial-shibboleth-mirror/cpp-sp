@@ -34,17 +34,11 @@ ShibHttpModule::DoHandler(
     _In_ IHttpEventProvider *   pProvider
 )
 {
-    IHttpRequest *req(pHttpContext->GetRequest());
-    map<string, site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(req->GetSiteId()));
-    if (map_i == g_Sites.end()) {
-        return RQ_NOTIFICATION_CONTINUE;
-    }
-
     string threadid("[");
     threadid += lexical_cast<string>(_getpid()) + "] native_shib";
     xmltooling::NDC ndc(threadid.c_str());
 
-    NativeRequest handler(pHttpContext, pProvider, map_i->second);
+    NativeRequest handler(pHttpContext, pProvider);
 
     pair<bool, long> res = handler.getServiceProvider().doHandler(handler);
 
@@ -61,17 +55,13 @@ ShibHttpModule::DoFilter(
 )
 {
     IHttpRequest *req(pHttpContext->GetRequest());
-    map<string, site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(req->GetSiteId()));
-    if (map_i == g_Sites.end()) {
-        return RQ_NOTIFICATION_CONTINUE;
-    }
 
     string threadid("[");
     threadid += lexical_cast<string>(_getpid()) + "] native_shib";
     xmltooling::NDC ndc(threadid.c_str());
 
     // TODO Different class?
-    NativeRequest filter(pHttpContext, pProvider, map_i->second);
+    NativeRequest filter(pHttpContext, pProvider);
 
     pair<bool, long> res = filter.getServiceProvider().doAuthentication(filter);
     if (res.first) {

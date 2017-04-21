@@ -34,17 +34,13 @@
 
 using namespace Config;
 
-NativeRequest::NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider,  const _In_ site_t site) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
+NativeRequest::NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
     m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
     m_firsttime(true), m_useHeaders(g_bUseHeaders), m_useVariables(g_bUseVariables), m_gotBody(false), m_event(pEventProvider)
 {
     DWORD len;
 
-    // ServerVariable SERVER_NAME is what the client sent.  So use the IIS site name (which needs to have been set to something sensible)
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-    m_hostname = converter.to_bytes(m_ctx->GetSite()->GetSiteName());
-    to_lower(m_hostname);
-
     setRequestURI(converter.to_bytes(m_ctx->GetScriptName()).c_str());
 
     PCSTR port;
@@ -63,27 +59,60 @@ NativeRequest::NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventPro
         throwError("Get Server Secure", hr);
     }
 
-    // Port may come from IIS or from site def.
-    // NOTE getting the port from m_request->GetLocalAddress() doesn't work (we get the used port)
-    // TODO Is SERVER_PORT secure?
-    // TODO default from type, add site for virtualization.
-    if (!g_bNormalizeRequest || (m_SSL && site.m_sslport.empty()) || (!m_SSL && site.m_port.empty())) {
+    map<string, site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(m_request->GetSiteId()));
+    bool setPort = false;
+    string thePort("");
+    if (!g_bNormalizeRequest) {
+        // Only grab the port from IIS if the user said no to normalization
         hr = m_ctx->GetServerVariable("SERVER_PORT", &port, &len);
         if (SUCCEEDED(hr)) {
-            m_port = lexical_cast<int>(port);
-        }
-        else if (m_SSL) {
-            m_port = 443;
-        }
-        else {
-            m_port = 80;
+            thePort = port;
         }
     }
-    else if (m_SSL) {
-        m_port = lexical_cast<int>(site.m_sslport);
+
+    if (map_i == g_Sites.end()) {
+
+        log(SPRequest::SPDebug, "Site not found, using IIS provided information");
+
+        // ServerVariable SERVER_NAME is what the client sent.  So use the IIS site name (which needs to have been set to something sensible)
+        m_hostname = converter.to_bytes(m_ctx->GetSite()->GetSiteName());
+        to_lower(m_hostname);
+
     }
     else {
-        m_port = lexical_cast<int>(site.m_port);
+        log(SPRequest::SPDebug, "Site found, using site informatiom");
+
+        site_t site = map_i->second;
+
+        // Grab the host from the site
+        m_hostname = site.m_name;
+
+        // Grab the port from the site - if present
+        if (m_SSL && !site.m_sslport.empty()) {
+            m_port = lexical_cast<int>(site.m_sslport);
+            setPort = true;
+        }
+        else if (!m_SSL && !site.m_port.empty()) {
+            m_port = lexical_cast<int>(site.m_port);
+            setPort = true;
+        }
+    }
+
+    if (!setPort) {
+        if (!thePort.empty()) {
+            // We've not set the port so far (from the site) *AND* we are not normalising, grab from IIS
+            setPort = true;
+            m_port = lexical_cast<int>(port);
+        }
+        else {
+            // hardwire.
+            if (m_SSL) {
+                m_port = 443;
+            }
+            else {
+                m_port = 80;
+            }
+        }
     }
 
     PCSTR ru;
@@ -99,7 +128,6 @@ NativeRequest::NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventPro
     else {
         throwError("Get remote user", hr);
     }
-
 }
 
 void NativeRequest::setHeader(const char* name, const char* value)

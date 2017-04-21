@@ -42,7 +42,7 @@ private:
     string m_allhttp;
 
 public:
-    NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider, const _In_ Config::site_t site);
+    NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider);
 
 protected:
     //
