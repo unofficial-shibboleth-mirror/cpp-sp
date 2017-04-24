@@ -37,7 +37,7 @@ using namespace Config;
 _Use_decl_annotations_
 NativeRequest::NativeRequest(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
     m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
-    m_firsttime(true), m_useHeaders(g_bUseHeaders), m_useVariables(g_bUseVariables), m_gotBody(false), m_event(pEventProvider)
+    m_firsttime(true), m_gotBody(false), m_event(pEventProvider)
 {
     DWORD len;
 
@@ -79,11 +79,16 @@ NativeRequest::NativeRequest(IHttpContext *pHttpContext, IHttpEventProvider *pEv
         m_hostname = converter.to_bytes(m_ctx->GetSite()->GetSiteName());
         to_lower(m_hostname);
 
+        m_useHeaders = g_bUseHeaders;
+        m_useVariables = g_bUseVariables;
     }
     else {
         log(SPRequest::SPDebug, "Site found, using site informatiom");
 
         site_t site = map_i->second;
+
+        m_useHeaders = site.m_useHeaders;
+        m_useVariables = site.m_useVariables;
 
         // Grab the host from the site
         m_hostname = site.m_name;

@@ -148,12 +148,17 @@ RegisterModule(
             }
         }
 
-        props = props->getPropertySet("ISAPI");
+        props = props->getPropertySet("IIS");
         if (props) {
             flag = props->getBool("normalizeRequest");
             g_bNormalizeRequest = !flag.first || flag.second;
             flag = props->getBool("safeHeaderNames");
             g_bSafeHeaderNames = flag.first && flag.second;
+            flag = props->getBool("useHeaders");
+            g_bUseHeaders = flag.first && flag.second;
+            flag = props->getBool("useVariables");
+            g_bUseVariables= !flag.first || flag.second;
+
             const DOMElement* child = XMLHelper::getFirstChildElement(props->getElement(), Site);
             while (child) {
                 string id(XMLHelper::getAttrString(child, "", id));

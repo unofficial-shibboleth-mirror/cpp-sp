@@ -33,8 +33,8 @@ private:
     int m_port;
     string m_hostname;
     bool m_SSL;
-    const bool m_useVariables;
-    const bool m_useHeaders;
+    bool m_useVariables;
+    bool m_useHeaders;
     mutable string m_remoteUser;
     mutable vector<string> m_certs;
     mutable string m_body;
