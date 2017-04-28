@@ -38,6 +38,7 @@ ShibHttpModule::DoHandler(
     threadid += lexical_cast<string>(_getpid()) + "] native_shib";
     xmltooling::NDC ndc(threadid.c_str());
 
+    // TODO the handler and the Filter both use the same class.  Should it?
     NativeRequest handler(pHttpContext, pProvider, false);
 
     pair<bool, long> res = handler.getServiceProvider().doHandler(handler);

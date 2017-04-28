@@ -80,17 +80,19 @@ ShibUser::DereferenceUser(VOID)
 BOOL
 ShibUser::SupportsIsInRole(VOID)
 {
-    return FALSE;
+    return TRUE;
 }
 
 HRESULT
 ShibUser::IsInRole(_In_  PCWSTR  pszRoleName, _Out_ BOOL *  pfInRole)
 {
-    return E_NOTIMPL;
+    wstring role(pszRoleName);
+    *pfInRole = (role == L"shibAuthn");
+    return S_OK;
 }
 PVOID
 ShibUser::GetUserVariable(_In_ PCSTR    pszVariableName)
 {
-    return  nullptr;
+    return  "flibby";
 }
 
