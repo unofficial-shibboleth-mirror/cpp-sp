@@ -22,6 +22,9 @@
 
 class ShibUser : public IHttpUser {
 
+    // An IHttpUser which allows us to supply REMOTE_USER.
+    // Also, a testbed for Roles Based AuthN.
+
 public:
     ShibUser(std::string username);
             

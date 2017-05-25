@@ -55,7 +55,7 @@ ShibHttpModule::DoFilter(
     _In_ IHttpEventProvider *  pProvider
 )
 {
-    IHttpRequest *req(pHttpContext->GetRequest());
+    const IHttpRequest *req(pHttpContext->GetRequest());
 
     string threadid("[");
     threadid += lexical_cast<string>(_getpid()) + "] native_shib";

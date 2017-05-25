@@ -27,7 +27,7 @@
 
 #include <shibsp/exceptions.h>
 
-#include <codecvt>
+#include <codecvt> // 16 bit to 8 bit chars
 #include "NativeRequest.hpp"
 #include "ShibHttpModule.hpp"
 #include "ShibUser.hpp"
@@ -166,9 +166,8 @@ void NativeRequest::setHeader(const char* name, const char* value)
 
 void NativeRequest::setRemoteUser(const char* user)
 {
-
     m_remoteUser = user;
-    if (m_useVariables) {
+    if (m_useHeaders) {
         HRESULT hr;
         if (user) {
             hr = m_request->SetHeader("REMOTE_USER", user, static_cast<USHORT>(strlen(user)), true);
@@ -181,18 +180,14 @@ void NativeRequest::setRemoteUser(const char* user)
         }
     }
     if (m_useVariables) {
+        // Setting the variable REMOTE_USER fails, so set the Principal if we are called appropriately.
+        // Getting REMOTE_USER goes via the Principal.
         auto_ptr_XMLCh widen(user);
         IAuthenticationProvider *auth = dynamic_cast<IAuthenticationProvider*>(m_event);
 
         if (auth) {
             auth->SetUser(new ShibUser(user));
         }
-
-/*            const HRESULT hr(m_ctx->SetServerVariable("REMOTE_USER", widen.get())); 
-            if (FAILED(hr)) {
-                throwError("setRemoteUser (Header)", hr);
-            }
-        }*/
     }
 }
 
@@ -346,18 +341,11 @@ const char* NativeRequest::getRequestBody() const
     if (m_gotBody) {
         return m_body.c_str();
     }
+    // TODO Not Thread safe?
     DWORD totalBytesLeft = m_request->GetRemainingEntityBytes();
     if (totalBytesLeft > 1024 * 1024) {
         throw opensaml::SecurityPolicyException("Size of request body exceeded 1M size limit.");
     }
-/*        else if (m_lpECB->cbTotalBytes > m_lpECB->cbAvailable) {
-        m_gotBody=true;
-        DWORD datalen=m_lpECB->cbTotalBytes;
-        if (m_lpECB->cbAvailable > 0) {
-        m_body.assign(reinterpret_cast<char*>(m_lpECB->lpbData), m_lpECB->cbAvailable);
-        datalen-=m_lpECB->cbAvailable;
-    }
-    */
     while (totalBytesLeft) {
         char buf[8192];
         DWORD bytesRead;
