@@ -21,7 +21,7 @@
 #include "IIS7_shib.hpp"
 #include "ShibUser.hpp"
 
-ShibUser::ShibUser(std::string name) : m_refCount(1), m_widen(name.c_str())
+ShibUser::ShibUser(std::string name, set<wstring> roles) : m_refCount(1), m_widen(name.c_str()), m_roles(roles)
 {
     ;
 }
@@ -87,12 +87,21 @@ HRESULT
 ShibUser::IsInRole(_In_  PCWSTR  pszRoleName, _Out_ BOOL *  pfInRole)
 {
     wstring role(pszRoleName);
-    *pfInRole = (role == L"shibAuthn");
+
+    if (m_roles.find(role) != m_roles.end()) {
+        *pfInRole = TRUE;
+    }
+    else {
+        *pfInRole = FALSE;
+    }
+
+
     return S_OK;
 }
+
 PVOID
 ShibUser::GetUserVariable(_In_ PCSTR    pszVariableName)
 {
-    return  "flibby";
+    return  "";
 }
 

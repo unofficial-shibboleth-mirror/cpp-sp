@@ -40,6 +40,7 @@ private:
     mutable string m_body;
     mutable bool m_gotBody;
     string m_allhttp;
+    set<wstring> m_roles;
 
 public:
     NativeRequest(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider, _In_ bool checkUser);

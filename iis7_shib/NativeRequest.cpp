@@ -21,6 +21,7 @@
 #include "IIS7_shib.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <xercesc/util/Base64.hpp>
 #include <xmltooling/util/NDC.h>
@@ -161,6 +162,18 @@ void NativeRequest::setHeader(const char* name, const char* value)
         if (FAILED(hr)) {
             throwError("setHeader (Variable)", hr);
         }
+
+        for (list<role_t>::iterator role = g_Roles.begin(); role != g_Roles.end(); ++role) {
+            if (role->m_attribute == name) {
+                string str(value);
+                tokenizer<escaped_list_separator<char>> tok(str, escaped_list_separator<char>('\\', ';', '"'));
+                for (tokenizer<escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
+                    const xmltooling::auto_ptr_XMLCh widen(string(role->m_prefix + (*it)).c_str());
+                    m_roles.insert(widen.get());
+                }
+            }
+        }
+
     }
 }
 
@@ -186,7 +199,10 @@ void NativeRequest::setRemoteUser(const char* user)
         IAuthenticationProvider *auth = dynamic_cast<IAuthenticationProvider*>(m_event);
 
         if (auth) {
-            auth->SetUser(new ShibUser(user));
+            if (!g_authNRole.empty()) {
+                m_roles.insert(g_authNRole);
+            }
+            auth->SetUser(new ShibUser(user, m_roles));
         }
     }
 }

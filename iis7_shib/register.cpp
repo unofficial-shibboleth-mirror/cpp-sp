@@ -36,6 +36,8 @@ namespace Config {
     bool g_bUseHeaders = false;
     bool g_bUseVariables = true;
     vector<string> g_NoCerts;
+    list<role_t> g_Roles;
+    wstring g_authNRole;
 }
 
 using namespace Config;
@@ -159,12 +161,23 @@ RegisterModule(
             flag = props->getBool("useVariables");
             g_bUseVariables= !flag.first || flag.second;
 
-            const DOMElement* child = XMLHelper::getFirstChildElement(props->getElement(), Site);
-            while (child) {
-                string id(XMLHelper::getAttrString(child, "", id));
+            const DOMElement* site = XMLHelper::getFirstChildElement(props->getElement(), Site);
+            while (site) {
+                string id(XMLHelper::getAttrString(site, "", id));
                 if (!id.empty())
-                    g_Sites.insert(make_pair(id, site_t(child)));
-                child = XMLHelper::getNextSiblingElement(child, Site);
+                    g_Sites.insert(make_pair(id, site_t(site)));
+                site = XMLHelper::getNextSiblingElement(site, Site);
+            }
+            const PropertySet* roles = props->getPropertySet("Roles");
+            if (roles) {
+                pair<bool, const char*> authNRoleFlag = roles->getString("authNRole");
+                xmltooling::auto_ptr_XMLCh rolestr(authNRoleFlag.first? authNRoleFlag.second : "ShibbolethAuthN");
+                g_authNRole = rolestr.get();
+                const DOMElement* role = XMLHelper::getFirstChildElement(roles->getElement(), Role);
+                while (role) {
+                        g_Roles.push_back(role_t(role));
+                        role = XMLHelper::getNextSiblingElement(role, Role);
+                }
             }
         }
     }

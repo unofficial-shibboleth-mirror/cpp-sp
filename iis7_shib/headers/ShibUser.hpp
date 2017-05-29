@@ -26,7 +26,7 @@ class ShibUser : public IHttpUser {
     // Also, a testbed for Roles Based AuthN.
 
 public:
-    ShibUser(std::string username);
+    ShibUser(std::string username, set<wstring> roles);
             
     PCWSTR
     GetRemoteUserName(
@@ -87,5 +87,5 @@ public:
 private:
     const auto_ptr_XMLCh m_widen;
     volatile unsigned int m_refCount;
-
+    const set<wstring> m_roles;
 };

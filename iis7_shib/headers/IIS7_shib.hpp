@@ -28,6 +28,7 @@
 // Miscelanea
 //
 #include <set>
+#include <list>
 #include <boost/lexical_cast.hpp>
 #include <string>
 
@@ -46,6 +47,7 @@
 
 #include <xmltooling/util/XMLHelper.h>
 #include <xmltooling/Lockable.h>
+#include <shibsp/exceptions.h>
 
 #include <message.h>
 
@@ -64,9 +66,12 @@ namespace Config {
     static const XMLCh scheme[] =           UNICODE_LITERAL_6(s, c, h, e, m, e);
     static const XMLCh id[] =               UNICODE_LITERAL_2(i, d);
     static const XMLCh useHeaders[] =       UNICODE_LITERAL_10(u, s, e, H, e, a, d, e, r, s);
+    static const XMLCh theAttribute[] =     UNICODE_LITERAL_9(a, t, t, r, i, b, u, t, e);
+    static const XMLCh thePrefix[] =        UNICODE_LITERAL_6(p, r, e, f, i, x);
     static const XMLCh useVariables[] =     UNICODE_LITERAL_12(u, s, e, V, a, r, i, a, b, l, e, s);
     static const XMLCh Alias[] =            UNICODE_LITERAL_5(A, l, i, a, s);
     static const XMLCh Site[] =             UNICODE_LITERAL_4(S, i, t, e);
+    static const XMLCh Role[] =             UNICODE_LITERAL_4(R, o, l, e);
 
     static const char* SpoofHeaderName = "ShibSpoofCheck";
 
@@ -80,6 +85,7 @@ namespace Config {
     extern bool g_bUseHeaders;
     extern bool g_bUseVariables;
     extern vector<string> g_NoCerts;
+
 
     struct site_t {
         site_t(const DOMElement* e)
@@ -105,6 +111,22 @@ namespace Config {
     };
 
     extern map<string, site_t> g_Sites;
+
+    struct role_t {
+        role_t(const DOMElement* e)
+            : m_attribute(XMLHelper::getAttrString(e, "", theAttribute)),
+            m_prefix(XMLHelper::getAttrString(e, "", thePrefix))
+        {
+            if (m_attribute.empty()) {
+                throw ConfigurationException("<Role> attribute name should not be empty");
+            }
+        }
+        const string m_attribute;
+        const string m_prefix;
+    };
+
+    extern wstring g_authNRole;
+    extern list<role_t> g_Roles;
 }
 
 BOOL LogEvent(

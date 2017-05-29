@@ -188,20 +188,35 @@
         <element name="IIS" minOccurs="0">
           <complexType>
             <sequence>
-              <element name="Site" maxOccurs="unbounded" minOccurs="0">
-                <complexType>
-                  <sequence>
-                    <element name="Alias" type="conf:string" minOccurs="0" maxOccurs="unbounded"/>
-                  </sequence>
-                  <attribute name="id" type="unsignedInt" use="required"/>
-                  <attribute name="name" type="conf:string" use="required"/>
-                  <attribute name="port" type="unsignedInt"/>
-            <attribute name="useHeaders" type="boolean"/>
-            <attribute name="useVariables" type="boolean"/>
-                  <attribute name="sslport" type="unsignedInt"/>
-                  <attribute name="scheme" type="conf:string"/>
-                </complexType>
-              </element>
+              <choice>
+                <element name="Site" maxOccurs="unbounded" minOccurs="0">
+                  <complexType>
+                    <sequence>
+                      <element name="Alias" type="conf:string" minOccurs="0" maxOccurs="unbounded"/>
+                    </sequence>
+                    <attribute name="id" type="unsignedInt" use="required"/>
+                    <attribute name="name" type="conf:string" use="required"/>
+                    <attribute name="port" type="unsignedInt"/>
+                    <attribute name="useHeaders" type="boolean"/>
+                    <attribute name="useVariables" type="boolean"/>
+                    <attribute name="sslport" type="unsignedInt"/>
+                    <attribute name="scheme" type="conf:string"/>
+                  </complexType>
+                </element>
+                <element name="Roles" maxOccurs="unbounded" minOccurs="0">
+                  <complexType>
+                      <sequence>
+                        <element name="Role" minOccurs="0" maxOccurs="unbounded">
+                          <complexType >
+                            <attribute name="attribute" type="string" use="required"/>
+                            <attribute name="prefix" type="string" use="optional"/>
+                          </complexType>
+                        </element>
+                    </sequence>
+                    <attribute name="authNRole" type="string" use="optional"/>
+                  </complexType>
+                </element>
+              </choice>
               <any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
             </sequence>
             <attribute name="normalizeRequest" type="boolean"/>
