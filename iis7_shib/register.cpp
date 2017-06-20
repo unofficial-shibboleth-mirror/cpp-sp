@@ -150,7 +150,7 @@ RegisterModule(
             }
         }
 
-        props = props->getPropertySet("IIS");
+        props = props->getPropertySet("ISAPI");
         if (props) {
             flag = props->getBool("normalizeRequest");
             g_bNormalizeRequest = !flag.first || flag.second;

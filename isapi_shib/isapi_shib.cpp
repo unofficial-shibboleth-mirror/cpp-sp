@@ -46,6 +46,8 @@
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
+#include <xmltooling/logging.h>
+
 #include <xercesc/util/Base64.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 
@@ -69,6 +71,8 @@ namespace {
     static const XMLCh sslport[] =          UNICODE_LITERAL_7(s,s,l,p,o,r,t);
     static const XMLCh scheme[] =           UNICODE_LITERAL_6(s,c,h,e,m,e);
     static const XMLCh id[] =               UNICODE_LITERAL_2(i,d);
+    static const XMLCh useHeaders[] =       UNICODE_LITERAL_10(u, s, e, H, e, a, d, e, r, s);
+    static const XMLCh useVariables[] =     UNICODE_LITERAL_12(u, s, e, V, a, r, i, a, b, l, e, s);
     static const XMLCh Alias[] =            UNICODE_LITERAL_5(A,l,i,a,s);
     static const XMLCh Site[] =             UNICODE_LITERAL_4(S,i,t,e);
 
@@ -237,13 +241,26 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             g_bNormalizeRequest = !flag.first || flag.second;
             flag = props->getBool("safeHeaderNames");
             g_bSafeHeaderNames = flag.first && flag.second;
+            if (props->getString("useHeaders").first)
+                log4shib::Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("useHeaders attribute not valid for this filter");
+            if (props->getString("useVariables").first)
+                log4shib::Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("useVariables attribute not valid for this filter");
+
             const DOMElement* child = XMLHelper::getFirstChildElement(props->getElement(), Site);
             while (child) {
                 string id(XMLHelper::getAttrString(child, "", id));
-                if (!id.empty())
+                if (!id.empty()) {
                     g_Sites.insert(make_pair(id, site_t(child)));
+                    if (!XMLHelper::getAttrString(child, "", useHeaders).empty())
+                        log4shib::Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("useHeaders attribute not valid for this filter");
+                    if (!XMLHelper::getAttrString(child, "", useVariables).empty())
+                        log4shib::Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("useVariables attribute not valid for this filter");
+                }
                 child = XMLHelper::getNextSiblingElement(child, Site);
             }
+
+            if (nullptr != props->getPropertySet("Roles"))
+                log4shib::Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("<Roles> element not valid for this filter");
         }
     }
 
