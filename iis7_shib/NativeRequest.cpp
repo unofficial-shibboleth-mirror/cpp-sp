@@ -180,30 +180,19 @@ void NativeRequest::setHeader(const char* name, const char* value)
 void NativeRequest::setRemoteUser(const char* user)
 {
     m_remoteUser = user;
-    if (m_useHeaders) {
-        HRESULT hr;
-        if (user) {
-            hr = m_request->SetHeader("REMOTE_USER", user, static_cast<USHORT>(strlen(user)), true);
-        }
-        else {
-            hr = m_request->DeleteHeader("REMOTE_USER");
-        }
-        if (FAILED(hr)) {
-            throwError("setRemoteUser (Variable)", hr);
-        }
-    }
-    if (m_useVariables) {
-        // Setting the variable REMOTE_USER fails, so set the Principal if we are called appropriately.
-        // Getting REMOTE_USER goes via the Principal.
-        auto_ptr_XMLCh widen(user);
-        IAuthenticationProvider *auth = dynamic_cast<IAuthenticationProvider*>(m_event);
+    // Setting the variable REMOTE_USER fails, so set the Principal if we are called appropriately.
+    // Getting REMOTE_USER goes via the Principal.
+    auto_ptr_XMLCh widen(user);
+    IAuthenticationProvider *auth = dynamic_cast<IAuthenticationProvider*>(m_event);
 
-        if (auth) {
-            if (!g_authNRole.empty()) {
-                m_roles.insert(g_authNRole);
-            }
-            auth->SetUser(new ShibUser(user, m_roles));
+    if (auth) {
+        if (!g_authNRole.empty()) {
+            m_roles.insert(g_authNRole);
         }
+        auth->SetUser(new ShibUser(user, m_roles));
+    }
+    else {
+        log(SPError, "Internal Error:  setting remote user in a non AuthN Context");
     }
 }
 
