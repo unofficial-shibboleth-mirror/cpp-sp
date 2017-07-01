@@ -24,10 +24,7 @@
  *    - if it's not there we create a volatile key, write it and say "OK"
  *    - if it is there and the same then we say OK
  *    - if it is there and differs then we delete thekey (resetting the trigger) and say NOT OK
- *  
  */
-//
-//
 
 #include "RegistrySignature.h"
 

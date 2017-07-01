@@ -137,12 +137,12 @@ NativeRequest::NativeRequest(IHttpContext *pHttpContext, IHttpEventProvider *pEv
     }
 
     if (checkUser && m_useHeaders && !g_spoofKey.empty()) {
-        const string hdr = getSecureHeader(SpoofHeaderName);
+        const string hdr = getHeader(SpoofHeaderName);
         if (hdr == g_spoofKey) {
             m_firsttime = false;
         }
         if (!m_firsttime) {
-            log(SPDebug, "shib_check_user running more than once");
+            log(SPDebug, "IIS filter running more than once");
         }
     }
 }
