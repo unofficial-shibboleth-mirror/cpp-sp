@@ -23,6 +23,9 @@
 // Project
 #include "IIS7_shib.hpp"
 #include "ShibHttpModule.hpp"
+#include "../util/RegistrySignature.h"
+#include <xmltooling/logging.h>
+
 
 namespace Config {
     HINSTANCE g_hinstDLL;
@@ -86,6 +89,17 @@ RegisterModule(
                  "Reentrant filter initialization, ignoring...");
         return S_OK;
     }
+
+    RegistrySignature::CheckSigResult checkSig = RegistrySignature::CheckSignature('IIS7');
+    if (RegistrySignature::CheckSigResult::Failed == checkSig) {
+        LogEvent(nullptr, EVENTLOG_WARNING_TYPE, SHIB_NATIVE_CANNOT_CHECK_SIGNATURE, nullptr,
+                 "Couldn't Check signature");
+    }
+    else if (RegistrySignature::CheckSigResult::Mismatched == checkSig) {
+        log4shib::Category::getInstance(SHIBSP_LOGCAT ".Native").error("ISAPI Filter is already running, exiting");
+        return FALSE;
+    }
+
 
     g_Config = &SPConfig::getConfig();
     g_Config->setFeatures(
