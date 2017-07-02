@@ -21,7 +21,9 @@
     <ClCompile Include="..\..\..\iis7_shib\ShibHttpModule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\util\RegistrySignature.cpp" />
+    <ClCompile Include="..\..\..\util\RegistrySignature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\Iis7_Shib\iis7_shib.rc">
