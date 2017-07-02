@@ -112,21 +112,8 @@ namespace Config {
 
     extern map<string, site_t> g_Sites;
 
-    struct role_t {
-        role_t(const DOMElement* e)
-            : m_attribute(XMLHelper::getAttrString(e, "", theAttribute)),
-            m_prefix(XMLHelper::getAttrString(e, "", thePrefix))
-        {
-            if (m_attribute.empty()) {
-                throw ConfigurationException("<Role> attribute name should not be empty");
-            }
-        }
-        const string m_attribute;
-        const string m_prefix;
-    };
-
     extern wstring g_authNRole;
-    extern list<role_t> g_Roles;
+    extern vector<string> g_RoleAttributeNames;
 }
 
 BOOL LogEvent(

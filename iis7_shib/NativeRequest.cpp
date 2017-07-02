@@ -163,17 +163,16 @@ void NativeRequest::setHeader(const char* name, const char* value)
             throwError("setHeader (Variable)", hr);
         }
 
-        for (list<role_t>::iterator role = g_Roles.begin(); role != g_Roles.end(); ++role) {
-            if (role->m_attribute == name) {
+        for (vector<string>::iterator roleAttribute = g_RoleAttributeNames.begin(); roleAttribute != g_RoleAttributeNames.end(); ++roleAttribute) {
+            if (*roleAttribute == name) {
                 string str(value);
                 tokenizer<escaped_list_separator<char>> tok(str, escaped_list_separator<char>('\\', ';', '"'));
                 for (tokenizer<escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
-                    const xmltooling::auto_ptr_XMLCh widen(string(role->m_prefix + (*it)).c_str());
+                    const xmltooling::auto_ptr_XMLCh widen(it->c_str());
                     m_roles.insert(widen.get());
                 }
             }
         }
-
     }
 }
 

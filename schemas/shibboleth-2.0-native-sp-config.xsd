@@ -164,38 +164,29 @@
       <element name="Extensions" type="conf:ExtensionsType" minOccurs="0"/>
       <element name="ISAPI" minOccurs="0">
         <complexType>
-          <sequence maxOccurs="unbounded" minOccurs="0">
-            <choice>
-              <element name="Site">
-                <complexType>
-                  <sequence>
-                    <element name="Alias" type="conf:string" minOccurs="0" maxOccurs="unbounded"/>
-                  </sequence>
-                  <attribute name="id" type="unsignedInt" use="required"/>
-                  <attribute name="name" type="conf:string" use="required"/>
-                  <attribute name="port" type="unsignedInt"/>
-                  <attribute name="useHeaders" type="boolean"/>
-                  <attribute name="useVariables" type="boolean"/>
-                  <attribute name="sslport" type="unsignedInt"/>
-                  <attribute name="scheme" type="conf:string"/>
-                </complexType>
-              </element>
-              <element name="Roles">
-                <complexType>
-                    <sequence>
-                      <element name="Role" minOccurs="0" maxOccurs="unbounded">
-                        <complexType >
-                          <attribute name="attribute" type="string" use="required"/>
-                          <attribute name="prefix" type="string" use="optional"/>
-                        </complexType>
-                      </element>
-                  </sequence>
-                  <attribute name="authNRole" type="string" use="optional"/>
-                </complexType>
-              </element>
-            </choice>
+          <choice maxOccurs="unbounded" minOccurs="0">
+            <element name="Site">
+              <complexType>
+                <sequence>
+                  <element name="Alias" type="conf:string" minOccurs="0" maxOccurs="unbounded"/>
+                </sequence>
+                <attribute name="id" type="unsignedInt" use="required"/>
+                <attribute name="name" type="conf:string" use="required"/>
+                <attribute name="port" type="unsignedInt"/>
+                <attribute name="useHeaders" type="boolean"/>
+                <attribute name="useVariables" type="boolean"/>
+                <attribute name="sslport" type="unsignedInt"/>
+                <attribute name="scheme" type="conf:string"/>
+              </complexType>
+            </element>
+            <element name="Roles">
+              <complexType>
+                <attribute name="authNRole" type="string" use="optional"/>
+                <attribute name="roleAttributes" type="string" use="optional"/>
+              </complexType>
+            </element>
             <any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
-          </sequence>
+          </choice>
           <attribute name="normalizeRequest" type="boolean"/>
           <attribute name="safeHeaderNames" type="boolean"/>
           <attribute name="useHeaders" type="boolean"/>

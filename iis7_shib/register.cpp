@@ -19,12 +19,17 @@
 */
 
 #define _CRT_RAND_S
+// https://stackoverflow.com/questions/1301277/c-boost-whats-the-cause-of-this-warning
+
+#define _SCL_SECURE_NO_WARNINGS 1
 
 // Project
 #include "IIS7_shib.hpp"
 #include "ShibHttpModule.hpp"
 #include "../util/RegistrySignature.h"
 #include <xmltooling/logging.h>
+#pragma warning(disable: 4996)
+#include <boost/algorithm/string.hpp>
 
 
 namespace Config {
@@ -39,11 +44,12 @@ namespace Config {
     bool g_bUseHeaders = false;
     bool g_bUseVariables = true;
     vector<string> g_NoCerts;
-    list<role_t> g_Roles;
+    vector<string> g_RoleAttributeNames;
     wstring g_authNRole;
 }
 
 using namespace Config;
+
 
 static void _my_invalid_parameter_handler(
     const wchar_t * expression,
@@ -184,13 +190,14 @@ RegisterModule(
             }
             const PropertySet* roles = props->getPropertySet("Roles");
             if (roles) {
-                pair<bool, const char*> authNRoleFlag = roles->getString("authNRole");
+                const pair<bool, const char*> authNRoleFlag = roles->getString("authNRole");
                 xmltooling::auto_ptr_XMLCh rolestr(authNRoleFlag.first? authNRoleFlag.second : "ShibbolethAuthN");
                 g_authNRole = rolestr.get();
-                const DOMElement* role = XMLHelper::getFirstChildElement(roles->getElement(), Role);
-                while (role) {
-                        g_Roles.push_back(role_t(role));
-                        role = XMLHelper::getNextSiblingElement(role, Role);
+
+                const pair<bool, const char*> theRoles = roles->getString("roleAttributes");
+                if (theRoles.first) {
+#pragma warning(disable: 4996)
+                    boost::split(g_RoleAttributeNames, theRoles.second, boost::algorithm::is_space(), boost::algorithm::token_compress_on);
                 }
             }
         }
