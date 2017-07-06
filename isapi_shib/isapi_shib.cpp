@@ -178,7 +178,8 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         LogEvent(nullptr, EVENTLOG_WARNING_TYPE, SHIB_ISAPI_CANNOT_CHECK_SIGNATURE, nullptr,
                  "Couldn't Check signature");
     } else if (RegistrySignature::Mismatched == checkSig) {
-        log4shib::Category::getInstance(SHIBSP_LOGCAT ".ISAPI").error("Native Filter is already running, exiting");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_ISAPI_CANNOT_CHECK_SIGNATURE, nullptr,
+                 "Native Filter is already running, exiting");
         return FALSE;
     }
 

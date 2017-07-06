@@ -36,7 +36,7 @@ namespace RegistrySignature
         // Supress downrev (==VC2010 builds)
         return Matched;
 #else
-        const WCHAR KeyName[] = L"SOFTWARE\\Shibboleth\\IsapiPlugin";
+        const WCHAR KeyName[] = L"SOFTWARE\\Shibboleth\\PublicRWKey\\IsapiPlugin";
         const WCHAR ValueName[] = L"Signature";
 
         struct HKEY_HOLDER {

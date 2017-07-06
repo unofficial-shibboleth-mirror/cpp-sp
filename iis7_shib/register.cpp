@@ -102,10 +102,10 @@ RegisterModule(
                  "Couldn't Check signature");
     }
     else if (RegistrySignature::CheckSigResult::Mismatched == checkSig) {
-        log4shib::Category::getInstance(SHIBSP_LOGCAT ".Native").error("ISAPI Filter is already running, exiting");
+        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CANNOT_CHECK_SIGNATURE, nullptr,
+                 "ISAPI Filter is already running, exiting");
         return FALSE;
     }
-
 
     g_Config = &SPConfig::getConfig();
     g_Config->setFeatures(
