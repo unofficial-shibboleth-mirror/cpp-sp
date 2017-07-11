@@ -32,7 +32,7 @@
 <?define LibEay="libeay32_$(var.OpenSSLFileVersion).dll"?>
 <?define LibEayD="libeay32_$(var.OpenSSLFileVersion)D.dll"?>
 <?define SslEay="ssleay32_$(var.OpenSSLFileVersion).dll"?>
-<?define SslEayD="ssleay32_$(var.OpenSSLFileVersion).dll"?>
+<?define SslEayD="ssleay32_$(var.OpenSSLFileVersion)D.dll"?>
 
 <?endif ?>
 
