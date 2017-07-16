@@ -35,7 +35,6 @@
 
 using namespace Config;
 
-_Use_decl_annotations_
 NativeRequest::NativeRequest(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
     m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
     m_firsttime(true), m_gotBody(false), m_event(pEventProvider)

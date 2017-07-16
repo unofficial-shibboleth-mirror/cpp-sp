@@ -66,7 +66,7 @@ class ShibModuleFactory : public IHttpModuleFactory {
 public:
     ShibModuleFactory() {};
     virtual HRESULT GetHttpModule(
-        _Outptr_ CHttpModule **  ppModule,
+        CHttpModule **  ppModule,
         _In_ IModuleAllocator *     pAllocator
     )
     {
