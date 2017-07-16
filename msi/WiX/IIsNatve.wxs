@@ -7,7 +7,7 @@
 	    <Package Description="IISNative DownLevel Installer" InstallerVersion="301" Compressed="yes" InstallScope="perMachine" Platform="x64" />
 
 	    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-	    <MediaTemplate  EmbedCab='yes'/>
+	    <MediaTemplate  EmbedCab="yes"/>
 
         <Upgrade Id="$(var.ShibbolethUpgradeCode)">
             <UpgradeVersion Property="FOUNDSHIB" Minimum="2.6.0.0"  Maximum="2.7.0.0" OnlyDetect="yes"/>
@@ -20,19 +20,22 @@
 		    <ComponentRef Id="iis7" />
             <ComponentRef Id="iis7D"/>
             <ComponentRef Id="native_sp_config.xsd"/>
-	    </Feature>
+            <ComponentRef Id="isapi_shib64.dll"/>
+            <ComponentRef Id="isapi_shib64.dll_debug"/>
+            <ComponentRef Id="PublicRWKey"/>
+        </Feature>
 
-        <Directory Id='TARGETDIR' Name='SourceDir'>
-            <Directory Id='opt' Name='opt'>
-                <Directory Id='INSTALLDIR' Name='shibboleth-sp'/>
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="opt" Name="opt">
+                <Directory Id="INSTALLDIR" Name="shibboleth-sp"/>
             </Directory>
-            <Directory Id='CommonAppDataFolder' Name='CommonFiles' >
-                <Directory Id='Shibboleth' Name='Shibboleth' >
-                    <Directory Id='SP' Name='SP' >
-                        <Directory Id='xml' Name='xml' >
-                            <Directory Id='xml_shibboleth' Name='shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\schemas' >
-                                <Component Id='native_sp_config.xsd' Guid='{5514B435-94AB-4A92-9737-0BEB78C146C8}'>
-                                    <File KeyPath='yes' Id='native_sp_config.xsd' Name='shibboleth-2.0-native-sp-config.xsd' />
+            <Directory Id="CommonAppDataFolder" Name="CommonFiles" >
+                <Directory Id="Shibboleth" Name="Shibboleth" >
+                    <Directory Id="SP" Name="SP" >
+                        <Directory Id="xml" Name="xml" >
+                            <Directory Id="xml_shibboleth" Name="shibboleth" FileSource="$(var.SPBuildDirectory)\cpp-sp\schemas" >
+                                <Component Id="native_sp_config.xsd" Guid="{5514B435-94AB-4A92-9737-0BEB78C146C8}">
+                                    <File KeyPath="yes" Id="native_sp_config.xsd" Name="shibboleth-2.0-native-sp-config.xsd" />
                                 </Component>
                             </Directory>
                         </Directory>
@@ -41,19 +44,33 @@
             </Directory>
         </Directory>
 
-        <DirectoryRef Id='INSTALLDIR'>
+        <DirectoryRef Id="INSTALLDIR">
             <Directory Id="lib64" Name="lib64">
                 <Directory Id="lib64_shibboleth" Name="shibboleth" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release">
                     <Component Guid="{17B76ADE-0ECE-4214-809F-F32B3AB13D54}" Win64="yes" Id="iis7">
                         <File KeyPath="yes" Checksum="yes" Name="iis7_shib.dll" Id="iis7_shib_dll"/>
                     </Component>
+                    <Component Id="isapi_shib64.dll" Guid="{3BC7260B-D035-4F79-A39E-EDA0181BBB1B}" Win64="yes">
+                        <File KeyPath="yes" Checksum="yes" Id="isapi_shib64.dll" Name="isapi_shib.dll" />
+                    </Component>
                     <Directory Id="lib64_shibboleth_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Debug">
                         <Component Guid="{C6071995-5BFC-4F43-AE02-E6C6510983C5}" Win64="yes" Id="iis7D">
                             <File KeyPath="yes" Checksum="yes" Name="iis7_shib.dll"/>
                         </Component>
+                        <Component Id="isapi_shib64.dll_debug" Guid="{60BC5679-A40E-42E5-9FC0-CCE924E660ED}" Win64="yes">
+                            <File KeyPath="yes" Checksum="yes" Id="isapi_shib64.dll_debug" Name="isapi_shib.dll" />
+                        </Component>
                     </Directory>
                 </Directory>
             </Directory>
+            <Component Id="PublicRWKey" Guid="{1D9E7BAE-12FD-459C-B1BB-4B70E916B711}" Win64="yes" Permanent="yes">
+                <RegistryKey ForceCreateOnInstall="yes"  Root="HKLM" Key="SOFTWARE\Shibboleth\PublicRWKey">
+                    <Permission User="Everyone" GenericAll="yes"/>
+                    <RegistryValue KeyPath="yes" Name="KeyPath" Value="0" Type="integer">
+                        <Permission User="Everyone" GenericAll="yes"/>
+                    </RegistryValue>
+                </RegistryKey>
+            </Component>
         </DirectoryRef>
                                 
         <CustomAction Id="SetQtInstall" Property="QtInstall"
