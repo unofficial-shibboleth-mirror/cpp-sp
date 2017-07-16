@@ -186,7 +186,9 @@
     <ClCompile Include="..\..\..\adfs\adfs.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\adfs\adfs.rc" />
+    <ResourceCompile Include="..\..\..\adfs\adfs.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\adfs\Makefile.am" />

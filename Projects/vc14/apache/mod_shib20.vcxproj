@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -248,7 +248,9 @@
     <ClCompile Include="..\..\..\apache\mod_shib_20.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\apache\mod_shib_20.rc" />
+    <ResourceCompile Include="..\..\..\apache\mod_shib_20.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\apache\resource.h" />

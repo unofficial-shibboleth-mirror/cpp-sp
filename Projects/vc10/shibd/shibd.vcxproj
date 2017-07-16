@@ -214,7 +214,9 @@
     <ClCompile Include="..\..\..\shibd\shibd_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\shibd\shibd.rc" />
+    <ResourceCompile Include="..\..\..\shibd\shibd.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Projects\VC10\shibsp\shibsp.vcxproj">

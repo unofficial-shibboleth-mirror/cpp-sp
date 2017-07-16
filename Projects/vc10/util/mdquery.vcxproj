@@ -210,7 +210,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\util\mdquery.rc" />
+    <ResourceCompile Include="..\..\..\util\mdquery.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\util\resource.h" />

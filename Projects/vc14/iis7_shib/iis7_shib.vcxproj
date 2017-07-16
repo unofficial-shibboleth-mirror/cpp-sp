@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -205,8 +205,8 @@
     <ClCompile Include="..\..\..\util\RegistrySignature.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\Iis7_Shib\iis7_shib.rc">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    <ResourceCompile Include="..\..\..\Iis7_Shib\iis7_shib.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>

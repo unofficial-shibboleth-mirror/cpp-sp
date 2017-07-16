@@ -207,8 +207,8 @@
     <ClCompile Include="..\..\..\iis7_shib\ShibUser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\Iis7_Shib\iis7_shib.rc">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    <ResourceCompile Include="..\..\..\Iis7_Shib\iis7_shib.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>

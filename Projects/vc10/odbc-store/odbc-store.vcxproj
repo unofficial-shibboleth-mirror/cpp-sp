@@ -183,7 +183,9 @@
     <ClCompile Include="..\..\..\odbc-store\odbc-store.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\odbc-store\odbc-store.rc" />
+    <ResourceCompile Include="..\..\..\odbc-store\odbc-store.rc"  >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\odbc-store\resource.h" />

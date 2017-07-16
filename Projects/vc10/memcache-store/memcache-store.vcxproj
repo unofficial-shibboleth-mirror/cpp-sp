@@ -182,7 +182,9 @@
     <ClCompile Include="..\..\..\memcache-store\memcache-store.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\memcache-store\memcache-store.rc" />
+    <ResourceCompile Include="..\..\..\memcache-store\memcache-store.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\memcache-store\resource.h" />

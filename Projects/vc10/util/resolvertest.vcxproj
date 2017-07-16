@@ -213,7 +213,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\util\resolvertest.rc" />
+    <ResourceCompile Include="..\..\..\util\resolvertest.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\util\resource.h" />

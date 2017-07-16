@@ -234,7 +234,9 @@
     <ClCompile Include="..\..\..\apache\mod_shib_13.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\apache\mod_shib_13.rc" />
+    <ResourceCompile Include="..\..\..\apache\mod_shib_13.rc" >
+      <PreprocessorDefinitions>RC_FILE_VERSION=$(SPFileVersion);RC_PRODUCT_VERSION=$(SPProductVersion)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\apache\resource.h" />
