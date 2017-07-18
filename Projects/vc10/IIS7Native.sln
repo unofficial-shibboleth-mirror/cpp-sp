@@ -5,7 +5,12 @@ EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "IisNative", "iis7_shib\IisNative.wixproj", "{1A2E6C72-A43F-46C7-BDA2-F2A8C7EE2DB1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CEE84E04-6A19-4F93-8FE5-98F9D22526DD} = {CEE84E04-6A19-4F93-8FE5-98F9D22526DD}
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3} = {87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibsp-lite", "shibsp\shibsp-lite.vcxproj", "{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "isapi_shib_iis7", "iis7_shib\isapi_shib_iis7.vcxproj", "{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +31,22 @@ Global
 		{1A2E6C72-A43F-46C7-BDA2-F2A8C7EE2DB1}.Release|Win32.ActiveCfg = Release|x64
 		{1A2E6C72-A43F-46C7-BDA2-F2A8C7EE2DB1}.Release|x64.ActiveCfg = Release|x64
 		{1A2E6C72-A43F-46C7-BDA2-F2A8C7EE2DB1}.Release|x64.Build.0 = Release|x64
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Debug|Win32.Build.0 = Debug|Win32
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Debug|x64.ActiveCfg = Debug|x64
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Debug|x64.Build.0 = Debug|x64
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Release|Win32.ActiveCfg = Release|Win32
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Release|Win32.Build.0 = Release|Win32
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Release|x64.ActiveCfg = Release|x64
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7}.Release|x64.Build.0 = Release|x64
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}.Debug|Win32.Build.0 = Debug|Win32
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}.Debug|x64.ActiveCfg = Debug|x64
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}.Debug|x64.Build.0 = Debug|x64
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}.Release|Win32.ActiveCfg = Release|Win32
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}.Release|Win32.Build.0 = Release|Win32
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}.Release|x64.ActiveCfg = Release|x64
+		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

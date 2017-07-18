@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <!-- From Version -->
@@ -20,9 +20,10 @@
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <OutputPath>bin\$(Platform)\$(Configuration)\</OutputPath>
+    <OutputPath>..\..\..\msi\wix\</OutputPath>
     <IntermediateOutputPath>obj\$(Platform)\$(Configuration)\</IntermediateOutputPath>
     <DefineConstants>ShibbolethUpgradeCode=$(ShibbolethUpgradeCode);MsVCVersion=vc10;SPBuildDirectory=$(SolutionDir)..\..\..\</DefineConstants>
+    <LeaveTemporaryFiles>False</LeaveTemporaryFiles>
   </PropertyGroup>
   <ItemGroup>
     <WixExtension Include="WixUtilExtension">
@@ -35,7 +36,7 @@
     </WixExtension>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="IIsNatve.wxs" />
+    <Compile Include="..\..\..\msi\wix\IIsNatve.wxs" />
   </ItemGroup>
   <Import Project="$(WixTargetsPath)" />
   <!--
