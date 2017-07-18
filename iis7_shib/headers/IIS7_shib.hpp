@@ -66,8 +66,6 @@ namespace Config {
     static const XMLCh scheme[] =           UNICODE_LITERAL_6(s, c, h, e, m, e);
     static const XMLCh id[] =               UNICODE_LITERAL_2(i, d);
     static const XMLCh useHeaders[] =       UNICODE_LITERAL_10(u, s, e, H, e, a, d, e, r, s);
-    static const XMLCh theAttribute[] =     UNICODE_LITERAL_9(a, t, t, r, i, b, u, t, e);
-    static const XMLCh thePrefix[] =        UNICODE_LITERAL_6(p, r, e, f, i, x);
     static const XMLCh useVariables[] =     UNICODE_LITERAL_12(u, s, e, V, a, r, i, a, b, l, e, s);
     static const XMLCh Alias[] =            UNICODE_LITERAL_5(A, l, i, a, s);
     static const XMLCh Site[] =             UNICODE_LITERAL_4(S, i, t, e);

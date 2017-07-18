@@ -78,6 +78,7 @@ NativeRequest::NativeRequest(IHttpContext *pHttpContext, IHttpEventProvider *pEv
         // ServerVariable SERVER_NAME is what the client sent.  So use the IIS site name (which needs to have been set to something sensible)
         m_hostname = converter.to_bytes(m_ctx->GetSite()->GetSiteName());
         to_lower(m_hostname);
+        log(SPRequest::SPDebug, "Host name: " + m_hostname);
 
         m_useHeaders = g_bUseHeaders;
         m_useVariables = g_bUseVariables;
