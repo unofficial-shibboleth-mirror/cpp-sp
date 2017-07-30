@@ -199,6 +199,8 @@ RegisterModule(
 #pragma warning(disable: 4996)
                     boost::split(g_RoleAttributeNames, theRoles.second, boost::algorithm::is_space(), boost::algorithm::token_compress_on);
                 }
+            } else {
+                g_authNRole = L"ShibbolethAuthN";
             }
         }
     }
