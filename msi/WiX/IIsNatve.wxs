@@ -2,11 +2,11 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
     <Product Id="*" Name="Shibboleth IIS native server support: Downlevel installer " Language="1033" 
-                Version="0.1.0.0" Manufacturer="Shibboleth Consortium"
+                Version="0.2.0.0" Manufacturer="Shibboleth Consortium"
                 UpgradeCode="5d2542f1-deb7-41ef-a20f-4f85e5f66a71">
 	    <Package Description="IISNative DownLevel Installer" InstallerVersion="301" Compressed="yes" InstallScope="perMachine" Platform="x64" />
 
-	    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+	    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowSameVersionUpgrades="yes" MigrateFeatures='yes' />
 	    <MediaTemplate  EmbedCab="yes"/>
 
         <Upgrade Id="$(var.ShibbolethUpgradeCode)">
@@ -83,10 +83,10 @@
         <CustomAction Id="QtUninstall" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="deferred" Impersonate="no" />
 
         <InstallExecuteSequence>
-            <Custom Action="SetQtInstall" After="InstallFiles">NOT Installed</Custom>
-            <Custom Action="QtInstall" After="SetQtInstall">NOT Installed</Custom>
-            <Custom Action="SetQtUninstall" After="CostInitialize">Installed</Custom>
-            <Custom Action="QtUninstall" Before="RemoveFiles">Installed</Custom>
+            <Custom Action="SetQtInstall" After="InstallFiles">$iis7 = 3</Custom> <!-- action = local == install -->
+            <Custom Action="QtInstall" After="SetQtInstall">$iis7 = 3</Custom>
+            <Custom Action="SetQtUninstall" After="CostFinalize">$iis7 = 2</Custom><!-- action = absent == uninstall -->
+            <Custom Action="QtUninstall" Before="RemoveFiles">$iis7 = 2</Custom>
         </InstallExecuteSequence>
 
         <!-- From ShibbolethSP-noarch -->
