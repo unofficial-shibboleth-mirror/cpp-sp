@@ -157,13 +157,19 @@ Xerces-x64.msm: Xerces-x64.wixobj
 	light Xerces-x64.wixobj
 	del ..\*64*.msi
 
-Xerces-x86.wixobj: Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)\Build\Win32\$(MsVCVersion)\Release\xerces-c_$(XercesFileVersion).dll Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)\Build\Win32\$(MsVCVersion)\Debug\xerces-c_$(XercesFileVersion)D.dll
-	wixcop -indent:2 Xerces-x86.wxs 
-	candle Xerces-x86.wxs -dBuildDirectory=$(BuildSP) -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) -dXerces32Component=$(Xerces32Component) -dXerces32Componentd=$(Xerces32Componentd) -dShibbolethMsVersion=$(MsVCVersion) 
+XercesDll32=$(BuildSP)$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
+XercesDebugDll32=$(BuildSP)$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
 
-Xerces-x64.wixobj: Xerces-x64.wxs $(BuildSP)\xerces-c-$(XercesVersion)\Build\Win64\$(MsVCVersion)\Release\xerces-c_$(XercesFileVersion).dll Xerces-x86.wxs $(BuildSP)\xerces-c-$(XercesVersion)\Build\Win64\$(MsVCVersion)\Debug\xerces-c_$(XercesFileVersion)D.dll
+Xerces-x86.wixobj: Xerces-x86.wxs $(XercesDll32) Xerces-x86.wxs $(XercesDebugDll32)
+	wixcop -indent:2 Xerces-x86.wxs 
+	candle Xerces-x86.wxs -dBuildDirectory=$(BuildSP) -dXercesDll=$(XercesDll32) -dXercesDebugDll=$(XercesDebugDll32) -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) -dXerces32Component=$(Xerces32Component) -dXerces32Componentd=$(Xerces32Componentd) -dShibbolethMsVersion=$(MsVCVersion) 
+
+XercesDll64=$(BuildSP)$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
+XercesDebugDll64=$(BuildSP)$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
+
+Xerces-x64.wixobj: Xerces-x64.wxs $(XercesDll64) Xerces-x86.wxs $(XercesDebugDll64)
 	wixcop -indent:2 Xerces-x64.wxs 
-	candle Xerces-x64.wxs -dBuildDirectory=$(BuildSP) -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) -dXerces64Component=$(Xerces64Component) -dXerces64Componentd=$(Xerces64Componentd) -dShibbolethMsVersion=$(MsVCVersion) 
+	candle Xerces-x64.wxs -dBuildDirectory=$(BuildSP) -dXercesDll=$(XercesDll64) -dXercesDebugDll=$(XercesDebugDll64) -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) -dXerces64Component=$(Xerces64Component) -dXerces64Componentd=$(Xerces64Componentd) -dShibbolethMsVersion=$(MsVCVersion) 
 
 
 #

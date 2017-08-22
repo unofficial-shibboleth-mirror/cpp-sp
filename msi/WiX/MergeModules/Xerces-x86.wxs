@@ -27,13 +27,11 @@
           <Directory Id='shibboleth_sp' Name='SP'>
             <Directory Id='lib' Name='lib'>
               <Component Id='xercesc.dll' Guid='$(var.Xerces32Component)'>
-                <File KeyPath='yes' Checksum='yes'
-                      Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)\Build\Win32\$(var.ShibbolethMsVersion)\Release\xerces-c_$(var.XercesFileVersion).dll'/>
+                <File KeyPath='yes' Checksum='yes' Source='$(var.XercesDll)'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='xercescD.dll' Guid='$(var.Xerces32Componentd)'>
-                  <File KeyPath='yes' Checksum='yes'
-                        Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)\Build\Win32\$(var.ShibbolethMsVersion)\Debug\xerces-c_$(var.XercesFileVersion)D.dll'/>
+                  <File KeyPath='yes' Checksum='yes' Source='$(var.XercesDebugDll)'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
