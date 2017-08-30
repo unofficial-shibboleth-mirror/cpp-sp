@@ -158,7 +158,7 @@ void NativeRequest::setHeader(const char* name, const char* value)
     }
     if (m_useVariables) {
         const auto_ptr_XMLCh widen(value); // TODO : use a converter?
-        const HRESULT hr(m_ctx->SetServerVariable(const_cast<char*>(name), widen.get()));
+        const HRESULT hr(m_ctx->SetServerVariable(const_cast<char*>(name), reinterpret_cast<PCWSTR>(widen.get())));
         if (FAILED(hr)) {
             throwError("setHeader (Variable)", hr);
         }
@@ -169,7 +169,7 @@ void NativeRequest::setHeader(const char* name, const char* value)
                 tokenizer<escaped_list_separator<char>> tok(str, escaped_list_separator<char>('\\', ';', '"'));
                 for (tokenizer<escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
                     const xmltooling::auto_ptr_XMLCh widen(it->c_str());
-                    m_roles.insert(widen.get());
+                    m_roles.insert(reinterpret_cast<PCWSTR>(widen.get()));
                 }
             }
         }

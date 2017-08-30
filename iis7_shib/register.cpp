@@ -192,7 +192,7 @@ RegisterModule(
             if (roles) {
                 const pair<bool, const char*> authNRoleFlag = roles->getString("authNRole");
                 xmltooling::auto_ptr_XMLCh rolestr(authNRoleFlag.first? authNRoleFlag.second : "ShibbolethAuthN");
-                g_authNRole = rolestr.get();
+                g_authNRole = reinterpret_cast<PCWSTR>(rolestr.get());
 
                 const pair<bool, const char*> theRoles = roles->getString("roleAttributes");
                 if (theRoles.first) {

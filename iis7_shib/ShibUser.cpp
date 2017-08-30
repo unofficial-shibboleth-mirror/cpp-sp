@@ -29,13 +29,13 @@ ShibUser::ShibUser(std::string name, set<wstring> roles) : m_refCount(1), m_wide
 PCWSTR
 ShibUser::GetRemoteUserName(VOID)
 {
-    return m_widen.get();
+    return reinterpret_cast<PCWSTR>(m_widen.get());
 }
 
 PCWSTR
 ShibUser::GetUserName(VOID)
 {
-    return m_widen.get();
+    return reinterpret_cast<PCWSTR>(m_widen.get());
 }
 
 PCWSTR
