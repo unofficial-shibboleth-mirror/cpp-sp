@@ -16,21 +16,11 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?if $(var.OpenSSLV1Libs) = "1" ?>
+<?define ReleaseDllDir="builds\libcurl-$(var.ShibbolethMsVersion)-x64-release-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
+<?define ReleaseExeDir="builds\libcurl-$(var.ShibbolethMsVersion)-x64-release-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
+<?define DebugDllDir="builds\libcurl-$(var.ShibbolethMsVersion)-x64-debug-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
+<?define DebugExeDir="builds\libcurl-$(var.ShibbolethMsVersion)-x64-debug-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
 
-<?define ReleaseDllDir="builds\libcurl-vc14-x64-release-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
-<?define ReleaseExeDir="builds\libcurl-vc14-x64-release-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
-<?define DebugDllDir="builds\libcurl-vc14-x64-debug-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
-<?define DebugExeDir="builds\libcurl-vc14-x64-debug-dll-ssl-dll-zlib-dll-ipv6-sspi\bin"?>
-
-<?else ?>
-
-<?define ReleaseDllDir="lib\release-dll-ssl-dll-zlib-dll.x64"?>
-<?define DebugDllDir="lib\debug-dll-ssl-dll-zlib-dll.x64"?>
-<?define ReleaseExeDir="src\release.x64"?>
-<?define DebugExeDir="src\debug"?>
-
-<?endif ?>
 
 <Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
   <Module Id='CurlMergeModule_x64' Language='1033' Version='$(var.CurlVersion)'>

@@ -48,19 +48,13 @@
           <Component Id='isapi_shib.dll' Guid='{716D6F4F-4185-4219-B1BA-1D15F867926E}'>
             <File KeyPath='yes' Checksum='yes' Name='isapi_shib.dll' />
           </Component>
-          <Component Id='mod_shib_13.so' Guid='{5C85940B-7644-4AA4-9948-9EFFC1729EFB}'>
-            <File KeyPath='yes' Checksum='yes' Name='mod_shib_13.so' />
-          </Component>
-          <Component Id='mod_shib_20.so' Guid='{FFC2D560-FD06-42BB-9EA7-B0CC988AC4A6}'>
-            <File KeyPath='yes' Checksum='yes' Name='mod_shib_20.so' />
-          </Component>
           <Component Id='mod_shib_22.so' Guid='{BB889066-3EF2-43C5-BC4D-CD6B1DC4AE7B}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_22.so' />
           </Component>
           <Component Id='mod_shib_24.so' Guid='{8CAE4DF0-C8A8-4A48-A213-F4B3AFE6F439}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_24.so' />
           </Component>
-          <?if $(var.MsVCVersion) != "vc14" ?>
+          <?if $(var.NSApi) != "" ?>
           <Component Id='nsapi_shib.dll' Guid='{F199DD8A-292F-4C7D-AACB-7283852D6335}'>
             <File KeyPath='yes' Checksum='yes' Name='nsapi_shib.dll' />
           </Component>
@@ -74,12 +68,14 @@
           <Component Id='plugins_lite.so' Guid='{FF18A6B4-EDC7-4A9A-8BFE-C166DCE5243E}'>
             <File KeyPath='yes' Checksum='yes' Name='plugins-lite.so' />
           </Component>
+          <?if $(var.FCGI) != "" ?>
           <Component Id='shibauthorizer.exe' Guid='{7C7C1C24-902A-4003-AE59-599E79161782}'>
             <File KeyPath='yes' Checksum='yes' Name='shibauthorizer.exe' />
           </Component>
           <Component Id='shibresponder.exe' Guid='{510267D9-61F2-47EF-99D2-CB3D21CB14EB}'>
             <File KeyPath='yes' Checksum='yes' Name='shibresponder.exe' />
           </Component>
+          <?endif?>
           <Directory Id='lib_shibboleth_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Debug'>
             <Component Id='adfs.so_debug' Guid='{9B8E071F-B251-4373-A786-8966FD0D22EF}'>
               <File KeyPath='yes' Checksum='yes' Id='adfs.so_debug' Name='adfs.so' />
@@ -90,19 +86,13 @@
             <Component Id='isapi_shib.dll_debug' Guid='{F8212D30-0BA8-4F02-B595-E8E5D312342B}'>
               <File KeyPath='yes' Checksum='yes' Id='isapi_shib.dll_debug' Name='isapi_shib.dll' />
             </Component>
-            <Component Id='mod_shib_13.so_debug' Guid='{E8B798AB-D772-428D-8033-2A77CB437CF0}'>
-              <File KeyPath='yes' Checksum='yes' Id='mod_shib_13.so_debug' Name='mod_shib_13.so' />
-            </Component>
-            <Component Id='mod_shib_20.so_debug' Guid='{468806BF-6924-47D5-B319-608C2D63FDDC}'>
-              <File KeyPath='yes' Checksum='yes' Id='mod_shib_20.so_debug' Name='mod_shib_20.so' />
-            </Component>
             <Component Id='mod_shib_22.so_debug' Guid='{3DA4492F-C0EA-4286-9C37-13F82342FA67}'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_22.so_debug' Name='mod_shib_22.so' />
             </Component>
             <Component Id='mod_shib_24.so_debug' Guid='{E04003DF-8C61-4C9E-87AB-89223C5E65DC}'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_24.so_debug' Name='mod_shib_24.so' />
             </Component>
-            <?if $(var.MsVCVersion) != "vc14" ?>
+            <?if $(var.NSApi) != "" ?>
             <Component Id='nsapi_shib.dll_debug' Guid='{492A5D72-4FE0-417E-9023-311E1BF34816}'>
               <File KeyPath='yes' Checksum='yes' Id='nsapi_shib.dll_debug' Name='nsapi_shib.dll' />
             </Component>
@@ -116,12 +106,14 @@
             <Component Id='plugins_lite.so_debug' Guid='{83A9DA0D-774C-4F96-9446-D5A1B61BB4A2}'>
               <File KeyPath='yes' Checksum='yes' Id='plugins_lite.so_debug' Name='plugins-lite.so' />
             </Component>
+            <?if $(var.FCGI) != "" ?>
             <Component Id='shibauthorizer.exe_debug' Guid='{83360639-DDC0-4B76-8168-21FB77EE6CD6}'>
               <File KeyPath='yes' Checksum='yes' Id='shibauthorizer.exe_debug' Name='shibauthorizer.exe' />
             </Component>
             <Component Id='shibresponder.exe_debug' Guid='{760124EA-67E5-4393-B3DF-657DCC92F04C}'>
               <File KeyPath='yes' Checksum='yes' Id='shibresponder.exe_debug' Name='shibresponder.exe' />
             </Component>
+            <?endif?>
           </Directory><!-- lib_shibboleth_debug -->
         </Directory><!-- lib_shibboleth -->
       </Directory><!-- lib -->

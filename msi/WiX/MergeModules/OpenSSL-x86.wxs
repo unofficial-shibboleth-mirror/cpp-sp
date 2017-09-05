@@ -16,25 +16,12 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<?if $(var.OpenSSLV1Libs) = "1" ?>
-
 <?define ReleaseDir="x86\bin"?>
 <?define DebugDir="x86Debug\bin"?>
 <?define LibEay="libcrypto-$(var.OpenSSLFileVersion).dll"?>
 <?define LibEayD="libcrypto-$(var.OpenSSLFileVersion)D.dll"?>
 <?define SslEay="libssl-$(var.OpenSSLFileVersion).dll"?>
 <?define SslEayD="libssl-$(var.OpenSSLFileVersion)D.dll"?>
-
-<?else ?>
-
-<?define ReleaseDir="out64dll"?>
-<?define DebugDir="out64dll.dbg"?>
-<?define LibEay="libeay32_$(var.OpenSSLFileVersion).dll"?>
-<?define LibEayD="libeay32_$(var.OpenSSLFileVersion)D.dll"?>
-<?define SslEay="ssleay32_$(var.OpenSSLFileVersion).dll"?>
-<?define SslEayD="ssleay32_$(var.OpenSSLFileVersion)D.dll"?>
-
-<?endif ?>
 
 
 

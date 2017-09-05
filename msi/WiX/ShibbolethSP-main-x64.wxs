@@ -53,7 +53,9 @@
       <Directory Id='ProgramFilesFolder' Name='PFiles'>
         <!-- 32 bit merge modules -notionally go to "Program Files (x86)" -->
         <Merge Id='CurlMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Curl-x86.msm' DiskId='1' />
+        <?if $(var.FCGI) != "" ?>
         <Merge Id='FastCGIMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\FastCGI-x86.msm' DiskId='1' />
+        <?endif?>
         <Merge Id='Log4ShibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Log4Shib-x86.msm' DiskId='1' />
         <Merge Id='OpenSAMLMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-x86.msm' DiskId='1' />
         <Merge Id='OpenSAMLMergeModule_schemas' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-schemas.msm' DiskId='1' />
@@ -63,14 +65,16 @@
         <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm' DiskId='1' />
         <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm' DiskId='1' />
-        <Merge Id='Microsoft_DebugCRT_x86' Language='1033' SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_DebugCRT_x86.msm' DiskId='1' />
-        <Merge Id='Microsoft_CRT_x86' Language='1033' SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_CRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_DebugCRT_x86' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.MsVCVersion)0_DebugCRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_CRT_x86' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.MsVCVersion)0_CRT_x86.msm' DiskId='1' />
       </Directory><!--ProgramFilesFolder-->
 
       <Directory Id='ProgramFiles64Folder' Name='PFiles'>
         <!-- 64 bit merge modules notionally go to "Program Files" -->
         <Merge Id='CurlMergeModule_x64' Language='1033' SourceFile='MergeModules\Curl-x64.msm' DiskId='1' />
+        <?if $(var.FCGI) != "" ?>
         <Merge Id='FastCGIMergeModule_x64' Language='1033' SourceFile='MergeModules\FastCGI-x64.msm' DiskId='1' />
+        <?endif?>
         <Merge Id='Log4ShibMergeModule_x64' Language='1033' SourceFile='MergeModules\Log4Shib-x64.msm' DiskId='1' />
         <Merge Id='OpenSAMLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSAML-x64.msm' DiskId='1' />
         <Merge Id='OpenSSLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSSL-x64.msm' DiskId='1' />
@@ -78,8 +82,8 @@
         <Merge Id='XercesMergeModule_x64' Language='1033' SourceFile='MergeModules\Xerces-x64.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x64' Language='1033' SourceFile='MergeModules\XmlSec-x64.msm' DiskId='1' />
         <Merge Id='ZlibMergeModule_x64' Language='1033' SourceFile='MergeModules\Zlib-x64.msm' DiskId='1' />
-        <Merge Id='Microsoft_DebugCRT_x64' Language='1033' SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_DebugCRT_x64.msm' DiskId='1' />
-        <Merge Id='Microsoft_CRT_x64' Language='1033' SourceFile='C:\Program Files (x86)\Common Files\Merge Modules\Microsoft_$(var.MsVCVersion)0_CRT_x64.msm' DiskId='1' />
+        <Merge Id='Microsoft_DebugCRT_x64' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.MsVCVersion)0_DebugCRT_x64.msm' DiskId='1' />
+        <Merge Id='Microsoft_CRT_x64' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.MsVCVersion)0_CRT_x64.msm' DiskId='1' />
       </Directory><!--ProgramFiles64Folder-->
 
       <!-- PATH -->
@@ -102,7 +106,9 @@
 
     <Feature Id='Shibboleth' Title='Shibboleth' Level='1' Display='hidden' ConfigurableDirectory='INSTALLDIR'>
       <MergeRef Id='CurlMergeModule_x86'/>
+      <?if $(var.FCGI) != "" ?>
       <MergeRef Id='FastCGIMergeModule_x86'/>
+      <?endif?>
       <MergeRef Id='Log4ShibMergeModule_x86'/>
       <MergeRef Id='OpenSAMLMergeModule_x86'/>
       <MergeRef Id='OpenSAMLMergeModule_schemas'/>
@@ -117,7 +123,9 @@
       <MergeRef Id='Microsoft_CRT_x86'/>
 
       <MergeRef Id='CurlMergeModule_x64'/>
+      <?if $(var.FCGI) != "" ?>
       <MergeRef Id='FastCGIMergeModule_x64'/>
+      <?endif?>
       <MergeRef Id='Log4ShibMergeModule_x64'/>
       <MergeRef Id='OpenSAMLMergeModule_x64'/>
       <MergeRef Id='OpenSSLMergeModule_x64'/>
@@ -144,8 +152,10 @@
       <ComponentRef Id='odbc_store64.so'/>
       <ComponentRef Id='plugins64.so'/>
       <ComponentRef Id='plugins_lite64.so'/>
+      <?if $(var.FCGI) != "" ?>
       <ComponentRef Id='shibauthorizer64.exe'/>
       <ComponentRef Id='shibresponder64.exe'/>
+      <?endif?>
 
       <ComponentRef Id='adfs64.so_debug'/>
       <ComponentRef Id='adfs_lite64.so_debug'/>
@@ -155,8 +165,10 @@
       <ComponentRef Id='odbc_store64.so_debug'/>
       <ComponentRef Id='plugins64.so_debug'/>
       <ComponentRef Id='plugins_lite64.so_debug'/>
+      <?if $(var.FCGI) != "" ?>
       <ComponentRef Id='shibauthorizer64.exe_debug'/>
       <ComponentRef Id='shibresponder64.exe_debug'/>
+      <?endif?>
 
       <ComponentRef Id='shibd64.exe'/>
       <ComponentRef Id='shibd64.exe_debug'/>

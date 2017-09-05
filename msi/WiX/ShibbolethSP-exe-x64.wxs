@@ -63,12 +63,14 @@
           <Component Id='plugins_lite64.so' Guid='{83CA3D25-2370-426A-9747-B8A74EFC9037}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='plugins_lite64.so' Name='plugins-lite.so' />
           </Component>
+          <?if $(var.FCGI) != "" ?>
           <Component Id='shibauthorizer64.exe' Guid='{5A323F4F-AE87-451A-9253-1965E46C9C5F}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='shibauthorizer64.exe' Name='shibauthorizer.exe' />
           </Component>
           <Component Id='shibresponder64.exe' Guid='{538D6EEC-1AE1-400B-94AF-2B7791BFEBDA}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='shibresponder64.exe' Name='shibresponder.exe' />
           </Component>
+          <?endif?>
           <Directory Id='lib64_shibboleth_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Debug'>
             <Component Id='adfs64.so_debug' Guid='{BFF58DDD-CF04-49B1-A172-C84087705D2A}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='adfs64.so_debug' Name='adfs.so' />
@@ -94,12 +96,14 @@
             <Component Id='plugins_lite64.so_debug' Guid='{3A05BDF3-12C8-4502-A30D-7C8B9C7A5855}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='plugins_lite64.so_debug' Name='plugins-lite.so' />
             </Component>
+            <?if $(var.FCGI) != "" ?>
             <Component Id='shibauthorizer64.exe_debug' Guid='{642C9137-66C8-4E2E-A76C-4D9F65B17157}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='shibauthorizer64.exe_debug' Name='shibauthorizer.exe' />
             </Component>
             <Component Id='shibresponder64.exe_debug' Guid='{7947F31A-1429-44FC-85B2-BF1E7AA50D20}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='shibresponder64.exe_debug' Name='shibresponder.exe' />
             </Component>
+            <?endif?>
           </Directory><!-- lib_shibboleth_debug -->
         </Directory><!-- lib_shibboleth -->
       </Directory><!-- lib -->
