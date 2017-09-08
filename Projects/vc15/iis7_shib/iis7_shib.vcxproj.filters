@@ -15,13 +15,13 @@
     <ClCompile Include="..\..\..\iis7_shib\ShibUser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\iis7_shib\NativeRequest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\iis7_shib\ShibHttpModule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\util\RegistrySignature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\iis7_shib\IIS7Request.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -34,9 +34,6 @@
     <ClInclude Include="..\..\..\iis7_shib\resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\iis7_shib\headers\NativeRequest.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\iis7_shib\headers\IIS7_shib.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -44,6 +41,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\iis7_shib\headers\ShibUser.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\iis7_shib\headers\IIS7Request.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

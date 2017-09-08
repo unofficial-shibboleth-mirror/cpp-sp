@@ -24,7 +24,7 @@
 
 #include <xmltooling/util/NDC.h>
 #include "ShibHttpModule.hpp"
-#include "NativeRequest.hpp"
+#include "IIS7Request.hpp"
 
 using namespace Config;
 
@@ -39,7 +39,7 @@ ShibHttpModule::DoHandler(
     xmltooling::NDC ndc(threadid.c_str());
 
     // TODO the handler and the Filter both use the same class.  Should it?
-    NativeRequest handler(pHttpContext, pProvider, false);
+    IIS7Request handler(pHttpContext, pProvider, false);
 
     pair<bool, long> res = handler.getServiceProvider().doHandler(handler);
 
@@ -62,7 +62,7 @@ ShibHttpModule::DoFilter(
     xmltooling::NDC ndc(threadid.c_str());
 
     // TODO Different class?
-    NativeRequest filter(pHttpContext, pProvider, true);
+    IIS7Request filter(pHttpContext, pProvider, true);
 
     pair<bool, long> res = filter.getServiceProvider().doAuthentication(filter);
     if (res.first) {

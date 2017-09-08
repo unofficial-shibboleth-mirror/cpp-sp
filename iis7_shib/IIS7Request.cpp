@@ -29,13 +29,13 @@
 #include <shibsp/exceptions.h>
 
 #include <codecvt> // 16 bit to 8 bit chars
-#include "NativeRequest.hpp"
+#include "IIS7Request.hpp"
 #include "ShibHttpModule.hpp"
 #include "ShibUser.hpp"
 
 using namespace Config;
 
-NativeRequest::NativeRequest(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
+IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
     m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
     m_firsttime(true), m_gotBody(false), m_event(pEventProvider)
 {
@@ -147,7 +147,7 @@ NativeRequest::NativeRequest(IHttpContext *pHttpContext, IHttpEventProvider *pEv
     }
 }
 
-void NativeRequest::setHeader(const char* name, const char* value)
+void IIS7Request::setHeader(const char* name, const char* value)
 {
     if (m_useHeaders) {
         const string hdr = g_bSafeHeaderNames ? makeSafeHeader(name) : (string(name) + ':');
@@ -176,7 +176,7 @@ void NativeRequest::setHeader(const char* name, const char* value)
     }
 }
 
-void NativeRequest::setRemoteUser(const char* user)
+void IIS7Request::setRemoteUser(const char* user)
 {
     m_remoteUser = user;
     // Setting the variable REMOTE_USER fails, so set the Principal if we are called appropriately.
@@ -195,7 +195,7 @@ void NativeRequest::setRemoteUser(const char* user)
     }
 }
 
-const vector<string>& NativeRequest::getClientCertificates() const
+const vector<string>& IIS7Request::getClientCertificates() const
 // TODO test - all the calls are commented out.
 {
     if (m_certs.empty()) {
@@ -223,12 +223,12 @@ const vector<string>& NativeRequest::getClientCertificates() const
     return m_certs;
 }
 
-const char* NativeRequest::getMethod() const
+const char* IIS7Request::getMethod() const
 {
     return m_request->GetHttpMethod();
 }
 
-void NativeRequest::clearHeader(const char* rawname, const char* cginame)
+void IIS7Request::clearHeader(const char* rawname, const char* cginame)
 {
     if (m_useHeaders) {
         if (g_checkSpoofing && m_firsttime) {
@@ -253,24 +253,24 @@ void NativeRequest::clearHeader(const char* rawname, const char* cginame)
     }
 }
 
-long NativeRequest::returnDecline()
+long IIS7Request::returnDecline()
 {
     return RQ_NOTIFICATION_CONTINUE;
 }
 
-long NativeRequest::returnOK()
+long IIS7Request::returnOK()
 {
     return RQ_NOTIFICATION_CONTINUE;
 }
 
-void NativeRequest::log(SPLogLevel level, const string& msg) const
+void IIS7Request::log(SPLogLevel level, const string& msg) const
 {
     AbstractSPRequest::log(level, msg);
     if (level >= SPCrit)
         LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CRITICAL, nullptr, msg.c_str());
 }
 
-string NativeRequest::getRemoteAddr() const
+string IIS7Request::getRemoteAddr() const
 {
     string ret = AbstractSPRequest::getRemoteAddr();
     if (ret.empty()) {
@@ -284,7 +284,7 @@ string NativeRequest::getRemoteAddr() const
     return ret;
 }
 
-string NativeRequest::getSecureHeader(const char* name) const
+string IIS7Request::getSecureHeader(const char* name) const
 {
     string hdr = g_bSafeHeaderNames ? makeSafeHeader(name) : (string(name) + ':');
     PCSTR p = m_request->GetHeader(hdr.c_str());
@@ -293,22 +293,22 @@ string NativeRequest::getSecureHeader(const char* name) const
 //
 // XMLTooling::GenericRequest
 //
-const char* NativeRequest::getScheme() const
+const char* IIS7Request::getScheme() const
 {
     return m_SSL ? "https" : "http";
 }
 
-const char* NativeRequest::getHostname() const
+const char* IIS7Request::getHostname() const
 {
     return m_hostname.c_str();
 }
 
-int NativeRequest::getPort() const
+int IIS7Request::getPort() const
 {
     return m_port;
 }
 
-string NativeRequest::getContentType() const
+string IIS7Request::getContentType() const
 {
     PCSTR type;
     DWORD len;
@@ -319,7 +319,7 @@ string NativeRequest::getContentType() const
     return "";
 }
 
-long NativeRequest::getContentLength() const
+long IIS7Request::getContentLength() const
 {
     PCSTR length;
     DWORD len;
@@ -330,7 +330,7 @@ long NativeRequest::getContentLength() const
     return 0;
 }
 
-string NativeRequest::getRemoteUser() const
+string IIS7Request::getRemoteUser() const
 {
     if (!m_remoteUser.empty()) {
         return m_remoteUser;
@@ -340,7 +340,7 @@ string NativeRequest::getRemoteUser() const
     return m_remoteUser;
 }
 
-const char* NativeRequest::getRequestBody() const
+const char* IIS7Request::getRequestBody() const
 {
     if (m_gotBody) {
         return m_body.c_str();
@@ -373,7 +373,7 @@ const char* NativeRequest::getRequestBody() const
 //
 // XMLTooing:: HTTPRequest
 //
-const char* NativeRequest::getQueryString() const
+const char* IIS7Request::getQueryString() const
 {
     PCSTR qs;
     DWORD len;
@@ -384,14 +384,14 @@ const char* NativeRequest::getQueryString() const
     return "";
 }
 
-string NativeRequest::getHeader(const char* name) const
+string IIS7Request::getHeader(const char* name) const
 {
     PCSTR p = m_request->GetHeader(name);
     return  (nullptr == p) ? "" : p;
 }
 
 // XMLTooing:: HTTPResponse, GenericResponse
-long NativeRequest::sendResponse(istream& in, long status)
+long IIS7Request::sendResponse(istream& in, long status)
 {
     const char* codestr="200 OK";
     switch (status) {
@@ -431,7 +431,7 @@ long NativeRequest::sendResponse(istream& in, long status)
 }
 
 // XMLTooing:: HTTPResponse
-void NativeRequest::setResponseHeader(const char* name, const char* value)
+void IIS7Request::setResponseHeader(const char* name, const char* value)
 {
     HTTPResponse::setResponseHeader(name, value);
 
@@ -449,7 +449,7 @@ void NativeRequest::setResponseHeader(const char* name, const char* value)
     }
 }
 
-long NativeRequest::sendRedirect(const char* url)
+long IIS7Request::sendRedirect(const char* url)
 {
     HTTPResponse::sendRedirect(url);
     HRESULT hr = m_response->Redirect(url);
@@ -460,7 +460,7 @@ long NativeRequest::sendRedirect(const char* url)
     return RQ_NOTIFICATION_FINISH_REQUEST;
 }
 
-string NativeRequest::makeSafeHeader(const char* rawname) const
+string IIS7Request::makeSafeHeader(const char* rawname) const
 {
     string hdr;
     for (; *rawname; ++rawname) {
@@ -471,7 +471,7 @@ string NativeRequest::makeSafeHeader(const char* rawname) const
 }
 
 // TODO We need a strategy for what is logged, what is fatal and how.
-void NativeRequest::logFatal(const string& operation, HRESULT hr) const
+void IIS7Request::logFatal(const string& operation, HRESULT hr) const
 {
     string msg(operation + " failed: " + lexical_cast<string>(hr));
     LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CRITICAL, nullptr, msg.c_str());
@@ -480,7 +480,7 @@ void NativeRequest::logFatal(const string& operation, HRESULT hr) const
     }
 }
 
-void NativeRequest::throwError(const string& operation, HRESULT hr) const
+void IIS7Request::throwError(const string& operation, HRESULT hr) const
 {
     string msg(operation + " failed: " + lexical_cast<string>(hr));
     throw IOException(msg.c_str());

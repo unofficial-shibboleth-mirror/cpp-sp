@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -198,7 +198,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\iis7_shib\NativeRequest.cpp" />
+    <ClCompile Include="..\..\..\iis7_shib\IIS7Request.cpp" />
     <ClCompile Include="..\..\..\iis7_shib\register.cpp" />
     <ClCompile Include="..\..\..\iis7_shib\ShibHttpModule.cpp" />
     <ClCompile Include="..\..\..\iis7_shib\ShibUser.cpp" />
@@ -217,7 +217,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\iis7_shib\headers\IIS7_shib.hpp" />
-    <ClInclude Include="..\..\..\iis7_shib\headers\NativeRequest.hpp" />
+    <ClInclude Include="..\..\..\iis7_shib\headers\IIS7Request.hpp" />
     <ClInclude Include="..\..\..\iis7_shib\headers\ShibHttpModule.hpp" />
     <ClInclude Include="..\..\..\iis7_shib\headers\ShibUser.hpp" />
     <ClInclude Include="..\..\..\iis7_shib\resource.h" />
