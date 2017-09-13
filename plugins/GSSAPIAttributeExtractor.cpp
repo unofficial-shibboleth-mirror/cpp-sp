@@ -341,7 +341,7 @@ void GSSAPIExtractor::extractAttributes(
         return;
     }
 
-    xsecsize_t x;
+    XMLSize_t x;
     OM_uint32 major,minor;
     auto_ptr_char encoded(encodedWide);
 

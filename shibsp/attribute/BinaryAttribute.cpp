@@ -44,7 +44,7 @@ BinaryAttribute::BinaryAttribute(const vector<string>& ids) : Attribute(ids)
 
 BinaryAttribute::BinaryAttribute(DDF& in) : Attribute(in)
 {
-    xsecsize_t x;
+    XMLSize_t x;
     DDF val = in.first().first();
     while (val.string()) {
         m_serialized.push_back(val.string());
@@ -99,7 +99,7 @@ void BinaryAttribute::removeValue(size_t index)
 
 const vector<string>& BinaryAttribute::getSerializedValues() const
 {
-    xsecsize_t len;
+    XMLSize_t len;
     XMLByte *pos, *pos2;
     if (m_serialized.empty()) {
         for (vector<string>::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {

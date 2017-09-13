@@ -59,7 +59,7 @@ CommonDomainCookie::CommonDomainCookie(const char* cookie)
     free(b64);
 
     // Now Base64 decode the list.
-    xsecsize_t len;
+    XMLSize_t len;
     for (vector<string>::iterator i=templist.begin(); i!=templist.end(); ++i) {
         XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(i->c_str()),&len);
         if (decoded && *decoded) {
@@ -96,7 +96,7 @@ const char* CommonDomainCookie::set(const char* entityID)
     m_list.push_back(entityID);
 
     // Now rebuild the delimited list.
-    xsecsize_t len;
+    XMLSize_t len;
     string delimited;
     for (vector<string>::const_iterator j=m_list.begin(); j!=m_list.end(); j++) {
         if (!delimited.empty()) delimited += ' ';

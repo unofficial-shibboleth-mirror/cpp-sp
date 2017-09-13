@@ -93,7 +93,7 @@ void XMLAttribute::removeValue(size_t index)
 
 const vector<string>& XMLAttribute::getSerializedValues() const
 {
-    xsecsize_t len;
+    XMLSize_t len;
     XMLByte *pos, *pos2;
     if (m_serialized.empty()) {
         for (vector<string>::const_iterator i=m_values.begin(); i!=m_values.end(); ++i) {

@@ -648,7 +648,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     auto_ptr<AuthnRequest> req;
 
     if (requestTemplate) {
-        xsecsize_t x;
+        XMLSize_t x;
         XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(requestTemplate), &x);
         if (decoded) {
             istringstream is(reinterpret_cast<char*>(decoded));

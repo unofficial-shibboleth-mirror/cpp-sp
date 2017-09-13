@@ -227,7 +227,7 @@ gss_ctx_id_t RemotedRequest::getGSSContext() const
     if (m_gssctx == GSS_C_NO_CONTEXT) {
         const char* encoded = m_input["gss_context"].string();
         if (encoded) {
-            xsecsize_t x;
+            XMLSize_t x;
             XMLByte* decoded = Base64::decode(reinterpret_cast<const XMLByte*>(encoded), &x);
             if (decoded) {
                 gss_buffer_desc importbuf;
@@ -253,7 +253,7 @@ gss_name_t RemotedRequest::getGSSName() const
     if (m_gssname == GSS_C_NO_NAME) {
         const char* encoded = m_input["gss_name"].string();
         if (encoded) {
-            xsecsize_t x;
+            XMLSize_t x;
             XMLByte* decoded = Base64::decode(reinterpret_cast<const XMLByte*>(encoded), &x);
             gss_buffer_desc importbuf;
             importbuf.length = x;
@@ -422,7 +422,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
             gss_buffer_desc contextbuf = GSS_C_EMPTY_BUFFER;
             OM_uint32 major = gss_export_sec_context(&minor, &ctx, &contextbuf);
             if (major == GSS_S_COMPLETE) {
-                xsecsize_t len = 0;
+                XMLSize_t len = 0;
                 XMLByte* out = Base64::encode(reinterpret_cast<const XMLByte*>(contextbuf.value), contextbuf.length, &len);
                 gss_release_buffer(&minor, &contextbuf);
                 if (out) {
@@ -451,7 +451,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
                 gss_buffer_desc namebuf = GSS_C_EMPTY_BUFFER;
                 OM_uint32 major = gss_export_name_composite(&minor, name, &namebuf);
                 if (major == GSS_S_COMPLETE) {
-                    xsecsize_t len = 0;
+                    XMLSize_t len = 0;
                     XMLByte* out = Base64::encode(reinterpret_cast<const XMLByte*>(namebuf.value), namebuf.length, &len);
                     gss_release_buffer(&minor, &namebuf);
                     if (out) {

@@ -211,7 +211,7 @@ const vector<string>& NativeRequest::getClientCertificates() const
         if (nullptr == certInfo) {
             return m_certs;
         }
-        xsecsize_t outlen;
+        XMLSize_t outlen;
         XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(certInfo->pCertEncoded), certInfo->CertEncodedSize, &outlen);
         m_certs.push_back(reinterpret_cast<char*>(serialized));
 #ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE

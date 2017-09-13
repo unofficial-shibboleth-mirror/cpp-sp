@@ -111,7 +111,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
             if (!(*valrange.first)->hasChildren()) {
                 auto_ptr_char val((*valrange.first)->getTextContent());
                 if (val.get() && *val.get()) {
-                    xsecsize_t x;
+                    XMLSize_t x;
                     XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(val.get()),&x);
                     if (decoded) {
                         dest.push_back(reinterpret_cast<char*>(decoded));
@@ -144,7 +144,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
         }
         auto_ptr_char val(saml2name->getName());
         if (val.get() && *val.get()) {
-            xsecsize_t x;
+            XMLSize_t x;
             XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(val.get()),&x);
             if (decoded) {
                 dest.push_back(reinterpret_cast<char*>(decoded));
@@ -173,7 +173,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
             }
             auto_ptr_char val(saml1name->getName());
             if (val.get() && *val.get()) {
-                xsecsize_t x;
+                XMLSize_t x;
                 XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(val.get()),&x);
                 if (decoded) {
                     dest.push_back(reinterpret_cast<char*>(decoded));
