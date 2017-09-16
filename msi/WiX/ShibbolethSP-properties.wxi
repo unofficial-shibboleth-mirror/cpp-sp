@@ -23,10 +23,7 @@
 <Include xmlns='http://schemas.microsoft.com/wix/2006/wi'>
 
   <!-- Are we installing IIS, if so what extension to used -->
-  <Property Id='INSTALL_ISAPI_FILTER' Value='TRUE' Secure='yes' />
-  <Property Id='SHIB_FILE_EXTENSION' Value='.sso' Secure='yes'>
-    <RegistrySearch Id='AppReg' Root='HKLM' Key='SOFTWARE\Shibboleth' Name='FileExtension' Type='raw' />
-  </Property>
+  <Property Id='INSTALL_IIS_PLUGIN' Value='TRUE' Secure='yes' />
 
   <!-- Information for the properties page of the msi -->
 

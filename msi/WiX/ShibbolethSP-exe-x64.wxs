@@ -48,6 +48,9 @@
           <Component Id='isapi_shib64.dll' Guid='{3BC7260B-D035-4F79-A39E-EDA0181BBB1B}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='isapi_shib64.dll' Name='isapi_shib.dll' />
           </Component>
+          <Component Id='iis7_shib64.dll' Guid='{17B76ADE-0ECE-4214-809F-F32B3AB13D54}' Win64='yes'>
+            <File KeyPath='yes' Checksum='yes' Id='iis7_shib64.dll' Name='iis7_shib.dll' />
+          </Component>
           <Component Id='mod_shib_2264.so' Guid='{3C8F67F5-C7C2-40DB-94AB-A26266C113C8}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='mod_shib_2264.so' Name='mod_shib_22.so' />
           </Component>
@@ -80,6 +83,9 @@
             </Component>
             <Component Id='isapi_shib64.dll_debug' Guid='{60BC5679-A40E-42E5-9FC0-CCE924E660ED}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='isapi_shib64.dll_debug' Name='isapi_shib.dll' />
+            </Component>
+            <Component Id='iis7_shib64.dll_debug' Guid='{C6071995-5BFC-4F43-AE02-E6C6510983C5}' Win64='yes'>
+              <File KeyPath='yes' Checksum='yes' Id='iis7_shib64.dll_debug' Name='iis7_shib.dll' />
             </Component>
             <Component Id='mod_shib_2264.so_debug' Guid='{59FE3C18-1920-48A0-80BC-7ECF8579E441}' Win64='yes'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_2264.so_debug' Name='mod_shib_22.so' />

@@ -26,8 +26,7 @@
       <!-- This Dialog sets up:
            - INSTALLDIR
            - INSTALL_32BIT (if a 64bit machine)
-           - INSTALL_ISAPI_FILTER (if IIS about)
-           - SHIB_FILE_EXTENSION (if IIS about)
+           - INSTALL_IIS7_PLUGIN (if IIS about)
         -->
 
       <Dialog Id='InstallDirDlgShib' Width='370' Height='270' Title='[ProductName] Setup'>
@@ -62,30 +61,18 @@
 
         <!-- 32 Bits? -->
         <Control Id='Install32Bit' Type='CheckBox' X='265' Y='146' Height='17' Width='80'
-                 Property='INSTALL_32BIT' CheckBoxValue='TRUE' 
+                 Property='INSTALL_32BIT' CheckBoxValue='TRUE'
                  Text='Run as 32-Bit'>
           <Condition Action='show'>IS64BITINSTALL = "TRUE"</Condition>
           <Condition Action='hide'>IS64BITINSTALL &lt;&gt; "TRUE"</Condition>
         </Control>
 
-        <!-- ISAPI? -->
-        <Control Id='InstallISAPI' Type='CheckBox' X='25' Y='175' Height='17' Width='160'
-                 Property='INSTALL_ISAPI_FILTER' CheckBoxValue='TRUE' 
-                 Text='Install ISAPI modules into IIS'>
-          <Condition Action='show'>IISMAJORVERSION</Condition>
-          <Condition Action='hide'>NOT IISMAJORVERSION</Condition>
-        </Control>
-        <Control Id='FileExtensionText' Type='Text' X='185' Y='178' Height='17' Width='96'
-                 Text='IIS Script Extension'>
-          <Condition Action='show'>IISMAJORVERSION</Condition>
-          <Condition Action='hide'>NOT IISMAJORVERSION</Condition>
-        </Control>
-        <Control Id='FileExtensionEdit' Type='Edit' X='285' Y='175' Height='17' Width='50'
-                 Property='SHIB_FILE_EXTENSION' Text='[SHIB_FILE_EXTENSION]'>
-          <Condition Action='show'>IISMAJORVERSION</Condition>
-          <Condition Action='hide'>NOT IISMAJORVERSION</Condition>
-          <Condition Action='enable'>INSTALL_ISAPI_FILTER = "TRUE"</Condition>
-          <Condition Action='disable'>INSTALL_ISAPI_FILTER &lt;&gt; "TRUE"</Condition>
+        <!-- IIS7 Plugin -->
+        <Control Id='InstallIIS7' Type='CheckBox' X='25' Y='175' Height='17' Width='160'
+                 Property='INSTALL_IIS7_PLUGIN' CheckBoxValue='TRUE'
+                 Text='Configure IIS7 modules'>
+          <Condition Action='show'>IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6")</Condition>
+          <Condition Action='hide'>NOT IISMAJORVERSION OR (IISMAJORVERSION = "#6")</Condition>
         </Control>
 
         <!-- Stuff at the bottom: line, Back,Next, [space] Cancel -->

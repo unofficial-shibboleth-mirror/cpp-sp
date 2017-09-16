@@ -68,11 +68,6 @@
                       Name='InstallDir' Type='directory' />
     </Property>
 
-    <Property Id='OLD_INSTALL_ISAPI_FILTER' Secure='yes'>
-      <RegistrySearch Id='OldInstallIsapi' Root='HKLM' Key='SOFTWARE\Shibboleth' 
-                      Name='InstallIsapi' Type='raw' />
-    </Property>
-
     <!-- non virtualized registry setting -->
     <Property Id='OLD_SERVICEINSTALLED' Secure='yes'>
       <RegistrySearch Id='OldServiceInstalled' Root='HKLM' Key='SYSTEM\CurrentControlSet\services\shibd_Default'
@@ -84,18 +79,6 @@
       <Component Id='TargetDir' Guid='{F02FB6E5-1146-4EC5-9D59-07BA6732C4DD}' >
         <RegistryValue Id='TargetDir'  Root='HKLM' Key='SOFTWARE\Shibboleth' 
                        Name='InstallDir' Value='[INSTALLDIR]' Type='string' KeyPath='yes' />
-      </Component>
-
-      <Component Id='InstallIsapi' Guid='{4F81E47D-B406-42B6-A702-90ACA666075E}' >
-        <Condition>IISMAJORVERSION</Condition>
-        <RegistryValue Id='InstallIsapi'  Root='HKLM' Key='SOFTWARE\Shibboleth' 
-                       Name='InstallIsapi' Value='[INSTALL_ISAPI_FILTER]' Type='string' KeyPath='yes' />
-      </Component>
-
-      <Component Id='file_extension' Guid='{88D0BEF3-6E15-4688-8492-9FF23B6221DF}'>
-        <Condition>INSTALL_ISAPI_FILTER = "TRUE"</Condition>
-        <RegistryValue Root='HKLM' Key='SOFTWARE\Shibboleth' 
-                       Name='FileExtension' Value='[SHIB_FILE_EXTENSION]' Type='string' KeyPath='yes' />
       </Component>
 
       <!-- pretty icon for the "install programs" page -->

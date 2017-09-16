@@ -49,6 +49,7 @@
   <ComponentRef Id="adfs.so" />
   <ComponentRef Id="adfs_lite.so" />
   <ComponentRef Id="isapi_shib.dll" />
+  <ComponentRef Id="iis7_shib.dll" />
   <ComponentRef Id="mod_shib_22.so" />
   <?if $(var.NSApi) != "" ?>
   <ComponentRef Id="nsapi_shib.dll" />
@@ -65,6 +66,7 @@
   <ComponentRef Id="adfs.so_debug" />
   <ComponentRef Id="adfs_lite.so_debug" />
   <ComponentRef Id="isapi_shib.dll_debug" />
+  <ComponentRef Id="iis7_shib.dll_debug" />
   <ComponentRef Id="mod_shib_22.so_debug" />
   <?if $(var.NSApi) != "" ?>
   <ComponentRef Id="nsapi_shib.dll_debug" />
@@ -83,7 +85,5 @@
 
   <!-- ShibbolethSP-registry-x32 -->
   <ComponentRef Id="TargetDir" />
-  <ComponentRef Id="InstallIsapi" />
-  <ComponentRef Id="file_extension" />
   <ComponentRef Id="shib.ico" />
 </Include>

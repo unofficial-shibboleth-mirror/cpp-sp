@@ -48,6 +48,9 @@
           <Component Id='isapi_shib.dll' Guid='{716D6F4F-4185-4219-B1BA-1D15F867926E}'>
             <File KeyPath='yes' Checksum='yes' Name='isapi_shib.dll' />
           </Component>
+          <Component Id='iis7_shib.dll' Guid='{2DC61347-E3C9-467c-8530-6A369B53C729}'>
+            <File KeyPath='yes' Checksum='yes' Name='iis7_shib.dll' />
+          </Component>
           <Component Id='mod_shib_22.so' Guid='{BB889066-3EF2-43C5-BC4D-CD6B1DC4AE7B}'>
             <File KeyPath='yes' Checksum='yes' Name='mod_shib_22.so' />
           </Component>
@@ -85,6 +88,9 @@
             </Component>
             <Component Id='isapi_shib.dll_debug' Guid='{F8212D30-0BA8-4F02-B595-E8E5D312342B}'>
               <File KeyPath='yes' Checksum='yes' Id='isapi_shib.dll_debug' Name='isapi_shib.dll' />
+            </Component>
+            <Component Id='iis7_shib.dll_debug' Guid='{24FC91C7-1401-4ac1-BC14-E881E47D88BD}'>
+              <File KeyPath='yes' Checksum='yes' Id='iis7_shib.dll_debug' Name='iis7_shib.dll' />
             </Component>
             <Component Id='mod_shib_22.so_debug' Guid='{3DA4492F-C0EA-4286-9C37-13F82342FA67}'>
               <File KeyPath='yes' Checksum='yes' Id='mod_shib_22.so_debug' Name='mod_shib_22.so' />
