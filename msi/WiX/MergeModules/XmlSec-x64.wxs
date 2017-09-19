@@ -26,7 +26,7 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib' 
-                       FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\$(var.ShibbolethMsVersion)\Release No Xalan'>
+                       FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\$(var.ShibbolethMsVersion)\Release Minimal'>
               <Component Id='xsec.dll' Guid='$(var.XmlSec64Component)' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='xsec_$(var.XmlSecFileVersion).dll'/>
               </Component>
@@ -49,7 +49,7 @@
                 <File KeyPath='yes' Checksum='yes' Name='txfmout.exe'/>
               </Component>
               <Directory Id='lib_debug' Name='debug' 
-                         FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\$(var.ShibbolethMsVersion)\Debug No Xalan'>
+                         FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\x64\$(var.ShibbolethMsVersion)\Debug Minimal'>
                 <Component Id='xsecD.dll' Guid='$(var.XmlSec64Componentd)' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes' Name='xsec_$(var.XmlSecFileVersion)D.dll'/>
                 </Component>

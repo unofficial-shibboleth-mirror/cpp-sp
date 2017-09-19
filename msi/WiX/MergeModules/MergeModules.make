@@ -240,38 +240,38 @@ XmlSec-x64.msm: XmlSec-x64.wixobj
 	light XmlSec-x64.wixobj
 	del ..\*64*.msi
 
-XmlSec-x86.wixobj: XmlSec-x86.wxs "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release No Xalan\xsec_$(XmlSecFileVersion).dll"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release No Xalan\c14n.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release No Xalan\checksig.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release No Xalan\cipher.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release No Xalan\siginf.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release No Xalan\templatesign.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release No Xalan\txfmout.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug No Xalan\xsec_$(XmlSecFileVersion)D.dll"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug No Xalan\c14n.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug No Xalan\checksig.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug No Xalan\cipher.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug No Xalan\siginf.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug No Xalan\templatesign.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug No Xalan\txfmout.exe"
+XmlSec-x86.wixobj: XmlSec-x86.wxs "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release Minimal\xsec_$(XmlSecFileVersion).dll"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release Minimal\c14n.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release Minimal\checksig.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release Minimal\cipher.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release Minimal\siginf.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release Minimal\templatesign.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Release Minimal\txfmout.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug Minimal\xsec_$(XmlSecFileVersion)D.dll"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug Minimal\c14n.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug Minimal\checksig.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug Minimal\cipher.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug Minimal\siginf.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug Minimal\templatesign.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\Win32\$(MsVCVersion)\Debug Minimal\txfmout.exe"
 	wixcop -indent:2 XmlSec-x86.wxs
 	candle XmlSec-x86.wxs -dBuildDirectory=$(BuildSP) -dXmlSecVersion=$(XmlSecVersion) -dXmlSecFileVersion=$(XmlSecFileVersion)\
                           -dXmlSec32Component=$(XmlSec32Component) -dXmlSec32Componentd=$(XmlSec32Componentd) -dShibbolethMsVersion=$(MsVCVersion)
 
-XmlSec-x64.wixobj: XmlSec-x64.wxs "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release No Xalan\xsec_$(XmlSecFileVersion).dll"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release No Xalan\c14n.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release No Xalan\checksig.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release No Xalan\cipher.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release No Xalan\siginf.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release No Xalan\templatesign.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release No Xalan\txfmout.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug No Xalan\xsec_$(XmlSecFileVersion)D.dll"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug No Xalan\c14n.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug No Xalan\checksig.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug No Xalan\cipher.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug No Xalan\siginf.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug No Xalan\templatesign.exe"\
-                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug No Xalan\txfmout.exe"
+XmlSec-x64.wixobj: XmlSec-x64.wxs "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release Minimal\xsec_$(XmlSecFileVersion).dll"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release Minimal\c14n.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release Minimal\checksig.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release Minimal\cipher.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release Minimal\siginf.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release Minimal\templatesign.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Release Minimal\txfmout.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug Minimal\xsec_$(XmlSecFileVersion)D.dll"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug Minimal\c14n.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug Minimal\checksig.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug Minimal\cipher.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug Minimal\siginf.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug Minimal\templatesign.exe"\
+                                  "$(BuildSP)\xml-security-c-$(XmlSecVersion)\Build\x64\$(MsVCVersion)\Debug Minimal\txfmout.exe"
 	wixcop -indent:2 XmlSec-x64.wxs
 	candle XmlSec-x64.wxs -dBuildDirectory=$(BuildSP) -dXmlSecVersion=$(XmlSecVersion) -dXmlSecFileVersion=$(XmlSecFileVersion)\
                           -dXmlSec64Component=$(XmlSec64Component) -dXmlSec64Componentd=$(XmlSec64Componentd) -dShibbolethMsVersion=$(MsVCVersion)
