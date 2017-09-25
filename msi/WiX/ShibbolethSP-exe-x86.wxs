@@ -125,17 +125,7 @@
       </Directory><!-- lib -->
       <!-- the service bin -->
       <Directory Id='sbin' Name='sbin' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release'>
-        <Component Id='shibd.exe' Guid='{2476BB80-9384-4026-86F5-E1569A685187}'>
-          <File KeyPath='yes' Checksum='yes' Name='shibd.exe' />
-          <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
-          <ServiceInstall Id='shibd' Name='shibd_Default'
-                          DisplayName='Shibboleth 2 Daemon (Default)'
-                          Description='Manages shared state and offloads SAML processing from Shibboleth web server modules.'
-                          Arguments='-stdout "[INSTALLDIR]var\log\shibboleth\stdout.log" -stderr "[INSTALLDIR]var\log\shibboleth\stderr.log"'
-                          Type='ownProcess' Start='auto' ErrorControl='ignore' />
-          <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'
-                          Remove='uninstall' Start='install' Wait='no' />
-        </Component>
+        <!-- Service bin is installed in main-x86 (with service) and main-64 (without) -->
         <Directory Id='sbin_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Debug'>
           <Component Id='shibd.exe_debug' Guid='{91E9DF13-0940-43E7-9A2F-9571F6FC3DF2}'>
             <File KeyPath='yes' Checksum='yes' Id='shibd.exe_debug' Name='shibd.exe' />

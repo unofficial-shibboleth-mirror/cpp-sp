@@ -115,9 +115,7 @@
       </Directory><!-- lib -->
       <!-- the service bin -->
       <Directory Id='sbin64' Name='sbin64' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release'>
-        <Component Id='shibd64.exe' Guid='{707B57A2-CCA0-48A6-9F66-275EB04474AA}' Win64='yes'>
-          <File KeyPath='yes' Checksum='yes' Id='shibd64.exe' Name='shibd.exe' />
-        </Component>
+        <!-- Service bins are declared in main -->
         <Directory Id='sbin64_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Debug'>
           <Component Id='shibd64.exe_debug' Guid='{657A1902-0104-47C7-84A7-AEB5F736B02F}' Win64='yes'>
             <File KeyPath='yes' Checksum='yes' Id='shibd64.exe_debug' Name='shibd.exe' />

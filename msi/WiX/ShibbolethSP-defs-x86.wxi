@@ -80,7 +80,6 @@
   <ComponentRef Id="shibresponder.exe_debug" />
   <?endif?>
 
-  <ComponentRef Id="shibd.exe" />
   <ComponentRef Id="shibd.exe_debug" />
 
   <!-- ShibbolethSP-registry-x32 -->

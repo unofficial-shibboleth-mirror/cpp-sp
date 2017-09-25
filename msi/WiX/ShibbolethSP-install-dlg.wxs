@@ -25,7 +25,6 @@
 
       <!-- This Dialog sets up:
            - INSTALLDIR
-           - INSTALL_32BIT (if a 64bit machine)
            - INSTALL_IIS7_PLUGIN (if IIS about)
         -->
 
@@ -56,19 +55,11 @@
         </Control>
 
         <!-- Service? -->
-        <Control Id='InstallShibd' Type='Text' X='25' Y='148' Height='17' Width='235' 
+        <Control Id='InstallShibd' Type='Text' X='25' Y='142' Height='17' Width='195' 
                  Text='The Shibboleth Daemon will be installed as a service.' />
 
-        <!-- 32 Bits? -->
-        <Control Id='Install32Bit' Type='CheckBox' X='265' Y='146' Height='17' Width='80'
-                 Property='INSTALL_32BIT' CheckBoxValue='TRUE'
-                 Text='Run as 32-Bit'>
-          <Condition Action='show'>IS64BITINSTALL = "TRUE"</Condition>
-          <Condition Action='hide'>IS64BITINSTALL &lt;&gt; "TRUE"</Condition>
-        </Control>
-
         <!-- IIS7 Plugin -->
-        <Control Id='InstallIIS7' Type='CheckBox' X='25' Y='175' Height='17' Width='160'
+        <Control Id='InstallIIS7' Type='CheckBox'  X='225' Y='140' Height='17' Width='120'
                  Property='INSTALL_IIS7_PLUGIN' CheckBoxValue='TRUE'
                  Text='Configure IIS7 modules'>
           <Condition Action='show'>IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6")</Condition>

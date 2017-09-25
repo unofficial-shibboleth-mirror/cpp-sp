@@ -39,9 +39,8 @@
 
     <!-- NOTE we should not use sys.BUILDARCH since that reflects the candle parameters, *NOT* the architecture -->
     <Property Id='IS64BITINSTALL' Value='TRUE'/>
-    <Property Id='INSTALL_32BIT' Secure='yes' />
-    <UIRef Id='ShibbolethInstallDir'/>
 
+    <UIRef Id='ShibbolethInstallDir'/>
 
     <!-- Files -->
     <Directory Id='TARGETDIR' Name='SourceDir'>
@@ -94,15 +93,6 @@
         <Environment Id='SetPath' Name='PATH' Action='set' Part='last' System='yes' Value='[ProgramFilesFolder]Shibboleth\SP\lib' />
       </Component>
     </Directory><!--TARGETDIR-->
-
-    <DirectoryRef Id='etc_shibboleth' FileSource='$(var.SPBuildDirectory)\cpp-sp\configs'>
-      <Component Id='SetService64' Guid='{8DE75314-84B5-4BD1-ABD2-9FC1DEE399DC}'>
-        <File KeyPath='yes' Name='SetService64.bat' />
-      </Component>
-      <Component Id='SetService32' Guid='{3332A486-845E-4EE4-975F-3D75757EB941}'>
-        <File KeyPath='yes' Name='SetService32.bat' />
-      </Component>
-    </DirectoryRef><!-- etc_shibboleth -->
 
     <Feature Id='Shibboleth' Title='Shibboleth' Level='1' Display='hidden' ConfigurableDirectory='INSTALLDIR'>
       <MergeRef Id='CurlMergeModule_x86'/>
@@ -172,7 +162,6 @@
       <ComponentRef Id='shibresponder64.exe_debug'/>
       <?endif?>
 
-      <ComponentRef Id='shibd64.exe'/>
       <ComponentRef Id='shibd64.exe_debug'/>
 
       <!-- ShibbolethSP-registry-x64 -->
@@ -183,9 +172,6 @@
       <!-- ShibbolethSP-main-x64 -->
       <ComponentRef Id='SetPath'/>
       <ComponentRef Id='SetPath64'/>
-
-      <ComponentRef Id='SetService64' />
-      <ComponentRef Id='SetService32' />
 
       <?include ShibbolethSP-defs-x86.wxi ?>
 
@@ -217,6 +203,22 @@
           <RegistryValue Name='EventMessageFile' Type='string' Value='[#Messages]'/>
           <RegistryValue Name='ParameterMessageFile' Type='string' Value='[#Messages]'/>
         </RegistryKey>
+      </Component>
+
+      <Component Id='shibd.exe' Guid='{2476BB80-9384-4026-86F5-E1569A685187}' Directory='sbin'>
+        <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe' />
+      </Component>
+
+      <Component Id='shibd64.exe' Guid='{707B57A2-CCA0-48A6-9F66-275EB04474AA}' Win64='yes' Directory='sbin64'>
+        <File KeyPath='yes' Checksum='yes' Id='shibd64.exe'  Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\shibd.exe' />
+        <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
+        <ServiceInstall Id='shibd' Name='shibd_Default'
+                        DisplayName='Shibboleth 2 Daemon (Default)'
+                        Description='Manages shared state and offloads SAML processing from Shibboleth web server modules.'
+                        Arguments='-stdout "[INSTALLDIR]var\log\shibboleth\stdout.log" -stderr "[INSTALLDIR]var\log\shibboleth\stderr.log"'
+                        Type='ownProcess' Start='auto' ErrorControl='ignore' />
+        <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'
+                        Remove='uninstall' Start='install' Wait='no' />
       </Component>
 
     </Feature>

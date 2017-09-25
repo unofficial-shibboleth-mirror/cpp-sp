@@ -30,7 +30,7 @@
 
     <Condition Message='Shibboleth requires Windows Vista or later.'>NOT VersionNT OR (VersionNT &gt;= 600)</Condition>
     <Condition Message='Shibboleth requires a Windows NT-based operating system.'>NOT Version9X</Condition>
-    <Condition Message='You must uninstall very old versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.'>(SHIB_OLDVERSION = "none") AND (SHIB_OLDVERSION_64 = "none")</Condition>
+    <Condition Message='You must uninstall very old versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.'>(SHIB_OLDVERSION = "none")</Condition>
 
     <Condition Message='For a 32-bit installation on a 64-bit architecture, install the 64-bit MSI but specify 32-bit defaults'>NOT VersionNT64</Condition>
 
@@ -40,7 +40,6 @@
 
     <!-- NOTE we should not use sys.BUILDARCH since that reflects the candle parameters, *NOT* the architecture -->
     <Property Id='IS64BITINSTALL' Value='FALSE'/>
-    <Property Id='INSTALL_32BIT' Secure='yes' Value='TRUE' />
 
     <UIRef Id='ShibbolethInstallDir'/>
 
@@ -130,7 +129,17 @@
         </RegistryKey>
       </Component>
 
-
+      <Component Id='shibd.exe' Guid='{2476BB80-9384-4026-86F5-E1569A685187}' Directory='sbin'>
+        <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe' />
+        <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
+        <ServiceInstall Id='shibd' Name='shibd_Default'
+                        DisplayName='Shibboleth 2 Daemon (Default)'
+                        Description='Manages shared state and offloads SAML processing from Shibboleth web server modules.'
+                        Arguments='-stdout "[INSTALLDIR]var\log\shibboleth\stdout.log" -stderr "[INSTALLDIR]var\log\shibboleth\stderr.log"'
+                        Type='ownProcess' Start='auto' ErrorControl='ignore' />
+        <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'
+                        Remove='uninstall' Start='install' Wait='no' />
+      </Component>
     </Feature>
 
     <!-- Also put in the configuration for IIS7 - There is a difference between 32 and 64 bit dlls and

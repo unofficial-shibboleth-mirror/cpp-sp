@@ -36,7 +36,7 @@ End Sub
 
 
 Dim FileSystemObj, ConvertedDir, ConfigFile, XMLDir, WshShell
-Dim customData, msiProperties, InstallDir, LibDir, Is64Bit, Install32, LogFile
+Dim customData, msiProperties, InstallDir, LibDir, Is64Bit, LogFile
 
 on error resume next
 Set FileSystemObj = CreateObject("Scripting.FileSystemObject")
@@ -47,19 +47,16 @@ if (Err = 0) then
   msiProperties = split(customData,";@;")
   InstallDir = msiProperties(0)
   Is64Bit = msiProperties(1)
-  Install32 = msiProperties(2)
 
   LibDir = "lib"
   If (Is64Bit = "TRUE") then
-      If (Install32 <> "TRUE") then
-          LibDir = "lib64"
-      End If
+     LibDir = "lib64"
   End If
 
   Set LogFile = FileSystemObj.OpenTextFile(InstallDir & "\var\log\shibboleth\Installer.log", 8, true)
 
   If (LogFile) then
-     LogFile.WriteLine "Edit Config Files to " & InstallDir & ", 64Bit = " & Is64Bit & ", 32Bit = " & Install32
+     LogFile.WriteLine "Edit Config Files to " & InstallDir & ", 64Bit = " & Is64Bit
   End If
 
   'Remove all trailing backslashes to normalize

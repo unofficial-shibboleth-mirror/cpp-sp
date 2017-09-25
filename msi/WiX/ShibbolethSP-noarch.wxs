@@ -166,13 +166,10 @@
 
     <CustomAction Id='EditConfigFiles' 
                   BinaryKey='EditConfigFileSrc' VBScriptCall='' Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[IS64BITINSTALL];@;[INSTALL_32BIT]' />
+    <CustomAction Id='SetEditConfigFiles' Property='EditConfigFiles' Value='[INSTALLDIR];@;[IS64BITINSTALL]' />
 
     <CustomAction Id='KeyGen' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
     <CustomAction Id='SetKeyGen' Property='KeyGen' Value='&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot;' />
-
-    <CustomAction Id='ServicePath64' BinaryKey='WixCA' DllEntry='CAQuietExec' Execute='deferred' Impersonate='no' />
-    <CustomAction Id='SetServicePath64' Property='ServicePath64' Value='&quot;[INSTALLDIR]etc\shibboleth\SetService64.bat&quot;' />
 
     <!-- Inherit the installation dir if one was set -->
     <CustomAction Id='InheritInstallDir' Property='INSTALLDIR' Value='[OLD_INSTALLDIR]' />
@@ -199,13 +196,6 @@
       <Custom Action='KeyGen' After='WriteEnvironmentStrings'>NOT Installed</Custom>
 
       <!-- IIS handling is no longer architecture independant and happens in ShibbolethSP-main-x?? -->
-
-      <Custom Action='SetServicePath64' Before='CostInitialize'>
-        (NOT Installed) AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
-      </Custom>
-      <Custom Action='ServicePath64' After='InstallServices'>
-        (NOT Installed) AND (NOT ALREADYINSTALLED) AND (NOT INSTALL_32BIT) AND (IS64BITINSTALL = "TRUE")
-      </Custom>
 
       <!-- Duplicate actions from the UI case -->
       <Custom Action='InheritInstallDir' After='AppSearch'>
