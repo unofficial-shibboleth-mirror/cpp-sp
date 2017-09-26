@@ -85,7 +85,7 @@ public:
     );
 
 private:
-    const auto_ptr_XMLCh m_widen;
+    wstring m_username;
     volatile unsigned int m_refCount;
     const set<wstring> m_roles;
 };

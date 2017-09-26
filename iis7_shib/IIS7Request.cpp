@@ -157,19 +157,19 @@ void IIS7Request::setHeader(const char* name, const char* value)
         }
     }
     if (m_useVariables) {
-        const auto_ptr_XMLCh widen(value); // TODO : use a converter?
-        const HRESULT hr(m_ctx->SetServerVariable(const_cast<char*>(name), reinterpret_cast<PCWSTR>(widen.get())));
+        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+        const wstring wValue(converter.from_bytes(value));
+        const HRESULT hr(m_ctx->SetServerVariable(const_cast<char*>(name), wValue.c_str()));
         if (FAILED(hr)) {
             throwError("setHeader (Variable)", hr);
         }
 
         for (vector<string>::iterator roleAttribute = g_RoleAttributeNames.begin(); roleAttribute != g_RoleAttributeNames.end(); ++roleAttribute) {
             if (*roleAttribute == name) {
-                string str(value);
+                const string str(value);
                 tokenizer<escaped_list_separator<char>> tok(str, escaped_list_separator<char>('\\', ';', '"'));
                 for (tokenizer<escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
-                    const xmltooling::auto_ptr_XMLCh widen(it->c_str());
-                    m_roles.insert(reinterpret_cast<PCWSTR>(widen.get()));
+                    m_roles.insert(converter.from_bytes(*it));
                 }
             }
         }

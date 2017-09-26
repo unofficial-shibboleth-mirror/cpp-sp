@@ -29,6 +29,7 @@
 #include "../util/RegistrySignature.h"
 #include <xmltooling/logging.h>
 #pragma warning(disable: 4996)
+#include <codecvt> // 16 bit to 8 bit and vice versa chars
 #include <boost/algorithm/string.hpp>
 
 
@@ -45,7 +46,7 @@ namespace Config {
     bool g_bUseVariables = true;
     vector<string> g_NoCerts;
     vector<string> g_RoleAttributeNames;
-    wstring g_authNRole;
+    wstring g_authNRole(L"ShibbolethAuthN");
 }
 
 using namespace Config;
@@ -191,16 +192,18 @@ RegisterModule(
             const PropertySet* roles = props->getPropertySet("Roles");
             if (roles) {
                 const pair<bool, const char*> authNRoleFlag = roles->getString("authNRole");
-                xmltooling::auto_ptr_XMLCh rolestr(authNRoleFlag.first? authNRoleFlag.second : "ShibbolethAuthN");
-                g_authNRole = reinterpret_cast<PCWSTR>(rolestr.get());
+
+                if (authNRoleFlag.first) {
+                    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+                    wstring rolestr(converter.from_bytes(string(authNRoleFlag.second)));
+
+                    g_authNRole = rolestr;
+                }
 
                 const pair<bool, const char*> theRoles = roles->getString("roleAttributes");
                 if (theRoles.first) {
-#pragma warning(disable: 4996)
                     boost::split(g_RoleAttributeNames, theRoles.second, boost::algorithm::is_space(), boost::algorithm::token_compress_on);
                 }
-            } else {
-                g_authNRole = L"ShibbolethAuthN";
             }
         }
     }

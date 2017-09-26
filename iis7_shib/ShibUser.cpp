@@ -20,22 +20,25 @@
 
 #include "IIS7_shib.hpp"
 #include "ShibUser.hpp"
+#include <codecvt> // 16 bit to 8 bit and vice versa chars
 
-ShibUser::ShibUser(std::string name, set<wstring> roles) : m_refCount(1), m_widen(name.c_str()), m_roles(roles)
+
+ShibUser::ShibUser(std::string name, set<wstring> roles) : m_refCount(1), m_roles(roles)
 {
-    ;
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    m_username = converter.from_bytes(string(name));
 }
 
 PCWSTR
 ShibUser::GetRemoteUserName(VOID)
 {
-    return reinterpret_cast<PCWSTR>(m_widen.get());
+    return m_username.c_str();
 }
 
 PCWSTR
 ShibUser::GetUserName(VOID)
 {
-    return reinterpret_cast<PCWSTR>(m_widen.get());
+    return m_username.c_str();
 }
 
 PCWSTR
