@@ -826,6 +826,17 @@ void xml_encode(ostream& os, const char* start)
     }
 }
 
+static
+bool
+is32bitSafe(long what)
+{
+    if (sizeof(what) <= 4) return true;
+    unsigned long uWhat = (what < 0) ? -what : what;
+    unsigned long upperOfuWhat = uWhat >> 31;
+
+    return (0 == upperOfuWhat);
+}
+
 void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
 {
     if (p) {
@@ -855,6 +866,7 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
                 break;
 
             case ddf_body_t::DDF_INT:
+                if (is32bitSafe(p->value.integer)) throw IOException("Integer Overflow");
                 os << "<number";
                 if (name_attr && p->name) {
                     os << " name=\"";
