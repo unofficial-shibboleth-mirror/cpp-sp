@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="GeneratedCode">
+      <UniqueIdentifier>{fcbe8a11-bd10-42fc-bae0-3d98a28cc043}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UnitTests">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\unittests\BaseTestCase.h">
+      <Filter>UnitTests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\unittests\SPTest.h">
+      <Filter>UnitTests</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\unittests\DynamicMetadataProviderTest.h">
+      <Filter>UnitTests</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\DynamicMetadataProviderTest.cpp">
+      <Filter>GeneratedCode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\SPTest.cpp">
+      <Filter>GeneratedCode</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
