@@ -174,7 +174,8 @@
     <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\SPTest.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="..\..\..\unittests\data\DynamicMetadataProvider.xml" />
+    <Xml Include="..\..\..\unittests\data\templateFromFile.xml" />
+    <Xml Include="..\..\..\unittests\data\templateFromRepo.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

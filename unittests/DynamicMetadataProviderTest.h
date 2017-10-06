@@ -65,6 +65,28 @@ public:
         }
     }
 
+    void testTemplateFromFile()
+    {
+        string config = data_path + "templateFromFile.xml";
+        ifstream in(config.c_str());
+        XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
+        ParserPool& pool = xcf.getParser();
+        DOMDocument* doc = pool.parse(in);
+        XercesJanitor<DOMDocument> janitor(doc);
+
+        auto_ptr<MetadataProvider> metadataProvider(
+            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, doc->getDocumentElement())
+        );
+        try {
+            metadataProvider->init();
+            pair<const EntityDescriptor*, const RoleDescriptor*>  pair = metadataProvider->getEntityDescriptor(opensaml::saml2md::MetadataProvider::Criteria("https://www.example.org/sp"));
+        } catch (XMLToolingException& ex) {
+            TS_TRACE(ex.what());
+            throw;
+        }
+    }
+
+
 };
 
 

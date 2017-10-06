@@ -34,7 +34,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="..\..\..\unittests\data\DynamicMetadataProvider.xml">
+    <Xml Include="..\..\..\unittests\data\templateFromFile.xml">
+      <Filter>Data</Filter>
+    </Xml>
+    <Xml Include="..\..\..\unittests\data\templateFromRepo.xml">
       <Filter>Data</Filter>
     </Xml>
   </ItemGroup>
