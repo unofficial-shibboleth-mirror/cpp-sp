@@ -20,14 +20,13 @@
 #include <fstream>
 
 #include "BaseTestCase.h"
-#include <shibsp\SPConfig.h>
-#include <cpp-opensaml\saml\saml2\metadata\MetadataProvider.h>
 #include <xercesc\dom\DOMDocument.hpp>
 #include <cpp-xmltooling\xmltooling\XMLToolingConfig.h>
 #include <cpp-xmltooling\xmltooling\util\XMLHelper.h>
 #include <cpp-xmltooling\xmltooling\util\ParserPool.h>
 
 #include <cpp-opensaml\saml\SAMLConfig.h>
+#include <cpp-opensaml\saml\saml2\metadata\MetadataProvider.h>
 
 
 using namespace xmltooling;
@@ -45,7 +44,25 @@ public:
     void tearDown()
     {}
 
-    void testXMLProvider() {
+    void testTemplateFromRepo() {
+        string config = data_path + "templateFromRepo.xml";
+        ifstream in(config.c_str());
+        XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
+        ParserPool& pool = xcf.getParser();
+        DOMDocument* doc = pool.parse(in);
+        XercesJanitor<DOMDocument> janitor(doc);
+
+        auto_ptr<MetadataProvider> metadataProvider(
+            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, doc->getDocumentElement())
+        );
+        try {
+            metadataProvider->init();
+            pair<const EntityDescriptor*, const RoleDescriptor*>  pair = metadataProvider->getEntityDescriptor( opensaml::saml2md::MetadataProvider::Criteria("https://www.example.org/sp"));
+        }
+        catch (XMLToolingException& ex) {
+            TS_TRACE(ex.what());
+            throw;
+        }
     }
 
 };
