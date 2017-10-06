@@ -40,5 +40,8 @@
     <Xml Include="..\..\..\unittests\data\templateFromRepo.xml">
       <Filter>Data</Filter>
     </Xml>
+    <Xml Include="..\..\..\unittests\data\regexFromFile.xml">
+      <Filter>Data</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

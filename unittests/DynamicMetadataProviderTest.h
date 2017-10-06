@@ -79,12 +79,38 @@ public:
         );
         try {
             metadataProvider->init();
-            pair<const EntityDescriptor*, const RoleDescriptor*>  pair = metadataProvider->getEntityDescriptor(opensaml::saml2md::MetadataProvider::Criteria("https://www.example.org/sp"));
+            pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(opensaml::saml2md::MetadataProvider::Criteria("https://www.example.org/sp"));
+            TS_ASSERT(nullptr != thePair.first);
+
         } catch (XMLToolingException& ex) {
             TS_TRACE(ex.what());
             throw;
         }
     }
+
+    void testRegexFromFile()
+    {
+        string config = data_path + "regexFromFile.xml";
+        ifstream in(config.c_str());
+        XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
+        ParserPool& pool = xcf.getParser();
+        DOMDocument* doc = pool.parse(in);
+        XercesJanitor<DOMDocument> janitor(doc);
+
+        auto_ptr<MetadataProvider> metadataProvider(
+            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, doc->getDocumentElement())
+        );
+        try {
+            metadataProvider->init();
+            pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(opensaml::saml2md::MetadataProvider::Criteria("https://www.example.org/sp"));
+            TS_ASSERT(nullptr != thePair.first);
+
+        } catch (XMLToolingException& ex) {
+            TS_TRACE(ex.what());
+            throw;
+        }
+    }
+
 
 
 };

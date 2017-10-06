@@ -1,0 +1,3 @@
+<MetadataProvider type="Dynamic" ignoreTransport="true" >
+    <Regex match="^https?://([a-zA-Z0-9\\.]+).*$">file:///H:/Perforce/VS2017/cpp-sp/unittests/data/$1.xml</Regex>
+</MetadataProvider>

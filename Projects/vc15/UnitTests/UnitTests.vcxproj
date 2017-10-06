@@ -175,6 +175,7 @@
   </ItemGroup>
   <ItemGroup>
     <Xml Include="..\..\..\unittests\data\templateFromFile.xml" />
+    <Xml Include="..\..\..\unittests\data\regexFromFile.xml" />
     <Xml Include="..\..\..\unittests\data\templateFromRepo.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
