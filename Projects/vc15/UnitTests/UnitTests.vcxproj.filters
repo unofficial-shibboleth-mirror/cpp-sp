@@ -8,17 +8,20 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{c7232fb3-a33b-4038-80d4-eb48b209a285}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\unittests\BaseTestCase.h">
       <Filter>UnitTests</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\unittests\SPTest.h">
-      <Filter>UnitTests</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\..\unittests\DynamicMetadataProviderTest.h">
+      <Filter>UnitTests</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\unittests\SPTest.h">
       <Filter>UnitTests</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -29,5 +32,10 @@
     <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\SPTest.cpp">
       <Filter>GeneratedCode</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\..\unittests\data\DynamicMetadataProvider.xml">
+      <Filter>Data</Filter>
+    </Xml>
   </ItemGroup>
 </Project>
