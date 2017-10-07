@@ -65,8 +65,8 @@
         <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm' DiskId='1' />
         <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm' DiskId='1' />
         <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm' DiskId='1' />
-        <Merge Id='Microsoft_DebugCRT_x86' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.MsVCVersion)0_DebugCRT_x86.msm' DiskId='1' />
-        <Merge Id='Microsoft_CRT_x86' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.MsVCVersion)0_CRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_DebugCRT_x86' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x86.msm' DiskId='1' />
+        <Merge Id='Microsoft_CRT_x86' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x86.msm' DiskId='1' />
       </Directory><!--ProgramFilesFolder-->
 
       <Component Id='SetPath' Guid='{3300B9CD-67AF-4AAC-801D-8C56E5FB4AF5}'>
