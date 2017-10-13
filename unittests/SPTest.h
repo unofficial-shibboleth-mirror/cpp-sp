@@ -25,12 +25,24 @@ public:
             return false;
         }
 
+        if (!conf.instantiate("./configs/shibboleth2.xml")) /*
+            
+            (std::string("<SPConfig type='XML' xmlns='urn:mace:shibboleth:2.0:native:sp:config' xmlns:conf='urn:mace:shibboleth:2.0:native:sp:config'\n") +
+                              std::string("xmlns:saml='urn:oasis:names:tc:SAML:2.0:assertion' xmlns:samlp='urn:oasis:names:tc:SAML:2.0:protocol'\n") +
+                              std::string("xmlns:md='urn:oasis:names:tc:SAML:2.0:metadata' clockSkew='180'> \n") +
+                              std::string("<conf:SecurityPolicyProvider type='XML' validate='true' path='..\cpp-sp\configs\security-policy.xml' /> </SPConfig>\n")).c_str()))/*
+        "<SecurityPolicyProvider xmlns='urn:mace:shibboleth:2.0:native:sp:config' type='XML' validate='true' path='../cpp-sp/configs/security-policy.xml' />"))*/ {
+            fprintf(stderr, "configuration is invalid, see console for specific problems\n");
+            return false;
+        }
+
         registerMetadataExtClasses();
 
         return true;
     }
     bool tearDownWorld() {
         SPConfig::getConfig().term();
+        SPConfig::getConfig().getServiceProvider();
         return true;
     }
 };

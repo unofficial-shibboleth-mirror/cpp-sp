@@ -73,6 +73,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>$(SolutionDir)..\..\Build\VC15\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)\..\..\Build\VC15\$(Configuration)\</OutDir>
+    <IncludePath>$(ProjectDir)\..\..\..\unittests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>$(SolutionDir)..\..\Build\VC15\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
@@ -80,6 +81,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(SolutionDir)..\..\Build\VC15\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)\..\..\Build\VC15\$(Platform)\$(Configuration)\</OutDir>
+    <IncludePath>$(ProjectDir)\..\..\..\unittests;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(SolutionDir)..\..\Build\VC15\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
@@ -148,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\unittests\BaseTestCase.h" />
+    <ClInclude Include="..\..\..\unittests\TestApplication.h" />
     <CustomBuild Include="..\..\..\unittests\SPTest.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --error-printer --have-eh --have-std --abort-on-fail -o "$(IntDir)%(Filename)".cpp  "%(FullPath)"</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --error-printer --have-eh --have-std --abort-on-fail -o "$(IntDir)%(Filename)".cpp  "%(FullPath)"</Command>
@@ -172,11 +175,16 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\DynamicMetadataProviderTest.cpp" />
     <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\SPTest.cpp" />
+    <ClCompile Include="..\..\..\unittests\TestApplication.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Xml Include="..\..\..\unittests\data\08ced64cddc9f1578598b2cf71ae747b11d11472.xml" />
+    <Xml Include="..\..\..\unittests\data\fromMDQ.xml" />
+    <Xml Include="..\..\..\unittests\data\spp.xml" />
     <Xml Include="..\..\..\unittests\data\templateFromFile.xml" />
     <Xml Include="..\..\..\unittests\data\regexFromFile.xml" />
     <Xml Include="..\..\..\unittests\data\templateFromRepo.xml" />
+    <Xml Include="..\..\..\unittests\data\www.example.org.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

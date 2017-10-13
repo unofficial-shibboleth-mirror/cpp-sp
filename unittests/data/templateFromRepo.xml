@@ -1,3 +1,3 @@
 <MetadataProvider type="Dynamic" ignoreTransport="true" >
-<Subst hashed="SHA1">https://git.shibboleth.net/view/?p=java-opensaml.git&amp;a=blob_plain&amp;f=opensaml-saml-impl/src/test/resources/org/opensaml/saml/metadata/resolver/impl/$entityID.xml&amp;hb=master</Subst>
+<Subst hashed="SHA1">http://git.shibboleth.net/view/?p=java-opensaml.git&amp;a=blob_plain&amp;f=opensaml-saml-impl/src/test/resources/org/opensaml/saml/metadata/resolver/impl/$entityID.xml&amp;hb=master</Subst>
 </MetadataProvider>

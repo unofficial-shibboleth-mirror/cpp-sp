@@ -11,11 +11,12 @@
     <Filter Include="Data">
       <UniqueIdentifier>{c7232fb3-a33b-4038-80d4-eb48b209a285}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\unittests\BaseTestCase.h">
-      <Filter>UnitTests</Filter>
-    </ClInclude>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{cf42e119-7cf9-4ff7-a27d-a4148c214ddd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{63179b9d-7e8f-4fc1-aeed-19174ecf134b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\..\unittests\DynamicMetadataProviderTest.h">
@@ -32,6 +33,9 @@
     <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\SPTest.cpp">
       <Filter>GeneratedCode</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\unittests\TestApplication.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="..\..\..\unittests\data\templateFromFile.xml">
@@ -43,5 +47,25 @@
     <Xml Include="..\..\..\unittests\data\regexFromFile.xml">
       <Filter>Data</Filter>
     </Xml>
+    <Xml Include="..\..\..\unittests\data\08ced64cddc9f1578598b2cf71ae747b11d11472.xml">
+      <Filter>Data</Filter>
+    </Xml>
+    <Xml Include="..\..\..\unittests\data\www.example.org.xml">
+      <Filter>Data</Filter>
+    </Xml>
+    <Xml Include="..\..\..\unittests\data\fromMDQ.xml">
+      <Filter>Data</Filter>
+    </Xml>
+    <Xml Include="..\..\..\unittests\data\spp.xml">
+      <Filter>Data</Filter>
+    </Xml>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\unittests\BaseTestCase.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\unittests\TestApplication.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
