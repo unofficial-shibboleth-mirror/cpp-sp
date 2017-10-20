@@ -53,37 +53,106 @@ extern string data_path;
 class DynamicMetadataTest : public CxxTest::TestSuite {
  private:
     const string m_entityId;
-    const MetadataProvider::Criteria m_entityIdCriteria;
     auto_ptr<SAML2ArtifactType0004> m_artifact;
-    MetadataProvider::Criteria m_artifactCriteria;
 public:
-    DynamicMetadataTest() : CxxTest::TestSuite(), m_entityId("https://www.example.org/sp"), m_entityIdCriteria(m_entityId.c_str()),
-        m_artifact(nullptr)
-    {
-
-    }
+    DynamicMetadataTest() : CxxTest::TestSuite(), m_entityId("https://idp.shibboleth.net/idp/shibboleth"), m_artifact(nullptr)
+    {}
 
     void setUp()
     {
-        m_artifact.reset(new SAML2ArtifactType0004(SecurityHelper::doHash("SHA1", m_entityId.data(), m_entityId.length(), false), 666));
-        m_artifactCriteria = MetadataProvider::Criteria(m_artifact.get());
+        if (!m_artifact.get()) {
+            m_artifact.reset(new SAML2ArtifactType0004(SecurityHelper::doHash("SHA1", m_entityId.data(), m_entityId.length(), false), 666));
+        }
     }
 
-    void tearDown()
-    {}
+private:
 
+    void performTest(string fileName, bool artifactOnly, const string type =  DYNAMIC_METADATA_PROVIDER)
+    {
+        const string config(data_path + fileName);
+        ifstream in(config.c_str());
+        const XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
+        ParserPool& pool = xcf.getParser();
+        XercesJanitor<DOMDocument> janitor(pool.parse(in));
+        auto_ptr<MetadataProvider> metadataProvider(
+            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(type, janitor.get()->getDocumentElement())
+        );
+
+        ta::TestApplication testApp(SPConfig::getConfig().getServiceProvider(), metadataProvider.get());
+        try {
+            metadataProvider->init();
+            if (!artifactOnly) {
+                MetadataProviderCriteria crit(testApp, m_entityId.c_str());
+                pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(crit);
+                TS_ASSERT(nullptr != thePair.first);
+            }
+
+            MetadataProviderCriteria artifactCrit(testApp, m_artifact.get());
+            pair<const EntityDescriptor*, const RoleDescriptor*>  artifactPair = metadataProvider->getEntityDescriptor(artifactCrit);
+            TS_ASSERT(nullptr != artifactPair.first);
+        } catch (XMLToolingException& ex) {
+            TS_TRACE(ex.what());
+            throw;
+        }
+
+    }
+
+public:
     void testTemplateFromRepo() {
-        string config = data_path + "templateFromRepo.xml";
+        performTest("templateFromRepo.xml", false);
+    }
+
+    void testTemplateFromRepoArtifactOnly ()
+    {
+        
+        performTest("templateFromRepo.xml", true);
+    }
+
+
+    void testTemplateFromFile()
+    {
+        performTest("templateFromFile.xml", false);
+    }
+
+    void testTemplateFromFileArtifactOnly()
+    {
+        // The template *IGNORES* the input and joint points at /idp.shibboleth.net.xml 
+        performTest("templateFromFile.xml", true);
+    }
+
+
+    void testRegexFromFile()
+    {
+        performTest("regexFromFile.xml", false);
+    }
+
+    void testRegexFromFileArtifactOnly()
+    {
+        performTest("regexFromFile.xml", true);
+    }
+
+
+    void testTestFromStaticFile()
+    {
+        performTest("staticFromFile.xml", false, XML_METADATA_PROVIDER);
+    }
+
+    void testTestFromStaticFileArtefactOnly()
+    {
+        performTest("staticFromFile.xml", true, XML_METADATA_PROVIDER);
+    }
+
+/* WIP
+
+    void MDQ() {
+        string config = data_path + "fromMDQ.xml";
         ifstream in(config.c_str());
         XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
         ParserPool& pool = xcf.getParser();
         XercesJanitor<DOMDocument> janitor(pool.parse(in));
-
         auto_ptr<MetadataProvider> metadataProvider(
             opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, janitor.get()->getDocumentElement())
         );
-
-      
 
         ta::TestApplication testApp(SPConfig::getConfig().getServiceProvider(), metadataProvider.get());
         MetadataProviderCriteria crit(testApp, m_entityId.c_str());
@@ -92,65 +161,17 @@ public:
             pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(crit);
             TS_ASSERT(nullptr != thePair.first);
 
-            const EntityDescriptor* foo = thePair.first;
-            auto f = foo->getEntityID();
-
+            MetadataProviderCriteria artifactCrit(testApp, m_artifact.get());
+            pair<const EntityDescriptor*, const RoleDescriptor*>  artefactPair = metadataProvider->getEntityDescriptor(artifactCrit);
+            TS_ASSERT(nullptr != artefactPair.first);
+            if (nullptr != artefactPair.first)
+                fprintf(stderr, "ei : %s\n", (artefactPair.first)->getEntityID());
         }
         catch (XMLToolingException& ex) {
             TS_TRACE(ex.what());
             throw;
         }
     }
-
-    void testTemplateFromFile()
-    {
-        string config = data_path + "templateFromFile.xml";
-        ifstream in(config.c_str());
-        XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
-        ParserPool& pool = xcf.getParser();
-        DOMDocument* doc = pool.parse(in);
-        XercesJanitor<DOMDocument> janitor(doc);
-
-        auto_ptr<MetadataProvider> metadataProvider(
-            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, doc->getDocumentElement())
-        );
-        try {
-            metadataProvider->init();
-            pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(m_entityIdCriteria);
-            TS_ASSERT(nullptr != thePair.first);
-
-            pair<const EntityDescriptor*, const RoleDescriptor*>  artefactPair = metadataProvider->getEntityDescriptor(m_artifactCriteria);
-
-
-        } catch (XMLToolingException& ex) {
-            TS_TRACE(ex.what());
-            throw;
-        }
-    }
-
-    void testRegexFromFile()
-    {
-        string config = data_path + "regexFromFile.xml";
-        ifstream in(config.c_str());
-        XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
-        ParserPool& pool = xcf.getParser();
-        DOMDocument* doc = pool.parse(in);
-        XercesJanitor<DOMDocument> janitor(doc);
-
-        auto_ptr<MetadataProvider> metadataProvider(
-            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, doc->getDocumentElement())
-        );
-        try {
-            metadataProvider->init();
-            pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(m_entityIdCriteria);
-            TS_ASSERT(nullptr != thePair.first);
-
-        } catch (XMLToolingException& ex) {
-            TS_TRACE(ex.what());
-            throw;
-        }
-    }
-
-
+    */
 
 };

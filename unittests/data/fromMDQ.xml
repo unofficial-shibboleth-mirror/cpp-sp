@@ -1,0 +1,3 @@
+<MetadataProvider type="Dynamic" ignoreTransport="true" >
+<Subst>http://shibboleth.net:9000/entities/$entityID</Subst>
+</MetadataProvider>

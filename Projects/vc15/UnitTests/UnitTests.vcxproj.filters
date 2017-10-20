@@ -17,6 +17,9 @@
     <Filter Include="Source">
       <UniqueIdentifier>{63179b9d-7e8f-4fc1-aeed-19174ecf134b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Data\Metadata">
+      <UniqueIdentifier>{9f784e0b-e150-40c5-bc09-eb884c7b7a47}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\..\unittests\DynamicMetadataProviderTest.h">
@@ -47,17 +50,17 @@
     <Xml Include="..\..\..\unittests\data\regexFromFile.xml">
       <Filter>Data</Filter>
     </Xml>
-    <Xml Include="..\..\..\unittests\data\08ced64cddc9f1578598b2cf71ae747b11d11472.xml">
-      <Filter>Data</Filter>
-    </Xml>
-    <Xml Include="..\..\..\unittests\data\www.example.org.xml">
-      <Filter>Data</Filter>
-    </Xml>
     <Xml Include="..\..\..\unittests\data\fromMDQ.xml">
       <Filter>Data</Filter>
     </Xml>
-    <Xml Include="..\..\..\unittests\data\spp.xml">
+    <Xml Include="..\..\..\unittests\data\staticFromFile.xml">
       <Filter>Data</Filter>
+    </Xml>
+    <Xml Include="..\..\..\unittests\data\idp.shibboleth.net.xml">
+      <Filter>Data\Metadata</Filter>
+    </Xml>
+    <Xml Include="..\..\..\unittests\data\df5a20c921bc30c1b76c5a6cec08d074e280de8b.xml">
+      <Filter>Data\Metadata</Filter>
     </Xml>
   </ItemGroup>
   <ItemGroup>
