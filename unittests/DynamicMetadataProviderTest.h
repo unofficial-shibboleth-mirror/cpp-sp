@@ -150,9 +150,10 @@ public:
         performTest("staticFromFile.xml", true, XML_METADATA_PROVIDER);
     }
 
-/* WIP
 
-    void MDQ() {
+private:
+    void mdqTest(bool artifactOnly)
+    {
         string config = data_path + "fromMDQ.xml";
         ifstream in(config.c_str());
         XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
@@ -163,23 +164,34 @@ public:
         );
 
         ta::TestApplication testApp(SPConfig::getConfig().getServiceProvider(), metadataProvider.get());
-        MetadataProviderCriteria crit(testApp, m_entityId.c_str());
+        const string testEntity("https://foo1.example.org/idp/shibboleth");
         try {
             metadataProvider->init();
-            pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(crit);
-            TS_ASSERT(nullptr != thePair.first);
+            if (!artifactOnly) {
+                MetadataProviderCriteria crit(testApp, testEntity.c_str());
+                pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(crit);
+                TS_ASSERT(nullptr != thePair.first);
+            }
 
-            MetadataProviderCriteria artifactCrit(testApp, m_artifact.get());
+            auto_ptr<SAML2ArtifactType0004> testArtifact(new SAML2ArtifactType0004(SecurityHelper::doHash("SHA1", testEntity.data(), testEntity.length(), false), 666));
+            MetadataProviderCriteria artifactCrit(testApp, testArtifact.get());
             pair<const EntityDescriptor*, const RoleDescriptor*>  artefactPair = metadataProvider->getEntityDescriptor(artifactCrit);
             TS_ASSERT(nullptr != artefactPair.first);
-            if (nullptr != artefactPair.first)
-                fprintf(stderr, "ei : %s\n", (artefactPair.first)->getEntityID());
-        }
-        catch (XMLToolingException& ex) {
+        } catch (XMLToolingException& ex) {
             TS_TRACE(ex.what());
             throw;
         }
     }
-    */
+
+public:
+    void testMDQ()
+    {
+        mdqTest(false);
+    }
+
+    void testMDQArtifactOnly ()
+    {
+        mdqTest(true);
+    }
 
 };
