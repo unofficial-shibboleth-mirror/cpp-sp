@@ -62,6 +62,9 @@
     <Xml Include="..\..\..\unittests\data\df5a20c921bc30c1b76c5a6cec08d074e280de8b.xml">
       <Filter>Data\Metadata</Filter>
     </Xml>
+    <Xml Include="..\..\..\unittests\data\chainedFromURL.xml">
+      <Filter>Data</Filter>
+    </Xml>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\unittests\BaseTestCase.h">

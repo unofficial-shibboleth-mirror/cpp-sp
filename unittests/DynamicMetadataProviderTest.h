@@ -120,7 +120,6 @@ public:
         performTest("templateFromFile.xml", true);
     }
 
-
     void testRegexFromFile()
     {
         performTest("regexFromFile.xml", false);
@@ -131,6 +130,15 @@ public:
         performTest("regexFromFile.xml", true);
     }
 
+    void testChainedFromRepo()
+    {
+        performTest("chainedFromURL.xml", false, CHAINING_METADATA_PROVIDER);
+    }
+
+    void testChainedFromRepoArtifactOnly()
+    {
+        performTest("chainedFromURL.xml", true, CHAINING_METADATA_PROVIDER);
+    }
 
     void testTestFromStaticFile()
     {
