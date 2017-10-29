@@ -866,7 +866,8 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
                 break;
 
             case ddf_body_t::DDF_INT:
-                if (is32bitSafe(p->value.integer)) throw IOException("Integer Overflow");
+                if (!is32bitSafe(p->value.integer))
+                    throw IOException("Integer Overflow");
                 os << "<number";
                 if (name_attr && p->name) {
                     os << " name=\"";
