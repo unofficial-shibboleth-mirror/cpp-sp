@@ -39,7 +39,7 @@
 #include <saml/version.h>
 #include <saml/binding/SAMLArtifact.h>
 #include <saml/saml2/metadata/Metadata.h>
-#include <saml/saml2/metadata/DynamicMetadataProvider.h>
+#include <saml/saml2/metadata/AbstractDynamicMetadataProvider.h>
 
 #include <xmltooling/logging.h>
 #include <xmltooling/XMLToolingConfig.h>
@@ -61,7 +61,7 @@ using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    class SHIBSP_DLLLOCAL DynamicMetadataProvider : public saml2md::DynamicMetadataProvider
+    class SHIBSP_DLLLOCAL DynamicMetadataProvider : public saml2md::AbstractDynamicMetadataProvider
     {
     public:
         DynamicMetadataProvider(const xercesc::DOMElement* e=nullptr);
@@ -95,7 +95,7 @@ namespace shibsp {
 };
 
 DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
-    : saml2md::DynamicMetadataProvider(e),
+    : saml2md::AbstractDynamicMetadataProvider(true, e),
         m_verifyHost(XMLHelper::getAttrBool(e, true, verifyHost)),
         m_ignoreTransport(XMLHelper::getAttrBool(e, false, ignoreTransport)),
         m_encoded(true), m_trust(nullptr)
@@ -107,6 +107,10 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
             m_subst = s.get();
             m_encoded = XMLHelper::getAttrBool(child, true, encoded);
             m_hashed = XMLHelper::getAttrString(child, nullptr, hashed);
+            if (!m_subst.empty() &&
+                XMLString::startsWithI(m_subst.c_str(), "file://")) {
+                throw ConfigurationException("DynamicMetadataProvider: <Subst> cannot be a file:// URL");
+            }
         }
     }
 
@@ -115,8 +119,13 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
         if (child && child->hasChildNodes() && child->hasAttributeNS(nullptr, match)) {
             m_match = XMLHelper::getAttrString(child, nullptr, match);
             auto_ptr_char repl(child->getFirstChild()->getNodeValue());
-            if (repl.get() && *repl.get())
+            if (repl.get() && *repl.get()) {
                 m_regex = repl.get();
+                if (!m_regex.empty() &&
+                    XMLString::startsWithI(m_regex.c_str(), "file://")) {
+                    throw ConfigurationException("DynamicMetadataProvider: <Regex> cannot be a file:// URL");
+                }
+            }
         }
     }
 
@@ -192,8 +201,7 @@ saml2md::EntityDescriptor* DynamicMetadataProvider::resolve(const saml2md::Metad
     }
 
     if (XMLString::startsWithI(name.c_str(), "file://")) {
-        MetadataProvider::Criteria baseCriteria(name.c_str());
-        return saml2md::DynamicMetadataProvider::resolve(baseCriteria);
+        throw saml2md::MetadataException("Dynamic MetadataProvider: Resolved name cannot start with a file:// ");
     }
 
     // Establish networking properties based on calling application.
