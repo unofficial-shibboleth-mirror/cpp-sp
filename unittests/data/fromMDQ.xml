@@ -1,3 +1,4 @@
-<MetadataProvider type="Dynamic" ignoreTransport="true" >
-<Subst>http://shibboleth.net:9000/entities/$entityID</Subst>
+<MetadataProvider type="Dynamic" ignoreTransport="true"  cacheDirectory="foo" backgroundInitialize="true">
+<Subst>http://mdq-beta.incommon.org/global/entities/$entityID</Subst>
+    <MetadataFilter type="Signature" certificate="icpem.pem"/>
 </MetadataProvider>

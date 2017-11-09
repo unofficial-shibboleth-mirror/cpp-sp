@@ -1,6 +1,7 @@
 log4j.rootCategory=WARN, console
 log4j.category.Shibboleth.MetadataProvider.Dynamic=DEBUG
-log4j.category.OpenSAML.MetadataProvider.Dynamic=DEBUG
+log4j.category.OpenSAML.MetadataProvider=DEBUG
+log4j.category.OpenSAML.Metadata=DEBUG
 
 Shibboleth
 log4j.appender.console=org.apache.log4j.ConsoleAppender
