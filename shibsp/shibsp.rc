@@ -65,7 +65,7 @@ BEGIN
             VALUE "InternalName", "shibsp1_6\0"
 #endif
 #endif
-            VALUE "LegalCopyright", "Copyright © 2016 UCAID\0"
+            VALUE "LegalCopyright", "Copyright © 2017 UCAID\0"
             VALUE "LegalTrademarks", "\0"
 #ifdef SHIBSP_LITE
 #ifdef _DEBUG
@@ -81,8 +81,8 @@ BEGIN
 #endif
 #endif
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 2.6.0\0"
-            VALUE "ProductVersion", "2, 6, 0, 0\0"
+            VALUE "ProductName", "Shibboleth 2.6.1\0"
+            VALUE "ProductVersion", "2, 6, 1, 0\0"
             VALUE "SpecialBuild", "\0"
         END
     END
