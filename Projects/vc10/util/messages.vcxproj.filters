@@ -15,12 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\..\..\shibd\message.mc">
-      <Filter>Source Files</Filter>
-    </CustomBuild>
+    <CustomBuild Include="..\..\..\util\message.mc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="messageResource.rc">
+    <ResourceCompile Include="..\..\..\util\messageResource.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
