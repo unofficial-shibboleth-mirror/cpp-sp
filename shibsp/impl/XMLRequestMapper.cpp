@@ -413,9 +413,14 @@ const Override* Override::locate(const HTTPRequest& request) const
             path2 = path2.substr(0, sep);
 
         for (vector< pair< boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > >::const_iterator re = o->m_regexps.begin(); re != o->m_regexps.end(); ++re) {
-            if (re->first->matches(path2.c_str())) {
-                o = re->second.get();
-                break;
+            try {
+                if (re->first->matches(path2.c_str())) {
+                    o = re->second.get();
+                    break;
+                }
+            } catch (XMLException& ex) {
+                auto_ptr_char tmp(ex.getMessage());
+                throw ConfigurationException("Caught exception while matching PathRegex : $1", params(1, tmp.get()));
             }
         }
     }
@@ -433,10 +438,15 @@ const Override* Override::locate(const HTTPRequest& request) const
                     if (q->get<1>()) {
                         // We have to match one of the values.
                         while (vals.first != vals.second) {
-                            if (q->get<1>()->matches(vals.first->second)) {
-                                o = q->get<2>().get();
-                                descended = true;
-                                break;
+                            try{
+                                if (q->get<1>()->matches(vals.first->second)) {
+                                    o = q->get<2>().get();
+                                    descended = true;
+                                    break;
+                                }
+                            } catch (XMLException& ex) {
+                                auto_ptr_char tmp(ex.getMessage());
+                                throw ConfigurationException("Caught exception while matching Query regular expression : $1", params(1, tmp.get()));
                             }
                             ++vals.first;
                         }
@@ -619,8 +629,14 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const HTTP
         o = i->second.get();
     else {
         for (vector< pair< boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > >::const_iterator re = m_regexps.begin(); !o && re != m_regexps.end(); ++re) {
-            if (re->first->matches(vhost))
-                o=re->second.get();
+            try{
+                if (re->first->matches(vhost))
+                    o=re->second.get();
+            } catch (XMLException& ex) {
+                auto_ptr_char tmp(ex.getMessage());
+                throw ConfigurationException("Caught exception while matching HostRegex : $1", params(1, tmp.get()));
+            }
+
         }
     }
 
