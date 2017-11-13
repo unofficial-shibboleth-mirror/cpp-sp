@@ -95,7 +95,7 @@ namespace shibsp {
 };
 
 DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
-    : saml2md::DynamicMetadataProvider(e),
+    : saml2md::DynamicMetadataProvider(e), MetadataProvider(e),
         m_verifyHost(XMLHelper::getAttrBool(e, true, verifyHost)),
         m_ignoreTransport(XMLHelper::getAttrBool(e, false, ignoreTransport)),
         m_encoded(true), m_trust(nullptr)
