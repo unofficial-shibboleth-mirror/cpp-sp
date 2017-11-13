@@ -484,8 +484,11 @@ pair<bool,long> RemotedHandler::unwrap(SPRequest& request, DDF& out) const
         return make_pair(true, request.sendRedirect(h.string()));
     h = out["response"];
     if (h.isstruct()) {
-        istringstream s(h["data"].string());
-        return make_pair(true, request.sendResponse(s, h["status"].integer()));
+        const char* data = h["data"].string();
+        if (data) {
+            istringstream s(data);
+            return make_pair(true, request.sendResponse(s, h["status"].integer()));
+        }
     }
     return make_pair(false, 0L);
 }
