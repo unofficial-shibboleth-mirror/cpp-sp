@@ -117,7 +117,7 @@ namespace shibsp {
         string fname;
         if (!pathname.first) {
             if (!accesserror) {
-                fname = string(page) + "Error.html";
+                fname = string(mderror ? "metadata" : page) + "Error.html";
                 pathname.second = fname.c_str();
             }
         }
