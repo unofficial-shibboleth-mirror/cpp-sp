@@ -51,7 +51,7 @@ BEGIN
 #else
             VALUE "FileDescription", "Shibboleth SP Library\0"
 #endif
-            VALUE "FileVersion", "1, 6, 0, 0\0"
+            VALUE "FileVersion", "1, 6, 1, 0\0"
 #ifdef SHIBSP_LITE
 #ifdef _DEBUG
             VALUE "InternalName", "shibsp-lite1_6D\0"
