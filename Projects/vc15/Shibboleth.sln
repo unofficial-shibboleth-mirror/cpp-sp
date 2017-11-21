@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.16
+VisualStudioVersion = 15.0.27004.2009
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server Modules", "Server Modules", "{26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}"
 EndProject
@@ -60,8 +60,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		..\..\configs\postTemplate.html = ..\..\configs\postTemplate.html
 		..\..\configs\protocols.xml = ..\..\configs\protocols.xml
 		..\..\configs\security-policy.xml = ..\..\configs\security-policy.xml
-		..\..\configs\SetService32.bat = ..\..\configs\SetService32.bat
-		..\..\configs\SetService64.bat = ..\..\configs\SetService64.bat
 		..\..\configs\shibboleth2.xml = ..\..\configs\shibboleth2.xml
 		..\..\configs\shibd-debian.in = ..\..\configs\shibd-debian.in
 		..\..\configs\shibd-osx.plist.in = ..\..\configs\shibd-osx.plist.in
@@ -70,9 +68,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		..\..\configs\shibd.logger.in = ..\..\configs\shibd.logger.in
 		..\..\configs\sslError.html = ..\..\configs\sslError.html
 		..\..\configs\syslog.logger = ..\..\configs\syslog.logger
-		..\..\configs\upgrade.xsl = ..\..\configs\upgrade.xsl
 		..\..\configs\win-shibboleth2.xml = ..\..\configs\win-shibboleth2.xml
-		..\..\configs\xsltproc.js = ..\..\configs\xsltproc.js
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{31B171C1-E06C-464F-A541-38724AB52D79}"
@@ -146,12 +142,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "plugins-lite", "plugins\plu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Installers", "Installers", "{BF389E01-8F97-4ECA-8C62-2DBB8F0480DD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MergeModules", "Wix\MergeModules.vcxproj", "{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MergeModules", "wix\MergeModules.vcxproj", "{EFF65B5B-85AB-4FD5-A217-7E6CA4219951}"
 	ProjectSection(ProjectDependencies) = postProject
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Installer", "Wix\Installer.vcxproj", "{C2B1BB79-C88B-42B4-9AEC-170F91910F70}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Installer", "wix\Installer.vcxproj", "{C2B1BB79-C88B-42B4-9AEC-170F91910F70}"
 	ProjectSection(ProjectDependencies) = postProject
 		{87C25D4E-8D19-4513-B0BA-BC668BC2DEE3} = {87C25D4E-8D19-4513-B0BA-BC668BC2DEE3}
 		{B44C0852-83B8-4FB2-A86E-097C9C8256D1} = {B44C0852-83B8-4FB2-A86E-097C9C8256D1}

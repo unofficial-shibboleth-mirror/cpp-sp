@@ -30,14 +30,14 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\DynamicMetadataProviderTest.cpp">
-      <Filter>GeneratedCode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Build\VC15\UnitTests\x64\Debug\SPTest.cpp">
-      <Filter>GeneratedCode</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\unittests\TestApplication.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\unittests\DynamicMetadataProviderTest.cpp">
+      <Filter>GeneratedCode</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\unittests\SPTest.cpp">
+      <Filter>GeneratedCode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -13,22 +13,22 @@ Requires:	openssl
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 PreReq:		xmltooling-schemas%{?_isa} >= 1.6.0, opensaml-schemas%{?_isa} >= 2.6.0
 %else
-PreReq:		xmltooling-schemas >= 1.6.0, opensaml-schemas >= 2.6.0
+PreReq:		xmltooling-schemas >= 3.0.0, opensaml-schemas >= 3.0.0
 %endif
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:		%{insserv_prereq} %{fillup_prereq}
-BuildRequires:	libxerces-c-devel >= 3.1
+BuildRequires:	libxerces-c-devel >= 3.2
 %else
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
 BuildRequires:	systemd-devel, pkgconfig
-BuildRequires:	xerces-c-devel >= 3.1
+BuildRequires:	xerces-c-devel >= 3.2
 %else
-BuildRequires:	libxerces-c-devel >= 3.1
+BuildRequires:	libxerces-c-devel >= 3.2
 %endif
 %endif
-BuildRequires:	libxml-security-c-devel >= 1.7.3
-BuildRequires:	libxmltooling-devel >= 1.6.0
-BuildRequires:	libsaml-devel >= 2.6.0
+BuildRequires:	libxml-security-c-devel >= 2.0.0
+BuildRequires:	libxmltooling-devel >= 3.0.0
+BuildRequires:	libsaml-devel >= 3.0.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.4}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
@@ -90,13 +90,13 @@ Group:		Development/Libraries/C and C++
 Requires:	%{name} = %{version}-%{release}
 Obsoletes:	shibboleth-sp-devel = 2.5.0
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
-Requires:	xerces-c-devel >= 3.1
+Requires:	xerces-c-devel >= 3.2
 %else
-Requires:	libxerces-c-devel >= 3.1
+Requires:	libxerces-c-devel >= 3.2
 %endif
-Requires: 	libxml-security-c-devel >= 1.7.3
-Requires: 	libxmltooling-devel >= 1.6.0
-Requires: 	libsaml-devel >= 2.6.0
+Requires: 	libxml-security-c-devel >= 2.0.0
+Requires: 	libxmltooling-devel >= 3.0.0
+Requires: 	libsaml-devel >= 3.0.0
 %{?_with_log4cpp:Requires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:Requires: liblog4shib-devel >= 1.0.4}
 
@@ -470,6 +470,9 @@ exit 0
 %doc %{pkgdocdir}/api
 
 %changelog
+* Tue Nov 21 2017 Scott Cantor <cantor.2@osu.edu> - 3.0.0-1
+- Bump dependency versions
+
 * Tue May 03 2016 Scott Cantor <cantor.2@osu.edu> - 2.6.0-1
 - Bump opensaml dependency version
 - Bump max wait time for shibd systemd unit file

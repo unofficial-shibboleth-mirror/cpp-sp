@@ -93,5 +93,6 @@ x64
 /shibsp/stamp-h2
 /util/mdquery
 /util/resolvertest
+/unittests/*.cpp
 .deps
 .dirstamp
