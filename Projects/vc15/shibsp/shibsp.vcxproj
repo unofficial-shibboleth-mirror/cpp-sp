@@ -22,7 +22,6 @@
     <ProjectGuid>{81F0F7A6-DC36-46EF-957F-F9E81D4403F6}</ProjectGuid>
     <RootNamespace>shibsp</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -90,10 +89,10 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)8_0D</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)8_0D</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)8_0</TargetName>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)8_0</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)3_0D</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectName)3_0D</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)3_0</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectName)3_0</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>$(SolutionDir)..\..\Build\VC15\$(projectName)\$(Platform)\$(Configuration)\</IntDir>
@@ -116,13 +115,13 @@
       <PreprocessorDefinitions>_UNICODE;UNICODE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xsec_2D.lib;saml10D.lib;xmltooling8D.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xsec_2D.lib;saml3D.lib;xmltooling3D.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\cpp-opensaml\Build\VC15\$(Configuration);..\..\..\..\cpp-xmltooling\Build\VC15\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>$(TargetDir)$(ProjectName)8D.lib</ImportLibrary>
+      <ImportLibrary>$(TargetDir)$(ProjectName)3D.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -143,13 +142,13 @@
       <PreprocessorDefinitions>_UNICODE;UNICODE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xsec_2D.lib;saml10D.lib;xmltooling8D.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4shib1D.lib;xerces-c_3D.lib;xsec_2D.lib;saml3D.lib;xmltooling3D.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\cpp-opensaml\Build\VC15\$(Platform)\$(Configuration);..\..\..\..\cpp-xmltooling\Build\VC15\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>$(TargetDir)$(ProjectName)8D.lib</ImportLibrary>
+      <ImportLibrary>$(TargetDir)$(ProjectName)3D.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -160,14 +159,14 @@
       <DisableSpecificWarnings>4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_2.lib;saml10.lib;xmltooling8.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_2.lib;saml3.lib;xmltooling3.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\cpp-opensaml\Build\VC15\$(Configuration);..\..\..\..\cpp-xmltooling\Build\VC15\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>$(TargetDir)$(ProjectName)8.lib</ImportLibrary>
+      <ImportLibrary>$(TargetDir)$(ProjectName)3.lib</ImportLibrary>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
@@ -182,7 +181,7 @@
       <DisableSpecificWarnings>4275</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_2.lib;saml10.lib;xmltooling8.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>log4shib1.lib;xerces-c_3.lib;xsec_2.lib;saml3.lib;xmltooling3.lib;wsock32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\cpp-opensaml\Build\VC15\$(Platform)\$(Configuration);..\..\..\..\cpp-xmltooling\Build\VC15\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -190,7 +189,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <ImportLibrary>$(TargetDir)$(ProjectName)8.lib</ImportLibrary>
+      <ImportLibrary>$(TargetDir)$(ProjectName)3.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
