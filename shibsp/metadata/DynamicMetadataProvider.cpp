@@ -461,7 +461,8 @@ void *DynamicMetadataProvider::init_fn(void* pv)
                 auto_ptr<EntityDescriptor> entity (me->entityFromStream(thisFileEntry));
                 thisFileEntry.close();
                 if (entity.get()) {
-                    me->doFilters(BatchLoadMetadataFilterContext(true),  *entity);
+                    const BatchLoadMetadataFilterContext bc(true);
+                    me->doFilters(&bc, *entity);
                     me->cacheEntity(entity.get());
                     entity.release();
                 }
