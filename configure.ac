@@ -24,11 +24,11 @@ AC_ARG_ENABLE(debug,
     enable_debug=$enableval, enable_debug=no)
 
 if test "$enable_debug" = "yes" ; then
-    GCC_CFLAGS="$CFLAGS -g -D_DEBUG -Wstrict-overflow=5"
-    GCC_CXXFLAGS="$CXXFLAGS -g -D_DEBUG -Wstrict-overflow=5"
+    GCC_CFLAGS="$CFLAGS -g -D_DEBUG"
+    GCC_CXXFLAGS="$CXXFLAGS -g -D_DEBUG"
 else
-    GCC_CFLAGS="$CFLAGS -O2 -DNDEBUG -Wstrict-overflow=5"
-    GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG -Wstrict-overflow=5"
+    GCC_CFLAGS="$CFLAGS -O2 -DNDEBUG"
+    GCC_CXXFLAGS="$CXXFLAGS -O2 -DNDEBUG"
 fi
 
 AC_CONFIG_HEADERS([config.h shibsp/config_pub.h])
