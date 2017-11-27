@@ -17,15 +17,11 @@ PreReq:		xmltooling-schemas >= 3.0.0, opensaml-schemas >= 3.0.0
 %endif
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:		%{insserv_prereq} %{fillup_prereq}
-BuildRequires:	libxerces-c-devel >= 3.2
-%else
+%endif
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
-BuildRequires:	systemd-devel, pkgconfig
-BuildRequires:	xerces-c-devel >= 3.2
-%else
-BuildRequires:	libxerces-c-devel >= 3.2
+BuildRequires:  systemd-devel, pkgconfig
 %endif
-%endif
+BuildRequires:  libxerces-c-devel >= 3.2
 BuildRequires:	libxml-security-c-devel >= 2.0.0
 BuildRequires:	libxmltooling-devel >= 3.0.0
 BuildRequires:	libsaml-devel >= 3.0.0
@@ -89,11 +85,7 @@ Summary:	Shibboleth Development Headers
 Group:		Development/Libraries/C and C++
 Requires:	%{name} = %{version}-%{release}
 Obsoletes:	shibboleth-sp-devel = 2.5.0
-%if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
-Requires:	xerces-c-devel >= 3.2
-%else
 Requires:	libxerces-c-devel >= 3.2
-%endif
 Requires: 	libxml-security-c-devel >= 2.0.0
 Requires: 	libxmltooling-devel >= 3.0.0
 Requires: 	libsaml-devel >= 3.0.0
@@ -472,6 +464,7 @@ exit 0
 %changelog
 * Tue Nov 21 2017 Scott Cantor <cantor.2@osu.edu> - 3.0.0-1
 - Bump dependency versions
+- Require Xerces 3.2 as shipped by me on all platforms
 
 * Tue May 03 2016 Scott Cantor <cantor.2@osu.edu> - 2.6.0-1
 - Bump opensaml dependency version
