@@ -35,10 +35,3 @@
 
 /* Define to 1 if log4shib library is used. */
 #define SHIBSP_LOG4SHIB 1
-
-#ifndef XMLTOOLING_NO_XMLSEC
-# include <xsec/framework/XSECDefs.hpp>
-# if (_XSEC_VERSION_FULL >= 10600)
-#  define SHIBSP_XMLSEC_WHITELISTING 1
-# endif
-#endif

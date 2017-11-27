@@ -2155,19 +2155,14 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 
     if (first) {
         if (!m_policy->getAlgorithmWhitelist().empty()) {
-#ifdef SHIBSP_XMLSEC_WHITELISTING
             for (vector<xstring>::const_iterator white = m_policy->getAlgorithmWhitelist().begin();
                     white != m_policy->getAlgorithmWhitelist().end(); ++white) {
                 XSECPlatformUtils::whitelistAlgorithm(white->c_str());
                 auto_ptr_char whitelog(white->c_str());
                 log.info("explicitly whitelisting security algorithm (%s)", whitelog.get());
             }
-#else
-            log.crit("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
-#endif
         }
         else if (!m_policy->getDefaultAlgorithmBlacklist().empty() || !m_policy->getAlgorithmBlacklist().empty()) {
-#ifdef SHIBSP_XMLSEC_WHITELISTING
             for (vector<xstring>::const_iterator black = m_policy->getDefaultAlgorithmBlacklist().begin();
                     black != m_policy->getDefaultAlgorithmBlacklist().end(); ++black) {
                 XSECPlatformUtils::blacklistAlgorithm(black->c_str());
@@ -2180,9 +2175,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
                 auto_ptr_char blacklog(black->c_str());
                 log.info("explicitly blacklisting security algorithm (%s)", blacklog.get());
             }
-#else
-            log.crit("XML-Security-C library prior to 1.6.0 does not support algorithm white/blacklists");
-#endif
         }
     }
 

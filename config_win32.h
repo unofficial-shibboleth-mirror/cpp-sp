@@ -60,13 +60,6 @@
 /* Define if you have POSIX threads libraries and header files. */
 /* #undef HAVE_PTHREAD */
 
-#ifndef SHIBSP_LITE
-# include <xsec/framework/XSECDefs.hpp>
-# if (_XSEC_VERSION_FULL >= 10600)
-#  define SHIBSP_XMLSEC_WHITELISTING 1
-# endif
-#endif
-
 /* Define to 1 if you have the <stdint.h> header file. */
 /* #undef HAVE_STDINT_H */
 

@@ -264,21 +264,17 @@ AC_CHECK_HEADER([xsec/utils/XSECPlatformUtils.hpp],,AC_MSG_ERROR([unable to find
 AC_MSG_CHECKING([XML-Security-C version])
 AC_PREPROC_IFELSE(
     [AC_LANG_PROGRAM([#include <xsec/utils/XSECPlatformUtils.hpp>],
-    [#if XSEC_VERSION_MAJOR > 1 || (XSEC_VERSION_MAJOR == 1 && XSEC_VERSION_MEDIUM > 3)
+    [#if XSEC_VERSION_MAJOR >= 2
 int i = 0;
 #else
-#error need version 1.4.0 or later
+#error need version 2.0.0 or later
 #endif])],
     [AC_MSG_RESULT(OK)],
-    [AC_MSG_FAILURE([XML-Security-C version 1.4.0 or greater is required.])])
+    [AC_MSG_FAILURE([XML-Security version 2.0.0 or greater is required.])])
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <xsec/utils/XSECPlatformUtils.hpp>]],
         [[XSECPlatformUtils::Initialise()]])],,
     [AC_MSG_ERROR([unable to link with XML-Security])])
-
-AC_MSG_CHECKING([whether XML-Security-C supports white/blacklisting of algorithms])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <xsec/framework/XSECAlgorithmMapper.hpp>]], [[XSECAlgorithmMapper* mapper; mapper->whitelistAlgorithm(NULL);]])],[AC_MSG_RESULT([yes])
-      AC_DEFINE([SHIBSP_XMLSEC_WHITELISTING],[1],[Define to 1 if XML-Security-C supports white/blacklisting algorithms.])],[AC_MSG_RESULT([no])])
 
 # restore master libs
 LIBS="$save_LIBS"
