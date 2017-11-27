@@ -40,6 +40,7 @@
 #include <saml/saml2/metadata/Metadata.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
 #include <saml/saml2/metadata/AbstractDynamicMetadataProvider.h>
+#include <saml/saml2/metadata/MetadataFilter.h>
 
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/logging.h>
@@ -460,7 +461,7 @@ void *DynamicMetadataProvider::init_fn(void* pv)
                 auto_ptr<EntityDescriptor> entity (me->entityFromStream(thisFileEntry));
                 thisFileEntry.close();
                 if (entity.get()) {
-                    me->doFilters(*entity);
+                    me->doFilters(BatchLoadMetadataFilterContext(true),  *entity);
                     me->cacheEntity(entity.get());
                     entity.release();
                 }
