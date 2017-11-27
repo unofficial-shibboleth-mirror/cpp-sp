@@ -72,12 +72,7 @@ namespace shibsp {
             m_document = doc;
         }
 
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-        short
-#else
-        FilterAction
-#endif
-        acceptNode(const DOMNode* node) const {
+        FilterAction acceptNode(const DOMNode* node) const {
             return FILTER_REJECT;
         }
 

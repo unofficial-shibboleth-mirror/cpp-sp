@@ -104,11 +104,7 @@ const vector<string>& XMLAttribute::getSerializedValues() const
                         *pos++=*pos2;
                 *pos=0;
                 m_serialized.push_back(reinterpret_cast<char*>(enc));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                XMLString::release(&enc);
-#else
                 XMLString::release((char**)&enc);
-#endif
             }
         }
     }

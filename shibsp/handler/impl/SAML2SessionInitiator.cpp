@@ -134,12 +134,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SessionInitiatorNodeFilter : public DOMNodeFilter
     {
     public:
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-        short
-#else
-        FilterAction
-#endif
-        acceptNode(const DOMNode* node) const {
+        FilterAction acceptNode(const DOMNode* node) const {
             return FILTER_REJECT;
         }
     };
@@ -652,11 +647,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(requestTemplate), &x);
         if (decoded) {
             istringstream is(reinterpret_cast<char*>(decoded));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-            XMLString::release(&decoded);
-#else
             XMLString::release((char**)&decoded);
-#endif
             DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(is);
             XercesJanitor<DOMDocument> docjanitor(doc);
             auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));

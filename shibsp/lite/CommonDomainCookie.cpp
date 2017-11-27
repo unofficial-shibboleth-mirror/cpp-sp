@@ -64,11 +64,7 @@ CommonDomainCookie::CommonDomainCookie(const char* cookie)
         XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(i->c_str()),&len);
         if (decoded && *decoded) {
             m_list.push_back(reinterpret_cast<char*>(decoded));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-            XMLString::release(&decoded);
-#else
             XMLString::release((char**)&decoded);
-#endif
         }
     }
 }
@@ -109,11 +105,7 @@ const char* CommonDomainCookie::set(const char* entityID)
         *pos=0;
 
         delimited += reinterpret_cast<char*>(b64);
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-        XMLString::release(&b64);
-#else
         XMLString::release((char**)&b64);
-#endif
     }
 
     m_encoded=XMLToolingConfig::getConfig().getURLEncoder()->encode(delimited.c_str());

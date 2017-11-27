@@ -237,11 +237,7 @@ gss_ctx_id_t RemotedRequest::getGSSContext() const
                 OM_uint32 major = gss_import_sec_context(&minor, &importbuf, &m_gssctx);
                 if (major != GSS_S_COMPLETE)
                     m_gssctx = GSS_C_NO_CONTEXT;
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                XMLString::release(&decoded);
-#else
                 XMLString::release((char**)&decoded);
-#endif
             }
         }
     }
@@ -266,11 +262,7 @@ gss_name_t RemotedRequest::getGSSName() const
 #endif
             if (major != GSS_S_COMPLETE)
                 m_gssname = GSS_C_NO_NAME;
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-            XMLString::release(&decoded);
-#else
             XMLString::release((char**)&decoded);
-#endif
         }
 
         if (m_gssname == GSS_C_NO_NAME) {
@@ -428,11 +420,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
                 if (out) {
                     string ctx;
                     ctx.append(reinterpret_cast<char*>(out), len);
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                    XMLString::release(&out);
-#else
                     XMLString::release((char**)&out);
-#endif
                     in.addmember("gss_context").string(ctx.c_str());
                 }
                 else {
@@ -457,11 +445,7 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
                     if (out) {
                         string nm;
                         nm.append(reinterpret_cast<char*>(out), len);
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                        XMLString::release(&out);
-#else
                         XMLString::release((char**)&out);
-#endif
                         in.addmember("gss_name").string(nm.c_str());
                     }
                     else {

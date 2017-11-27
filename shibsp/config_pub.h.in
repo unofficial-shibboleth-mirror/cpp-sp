@@ -16,12 +16,6 @@
 /* Define to 1 if log4shib library is used. */
 #undef SHIBSP_LOG4SHIB
 
-/* Define to 1 if Xerces XMLString includes XMLByte release. */
-#undef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-
-/* Define to 1 if Xerces DOMNodeFilter API returns a short. */
-#undef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-
 /* Define to 1 if XML-Security-C supports white/blacklisting algorithms. */
 #undef SHIBSP_XMLSEC_WHITELISTING
 

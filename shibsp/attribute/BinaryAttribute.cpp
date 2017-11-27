@@ -51,11 +51,7 @@ BinaryAttribute::BinaryAttribute(DDF& in) : Attribute(in)
         XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(val.string()), &x);
         if (decoded) {
             m_values.push_back(string(reinterpret_cast<char*>(decoded), x));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-            XMLString::release(&decoded);
-#else
             XMLString::release((char**)&decoded);
-#endif
         }
         val = in.first().next();
     }
@@ -110,11 +106,7 @@ const vector<string>& BinaryAttribute::getSerializedValues() const
                         *pos++=*pos2;
                 *pos=0;
                 m_serialized.push_back(reinterpret_cast<char*>(enc));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                XMLString::release(&enc);
-#else
                 XMLString::release((char**)&enc);
-#endif
             }
         }
     }

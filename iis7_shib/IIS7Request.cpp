@@ -214,11 +214,7 @@ const vector<string>& IIS7Request::getClientCertificates() const
         XMLSize_t outlen;
         XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(certInfo->pCertEncoded), certInfo->CertEncodedSize, &outlen);
         m_certs.push_back(reinterpret_cast<char*>(serialized));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-        XMLString::release(&serialized);
-#else
         XMLString::release((char**)&serialized);
-#endif
     }
     return m_certs;
 }

@@ -115,11 +115,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
                     XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(val.get()),&x);
                     if (decoded) {
                         dest.push_back(reinterpret_cast<char*>(decoded));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                        XMLString::release(&decoded);
-#else
                         XMLString::release((char**)&decoded);
-#endif
                     }
                     else {
                         log.warn("skipping AttributeValue, unable to base64-decode");
@@ -148,11 +144,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
             XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(val.get()),&x);
             if (decoded) {
                 dest.push_back(reinterpret_cast<char*>(decoded));
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                XMLString::release(&decoded);
-#else
                 XMLString::release((char**)&decoded);
-#endif
             }
             else {
                 log.warn("ignoring NameID, unable to base64-decode");
@@ -177,11 +169,7 @@ shibsp::Attribute* Base64AttributeDecoder::decode(
                 XMLByte* decoded=Base64::decode(reinterpret_cast<const XMLByte*>(val.get()),&x);
                 if (decoded) {
                     dest.push_back(reinterpret_cast<char*>(decoded));
-    #ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-                    XMLString::release(&decoded);
-    #else
                     XMLString::release((char**)&decoded);
-    #endif
                 }
                 else {
                     log.warn("ignoring NameIdentifier, unable to base64-decode");

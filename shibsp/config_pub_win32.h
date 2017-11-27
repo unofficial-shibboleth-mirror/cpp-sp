@@ -36,13 +36,6 @@
 /* Define to 1 if log4shib library is used. */
 #define SHIBSP_LOG4SHIB 1
 
-#include <xercesc/util/XercesVersion.hpp>
-
-#if (XERCES_VERSION_MAJOR < 3)
-# define SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE 1
-# define SHIBSP_XERCESC_SHORT_ACCEPTNODE 1
-#endif
-
 #ifndef XMLTOOLING_NO_XMLSEC
 # include <xsec/framework/XSECDefs.hpp>
 # if (_XSEC_VERSION_FULL >= 10600)

@@ -202,12 +202,7 @@ namespace {
         }
 
         // Provides filter to exclude special config elements.
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-        short
-#else
-        FilterAction
-#endif
-        acceptNode(const DOMNode* node) const;
+        FilterAction acceptNode(const DOMNode* node) const;
 
     private:
         template <class T> T* doChainedPlugins(
@@ -310,12 +305,7 @@ namespace {
         map< string,boost::shared_ptr<Application> > m_appmap;
 
         // Provides filter to exclude special config elements.
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-        short
-#else
-        FilterAction
-#endif
-        acceptNode(const DOMNode* node) const;
+        FilterAction acceptNode(const DOMNode* node) const;
 
         void setDocument(DOMDocument* doc) {
             m_document = doc;
@@ -1509,12 +1499,7 @@ void XMLApplication::doAttributePlugins(DOMElement* e, Category& log)
 }
 #endif
 
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-short
-#else
-DOMNodeFilter::FilterAction
-#endif
-XMLApplication::acceptNode(const DOMNode* node) const
+DOMNodeFilter::FilterAction XMLApplication::acceptNode(const DOMNode* node) const
 {
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,ApplicationOverride) ||
@@ -1814,12 +1799,7 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
     }
 }
 
-#ifdef SHIBSP_XERCESC_SHORT_ACCEPTNODE
-short
-#else
-DOMNodeFilter::FilterAction
-#endif
-XMLConfigImpl::acceptNode(const DOMNode* node) const
+DOMNodeFilter::FilterAction XMLConfigImpl::acceptNode(const DOMNode* node) const
 {
     if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB2SPCONFIG_NS))
         return FILTER_ACCEPT;

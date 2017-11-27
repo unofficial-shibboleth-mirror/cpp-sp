@@ -375,11 +375,7 @@ void GSSAPIExtractor::extractAttributes(
                 gss = GSS_C_NO_CONTEXT;
             }
         }
-#ifdef SHIBSP_XERCESC_HAS_XMLBYTE_RELEASE
-        XMLString::release(&decoded);
-#else
         XMLString::release((char**)&decoded);
-#endif
     }
     else {
         m_log.warn("unable to extract attributes, base64 decode of GSSAPI context or name failed");
