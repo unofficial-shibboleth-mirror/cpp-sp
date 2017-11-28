@@ -1,4 +1,5 @@
 
+#include <Windows.h>
 #include <xmltooling\unicode.h>
 
 #include <shibsp/Application.h>

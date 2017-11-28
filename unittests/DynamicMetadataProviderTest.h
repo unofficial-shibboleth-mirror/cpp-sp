@@ -69,7 +69,6 @@ private:
 
     void performTest(string fileName, bool artifactOnly, const string type =  DYNAMIC_METADATA_PROVIDER)
     {
-#if 0
         const string config(data_path + fileName);
         ifstream in(config.c_str());
         const XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
@@ -95,7 +94,6 @@ private:
             TS_TRACE(ex.what());
             throw;
         }
-#endif
     }
 
 public:
@@ -111,23 +109,23 @@ public:
 
     void testTemplateFromFile()
     {
-        performTest("templateFromFile.xml", false); // Currently fails
+//        performTest("templateFromFile.xml", false); // Currently fails
     }
 
     void testTemplateFromFileArtifactOnly()
     {
         // The template *IGNORES* the input and joint points at /idp.shibboleth.net.xml 
-        performTest("templateFromFile.xml", true);  // Currently fails
+       // performTest("templateFromFile.xml", true);  // Currently fails
     }
 
     void testRegexFromFile()
     {
-        performTest("regexFromFile.xml", false);  // Currently fails
+        //performTest("regexFromFile.xml", false);  // Currently fails
     }
 
     void testRegexFromFileArtifactOnly()
     {
-        performTest("regexFromFile.xml", true);
+       // performTest("regexFromFile.xml", true);
     }
 
     void testChainedFromRepo()
@@ -142,12 +140,12 @@ public:
 
     void testTestFromStaticFile()
     {
-        performTest("staticFromFile.xml", false, XML_METADATA_PROVIDER);
+       // performTest("staticFromFile.xml", false, XML_METADATA_PROVIDER);
     }
 
     void testTestFromStaticFileArtefactOnly()
     {
-        performTest("staticFromFile.xml", true, XML_METADATA_PROVIDER);
+        //performTest("staticFromFile.xml", true, XML_METADATA_PROVIDER);
     }
 
 
@@ -191,7 +189,7 @@ public:
 
     void testMDQArtifactOnly ()
     {
-        mdqTest(true);
+        //mdqTest(true);
     }
 
 };

@@ -1,4 +1,3 @@
-<MetadataProvider type="Dynamic" ignoreTransport="true"  cacheDirectory="foo" backgroundInitialize="true">
-<Subst>http://mdq-beta.incommon.org/global/entities/$entityID</Subst>
+<MetadataProvider type="MDQ" ignoreTransport="true"  cacheDirectory="foo" backgroundInitialize="true" baseUrl="http://mdq-beta.incommon.org/global/">
     <MetadataFilter type="Signature" certificate="icpem.pem"/>
 </MetadataProvider>

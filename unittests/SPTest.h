@@ -1,3 +1,4 @@
+#include <Windows.h>
 #include <fstream>
 #include "BaseTestCase.h"
 #include <shibsp/SPConfig.h>
