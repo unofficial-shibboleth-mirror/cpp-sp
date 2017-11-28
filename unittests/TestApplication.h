@@ -1,4 +1,4 @@
-#include <shibsp/spconfig.h>
+#include <shibsp/SPConfig.h>
 #include <shibsp/Application.h>
 #include <shibsp/util/DOMPropertySet.h>
 #include <saml/saml2/metadata/MetadataProvider.h>
