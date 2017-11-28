@@ -84,6 +84,8 @@ namespace shibsp {
 
     private:
         bool m_verifyHost, m_ignoreTransport, m_encoded, m_backgroundInit;
+        const bool m_isMDQ;
+        static bool s_artifactWarned;
         string m_subst, m_match, m_regex, m_hashed, m_cacheDir;
         boost::scoped_ptr<X509TrustEngine> m_trust;
         boost::scoped_ptr<CredentialResolver> m_dummyCR;
@@ -110,7 +112,10 @@ namespace shibsp {
     static const XMLCh verifyHost[] =       UNICODE_LITERAL_10(v,e,r,i,f,y,H,o,s,t);
     static const XMLCh cacheDirectory[] =   UNICODE_LITERAL_14(c,a,c,h,e,D,i,r,e,c,t,o,r,y);
     static const XMLCh backgroundInit[] =   UNICODE_LITERAL_20(b,a,c,k,g,r,o,u,n,d,I,n,i,t,i,a,l,i,z,e);
+    static const XMLCh baseUrl[] =          UNICODE_LITERAL_7(b,a,s,e,U,r,l);
 };
+
+bool DynamicMetadataProvider::s_artifactWarned(false);
 
 DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
     : MetadataProvider(e), AbstractDynamicMetadataProvider(true, e),
@@ -118,7 +123,7 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
         m_log( Category::getInstance(SHIBSP_LOGCAT ".MetadataProvider.Dynamic")),
         m_cacheDir(XMLHelper::getAttrString(e, "", cacheDirectory)),
         m_ignoreTransport(XMLHelper::getAttrBool(e, false, ignoreTransport)),
-        m_encoded(true), m_trust(nullptr), m_init_thread(nullptr)
+        m_encoded(true), m_trust(nullptr), m_init_thread(nullptr), m_isMDQ(XMLHelper::getAttrString(e, "Dyanamic", _type) == "MDQ")
 {
     const DOMElement* child = XMLHelper::getFirstChildElement(e, Subst);
     if (child && child->hasChildNodes()) {
@@ -131,6 +136,8 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
                 XMLString::startsWithI(m_subst.c_str(), "file://")) {
                 throw ConfigurationException("DynamicMetadataProvider: <Subst> cannot be a file:// URL");
             }
+            if (m_isMDQ)
+                throw ConfigurationException("DynamicMetadataProvider: <Subst> is incompatible with type=\"MDQ\"");
         }
     }
 
@@ -145,8 +152,18 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
                     XMLString::startsWithI(m_regex.c_str(), "file://")) {
                     throw ConfigurationException("DynamicMetadataProvider: <Regex> cannot be a file:// URL");
                 }
+                if (m_isMDQ)
+                    throw ConfigurationException("DynamicMetadataProvider: <Regex> is incompatible with type=\"MDQ\"");
             }
         }
+    }
+
+    if (m_isMDQ) {
+        string theBaseUrl(XMLHelper::getAttrString(e, nullptr, baseUrl));
+        if (theBaseUrl.empty())
+            throw ConfigurationException("DynamicMetadataProvider: type=\"MDQ\" must also contain baseUrl=\"whatever\"");
+        m_subst = theBaseUrl + (boost::algorithm::ends_with(theBaseUrl, "/") ? "entities/$entityID" : "/entities/$entityID");
+        m_hashed = "";
     }
 
     if (!m_ignoreTransport) {
@@ -356,6 +373,11 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
         istream& msg = transport->receive();
 
         EntityDescriptor* entity = entityFromStream(msg);
+
+        if (nullptr != entity && !m_isMDQ && criteria.artifact && !s_artifactWarned) {
+            m_log.warn("Successful resolution of an artifact by a non-MDQ dynamic server is not guaranteed to work");
+            s_artifactWarned = true;
+        }
 
         return entity;
     }

@@ -61,4 +61,5 @@ void shibsp::registerMetadataExtClasses() {
     REGISTER_ELEMENT(KeyAuthority);
 
     opensaml::SAMLConfig::getConfig().MetadataProviderManager.registerFactory(DYNAMIC_METADATA_PROVIDER, DynamicMetadataProviderFactory);
+    opensaml::SAMLConfig::getConfig().MetadataProviderManager.registerFactory(MDQ_METADATA_PROVIDER, DynamicMetadataProviderFactory);
 }
