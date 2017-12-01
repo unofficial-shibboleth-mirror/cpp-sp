@@ -41,19 +41,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="..\..\..\unittests\data\templateFromFile.xml">
-      <Filter>Data</Filter>
-    </Xml>
     <Xml Include="..\..\..\unittests\data\templateFromRepo.xml">
       <Filter>Data</Filter>
     </Xml>
-    <Xml Include="..\..\..\unittests\data\regexFromFile.xml">
-      <Filter>Data</Filter>
-    </Xml>
     <Xml Include="..\..\..\unittests\data\fromMDQ.xml">
-      <Filter>Data</Filter>
-    </Xml>
-    <Xml Include="..\..\..\unittests\data\staticFromFile.xml">
       <Filter>Data</Filter>
     </Xml>
     <Xml Include="..\..\..\unittests\data\idp.shibboleth.net.xml">
@@ -63,6 +54,9 @@
       <Filter>Data\Metadata</Filter>
     </Xml>
     <Xml Include="..\..\..\unittests\data\chainedFromURL.xml">
+      <Filter>Data</Filter>
+    </Xml>
+    <Xml Include="..\..\..\unittests\data\localDynamic.xml">
       <Filter>Data</Filter>
     </Xml>
   </ItemGroup>

@@ -53,9 +53,11 @@ extern string data_path;
 class DynamicMetadataTest : public CxxTest::TestSuite {
  private:
     const string m_entityId;
+    const string m_entityIdFail;
     auto_ptr<SAML2ArtifactType0004> m_artifact;
 public:
-    DynamicMetadataTest() : CxxTest::TestSuite(), m_entityId("https://idp.shibboleth.net/idp/shibboleth"), m_artifact(nullptr)
+    DynamicMetadataTest() : CxxTest::TestSuite(), m_entityId("https://idp.shibboleth.net/idp/shibboleth"),
+        m_entityIdFail("https://idp.shibboleth.net/idp/shibboleth/Fail"), m_artifact(nullptr)
     {}
 
     void setUp()
@@ -82,9 +84,12 @@ private:
         try {
             metadataProvider->init();
             if (!artifactOnly) {
-                MetadataProviderCriteria crit(testApp, m_entityId.c_str());
-                pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(crit);
+                MetadataProviderCriteria critOK(testApp, m_entityId.c_str());
+                pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(critOK);
                 TS_ASSERT(nullptr != thePair.first);
+                MetadataProviderCriteria critFail(testApp, m_entityIdFail.c_str());
+                thePair = metadataProvider->getEntityDescriptor(critFail);
+                TS_ASSERT(nullptr == thePair.first);
             }
 
             MetadataProviderCriteria artifactCrit(testApp, m_artifact.get());
@@ -107,26 +112,16 @@ public:
     }
 
 
-    void testTemplateFromFile()
+    void testLocalDynamic()
     {
-//        performTest("templateFromFile.xml", false); // Currently fails
+        performTest("localDynamic.xml", false, LOCAL_DYNAMIC_METADATA_PROVIDER);
     }
 
-    void testTemplateFromFileArtifactOnly()
+    void testLocalDynamicArtifactOnly()
     {
-        // The template *IGNORES* the input and joint points at /idp.shibboleth.net.xml 
-       // performTest("templateFromFile.xml", true);  // Currently fails
+       performTest("localDynamic.xml", true, LOCAL_DYNAMIC_METADATA_PROVIDER);
     }
 
-    void testRegexFromFile()
-    {
-        //performTest("regexFromFile.xml", false);  // Currently fails
-    }
-
-    void testRegexFromFileArtifactOnly()
-    {
-       // performTest("regexFromFile.xml", true);
-    }
 
     void testChainedFromRepo()
     {
@@ -137,17 +132,6 @@ public:
     {
         performTest("chainedFromURL.xml", true, CHAINING_METADATA_PROVIDER);
     }
-
-    void testTestFromStaticFile()
-    {
-       // performTest("staticFromFile.xml", false, XML_METADATA_PROVIDER);
-    }
-
-    void testTestFromStaticFileArtefactOnly()
-    {
-        //performTest("staticFromFile.xml", true, XML_METADATA_PROVIDER);
-    }
-
 
 private:
     void mdqTest(bool artifactOnly)
@@ -169,6 +153,9 @@ private:
                 MetadataProviderCriteria crit(testApp, testEntity.c_str());
                 pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(crit);
                 TS_ASSERT(nullptr != thePair.first);
+                MetadataProviderCriteria critFail(testApp, m_entityIdFail.c_str());
+                thePair = metadataProvider->getEntityDescriptor(critFail);
+                TS_ASSERT(nullptr == thePair.first);
             }
 
             auto_ptr<SAML2ArtifactType0004> testArtifact(new SAML2ArtifactType0004(SecurityHelper::doHash("SHA1", testEntity.data(), testEntity.length(), false), 666));
@@ -189,7 +176,7 @@ public:
 
     void testMDQArtifactOnly ()
     {
-        //mdqTest(true);
+        mdqTest(true);
     }
 
 };
