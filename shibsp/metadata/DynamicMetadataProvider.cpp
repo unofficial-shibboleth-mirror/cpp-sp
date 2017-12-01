@@ -23,6 +23,8 @@
  *
  * Advanced implementation of a dynamic caching MetadataProvider.
  */
+#include <fstream>
+
 
 #include "internal.h"
 #include "exceptions.h"
@@ -30,7 +32,6 @@
 #include "ServiceProvider.h"
 #include "metadata/MetadataProviderCriteria.h"
 #include <boost/algorithm/string.hpp>
-#include <xercesc/framework/Wrapper4InputSource.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 #include <xsec/framework/XSECDefs.hpp>
@@ -52,8 +53,6 @@
 #include <xmltooling/security/X509TrustEngine.h>
 #include <xmltooling/soap/HTTPSOAPTransport.h>
 #include <xmltooling/util/NDC.h>
-#include <xmltooling/util/ParserPool.h>
-#include <xmltooling/util/CloneInputStream.h>
 #include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -93,7 +92,6 @@ namespace shibsp {
         Category & m_log;
         static void* init_fn(void*);
 
-        EntityDescriptor* entityFromStream(istream& stream) const;
     };
 
     MetadataProvider* SHIBSP_DLLLOCAL DynamicMetadataProviderFactory(const DOMElement* const & e)
@@ -518,40 +516,3 @@ void *DynamicMetadataProvider::init_fn(void* pv)
     return nullptr;
 }
 
-EntityDescriptor* DynamicMetadataProvider::entityFromStream(istream &stream) const
-{
-
-    DOMDocument* doc=nullptr;
-    StreamInputSource src(stream, "DynamicMetadataProvider");
-
-    Wrapper4InputSource dsrc(&src, false);
-
-    if (m_validate)
-        doc=XMLToolingConfig::getConfig().getValidatingParser().parse(dsrc);
-    else
-        doc=XMLToolingConfig::getConfig().getParser().parse(dsrc);
-
-    // Wrap the document for now.
-    XercesJanitor<DOMDocument> docjanitor(doc);
-
-    // Check root element.
-    if (!doc->getDocumentElement() || !XMLHelper::isNodeNamed(doc->getDocumentElement(),
-                                                              samlconstants::SAML20MD_NS, EntityDescriptor::LOCAL_NAME)) {
-        throw MetadataException("Root of metadata instance was not an EntityDescriptor");
-    }
-
-    // Unmarshall objects, binding the document.
-    auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
-    docjanitor.release();
-
-    // Make sure it's metadata.
-    EntityDescriptor* entity = dynamic_cast<EntityDescriptor*>(xmlObject.get());
-    if (!entity) {
-        throw MetadataException(
-            "Root of metadata instance not recognized: $1", params(1, xmlObject->getElementQName().toString().c_str())
-        );
-    }
-
-    xmlObject.release();
-    return entity;
-}
