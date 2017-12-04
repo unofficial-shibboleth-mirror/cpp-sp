@@ -43,7 +43,7 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <Import Project="..\..\..\..\BuildPath.props" />
-  <Import Project="$(ParentRoot)\Versions.props" />
+  <Import Project="$(SolutionDir)..\..\..\cpp-msbuild\Versions.props" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <NMakeBuildCommandLine>cd ..\..\..\msi\Wix\

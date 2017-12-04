@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -63,8 +63,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <Import Project="..\..\..\..\BuildPath.props" />
-  <Import Project="$(ParentRoot)\Versions.props" />
-  <Import Project="$(ParentRoot)\Includes.props" />
+  <Import Project="$(SolutionDir)..\..\..\cpp-msbuild\Versions.props" />
+  <Import Project="$(SolutionDir)..\..\..\cpp-msbuild\Includes.props" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>

@@ -66,8 +66,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <Import Project="..\..\..\..\BuildPath.props" />
-  <Import Project="$(ParentRoot)\Versions.props" />
-  <Import Project="$(ParentRoot)\Includes.props" />
+  <Import Project="$(SolutionDir)..\..\..\cpp-msbuild\Versions.props" />
+  <Import Project="$(SolutionDir)..\..\..\cpp-msbuild\Includes.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetExt>.dll</TargetExt>
     <LinkIncremental>false</LinkIncremental>
