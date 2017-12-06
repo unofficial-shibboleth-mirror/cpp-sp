@@ -32,7 +32,7 @@
       <Directory Id='ProgramFiles64Folder' >
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\$(var.ReleaseDir)\' >
+            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\$(openssl)\$(var.ReleaseDir)\' >
               <Component Id='libeay32.dll' Guid='$(var.LibEay64Component)' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='$(var.LibEay)' />
               </Component>
@@ -42,7 +42,7 @@
               <Component Id='openssl.exe' Guid='{AF6DBF01-02E0-4CA4-9466-2E95EAC1200E}' Win64='yes'>
                 <File KeyPath='yes' Checksum='yes' Name='openssl.exe' />
               </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\$(var.DebugDir)\'>
+              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\'>
                 <Component Id='libeay32D.dll' Guid='$(var.LibEay64Componentd)' Win64='yes'>
                   <File KeyPath='yes' Checksum='yes' Name='$(var.LibEayD)' />
                 </Component>
@@ -56,7 +56,7 @@
             </Directory><!-- lib -->
             <Directory Id='doc' Name='doc'>
               <Component Id='OPENSSL.LICENSE' Guid='{10B77A21-E554-47F2-99F0-7171304FE899}' Win64='yes'>
-                <File KeyPath='yes' Name='OPENSSL.LICENSE' Source='$(var.BuildDirectory)\openssl-$(var.OpenSSLDirVersion)\LICENSE' />
+                <File KeyPath='yes' Name='OPENSSL.LICENSE' Source='$(var.BuildDirectory)\$(var.openssldir)\LICENSE' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->

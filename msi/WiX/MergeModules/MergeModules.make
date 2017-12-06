@@ -150,13 +150,13 @@ OpenSSL-x64.msm: OpenSSL-x64.wixobj
 
 OpenSSL-x86.wixobj: OpenSSL-x86.wxs
 	wixcop -indent:2 OpenSSL-x86.wxs
-	candle OpenSSL-x86.wxs -dBuildDirectory=$(BuildSP) -dOpenSSLVersion=$(OpenSSLVersion) -dOpenSSLDirVersion=$(OpenSSLDirVersion)\
+	candle OpenSSL-x86.wxs -dBuildDirectory=$(BuildSP) -dOpenSSLVersion=$(OpenSSLVersion) \
                            -dOpenSSLFileVersion=$(OpenSSLFileVersion) -dLibEay32Component=$(LibEay32Component) -dSSlEay32Component=$(SSlEay32Component)\
                            -dLibEay32Componentd=$(LibEay32Componentd) -dSSlEay32Componentd=$(SSlEay32Componentd)
 
 OpenSSL-x64.wixobj: OpenSSL-x64.wxs
 	wixcop -indent:2 OpenSSL-x64.wxs
-	candle OpenSSL-x64.wxs -dBuildDirectory=$(BuildSP) -dOpenSSLVersion=$(OpenSSLVersion) -dOpenSSLDirVersion=$(OpenSSLDirVersion)\
+	candle OpenSSL-x64.wxs -dBuildDirectory=$(BuildSP) -dOpenSSLVersion=$(OpenSSLVersion) \
                            -dOpenSSLFileVersion=$(OpenSSLFileVersion) -dLibEay64Component=$(LibEay64Component)\
                            -dSSlEay64Component=$(SSlEay64Component) -dLibEay64Componentd=$(LibEay64Componentd) -dSSlEay64Componentd=$(SSlEay64Componentd)
 
