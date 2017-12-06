@@ -77,19 +77,20 @@ Log4Shib-x86.msm: Log4Shib-x86.wixobj
 	del ..\*32*.msi
 
 Log4Shib-x86.wixobj: Log4Shib-x86.wxs\
-			$(BuildSP)\log4shib-$(Log4ShibVersion)\ms$(MsVCVersion)\Debug\log4shib$(Log4ShibFileVersion)D.dll\
-			$(BuildSP)\log4shib-$(Log4ShibVersion)\ms$(MsVCVersion)\Release\log4shib$(Log4ShibFileVersion).dll
+			$(BuildSP)\$(log4shib)\ms$(MsVCVersion)\Debug\log4shib$(Log4ShibFileVersion)D.dll\
+			$(BuildSP)\$(log4shib)\ms$(MsVCVersion)\Release\log4shib$(Log4ShibFileVersion).dll
 	wixcop -indent:2 Log4Shib-x86.wxs
-	candle Log4Shib-x86.wxs -dBuildDirectory=$(BuildSP) -dLog4ShibVersion=$(Log4ShibVersion)\ -d
+	candle Log4Shib-x86.wxs -dBuildDirectory=$(BuildSP) -dLog4ShibVersion=$(Log4ShibVersion) -dlog4shib=$(log4shib)\ 
 							-dLog4ShibFileVersion=$(Log4ShibFileVersion)\
                             -dLog4ShibComponent32=$(Log4ShibComponent32) -dLog4ShibComponent32d=$(Log4ShibComponent32d)\
                             -dShibbolethMsVersion=$(MsVCVersion)
 
 Log4Shib-x64.wixobj: Log4Shib-x64.wxs\
-			$(BuildSP)\log4shib-$(Log4ShibVersion)\ms$(MsVCVersion)\x64\Debug\log4shib$(Log4ShibFileVersion)D.dll\
-			$(BuildSP)\log4shib-$(Log4ShibVersion)\ms$(MsVCVersion)\x64\Release\log4shib$(Log4ShibFileVersion).dll
+			$(BuildSP)\$(log4shib)\ms$(MsVCVersion)\x64\Debug\log4shib$(Log4ShibFileVersion)D.dll\
+			$(BuildSP)\$(log4shib)\ms$(MsVCVersion)\x64\Release\log4shib$(Log4ShibFileVersion).dll
 	wixcop -indent:2 Log4Shib-x64.wxs
 	candle Log4Shib-x64.wxs -dBuildDirectory=$(BuildSP) -dLog4ShibVersion=$(Log4ShibVersion) -dLog4ShibFileVersion=$(Log4ShibFileVersion)\
+                            -dlog4shib=$(log4shib)\ 
                             -dLog4ShibComponent64=$(Log4ShibComponent64) -dLog4ShibComponent64d=$(Log4ShibComponent64d) -dShibbolethMsVersion=$(MsVCVersion)
 
 #
