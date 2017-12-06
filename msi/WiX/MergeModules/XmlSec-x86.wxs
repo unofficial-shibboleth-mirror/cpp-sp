@@ -26,7 +26,7 @@
         <Directory Id='shibboleth' Name='Shibboleth'>
           <Directory Id='shibboleth_SP' Name='SP'>
             <Directory Id='lib' Name='lib' 
-                       FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\Win32\$(var.ShibbolethMsVersion)\Release Minimal'>
+                       FileSource='$(var.BuildDirectory)\$(var.xmlsec)\Build\Win32\$(var.ShibbolethMsVersion)\Release Minimal'>
               <Component Id='xsec.dll' Guid='$(var.XmlSec32Component)'>
                 <File KeyPath='yes' Checksum='yes' Name='xsec_$(var.XmlSecFileVersion).dll'/>
               </Component>
@@ -49,7 +49,7 @@
                 <File KeyPath='yes' Checksum='yes' Name='txfmout.exe'/>
               </Component>
               <Directory Id='lib_debug' Name='debug' 
-                         FileSource='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\Build\Win32\$(var.ShibbolethMsVersion)\Debug Minimal'>
+                         FileSource='$(var.BuildDirectory)\$(var.xmlsec)\Build\Win32\$(var.ShibbolethMsVersion)\Debug Minimal'>
                 <Component Id='xsecD.dll' Guid='$(var.XmlSec32Componentd)'>
                   <File KeyPath='yes' Checksum='yes' Name='xsec_$(var.XmlSecFileVersion)D.dll'/>
                 </Component>
@@ -76,7 +76,7 @@
             <Directory Id='doc' Name='doc'>
               <Component Id='SANTUARIO.LICENSE' Guid='{FF81AD29-36DF-42BD-AFC9-211F083D9872}'>
                 <File KeyPath='yes' Name='SANTUARIO.LICENSE'
-                  Source='$(var.BuildDirectory)\xml-security-c-$(var.XmlSecVersion)\LICENSE.txt' />
+                  Source='$(var.BuildDirectory)\$(var.xmlsec)\LICENSE.txt' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->
