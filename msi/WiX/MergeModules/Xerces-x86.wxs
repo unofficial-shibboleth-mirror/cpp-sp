@@ -38,7 +38,7 @@
             <Directory Id='doc' Name='doc'>
               <Component Id='XERCES.LICENSE' Guid='{7AAB5CC3-CCB4-4567-A16D-584CAE7E95EB}'>
                 <File KeyPath='yes' Name='XERCES.LICENSE'
-                  Source='$(var.BuildDirectory)\xerces-c-$(var.XercesVersion)\LICENSE' />
+                  Source='$(var.BuildDirectory)\$(var.xerces)\LICENSE' />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->

@@ -216,18 +216,20 @@ XercesDebugDll32=$(BuildSP)$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(Xer
 
 Xerces-x86.wixobj: Xerces-x86.wxs $(XercesDll32) Xerces-x86.wxs $(XercesDebugDll32)
 	wixcop -indent:2 Xerces-x86.wxs
-	candle Xerces-x86.wxs -dBuildDirectory=$(BuildSP) -dXercesDll=$(XercesDll32) -dXercesDebugDll=$(XercesDebugDll32) -dXercesVersion=$(XercesVersion)\
-                          -dXercesFileVersion=$(XercesFileVersion) -dXerces32Component=$(Xerces32Component) -dXerces32Componentd=$(Xerces32Componentd)\
-                          -dShibbolethMsVersion=$(MsVCVersion)
+	candle Xerces-x86.wxs -dBuildDirectory=$(BuildSP) -dXercesDll=$(XercesDll32) -dXercesDebugDll=$(XercesDebugDll32) \
+						  -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) \
+                          -dXerces32Component=$(Xerces32Component) -dXerces32Componentd=$(Xerces32Componentd)\
+                          -dShibbolethMsVersion=$(MsVCVersion) -dxerces=$(Xerces)
 
 XercesDll64=$(BuildSP)$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
 XercesDebugDll64=$(BuildSP)$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
 
 Xerces-x64.wixobj: Xerces-x64.wxs $(XercesDll64) Xerces-x86.wxs $(XercesDebugDll64)
 	wixcop -indent:2 Xerces-x64.wxs
-	candle Xerces-x64.wxs -dBuildDirectory=$(BuildSP) -dXercesDll=$(XercesDll64) -dXercesDebugDll=$(XercesDebugDll64) -dXercesVersion=$(XercesVersion)\
-                          -dXercesFileVersion=$(XercesFileVersion) -dXerces64Component=$(Xerces64Component) -dXerces64Componentd=$(Xerces64Componentd)\
-                          -dShibbolethMsVersion=$(MsVCVersion)
+	candle Xerces-x64.wxs -dBuildDirectory=$(BuildSP) -dXercesDll=$(XercesDll64) -dXercesDebugDll=$(XercesDebugDll64) \
+						  -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) \
+						  -dXerces64Component=$(Xerces64Component) -dXerces64Componentd=$(Xerces64Componentd)\
+                          -dShibbolethMsVersion=$(MsVCVersion)  -dxerces=$(Xerces)
 
 
 #
