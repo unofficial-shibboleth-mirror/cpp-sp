@@ -28,12 +28,12 @@
             <Directory Id='lib' Name='lib'>
               <Component Id='zlib1.dll' Guid='$(var.Zlib32Component)'>
                 <File KeyPath='yes' Checksum='yes'
-                      Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\Release\zlib$(var.ZlibFileVersion).dll'/>
+                      Source='$(var.BuildDirectory)\$(var.zlib)\Release\zlib$(var.ZlibFileVersion).dll'/>
               </Component>
               <Directory Id='lib_debug' Name='debug'>
                 <Component Id='zlib1d.dll' Guid='$(var.Zlib32Componentd)'>
                   <File KeyPath='yes' Checksum='yes'
-                        Source='$(var.BuildDirectory)\zlib-$(var.ZlibVersion)\Debug\zlib$(var.ZlibFileVersion)d.dll'/>
+                        Source='$(var.BuildDirectory)\$(var.zlib)\Debug\zlib$(var.ZlibFileVersion)d.dll'/>
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->

@@ -80,7 +80,7 @@ Log4Shib-x86.wixobj: Log4Shib-x86.wxs\
 			$(BuildSP)\$(log4shib)\ms$(MsVCVersion)\Debug\log4shib$(Log4ShibFileVersion)D.dll\
 			$(BuildSP)\$(log4shib)\ms$(MsVCVersion)\Release\log4shib$(Log4ShibFileVersion).dll
 	wixcop -indent:2 Log4Shib-x86.wxs
-	candle Log4Shib-x86.wxs -dBuildDirectory=$(BuildSP) -dLog4ShibVersion=$(Log4ShibVersion) -dlog4shib=$(log4shib)\ 
+	candle Log4Shib-x86.wxs -dBuildDirectory=$(BuildSP) -dLog4ShibVersion=$(Log4ShibVersion) -dlog4shib=$(log4shib)\
 							-dLog4ShibFileVersion=$(Log4ShibFileVersion)\
                             -dLog4ShibComponent32=$(Log4ShibComponent32) -dLog4ShibComponent32d=$(Log4ShibComponent32d)\
                             -dShibbolethMsVersion=$(MsVCVersion)
@@ -90,7 +90,7 @@ Log4Shib-x64.wixobj: Log4Shib-x64.wxs\
 			$(BuildSP)\$(log4shib)\ms$(MsVCVersion)\x64\Release\log4shib$(Log4ShibFileVersion).dll
 	wixcop -indent:2 Log4Shib-x64.wxs
 	candle Log4Shib-x64.wxs -dBuildDirectory=$(BuildSP) -dLog4ShibVersion=$(Log4ShibVersion) -dLog4ShibFileVersion=$(Log4ShibFileVersion)\
-                            -dlog4shib=$(log4shib)\ 
+                            -dlog4shib=$(log4shib)\
                             -dLog4ShibComponent64=$(Log4ShibComponent64) -dLog4ShibComponent64d=$(Log4ShibComponent64d) -dShibbolethMsVersion=$(MsVCVersion)
 
 #
@@ -289,15 +289,16 @@ zlib-x64.msm: zlib-x64.wixobj
 	light zlib-x64.wixobj
 	del ..\*64*.msi
 
-zlib-x86.wixobj: zlib-x86.wxs $(BuildSP)\zlib-$(ZlibVersion)\Release\zlib$(ZlibFileVersion).dll $(BuildSP)\zlib-$(ZlibVersion)\Debug\zlib$(ZlibFileVersion)d.dll
+zlib-x86.wixobj: zlib-x86.wxs $(BuildSP)\$(zlib)\Release\zlib$(ZlibFileVersion).dll \
+                              $(BuildSP)\$(zlib)\Debug\zlib$(ZlibFileVersion)d.dll
 	wixcop -indent:2 zlib-x86.wxs
-	candle zlib-x86.wxs -dBuildDirectory=$(BuildSP) -dZlibVersion=$(ZlibVersion) -dZlibFileVersion=$(ZlibFileVersion) -dZlib32Component=$(Zlib32Component)\
-                        -dZlib32Componentd=$(Zlib32Componentd)
+	candle zlib-x86.wxs -dBuildDirectory=$(BuildSP) -dZlibVersion=$(ZlibVersion) -dZlibFileVersion=$(ZlibFileVersion) \
+						-dZlib32Component=$(Zlib32Component) -dZlib32Componentd=$(Zlib32Componentd) -dzlib=$(zlib)
 
-zlib-x64.wixobj: zlib-x64.wxs $(BuildSP)\zlib-$(ZlibVersion)\x64\Release\zlib$(ZlibFileVersion).dll\
-                              $(BuildSP)\zlib-$(ZlibVersion)\x64\Debug\zlib$(ZlibFileVersion)d.dll
+zlib-x64.wixobj: zlib-x64.wxs $(BuildSP)\$(zlib)\x64\Release\zlib$(ZlibFileVersion).dll\
+                              $(BuildSP)\$(zlib)\x64\Debug\zlib$(ZlibFileVersion)d.dll
 	wixcop -indent:2 zlib-x64.wxs
-	candle zlib-x64.wxs -dBuildDirectory=$(BuildSP) -dZlibVersion=$(ZlibVersion) -dZlibFileVersion=$(ZlibFileVersion) -dZlib64Component=$(Zlib64Component)\
-                        -dZlib64Componentd=$(Zlib64Componentd)
+	candle zlib-x64.wxs -dBuildDirectory=$(BuildSP) -dZlibVersion=$(ZlibVersion) -dZlibFileVersion=$(ZlibFileVersion) \
+                        -dZlib64Component=$(Zlib64Component) -dZlib64Componentd=$(Zlib64Componentd)  -dzlib=$(zlib)
 
 #
