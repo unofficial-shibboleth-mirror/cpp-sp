@@ -57,6 +57,16 @@
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
 
+#ifndef WIN32
+# if defined(HAVE_SYS_TYPES_H) && defined(HAVE_DIRENT_H)
+#  include <dirent.h>
+#  include <sys/types.h>
+#  include <sys/stat.h>
+# else
+#  error Unsupported directory library headers.
+# endif
+#endif
+
 using namespace shibsp;
 using namespace opensaml;
 using namespace opensaml::saml2md;
