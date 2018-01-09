@@ -71,6 +71,7 @@ AC_LANG(C)
 AC_C_CONST
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
+AC_HEADER_DIRENT
 
 # Checks for library functions.
 AC_FUNC_STRFTIME
