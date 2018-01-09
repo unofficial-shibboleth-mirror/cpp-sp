@@ -62,6 +62,7 @@
 #  include <dirent.h>
 #  include <sys/types.h>
 #  include <sys/stat.h>
+#  include <errno.h>
 # else
 #  error Unsupported directory library headers.
 # endif
@@ -426,7 +427,7 @@ void DynamicMetadataProvider::indexEntity(EntityDescriptor* site, time_t& validU
             return;
     }
 
-    ofstream out(backingFile);
+    ofstream out(backingFile.c_str());
 
     XMLHelper::serialize(site->marshall(), out, false);
 }
@@ -486,7 +487,7 @@ void *DynamicMetadataProvider::init_fn(void* pv)
 #endif
         try {
             me->m_log.info("Reload from %s", fullname.c_str());
-            ifstream thisFileEntry(fullname);
+            ifstream thisFileEntry(fullname.c_str());
             if (thisFileEntry) {
                 auto_ptr<EntityDescriptor> entity (me->entityFromStream(thisFileEntry));
                 thisFileEntry.close();
