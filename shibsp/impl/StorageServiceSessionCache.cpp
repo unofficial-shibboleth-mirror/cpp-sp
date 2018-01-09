@@ -48,7 +48,6 @@
 #include <boost/shared_ptr.hpp>
 #include <xmltooling/io/HTTPRequest.h>
 #include <xmltooling/io/HTTPResponse.h>
-#include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/Threads.h>
@@ -66,7 +65,7 @@
 using namespace opensaml::saml2md;
 #else
 # include <ctime>
-# include <xmltooling/util/DateTime.h>
+# include <xercesc/util/XMLDateTime.hpp>
 #endif
 
 using namespace shibsp;
@@ -262,7 +261,7 @@ namespace {
 
             auto_ptr_XMLCh exp(m_obj["expires"].string());
             if (exp.get()) {
-                DateTime iso(exp.get());
+                XMLDateTime iso(exp.get());
                 iso.parseDateTime();
                 m_expires = iso.getEpoch();
             }
@@ -1153,7 +1152,7 @@ void SSCache::insert(
                 logexpstr = deadmenwalking["_shibnull"].string();
             if (logexpstr) {
                 auto_ptr_XMLCh dt(logexpstr);
-                DateTime dtobj(dt.get());
+                XMLDateTime dtobj(dt.get());
                 dtobj.parseDateTime();
                 time_t logexp = dtobj.getEpoch();
                 if (now - XMLToolingConfig::getConfig().clock_skew_secs < logexp)
@@ -1972,7 +1971,7 @@ void SSCache::receive(DDF& in, ostream& out)
         if (in["timeout"].string()) {
             time_t timeout = 0;
             auto_ptr_XMLCh dt(in["timeout"].string());
-            DateTime dtobj(dt.get());
+            XMLDateTime dtobj(dt.get());
             dtobj.parseDateTime();
             timeout = dtobj.getEpoch();
 
@@ -2029,7 +2028,7 @@ void SSCache::receive(DDF& in, ostream& out)
         time_t timeout = 0;
         auto_ptr_XMLCh dt(in["timeout"].string());
         if (dt.get()) {
-            DateTime dtobj(dt.get());
+            XMLDateTime dtobj(dt.get());
             dtobj.parseDateTime();
             timeout = dtobj.getEpoch();
         }

@@ -43,6 +43,7 @@
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLStringTokenizer.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xsec/dsig/DSIGConstants.hpp>
 
 using shibspconstants::SHIB2SPCONFIG_NS;
 using opensaml::SAMLConfig;

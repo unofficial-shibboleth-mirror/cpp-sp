@@ -33,7 +33,6 @@
 #include <saml/saml1/core/Assertions.h>
 #include <saml/saml2/core/Protocols.h>
 #include <saml/saml2/metadata/Metadata.h>
-#include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 

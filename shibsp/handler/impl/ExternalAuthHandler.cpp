@@ -51,7 +51,6 @@
 # include <saml/saml2/metadata/Metadata.h>
 # include <saml/saml2/metadata/MetadataProvider.h>
 # include <xmltooling/XMLToolingConfig.h>
-# include <xmltooling/util/DateTime.h>
 # include <xmltooling/util/ParserPool.h>
 # include <xmltooling/util/XMLHelper.h>
 # include <xercesc/framework/MemBufInputSource.hpp>
@@ -442,11 +441,11 @@ pair<bool,long> ExternalAuth::processMessage(
             }
         }
 
-        scoped_ptr<DateTime> authn_instant;
+        scoped_ptr<XMLDateTime> authn_instant;
         param = httpRequest.getParameter("AuthnInstant");
         if (param && *param) {
             auto_ptr_XMLCh d(param);
-            authn_instant.reset(new DateTime(d.get()));
+            authn_instant.reset(new XMLDateTime(d.get()));
             authn_instant->parseDateTime();
         }
 

@@ -43,7 +43,6 @@
 # include <saml/saml2/metadata/Metadata.h>
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/io/HTTPRequest.h>
-# include <xmltooling/util/DateTime.h>
 using namespace opensaml::saml1;
 using namespace opensaml::saml1p;
 using namespace opensaml;

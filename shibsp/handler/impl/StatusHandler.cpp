@@ -36,7 +36,7 @@
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <xmltooling/version.h>
-#include <xmltooling/util/DateTime.h>
+#include <xercesc/util/XMLDateTime.hpp>
 
 #ifdef HAVE_SYS_UTSNAME_H
 # include <sys/utsname.h>
@@ -273,7 +273,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         map<string,const char*> props;
         settings.first->getAll(props);
 
-        DateTime now(time(nullptr));
+        XMLDateTime now(time(nullptr), false);
         now.parseDateTime();
         auto_ptr_char timestamp(now.getFormattedString());
         request.setContentType("text/xml");
@@ -310,7 +310,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
     catch (XMLToolingException& ex) {
         m_log.error("error while processing request: %s", ex.what());
-        DateTime now(time(nullptr));
+        XMLDateTime now(time(nullptr), false);
         now.parseDateTime();
         auto_ptr_char timestamp(now.getFormattedString());
         request.setContentType("text/xml");
@@ -329,7 +329,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
     catch (std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
-        DateTime now(time(nullptr));
+        XMLDateTime now(time(nullptr), false);
         now.parseDateTime();
         auto_ptr_char timestamp(now.getFormattedString());
         request.setContentType("text/xml");
@@ -379,7 +379,7 @@ pair<bool,long> StatusHandler::processMessage(
 #ifndef SHIBSP_LITE
     m_log.debug("processing status request");
 
-    DateTime now(time(nullptr));
+    XMLDateTime now(time(nullptr), false);
     now.parseDateTime();
     auto_ptr_char timestamp(now.getFormattedString());
 

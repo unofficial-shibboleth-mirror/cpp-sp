@@ -34,8 +34,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <xercesc/util/XMLDateTime.hpp>
 #include <xmltooling/unicode.h>
-#include <xmltooling/util/DateTime.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
@@ -106,7 +106,7 @@ Rule::Rule(const DOMElement* e)
 {
     if (XMLString::equals(e->getLocalName(), TimeSinceAuthn)) {
         m_type = TM_AUTHN;
-        DateTime dur(e->getTextContent());
+        XMLDateTime dur(e->getTextContent());
         dur.parseDuration();
         m_value = dur.getEpoch(true);
         return;
@@ -130,9 +130,9 @@ Rule::Rule(const DOMElement* e)
     if (XMLString::equals(e->getLocalName(), Time)) {
         m_type = TM_TIME;
         auto_ptr_XMLCh widen(tokens.back().c_str());
-        DateTime dt(widen.get());
+        XMLDateTime dt(widen.get());
         dt.parseDateTime();
-        m_value = dt.getEpoch();
+        m_value = dt.getEpoch(false);
         return;
     }
 
@@ -172,9 +172,9 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
             auto_ptr_XMLCh atime(session->getAuthnInstant());
             if (atime.get()) {
                 try {
-                    DateTime dt(atime.get());
+                    XMLDateTime dt(atime.get());
                     dt.parseDateTime();
-                    if (time(nullptr) - dt.getEpoch() <= m_value)
+                    if (time(nullptr) - dt.getEpoch(false) <= m_value)
                         return shib_acl_true;
                     request.log(SPRequest::SPDebug, "elapsed time since authentication exceeds limit");
                     return shib_acl_false;
