@@ -843,7 +843,10 @@
       <attribute name="langFromClient" type="boolean"/>
       <attribute name="langPriority" type="conf:listOfStrings"/>
       <attribute name="contactPriority" type="conf:listOfStrings"/>
+      
+      <!-- Unsupported. -->
       <attribute name="disableDTD" type="boolean"/>
+      
       <anyAttribute namespace="##other" processContents="lax"/>
     </complexType>
   </element>
