@@ -59,6 +59,9 @@
     <Xml Include="..\..\..\unittests\data\localDynamic.xml">
       <Filter>Data</Filter>
     </Xml>
+    <Xml Include="..\..\..\unittests\data\badSigMDQ.xml">
+      <Filter>Data</Filter>
+    </Xml>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\unittests\BaseTestCase.h">

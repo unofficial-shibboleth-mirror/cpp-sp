@@ -33,6 +33,7 @@
 #include <saml/saml2/binding/SAML2ArtifactType0004.h>
 #include <saml/saml2/binding/SAML2Artifact.h>
 #include <saml/saml2/metadata/Metadata.h>
+#include <saml/saml2/metadata/MetadataFilter.h>
 
 #include <shibsp/Application.h>
 #include <shibsp/SPConfig.h>
@@ -177,6 +178,30 @@ public:
     void testMDQArtifactOnly ()
     {
         mdqTest(true);
+    }
+
+    void testMDQBadSig()
+    {
+        string config = data_path + "badSigMDQ.xml";
+        ifstream in(config.c_str());
+        XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
+        ParserPool& pool = xcf.getParser();
+        XercesJanitor<DOMDocument> janitor(pool.parse(in));
+        auto_ptr<MetadataProvider> metadataProvider(
+            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, janitor.get()->getDocumentElement())
+        );
+
+        ta::TestApplication testApp(SPConfig::getConfig().getServiceProvider(), metadataProvider.get());
+        const string testEntity("https://idp2.iay.org.uk/idp/shibboleth");
+        try {
+            metadataProvider->init();
+            MetadataProviderCriteria crit(testApp, testEntity.c_str());
+            pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(crit);
+            TS_ASSERT(nullptr == thePair.first);
+        } catch (XMLToolingException& ex) {
+            TS_TRACE(ex.what());
+            throw;
+        }
     }
 
 };

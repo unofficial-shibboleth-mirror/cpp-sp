@@ -177,6 +177,7 @@
     <ClCompile Include="..\..\..\unittests\TestApplication.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Xml Include="..\..\..\unittests\data\badSigMDQ.xml" />
     <Xml Include="..\..\..\unittests\data\chainedFromURL.xml">
       <SubType>Designer</SubType>
     </Xml>
