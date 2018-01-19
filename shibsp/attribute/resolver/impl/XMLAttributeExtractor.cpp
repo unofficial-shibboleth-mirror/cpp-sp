@@ -102,6 +102,19 @@ namespace shibsp {
             d.clear();
         }
 
+        void onEvent(const ObservableMetadataProvider& metadata, const EntityDescriptor& entity) const {
+            // Destroy attributes we cached from this provider and entity.
+            m_attrLock->wrlock();
+            SharedLock wrapper(m_attrLock, false);
+            decoded_t& d = m_decodedMap[&metadata];
+            decoded_t::iterator i = d.find(entity.getEntityID());
+            if (i != d.end()) {
+                for_each(i->second.begin(), i->second.end(), mem_fun_ref<DDF&, DDF>(&DDF::destroy));
+                d.erase(i);
+            }
+        }
+
+
         void extractAttributes(const Application&, const char*, const char*, const NameIdentifier&, ptr_vector<Attribute>&) const;
         void extractAttributes(const Application&, const char*, const char*, const NameID&, ptr_vector<Attribute>&) const;
         void extractAttributes(const Application&, const GenericRequest*, const char*, const char*, const saml1::Attribute&, ptr_vector<Attribute>&) const;
@@ -135,7 +148,7 @@ namespace shibsp {
 
         // manages caching of decoded Attributes
         scoped_ptr<RWLock> m_attrLock;
-        typedef map< const EntityAttributes*,vector<DDF> > decoded_t;
+        typedef map< xstring,vector<DDF> > decoded_t;
         mutable map<const ObservableMetadataProvider*,decoded_t> m_decodedMap;
     };
 
@@ -208,7 +221,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         m_document(nullptr),
         m_policyId(XMLHelper::getAttrString(e, nullptr, metadataPolicyId)),
         m_entityAssertions(true),
-        m_metaAttrCaching(XMLHelper::getAttrBool(e, true, metadataAttributeCaching))
+        m_metaAttrCaching(XMLHelper::getAttrBool(e, false, metadataAttributeCaching))
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLExtractorImpl");
@@ -581,17 +594,22 @@ void XMLExtractorImpl::extractAttributes(
     ptr_vector<Attribute>& attributes
     ) const
 {
+
+    const XMLCh* cacheID = nullptr;
+    if (observable && m_metaAttrCaching && dynamic_cast<const EntityDescriptor*>(ext.getParent())) {
+        cacheID = dynamic_cast<const EntityDescriptor*>(ext.getParent())->getEntityID();
+    }
+
     const vector<XMLObject*>& exts = ext.getUnknownXMLObjects();
     for (vector<XMLObject*>::const_iterator i = exts.begin(); i != exts.end(); ++i) {
         const EntityAttributes* container = dynamic_cast<const EntityAttributes*>(*i);
         if (!container)
             continue;
 
-        bool useCache = false;
         map<const ObservableMetadataProvider*,decoded_t>::iterator cacheEntry;
 
         // Check for cached result.
-        if (observable && m_metaAttrCaching) {
+        if (cacheID) {
             m_attrLock->rdlock();
             cacheEntry = m_decodedMap.find(observable);
             if (cacheEntry == m_decodedMap.end()) {
@@ -615,12 +633,11 @@ void XMLExtractorImpl::extractAttributes(
                     m_attrLock->rdlock();
                 }
             }
-            useCache = true;
         }
 
-        if (useCache) {
+        if (cacheID) {
             // We're holding the lock, so check the cache.
-            decoded_t::iterator d = cacheEntry->second.find(container);
+            decoded_t::iterator d = cacheEntry->second.find(cacheID);
             if (d != cacheEntry->second.end()) {
                 SharedLock locker(m_attrLock, false);   // pop the lock when we're done
                 for (vector<DDF>::iterator obj = d->second.begin(); obj != d->second.end(); ++obj) {
@@ -634,7 +651,7 @@ void XMLExtractorImpl::extractAttributes(
         }
 
         // Add a guard for the lock if we're caching.
-        SharedLock locker(useCache ? m_attrLock.get() : nullptr, false);
+        SharedLock locker(cacheID ? m_attrLock.get() : nullptr, false);
 
         // Use a holding area to support caching.
         ptr_vector<Attribute> holding;
@@ -811,14 +828,14 @@ void XMLExtractorImpl::extractAttributes(
         }
 
         if (!holding.empty()) {
-            if (useCache) {
+            if (cacheID) {
                 locker.release();   // unguard to upgrade lock
                 m_attrLock->unlock();
                 m_attrLock->wrlock();
                 SharedLock locker2(m_attrLock, false);   // pop the lock when we're done
-                if (cacheEntry->second.count(container) == 0) {
+                if (cacheEntry->second.count(cacheID) == 0) {
                     static void (vector<DDF>::* push_back)(DDF const &) = &vector<DDF>::push_back;
-                    vector<DDF>& marshalled = cacheEntry->second[container];
+                    vector<DDF>& marshalled = cacheEntry->second[cacheID];
                     for_each(
                         holding.begin(), holding.end(),
                         boost::bind(push_back, boost::ref(marshalled), boost::bind(&Attribute::marshall, _1))
