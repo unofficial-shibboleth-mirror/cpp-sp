@@ -30,7 +30,8 @@ Curl-x64.msm: Curl-x64.wixobj
 Curl-x64.wixobj: Curl-x64.wxs
 	wixcop -indent:2 Curl-x64.wxs
 	candle Curl-x64.wxs -dBuildDirectory=$(BuildSP) -dCurlVersion=$(CurlVersion)\
-			 -dShibbolethMsVersion=$(MsVCVersion)
+			 -dShibbolethMsVersion=$(MsVCVersion) -dCurlFileVersion=$(CurlFileVersion)\
+             -dLibCurlGuid64=$(LibCurlGuid64) -dLibCurlGuid64d=$(LibCurlGuid64d)
 
 Curl-x86.msm: Curl-x86.wixobj
 	light Curl-x86.wixobj
@@ -39,7 +40,8 @@ Curl-x86.msm: Curl-x86.wixobj
 Curl-x86.wixobj: Curl-x86.wxs
 	wixcop -indent:2 Curl-x86.wxs
 	candle Curl-x86.wxs -dBuildDirectory=$(BuildSP) -dCurlVersion=$(CurlVersion)\
-			-dShibbolethMsVersion=$(MsVCVersion)
+			-dShibbolethMsVersion=$(MsVCVersion) -dCurlFileVersion=$(CurlFileVersion)\
+             -dLibCurlGuid32=$(LibCurlGuid32) -dLibCurlGuid32d=$(LibCurlGuid32d)
 
 #
 # FastCGI
