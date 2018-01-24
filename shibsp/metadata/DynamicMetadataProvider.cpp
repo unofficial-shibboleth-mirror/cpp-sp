@@ -306,6 +306,10 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
 
     // Apply properties as directed.
     transport->setVerifyHost(m_verifyHost);
+    HTTPSOAPTransport *httpTransport = dynamic_cast<HTTPSOAPTransport*>(transport.get());
+    if (httpTransport) {
+        httpTransport->setAcceptEncoding("");
+    }
     if (m_trust.get() && m_dummyCR.get() && !transport->setTrustEngine(m_trust.get(), m_dummyCR.get()))
         throw IOException("Unable to install X509TrustEngine into transport object.");
 
