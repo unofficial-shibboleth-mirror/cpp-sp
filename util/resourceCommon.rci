@@ -1,14 +1,10 @@
 
             VALUE "Comments", "\0"
             VALUE "CompanyName", "Shibboleth Consortium\0"
-#ifdef RC_IS_SP
-            VALUE "FileVersion", "2,7,0,0\0"
-#else
-            VALUE "FileVersion", "2,7,0,0\0"
-#endif
-            VALUE "LegalCopyright", "Copyright © 2017 UCAID\0"
+            VALUE "FileVersion", "3,0,0,0\0"
+            VALUE "LegalCopyright", "Copyright © 2018 UCAID\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 2.7.0\0"
-            VALUE "ProductVersion", "2, 7, 0, 0\0"
+            VALUE "ProductName", "Shibboleth 3.0.0\0"
+            VALUE "ProductVersion", "0, 0, 0, 0\0"
             VALUE "SpecialBuild", "\0"

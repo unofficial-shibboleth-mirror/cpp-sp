@@ -72,7 +72,6 @@ BEGIN
         BEGIN
 #include "..\util\resourceCommon.rci"
             VALUE "FileDescription", "Shibboleth ADFSv1 Plugin\0"
-            VALUE "FileVersion", "2, 6, 0, 0\0"
 #ifdef SHIBSP_LITE
             VALUE "InternalName", "adfs-lite\0"
 #else
