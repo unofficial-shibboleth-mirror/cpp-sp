@@ -8,9 +8,11 @@ set ENTITYID=
 set TEMP_DOMAIN_NAME=
 set PARAM=
 set PREFIX=
+set OUT=%~dp0
 
 :opt_start
 set PARAM=%1
+
 if not defined PARAM goto opt_end
 if %1==-o goto opt_out
 if %1==-n goto opt_prefix
@@ -21,7 +23,6 @@ if %1==-f goto opt_force
 goto usage
 :opt_end
 
-if not defined OUT set OUT=%~dp0
 if not defined PREFIX set PREFIX=sp
 
 if exist "%OUT%\%PREFIX%-key.pem" goto protect
