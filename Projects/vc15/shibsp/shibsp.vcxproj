@@ -326,7 +326,6 @@
     <ClInclude Include="..\..\..\shibsp\security\SecurityPolicyProvider.h" />
     <ClInclude Include="..\..\..\shibsp\ServiceProvider.h" />
     <ClInclude Include="..\..\..\shibsp\SessionCache.h" />
-    <ClInclude Include="..\..\..\shibsp\SessionCacheEx.h" />
     <ClInclude Include="..\..\..\shibsp\SPConfig.h" />
     <ClInclude Include="..\..\..\shibsp\SPRequest.h" />
     <ClInclude Include="..\..\..\shibsp\TransactionLog.h" />

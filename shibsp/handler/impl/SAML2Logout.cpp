@@ -34,7 +34,7 @@
 #include "util/SPConstants.h"
 
 #ifndef SHIBSP_LITE
-# include "SessionCacheEx.h"
+# include "SessionCache.h"
 # include "security/SecurityPolicy.h"
 # include "security/SecurityPolicyProvider.h"
 # include "metadata/MetadataProviderCriteria.h"
@@ -271,7 +271,6 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
 #ifndef SHIBSP_LITE
     // First capture the active session ID.
     SessionCache* cache = application.getServiceProvider().getSessionCache();
-    SessionCacheEx* cacheex = dynamic_cast<SessionCacheEx*>(cache);
     string session_id = cache->active(application, request);
 
     scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &request));
@@ -470,22 +469,15 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
         // Now we perform "logout" by finding the matching sessions.
         vector<string> sessions;
         try {
-            if (cacheex) {
-                time_t expires = logoutRequest->getNotOnOrAfter() ? logoutRequest->getNotOnOrAfterEpoch() : 0;
-                cacheex->logout(application, entity, *nameid, &indexes, expires, sessions);
-                m_log.debug("session cache returned %d sessions bound to NameID in logout request", sessions.size());
+            time_t expires = logoutRequest->getNotOnOrAfter() ? logoutRequest->getNotOnOrAfterEpoch() : 0;
+            cache->logout(application, entity, *nameid, &indexes, expires, sessions);
+            m_log.debug("session cache returned %d sessions bound to NameID in logout request", sessions.size());
 
-                // Now we actually terminate everything except for the active session,
-                // if this is front-channel, for notification purposes.
-                for (vector<string>::const_iterator sit = sessions.begin(); sit != sessions.end(); ++sit)
-                    if (*sit != session_id)
-                        cacheex->remove(application, sit->c_str()); // using the ID-based removal operation
-            }
-            else {
-                m_log.warn("session cache does not support extended API, can't implement indirect logout of sessions");
-                if (!session_id.empty())
-                    sessions.push_back(session_id);
-            }
+            // Now we actually terminate everything except for the active session,
+            // if this is front-channel, for notification purposes.
+            for (vector<string>::const_iterator sit = sessions.begin(); sit != sessions.end(); ++sit)
+                if (*sit != session_id)
+                    cache->remove(application, sit->c_str()); // using the ID-based removal operation
         }
         catch (std::exception& ex) {
             m_log.error("error while logging out matching sessions: %s", ex.what());

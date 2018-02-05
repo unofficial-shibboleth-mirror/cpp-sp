@@ -290,6 +290,32 @@ namespace shibsp {
             )=0;
 
         /**
+        * Returns active sessions that match particular parameters and records the logout
+        * to prevent race conditions.
+        *
+        * <p>On exit, the mapping between these sessions and the associated information MAY be
+        * removed by the cache, so subsequent calls to this method may not return anything.
+        *
+        * <p>Until logout expiration, any attempt to create a session with the same parameters
+        * will be blocked by the cache.
+        *
+        * @param application   reference to Application that owns the session(s)
+        * @param issuer        source of session(s)
+        * @param nameid        name identifier associated with the session(s) to terminate
+        * @param indexes       indexes of sessions, or nullptr for all sessions associated with other parameters
+        * @param expires       logout expiration
+        * @param sessions      on exit, contains the IDs of the matching sessions found
+        */
+        virtual std::vector<std::string>::size_type logout(
+            const Application& application,
+            const opensaml::saml2md::EntityDescriptor* issuer,
+            const opensaml::saml2::NameID& nameid,
+            const std::set<std::string>* indexes,
+            time_t expires,
+            std::vector<std::string>& sessions
+        )=0;
+
+        /**
          * Executes a test of the cache's general health.
          */
         virtual void test()=0;
@@ -353,6 +379,28 @@ namespace shibsp {
          * @param response      optional response to client enabling removal of session or reference
          */
         virtual void remove(const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=nullptr)=0;
+
+        /**
+        * Locates an existing session by ID.
+        *
+        * <p>If the client address is supplied, then a check will be performed against
+        * the address recorded in the record.
+        *
+        * @param application   reference to Application that owns the Session
+        * @param key           session key
+        * @param client_addr   network address of client (if known)
+        * @param timeout       inactivity timeout to enforce (0 for none, nullptr to bypass check/update of last access)
+        * @return  pointer to locked Session, or nullptr
+        */
+        virtual Session* find(const Application& application, const char* key, const char* client_addr = nullptr, time_t* timeout = nullptr)=0;
+
+        /**
+        * Deletes an existing session.
+        *
+        * @param application   reference to Application that owns the Session
+        * @param key           session key
+        */
+        virtual void remove(const Application& application, const char* key)=0;
     };
 
     /** SessionCache implementation backed by a StorageService. */

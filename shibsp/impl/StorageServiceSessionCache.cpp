@@ -36,7 +36,7 @@
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
-#include "SessionCacheEx.h"
+#include "SessionCache.h"
 #include "TransactionLog.h"
 #include "attribute/Attribute.h"
 #include "handler/RemotedHandler.h"
@@ -86,7 +86,7 @@ namespace {
     }
 
     class StoredSession;
-    class SSCache : public SessionCacheEx
+    class SSCache : public SessionCache
 #ifndef SHIBSP_LITE
         ,public virtual Remoted
 #endif
@@ -853,14 +853,6 @@ SessionCache::SessionCache()
 }
 
 SessionCache::~SessionCache()
-{
-}
-
-SessionCacheEx::SessionCacheEx()
-{
-}
-
-SessionCacheEx::~SessionCacheEx()
 {
 }
 

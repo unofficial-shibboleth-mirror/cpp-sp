@@ -36,7 +36,6 @@ libshibspinclude_HEADERS = \
 	RequestMapper.h \
 	ServiceProvider.h \
 	SessionCache.h \
-	SessionCacheEx.h \
 	SPConfig.h \
 	SPRequest.h \
 	TransactionLog.h \
