@@ -82,7 +82,7 @@ void SHIBSP_API shibsp::registerEvents()
 }
 
 TransactionLog::TransactionLog(const char* fmt, const char* absent)
-    : log(logging::Category::getInstance(SHIBSP_TX_LOGCAT)), m_lock(Mutex::create()), m_absent(absent ? absent : "")
+    : m_log(logging::Category::getInstance(SHIBSP_TX_LOGCAT)), m_lock(Mutex::create()), m_absent(absent ? absent : "")
 {
     // Split the formatting string into named '%' parameter tokens, and "other stuff" to be echoed
     // literally in log messages.
@@ -154,7 +154,7 @@ void TransactionLog::write(const TransactionLog::Event& e)
             os << ")";
 
             Locker locker(this);
-            log.info(os.str());
+            m_log.info(os.str());
             os.str("");
 
             os << "Cached the following attributes with session (ID: ";
@@ -162,14 +162,14 @@ void TransactionLog::write(const TransactionLog::Event& e)
             os << ") for (applicationId: ";
             login->write(os, "%app", nullptr);
             os << ") {";
-            log.info(os.str());
+            m_log.info(os.str());
 
             if (login->m_attributes) {
                 for (vector<Attribute*>::const_iterator a=login->m_attributes->begin(); a != login->m_attributes->end(); ++a)
-                    log.infoStream() << "\t" << (*a)->getId() << " (" << (*a)->valueCount() << " values)";
+                    m_log.infoStream() << "\t" << (*a)->getId() << " (" << (*a)->valueCount() << " values)";
             }
 
-            log.info("}");
+            m_log.info("}");
             return;
         }
 
@@ -180,7 +180,7 @@ void TransactionLog::write(const TransactionLog::Event& e)
             os << ") (ID: ";
             logout->write(os, "%s", nullptr);
             os << ")";
-            log.info(os.str());
+            m_log.info(os.str());
             return;
         }
     }

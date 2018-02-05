@@ -76,9 +76,6 @@ namespace shibsp {
 
     /**
      * Interface to a synchronized event/audit logging object.
-     * 
-     * <p>For backward compatibility, we expose a logging object directly, but
-     * new applications should rely on the Event callback API.
      */
     class SHIBSP_API TransactionLog : public virtual xmltooling::Lockable
     {
@@ -96,9 +93,6 @@ namespace shibsp {
         
         xmltooling::Lockable* lock();
         void unlock();
-
-        /** @deprecated Logging object. */
-        xmltooling::logging::Category& log;
 
         /**
          * Callback interface that outputs an event record to a stream using formatting tokens.
@@ -172,6 +166,7 @@ namespace shibsp {
         virtual void write(const Event& e);
 
     private:
+        xmltooling::logging::Category& m_log;
         boost::scoped_ptr<xmltooling::Mutex> m_lock;
         std::string m_absent;
         std::vector<std::string> m_formatting;
