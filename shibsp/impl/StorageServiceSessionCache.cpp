@@ -99,26 +99,6 @@ namespace {
         void receive(DDF& in, ostream& out);
 
         void insert(
-            const Application& app,
-            const HTTPRequest& httpRequest,
-            HTTPResponse& httpResponse,
-            time_t expires,
-            const EntityDescriptor* issuer=nullptr,
-            const XMLCh* protocol=nullptr,
-            const saml2::NameID* nameid=nullptr,
-            const XMLCh* authn_instant=nullptr,
-            const XMLCh* session_index=nullptr,
-            const XMLCh* authncontext_class=nullptr,
-            const XMLCh* authncontext_decl=nullptr,
-            const vector<const Assertion*>* tokens=nullptr,
-            const vector<Attribute*>* attributes=nullptr
-            ) {
-            string dummy;
-            insert(dummy, app, httpRequest, httpResponse, expires, issuer, protocol, nameid,
-                    authn_instant, session_index, authncontext_class, authncontext_decl, tokens, attributes);
-        }
-
-        void insert(
             string& sessionID,
             const Application& app,
             const HTTPRequest& httpRequest,
@@ -875,30 +855,6 @@ SessionCache::SessionCache()
 SessionCache::~SessionCache()
 {
 }
-
-#ifndef SHIBSP_LITE
-
-void SessionCache::insert(
-    string& sessionID,
-    const Application& app,
-    const HTTPRequest& httpRequest,
-    HTTPResponse& httpResponse,
-    time_t expires,
-    const EntityDescriptor* issuer,
-    const XMLCh* protocol,
-    const saml2::NameID* nameid,
-    const XMLCh* authn_instant,
-    const XMLCh* session_index,
-    const XMLCh* authncontext_class,
-    const XMLCh* authncontext_decl,
-    const vector<const Assertion*>* tokens,
-    const vector<Attribute*>* attributes
-    ) {
-    return insert(app, httpRequest, httpResponse, expires, issuer, protocol, nameid,
-            authn_instant, session_index, authncontext_class, authncontext_decl, tokens, attributes);
-}
-
-#endif
 
 SessionCacheEx::SessionCacheEx()
 {
