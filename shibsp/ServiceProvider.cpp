@@ -280,15 +280,6 @@ ServiceProvider::~ServiceProvider()
 {
 }
 
-#ifndef SHIBSP_LITE
-SecurityPolicyProvider* ServiceProvider::getSecurityPolicyProvider(bool required) const
-{
-    if (required)
-        throw ConfigurationException("No SecurityPolicyProvider available.");
-    return nullptr;
-}
-#endif
-
 Remoted* ServiceProvider::regListener(const char* address, Remoted* listener)
 {
     Remoted* ret = nullptr;

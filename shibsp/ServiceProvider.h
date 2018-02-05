@@ -127,25 +127,7 @@ namespace shibsp {
          * @param required true iff an exception should be thrown if no SecurityPolicyProvider is available
          * @return  a SecurityPolicyProvider
          */
-        virtual SecurityPolicyProvider* getSecurityPolicyProvider(bool required=true) const;
-
-        /**
-         * @deprecated
-		 * Returns the security policy settings for an identified policy.
-         *
-		 * @param id    identifies the policy to return, or nullptr for default
-         * @return a PropertySet
-		 */
-        virtual const PropertySet* getPolicySettings(const char* id) const=0;
-
-        /**
-         * @deprecated
-		 * Returns the security policy rules for an identified policy.
-         *
-		 * @param id    identifies the policy to return, or nullptr for default
-         * @return an array of policy rules
-		 */
-        virtual const std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id) const=0;
+        virtual SecurityPolicyProvider* getSecurityPolicyProvider(bool required=true) const=0;
 
         /**
          * Sets implementation-specific transport options.

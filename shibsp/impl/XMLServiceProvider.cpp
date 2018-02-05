@@ -419,14 +419,6 @@ namespace {
             return m_impl->m_policy.get();
         }
 
-        const PropertySet* getPolicySettings(const char* id) const {
-            return getSecurityPolicyProvider()->getPolicySettings(id);
-        }
-
-        const vector<const SecurityPolicyRule*>& getPolicyRules(const char* id) const {
-            return getSecurityPolicyProvider()->getPolicyRules(id);
-        }
-
         bool setTransportOptions(SOAPTransport& transport) const {
             bool ret = true;
             for (vector< boost::tuple<string,string,string> >::const_iterator opt = m_impl->m_transportOptions.begin();
