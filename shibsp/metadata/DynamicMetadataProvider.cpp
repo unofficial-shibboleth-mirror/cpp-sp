@@ -513,8 +513,8 @@ void *DynamicMetadataProvider::init_fn(void* pv)
             me->m_log.error("Filter error while reloading from cache (%s): %s", fullname.c_str(), msg.get());
             remove(fullname.c_str());
         }
-        catch (exception &e) {
-            me->m_log.error("Other error while reloading from cache (%s)", fullname.c_str());
+        catch (exception& e) {
+            me->m_log.error("Other error while reloading from cache (%s): %s", fullname.c_str(), e.what());
             remove(fullname.c_str());
         }
 
