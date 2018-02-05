@@ -28,7 +28,7 @@
 #include "exceptions.h"
 #include "Application.h"
 #include "ServiceProvider.h"
-#include "SessionCacheEx.h"
+#include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
@@ -156,7 +156,7 @@ pair<bool,long> AssertionLookup::processMessage(const Application& application, 
 
     m_log.debug("processing assertion lookup request (session: %s, assertion: %s)", key, ID);
 
-    SessionCacheEx* cache = dynamic_cast<SessionCacheEx*>(application.getServiceProvider().getSessionCache());
+    SessionCache* cache = application.getServiceProvider().getSessionCache();
     if (!cache) {
         m_log.error("session cache does not support extended API");
         throw FatalProfileException("Session cache does not support assertion lookup.");
