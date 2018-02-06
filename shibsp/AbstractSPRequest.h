@@ -74,6 +74,8 @@ namespace shibsp {
         const char* getParameter(const char* name) const;
         std::vector<const char*>::size_type getParameters(const char* name, std::vector<const char*>& values) const;
         const char* getHandlerURL(const char* resource=nullptr) const;
+        std::string getSecureHeader(const char* name) const;
+        void setAuthType(const char* authtype);
         void log(SPLogLevel level, const std::string& msg) const;
         bool isPriorityEnabled(SPLogLevel level) const;
 

@@ -102,7 +102,7 @@ namespace shibsp {
          * @param name  the name of the secure header to return
          * @return the header's value, or an empty string
          */
-        virtual std::string getSecureHeader(const char* name) const;
+        virtual std::string getSecureHeader(const char* name) const=0;
 
         /**
          * Ensures no value exists for a request header.
@@ -132,7 +132,7 @@ namespace shibsp {
          *
          * @param authtype  AUTH_TYPE value to set or nullptr to clear
          */
-        virtual void setAuthType(const char* authtype);
+        virtual void setAuthType(const char* authtype)=0;
 
         /** Portable logging levels. */
         enum SPLogLevel {

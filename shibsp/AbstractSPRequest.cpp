@@ -48,15 +48,6 @@ SPRequest::~SPRequest()
 {
 }
 
-string SPRequest::getSecureHeader(const char* name) const
-{
-    return getHeader(name);
-}
-
-void SPRequest::setAuthType(const char* authtype)
-{
-}
-
 #ifdef SHIBSP_HAVE_GSSAPI
 GSSRequest::GSSRequest()
 {
@@ -340,6 +331,16 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     // Build the handler URL
     m_handlerURL += host + path;
     return m_handlerURL.c_str();
+}
+
+string AbstractSPRequest::getSecureHeader(const char* name) const
+{
+    return getHeader(name);
+}
+
+void AbstractSPRequest::setAuthType(const char* authtype)
+{
+
 }
 
 void AbstractSPRequest::log(SPLogLevel level, const std::string& msg) const
