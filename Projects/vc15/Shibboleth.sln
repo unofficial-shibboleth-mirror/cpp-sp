@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2002
+VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server Modules", "Server Modules", "{26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}"
 EndProject
@@ -118,6 +118,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "adfs", "adfs\adfs.vcxproj", "{26D4FABF-ACDE-4947-9C4A-7AE1B50CD83A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "adfs-lite", "adfs\adfs-lite.vcxproj", "{26D4FABF-ACDE-4947-9C4A-7AE1B50CD83B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F7}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mdquery", "util\mdquery.vcxproj", "{F13141B6-6C87-40BB-8D4E-5CC56EBB4C5A}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -177,6 +180,11 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "UnitTests\UnitTests.vcxproj", "{9212963D-AB04-4CA1-A856-735993246076}"
 	ProjectSection(ProjectDependencies) = postProject
 		{81F0F7A6-DC36-46EF-957F-F9E81D4403F6} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F6}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nsapi_shib", "nsapi_shib\nsapi_shib.vcxproj", "{1396D80A-8672-4224-9B02-95F3F4207CDB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81F0F7A6-DC36-46EF-957F-F9E81D4403F7} = {81F0F7A6-DC36-46EF-957F-F9E81D4403F7}
 	EndProjectSection
 EndProject
 Global
@@ -337,6 +345,14 @@ Global
 		{9212963D-AB04-4CA1-A856-735993246076}.Release|Win32.Build.0 = Release|Win32
 		{9212963D-AB04-4CA1-A856-735993246076}.Release|x64.ActiveCfg = Release|x64
 		{9212963D-AB04-4CA1-A856-735993246076}.Release|x64.Build.0 = Release|x64
+		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Debug|Win32.Build.0 = Debug|Win32
+		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Debug|x64.ActiveCfg = Debug|x64
+		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Debug|x64.Build.0 = Debug|x64
+		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Release|Win32.ActiveCfg = Release|Win32
+		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Release|Win32.Build.0 = Release|Win32
+		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Release|x64.ActiveCfg = Release|x64
+		{1396D80A-8672-4224-9B02-95F3F4207CDB}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -358,6 +374,7 @@ Global
 		{303291A1-C542-49E4-80B3-9304B7B6F8BC} = {FED80230-119E-4B2F-9F53-D2660A5F022B}
 		{B44C0852-83B8-4FB2-A86E-097C9C8256D0} = {26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}
 		{CEE84E04-6A19-4F93-8FE5-98F9D22526DD} = {26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}
+		{1396D80A-8672-4224-9B02-95F3F4207CDB} = {26BA8F84-6E42-41FA-9B13-5D3F4B5B2050}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {66E1D767-052C-43C8-8F6B-90D14B741E03}
