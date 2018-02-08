@@ -1491,30 +1491,51 @@ void XMLApplication::doAttributePlugins(DOMElement* e, Category& log)
 }
 #endif
 
+
 DOMNodeFilter::FilterAction XMLApplication::acceptNode(const DOMNode* node) const
 {
     const XMLCh* name=node->getLocalName();
-    if (XMLString::equals(name,ApplicationOverride) ||
-        XMLString::equals(name,_Audience) ||
-        XMLString::equals(name,Notify) ||
-        XMLString::equals(name,_Handler) ||
-        XMLString::equals(name,_AssertionConsumerService) ||
-        XMLString::equals(name,_ArtifactResolutionService) ||
-        XMLString::equals(name,Logout) ||
-        XMLString::equals(name,_LogoutInitiator) ||
-        XMLString::equals(name,_ManageNameIDService) ||
-        XMLString::equals(name,NameIDMgmt) ||
-        XMLString::equals(name,_SessionInitiator) ||
-        XMLString::equals(name,_SingleLogoutService) ||
-        XMLString::equals(name,SSO) ||
-        XMLString::equals(name,RelyingParty) ||
-        XMLString::equals(name,_MetadataProvider) ||
-        XMLString::equals(name,_TrustEngine) ||
-        XMLString::equals(name,_CredentialResolver) ||
-        XMLString::equals(name,_AttributeFilter) ||
-        XMLString::equals(name,_AttributeExtractor) ||
-        XMLString::equals(name,_AttributeResolver))
+    if (XMLString::equals(name, ApplicationOverride) ||
+        XMLString::equals(name, _Audience) ||
+        XMLString::equals(name, Notify) ||
+        XMLString::equals(name, _Handler) ||
+        XMLString::equals(name, _AssertionConsumerService) ||
+        XMLString::equals(name, _ArtifactResolutionService) ||
+        XMLString::equals(name, Logout) ||
+        XMLString::equals(name, _LogoutInitiator) ||
+        XMLString::equals(name, _ManageNameIDService) ||
+        XMLString::equals(name, NameIDMgmt) ||
+        XMLString::equals(name, _SessionInitiator) ||
+        XMLString::equals(name, _SingleLogoutService) ||
+        XMLString::equals(name, SSO) ||
+        XMLString::equals(name, RelyingParty) ||
+        XMLString::equals(name, _MetadataProvider) ||
+        XMLString::equals(name, _TrustEngine) ||
+        XMLString::equals(name, _CredentialResolver) ||
+        XMLString::equals(name, _AttributeFilter) ||
+        XMLString::equals(name, _AttributeExtractor) ||
+        XMLString::equals(name, _AttributeResolver)) {
         return FILTER_REJECT;
+    }
+
+    const XMLCh _cookieProps[] = UNICODE_LITERAL_11(c,o,o,k,i,e,P,r,o,p,s);
+    const XMLCh _http[] = UNICODE_LITERAL_4(h,t,t,p);
+    const XMLCh _https[] = UNICODE_LITERAL_5(h,t,t,p,s);
+    const XMLCh _Sessions[] = UNICODE_LITERAL_8(S,e,s,s,i,o,n,s);
+
+    if (XMLString::equals(name, _Sessions)) {
+        // This is a hack, but it's a fairly clean way to mutate a setting.
+        DOMNode* cookieProps = node->getAttributes()->getNamedItemNS(nullptr, _cookieProps);
+        if (cookieProps) {
+            const XMLCh* val = cookieProps->getNodeValue();
+            if (!val || (*val != chSemiColon && !XMLString::equals(val, _http) && !XMLString::equals(val, _https))) {
+                xstring newval(1, chSemiColon);
+                newval += chSpace;
+                newval += val;
+                cookieProps->setNodeValue(newval.c_str());
+            }
+        }
+    }
 
     return FILTER_ACCEPT;
 }
