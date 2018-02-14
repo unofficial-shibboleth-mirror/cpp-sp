@@ -28,8 +28,8 @@
   <!-- Information for the properties page of the msi -->
 
   <Property Id='ARPCONTACT' Value='contact@shibboleth.net' />
-  <Property Id='ARPHELPLINK' Value='https://wiki.shibboleth.net/confluence/display/SHIB2/Installation+and+Configuration' />
-  <Property Id='ARPURLUPDATEINFO' Value='https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPWindowsUpgrade' />
+  <Property Id='ARPHELPLINK' Value='https://wiki.shibboleth.net/confluence/display/SP3/' />
+  <Property Id='ARPURLUPDATEINFO' Value='https://wiki.shibboleth.net/confluence/display/SP3/' />
   <Property Id='ARPURLINFOABOUT' Value='http://shibboleth.net/' />
 
   <!-- Do we want to force the ServiceStart to happen? -->

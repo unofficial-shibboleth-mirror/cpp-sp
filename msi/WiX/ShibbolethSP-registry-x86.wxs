@@ -20,7 +20,7 @@
   <!--
     This is where we put all the architecture neutral bits of the
     Shibboleth install.  It turns out that it may not be all the
-    architecture insenstive stuff since some GUIDS may have moved
+    architecture insensitive stuff since some GUIDS may have moved
   -->
   <Fragment>
     <!-- Previous version search -->

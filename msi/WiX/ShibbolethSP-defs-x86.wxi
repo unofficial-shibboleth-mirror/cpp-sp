@@ -10,7 +10,7 @@
   <ComponentRef Id="RELEASE.txt" />
 
   <ComponentRef Id="example_metadata.xml" />
-  <ComponentRef Id="example_shibboleth2.xml" />
+  <ComponentRef Id="example_shibboleth3.xml" />
   <ComponentRef Id="keygen.bat" />
   <ComponentRef Id="attrChecker.html" />
   <ComponentRef Id="sslError.html" />
@@ -19,7 +19,7 @@
   <ComponentRef Id="localLogout.html" />
   <ComponentRef Id="attribute_map.xml" />
   <ComponentRef Id="attribute_policy.xml" />
-  <ComponentRef Id="shibboleth2.xml" />
+  <ComponentRef Id="shibboleth3.xml" />
   <ComponentRef Id="console.logger" />
   <ComponentRef Id="discoveryTemplate.html" />
   <ComponentRef Id="postTemplate.html" />

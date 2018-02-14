@@ -35,13 +35,13 @@ BUILTCONFIGFILES = \
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
 CONFIGFILES = \
-	shibboleth2.xml \
+	shibboleth3.xml \
 	attribute-map.xml \
 	attribute-policy.xml \
 	protocols.xml \
 	security-policy.xml \
 	example-metadata.xml \
-	example-shibboleth2.xml \
+	example-shibboleth3.xml \
 	console.logger \
 	syslog.logger \
 	accessError.html \

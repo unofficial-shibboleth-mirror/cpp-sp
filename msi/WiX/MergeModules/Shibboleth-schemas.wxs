@@ -57,6 +57,9 @@
                 <Component Id='native_sp_config.xsd' Guid='{5514B435-94AB-4A92-9737-0BEB78C146C8}'>
                   <File KeyPath='yes' Id='native_sp_config.xsd' Name='shibboleth-2.0-native-sp-config.xsd' />
                 </Component>
+                <Component Id='native_sp3_config.xsd' Guid='{88E6E195-F004-4104-B6B3-62317BF75E5C}'>
+                  <File KeyPath='yes' Id='native_sp3_config.xsd' Name='shibboleth-3.0-native-sp-config.xsd' />
+                </Component>
                 <Component Id='native_sp_protocols.xsd' Guid='{AE42FFFB-1A59-4F1D-9935-15D727B99929}'>
                   <File KeyPath='yes' Id='native_sp_protocols.xsd' Name='shibboleth-2.0-native-sp-protocols.xsd' />
                 </Component>
