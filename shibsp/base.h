@@ -95,7 +95,10 @@
 #define SHIBSP_TX_LOGCAT "Shibboleth-TRANSACTION"
 
 /** Default name of configuration file. */
-# define SHIBSP_CONFIG  "shibboleth2.xml"
+# define SHIBSP_CONFIG  "shibboleth3.xml"
+
+/** Default name of configuration file. */
+# define SHIBSP2_CONFIG  "shibboleth2.xml"
 
 #ifdef WIN32
 

@@ -404,17 +404,21 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
 #ifdef _DEBUG
     NDC ndc("instantiate");
 #endif
+
+    bool retry = false;
+
     if (!config)
         config = getenv("SHIBSP_CONFIG");
-    if (!config)
+    if (!config) {
         config = SHIBSP_CONFIG;
+        retry = true;
+    }
     try {
         xercesc::DOMDocument* dummydoc;
         if (*config == '"' || *config == '\'') {
             throw ConfigurationException("The value of SHIBSP_CONFIG started with a quote.");
         }
         else if (*config != '<') {
-
             // Mock up some XML.
             string resolved(config);
             stringstream snippet;
@@ -448,9 +452,18 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
         return true;
     }
     catch (std::exception& ex) {
-        if (rethrow)
+        if (retry) {
+            Category::getInstance(SHIBSP_LOGCAT ".Config").warn(
+                "failed to load default configuration (%s), retrying with legacy default (%s)", config, SHIBSP2_CONFIG
+            );
+            return instantiate(SHIBSP2_CONFIG, rethrow);
+        }
+        else if (rethrow) {
             throw;
-        Category::getInstance(SHIBSP_LOGCAT ".Config").fatal("caught exception while loading configuration: %s", ex.what());
+        }
+        else {
+            Category::getInstance(SHIBSP_LOGCAT ".Config").fatal("caught exception while loading configuration: %s", ex.what());
+        }
     }
     return false;
 }
