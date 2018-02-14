@@ -88,7 +88,7 @@ namespace shibsp {
             // Initial guess at index to use.
             pair<bool,unsigned int> ix = pair<bool,unsigned int>(false,0);
             if (!strncmp(handlerURL, "https", 5))
-                ix = getUnsignedInt("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
+                ix = getUnsignedInt("sslIndex", shibspconstants::ASCII_SHIBSPCONFIG_NS);
             if (!ix.first)
                 ix = getUnsignedInt("index");
             if (!ix.first)
@@ -146,16 +146,8 @@ SAML2ArtifactResolution::SAML2ArtifactResolution(const DOMElement* e, const char
 {
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        m_encoder.reset(
-            SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
-                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
-                )
-            );
-        m_decoder.reset(
-            SAMLConfig::getConfig().MessageDecoderManager.newPlugin(
-                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
-                )
-            );
+        m_encoder.reset(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(getString("Binding").second, e));
+        m_decoder.reset(SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second, e));
     }
 #endif
     string address(appId);
@@ -193,7 +185,7 @@ pair<bool,long> SAML2ArtifactResolution::run(SPRequest& request, bool isHandler)
         code->setCode(&Faultcode::SERVER);
         Faultstring* fs = FaultstringBuilder::buildFaultstring();
         fault->setFaultstring(fs);
-        pair<bool,bool> flag = getBool("detailedErrors", m_configNS.get());
+        pair<bool,bool> flag = getBool("detailedErrors", shibspconstants::ASCII_SHIBSPCONFIG_NS);
         auto_ptr_XMLCh msg((flag.first && flag.second) ? ex.what() : "Error processing request.");
         fs->setString(msg.get());
 #ifndef SHIBSP_LITE
@@ -255,7 +247,7 @@ void SAML2ArtifactResolution::receive(DDF& in, ostream& out)
         code->setCode(&Faultcode::SERVER);
         Faultstring* fs = FaultstringBuilder::buildFaultstring();
         fault->setFaultstring(fs);
-        pair<bool,bool> flag = getBool("detailedErrors", m_configNS.get());
+        pair<bool,bool> flag = getBool("detailedErrors", shibspconstants::ASCII_SHIBSPCONFIG_NS);
         auto_ptr_XMLCh msg((flag.first && flag.second) ? ex.what() : "Error processing request.");
         fs->setString(msg.get());
         m_encoder->encode(*resp, fault.get(), nullptr);
@@ -277,7 +269,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         throw ConfigurationException("No ArtifactMap instance installed.");
 
     // Locate policy key.
-    pair<bool,const char*> policyId = getString("policyId", m_configNS.get());  // namespace-qualified if inside handler element
+    pair<bool,const char*> policyId = getString("policyId", shibspconstants::ASCII_SHIBSPCONFIG_NS);  // namespace-qualified if inside handler element
     if (!policyId.first)
         policyId = application.getString("policyId");   // unqualified in Application(s) element
         

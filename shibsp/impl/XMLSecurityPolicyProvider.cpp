@@ -45,7 +45,6 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xsec/dsig/DSIGConstants.hpp>
 
-using shibspconstants::SHIB2SPCONFIG_NS;
 using opensaml::SAMLConfig;
 using opensaml::SecurityPolicyRule;
 using namespace shibsp;
@@ -197,8 +196,14 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
     xmltooling::NDC ndc("XMLSecurityPolicyProviderImpl");
 #endif
 
-    if (!XMLHelper::isNodeNamed(e, SHIB2SPCONFIG_NS, SecurityPolicies))
+    if (!XMLHelper::isNodeNamed(e, shibspconstants::SHIB2SPCONFIG_NS, SecurityPolicies) &&
+        !XMLHelper::isNodeNamed(e, shibspconstants::SHIB3SPCONFIG_NS, SecurityPolicies)) {
         throw ConfigurationException("XML SecurityPolicyProvider requires conf:SecurityPolicies at root of configuration.");
+    }
+
+    if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
+        log.warn("detected legacy 2.0 configuration, support will be removed from a future version of the software");
+    }
 
     const XMLCh* algs = nullptr;
     const DOMElement* alglist = XMLHelper::getLastChildElement(e, AlgorithmBlacklist);

@@ -52,8 +52,51 @@ namespace shibsp {
         std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
         std::pair<bool,int> getInt(const char* name, const char* ns=nullptr) const;
         void getAll(std::map<std::string,const char*>& properties) const;
-        const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const;
+        const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const;
         const xercesc::DOMElement* getElement() const;
+
+        /**
+         * Interface that remaps property names for legacy support.
+         */
+        class SHIBSP_API Remapper {
+            MAKE_NONCOPYABLE(Remapper);
+        protected:
+            /** Constructor. */
+            Remapper();
+
+        public:
+            /** Destructor. */
+            virtual ~Remapper();
+
+            /**
+             * Remap a name (or return it unchanged).
+             *
+             * @param src original name
+             * @param log logger to use
+             *
+             * @return the name to use
+             */
+            virtual const char* remap(const char* src, xmltooling::logging::Category& log) const=0;
+        };
+
+        /**
+         * Concrete remapper that relies on an STL map.
+         */
+        class SHIBSP_API STLRemapper : public Remapper {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param rules remapping rules
+             */
+            STLRemapper(const std::map<std::string,std::string>& rules);
+            virtual ~STLRemapper();
+
+            const char* remap(const char* src, xmltooling::logging::Category& log) const;
+
+        private:
+            const std::map<std::string, std::string>& m_rules;
+        };
 
         /**
          * Loads the property set from a DOM element.
@@ -61,13 +104,13 @@ namespace shibsp {
          * @param e         root element of property set
          * @param log       optional log object for tracing
          * @param filter    optional filter controls what child elements to include as nested PropertySets
-         * @param remapper  optional map of property rename rules for legacy property support
+         * @param remapper  optional mapper of property rename rules for legacy property support
          */
         void load(
             const xercesc::DOMElement* e,
             xmltooling::logging::Category* log=nullptr,
             xercesc::DOMNodeFilter* filter=nullptr,
-            const std::map<std::string,std::string>* remapper=nullptr
+            const Remapper* remapper=nullptr
             );
 
     protected:

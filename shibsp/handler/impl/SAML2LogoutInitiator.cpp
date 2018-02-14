@@ -171,9 +171,7 @@ void SAML2LogoutInitiator::init(const char* location)
         split(m_bindings, dupBindings, is_space(), algorithm::token_compress_on);
         for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
             try {
-                boost::shared_ptr<MessageEncoder> encoder(
-                    SAMLConfig::getConfig().MessageEncoderManager.newPlugin(*b, pair<const DOMElement*,const XMLCh*>(getElement(),nullptr))
-                    );
+                boost::shared_ptr<MessageEncoder> encoder(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(*b, getElement()));
                 if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                     m_encoders[*b] = encoder;
                     m_log.debug("supporting outgoing binding (%s)", b->c_str());

@@ -46,6 +46,34 @@ PropertySet::~PropertySet()
 {
 }
 
+DOMPropertySet::Remapper::Remapper()
+{
+}
+
+DOMPropertySet::Remapper::~Remapper()
+{
+}
+
+DOMPropertySet::STLRemapper::STLRemapper(const std::map<std::string, std::string>& rules) : m_rules(rules)
+{
+}
+
+DOMPropertySet::STLRemapper::~STLRemapper()
+{
+}
+
+const char* DOMPropertySet::STLRemapper::remap(const char* src, xmltooling::logging::Category& log) const
+{
+    map<string,string>::const_iterator i = src ? m_rules.find(src) : m_rules.end();
+    if (i != m_rules.end()) {
+        log.warn("DEPRECATED configuration - remapping property/set (%s) to (%s)", src, i->second.c_str());
+        return i->second.c_str();
+    }
+    else {
+        return src;
+    }
+}
+
 DOMPropertySet::DOMPropertySet() : m_parent(nullptr), m_root(nullptr)
 {
 }
@@ -75,7 +103,7 @@ void DOMPropertySet::load(
     const DOMElement* e,
     Category* log,
     DOMNodeFilter* filter,
-    const std::map<std::string,std::string>* remapper
+    const Remapper* remapper
     )
 {
 #ifdef _DEBUG
@@ -98,24 +126,23 @@ void DOMPropertySet::load(
             auto_ptr_char ns(a->getNamespaceURI());
             auto_ptr_char name(a->getLocalName());
             const char* realname=name.get();
-            map<string,string>::const_iterator remap;
             if (remapper) {
-                remap=remapper->find(realname);
-                if (remap!=remapper->end()) {
-                    log->warn("deprecation - remapping property (%s) to (%s)",realname,remap->second.c_str());
-                    realname=remap->second.c_str();
-                }
+                realname = remapper->remap(realname, *log);
             }
             if (ns.get()) {
-                if (remapper && (remap=remapper->find(ns.get()))!=remapper->end())
-                    m_map[string("{") + remap->second.c_str() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                else
-                    m_map[string("{") + ns.get() + '}' + realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                log->debug("added property {%s}%s (%s)",ns.get(),realname,val);
+                const char* realns = ns.get();
+                if (remapper) {
+                    realns = remapper->remap(realns, *log);
+                }
+                else if (XMLString::equals(realns, shibspconstants::ASCII_SHIB2SPCONFIG_NS)) {
+                    realns = shibspconstants::ASCII_SHIB3SPCONFIG_NS;
+                }
+                m_map[string("{") + realns + '}' + realname] = pair<char*, const XMLCh*>(val, a->getNodeValue());
+                log->debug("added property {%s}%s (%s)", realns, realname, val);
             }
             else {
                 m_map[realname]=pair<char*,const XMLCh*>(val,a->getNodeValue());
-                log->debug("added property %s (%s)",realname,val);
+                log->debug("added property %s (%s)", realname, val);
             }
         }
     }
@@ -130,23 +157,23 @@ void DOMPropertySet::load(
         auto_ptr_char ns(e->getNamespaceURI());
         auto_ptr_char name(e->getLocalName());
         const char* realname=name.get();
-        map<string,string>::const_iterator remap;
         if (remapper) {
-            remap = remapper->find(realname);
-            if (remap != remapper->end()) {
-                log->warn("deprecation - remapping nested property set (%s) to (%s)", realname, remap->second.c_str());
-                realname = remap->second.c_str();
-            }
+            realname = remapper->remap(realname, *log);
         }
         string key;
         if (ns.get()) {
-            if (remapper && (remap = remapper->find(ns.get())) != remapper->end())
-                key = string("{") + remap->second.c_str() + '}' + realname;
-            else
-                key = string("{") + ns.get() + '}' + realname;
+            const char* realns = ns.get();
+            if (remapper) {
+                realns = remapper->remap(realns, *log);
+            }
+            else if (XMLString::equals(realns, shibspconstants::ASCII_SHIB2SPCONFIG_NS)) {
+                realns = shibspconstants::ASCII_SHIB3SPCONFIG_NS;
+            }
+            key = string("{") + realns + '}' + realname;
         }
-        else
+        else {
             key = realname;
+        }
         if (m_nested.find(key) != m_nested.end())
             log->warn("load() skipping duplicate property set: %s", key.c_str());
         else {

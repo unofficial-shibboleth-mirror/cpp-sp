@@ -74,7 +74,7 @@ using namespace boost;
 using namespace std;
 
 AssertionConsumerService::AssertionConsumerService(
-    const DOMElement* e, const char* appId, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
+    const DOMElement* e, const char* appId, Category& log, DOMNodeFilter* filter, const Remapper* remapper
     ) : AbstractHandler(e, log, filter, remapper)
 {
     if (!e)
@@ -84,11 +84,7 @@ AssertionConsumerService::AssertionConsumerService(
     setAddress(address.c_str());
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        m_decoder.reset(
-            SAMLConfig::getConfig().MessageDecoderManager.newPlugin(
-                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
-                )
-            );
+        m_decoder.reset(SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second, e));
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
     }
 #endif
@@ -162,7 +158,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
 {
 #ifndef SHIBSP_LITE
     // Locate policy key.
-    pair<bool,const char*> prop = getString("policyId", m_configNS.get());  // may be namespace-qualified if inside handler element
+    pair<bool,const char*> prop = getString("policyId", shibspconstants::ASCII_SHIBSPCONFIG_NS);  // may be namespace-qualified if inside handler element
     if (!prop.first)
         prop = getString("policyId");   // try unqualified
     if (!prop.first)
@@ -244,7 +240,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
         // Check for isPassive error condition.
         const char* sc2 = ex.getProperty("statusCode2");
         if (sc2 && !strcmp(sc2, "urn:oasis:names:tc:SAML:2.0:status:NoPassive")) {
-            pair<bool,bool> ignore = getBool("ignoreNoPassive", m_configNS.get());  // may be namespace-qualified inside handler element
+            pair<bool,bool> ignore = getBool("ignoreNoPassive", shibspconstants::ASCII_SHIBSPCONFIG_NS);  // may be namespace-qualified inside handler element
             if (!ignore.first)
                 ignore = getBool("ignoreNoPassive");    // try unqualified
             if (ignore.first && ignore.second && !relayState.empty()) {
@@ -361,7 +357,7 @@ void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const cha
     // Initial guess at index to use.
     pair<bool,unsigned int> ix = pair<bool,unsigned int>(false,0);
     if (!strncmp(handlerURL, "https", 5))
-        ix = getUnsignedInt("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
+        ix = getUnsignedInt("sslIndex", shibspconstants::ASCII_SHIBSPCONFIG_NS);
     if (!ix.first)
         ix = getUnsignedInt("index");
     if (!ix.first)

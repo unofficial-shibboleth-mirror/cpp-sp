@@ -108,7 +108,7 @@ namespace {
         }
     };
 
-    MessageDecoder* ADFSDecoderFactory(const pair<const DOMElement*,const XMLCh*>& p)
+    MessageDecoder* ADFSDecoderFactory(const DOMElement* const &)
     {
         return new ADFSDecoder();
     }
@@ -123,7 +123,7 @@ namespace {
     {
     public:
         ADFSSessionInitiator(const DOMElement* e, const char* appId)
-            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.ADFS"), nullptr, &m_remapper), m_appId(appId), m_binding(WSFED_NS) {
+            : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.ADFS"), nullptr, this), m_appId(appId), m_binding(WSFED_NS) {
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {

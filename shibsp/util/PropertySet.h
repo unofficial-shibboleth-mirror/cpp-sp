@@ -119,7 +119,7 @@ namespace shibsp {
          * @param ns    nested property set namespace, or nullptr
          * @return the nested property set, or nullptr
          */        
-        virtual const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const=0;
+        virtual const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const=0;
         
         /**
          * Returns a DOM element representing the property container, if any.

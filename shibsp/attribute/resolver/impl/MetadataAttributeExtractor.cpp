@@ -130,26 +130,26 @@ MetadataExtractor::MetadataExtractor(const DOMElement* e)
         m_orgDisplayName(XMLHelper::getAttrString(e, nullptr, OrganizationDisplayName::LOCAL_NAME)),
         m_orgURL(XMLHelper::getAttrString(e, nullptr, OrganizationURL::LOCAL_NAME))
 {
-    e = e ? XMLHelper::getFirstChildElement(e) : nullptr;
-    while (e) {
-        if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2SPCONFIG_NS, ContactPerson::LOCAL_NAME)) {
-            string id(XMLHelper::getAttrString(e, nullptr, _id));
-            const XMLCh* type = e->getAttributeNS(nullptr, ContactPerson::CONTACTTYPE_ATTRIB_NAME);
+    const DOMElement* child = e ? XMLHelper::getFirstChildElement(e) : nullptr;
+    while (child) {
+        if (XMLHelper::isNodeNamed(child, e->getNamespaceURI(), ContactPerson::LOCAL_NAME)) {
+            string id(XMLHelper::getAttrString(child, nullptr, _id));
+            const XMLCh* type = child->getAttributeNS(nullptr, ContactPerson::CONTACTTYPE_ATTRIB_NAME);
             if (!id.empty() && type && *type) {
-                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, e));
+                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, child));
                 m_contacts.push_back(contact_tuple_t(id, type, decoder));
             }
         }
-        else if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2SPCONFIG_NS, Logo::LOCAL_NAME)) {
-            string id(XMLHelper::getAttrString(e, nullptr, _id));
-            int h(XMLHelper::getAttrInt(e, 0, Logo::HEIGHT_ATTRIB_NAME));
-            int w(XMLHelper::getAttrInt(e, 0, Logo::WIDTH_ATTRIB_NAME));
+        else if (XMLHelper::isNodeNamed(child, e->getNamespaceURI(), Logo::LOCAL_NAME)) {
+            string id(XMLHelper::getAttrString(child, nullptr, _id));
+            int h(XMLHelper::getAttrInt(child, 0, Logo::HEIGHT_ATTRIB_NAME));
+            int w(XMLHelper::getAttrInt(child, 0, Logo::WIDTH_ATTRIB_NAME));
             if (!id.empty()) {
-                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, e));
+                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, child));
                 m_logos.push_back(logo_tuple_t(id, h, w, decoder));
             }
         }
-        e = XMLHelper::getNextSiblingElement(e);
+        child = XMLHelper::getNextSiblingElement(child);
     }
 }
 

@@ -54,7 +54,7 @@ SecuredHandler::SecuredHandler(
     const char* aclProperty,
     const char* defaultACL,
     DOMNodeFilter* filter,
-    const map<string,string>* remapper
+    const Remapper* remapper
     ) : AbstractHandler(e, log, filter ? filter : &g_Blocker, remapper)
 {
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {

@@ -447,7 +447,7 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
         getServiceProvider()->init();
         return true;
     }
-    catch (exception& ex) {
+    catch (std::exception& ex) {
         if (rethrow)
             throw;
         Category::getInstance(SHIBSP_LOGCAT ".Config").fatal("caught exception while loading configuration: %s", ex.what());

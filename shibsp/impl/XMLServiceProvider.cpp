@@ -115,7 +115,8 @@ namespace {
     static vector<const Handler*> g_noHandlers;
 
     // Application configuration wrapper
-    class SHIBSP_DLLLOCAL XMLApplication : public Application, public Remoted, public DOMPropertySet, public DOMNodeFilter
+    class SHIBSP_DLLLOCAL XMLApplication
+        : public Application, public Remoted, public DOMPropertySet, public DOMNodeFilter
     {
     public:
         XMLApplication(const ServiceProvider*, const ProtocolProvider*, DOMElement*, const XMLApplication* base=nullptr);
@@ -331,6 +332,10 @@ namespace {
             background_load();
         }
 
+        const XMLCh* getConfigurationNamespace() const {
+            return m_impl ? m_impl->getElement()->getNamespaceURI() : nullptr;
+        }
+
         ~XMLConfig() {
             shutdown();
 #ifndef SHIBSP_LITE
@@ -363,7 +368,7 @@ namespace {
         pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const {return m_impl->getUnsignedInt(name,ns);}
         pair<bool,int> getInt(const char* name, const char* ns=nullptr) const {return m_impl->getInt(name,ns);}
         void getAll(map<string,const char*>& properties) const {return m_impl->getAll(properties);}
-        const PropertySet* getPropertySet(const char* name, const char* ns="urn:mace:shibboleth:2.0:native:sp:config") const {return m_impl->getPropertySet(name,ns);}
+        const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const {return m_impl->getPropertySet(name,ns);}
         const DOMElement* getElement() const {return m_impl->getElement();}
 
         // ServiceProvider
@@ -529,9 +534,11 @@ XMLApplication::XMLApplication(
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".Application");
 
     // First load any property sets.
-    map<string,string> remapper;
-    remapper["relayStateLimit"] = "redirectLimit";
-    remapper["relayStateWhitelist"] = "redirectWhitelist";
+    map<string,string> remapperMap;
+    remapperMap[shibspconstants::ASCII_SHIB2SPCONFIG_NS] = shibspconstants::ASCII_SHIB3SPCONFIG_NS;
+    remapperMap["relayStateLimit"] = "redirectLimit";
+    remapperMap["relayStateWhitelist"] = "redirectWhitelist";
+    DOMPropertySet::STLRemapper remapper(remapperMap);
     load(e, nullptr, this, &remapper);
 
     // Process redirect limit policy. Do this before assigning the parent pointer
@@ -619,7 +626,7 @@ XMLApplication::XMLApplication(
         doHandlers(pp, e, log);
 
     // Notification.
-    DOMNodeList* nlist = e->getElementsByTagNameNS(shibspconstants::SHIB2SPCONFIG_NS, Notify);
+    DOMNodeList* nlist = e->getElementsByTagNameNS(e->getNamespaceURI(), Notify);
     for (XMLSize_t i = 0; nlist && i < nlist->getLength(); ++i) {
         if (nlist->item(i)->getParentNode()->isSameNode(e)) {
             const XMLCh* channel = static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(nullptr, Channel);
@@ -869,7 +876,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
     pair<bool,const char*> location = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,nullptr);
     if (location.first) {
         try {
-            DOMElement* exportElement = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, _Handler);
+            DOMElement* exportElement = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _Handler);
             exportElement->setAttributeNS(nullptr,Location,sessions->getXMLString("exportLocation").second);
             pair<bool,const XMLCh*> exportACL = sessions->getXMLString("exportACL");
             if (exportACL.first) {
@@ -902,19 +909,19 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
     set<string> protocols;
     DOMElement* child = sessions ? XMLHelper::getFirstChildElement(sessions->getElement()) : nullptr;
     while (child) {
-        if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2SPCONFIG_NS, SSO)) {
+        if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), SSO)) {
             if (pp)
                 doSSO(*pp, protocols, child, log);
             else
                 log.error("no ProtocolProvider, SSO auto-configure unsupported");
         }
-        else if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2SPCONFIG_NS, Logout)) {
+        else if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), Logout)) {
             if (pp)
                 doLogout(*pp, protocols, child, log);
             else
                 log.error("no ProtocolProvider, Logout auto-configure unsupported");
         }
-        else if (XMLHelper::isNodeNamed(child, shibspconstants::SHIB2SPCONFIG_NS, NameIDMgmt)) {
+        else if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), NameIDMgmt)) {
             if (pp)
                 doNameIDMgmt(*pp, protocols, child, log);
             else
@@ -1089,7 +1096,7 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
             pair<bool,const XMLCh*> inittype = initiator->getXMLString("id");
             if (inittype.first) {
                 // Append a session initiator element of the designated type to the root element.
-                DOMElement* sidom = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, _SessionInitiator);
+                DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
                 sidom->setAttributeNS(nullptr, _type, inittype.second);
                 e->appendChild(sidom);
                 log.info("adding SessionInitiator of type (%s) to chain (/Login)", initiator->getString("id").second);
@@ -1177,7 +1184,7 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
         const XMLCh* discou = e->getAttributeNS(nullptr, discoveryURL);
         if (discou && *discou) {
             // Append a session initiator element of the designated type to the root element.
-            DOMElement* sidom = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, _SessionInitiator);
+            DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
             sidom->setAttributeNS(nullptr, _type, discop);
             sidom->setAttributeNS(nullptr, _URL, discou);
             e->appendChild(sidom);
@@ -1225,7 +1232,7 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
             pair<bool,const XMLCh*> inittype = initiator->getXMLString("id");
             if (inittype.first) {
                 // Append a logout initiator element of the designated type to the root element.
-                DOMElement* lidom = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, _LogoutInitiator);
+                DOMElement* lidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _LogoutInitiator);
                 lidom->setAttributeNS(nullptr, _type, inittype.second);
                 e->appendChild(lidom);
                 log.info("adding LogoutInitiator of type (%s) to chain (/Logout)", initiator->getString("id").second);
@@ -1267,7 +1274,7 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
                     slodom->setAttributeNS(nullptr, Binding, idprop.second);
                     slodom->setAttributeNS(nullptr, Location, pathprop.second);
                     if (e->hasAttributeNS(nullptr, _policyId))
-                        slodom->setAttributeNS(shibspconstants::SHIB2SPCONFIG_NS, _policyId, e->getAttributeNS(nullptr, _policyId));
+                        slodom->setAttributeNS(e->getNamespaceURI(), _policyId, e->getAttributeNS(nullptr, _policyId));
 
                     log.info("adding SingleLogoutService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
@@ -1351,7 +1358,7 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
                     nimdom->setAttributeNS(nullptr, Binding, idprop.second);
                     nimdom->setAttributeNS(nullptr, Location, pathprop.second);
                     if (e->hasAttributeNS(nullptr, _policyId))
-                        nimdom->setAttributeNS(shibspconstants::SHIB2SPCONFIG_NS, _policyId, e->getAttributeNS(nullptr, _policyId));
+                        nimdom->setAttributeNS(e->getNamespaceURI(), _policyId, e->getAttributeNS(nullptr, _policyId));
 
                     log.info("adding ManageNameIDService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
@@ -1814,7 +1821,8 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
 
 DOMNodeFilter::FilterAction XMLConfigImpl::acceptNode(const DOMNode* node) const
 {
-    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB2SPCONFIG_NS))
+    if (!XMLString::equals(node->getNamespaceURI(),shibspconstants::SHIB2SPCONFIG_NS)
+            && !XMLString::equals(node->getNamespaceURI(), shibspconstants::SHIB3SPCONFIG_NS))
         return FILTER_ACCEPT;
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,ApplicationDefaults) ||
@@ -2057,6 +2065,10 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         );
 #endif
 
+    if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
+        log.warn("detected legacy 2.0 configuration, support will be removed from a future version of the software");
+    }
+
     // First load any property sets.
     load(e, nullptr, this);
 
@@ -2128,7 +2140,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         if (!m_requestMapper) {
             log.info("no RequestMapper specified, using 'Native' plugin with empty/default map");
             child = e->getOwnerDocument()->createElementNS(nullptr, _RequestMapper);
-            DOMElement* mapperDummy = e->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, RequestMap);
+            DOMElement* mapperDummy = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), RequestMap);
             mapperDummy->setAttributeNS(nullptr, applicationId, _default);
             child->appendChild(mapperDummy);
             m_requestMapper.reset(conf.RequestMapperManager.newPlugin(NATIVE_REQUEST_MAPPER, child));

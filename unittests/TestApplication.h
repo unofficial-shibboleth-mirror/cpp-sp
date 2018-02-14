@@ -53,7 +53,7 @@ namespace ta {
         virtual pair<bool, unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
         virtual pair<bool, int> getInt(const char* name, const char* ns=nullptr) const;
         virtual void getAll(std::map<std::string, const char*>& properties) const;
-        virtual const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIB2SPCONFIG_NS) const;
+        virtual const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const;
         virtual const xercesc::DOMElement* getElement() const;
 
     private:

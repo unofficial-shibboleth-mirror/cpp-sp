@@ -77,7 +77,7 @@ namespace shibsp {
     {
     public:
         FilterAction acceptNode(const DOMNode* node) const {
-            if (XMLHelper::isNodeNamed(node,shibspconstants::SHIB2SPCONFIG_NS,_SessionInitiator))
+            if (XMLString::equals(node->getLocalName(), _SessionInitiator))
                 return FILTER_REJECT;
             return FILTER_ACCEPT;
         }

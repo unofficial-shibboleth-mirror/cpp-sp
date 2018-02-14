@@ -50,8 +50,6 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory CookieSessionInitiatorFactory;
 };
 
-map<string,string> SessionInitiator::m_remapper;
-
 void SHIBSP_API shibsp::registerSessionInitiators()
 {
     SPConfig& conf=SPConfig::getConfig();
@@ -63,8 +61,6 @@ void SHIBSP_API shibsp::registerSessionInitiators()
     conf.SessionInitiatorManager.registerFactory(TRANSFORM_SESSION_INITIATOR, TransformSessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(FORM_SESSION_INITIATOR, FormSessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(COOKIE_SESSION_INITIATOR, CookieSessionInitiatorFactory);
-
-    SessionInitiator::m_remapper["defaultACSIndex"] = "acsIndex";
 }
 
 SessionInitiator::SessionInitiator()
@@ -73,6 +69,17 @@ SessionInitiator::SessionInitiator()
 
 SessionInitiator::~SessionInitiator()
 {
+}
+
+const char* SessionInitiator::remap(const char* src, Category& log) const
+{
+    if (XMLString::equals(src, "defaultACSIndex")) {
+        log.warn("DEPRECATED configuration - remapping property/set (%s) to (%s)", src, "acsIndex");
+        return "acsIndex";
+    }
+    else {
+        return src;
+    }
 }
 
 const char* SessionInitiator::getEventType() const {

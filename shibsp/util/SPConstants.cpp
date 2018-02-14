@@ -45,12 +45,21 @@ const XMLCh shibspconstants::SHIBMD_NS[] = // urn:mace:shibboleth:metadata:1.0
 
 const XMLCh shibspconstants::SHIBMD_PREFIX[] = UNICODE_LITERAL_6(s,h,i,b,m,d);
 
+const XMLCh shibspconstants::SHIB3SPCONFIG_NS[] = // urn:mace:shibboleth:3.0:native:sp:config
+{ chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
+chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
+chDigit_3, chPeriod, chDigit_0, chColon, chLatin_n, chLatin_a, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chColon,
+chLatin_s, chLatin_p, chColon, chLatin_c, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chNull
+};
+
 const XMLCh shibspconstants::SHIB2SPCONFIG_NS[] = // urn:mace:shibboleth:2.0:native:sp:config
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
   chLatin_s, chLatin_h, chLatin_i, chLatin_b, chLatin_b, chLatin_o, chLatin_l, chLatin_e, chLatin_t, chLatin_h, chColon,
   chDigit_2, chPeriod, chDigit_0, chColon, chLatin_n, chLatin_a, chLatin_t, chLatin_i, chLatin_v, chLatin_e, chColon,
   chLatin_s, chLatin_p, chColon, chLatin_c, chLatin_o, chLatin_n, chLatin_f, chLatin_i, chLatin_g, chNull
 };
+
+const XMLCh* shibspconstants::SHIBSPCONFIG_NS = shibspconstants::SHIB3SPCONFIG_NS;
 
 const XMLCh shibspconstants::SHIB2SPPROTOCOLS_NS[] = // urn:mace:shibboleth:2.0:native:sp:protocols
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,
@@ -132,4 +141,8 @@ const char shibspconstants::SHIB1_SESSIONINIT_PROFILE_URI[] = "urn:mace:shibbole
 
 const char shibspconstants::SHIB1_LOGOUT_PROFILE_URI[] = "urn:mace:shibboleth:sp:1.3:Logout";
 
+const char shibspconstants::ASCII_SHIB3SPCONFIG_NS[] = "urn:mace:shibboleth:3.0:native:sp:config";
+
 const char shibspconstants::ASCII_SHIB2SPCONFIG_NS[] = "urn:mace:shibboleth:2.0:native:sp:config";
+
+const char* shibspconstants::ASCII_SHIBSPCONFIG_NS = shibspconstants::ASCII_SHIB3SPCONFIG_NS;

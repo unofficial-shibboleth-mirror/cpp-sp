@@ -45,7 +45,6 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 
-using shibspconstants::SHIB2SPCONFIG_NS;
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;
@@ -256,7 +255,7 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
 
             if (*n) {
                 // Create a placeholder Path element for the first path segment and replant under it.
-                DOMElement* newpath = path->getOwnerDocument()->createElementNS(shibspconstants::SHIB2SPCONFIG_NS, Path);
+                DOMElement* newpath = path->getOwnerDocument()->createElementNS(path->getNamespaceURI(), Path);
                 newpath->setAttributeNS(nullptr, name, namebuf.c_str());
                 path->setAttributeNS(nullptr, name, n);
                 path->getParentNode()->replaceChild(newpath, path);
@@ -466,8 +465,14 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
 #endif
     static const XMLCh _RequestMap[] =  UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
 
-    if (e && !XMLHelper::isNodeNamed(e, SHIB2SPCONFIG_NS, _RequestMap))
+    if (e && !XMLHelper::isNodeNamed(e, shibspconstants::SHIB2SPCONFIG_NS, _RequestMap)
+          && !XMLHelper::isNodeNamed(e, shibspconstants::SHIB3SPCONFIG_NS, _RequestMap)) {
         throw ConfigurationException("XML RequestMapper requires conf:RequestMap at root of configuration.");
+    }
+
+    if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
+        log.warn("detected legacy 2.0 configuration, support will be removed from a future version of the software");
+    }
 
     // Load the property set.
     load(e, nullptr, this);

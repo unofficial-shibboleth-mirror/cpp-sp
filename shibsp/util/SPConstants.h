@@ -41,6 +41,12 @@ namespace shibspconstants {
     /** Shibboleth Metadata QName prefix ("shibmd") */
     extern SHIBSP_API const XMLCh SHIBMD_PREFIX[];
 
+    /** "Current" Shibboleth SP configuration namespace */
+    extern SHIBSP_API const XMLCh* SHIBSPCONFIG_NS;
+
+    /** Shibboleth 3.0 SP configuration namespace ("urn:mace:shibboleth:3.0:native:sp:config") */
+    extern SHIBSP_API const XMLCh SHIB3SPCONFIG_NS[];
+
     /** Shibboleth 2.0 SP configuration namespace ("urn:mace:shibboleth:2.0:native:sp:config") */
     extern SHIBSP_API const XMLCh SHIB2SPCONFIG_NS[];
 
@@ -83,6 +89,12 @@ namespace shibspconstants {
     /** Shibboleth 1.3 Local Logout binding/profile ("urn:mace:shibboleth:sp:1.3:Logout") */
     extern SHIBSP_API const char SHIB1_LOGOUT_PROFILE_URI[];
     
+    /** "Current" Shibboleth SP configuration namespace */
+    extern SHIBSP_API const char* ASCII_SHIBSPCONFIG_NS;
+
+    /** Shibboleth 3.0 SP configuration namespace ("urn:mace:shibboleth:3.0:native:sp:config") */
+    extern SHIBSP_API const char ASCII_SHIB3SPCONFIG_NS[];
+
     /** Shibboleth 2.0 SP configuration namespace ("urn:mace:shibboleth:2.0:native:sp:config") */
     extern SHIBSP_API const char ASCII_SHIB2SPCONFIG_NS[];
 };

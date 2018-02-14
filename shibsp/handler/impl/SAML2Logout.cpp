@@ -161,17 +161,13 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
         SAMLConfig& conf = SAMLConfig::getConfig();
 
         // Handle incoming binding.
-        m_decoder.reset(
-            conf.MessageDecoderManager.newPlugin(
-                getString("Binding").second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS)
-                )
-            );
+        m_decoder.reset(conf.MessageDecoderManager.newPlugin(getString("Binding").second, e));
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
 
         if (m_decoder->isUserAgentPresent()) {
             // Handle front-channel binding setup.
             string dupBindings;
-            pair<bool,const char*> outgoing = getString("outgoingBindings", m_configNS.get());
+            pair<bool,const char*> outgoing = getString("outgoingBindings", shibspconstants::ASCII_SHIBSPCONFIG_NS);
             if (outgoing.first) {
                 dupBindings = outgoing.second;
                 trim(dupBindings);
@@ -185,9 +181,7 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
             split(m_bindings, dupBindings, is_space(), algorithm::token_compress_on);
             for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
                 try {
-                    boost::shared_ptr<MessageEncoder> encoder(
-                        conf.MessageEncoderManager.newPlugin(*b, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS))
-                        );
+                    boost::shared_ptr<MessageEncoder> encoder(conf.MessageEncoderManager.newPlugin(*b, e));
                     if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                         m_encoders[*b] = encoder;
                         m_log.debug("supporting outgoing binding (%s)", b->c_str());
@@ -203,9 +197,7 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
         }
         else {
             pair<bool,const char*> b = getString("Binding");
-            boost::shared_ptr<MessageEncoder> encoder(
-                conf.MessageEncoderManager.newPlugin(b.second, pair<const DOMElement*,const XMLCh*>(e,shibspconstants::SHIB2SPCONFIG_NS))
-                );
+            boost::shared_ptr<MessageEncoder> encoder(conf.MessageEncoderManager.newPlugin(b.second, e));
             m_encoders[b.second] = encoder;
         }
     }
@@ -354,7 +346,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTT
     // If we get here, it's an external protocol message to decode.
 
     // Locate policy key.
-    pair<bool,const char*> policyId = getString("policyId", m_configNS.get());  // may be namespace-qualified inside handler element
+    pair<bool,const char*> policyId = getString("policyId", shibspconstants::ASCII_SHIBSPCONFIG_NS);  // may be namespace-qualified inside handler element
     if (!policyId.first)
         policyId = getString("policyId");   // try unqualified
     if (!policyId.first)

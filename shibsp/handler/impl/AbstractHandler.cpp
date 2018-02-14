@@ -418,8 +418,8 @@ void Handler::recoverRelayState(
 }
 
 AbstractHandler::AbstractHandler(
-    const DOMElement* e, Category& log, DOMNodeFilter* filter, const map<string,string>* remapper
-    ) : m_log(log), m_configNS(shibspconstants::SHIB2SPCONFIG_NS) {
+    const DOMElement* e, Category& log, DOMNodeFilter* filter, const Remapper* remapper
+    ) : m_log(log) {
     load(e, nullptr, filter, remapper);
 }
 
@@ -486,7 +486,7 @@ void AbstractHandler::fillStatus(saml2p::StatusResponseType& response, const XML
         ssubcode->setValue(subcode);
     }
     if (msg) {
-        pair<bool,bool> flag = getBool("detailedErrors", m_configNS.get());
+        pair<bool,bool> flag = getBool("detailedErrors", shibspconstants::ASCII_SHIBSPCONFIG_NS);
         auto_ptr_XMLCh widemsg((flag.first && flag.second) ? msg : "Error processing request.");
         saml2p::StatusMessage* sm = saml2p::StatusMessageBuilder::buildStatusMessage();
         status->setStatusMessage(sm);
@@ -523,7 +523,7 @@ long AbstractHandler::sendMessage(
     const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : nullptr;
     const PropertySet* relyingParty = application.getRelyingParty(entity);
     pair<bool,const char*> flag = getString("signing",
-        !getElement() || XMLString::equals(getElement()->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS) ? nullptr : m_configNS.get());
+        !getElement() || XMLString::equals(getElement()->getNamespaceURI(), shibspconstants::SHIBSPCONFIG_NS) ? nullptr : shibspconstants::ASCII_SHIBSPCONFIG_NS);
     if (!flag.first)
         flag = relyingParty->getString("signing");
     if (SPConfig::shouldSignOrEncrypt(flag.first ? flag.second : defaultSigningProperty, destination, encoder.isUserAgentPresent())) {

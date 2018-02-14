@@ -28,8 +28,8 @@
 #define __shibsp_sesinitiator_h__
 
 #include <shibsp/handler/Handler.h>
+#include <shibsp/util/DOMPropertySet.h>
 
-#include <map>
 #include <set>
 #include <string>
 
@@ -43,12 +43,10 @@ namespace shibsp {
      * <p>By default, SessionInitiators look for an entityID on the incoming request
      * and pass control to the specialized run method.
      */
-    class SHIBSP_API SessionInitiator : public virtual Handler
+    class SHIBSP_API SessionInitiator : public virtual Handler, public DOMPropertySet::Remapper
     {
         friend void SHIBSP_API registerSessionInitiators();
     protected:
-        /** Property remapper for configuration compatibility. */
-        static std::map<std::string,std::string> m_remapper;
 
         /** Set of optional settings supported by handler. */
         std::set<std::string> m_supportedOptions;
@@ -104,6 +102,8 @@ namespace shibsp {
         virtual std::pair<bool,long> run(SPRequest& request, std::string& entityID, bool isHandler=true) const=0;
 
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
+
+        const char* remap(const char* src, xmltooling::logging::Category& log) const;
 
 #ifndef SHIBSP_LITE
         const char* getType() const;

@@ -72,13 +72,13 @@ namespace shibsp {
          * @param e         DOM element to load as property set.
          * @param log       logging category to use
          * @param filter    optional filter controls what child elements to include as nested PropertySets
-         * @param remapper  optional map of property rename rules for legacy property support
+         * @param remapper  optional property rename mapper for legacy property support
          */
         AbstractHandler(
             const xercesc::DOMElement* e,
             xmltooling::logging::Category& log,
             xercesc::DOMNodeFilter* filter=nullptr,
-            const std::map<std::string,std::string>* remapper=nullptr
+            const Remapper* remapper=nullptr
             );
 
         void log(SPRequest::SPLogLevel level, const std::string& msg) const;
@@ -270,9 +270,6 @@ namespace shibsp {
 
         /** Logging object. */
         xmltooling::logging::Category& m_log;
-        
-        /** Configuration namespace for custom properties. */
-        xmltooling::auto_ptr_char m_configNS;
 
     public:
         virtual ~AbstractHandler();

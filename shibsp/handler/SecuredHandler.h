@@ -53,7 +53,7 @@ namespace shibsp {
          * @param aclProperty   name of IP/CIDR ACL property
          * @param defaultACL    IP/CIDR ACL to apply if no acl property is set
          * @param filter        optional filter controls what child elements to include as nested PropertySets
-         * @param remapper      optional map of property rename rules for legacy property support
+         * @param remapper      optional property rename mapper for legacy property support
          */
         SecuredHandler(
             const xercesc::DOMElement* e,
@@ -61,7 +61,7 @@ namespace shibsp {
             const char* aclProperty="acl",
             const char* defaultACL=nullptr,
             xercesc::DOMNodeFilter* filter=nullptr,
-            const std::map<std::string,std::string>* remapper=nullptr
+            const Remapper* remapper=nullptr
             );
 
     public:

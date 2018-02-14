@@ -80,14 +80,14 @@ namespace shibsp {
          * @param appId     ID of application that "owns" the handler
          * @param log       a logging object to use
          * @param filter    optional filter controls what child elements to include as nested PropertySets
-         * @param remapper  optional map of property rename rules for legacy property support
+         * @param remapper  optional property rename mapper for legacy property support
          */
         AssertionConsumerService(
             const xercesc::DOMElement* e,
             const char* appId,
             xmltooling::logging::Category& log,
             xercesc::DOMNodeFilter* filter=nullptr,
-            const std::map<std::string,std::string>* remapper=nullptr
+            const Remapper* remapper=nullptr
             );
 
         /**

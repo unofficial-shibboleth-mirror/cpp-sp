@@ -149,7 +149,7 @@ namespace shibsp {
 };
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAML2"), &g_SINFilter, &m_remapper), m_appId(appId),
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAML2"), &g_SINFilter, this), m_appId(appId),
         m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS)
 #ifdef SHIBSP_LITE
         ,m_ecp(false)
@@ -199,11 +199,7 @@ void SAML2SessionInitiator::init(const char* location)
         // If directed, build an ECP encoder.
         if (flag.first && flag.second) {
             try {
-                m_ecp.reset(
-                    SAMLConfig::getConfig().MessageEncoderManager.newPlugin(
-                        samlconstants::SAML20_BINDING_PAOS, pair<const DOMElement*,const XMLCh*>(getElement(), nullptr)
-                        )
-                    );
+                m_ecp.reset(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(samlconstants::SAML20_BINDING_PAOS, getElement()));
             }
             catch (std::exception& ex) {
                 m_log.error("error building PAOS/ECP MessageEncoder: %s", ex.what());
@@ -224,9 +220,7 @@ void SAML2SessionInitiator::init(const char* location)
         split(m_bindings, dupBindings, is_space(), algorithm::token_compress_on);
         for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
             try {
-                boost::shared_ptr<MessageEncoder> encoder(
-                    SAMLConfig::getConfig().MessageEncoderManager.newPlugin(*b, pair<const DOMElement*,const XMLCh*>(getElement(),nullptr))
-                    );
+                boost::shared_ptr<MessageEncoder> encoder(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(*b, getElement()));
                 if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                     m_encoders[*b] = encoder;
                     m_log.debug("supporting outgoing binding (%s)", b->c_str());
@@ -383,7 +377,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             // Determine index to use.
             pair<bool,const XMLCh*> ix = pair<bool,const XMLCh*>(false,nullptr);
             if (!strncmp(ACSloc.c_str(), "https://", 8)) {
-            	ix = ACS->getXMLString("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
+            	ix = ACS->getXMLString("sslIndex", shibspconstants::ASCII_SHIBSPCONFIG_NS);
             	if (!ix.first)
             		ix = ACS->getXMLString("index");
             }
@@ -460,7 +454,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         // Determine index to use.
         pair<bool,const char*> ix = pair<bool,const char*>(false,nullptr);
         if (!strncmp(ACSloc.c_str(), "https://", 8)) {
-        	ix = ACS->getString("sslIndex", shibspconstants::ASCII_SHIB2SPCONFIG_NS);
+        	ix = ACS->getString("sslIndex", shibspconstants::ASCII_SHIBSPCONFIG_NS);
         	if (!ix.first)
         		ix = ACS->getString("index");
         }

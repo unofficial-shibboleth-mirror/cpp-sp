@@ -59,7 +59,7 @@ namespace shibsp {
     {
     public:
         WAYFSessionInitiator(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.WAYF"), nullptr, &m_remapper), m_url(nullptr) {
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.WAYF"), nullptr, this), m_url(nullptr) {
             pair<bool,const char*> url = getString("URL");
             if (!url.first)
                 throw ConfigurationException("WAYF SessionInitiator requires a URL property.");
