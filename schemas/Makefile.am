@@ -7,6 +7,7 @@ pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@
 schemafiles = \
     shibboleth.xsd \
     shibboleth-metadata-1.0.xsd \
+    shibboleth-3.0-native-sp-config.xsd \
     shibboleth-2.0-native-sp-config.xsd \
     shibboleth-2.0-native-sp-protocols.xsd \
     shibboleth-2.0-sp-notify.xsd \

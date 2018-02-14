@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <system systemId="urn:mace:shibboleth:metadata:1.0" uri="@-PKGXMLDIR-@/shibboleth-metadata-1.0.xsd"/>
+    <system systemId="urn:mace:shibboleth:3.0:native:sp:config" uri="@-PKGXMLDIR-@/shibboleth-3.0-native-sp-config.xsd"/>
     <system systemId="urn:mace:shibboleth:2.0:native:sp:config" uri="@-PKGXMLDIR-@/shibboleth-2.0-native-sp-config.xsd"/>
     <system systemId="urn:mace:shibboleth:2.0:native:sp:protocols" uri="@-PKGXMLDIR-@/shibboleth-2.0-native-sp-protocols.xsd"/>
     <system systemId="urn:mace:shibboleth:2.0:sp:notify" uri="@-PKGXMLDIR-@/shibboleth-2.0-sp-notify.xsd"/>
