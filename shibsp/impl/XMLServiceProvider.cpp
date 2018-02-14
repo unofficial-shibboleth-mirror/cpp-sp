@@ -2163,7 +2163,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         // For backward compatibility, wrap in a plugin element.
         DOMElement* polwrapper = e->getOwnerDocument()->createElementNS(nullptr, _SecurityPolicyProvider);
         polwrapper->appendChild(child);
-        log.warn("deprecated/legacy SecurityPolicy configuration, consider externalizing with <SecurityPolicyProvider>");
+        log.warn("DEPRECATED: inline SecurityPolicy configuration, externalize via <SecurityPolicyProvider>");
         m_policy.reset(conf.SecurityPolicyProviderManager.newPlugin(XML_SECURITYPOLICY_PROVIDER, polwrapper));
     }
     else {

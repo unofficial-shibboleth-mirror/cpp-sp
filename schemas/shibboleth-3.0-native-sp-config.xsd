@@ -112,7 +112,6 @@
         </sequence>
         <attribute name="StorageService" type="IDREF"/>
         <attribute name="cacheAllowance" type="unsignedInt"/>
-        <attribute name="cacheTimeout" type="unsignedInt"/> <!-- deprecated -->
         <attribute name="maintainReverseIndex" type="boolean"/>
         <attribute name="excludeReverseIndex" type="conf:listOfStrings"/>
         <anyAttribute namespace="##any" processContents="lax"/>
@@ -639,7 +638,6 @@
           <attribute name="isDefault" type="boolean"/>
           <attribute name="URL" type="anyURI"/>
           <attribute name="acsIndex" type="unsignedShort"/>
-          <attribute name="defaultACSIndex" type="unsignedShort"/>  <!-- deprecated -->
           <attributeGroup ref="conf:SessionInitiatorGroup"/>
         </restriction>
       </complexContent>
@@ -828,10 +826,7 @@
         <element name="ArtifactMap" type="conf:ArtifactMapType" minOccurs="0"/>
         <element name="RequestMapper" type="conf:PluggableType" minOccurs="0"/>
         <element name="ApplicationDefaults" type="conf:ApplicationDefaultsType"/>
-        <choice>
-          <element name="SecurityPolicyProvider" type="conf:PluggableType"/>
-          <element ref="conf:SecurityPolicies"/> <!-- deprecated -->
-        </choice>
+        <element name="SecurityPolicyProvider" type="conf:PluggableType"/>
         <element name="ProtocolProvider" type="conf:PluggableType" minOccurs="0"/>
         <element ref="conf:TransportOption" minOccurs="0" maxOccurs="unbounded"/>
         <element ref="ds:Signature" minOccurs="0"/>
@@ -842,11 +837,7 @@
       <attribute name="allowedSchemes" type="conf:listOfStrings"/>
       <attribute name="langFromClient" type="boolean"/>
       <attribute name="langPriority" type="conf:listOfStrings"/>
-      <attribute name="contactPriority" type="conf:listOfStrings"/>
-      
-      <!-- Unsupported. -->
-      <attribute name="disableDTD" type="boolean"/>
-      
+      <attribute name="contactPriority" type="conf:listOfStrings"/>      
       <anyAttribute namespace="##other" processContents="lax"/>
     </complexType>
   </element>
