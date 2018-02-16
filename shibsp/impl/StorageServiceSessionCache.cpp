@@ -878,7 +878,7 @@ SSCache::SSCache(const DOMElement* e)
     static const XMLCh _StorageServiceLite[] =  UNICODE_LITERAL_18(S,t,o,r,a,g,e,S,e,r,v,i,c,e,L,i,t,e);
 
     if (e && e->hasAttributeNS(nullptr, cacheTimeout)) {
-        m_log.warn("cacheTimeout property is deprecated in favor of cacheAllowance (see documentation)");
+        m_log.warn("DEPRECATED: cacheTimeout property is replaced by cacheAllowance (see documentation)");
         m_cacheTimeout = XMLHelper::getAttrInt(e, 0, cacheTimeout);
     }
     m_cacheAllowance = XMLHelper::getAttrInt(e, 0, cacheAllowance);
