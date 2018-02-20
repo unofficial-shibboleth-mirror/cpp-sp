@@ -112,13 +112,6 @@ namespace shibsp {
 
         unsigned long getCacheTimeout(const shibsp::Application& app) const;
 
-        xmltooling::logging::Category& m_log;
-        bool inproc;
-#ifndef SHIBSP_LITE
-        xmltooling::StorageService* m_storage;
-        xmltooling::StorageService* m_storage_lite;
-#endif
-
     private:
 #ifndef SHIBSP_LITE
         // maintain back-mappings of NameID/SessionIndex -> session key
@@ -150,9 +143,18 @@ namespace shibsp {
         void dormant(const char* key);
         static void* cleanup_fn(void*);
 
+        xmltooling::logging::Category& m_log;
+        bool inproc;
+#ifndef SHIBSP_LITE
+        xmltooling::StorageService* m_storage;
+        xmltooling::StorageService* m_storage_lite;
+#endif
+
         bool shutdown;
         boost::scoped_ptr<xmltooling::CondWait> shutdown_wait;
         boost::scoped_ptr<xmltooling::Thread> cleanup_thread;
+
+        friend class StoredSession;
     };
 
 }
