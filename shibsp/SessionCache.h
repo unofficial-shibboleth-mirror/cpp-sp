@@ -283,7 +283,7 @@ namespace shibsp {
          */
         virtual bool matches(
             const Application& application,
-            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPRequest& request,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes
@@ -336,25 +336,6 @@ namespace shibsp {
          * <p>If the client address is supplied, then a check will be performed against
          * the address recorded in the record.
          *
-         * @param application   reference to Application that owns the Session
-         * @param request       request from client bound to session
-         * @param client_addr   network address of client (if known)
-         * @param timeout       inactivity timeout to enforce (0 for none, nullptr to bypass check/update of last access)
-         * @return  pointer to locked Session, or nullptr
-         */
-        virtual Session* find(
-            const Application& application,
-            const xmltooling::HTTPRequest& request,
-            const char* client_addr=nullptr,
-            time_t* timeout=nullptr
-            )=0;
-
-        /**
-         * Locates an existing session bound to a request.
-         *
-         * <p>If the client address is supplied, then a check will be performed against
-         * the address recorded in the record.
-         *
          * <p>If a bound session is found to have expired, be invalid, etc., and if the request
          * can be used to "clear" the session from subsequent client requests, then it may be cleared.
          *
@@ -365,11 +346,8 @@ namespace shibsp {
          * @return  pointer to locked Session, or nullptr
          */
         virtual Session* find(
-            const Application& application,
-            xmltooling::HTTPRequest& request,
-            const char* client_addr=nullptr,
-            time_t* timeout=nullptr
-            );
+            const Application& application, xmltooling::HTTPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr
+            )=0;
 
         /**
          * Deletes an existing session bound to a request.

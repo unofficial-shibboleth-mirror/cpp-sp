@@ -103,7 +103,7 @@ namespace shibsp {
         }
 
     private:
-        pair<bool,long> doRequest(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
+        pair<bool,long> doRequest(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
 
 #ifndef SHIBSP_LITE
         pair<bool,long> sendResponse(
@@ -258,7 +258,7 @@ void SAML2Logout::receive(DDF& in, ostream& out)
     out << ret;
 }
 
-pair<bool,long> SAML2Logout::doRequest(const Application& application, const HTTPRequest& request, HTTPResponse& response) const
+pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPRequest& request, HTTPResponse& response) const
 {
 #ifndef SHIBSP_LITE
     // First capture the active session ID.

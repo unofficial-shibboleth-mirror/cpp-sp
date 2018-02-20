@@ -90,11 +90,6 @@ SessionCache::~SessionCache()
 {
 }
 
-Session* SessionCache::find(const Application& application, HTTPRequest& request, const char* client_addr, time_t* timeout)
-{
-    return find(application, const_cast<const HTTPRequest&>(request), client_addr, timeout);
-}
-
 SSCache::SSCache(const DOMElement* e)
     : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache")), inproc(true),
 #ifndef SHIBSP_LITE
@@ -254,14 +249,6 @@ string SSCache::active(const Application& app, const HTTPRequest& request)
     pair<string, const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
     const char* session_id = request.getCookie(shib_cookie.first.c_str());
     return (session_id ? session_id : "");
-}
-
-Session* SSCache::find(const Application& app, const HTTPRequest& request, const char* client_addr, time_t* timeout)
-{
-    string id = active(app, request);
-    if (!id.empty())
-        return find(app, id.c_str(), client_addr, timeout);
-    return nullptr;
 }
 
 #ifndef SHIBSP_LITE
@@ -534,7 +521,7 @@ void SSCache::insert(
 
 bool SSCache::matches(
     const Application& app,
-    const xmltooling::HTTPRequest& request,
+    xmltooling::HTTPRequest& request,
     const saml2md::EntityDescriptor* issuer,
     const saml2::NameID& nameid,
     const set<string>* indexes

@@ -107,7 +107,7 @@ namespace shibsp {
         }
 
     private:
-        pair<bool,long> doRequest(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
+        pair<bool,long> doRequest(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
 
 #ifndef SHIBSP_LITE
         bool notifyBackChannel(const Application& application, const char* requestURL, const NameID& nameid, const NewID* newid) const;
@@ -239,7 +239,7 @@ void SAML2NameIDMgmt::receive(DDF& in, ostream& out)
     out << ret;
 }
 
-pair<bool,long> SAML2NameIDMgmt::doRequest(const Application& application, const HTTPRequest& request, HTTPResponse& response) const
+pair<bool,long> SAML2NameIDMgmt::doRequest(const Application& application, HTTPRequest& request, HTTPResponse& response) const
 {
 #ifndef SHIBSP_LITE
     SessionCache* cache = application.getServiceProvider().getSessionCache();

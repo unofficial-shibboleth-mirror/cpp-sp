@@ -96,7 +96,7 @@ namespace shibsp {
         }
         bool matches(
             const shibsp::Application& app,
-            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPRequest& request,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes
@@ -107,8 +107,7 @@ namespace shibsp {
         void test();
 
         std::string active(const shibsp::Application& app, const xmltooling::HTTPRequest& request);
-        shibsp::Session* find(const shibsp::Application& app, const xmltooling::HTTPRequest& request, const char* client_addr = nullptr, time_t* timeout = nullptr);
-        shibsp::Session* find(const shibsp::Application& app, xmltooling::HTTPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr);
+        shibsp::Session* find(const shibsp::Application& app, xmltooling::HTTPRequest& request, const char* client_addr = nullptr, time_t* timeout = nullptr);
         void remove(const shibsp::Application& app, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=nullptr);
 
         unsigned long getCacheTimeout(const shibsp::Application& app) const;
