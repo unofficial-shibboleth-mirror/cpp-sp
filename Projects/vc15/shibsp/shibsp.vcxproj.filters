@@ -429,6 +429,9 @@
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\RegistrationAuthorityFunctor.cpp">
       <Filter>Source Files\attribute\filtering\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\shibsp\impl\StoredSession.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\shibsp\GSSRequest.h">
@@ -572,9 +575,6 @@
     <ClInclude Include="..\..\..\shibsp\remoting\ddf.h">
       <Filter>Header Files\remoting</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\remoting\ListenerService.h">
-      <Filter>Header Files\security</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\shibsp\security\PKIXTrustEngine.h">
       <Filter>Header Files\security</Filter>
     </ClInclude>
@@ -601,6 +601,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\util\TemplateParameters.h">
       <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\impl\StoredSession.h">
+      <Filter>Source Files\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\remoting\ListenerService.h">
+      <Filter>Header Files\remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\impl\StorageServiceSessionCache.h">
+      <Filter>Source Files\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

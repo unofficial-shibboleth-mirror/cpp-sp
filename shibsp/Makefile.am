@@ -105,6 +105,8 @@ utilinclude_HEADERS = \
 
 noinst_HEADERS = \
 	internal.h \
+    impl/StoredSession.h \
+    impl/StorageServiceSessionCache.h \
 	remoting/impl/SocketListener.h
 
 common_sources = \
@@ -152,6 +154,7 @@ common_sources = \
 	handler/impl/TransformSessionInitiator.cpp \
 	handler/impl/WAYFSessionInitiator.cpp \
 	impl/ChainingAccessControl.cpp \
+    impl/StoredSession.cpp \
     impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
