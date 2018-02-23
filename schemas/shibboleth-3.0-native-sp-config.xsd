@@ -114,6 +114,7 @@
         <attribute name="cacheAllowance" type="unsignedInt"/>
         <attribute name="maintainReverseIndex" type="boolean"/>
         <attribute name="excludeReverseIndex" type="conf:listOfStrings"/>
+        <attribute name="persistedAttributes" type="conf:listOfStrings"/>
         <anyAttribute namespace="##any" processContents="lax"/>
       </restriction>
     </complexContent>

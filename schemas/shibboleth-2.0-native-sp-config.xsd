@@ -115,6 +115,7 @@
         <attribute name="cacheTimeout" type="unsignedInt"/> <!-- deprecated -->
         <attribute name="maintainReverseIndex" type="boolean"/>
         <attribute name="excludeReverseIndex" type="conf:listOfStrings"/>
+        <attribute name="persistedAttributes" type="conf:listOfStrings"/>
         <anyAttribute namespace="##any" processContents="lax"/>
       </restriction>
     </complexContent>
