@@ -66,7 +66,7 @@ namespace shibsp {
      * <p>The SessionCache does not itself require locking to manage
      * concurrency, but access to each Session is generally exclusive
      * or at least controlled, and the caller must unlock a Session
-     * to dispose of it.
+     * to dispose of it.</p>
      */
     class SHIBSP_API Session : public virtual xmltooling::Lockable
     {
@@ -135,7 +135,7 @@ namespace shibsp {
         /**
          * Returns the NameID associated with a session.
          *
-         * <p>SAML 1.x identifiers will be promoted to the 2.0 type.
+         * <p>SAML 1.x identifiers will be promoted to the 2.0 type.</p>
          *
          * @return a SAML 2.0 NameID associated with the session, if any
          */
@@ -152,7 +152,7 @@ namespace shibsp {
         /**
          * Returns a URI containing an AuthnContextClassRef provided with the session.
          *
-         * <p>SAML 1.x AuthenticationMethods will be returned as class references.
+         * <p>SAML 1.x AuthenticationMethods will be returned as class references.</p>
          *
          * @return  a URI identifying the authentication context class
          */
@@ -173,7 +173,7 @@ namespace shibsp {
         virtual const std::vector<Attribute*>& getAttributes() const=0;
 
         /**
-         * Returns the resolved attributes associated with the session, indexed by ID
+         * Returns the resolved attributes associated with the session, indexed by ID.
          *
          * @return an immutable map of attributes keyed by attribute ID
          */
@@ -182,7 +182,7 @@ namespace shibsp {
         /**
          * Returns the identifiers of the assertion(s) cached by the session.
          *
-         * <p>The SSO assertion is guaranteed to be first in the set.
+         * <p>The SSO assertion is guaranteed to be first in the set.</p>
          *
          * @return  an immutable array of AssertionID values
          */
@@ -235,9 +235,9 @@ namespace shibsp {
          * Inserts a new session into the cache and binds the session to the outgoing
          * client response.
          *
-         * <p>The newly created session ID is placed into the first parameter.
+         * <p>The newly created session ID is placed into the first parameter.</p>
          *
-         * <p>The SSO tokens and Attributes remain owned by the caller and are copied by the cache.
+         * <p>The SSO tokens and Attributes remain owned by the caller and are copied by the cache.</p>
          *
          * @param sessionID         reference to string to capture newly inserted session ID
          * @param application       reference to Application that owns the Session
@@ -334,10 +334,10 @@ namespace shibsp {
          * Locates an existing session bound to a request.
          *
          * <p>If the client address is supplied, then a check will be performed against
-         * the address recorded in the record.
+         * the address recorded in the record.</p>
          *
          * <p>If a bound session is found to have expired, be invalid, etc., and if the request
-         * can be used to "clear" the session from subsequent client requests, then it may be cleared.
+         * can be used to "clear" the session from subsequent client requests, then it may be cleared.</p>
          *
          * @param application   reference to Application that owns the Session
          * @param request       request from client bound to session
@@ -346,7 +346,10 @@ namespace shibsp {
          * @return  pointer to locked Session, or nullptr
          */
         virtual Session* find(
-            const Application& application, xmltooling::HTTPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr
+            const Application& application,
+            xmltooling::HTTPRequest& request,
+            const char* client_addr=nullptr,
+            time_t* timeout=nullptr
             )=0;
 
         /**
@@ -356,21 +359,23 @@ namespace shibsp {
          * @param request       request from client containing session, or a reference to it
          * @param response      optional response to client enabling removal of session or reference
          */
-        virtual void remove(const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=nullptr)=0;
+        virtual void remove(
+            const Application& application,
+            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPResponse* response=nullptr
+        )=0;
 
         /**
         * Locates an existing session by ID.
         *
         * <p>If the client address is supplied, then a check will be performed against
-        * the address recorded in the record.
+        * the address recorded in the record.</p>
         *
         * @param application   reference to Application that owns the Session
         * @param key           session key
-        * @param client_addr   network address of client (if known)
-        * @param timeout       inactivity timeout to enforce (0 for none, nullptr to bypass check/update of last access)
         * @return  pointer to locked Session, or nullptr
         */
-        virtual Session* find(const Application& application, const char* key, const char* client_addr = nullptr, time_t* timeout = nullptr)=0;
+        virtual Session* find(const Application& application, const char* key)=0;
 
         /**
         * Deletes an existing session.

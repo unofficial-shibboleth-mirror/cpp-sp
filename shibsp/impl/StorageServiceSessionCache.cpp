@@ -48,8 +48,10 @@
 #include <boost/bind.hpp>
 #include <xmltooling/io/HTTPRequest.h>
 #include <xmltooling/io/HTTPResponse.h>
+#include <xmltooling/util/DataSealer.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
+#include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
@@ -59,6 +61,7 @@
 # include <saml/saml2/core/Assertions.h>
 # include <saml/saml2/metadata/Metadata.h>
 # include <xmltooling/XMLToolingConfig.h>
+# include <xmltooling/util/ParserPool.h>
 # include <xmltooling/util/StorageService.h>
 # include <xercesc/util/XMLStringTokenizer.hpp>
 using namespace opensaml::saml2md;
@@ -104,6 +107,7 @@ SSCache::SSCache(const DOMElement* e)
     static const XMLCh cacheAssertions[] =      UNICODE_LITERAL_15(c,a,c,h,e,A,s,s,e,r,t,i,o,n,s);
     static const XMLCh cacheTimeout[] =         UNICODE_LITERAL_12(c,a,c,h,e,T,i,m,e,o,u,t);
     static const XMLCh excludeReverseIndex[] =  UNICODE_LITERAL_19(e,x,c,l,u,d,e,R,e,v,e,r,s,e,I,n,d,e,x);
+    static const XMLCh persistedAttributes[] =  UNICODE_LITERAL_19(p,e,r,s,i,s,t,e,d,A,t,t,r,i,b,u,t,e,s);
     static const XMLCh inprocTimeout[] =        UNICODE_LITERAL_13(i,n,p,r,o,c,T,i,m,e,o,u,t);
     static const XMLCh inboundHeader[] =        UNICODE_LITERAL_13(i,n,b,o,u,n,d,H,e,a,d,e,r);
     static const XMLCh maintainReverseIndex[] = UNICODE_LITERAL_20(m,a,i,n,t,a,i,n,R,e,v,e,r,s,e,I,n,d,e,x);
@@ -162,6 +166,19 @@ SSCache::SSCache(const DOMElement* e)
             while (toks.hasMoreTokens())
                 m_excludedNames.insert(toks.nextToken());
         }
+
+        const XMLCh* persistedAttributeIds = e ? e->getAttributeNS(nullptr, persistedAttributes) : nullptr;
+        if (persistedAttributeIds && *persistedAttributeIds) {
+            XMLStringTokenizer toks(persistedAttributeIds);
+            while (toks.hasMoreTokens()) {
+                auto_ptr_char tok(toks.nextToken());
+                m_persistedAttributeIds.insert(tok.get());
+            }
+        }
+
+        if (!m_persistedAttributeIds.empty() && XMLToolingConfig::getConfig().getDataSealer() == nullptr) {
+            throw ConfigurationException("Persisting sessions across nodes requires DataSealer component, check configuration");
+        }
     }
 #endif
 
@@ -177,6 +194,7 @@ SSCache::SSCache(const DOMElement* e)
     else {
         if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
             listener->regListener("find::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
+            listener->regListener("recover::" STORAGESERVICE_SESSION_CACHE "::SessionCache", this);
             listener->regListener("remove::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
             listener->regListener("touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
         }
@@ -205,6 +223,7 @@ SSCache::~SSCache()
         ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
         if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
             listener->unregListener("find::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
+            listener->unregListener("recover::" STORAGESERVICE_SESSION_CACHE "::SessionCache", this);
             listener->unregListener("remove::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
             listener->unregListener("touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
         }
@@ -264,6 +283,9 @@ void SSCache::test()
 
 void SSCache::insert(const char* key, time_t expires, const char* name, const char* index, short attempts)
 {
+#ifdef _DEBUG
+    xmltooling::NDC ndc("insert");
+#endif
     if (attempts > 10) {
         throw IOException("Exceeded retry limit.");
     }
@@ -517,6 +539,71 @@ void SSCache::insert(
 
     httpResponse.setCookie(shib_cookie.first.c_str(), k.c_str());
     sessionID = key.get();
+
+    // See if we need to persist the session data itself to a cookie for cross-node recovery.
+    if (!m_persistedAttributeIds.empty()) {
+        persist(app, httpResponse, obj, expires);
+    }
+}
+
+void SSCache::persist(const Application& app, HTTPResponse& httpResponse, DDF& session, time_t expires) const
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("persist");
+#endif
+
+    m_log.debug("checking if session (%s) should be persisted to cookie", session.name());
+
+    // We don't save assertions...
+    session["assertions"].destroy();
+
+    // Check each attribute.
+    DDF attrs = session["attributes"];
+    DDF attr = attrs.first();
+    while (!attr.isnull()) {
+        const char* aname = attr.first().name();
+        if (m_persistedAttributeIds.count(aname) == 0) {
+            m_log.debug("not persisting attribute for session recovery: %s", aname);
+            attr.destroy();
+        }
+        else {
+            m_log.debug("persisting attribute for session recovery: %s", aname);
+        }
+        attr = attrs.next();
+    }
+
+    if (attrs.integer() == 0) {
+        m_log.info("session (%s) contained no attributes requiring persistence, will not be recoverable", session.name());
+        return;
+    }
+
+    ostringstream persisted;
+    persisted << session;
+
+    try {
+        string sealed = XMLToolingConfig::getConfig().getDataSealer()->wrap(persisted.str().c_str(), expires);
+        sealed = XMLToolingConfig::getConfig().getURLEncoder()->encode(sealed.c_str());
+
+        time_t cookieLifetime;
+        pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsealed_", &cookieLifetime);
+        sealed += shib_cookie.second;
+        if (cookieLifetime > 0) {
+            cookieLifetime += time(nullptr);
+#ifndef HAVE_GMTIME_R
+            struct tm* ptime = gmtime(&cookieLifetime);
+#else
+            struct tm res;
+            struct tm* ptime = gmtime_r(&cookieLifetime, &res);
+#endif
+            char cookietimebuf[64];
+            strftime(cookietimebuf, 64, "; expires=%a, %d %b %Y %H:%M:%S GMT", ptime);
+            sealed += cookietimebuf;
+        }
+        httpResponse.setCookie(shib_cookie.first.c_str(), sealed.c_str());
+    }
+    catch (std::exception& e) {
+        m_log.error("failed to wrap session (%s) with DataSealer: %s", session.name(), e.what());
+    }
 }
 
 bool SSCache::matches(
@@ -775,7 +862,7 @@ LogoutEvent* SSCache::newLogoutEvent(const Application& app) const
 
 #endif
 
-Session* SSCache::find(const Application& app, const char* key, const char* client_addr, time_t* timeout)
+Session* SSCache::_find(const Application& app, const char* key, const char* recovery, const char* client_addr, time_t* timeout)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("find");
@@ -806,6 +893,7 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
             DDFJanitor jin(in);
             in.structure();
             in.addmember("key").string(key);
+            in.addmember("sealed").string(recovery);
             in.addmember("application_id").string(app.getId());
             if (timeout && *timeout) {
                 // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.
@@ -850,8 +938,16 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
             time_t lastAccess = 0;
             string record;
             int ver = m_storage->readText(key, "session", &record, &lastAccess);
-            if (!ver)
-                return nullptr;
+            if (!ver) {
+                if (recovery && *recovery && recover(app, key, recovery)) {
+                    // Retry the read.
+                    ver = m_storage->readText(key, "session", &record, &lastAccess);
+                    if (!ver)
+                        m_log.warn("recovered session (%s) is missing from storage service", key);
+                }
+                if (!ver)
+                    return nullptr;
+            }
 
             if (0 == lastAccess) {
                 m_log.error("session (ID: %s) did not report time of last access", key);
@@ -952,13 +1048,21 @@ Session* SSCache::find(const Application& app, const char* key, const char* clie
 
 Session* SSCache::find(const Application& app, HTTPRequest& request, const char* client_addr, time_t* timeout)
 {
+#ifdef _DEBUG
+    xmltooling::NDC ndc("find");
+#endif
     string id = active(app, request);
     if (id.empty())
         return nullptr;
+
+    pair<string, const char*> shib_cookie = app.getCookieNameProps("_shibsealed_");
+    const char* c = request.getCookie(shib_cookie.first.c_str());
+
     try {
-        Session* session = find(app, id.c_str(), client_addr, timeout);
+        Session* session = _find(app, id.c_str(), c, client_addr, timeout);
         if (session)
             return session;
+
         HTTPResponse* response = dynamic_cast<HTTPResponse*>(&request);
         if (response) {
             if (!m_outboundHeader.empty())
@@ -966,6 +1070,8 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
             pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
             string exp(shib_cookie.second);
             exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+            shib_cookie = app.getCookieNameProps("_shibsealed_");
             response->setCookie(shib_cookie.first.c_str(), exp.c_str());
         }
     }
@@ -978,14 +1084,124 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
             string exp(shib_cookie.second);
             exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
             response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+            shib_cookie = app.getCookieNameProps("_shibsealed_");
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
         }
         throw;
     }
     return nullptr;
 }
 
+bool SSCache::recover(const Application& app, const char* key, const char* data)
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("recover");
+#endif
+
+    if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        m_log.debug("remoting recovery of session from sealed cookie");
+        // Remote the request.
+        DDF in("recover::" STORAGESERVICE_SESSION_CACHE "::SessionCache"), out;
+        DDFJanitor jin(in);
+        in.structure();
+        in.addmember("key").string(key);
+        in.addmember("application_id").string(app.getId());
+        in.addmember("sealed").string(data);
+
+        out = app.getServiceProvider().getListenerService()->send(in);
+        if (!out.isint() || out.integer() != 1) {
+            out.destroy();
+            m_log.debug("recovery of session (%s) failed", key);
+            return false;
+        }
+
+        out.destroy();
+        m_log.debug("session (%s) recovered from sealed cookie", key);
+    }
+    else {
+        // We're out of process, so we can recover the session.
+#ifndef SHIBSP_LITE
+        m_log.debug("attempting recovery of session (%s)", key);
+
+        DDF obj;
+        DDFJanitor jobj(obj);
+        string unwrapped;
+
+        char* dup = nullptr;
+        try {
+            dup = strdup(data);
+            XMLToolingConfig::getConfig().getURLEncoder()->decode(dup);
+            unwrapped = XMLToolingConfig::getConfig().getDataSealer()->unwrap(dup);
+            free(dup);
+
+            stringstream str(unwrapped);
+            str >> obj;
+        }
+        catch (std::exception& e) {
+            if (dup)
+                free(dup);
+            m_log.error("failed to unwrap sealed session data with DataSealer: %s", e.what());
+            return false;
+        }
+
+        if (!obj.isstruct() || !obj.name() || strcmp(obj.name(), key)) {
+            m_log.info("recovered session data was invalid for session (%s)", key);
+            return false;
+        }
+
+        auto_ptr<saml2::NameID> nameidObject;
+        const char* nameid = obj["nameid"].string();
+        if (nameid) {
+            // Parse and bind the document into an XMLObject.
+            istringstream instr(nameid);
+            DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr);
+            XercesJanitor<DOMDocument> janitor(doc);
+            nameidObject.reset(saml2::NameIDBuilder::buildNameID());
+            nameidObject->unmarshall(doc->getDocumentElement(), true);
+            janitor.release();
+        }
+
+        m_log.debug("storing recovered session (%s)...", key);
+        time_t now = time(nullptr);
+        if (!m_storage->createText(key, "session", unwrapped.c_str(), now + getCacheTimeout(app))) {
+            m_log.debug("recovered session (%s) matched existing record, likely a race condition");
+            return true;
+        }
+
+        // Store the reverse mapping for logout.
+        auto_ptr_char name(nameidObject.get() ? nameidObject->getName() : nullptr);
+        if (name.get() && *name.get() && m_reverseIndex
+            && (m_excludedNames.size() == 0 || m_excludedNames.count(nameidObject->getName()) == 0)) {
+            try {
+                auto_ptr_XMLCh exp(obj["expires"].string());
+                if (exp.get()) {
+                    XMLDateTime iso(exp.get());
+                    iso.parseDateTime();
+                    insert(key, iso.getEpoch(), name.get(), obj["session_index"].string());
+                }
+            }
+            catch (std::exception& ex) {
+                m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
+            }
+        }
+
+        const char* pid = obj["entity_id"].string();
+        const char* prot = obj["protocol"].string();
+        m_log.info("session recovered: ID (%s) IdP (%s) Protocol(%s)",
+            key, pid ? pid : "none", prot ? prot : "none");
+#else
+        throw ConfigurationException("SessionCache recovery requires a DataSealer.");
+#endif
+    }
+
+    return true;
+}
+
 void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPResponse* response)
 {
+#ifdef _DEBUG
+    xmltooling::NDC ndc("remove");
+#endif
     string session_id;
     pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
 
@@ -1003,6 +1219,9 @@ void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPRes
                 response->setResponseHeader(m_outboundHeader.c_str(), nullptr);
             string exp(shib_cookie.second);
             exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+
+            shib_cookie = app.getCookieNameProps("_shibsealed_");
             response->setCookie(shib_cookie.first.c_str(), exp.c_str());
         }
         remove(app, session_id.c_str());
@@ -1171,14 +1390,25 @@ void SSCache::receive(DDF& in, ostream& out)
         // Do an unversioned read.
         string record;
         time_t lastAccess = 0;
-        if (!m_storage->readText(key, "session", &record, &lastAccess)) {
-            m_log.debug("session not found in cache (%s)", key);
-            DDF ret(nullptr);
-            DDFJanitor jan(ret);
-            out << ret;
-            return;
+        int ver = m_storage->readText(key, "session", &record, &lastAccess);
+        if (!ver) {
+            const char* recovery = in["sealed"].string();
+            if (recovery && *recovery && recover(*app, key, recovery)) {
+                // Retry the read.
+                ver = m_storage->readText(key, "session", &record, &lastAccess);
+                if (!ver)
+                    m_log.warn("recovered session (%s) is missing from storage service", key);
+            }
+
+            if (!ver) {
+                DDF ret(nullptr);
+                DDFJanitor jan(ret);
+                out << ret;
+                return;
+            }
         }
-        else if (lastAccess == 0) {
+        
+        if (lastAccess == 0) {
             m_log.error("session (ID: %s) did not report time of last access", key);
             throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
         }
@@ -1344,6 +1574,20 @@ void SSCache::receive(DDF& in, ostream& out)
         remove(*app, key);
         DDF ret(nullptr);
         DDFJanitor jan(ret);
+        out << ret;
+    }
+    else if (!strcmp(in.name(), "recover::" STORAGESERVICE_SESSION_CACHE "::SessionCache")) {
+        const char* key = in["key"].string();
+        const char* cookie = in["sealed"].string();
+        if (!key || !cookie)
+            throw ListenerException("Required parameter missing for session recovery.");
+
+        DDF ret(nullptr);
+        DDFJanitor jan(ret);
+        if (recover(*app, key, cookie))
+            ret.integer(1L);
+        else
+            ret.integer(0L);
         out << ret;
     }
 }

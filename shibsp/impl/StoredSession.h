@@ -52,10 +52,10 @@ namespace shibsp {
 
     class SSCache;
 
-    class StoredSession : public virtual shibsp::Session
+    class StoredSession : public virtual Session
     {
     public:
-        StoredSession(SSCache* cache, shibsp::DDF& obj);
+        StoredSession(SSCache* cache, DDF& obj);
 
         virtual ~StoredSession();
 
@@ -78,7 +78,7 @@ namespace shibsp {
             return nullptr;
         }
         void setClientAddress(const char* client_addr) {
-            shibsp::DDF obj = m_obj["client_addr"];
+            DDF obj = m_obj["client_addr"];
             if (!obj.isstruct())
                 obj = m_obj.addmember("client_addr").structure();
             obj.addmember(getAddressFamily(client_addr)).string(client_addr);
@@ -107,19 +107,19 @@ namespace shibsp {
         const char* getAuthnContextDeclRef() const {
             return m_obj["authncontext_decl"].string();
         }
-        const std::vector<shibsp::Attribute*>& getAttributes() const {
+        const std::vector<Attribute*>& getAttributes() const {
             if (m_attributes.empty())
                 unmarshallAttributes();
             return m_attributes;
         }
-        const std::multimap<std::string, const shibsp::Attribute*>& getIndexedAttributes() const;
+        const std::multimap<std::string, const Attribute*>& getIndexedAttributes() const;
 
         const std::vector<const char*>& getAssertionIDs() const;
 
-        void validate(const shibsp::Application& application, const char* client_addr, time_t* timeout);
+        void validate(const Application& application, const char* client_addr, time_t* timeout);
 
 #ifndef SHIBSP_LITE
-        void addAttributes(const std::vector<shibsp::Attribute*>& attributes);
+        void addAttributes(const std::vector<Attribute*>& attributes);
         const opensaml::Assertion* getAssertion(const char* id) const;
         void addAssertion(opensaml::Assertion* assertion);
 #endif
@@ -134,13 +134,13 @@ namespace shibsp {
     private:
         void unmarshallAttributes() const;
 
-        shibsp::DDF m_obj;
+        DDF m_obj;
 #ifndef SHIBSP_LITE
         boost::scoped_ptr<opensaml::saml2::NameID> m_nameid;
         mutable std::map< std::string,boost::shared_ptr<opensaml::Assertion> > m_tokens;
 #endif
-        mutable std::vector<shibsp::Attribute*> m_attributes;
-        mutable std::multimap<std::string,const shibsp::Attribute*> m_attributeIndex;
+        mutable std::vector<Attribute*> m_attributes;
+        mutable std::multimap<std::string,const Attribute*> m_attributeIndex;
         mutable std::vector<const char*> m_ids;
 
         SSCache* m_cache;

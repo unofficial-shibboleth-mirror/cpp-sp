@@ -225,14 +225,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
             in.addmember("timeout").string(timebuf);
         }
 
-        try {
-            out=app.getServiceProvider().getListenerService()->send(in);
-        }
-        catch (...) {
-            out.destroy();
-            throw;
-        }
-
+        out = app.getServiceProvider().getListenerService()->send(in);
         if (out.isstruct()) {
             // We got an updated record back.
             m_cache->m_log.debug("session updated, reconstituting it");
@@ -242,6 +235,9 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
             m_attributeIndex.clear();
             m_obj.destroy();
             m_obj = out;
+        }
+        else {
+            out.destroy();
         }
     }
     else {

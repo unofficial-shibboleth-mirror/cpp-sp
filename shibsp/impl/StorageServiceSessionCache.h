@@ -56,9 +56,9 @@ namespace opensaml {
 namespace shibsp {
 
     class StoredSession;
-    class SSCache : public shibsp::SessionCache
+    class SSCache : public SessionCache
 #ifndef SHIBSP_LITE
-        ,public virtual shibsp::Remoted
+        ,public virtual Remoted
 #endif
     {
     public:
@@ -66,11 +66,11 @@ namespace shibsp {
         virtual ~SSCache();
 
 #ifndef SHIBSP_LITE
-        void receive(shibsp::DDF& in, std::ostream& out);
+        void receive(DDF& in, std::ostream& out);
 
         void insert(
             std::string& sessionID,
-            const shibsp::Application& app,
+            const Application& app,
             const xmltooling::HTTPRequest& httpRequest,
             xmltooling::HTTPResponse& httpResponse,
             time_t expires,
@@ -82,10 +82,10 @@ namespace shibsp {
             const XMLCh* authncontext_class=nullptr,
             const XMLCh* authncontext_decl=nullptr,
             const std::vector<const opensaml::Assertion*>* tokens=nullptr,
-            const std::vector<shibsp::Attribute*>* attributes=nullptr
+            const std::vector<Attribute*>* attributes=nullptr
             );
         std::vector<std::string>::size_type logout(
-            const shibsp::Application& app,
+            const Application& app,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes,
@@ -95,41 +95,52 @@ namespace shibsp {
             return _logout(app, issuer, nameid, indexes, expires, sessions, 0);
         }
         bool matches(
-            const shibsp::Application& app,
+            const Application& app,
             xmltooling::HTTPRequest& request,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes
             );
 #endif
-        shibsp::Session* find(const shibsp::Application& app, const char* key, const char* client_addr=nullptr, time_t* timeout=nullptr);
-        void remove(const shibsp::Application& app, const char* key);
+        std::string active(const Application& app, const xmltooling::HTTPRequest& request);
+        Session* find(const Application& app, xmltooling::HTTPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr);
+        void remove(const Application& app, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=nullptr);
+
+        Session* find(const Application& app, const char* key) {
+            return _find(app, key, nullptr, nullptr, nullptr);
+        }
+        void remove(const Application& app, const char* key);
         void test();
 
-        std::string active(const shibsp::Application& app, const xmltooling::HTTPRequest& request);
-        shibsp::Session* find(const shibsp::Application& app, xmltooling::HTTPRequest& request, const char* client_addr = nullptr, time_t* timeout = nullptr);
-        void remove(const shibsp::Application& app, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=nullptr);
-
-        unsigned long getCacheTimeout(const shibsp::Application& app) const;
+        unsigned long getCacheTimeout(const Application& app) const;
 
     private:
+        // internal delegates of external methods
+        Session * _find(
+            const Application& app,
+            const char* key,
+            const char* recovery,
+            const char* client_addr,
+            time_t* timeout);
 #ifndef SHIBSP_LITE
-        // maintain back-mappings of NameID/SessionIndex -> session key
-        void insert(const char* key, time_t expires, const char* name, const char* index, short attempts=0);
         std::vector<std::string>::size_type _logout(
-            const shibsp::Application& app,
+            const Application& app,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes,
             time_t expires,
             std::vector<std::string>& sessions,
             short attempts
-            );
+        );
+
+        // maintain back-mappings of NameID/SessionIndex -> session key
+        void insert(const char* key, time_t expires, const char* name, const char* index, short attempts=0);
         bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const opensaml::saml2::NameID& n1, const opensaml::saml2::NameID& n2) const;
-        shibsp::LogoutEvent* newLogoutEvent(const shibsp::Application& app) const;
+        LogoutEvent* newLogoutEvent(const Application& app) const;
 
         bool m_cacheAssertions,m_reverseIndex;
         std::set<xmltooling::xstring> m_excludedNames;
+        std::set<std::string> m_persistedAttributeIds;
 #endif
         const xercesc::DOMElement* m_root;         // Only valid during initialization
         unsigned long m_inprocTimeout,m_cacheTimeout,m_cacheAllowance;
@@ -142,6 +153,12 @@ namespace shibsp {
         // management of buffered sessions
         void dormant(const char* key);
         static void* cleanup_fn(void*);
+
+#ifndef SHIBSP_LITE
+        // persistence across nodes
+        void persist(const Application& app, xmltooling::HTTPResponse& httpResponse, DDF& session, time_t expires) const;
+#endif
+        bool recover(const Application& app, const char* key, const char* data);
 
         xmltooling::logging::Category& m_log;
         bool inproc;
