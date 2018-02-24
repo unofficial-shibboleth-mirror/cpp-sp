@@ -439,7 +439,7 @@ void IIS7Request::setResponseHeader(const char* name, const char* value)
         sz = USHRT_MAX;
     }
 
-    HRESULT hr = m_response->SetHeader(name, value,  static_cast<USHORT>(sz), TRUE);
+    HRESULT hr = m_response->SetHeader(name, value,  static_cast<USHORT>(sz), FALSE);
     if (FAILED(hr)) {
         throwError("setResponseHeader", hr);
     }
