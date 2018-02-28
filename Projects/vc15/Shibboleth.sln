@@ -60,7 +60,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		..\..\configs\postTemplate.html = ..\..\configs\postTemplate.html
 		..\..\configs\protocols.xml = ..\..\configs\protocols.xml
 		..\..\configs\security-policy.xml = ..\..\configs\security-policy.xml
-		..\..\configs\shibboleth2.xml = ..\..\configs\shibboleth2.xml
+		..\..\configs\shibboleth3.xml = ..\..\configs\shibboleth3.xml
 		..\..\configs\shibd-debian.in = ..\..\configs\shibd-debian.in
 		..\..\configs\shibd-osx.plist.in = ..\..\configs\shibd-osx.plist.in
 		..\..\configs\shibd-redhat.in = ..\..\configs\shibd-redhat.in
@@ -68,7 +68,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		..\..\configs\shibd.logger.in = ..\..\configs\shibd.logger.in
 		..\..\configs\sslError.html = ..\..\configs\sslError.html
 		..\..\configs\syslog.logger = ..\..\configs\syslog.logger
-		..\..\configs\win-shibboleth2.xml = ..\..\configs\win-shibboleth2.xml
+		..\..\configs\win-shibboleth3.xml = ..\..\configs\win-shibboleth3.xml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{31B171C1-E06C-464F-A541-38724AB52D79}"
