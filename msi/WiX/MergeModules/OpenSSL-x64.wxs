@@ -40,6 +40,7 @@
               <Component Id="openssl.exe" Guid="{AF6DBF01-02E0-4CA4-9466-2E95EAC1200E}" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Name="openssl.exe" />
               </Component>
+              <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug" FileSource="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\">
                 <Component Id="libeay32D.dll" Guid="$(var.LibEay64Componentd)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Name="$(var.LibEayD)" />
@@ -51,6 +52,7 @@
                   <File Id="openssl.exe_debug" KeyPath="yes" Checksum="yes" Name="openssl.exe" />
                 </Component>
               </Directory><!-- lib_debug-->
+              <?endif ?>
             </Directory><!-- lib -->
             <Directory Id="doc" Name="doc">
               <Component Id="OPENSSL.LICENSE" Guid="{10B77A21-E554-47F2-99F0-7171304FE899}" Win64="yes">

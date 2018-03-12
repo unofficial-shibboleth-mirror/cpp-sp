@@ -43,8 +43,10 @@
 
   <ComponentRef Id="resolvertest.exe" />
   <ComponentRef Id="mdquery.exe" />
+  <?if $(var.BuildDebug) != "" ?>
   <ComponentRef Id="resolvertest.exe_debug" />
   <ComponentRef Id="mdquery.exe_debug" />
+  <?endif ?>
 
   <ComponentRef Id="adfs.so" />
   <ComponentRef Id="adfs_lite.so" />
@@ -63,6 +65,7 @@
   <ComponentRef Id="shibresponder.exe" />
   <?endif ?>
 
+  <?if $(var.BuildDebug) != "" ?>
   <ComponentRef Id="adfs.so_debug" />
   <ComponentRef Id="adfs_lite.so_debug" />
   <ComponentRef Id="isapi_shib.dll_debug" />
@@ -81,6 +84,7 @@
   <?endif ?>
 
   <ComponentRef Id="shibd.exe_debug" />
+  <?endif ?>
 
   <!-- ShibbolethSP-registry-x32 -->
   <ComponentRef Id="TargetDir" />

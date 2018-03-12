@@ -36,6 +36,7 @@
               <Component Id="curl.exe" Guid="{67A6F011-9715-43C2-92F1-70FE53E935AD}">
                 <File KeyPath="yes" Checksum="yes" Source="$(var.BuildDirectory)\curl-$(var.CurlVersion)\$(var.ReleaseExeDir)\curl.exe" />
               </Component>
+              <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug">
                 <Component Id="libcurl5d.dll" Guid="$(var.LibCurlGuid32d)">
                   <File KeyPath="yes" Checksum="yes" Source="$(var.BuildDirectory)\curl-$(var.CurlVersion)\$(var.DebugDllDir)\libcurl$(var.CurlFileVersion)d.dll" />
@@ -44,6 +45,7 @@
                   <File Id="curl.exe_debug" KeyPath="yes" Checksum="yes" Source="$(var.BuildDirectory)\curl-$(var.CurlVersion)\$(var.DebugExeDir)\curl.exe" />
                 </Component>
               </Directory><!-- lib_debug-->
+              <?endif ?>
             </Directory><!-- lib -->
             <Directory Id="doc" Name="doc">
               <Component Id="CURL.LICENSE" Guid="{54E0C63F-C591-49AF-9D3C-CBBE8281B6DB}">

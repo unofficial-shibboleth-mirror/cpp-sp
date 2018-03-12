@@ -37,6 +37,7 @@
               <Component Id="xmltooling_lite.dll" Guid="$(var.XMLToolingLiteComponent64)" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll" />
               </Component>
+              <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\cpp-opensaml\Build\$(var.ShibbolethMsVersion)\x64\Debug\">
                 <Component Id="samlD.dll" Guid="$(var.SamlComponent64d)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Name="saml$(var.OpenSAMLFileVersion)D.dll" />
@@ -51,6 +52,7 @@
                   <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.dll" />
                 </Component>
               </Directory><!-- lib_debug -->
+              <?endif ?>
             </Directory><!-- lib -->
             <Directory Id="doc" Name="doc">
               <Component Id="doc" Guid="{F858AC39-4C24-4255-A86E-4747FE45624E}" Win64="yes">

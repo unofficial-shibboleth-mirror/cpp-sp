@@ -61,7 +61,9 @@
         <Merge Id="XercesMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm" DiskId="1" />
         <Merge Id="XmlSecMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm" DiskId="1" />
         <Merge Id="ZlibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm" DiskId="1" />
+        <?if $(var.BuildDebug) != "" ?>
         <Merge Id="Microsoft_DebugCRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x86.msm" DiskId="1" />
+        <?endif ?>
         <Merge Id="Microsoft_CRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x86.msm" DiskId="1" />
       </Directory><!--ProgramFilesFolder-->
 
@@ -85,7 +87,9 @@
       <MergeRef Id="XmlSecMergeModule_x86" />
       <MergeRef Id="ZlibMergeModule_x86" />
 
+      <?if $(var.BuildDebug) != "" ?>
       <MergeRef Id="Microsoft_DebugCRT_x86" />
+      <?endif ?>
       <MergeRef Id="Microsoft_CRT_x86" />
 
       <!-- ShibbolethSP-main-x86 -->

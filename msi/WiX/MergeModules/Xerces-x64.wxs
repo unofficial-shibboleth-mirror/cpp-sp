@@ -27,11 +27,13 @@
               <Component Id="xercesc.dll" Guid="$(var.Xerces64Component)" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Source="$(var.XercesDll)" />
               </Component>
+              <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug">
                 <Component Id="xercescD.dll" Guid="$(var.Xerces64Componentd)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Source="$(var.XercesDebugDll)" />
                 </Component>
               </Directory><!-- lib_debug-->
+              <?endif ?>
             </Directory><!-- lib -->
             <Directory Id="doc" Name="doc">
               <Component Id="XERCES.LICENSE" Guid="{12731F0B-681B-4154-9B02-BEB219954D44}" Win64="yes">

@@ -28,6 +28,7 @@
         <Component Id="mdquery64.exe" Guid="{3645630B-3991-4693-8664-A49242B9CF05}" Win64="yes">
           <File KeyPath="yes" Checksum="yes" Id="mdquery64.exe" Name="mdquery.exe" />
         </Component>
+        <?if $(var.BuildDebug) != "" ?>
         <Directory Id="bin64_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Debug">
           <Component Id="resolvertest64.exe_debug" Guid="{58C98426-8C96-41EE-B956-A6BBAEAE5A10}" Win64="yes">
             <File KeyPath="yes" Checksum="yes" Id="resolvertest64.exe_debug" Name="resolvertest.exe" />
@@ -36,6 +37,7 @@
             <File KeyPath="yes" Checksum="yes" Id="mdquery64.exe_debug" Name="mdquery.exe" />
           </Component>
         </Directory><!-- bin_debug -->
+        <?endif ?>
       </Directory><!-- bin -->
       <Directory Id="lib64" Name="lib64">
         <Directory Id="lib64_shibboleth" Name="shibboleth" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release">
@@ -74,6 +76,7 @@
             <File KeyPath="yes" Checksum="yes" Id="shibresponder64.exe" Name="shibresponder.exe" />
           </Component>
           <?endif ?>
+          <?if $(var.BuildDebug) != "" ?>
           <Directory Id="lib64_shibboleth_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Debug">
             <Component Id="adfs64.so_debug" Guid="{BFF58DDD-CF04-49B1-A172-C84087705D2A}" Win64="yes">
               <File KeyPath="yes" Checksum="yes" Id="adfs64.so_debug" Name="adfs.so" />
@@ -111,16 +114,19 @@
             </Component>
             <?endif ?>
           </Directory><!-- lib_shibboleth_debug -->
+          <?endif ?>
         </Directory><!-- lib_shibboleth -->
       </Directory><!-- lib -->
       <!-- the service bin -->
       <Directory Id="sbin64" Name="sbin64" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release">
         <!-- Service bins are declared in main -->
+        <?if $(var.BuildDebug) != "" ?>
         <Directory Id="sbin64_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Debug">
           <Component Id="shibd64.exe_debug" Guid="{657A1902-0104-47C7-84A7-AEB5F736B02F}" Win64="yes">
             <File KeyPath="yes" Checksum="yes" Id="shibd64.exe_debug" Name="shibd.exe" />
           </Component>
         </Directory><!-- sbin_debug -->
+        <?endif ?>
       </Directory><!-- sbin -->
     </DirectoryRef><!-- INSTALLDIR -->
   </Fragment>

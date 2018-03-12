@@ -60,7 +60,9 @@
         <Merge Id="XercesMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm" DiskId="1" />
         <Merge Id="XmlSecMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm" DiskId="1" />
         <Merge Id="ZlibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm" DiskId="1" />
+        <?if $(var.BuildDebug) != "" ?>
         <Merge Id="Microsoft_DebugCRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x86.msm" DiskId="1" />
+        <?endif ?>
         <Merge Id="Microsoft_CRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x86.msm" DiskId="1" />
       </Directory><!--ProgramFilesFolder-->
 
@@ -77,7 +79,9 @@
         <Merge Id="XercesMergeModule_x64" Language="1033" SourceFile="MergeModules\Xerces-x64.msm" DiskId="1" />
         <Merge Id="XmlSecMergeModule_x64" Language="1033" SourceFile="MergeModules\XmlSec-x64.msm" DiskId="1" />
         <Merge Id="ZlibMergeModule_x64" Language="1033" SourceFile="MergeModules\Zlib-x64.msm" DiskId="1" />
+        <?if $(var.BuildDebug) != "" ?>
         <Merge Id="Microsoft_DebugCRT_x64" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x64.msm" DiskId="1" />
+        <?endif ?>
         <Merge Id="Microsoft_CRT_x64" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x64.msm" DiskId="1" />
       </Directory><!--ProgramFiles64Folder-->
 
@@ -105,7 +109,9 @@
       <MergeRef Id="XmlSecMergeModule_x86" />
       <MergeRef Id="ZlibMergeModule_x86" />
 
+      <?if $(var.BuildDebug) != "" ?>
       <MergeRef Id="Microsoft_DebugCRT_x86" />
+      <?endif ?>
       <MergeRef Id="Microsoft_CRT_x86" />
 
       <MergeRef Id="CurlMergeModule_x64" />
@@ -120,15 +126,19 @@
       <MergeRef Id="XmlSecMergeModule_x64" />
       <MergeRef Id="ZlibMergeModule_x64" />
 
+      <?if $(var.BuildDebug) != "" ?>
       <MergeRef Id="Microsoft_DebugCRT_x64" />
+      <?endif ?>
       <MergeRef Id="Microsoft_CRT_x64" />
 
       <!-- ShibbolethSP-exe-x64-->
 
       <ComponentRef Id="resolvertest64.exe" />
       <ComponentRef Id="mdquery64.exe" />
+      <?if $(var.BuildDebug) != "" ?>
       <ComponentRef Id="resolvertest64.exe_debug" />
       <ComponentRef Id="mdquery64.exe_debug" />
+      <?endif ?>
 
       <ComponentRef Id="adfs64.so" />
       <ComponentRef Id="adfs_lite64.so" />
@@ -144,6 +154,7 @@
       <ComponentRef Id="shibresponder64.exe" />
       <?endif ?>
 
+      <?if $(var.BuildDebug) != "" ?>
       <ComponentRef Id="adfs64.so_debug" />
       <ComponentRef Id="adfs_lite64.so_debug" />
       <ComponentRef Id="isapi_shib64.dll_debug" />
@@ -159,6 +170,7 @@
       <?endif ?>
 
       <ComponentRef Id="shibd64.exe_debug" />
+      <?endif ?>
 
       <!-- ShibbolethSP-registry-x64 -->
       <ComponentRef Id="TargetDir64" />

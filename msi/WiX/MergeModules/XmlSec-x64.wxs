@@ -45,6 +45,7 @@
               <Component Id="txfmout.exe" Guid="{2D9025EE-D95F-4D3C-B0E7-86D742749D39}" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Name="txfmout.exe" />
               </Component>
+              <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug" FileSource="$(var.BuildDirectory)\$(var.xmlsec)\Build\x64\$(var.ShibbolethMsVersion)\Debug Minimal">
                 <Component Id="xsecD.dll" Guid="$(var.XmlSec64Componentd)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Name="xsec_$(var.XmlSecFileVersion)D.dll" />
@@ -68,6 +69,7 @@
                   <File Id="txfmout.exe_debug" KeyPath="yes" Checksum="yes" Name="txfmout.exe" />
                 </Component>
               </Directory><!-- lib_debug-->
+              <?endif ?>
             </Directory><!-- lib -->
             <Directory Id="doc" Name="doc">
               <Component Id="SANTUARIO.LICENSE" Guid="{07288B10-ED5A-443F-BC90-CFD987C798C4}" Win64="yes">

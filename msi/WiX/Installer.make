@@ -1,23 +1,17 @@
+!if "$(DEBUG_INSTALLER)" != ""
 APACHE_MODS_X64=..\..\Build\$(MsVCVersion)\x64\Debug\mod_shib_22.so ..\..\Build\$(MsVCVersion)\x64\Debug\mod_shib_24.so \
 		..\..\Build\$(MsVCVersion)\x64\Release\mod_shib_22.so ..\..\Build\$(MsVCVersion)\x64\Release\mod_shib_24.so
 
 APACHE_MODS_X86=..\..\Build\$(MsVCVersion)\Debug\mod_shib_22.so ..\..\Build\$(MsVCVersion)\Debug\mod_shib_24.so \
 		..\..\Build\$(MsVCVersion)\Release\mod_shib_22.so ..\..\Build\$(MsVCVersion)\Release\mod_shib_24.so
+!else
+APACHE_MODS_X64=..\..\Build\$(MsVCVersion)\x64\Release\mod_shib_22.so ..\..\Build\$(MsVCVersion)\x64\Release\mod_shib_24.so
+
+APACHE_MODS_X86=..\..\Build\$(MsVCVersion)\Release\mod_shib_22.so ..\..\Build\$(MsVCVersion)\Release\mod_shib_24.so
+!endif
 
 !If "$(MsVCVersion)" == "vc10"
-NSAPI_DLLS=..\..\Build\$(MsVCVersion)\Debug\nsapi_shib.dll ..\..\Build\$(MsVCVersion)\Release\nsapi_shib.dll
-FCGI86=MergeModules\FastCGI-x86.msm
-FCGI64=MergeModules\FastCGI-x64.msm
-FCGI_AUTH_RESP86= ..\..\Build\$(MsVCVersion)\Release\shibauthorizer.exe\
-			..\..\Build\$(MsVCVersion)\Release\shibresponder.exe\
-			..\..\Build\$(MsVCVersion)\Debug\shibauthorizer.exe\
-			..\..\Build\$(MsVCVersion)\Debug\shibresponder.exe
-FCGI_AUTH_RESP64=..\..\Build\$(MsVCVersion)\x64\Release\shibauthorizer.exe\
-			..\..\Build\$(MsVCVersion)\x64\Release\shibresponder.exe\
-			..\..\Build\$(MsVCVersion)\x64\Debug\shibauthorizer.exe\
-			..\..\Build\$(MsVCVersion)\x64\Debug\shibresponder.exe\
-!else
-
+!Error MSVC 10 not supported
 !Endif
 
 !If "$(CppMmDir)" == ""
@@ -62,42 +56,42 @@ Shibboleth.wixlib: ShibbolethSP-noarch.wixobj ShibbolethSP-exe-x86.wixobj Shibbo
 #
 # Individual files
 #
-ShibbolethSP-exe-x64.wixobj: ShibbolethSP-exe-x64.wxs ..\..\Build\$(MsVCVersion)\x64\Release\shibd.exe ..\..\Build\$(MsVCVersion)\x64\Release\resolvertest.exe ..\..\Build\$(MsVCVersion)\x64\Release\mdquery.exe ..\..\Build\$(MsVCVersion)\x64\Release\adfs.so ..\..\Build\$(MsVCVersion)\x64\Release\adfs-lite.so ..\..\Build\$(MsVCVersion)\x64\Release\isapi_shib.dll ..\..\Build\$(MsVCVersion)\x64\Release\iis7_shib.dll ..\..\Build\$(MsVCVersion)\x64\Release\odbc-store.so ..\..\Build\$(MsVCVersion)\x64\Release\plugins.so ..\..\Build\$(MsVCVersion)\x64\Release\plugins-lite.so $(FCGI_AUTH_RESP64) ..\..\Build\$(MsVCVersion)\x64\Debug\shibd.exe ..\..\Build\$(MsVCVersion)\x64\Debug\resolvertest.exe ..\..\Build\$(MsVCVersion)\x64\Debug\mdquery.exe ..\..\Build\$(MsVCVersion)\x64\Debug\adfs.so ..\..\Build\$(MsVCVersion)\x64\Debug\adfs-lite.so ..\..\Build\$(MsVCVersion)\x64\Debug\isapi_shib.dll $(APACHE_MODS_X64) ..\..\Build\$(MsVCVersion)\x64\Debug\odbc-store.so ..\..\Build\$(MsVCVersion)\x64\Debug\plugins.so ..\..\Build\$(MsVCVersion)\x64\Debug\plugins-lite.so
+ShibbolethSP-exe-x64.wixobj: ShibbolethSP-exe-x64.wxs ..\..\Build\$(MsVCVersion)\x64\Release\shibd.exe ..\..\Build\$(MsVCVersion)\x64\Release\resolvertest.exe ..\..\Build\$(MsVCVersion)\x64\Release\mdquery.exe ..\..\Build\$(MsVCVersion)\x64\Release\adfs.so ..\..\Build\$(MsVCVersion)\x64\Release\adfs-lite.so ..\..\Build\$(MsVCVersion)\x64\Release\isapi_shib.dll ..\..\Build\$(MsVCVersion)\x64\Release\iis7_shib.dll ..\..\Build\$(MsVCVersion)\x64\Release\odbc-store.so ..\..\Build\$(MsVCVersion)\x64\Release\plugins.so ..\..\Build\$(MsVCVersion)\x64\Release\plugins-lite.so $(FCGI_AUTH_RESP64) $(APACHE_MODS_X64)
 	wixcop -indent:2 ShibbolethSP-exe-x64.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-exe-x64.wxs -dFCGI="$(FCGI_AUTH_RESP64)"
+	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-exe-x64.wxs -dFCGI="$(FCGI_AUTH_RESP64)" -dBuildDebug=$(DebugInstaller)
 
 ShibbolethSP-registry-x64.wixobj: ShibbolethSP-registry-x64.wxs
 	wixcop -indent:2 ShibbolethSP-registry-x64.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-registry-x64.wxs
+	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-registry-x64.wxs -dBuildDebug=$(DebugInstaller)
 
 ShibbolethSP-noarch.wixobj: ShibbolethSP-noarch.wxs  ..\scripts\shib_edit_config_files.vbs-wix
 	wixcop -indent:2 ShibbolethSP-noarch.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-noarch.wxs
+	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-noarch.wxs -dBuildDebug=$(DebugInstaller)
 
-ShibbolethSP-exe-x86.wixobj: ShibbolethSP-exe-x86.wxs  ..\..\Build\$(MsVCVersion)\Release\shibd.exe ..\..\Build\$(MsVCVersion)\Release\resolvertest.exe ..\..\Build\$(MsVCVersion)\Release\mdquery.exe ..\..\Build\$(MsVCVersion)\Release\adfs.so ..\..\Build\$(MsVCVersion)\Release\adfs-lite.so ..\..\Build\$(MsVCVersion)\Release\iis7_shib.dll ..\..\Build\$(MsVCVersion)\Release\isapi_shib.dll ..\..\Build\$(MsVCVersion)\Release\odbc-store.so ..\..\Build\$(MsVCVersion)\Release\plugins.so ..\..\Build\$(MsVCVersion)\Release\plugins-lite.so $(FCGI_AUTH_RESP86) ..\..\Build\$(MsVCVersion)\Debug\shibd.exe ..\..\Build\$(MsVCVersion)\Debug\resolvertest.exe ..\..\Build\$(MsVCVersion)\Debug\mdquery.exe ..\..\Build\$(MsVCVersion)\Debug\adfs.so ..\..\Build\$(MsVCVersion)\Debug\adfs-lite.so ..\..\Build\$(MsVCVersion)\Debug\isapi_shib.dll $(APACHE_MODS_X86) $(NSAPI_DLLS) ..\..\Build\$(MsVCVersion)\Debug\odbc-store.so ..\..\Build\$(MsVCVersion)\Debug\plugins.so ..\..\Build\$(MsVCVersion)\Debug\plugins-lite.so
+ShibbolethSP-exe-x86.wixobj: ShibbolethSP-exe-x86.wxs  ..\..\Build\$(MsVCVersion)\Release\shibd.exe ..\..\Build\$(MsVCVersion)\Release\resolvertest.exe ..\..\Build\$(MsVCVersion)\Release\mdquery.exe ..\..\Build\$(MsVCVersion)\Release\adfs.so ..\..\Build\$(MsVCVersion)\Release\adfs-lite.so ..\..\Build\$(MsVCVersion)\Release\iis7_shib.dll ..\..\Build\$(MsVCVersion)\Release\isapi_shib.dll ..\..\Build\$(MsVCVersion)\Release\odbc-store.so ..\..\Build\$(MsVCVersion)\Release\plugins.so ..\..\Build\$(MsVCVersion)\Release\plugins-lite.so $(FCGI_AUTH_RESP86) $(APACHE_MODS_X86) $(NSAPI_DLLS)
 	wixcop -indent:2 ShibbolethSP-exe-x86.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-exe-x86.wxs -dNSApi="$(NSAPI_DLLS)" -dFCGI="$(FCGI_AUTH_RESP86)"
+	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-exe-x86.wxs -dNSApi="$(NSAPI_DLLS)" -dFCGI="$(FCGI_AUTH_RESP86)" -dBuildDebug=$(DebugInstaller)
 
 ShibbolethSP-registry-x86.wixobj: ShibbolethSP-registry-x86.wxs
 	wixcop -indent:2 ShibbolethSP-registry-x86.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-registry-x86.wxs
+	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-registry-x86.wxs -dBuildDebug=$(DebugInstaller)
 
 ShibbolethSP-gui.wixobj: ShibbolethSP-gui.wxs
 	wixcop -indent:2 ShibbolethSP-gui.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-gui.wxs
+	candle -dSPBuildDirectory=$(SolutionDir).. -dMsVCVersion=$(MsVCVersion) ShibbolethSP-gui.wxs -dBuildDebug=$(DebugInstaller)
 
 ShibbolethSP-update-dlg.wixobj: ShibbolethSP-update-dlg.wxs
 	wixcop -indent:2 ShibbolethSP-update-dlg.wxs
-	candle ShibbolethSP-update-dlg.wxs
+	candle ShibbolethSP-update-dlg.wxs -dBuildDebug=$(DebugInstaller)
 
 ShibbolethSP-install-dlg.wixobj: ShibbolethSP-install-dlg.wxs
 	wixcop -indent:2 ShibbolethSP-install-dlg.wxs
-	candle ShibbolethSP-install-dlg.wxs
+	candle ShibbolethSP-install-dlg.wxs -dBuildDebug=$(DebugInstaller)
 
 ShibbolethSP-main-x64.wixobj: ShibbolethSP-main-x64.wxs ShibbolethSP-properties.wxi ShibbolethSP-defs-x86.wxi MergeModules\Curl-x86.msm $(FCGI86) MergeModules\Log4Shib-x86.msm MergeModules\OpenSAML-x86.msm MergeModules\OpenSAML-schemas.msm MergeModules\OpenSSL-x86.msm MergeModules\Shibboleth-x86.msm MergeModules\Shibboleth-schemas.msm MergeModules\Xerces-x86.msm MergeModules\XmlSec-x86.msm MergeModules\Zlib-x86.msm MergeModules\Curl-x64.msm $(FCGI64) MergeModules\Log4Shib-x64.msm MergeModules\OpenSAML-x64.msm MergeModules\OpenSSL-x64.msm MergeModules\Shibboleth-x64.msm MergeModules\Xerces-x64.msm MergeModules\XmlSec-x64.msm MergeModules\Zlib-x64.msm
 	wixcop -indent:2 ShibbolethSP-main-x64.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dShibbolethVersion=$(ShibbolethVersion) -dShibbolethPatchVersion=$(ShibbolethPatchVersion) -dShibbolethId64=$(ShibbolethId64) -dShibbolethUpgradeCode=$(ShibbolethUpgradeCode) -dMsVCVersion=$(MsVCVersion) ShibbolethSP-main-x64.wxs -dFCGI="$(FCGI64)" -dNSApi="$(NSAPI_DLLS)" -dCppMmDir="$(CppMmDir)" -dCppVCVersion=$(CppVCVersion) 
+	candle -dSPBuildDirectory=$(SolutionDir).. -dShibbolethVersion=$(ShibbolethVersion) -dShibbolethPatchVersion=$(ShibbolethPatchVersion) -dShibbolethId64=$(ShibbolethId64) -dShibbolethUpgradeCode=$(ShibbolethUpgradeCode) -dMsVCVersion=$(MsVCVersion) ShibbolethSP-main-x64.wxs -dFCGI="$(FCGI64)" -dNSApi="$(NSAPI_DLLS)" -dCppMmDir="$(CppMmDir)" -dCppVCVersion=$(CppVCVersion) -dBuildDebug=$(DebugInstaller)
 
 ShibbolethSP-main-x86.wixobj: ShibbolethSP-main-x86.wxs ShibbolethSP-properties.wxi ShibbolethSP-defs-x86.wxi MergeModules\Curl-x86.msm $(FCGI86) MergeModules\Log4Shib-x86.msm MergeModules\OpenSAML-x86.msm MergeModules\OpenSAML-schemas.msm MergeModules\OpenSSL-x86.msm MergeModules\Shibboleth-x86.msm MergeModules\Shibboleth-schemas.msm MergeModules\Xerces-x86.msm MergeModules\XmlSec-x86.msm MergeModules\Zlib-x86.msm
 	wixcop -indent:2 ShibbolethSP-main-x86.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dShibbolethVersion=$(ShibbolethVersion) -dShibbolethPatchVersion=$(ShibbolethPatchVersion) -dShibbolethId32=$(ShibbolethId32) -dShibbolethUpgradeCode=$(ShibbolethUpgradeCode) -dMsVCVersion=$(MsVCVersion) ShibbolethSP-main-x86.wxs  -dFCGI="$(FCGI64)" -dNSApi="$(NSAPI_DLLS)"  -dCppMmDir="$(CppMmDir)" -dCppVCVersion=$(CppVCVersion) 
+	candle -dSPBuildDirectory=$(SolutionDir).. -dShibbolethVersion=$(ShibbolethVersion) -dShibbolethPatchVersion=$(ShibbolethPatchVersion) -dShibbolethId32=$(ShibbolethId32) -dShibbolethUpgradeCode=$(ShibbolethUpgradeCode) -dMsVCVersion=$(MsVCVersion) ShibbolethSP-main-x86.wxs  -dFCGI="$(FCGI64)" -dNSApi="$(NSAPI_DLLS)"  -dCppMmDir="$(CppMmDir)" -dCppVCVersion=$(CppVCVersion) -dBuildDebug=$(DebugInstaller)

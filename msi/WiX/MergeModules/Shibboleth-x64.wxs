@@ -30,6 +30,7 @@
               <Component Id="shibsp_lite.dll" Guid="$(var.ShibDllLite64Component)" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Name="shibsp-lite$(var.ShibbolethDllFileVersion).dll" />
               </Component>
+              <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\x64\Debug">
                 <Component Id="shibspD.dll" Guid="$(var.ShibDll64Componentd)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Name="shibsp$(var.ShibbolethDllFileVersion)D.dll" />
@@ -38,6 +39,7 @@
                   <File KeyPath="yes" Checksum="yes" Name="shibsp-lite$(var.ShibbolethDllFileVersion)D.dll" />
                 </Component>
               </Directory><!-- lib_debug -->
+              <?endif ?>
             </Directory><!-- lib -->
             <Directory Id="doc" Name="doc">
               <Component Id="doc" Guid="{1ACB430F-7846-4565-93FE-3BE1BC1235C1}" Win64="yes">
