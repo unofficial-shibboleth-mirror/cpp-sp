@@ -85,6 +85,20 @@
     </sequence>
   </complexType>
 
+  <complexType name="DataSealerType">
+    <annotation>
+      <documentation>References DataSealer plugins</documentation>
+    </annotation>
+    <complexContent>
+      <restriction base="conf:PluggableType">
+        <sequence>
+          <any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+        <anyAttribute namespace="##any" processContents="lax"/>
+      </restriction>
+    </complexContent>
+  </complexType>
+
   <complexType name="StorageServiceType">
     <annotation>
       <documentation>References StorageService plugins</documentation>
@@ -822,6 +836,7 @@
           <element name="Listener" type="conf:PluggableType"/>
         </choice>
         <element name="StorageService" type="conf:StorageServiceType" minOccurs="0" maxOccurs="unbounded"/>
+        <element name="DataSealer" type="conf:DataSealerType" minOccurs="0" />
         <element name="SessionCache" type="conf:SessionCacheType" minOccurs="0"/>
         <element name="ReplayCache" type="conf:ReplayCacheType" minOccurs="0"/>
         <element name="ArtifactMap" type="conf:ArtifactMapType" minOccurs="0"/>

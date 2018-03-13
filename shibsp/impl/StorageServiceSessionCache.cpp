@@ -48,7 +48,7 @@
 #include <boost/bind.hpp>
 #include <xmltooling/io/HTTPRequest.h>
 #include <xmltooling/io/HTTPResponse.h>
-#include <xmltooling/util/DataSealer.h>
+#include <xmltooling/security/DataSealer.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/URLEncoder.h>

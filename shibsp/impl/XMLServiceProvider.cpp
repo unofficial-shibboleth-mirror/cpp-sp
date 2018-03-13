@@ -84,6 +84,7 @@
 # include <saml/util/SAMLConstants.h>
 # include <xmltooling/security/ChainingTrustEngine.h>
 # include <xmltooling/security/CredentialResolver.h>
+# include <xmltooling/security/DataSealer.h>
 # include <xmltooling/security/SecurityHelper.h>
 # include <xmltooling/util/ReplayCache.h>
 # include <xmltooling/util/StorageService.h>
@@ -470,6 +471,7 @@ namespace {
     static const XMLCh Binding[] =              UNICODE_LITERAL_7(B,i,n,d,i,n,g);
     static const XMLCh Channel[]=               UNICODE_LITERAL_7(C,h,a,n,n,e,l);
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
+	static const XMLCh _DataSealer[] =			UNICODE_LITERAL_10(D,a,t,a,S,e,a,l,e,r);
     static const XMLCh _default[] =             UNICODE_LITERAL_7(d,e,f,a,u,l,t);
     static const XMLCh _Extensions[] =          UNICODE_LITERAL_10(E,x,t,e,n,s,i,o,n,s);
     static const XMLCh _fatal[] =               UNICODE_LITERAL_5(f,a,t,a,l);
@@ -1827,6 +1829,7 @@ DOMNodeFilter::FilterAction XMLConfigImpl::acceptNode(const DOMNode* node) const
     const XMLCh* name=node->getLocalName();
     if (XMLString::equals(name,ApplicationDefaults) ||
         XMLString::equals(name,_ArtifactMap) ||
+		XMLString::equals(name, _DataSealer) ||
         XMLString::equals(name,_Extensions) ||
         XMLString::equals(name,Listener) ||
         XMLString::equals(name,_ProtocolProvider) ||
@@ -2123,6 +2126,18 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             outer->m_listener->regListener("set::PostData", outer);
             outer->m_listener->regListener("get::PostData", outer);
         }
+
+		if (child = XMLHelper::getFirstChildElement(e, _DataSealer)) {
+			string t(XMLHelper::getAttrString(child, nullptr, _type));
+			if (!t.empty()) {
+				log.info("building DataSealer of type %s...", t.c_str());
+				auto_ptr<DataSealerKeyStrategy> strategy(XMLToolingConfig::getConfig().DataSealerKeyStrategyManager.newPlugin(t, child));
+				auto_ptr<DataSealer> sealer(new DataSealer(strategy.get()));
+				strategy.release();
+				XMLToolingConfig::getConfig().setDataSealer(sealer.get());
+				sealer.release();
+			}
+		}
 #endif
         if (conf.isEnabled(SPConfig::Caching))
             doCaching(e, outer, log);
