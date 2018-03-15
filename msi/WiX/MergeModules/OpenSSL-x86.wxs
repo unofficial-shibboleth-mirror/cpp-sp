@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 
 <!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
@@ -25,40 +25,38 @@
 
 
 
-<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='OpenSSLMergeModule_x86' Language='1033' Version='$(var.OpenSSLVersion)'>
-    <Package Id='11FD68EE-607E-4755-98AA-1C7EE5E03652' Description='Merge Module for OpenSSL (x86)'
-             Comments='This module is built by the Shibboleth Consortium. Includes libeay32 and ssleay32.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x86'/>
-    <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFilesFolder' Name='ProgramFiles'>
-        <Directory Id='shibboleth' Name='Shibboleth'>
-          <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\'>
-              <Component Id='libeay32.dll' Guid='$(var.LibEay32Component)'>
-                <File KeyPath='yes' Checksum='yes' Name='$(var.LibEay)' />
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Module Id="OpenSSLMergeModule_x86" Language="1033" Version="$(var.OpenSSLVersion)">
+    <Package Id="11FD68EE-607E-4755-98AA-1C7EE5E03652" Description="Merge Module for OpenSSL (x86)" Comments="This module is built by the Shibboleth Consortium. Includes libeay32 and ssleay32." Manufacturer="Shibboleth Consortium" InstallerVersion="300" Platform="x86" />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder" Name="ProgramFiles">
+        <Directory Id="shibboleth" Name="Shibboleth">
+          <Directory Id="shibboleth_sp" Name="SP">
+            <Directory Id="lib" Name="lib" FileSource="$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\">
+              <Component Id="libeay32.dll" Guid="$(var.LibEay32Component)">
+                <File KeyPath="yes" Checksum="yes" Name="$(var.LibEay)" />
               </Component>
-              <Component Id='ssleay32.dll' Guid='$(var.SSlEay32Component)'>
-                <File KeyPath='yes' Checksum='yes' Name='$(var.SslEay)' />
+              <Component Id="ssleay32.dll" Guid="$(var.SSlEay32Component)">
+                <File KeyPath="yes" Checksum="yes" Name="$(var.SslEay)" />
               </Component>
-              <Component Id='openssl.exe' Guid='{886F0254-AD10-45C6-A723-37C7FA466651}'>
-                <File KeyPath='yes' Checksum='yes' Name='openssl.exe' />
+              <Component Id="openssl.exe" Guid="{886F0254-AD10-45C6-A723-37C7FA466651}">
+                <File KeyPath="yes" Checksum="yes" Name="openssl.exe" />
               </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\' >
-                <Component Id='libeay32D.dll' Guid='$(var.LibEay32Componentd)'>
-                  <File KeyPath='yes' Checksum='yes' Name='$(var.LibEayD)' />
+              <Directory Id="lib_debug" Name="debug" FileSource="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\">
+                <Component Id="libeay32D.dll" Guid="$(var.LibEay32Componentd)">
+                  <File KeyPath="yes" Checksum="yes" Name="$(var.LibEayD)" />
                 </Component>
-                <Component Id='ssleay32D.dll' Guid='$(var.SSlEay32Componentd)'>
-                  <File KeyPath='yes' Checksum='yes' Name='$(var.SslEayD)' />
+                <Component Id="ssleay32D.dll" Guid="$(var.SSlEay32Componentd)">
+                  <File KeyPath="yes" Checksum="yes" Name="$(var.SslEayD)" />
                 </Component>
-                <Component Id='openssl.exe_debug' Guid='{D47E4692-F648-4800-BE4A-9D84DAD5DEEA}'>
-                  <File Id='openssl.exe_debug' KeyPath='yes' Checksum='yes' Name='openssl.exe' />
+                <Component Id="openssl.exe_debug" Guid="{D47E4692-F648-4800-BE4A-9D84DAD5DEEA}">
+                  <File Id="openssl.exe_debug" KeyPath="yes" Checksum="yes" Name="openssl.exe" />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
-            <Directory Id='doc' Name='doc'>
-              <Component Id='OPENSSL.LICENSE' Guid='{CEC1CC66-6D48-475A-8C99-B687B0B901AA}'>
-                <File KeyPath='yes' Name='OPENSSL.LICENSE' Source='$(var.BuildDirectory)\$(var.openssl)\LICENSE' />
+            <Directory Id="doc" Name="doc">
+              <Component Id="OPENSSL.LICENSE" Guid="{CEC1CC66-6D48-475A-8C99-B687B0B901AA}">
+                <File KeyPath="yes" Name="OPENSSL.LICENSE" Source="$(var.BuildDirectory)\$(var.openssl)\LICENSE" />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->

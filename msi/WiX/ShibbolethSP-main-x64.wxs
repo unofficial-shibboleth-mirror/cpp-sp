@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 
 <!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
@@ -16,209 +16,200 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Product Id='$(var.ShibbolethId64)' Language='1033'
-           Manufacturer='Shibboleth Consortium' Name='Shibboleth Service Provider'
-           UpgradeCode='$(var.ShibbolethUpgradeCode)' Version='$(var.ShibbolethVersion).$(var.ShibbolethPatchVersion)'>
-    <Package Description='Shibboleth SP (x86 and x64) V$(var.ShibbolethVersion) Patch Level $(var.ShibbolethPatchVersion)' Compressed='yes'
-           Manufacturer='Shibboleth Consortium' InstallerVersion='301' Platform='x64'/>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="$(var.ShibbolethId64)" Language="1033" Manufacturer="Shibboleth Consortium" Name="Shibboleth Service Provider" UpgradeCode="$(var.ShibbolethUpgradeCode)" Version="$(var.ShibbolethVersion).$(var.ShibbolethPatchVersion)">
+    <Package Description="Shibboleth SP (x86 and x64) V$(var.ShibbolethVersion) Patch Level $(var.ShibbolethPatchVersion)" Compressed="yes" Manufacturer="Shibboleth Consortium" InstallerVersion="301" Platform="x64" />
 
-    <MajorUpgrade DowngradeErrorMessage='A later version of [ProductName] is already installed. Setup will now exit.'
-          MigrateFeatures='yes' Schedule='afterInstallExecute' AllowSameVersionUpgrades='yes' />
+    <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." MigrateFeatures="yes" Schedule="afterInstallExecute" AllowSameVersionUpgrades="yes" />
 
-    <PropertyRef Id='SHIB_OLDVERSION_64'/>
-    <PropertyRef Id='SHIB_OLDVERSION'/>
+    <PropertyRef Id="SHIB_OLDVERSION_64" />
+    <PropertyRef Id="SHIB_OLDVERSION" />
 
-    <Condition Message='Shibboleth requires Windows Vista or later.'>NOT VersionNT OR (VersionNT &gt;= 600)</Condition>
-    <Condition Message='Shibboleth requires a Windows NT-based operating system.'>NOT Version9X</Condition>
-    <Condition Message='You must uninstall very old versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.'>(SHIB_OLDVERSION = "none") AND (SHIB_OLDVERSION_64 = "none")</Condition>
+    <Condition Message="Shibboleth requires Windows Vista or later.">NOT VersionNT OR (VersionNT &gt;= 600)</Condition>
+    <Condition Message="Shibboleth requires a Windows NT-based operating system.">NOT Version9X</Condition>
+    <Condition Message="You must uninstall very old versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.">(SHIB_OLDVERSION = "none") AND (SHIB_OLDVERSION_64 = "none")</Condition>
 
-    <Media Id='1' Cabinet='product.cab' EmbedCab='yes' />
+    <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
 
     <?include ShibbolethSP-properties.wxi?>
 
     <!-- NOTE we should not use sys.BUILDARCH since that reflects the candle parameters, *NOT* the architecture -->
-    <Property Id='IS64BITINSTALL' Value='TRUE'/>
+    <Property Id="IS64BITINSTALL" Value="TRUE" />
 
-    <UIRef Id='ShibbolethInstallDir'/>
+    <UIRef Id="ShibbolethInstallDir" />
 
     <!-- Files -->
-    <Directory Id='TARGETDIR' Name='SourceDir'>
+    <Directory Id="TARGETDIR" Name="SourceDir">
       <!-- The test bit -->
-      <Directory Id='opt' Name='opt'>
-        <Directory Id='INSTALLDIR' Name='shibboleth-sp'/>
+      <Directory Id="opt" Name="opt">
+        <Directory Id="INSTALLDIR" Name="shibboleth-sp" />
       </Directory>
 
-      <Directory Id='ProgramFilesFolder' Name='PFiles'>
+      <Directory Id="ProgramFilesFolder" Name="PFiles">
         <!-- 32 bit merge modules -notionally go to "Program Files (x86)" -->
-        <Merge Id='CurlMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Curl-x86.msm' DiskId='1' />
+        <Merge Id="CurlMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Curl-x86.msm" DiskId="1" />
         <?if $(var.FCGI) != "" ?>
-        <Merge Id='FastCGIMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\FastCGI-x86.msm' DiskId='1' />
-        <?endif?>
-        <Merge Id='Log4ShibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Log4Shib-x86.msm' DiskId='1' />
-        <Merge Id='OpenSAMLMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-x86.msm' DiskId='1' />
-        <Merge Id='OpenSAMLMergeModule_schemas' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-schemas.msm' DiskId='1' />
-        <Merge Id='OpenSSLMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSSL-x86.msm' DiskId='1' />
-        <Merge Id='ShibbolethMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-x86.msm' DiskId='1' />
-        <Merge Id='ShibbolethMergeModule_schemas' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-schemas.msm' DiskId='1' />
-        <Merge Id='XercesMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm' DiskId='1' />
-        <Merge Id='XmlSecMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm' DiskId='1' />
-        <Merge Id='ZlibMergeModule_x86' Language='1033' SourceFile='$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm' DiskId='1' />
-        <Merge Id='Microsoft_DebugCRT_x86' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x86.msm' DiskId='1' />
-        <Merge Id='Microsoft_CRT_x86' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x86.msm' DiskId='1' />
+        <Merge Id="FastCGIMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\FastCGI-x86.msm" DiskId="1" />
+        <?endif ?>
+        <Merge Id="Log4ShibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Log4Shib-x86.msm" DiskId="1" />
+        <Merge Id="OpenSAMLMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-x86.msm" DiskId="1" />
+        <Merge Id="OpenSAMLMergeModule_schemas" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-schemas.msm" DiskId="1" />
+        <Merge Id="OpenSSLMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSSL-x86.msm" DiskId="1" />
+        <Merge Id="ShibbolethMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-x86.msm" DiskId="1" />
+        <Merge Id="ShibbolethMergeModule_schemas" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-schemas.msm" DiskId="1" />
+        <Merge Id="XercesMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm" DiskId="1" />
+        <Merge Id="XmlSecMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm" DiskId="1" />
+        <Merge Id="ZlibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm" DiskId="1" />
+        <Merge Id="Microsoft_DebugCRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x86.msm" DiskId="1" />
+        <Merge Id="Microsoft_CRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x86.msm" DiskId="1" />
       </Directory><!--ProgramFilesFolder-->
 
-      <Directory Id='ProgramFiles64Folder' Name='PFiles'>
+      <Directory Id="ProgramFiles64Folder" Name="PFiles">
         <!-- 64 bit merge modules notionally go to "Program Files" -->
-        <Merge Id='CurlMergeModule_x64' Language='1033' SourceFile='MergeModules\Curl-x64.msm' DiskId='1' />
+        <Merge Id="CurlMergeModule_x64" Language="1033" SourceFile="MergeModules\Curl-x64.msm" DiskId="1" />
         <?if $(var.FCGI) != "" ?>
-        <Merge Id='FastCGIMergeModule_x64' Language='1033' SourceFile='MergeModules\FastCGI-x64.msm' DiskId='1' />
-        <?endif?>
-        <Merge Id='Log4ShibMergeModule_x64' Language='1033' SourceFile='MergeModules\Log4Shib-x64.msm' DiskId='1' />
-        <Merge Id='OpenSAMLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSAML-x64.msm' DiskId='1' />
-        <Merge Id='OpenSSLMergeModule_x64' Language='1033' SourceFile='MergeModules\OpenSSL-x64.msm' DiskId='1' />
-        <Merge Id='ShibbolethMergeModule_x64' Language='1033' SourceFile='MergeModules\Shibboleth-x64.msm' DiskId='1' />
-        <Merge Id='XercesMergeModule_x64' Language='1033' SourceFile='MergeModules\Xerces-x64.msm' DiskId='1' />
-        <Merge Id='XmlSecMergeModule_x64' Language='1033' SourceFile='MergeModules\XmlSec-x64.msm' DiskId='1' />
-        <Merge Id='ZlibMergeModule_x64' Language='1033' SourceFile='MergeModules\Zlib-x64.msm' DiskId='1' />
-        <Merge Id='Microsoft_DebugCRT_x64' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x64.msm' DiskId='1' />
-        <Merge Id='Microsoft_CRT_x64' Language='1033' SourceFile='$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x64.msm' DiskId='1' />
+        <Merge Id="FastCGIMergeModule_x64" Language="1033" SourceFile="MergeModules\FastCGI-x64.msm" DiskId="1" />
+        <?endif ?>
+        <Merge Id="Log4ShibMergeModule_x64" Language="1033" SourceFile="MergeModules\Log4Shib-x64.msm" DiskId="1" />
+        <Merge Id="OpenSAMLMergeModule_x64" Language="1033" SourceFile="MergeModules\OpenSAML-x64.msm" DiskId="1" />
+        <Merge Id="OpenSSLMergeModule_x64" Language="1033" SourceFile="MergeModules\OpenSSL-x64.msm" DiskId="1" />
+        <Merge Id="ShibbolethMergeModule_x64" Language="1033" SourceFile="MergeModules\Shibboleth-x64.msm" DiskId="1" />
+        <Merge Id="XercesMergeModule_x64" Language="1033" SourceFile="MergeModules\Xerces-x64.msm" DiskId="1" />
+        <Merge Id="XmlSecMergeModule_x64" Language="1033" SourceFile="MergeModules\XmlSec-x64.msm" DiskId="1" />
+        <Merge Id="ZlibMergeModule_x64" Language="1033" SourceFile="MergeModules\Zlib-x64.msm" DiskId="1" />
+        <Merge Id="Microsoft_DebugCRT_x64" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x64.msm" DiskId="1" />
+        <Merge Id="Microsoft_CRT_x64" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x64.msm" DiskId="1" />
       </Directory><!--ProgramFiles64Folder-->
 
       <!-- PATH -->
-      <Component Id='SetPath64' Guid='{D3BF9EF4-843A-4D48-BC6C-DC24B063FC35}' Win64='yes'>
-        <Environment Id='SetPath64' Name='PATH' Action='set' Part='last' System='yes' Value='[ProgramFiles64Folder]Shibboleth\SP\lib' />
+      <Component Id="SetPath64" Guid="{D3BF9EF4-843A-4D48-BC6C-DC24B063FC35}" Win64="yes">
+        <Environment Id="SetPath64" Name="PATH" Action="set" Part="last" System="yes" Value="[ProgramFiles64Folder]Shibboleth\SP\lib" />
       </Component>
-      <Component Id='SetPath' Guid='{0E8BD571-3A26-4F61-979E-B5807A28634A}'>
-        <Environment Id='SetPath' Name='PATH' Action='set' Part='last' System='yes' Value='[ProgramFilesFolder]Shibboleth\SP\lib' />
+      <Component Id="SetPath" Guid="{0E8BD571-3A26-4F61-979E-B5807A28634A}">
+        <Environment Id="SetPath" Name="PATH" Action="set" Part="last" System="yes" Value="[ProgramFilesFolder]Shibboleth\SP\lib" />
       </Component>
     </Directory><!--TARGETDIR-->
 
-    <Feature Id='Shibboleth' Title='Shibboleth' Level='1' Display='hidden' ConfigurableDirectory='INSTALLDIR'>
-      <MergeRef Id='CurlMergeModule_x86'/>
+    <Feature Id="Shibboleth" Title="Shibboleth" Level="1" Display="hidden" ConfigurableDirectory="INSTALLDIR">
+      <MergeRef Id="CurlMergeModule_x86" />
       <?if $(var.FCGI) != "" ?>
-      <MergeRef Id='FastCGIMergeModule_x86'/>
-      <?endif?>
-      <MergeRef Id='Log4ShibMergeModule_x86'/>
-      <MergeRef Id='OpenSAMLMergeModule_x86'/>
-      <MergeRef Id='OpenSAMLMergeModule_schemas'/>
-      <MergeRef Id='OpenSSLMergeModule_x86'/>
-      <MergeRef Id='ShibbolethMergeModule_x86'/>
-      <MergeRef Id='ShibbolethMergeModule_schemas'/>
-      <MergeRef Id='XercesMergeModule_x86'/>
-      <MergeRef Id='XmlSecMergeModule_x86'/>
-      <MergeRef Id='ZlibMergeModule_x86'/>
+      <MergeRef Id="FastCGIMergeModule_x86" />
+      <?endif ?>
+      <MergeRef Id="Log4ShibMergeModule_x86" />
+      <MergeRef Id="OpenSAMLMergeModule_x86" />
+      <MergeRef Id="OpenSAMLMergeModule_schemas" />
+      <MergeRef Id="OpenSSLMergeModule_x86" />
+      <MergeRef Id="ShibbolethMergeModule_x86" />
+      <MergeRef Id="ShibbolethMergeModule_schemas" />
+      <MergeRef Id="XercesMergeModule_x86" />
+      <MergeRef Id="XmlSecMergeModule_x86" />
+      <MergeRef Id="ZlibMergeModule_x86" />
 
-      <MergeRef Id='Microsoft_DebugCRT_x86'/>
-      <MergeRef Id='Microsoft_CRT_x86'/>
+      <MergeRef Id="Microsoft_DebugCRT_x86" />
+      <MergeRef Id="Microsoft_CRT_x86" />
 
-      <MergeRef Id='CurlMergeModule_x64'/>
+      <MergeRef Id="CurlMergeModule_x64" />
       <?if $(var.FCGI) != "" ?>
-      <MergeRef Id='FastCGIMergeModule_x64'/>
-      <?endif?>
-      <MergeRef Id='Log4ShibMergeModule_x64'/>
-      <MergeRef Id='OpenSAMLMergeModule_x64'/>
-      <MergeRef Id='OpenSSLMergeModule_x64'/>
-      <MergeRef Id='ShibbolethMergeModule_x64'/>
-      <MergeRef Id='XercesMergeModule_x64'/>
-      <MergeRef Id='XmlSecMergeModule_x64'/>
-      <MergeRef Id='ZlibMergeModule_x64'/>
+      <MergeRef Id="FastCGIMergeModule_x64" />
+      <?endif ?>
+      <MergeRef Id="Log4ShibMergeModule_x64" />
+      <MergeRef Id="OpenSAMLMergeModule_x64" />
+      <MergeRef Id="OpenSSLMergeModule_x64" />
+      <MergeRef Id="ShibbolethMergeModule_x64" />
+      <MergeRef Id="XercesMergeModule_x64" />
+      <MergeRef Id="XmlSecMergeModule_x64" />
+      <MergeRef Id="ZlibMergeModule_x64" />
 
-      <MergeRef Id='Microsoft_DebugCRT_x64'/>
-      <MergeRef Id='Microsoft_CRT_x64'/>
+      <MergeRef Id="Microsoft_DebugCRT_x64" />
+      <MergeRef Id="Microsoft_CRT_x64" />
 
       <!-- ShibbolethSP-exe-x64-->
 
-      <ComponentRef Id='resolvertest64.exe'/>
-      <ComponentRef Id='mdquery64.exe'/>
-      <ComponentRef Id='resolvertest64.exe_debug'/>
-      <ComponentRef Id='mdquery64.exe_debug'/>
+      <ComponentRef Id="resolvertest64.exe" />
+      <ComponentRef Id="mdquery64.exe" />
+      <ComponentRef Id="resolvertest64.exe_debug" />
+      <ComponentRef Id="mdquery64.exe_debug" />
 
-      <ComponentRef Id='adfs64.so'/>
-      <ComponentRef Id='adfs_lite64.so'/>
-      <ComponentRef Id='isapi_shib64.dll'/>
-      <ComponentRef Id='iis7_shib64.dll'/>
-      <ComponentRef Id='mod_shib_2264.so'/>
-      <ComponentRef Id='mod_shib_2464.so'/>
-      <ComponentRef Id='odbc_store64.so'/>
-      <ComponentRef Id='plugins64.so'/>
-      <ComponentRef Id='plugins_lite64.so'/>
+      <ComponentRef Id="adfs64.so" />
+      <ComponentRef Id="adfs_lite64.so" />
+      <ComponentRef Id="isapi_shib64.dll" />
+      <ComponentRef Id="iis7_shib64.dll" />
+      <ComponentRef Id="mod_shib_2264.so" />
+      <ComponentRef Id="mod_shib_2464.so" />
+      <ComponentRef Id="odbc_store64.so" />
+      <ComponentRef Id="plugins64.so" />
+      <ComponentRef Id="plugins_lite64.so" />
       <?if $(var.FCGI) != "" ?>
-      <ComponentRef Id='shibauthorizer64.exe'/>
-      <ComponentRef Id='shibresponder64.exe'/>
-      <?endif?>
+      <ComponentRef Id="shibauthorizer64.exe" />
+      <ComponentRef Id="shibresponder64.exe" />
+      <?endif ?>
 
-      <ComponentRef Id='adfs64.so_debug'/>
-      <ComponentRef Id='adfs_lite64.so_debug'/>
-      <ComponentRef Id='isapi_shib64.dll_debug'/>
-      <ComponentRef Id='iis7_shib64.dll_debug'/>
-      <ComponentRef Id='mod_shib_2264.so_debug'/>
-      <ComponentRef Id='mod_shib_2464.so_debug'/>
-      <ComponentRef Id='odbc_store64.so_debug'/>
-      <ComponentRef Id='plugins64.so_debug'/>
-      <ComponentRef Id='plugins_lite64.so_debug'/>
+      <ComponentRef Id="adfs64.so_debug" />
+      <ComponentRef Id="adfs_lite64.so_debug" />
+      <ComponentRef Id="isapi_shib64.dll_debug" />
+      <ComponentRef Id="iis7_shib64.dll_debug" />
+      <ComponentRef Id="mod_shib_2264.so_debug" />
+      <ComponentRef Id="mod_shib_2464.so_debug" />
+      <ComponentRef Id="odbc_store64.so_debug" />
+      <ComponentRef Id="plugins64.so_debug" />
+      <ComponentRef Id="plugins_lite64.so_debug" />
       <?if $(var.FCGI) != "" ?>
-      <ComponentRef Id='shibauthorizer64.exe_debug'/>
-      <ComponentRef Id='shibresponder64.exe_debug'/>
-      <?endif?>
+      <ComponentRef Id="shibauthorizer64.exe_debug" />
+      <ComponentRef Id="shibresponder64.exe_debug" />
+      <?endif ?>
 
-      <ComponentRef Id='shibd64.exe_debug'/>
+      <ComponentRef Id="shibd64.exe_debug" />
 
       <!-- ShibbolethSP-registry-x64 -->
-      <ComponentRef Id='TargetDir64'/>
-      <ComponentRef Id='Install32Bit64'/>
-      <ComponentRef Id='shib64.ico'/>
+      <ComponentRef Id="TargetDir64" />
+      <ComponentRef Id="Install32Bit64" />
+      <ComponentRef Id="shib64.ico" />
 
       <!-- ShibbolethSP-main-x64 -->
-      <ComponentRef Id='SetPath'/>
-      <ComponentRef Id='SetPath64'/>
+      <ComponentRef Id="SetPath" />
+      <ComponentRef Id="SetPath64" />
 
       <?include ShibbolethSP-defs-x86.wxi ?>
 
       <!-- 
          We put the messages for IIS7 and Shibd in this module since all others are shared with x86
         -->
-      <Component Id='messageFile' Guid='{3FF89632-9F39-4B1B-AA3E-3AF6C8155B92}' Win64='yes' Directory='bin64'>
-        <File Id='Messages' KeyPath='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\Messages.dll'/>
-        <RegistryKey Root='HKLM' Key='SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth Daemon'>
-          <RegistryValue Name='CategoryCount' Type='integer' Value='2'/>
-          <RegistryValue Name='TypeSupported' Type='integer' Value='15'/>
-          <RegistryValue Name='CategoryMessageFile' Type='string' Value='[#Messages]'/>
-          <RegistryValue Name='EventMessageFile' Type='string' Value='[#Messages]'/>
-          <RegistryValue Name='ParameterMessageFile' Type='string' Value='[#Messages]'/>
+      <Component Id="messageFile" Guid="{3FF89632-9F39-4B1B-AA3E-3AF6C8155B92}" Win64="yes" Directory="bin64">
+        <File Id="Messages" KeyPath="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\Messages.dll" />
+        <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth Daemon">
+          <RegistryValue Name="CategoryCount" Type="integer" Value="2" />
+          <RegistryValue Name="TypeSupported" Type="integer" Value="15" />
+          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[#Messages]" />
+          <RegistryValue Name="EventMessageFile" Type="string" Value="[#Messages]" />
+          <RegistryValue Name="ParameterMessageFile" Type="string" Value="[#Messages]" />
         </RegistryKey>
-        <RegistryKey Root='HKLM' Key='SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth ISAPI Filter'>
-          <RegistryValue Name='CategoryCount' Type='integer' Value='2'/>
-          <RegistryValue Name='TypeSupported' Type='integer' Value='15'/>
-          <RegistryValue Name='CategoryMessageFile' Type='string' Value='[#Messages]'/>
-          <RegistryValue Name='EventMessageFile' Type='string' Value='[#Messages]'/>
-          <RegistryValue Name='ParameterMessageFile' Type='string' Value='[#Messages]'/>
-        </RegistryKey>
-      </Component>
-      <Component Id='messageIIS7' Guid='{1CC5CF4A-6203-4ab8-9743-4A79C95D30CE}' Win64='yes' Directory='bin64'>
-        <RegistryKey Root='HKLM' Key='SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth NATIVE Filter'>
-          <RegistryValue Name='CategoryCount' Type='integer' Value='2'/>
-          <RegistryValue Name='TypeSupported' Type='integer' Value='15'/>
-          <RegistryValue Name='CategoryMessageFile' Type='string' Value='[#Messages]'/>
-          <RegistryValue Name='EventMessageFile' Type='string' Value='[#Messages]'/>
-          <RegistryValue Name='ParameterMessageFile' Type='string' Value='[#Messages]'/>
+        <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth ISAPI Filter">
+          <RegistryValue Name="CategoryCount" Type="integer" Value="2" />
+          <RegistryValue Name="TypeSupported" Type="integer" Value="15" />
+          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[#Messages]" />
+          <RegistryValue Name="EventMessageFile" Type="string" Value="[#Messages]" />
+          <RegistryValue Name="ParameterMessageFile" Type="string" Value="[#Messages]" />
         </RegistryKey>
       </Component>
-
-      <Component Id='shibd.exe' Guid='{2476BB80-9384-4026-86F5-E1569A685187}' Directory='sbin'>
-        <File KeyPath='yes' Checksum='yes' Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe' />
+      <Component Id="messageIIS7" Guid="{1CC5CF4A-6203-4ab8-9743-4A79C95D30CE}" Win64="yes" Directory="bin64">
+        <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth NATIVE Filter">
+          <RegistryValue Name="CategoryCount" Type="integer" Value="2" />
+          <RegistryValue Name="TypeSupported" Type="integer" Value="15" />
+          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[#Messages]" />
+          <RegistryValue Name="EventMessageFile" Type="string" Value="[#Messages]" />
+          <RegistryValue Name="ParameterMessageFile" Type="string" Value="[#Messages]" />
+        </RegistryKey>
       </Component>
 
-      <Component Id='shibd64.exe' Guid='{707B57A2-CCA0-48A6-9F66-275EB04474AA}' Win64='yes' Directory='sbin64'>
-        <File KeyPath='yes' Checksum='yes' Id='shibd64.exe'  Source='$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\shibd.exe' />
+      <Component Id="shibd.exe" Guid="{2476BB80-9384-4026-86F5-E1569A685187}" Directory="sbin">
+        <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe" />
+      </Component>
+
+      <Component Id="shibd64.exe" Guid="{707B57A2-CCA0-48A6-9F66-275EB04474AA}" Win64="yes" Directory="sbin64">
+        <File KeyPath="yes" Checksum="yes" Id="shibd64.exe" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\shibd.exe" />
         <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
-        <ServiceInstall Id='shibd' Name='shibd_Default'
-                        DisplayName='Shibboleth 2 Daemon (Default)'
-                        Description='Manages shared state and offloads SAML processing from Shibboleth web server modules.'
-                        Arguments='-stdout "[INSTALLDIR]var\log\shibboleth\stdout.log" -stderr "[INSTALLDIR]var\log\shibboleth\stderr.log"'
-                        Type='ownProcess' Start='auto' ErrorControl='ignore' />
-        <ServiceControl Id='shibd_Default' Name='shibd_Default' Stop='both'
-                        Remove='uninstall' Start='install' Wait='no' />
+        <ServiceInstall Id="shibd" Name="shibd_Default" DisplayName="Shibboleth 2 Daemon (Default)" Description="Manages shared state and offloads SAML processing from Shibboleth web server modules." Arguments="-stdout &quot;[INSTALLDIR]var\log\shibboleth\stdout.log&quot; -stderr &quot;[INSTALLDIR]var\log\shibboleth\stderr.log&quot;" Type="ownProcess" Start="auto" ErrorControl="ignore" />
+        <ServiceControl Id="shibd_Default" Name="shibd_Default" Stop="both" Remove="uninstall" Start="install" Wait="no" />
       </Component>
 
     </Feature>
@@ -226,12 +217,10 @@
     <!-- Also put in the configuration for IIS7 - There is a difference between 32 and 64 bit dlls and
          between 32 and 64 bit registration -->
 
-    <CustomAction Id='SetQtInstallIIS32' Property='QtInstallIIS32'
-                  Value='&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative32 /image:&quot;[#iis7_shib.dll]&quot; /precondition:&quot;bitness32&quot;'/>
-    <CustomAction Id='SetQtInstallIIS64' Property='QtInstallIIS64'
-                  Value='&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative /image:&quot;[#iis7_shib64.dll]&quot; /precondition:&quot;bitness64&quot;'/>
-    <CustomAction Id='QtInstallIIS32' BinaryKey='WixCA' DllEntry='CAQuietExec64' Execute='deferred' Impersonate='no'/>
-    <CustomAction Id='QtInstallIIS64' BinaryKey='WixCA' DllEntry='CAQuietExec64' Execute='deferred' Impersonate='no'/>
+    <CustomAction Id="SetQtInstallIIS32" Property="QtInstallIIS32" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative32 /image:&quot;[#iis7_shib.dll]&quot; /precondition:&quot;bitness32&quot;" />
+    <CustomAction Id="SetQtInstallIIS64" Property="QtInstallIIS64" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative /image:&quot;[#iis7_shib64.dll]&quot; /precondition:&quot;bitness64&quot;" />
+    <CustomAction Id="QtInstallIIS32" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Impersonate="no" />
+    <CustomAction Id="QtInstallIIS64" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Impersonate="no" />
 
     <InstallExecuteSequence>
       <!-- Install IIS if
@@ -239,19 +228,19 @@
            - AND we were told to
            - AND this is NOT an upgrade
         -->
-      <Custom Action='SetQtInstallIIS32' Before='InstallFiles'>
+      <Custom Action="SetQtInstallIIS32" Before="InstallFiles">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </Custom>
-      <Custom Action='SetQtInstallIIS64' After='InstallFiles'>
+      <Custom Action="SetQtInstallIIS64" After="InstallFiles">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </Custom>
-      <Custom Action='QtInstallIIS32' After='SetQtInstallIIS32'>
+      <Custom Action="QtInstallIIS32" After="SetQtInstallIIS32">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </Custom>
-      <Custom Action='QtInstallIIS64' After='SetQtInstallIIS64'>
+      <Custom Action="QtInstallIIS64" After="SetQtInstallIIS64">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </Custom>
-      <ScheduleReboot Before='InstallFinalize'>
+      <ScheduleReboot Before="InstallFinalize">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </ScheduleReboot>
     </InstallExecuteSequence>

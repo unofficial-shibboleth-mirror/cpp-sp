@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
    agreements.  See the NOTICE file distributed with this work for
@@ -15,36 +15,34 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='ShibbolethSPMergeModule_x64' Language='1033' Version='$(var.ShibbolethDllVersion)'>
-    <Package Id='{DF6FAD40-5EF8-43F2-BBE1-BD42B9E9ACAB}' Description='Merge Module for Shibboleth SP DLLs (x64)'
-             Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Module Id="ShibbolethSPMergeModule_x64" Language="1033" Version="$(var.ShibbolethDllVersion)">
+    <Package Id="{DF6FAD40-5EF8-43F2-BBE1-BD42B9E9ACAB}" Description="Merge Module for Shibboleth SP DLLs (x64)" Comments="This module is built by the Shibboleth Consortium." Manufacturer="Shibboleth Consortium" InstallerVersion="300" Platform="x64" />
 
-    <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
-        <Directory Id='shibboleth' Name='Shibboleth'>
-          <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib' FileSource='$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\x64\Release'>
-              <Component Id='shibsp.dll' Guid='$(var.ShibDll64Component)' Win64='yes'>
-                <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion).dll' />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder" Name="ProgramFiles">
+        <Directory Id="shibboleth" Name="Shibboleth">
+          <Directory Id="shibboleth_sp" Name="SP">
+            <Directory Id="lib" Name="lib" FileSource="$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\x64\Release">
+              <Component Id="shibsp.dll" Guid="$(var.ShibDll64Component)" Win64="yes">
+                <File KeyPath="yes" Checksum="yes" Name="shibsp$(var.ShibbolethDllFileVersion).dll" />
               </Component>
-              <Component Id='shibsp_lite.dll' Guid='$(var.ShibDllLite64Component)' Win64='yes'>
-                <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion).dll' />
+              <Component Id="shibsp_lite.dll" Guid="$(var.ShibDllLite64Component)" Win64="yes">
+                <File KeyPath="yes" Checksum="yes" Name="shibsp-lite$(var.ShibbolethDllFileVersion).dll" />
               </Component>
-              <Directory Id='lib_debug' Name='debug' FileSource='$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\x64\Debug' >
-                <Component Id='shibspD.dll' Guid='$(var.ShibDll64Componentd)' Win64='yes'>
-                  <File KeyPath='yes' Checksum='yes' Name='shibsp$(var.ShibbolethDllFileVersion)D.dll' />
+              <Directory Id="lib_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\x64\Debug">
+                <Component Id="shibspD.dll" Guid="$(var.ShibDll64Componentd)" Win64="yes">
+                  <File KeyPath="yes" Checksum="yes" Name="shibsp$(var.ShibbolethDllFileVersion)D.dll" />
                 </Component>
-                <Component Id='shibsp_liteD.dll' Guid='$(var.ShibDllLite64Componentd)' Win64='yes'>
-                  <File KeyPath='yes' Checksum='yes' Name='shibsp-lite$(var.ShibbolethDllFileVersion)D.dll' />
+                <Component Id="shibsp_liteD.dll" Guid="$(var.ShibDllLite64Componentd)" Win64="yes">
+                  <File KeyPath="yes" Checksum="yes" Name="shibsp-lite$(var.ShibbolethDllFileVersion)D.dll" />
                 </Component>
               </Directory><!-- lib_debug -->
             </Directory><!-- lib -->
-            <Directory Id='doc' Name='doc'>
-              <Component Id='doc' Guid='{1ACB430F-7846-4565-93FE-3BE1BC1235C1}' Win64='yes'>
-                <File KeyPath='yes' Name='SHIBBOLETH.LICENSE' Source='$(var.SPBuildDirectory)\doc\LICENSE.txt' />
-                <File Name='SHIBBOLETH.NOTICE' Source='$(var.SPBuildDirectory)\doc\NOTICE.txt' />
+            <Directory Id="doc" Name="doc">
+              <Component Id="doc" Guid="{1ACB430F-7846-4565-93FE-3BE1BC1235C1}" Win64="yes">
+                <File KeyPath="yes" Name="SHIBBOLETH.LICENSE" Source="$(var.SPBuildDirectory)\doc\LICENSE.txt" />
+                <File Name="SHIBBOLETH.NOTICE" Source="$(var.SPBuildDirectory)\doc\NOTICE.txt" />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->

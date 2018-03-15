@@ -53,7 +53,7 @@
   <ComponentRef Id="mod_shib_22.so" />
   <?if $(var.NSApi) != "" ?>
   <ComponentRef Id="nsapi_shib.dll" />
-  <?endif?>
+  <?endif ?>
   <ComponentRef Id="mod_shib_24.so" />
   <ComponentRef Id="odbc_store.so" />
   <ComponentRef Id="plugins.so" />
@@ -61,7 +61,7 @@
   <?if $(var.FCGI) != "" ?>
   <ComponentRef Id="shibauthorizer.exe" />
   <ComponentRef Id="shibresponder.exe" />
-  <?endif?>
+  <?endif ?>
 
   <ComponentRef Id="adfs.so_debug" />
   <ComponentRef Id="adfs_lite.so_debug" />
@@ -70,7 +70,7 @@
   <ComponentRef Id="mod_shib_22.so_debug" />
   <?if $(var.NSApi) != "" ?>
   <ComponentRef Id="nsapi_shib.dll_debug" />
-  <?endif?>
+  <?endif ?>
   <ComponentRef Id="mod_shib_24.so_debug" />
   <ComponentRef Id="odbc_store.so_debug" />
   <ComponentRef Id="plugins.so_debug" />
@@ -78,7 +78,7 @@
   <?if $(var.FCGI) != "" ?>
   <ComponentRef Id="shibauthorizer.exe_debug" />
   <ComponentRef Id="shibresponder.exe_debug" />
-  <?endif?>
+  <?endif ?>
 
   <ComponentRef Id="shibd.exe_debug" />
 

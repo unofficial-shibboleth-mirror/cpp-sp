@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
    agreements.  See the NOTICE file distributed with this work for
@@ -15,25 +15,21 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='ZlibMergeModule_x86' Language='1033' Version='$(var.ZlibVersion)'>
-    <Package Id='{68821F70-8952-4778-8149-85A93E4BF426}' Description='Merge Module for Zlib (x64)'
-             Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Module Id="ZlibMergeModule_x86" Language="1033" Version="$(var.ZlibVersion)">
+    <Package Id="{68821F70-8952-4778-8149-85A93E4BF426}" Description="Merge Module for Zlib (x64)" Comments="This module is built by the Shibboleth Consortium." Manufacturer="Shibboleth Consortium" InstallerVersion="300" Platform="x64" />
 
-    <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
-        <Directory Id='shibboleth' Name='Shibboleth'>
-          <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib'>
-              <Component Id='zlib1.dll' Guid='$(var.Zlib64Component)' Win64='yes'>
-                <File KeyPath='yes' Checksum='yes'
-                      Source='$(var.BuildDirectory)\$(var.zlib)\x64\Release\zlib$(var.ZlibFileVersion).dll'/>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder" Name="ProgramFiles">
+        <Directory Id="shibboleth" Name="Shibboleth">
+          <Directory Id="shibboleth_sp" Name="SP">
+            <Directory Id="lib" Name="lib">
+              <Component Id="zlib1.dll" Guid="$(var.Zlib64Component)" Win64="yes">
+                <File KeyPath="yes" Checksum="yes" Source="$(var.BuildDirectory)\$(var.zlib)\x64\Release\zlib$(var.ZlibFileVersion).dll" />
               </Component>
-              <Directory Id='lib_debug' Name='debug'>
-                <Component Id='zlib1d.dll' Guid='$(var.Zlib64Componentd)' Win64='yes'>
-                  <File KeyPath='yes' Checksum='yes'
-                        Source='$(var.BuildDirectory)\$(var.zlib)\x64\Debug\zlib$(var.ZlibFileVersion)d.dll'/>
+              <Directory Id="lib_debug" Name="debug">
+                <Component Id="zlib1d.dll" Guid="$(var.Zlib64Componentd)" Win64="yes">
+                  <File KeyPath="yes" Checksum="yes" Source="$(var.BuildDirectory)\$(var.zlib)\x64\Debug\zlib$(var.ZlibFileVersion)d.dll" />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->

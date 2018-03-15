@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 
 <!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
@@ -16,32 +16,27 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='FastCGIMergeModule_x64' Language='1033' Version='$(var.FastCGIVersion)'>
-    <Package Id='{4820855A-68B9-4EBB-94CD-4C1F9DA6EB02}' Description='Merge Module for FastCGI (x64)'
-             Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Module Id="FastCGIMergeModule_x64" Language="1033" Version="$(var.FastCGIVersion)">
+    <Package Id="{4820855A-68B9-4EBB-94CD-4C1F9DA6EB02}" Description="Merge Module for FastCGI (x64)" Comments="This module is built by the Shibboleth Consortium." Manufacturer="Shibboleth Consortium" InstallerVersion="300" Platform="x64" />
 
-    <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
-        <Directory Id='shibboleth' Name='Shibboleth'>
-          <Directory Id='shibboleth_SP' Name='SP'>
-            <Directory Id='lib' Name='lib'>
-              <Component Id='libfcgi.dll' Guid='{B3854D00-6E8A-4107-B1E3-26DD71F1C43D}' Win64='yes'>
-                <File KeyPath='yes' Checksum='yes'
-                  Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-$(var.ShibbolethMsVersion)\Win32\x64\Release\libfcgi.dll' />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder" Name="ProgramFiles">
+        <Directory Id="shibboleth" Name="Shibboleth">
+          <Directory Id="shibboleth_SP" Name="SP">
+            <Directory Id="lib" Name="lib">
+              <Component Id="libfcgi.dll" Guid="{B3854D00-6E8A-4107-B1E3-26DD71F1C43D}" Win64="yes">
+                <File KeyPath="yes" Checksum="yes" Source="$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-$(var.ShibbolethMsVersion)\Win32\x64\Release\libfcgi.dll" />
               </Component>
-              <Directory Id='lib_debug' Name='debug'>
-                <Component Id='libfcgid.dll' Guid='{A7EF753D-0729-47A2-BFBB-56C7152CF4A7}' Win64='yes'>
-                  <File KeyPath='yes' Checksum='yes'
-                    Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-$(var.ShibbolethMsVersion)\Win32\x64\Debug\libfcgid.dll' />
+              <Directory Id="lib_debug" Name="debug">
+                <Component Id="libfcgid.dll" Guid="{A7EF753D-0729-47A2-BFBB-56C7152CF4A7}" Win64="yes">
+                  <File KeyPath="yes" Checksum="yes" Source="$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-$(var.ShibbolethMsVersion)\Win32\x64\Debug\libfcgid.dll" />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
-            <Directory Id='doc' Name='doc'>
-              <Component Id='FASTCGI.LICENSE' Guid='{FC00E9B5-72B1-4E87-A5C4-26EE6A7BA509}' Win64='yes'>
-                <File KeyPath='yes' Name='FASTCGI.LICENSE'
-                  Source='$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-$(var.ShibbolethMsVersion)\LICENSE.TERMS' />
+            <Directory Id="doc" Name="doc">
+              <Component Id="FASTCGI.LICENSE" Guid="{FC00E9B5-72B1-4E87-A5C4-26EE6A7BA509}" Win64="yes">
+                <File KeyPath="yes" Name="FASTCGI.LICENSE" Source="$(var.BuildDirectory)\fcgi-$(var.FastCGIVersion)-$(var.ShibbolethMsVersion)\LICENSE.TERMS" />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth -->

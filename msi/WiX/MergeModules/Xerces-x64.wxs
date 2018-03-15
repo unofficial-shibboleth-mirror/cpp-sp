@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 
 <!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
@@ -16,29 +16,26 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
-  <Module Id='XercesMergeModule_x86' Language='1033' Version='$(var.XercesVersion)'>
-    <Package Id='{72CA15B1-CEB8-4C9B-A5CB-5254759E4B3A}' Description='Merge Module for Xerces (x64)'
-             Comments='This module is built by the Shibboleth Consortium.'
-             Manufacturer='Shibboleth Consortium' InstallerVersion='300' Platform='x64'/>
-    <Directory Id='TARGETDIR' Name='SourceDir'>
-      <Directory Id='ProgramFiles64Folder' Name='ProgramFiles'>
-        <Directory Id='shibboleth' Name='Shibboleth'>
-          <Directory Id='shibboleth_sp' Name='SP'>
-            <Directory Id='lib' Name='lib'>
-              <Component Id='xercesc.dll' Guid='$(var.Xerces64Component)' Win64='yes'>
-                <File KeyPath='yes' Checksum='yes' Source='$(var.XercesDll)'/>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Module Id="XercesMergeModule_x86" Language="1033" Version="$(var.XercesVersion)">
+    <Package Id="{72CA15B1-CEB8-4C9B-A5CB-5254759E4B3A}" Description="Merge Module for Xerces (x64)" Comments="This module is built by the Shibboleth Consortium." Manufacturer="Shibboleth Consortium" InstallerVersion="300" Platform="x64" />
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder" Name="ProgramFiles">
+        <Directory Id="shibboleth" Name="Shibboleth">
+          <Directory Id="shibboleth_sp" Name="SP">
+            <Directory Id="lib" Name="lib">
+              <Component Id="xercesc.dll" Guid="$(var.Xerces64Component)" Win64="yes">
+                <File KeyPath="yes" Checksum="yes" Source="$(var.XercesDll)" />
               </Component>
-              <Directory Id='lib_debug' Name='debug'>
-                <Component Id='xercescD.dll' Guid='$(var.Xerces64Componentd)' Win64='yes'>
-                  <File KeyPath='yes' Checksum='yes' Source='$(var.XercesDebugDll)'/>
+              <Directory Id="lib_debug" Name="debug">
+                <Component Id="xercescD.dll" Guid="$(var.Xerces64Componentd)" Win64="yes">
+                  <File KeyPath="yes" Checksum="yes" Source="$(var.XercesDebugDll)" />
                 </Component>
               </Directory><!-- lib_debug-->
             </Directory><!-- lib -->
-            <Directory Id='doc' Name='doc'>
-              <Component Id='XERCES.LICENSE' Guid='{12731F0B-681B-4154-9B02-BEB219954D44}' Win64='yes'>
-                <File KeyPath='yes' Name='XERCES.LICENSE'
-                    Source='$(var.BuildDirectory)\$(var.xerces)\LICENSE' />
+            <Directory Id="doc" Name="doc">
+              <Component Id="XERCES.LICENSE" Guid="{12731F0B-681B-4154-9B02-BEB219954D44}" Win64="yes">
+                <File KeyPath="yes" Name="XERCES.LICENSE" Source="$(var.BuildDirectory)\$(var.xerces)\LICENSE" />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_SP -->
