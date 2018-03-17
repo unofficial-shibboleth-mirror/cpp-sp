@@ -176,8 +176,10 @@ SSCache::SSCache(const DOMElement* e)
             }
         }
 
-        if (!m_persistedAttributeIds.empty() && XMLToolingConfig::getConfig().getDataSealer() == nullptr) {
-            throw ConfigurationException("Persisting sessions across nodes requires DataSealer component, check configuration");
+        if (!m_persistedAttributeIds.empty()) {
+			if (XMLToolingConfig::getConfig().getDataSealer() == nullptr)
+				throw ConfigurationException("Persisting sessions across nodes requires DataSealer component, check configuration");
+			XMLToolingConfig::getConfig().getDataSealer()->wrap("testing", time(nullptr)); // should throw if no key is installed
         }
     }
 #endif

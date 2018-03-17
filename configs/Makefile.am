@@ -168,6 +168,7 @@ EXTRA_DIST = \
 	shibd-debian.in \
 	shibd-osx.plist.in \
 	keygen.bat \
+	seckeygen.bat \
 	keygen.sh \
 	metagen.sh \
 	SetService32.bat \
