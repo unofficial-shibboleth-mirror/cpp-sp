@@ -2,6 +2,7 @@
 setlocal ENABLEDELAYEDEXPANSION
 
 set /A HISTORY=14
+set /A BYTES=16
 set FILENAME=sealer.keys
 set OUT=%~dp0
 
@@ -11,6 +12,7 @@ set PARAM=%1
 if not defined PARAM goto opt_end
 if %1==-o goto opt_out
 if %1==-h goto opt_history
+if %1==-b goto opt_bits
 if %1==-f goto opt_filename
 goto usage
 :opt_end
@@ -29,7 +31,7 @@ echo Removing %CHOP% old key(s)...
 if exist %OUT%\%FILENAME% (goto :regurgitate) else (set /A KEYVER=1)
 
 :addkey
-for /F %%a in ('openssl.exe rand -base64 16') do set KEYVAL=%%a
+for /F %%a in ('openssl.exe rand -base64 %BYTES%') do set KEYVAL=%%a
 echo %KEYVER%:%KEYVAL% >> %OUT%\%FILENAME%.tmp
 move /Y %OUT%\%FILENAME%.tmp %OUT%\%FILENAME%
 echo Added key version: %KEYVER%
@@ -60,11 +62,17 @@ shift
 goto opt_start
 
 :opt_history
-set HISTORY=%2
+set /A HISTORY=%2
+shift
+shift
+goto opt_start
+
+:opt_bits
+set /A BYTES=%2 / 8
 shift
 shift
 goto opt_start
 
 :usage
-echo usage: seckeygen [-h key history to maintain] [-f filename] [-o output dir]
+echo usage: seckeygen [-h key history to maintain] [-b key bits] [-f filename] [-o output dir]
 exit /b
