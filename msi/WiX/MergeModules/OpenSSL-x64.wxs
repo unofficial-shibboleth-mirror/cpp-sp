@@ -25,7 +25,7 @@
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Module Id="OpenSSLMergeModule_x64" Language="1033" Version="$(var.OpenSSLVersion)">
-    <Package Id="{EEB21422-347C-4AFA-A347-DCA0E5D61572}" Description="Merge Module for OpenSSL (x64)" Comments="This module is built by the Shibboleth Consortium. Includes libeay32 and ssleay32." Manufacturer="Shibboleth Consortium" InstallerVersion="300" Platform="x64" />
+    <Package Id="{EEB21422-347C-4AFA-A347-DCA0E5D61572}" Description="Merge Module for OpenSSL (x64)" Comments="This module is built by the Shibboleth Consortium. Includes libeay32 and ssleay32." Manufacturer="Shibboleth Consortium" InstallerVersion="400" Platform="x64" />
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFiles64Folder">
         <Directory Id="shibboleth" Name="Shibboleth">
