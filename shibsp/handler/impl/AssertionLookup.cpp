@@ -84,7 +84,7 @@ namespace shibsp {
 };
 
 AssertionLookup::AssertionLookup(const DOMElement* e, const char* appId)
-    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".AssertionLookup"), "exportACL", "127.0.0.1 ::1")
+    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.AssertionLookup"), "exportACL", "127.0.0.1 ::1")
 {
     setAddress("run::AssertionLookup");
 }

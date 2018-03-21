@@ -140,7 +140,7 @@ ArtifactResponse* ArtifactResolver::resolve(
     opensaml::SecurityPolicy& policy
     ) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ArtifactResolver");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Handler.ArtifactResolver");
 
     MetadataCredentialCriteria mcc(ssoDescriptor);
     shibsp::SecurityPolicy& sppolicy = dynamic_cast<shibsp::SecurityPolicy&>(policy);

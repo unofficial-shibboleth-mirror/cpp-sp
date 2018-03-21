@@ -107,7 +107,7 @@ namespace shibsp {
 };
 
 DiscoveryFeed::DiscoveryFeed(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".DiscoveryFeed"), &g_Blocker), m_cacheToClient(false)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.DiscoveryFeed"), &g_Blocker), m_cacheToClient(false)
 {
     pair<bool,const char*> prop = getString("Location");
     if (!prop.first)

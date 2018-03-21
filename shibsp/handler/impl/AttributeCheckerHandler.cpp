@@ -105,7 +105,7 @@ namespace shibsp {
 };
 
 AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".AttributeCheckerHandler"), &g_Blocker)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.AttributeChecker"), &g_Blocker)
 {
     if (!SPConfig::getConfig().isEnabled(SPConfig::InProcess))
         return;

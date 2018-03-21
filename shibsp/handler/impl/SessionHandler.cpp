@@ -74,7 +74,7 @@ namespace shibsp {
 };
 
 SessionHandler::SessionHandler(const DOMElement* e, const char* appId)
-    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionHandler")), m_values(false)
+    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.Session")), m_values(false)
 {
     pair<bool,const char*> prop = getString("contentType");
     if (prop.first)

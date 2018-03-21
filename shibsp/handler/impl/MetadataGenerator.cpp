@@ -186,7 +186,7 @@ namespace shibsp {
 };
 
 MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
-    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".MetadataGenerator"))
+    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.Metadata"))
 #ifndef SHIBSP_LITE
         ,m_http(0), m_https(0), m_encryptionBuilder(nullptr), m_digestBuilder(nullptr)
 #endif
