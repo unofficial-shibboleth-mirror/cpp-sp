@@ -167,8 +167,8 @@
     <CustomAction Id="EditConfigFiles" BinaryKey="EditConfigFileSrc" VBScriptCall="" Execute="deferred" Impersonate="no" />
     <CustomAction Id="SetEditConfigFiles" Property="EditConfigFiles" Value="[INSTALLDIR];@;[IS64BITINSTALL]" />
 
-    <CustomAction Id="KeyGen" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="deferred" Impersonate="no" />
-    <CustomAction Id="SetKeyGen" Property="KeyGen" Value="&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot;" />
+    <CustomAction Id="KeyGen" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" />
+    <CustomAction Id="SetKeyGen" Property="KeyGen" Value="&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot; [KEYGEN_EXTRA]" />
 
     <!-- Inherit the installation dir if one was set -->
     <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
