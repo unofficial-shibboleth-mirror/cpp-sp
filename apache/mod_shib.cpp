@@ -89,7 +89,7 @@
 
 #include <cstddef>
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>		// for getpid()
+#include <unistd.h>        // for getpid()
 #endif
 
 using namespace shibsp;
@@ -171,13 +171,14 @@ extern "C" void* merge_shib_server_config (SH_AP_POOL* p, void* base, void* sub)
 struct shib_dir_config
 {
     SH_AP_TABLE* tSettings; // generic table of extensible settings
+    SH_AP_TABLE* tUnsettings; // generic table of settings to "unset", i.e. default and block inheritance
 
     // RM Configuration
 #ifdef SHIB_APACHE_24
     int bRequestMapperAuthz;// support RequestMapper AccessControl plugins
 #else
     char* szAuthGrpFile;    // Auth GroupFile name
-	char* szAccessControl;	// path to "external" AccessControl plugin file
+    char* szAccessControl;    // path to "external" AccessControl plugin file
     int bRequireAll;        // all "known" require directives must match, otherwise OR logic
     int bAuthoritative;     // allow htaccess plugin to DECLINE when authz fails
     int bCompatWith24;      // support 2.4-reserved require logic for compatibility
@@ -201,11 +202,12 @@ extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
     dc->tSettings = nullptr;
+    dc->tUnsettings = nullptr;
 #ifdef SHIB_APACHE_24
     dc->bRequestMapperAuthz = -1;
 #else
     dc->szAuthGrpFile = nullptr;
-	dc->szAccessControl = nullptr;
+    dc->szAccessControl = nullptr;
     dc->bRequireAll = -1;
     dc->bAuthoritative = -1;
     dc->bCompatWith24 = -1;
@@ -230,10 +232,25 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     shib_dir_config* parent=(shib_dir_config*)base;
     shib_dir_config* child=(shib_dir_config*)sub;
 
-    // The child supersedes any matching table settings in the parent.
+    // The child supersedes any matching table settings in the parent,
+    // and only parent settings not "unset" by the child are copied in.
     dc->tSettings = nullptr;
-    if (parent->tSettings)
-        dc->tSettings = ap_copy_table(p, parent->tSettings);
+    if (parent->tSettings) {
+        if (child->tUnsettings) {
+            const array_header* thdr = ap_table_elts(parent->tSettings);
+            const table_entry* tent = (const table_entry*)thdr->elts;
+            for (int i = 0; i < thdr->nelts; ++i) {
+                if (!ap_table_get(child->tUnsettings, tent[i].key)) {
+                    if (!dc->tSettings)
+                        dc->tSettings = ap_make_table(p, thdr->nelts);
+                    ap_table_set(dc->tSettings, tent[i].key, tent[i].val);
+                }
+            }
+        }
+        else {
+            dc->tSettings = ap_copy_table(p, parent->tSettings);
+        }
+    }
     if (child->tSettings) {
         if (dc->tSettings)
             ap_overlap_tables(dc->tSettings, child->tSettings, AP_OVERLAP_TABLES_SET);
@@ -241,19 +258,37 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
             dc->tSettings = ap_copy_table(p, child->tSettings);
     }
 
+    // Unsetting is weird. We don't need to carry forward either the parent's
+    // or child's table for our own use because its only relevance is to block
+    // inheritance of the parent's settings during this specific merge. If another
+    // child is merged in, then *its* unset table will be applied to that merge, and
+    // so forth. So the merged result contains no explicit unsetters. Weird.
+    // EXCEPT: we need to merge and track all the unsets done as a group in order
+    // to block inheritance from the RequestMap, which is the "parent" for all
+    // settings.
+    dc->tUnsettings = nullptr;
+    if (parent->tUnsettings)
+        dc->tUnsettings = ap_copy_table(p, parent->tUnsettings);
+    if (child->tUnsettings) {
+        if (dc->tUnsettings)
+            ap_overlap_tables(dc->tUnsettings, child->tUnsettings, AP_OVERLAP_TABLES_SET);
+        else
+            dc->tUnsettings = ap_copy_table(p, child->tUnsettings);
+    }
+
 #ifdef SHIB_APACHE_24
     dc->bRequestMapperAuthz = ((child->bRequestMapperAuthz==-1) ? parent->bRequestMapperAuthz : child->bRequestMapperAuthz);
 #else
     if (child->szAuthGrpFile)
         dc->szAuthGrpFile=ap_pstrdup(p,child->szAuthGrpFile);
-    else if (parent->szAuthGrpFile)
+    else if (parent->szAuthGrpFile && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "AuthGroupFile")))
         dc->szAuthGrpFile=ap_pstrdup(p,parent->szAuthGrpFile);
     else
         dc->szAuthGrpFile=nullptr;
 
-	if (child->szAccessControl)
+    if (child->szAccessControl)
         dc->szAccessControl=ap_pstrdup(p,child->szAccessControl);
-    else if (parent->szAccessControl)
+    else if (parent->szAccessControl && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "ShibAccessControl")))
         dc->szAccessControl=ap_pstrdup(p,parent->szAccessControl);
     else
         dc->szAccessControl=nullptr;
@@ -261,29 +296,41 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
 
     if (child->szApplicationId)
         dc->szApplicationId=ap_pstrdup(p,child->szApplicationId);
-    else if (parent->szApplicationId)
+    else if (parent->szApplicationId && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "applicationId")))
         dc->szApplicationId=ap_pstrdup(p,parent->szApplicationId);
     else
         dc->szApplicationId=nullptr;
 
     if (child->szRequireWith)
         dc->szRequireWith=ap_pstrdup(p,child->szRequireWith);
-    else if (parent->szRequireWith)
+    else if (parent->szRequireWith && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "requireSessionWith")))
         dc->szRequireWith=ap_pstrdup(p,parent->szRequireWith);
     else
         dc->szRequireWith=nullptr;
 
     if (child->szRedirectToSSL)
         dc->szRedirectToSSL=ap_pstrdup(p,child->szRedirectToSSL);
-    else if (parent->szRedirectToSSL)
+    else if (parent->szRedirectToSSL && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "redirectToSSL")))
         dc->szRedirectToSSL=ap_pstrdup(p,parent->szRedirectToSSL);
     else
         dc->szRedirectToSSL=nullptr;
 
-    dc->bOff = ((child->bOff==-1) ? parent->bOff : child->bOff);
-    dc->bBasicHijack = ((child->bBasicHijack==-1) ? parent->bBasicHijack : child->bBasicHijack);
-    dc->bRequireSession = ((child->bRequireSession==-1) ? parent->bRequireSession : child->bRequireSession);
-    dc->bExportAssertion = ((child->bExportAssertion==-1) ? parent->bExportAssertion : child->bExportAssertion);
+    if (child->bRequireSession != -1)
+        dc->bRequireSession = child->bRequireSession;
+    else if (parent->bRequireSession != -1 && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "requireSession")))
+        dc->bRequireSession = parent->bRequireSession;
+    else
+        dc->bRequireSession = -1;
+
+    if (child->bExportAssertion != -1)
+        dc->bExportAssertion = child->bExportAssertion;
+    else if (parent->bExportAssertion != -1 && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "exportAssertion")))
+        dc->bExportAssertion = parent->bExportAssertion;
+    else
+        dc->bExportAssertion = -1;
+
+    dc->bOff = ((child->bOff == -1) ? parent->bOff : child->bOff);
+    dc->bBasicHijack = ((child->bBasicHijack == -1) ? parent->bBasicHijack : child->bBasicHijack);
 #ifndef SHIB_APACHE_24
     dc->bRequireAll = ((child->bRequireAll==-1) ? parent->bRequireAll : child->bRequireAll);
     dc->bAuthoritative = ((child->bAuthoritative==-1) ? parent->bAuthoritative : child->bAuthoritative);
@@ -963,24 +1010,24 @@ AccessControl* htAccessFactory(const xercesc::DOMElement* const & e)
 
 AccessControl::aclresult_t htAccessControl::doAccessControl(const ShibTargetApache& sta, const Session* session, const char* plugin) const
 {
-	aclresult_t result = shib_acl_false;
-	try {
+    aclresult_t result = shib_acl_false;
+    try {
         ifstream aclfile(plugin);
         if (!aclfile)
             throw ConfigurationException("Unable to open access control file ($1).", params(1, plugin));
         xercesc::DOMDocument* acldoc = XMLToolingConfig::getConfig().getParser().parse(aclfile);
-		XercesJanitor<xercesc::DOMDocument> docjanitor(acldoc);
-		static XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
+        XercesJanitor<xercesc::DOMDocument> docjanitor(acldoc);
+        static XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
         string t(XMLHelper::getAttrString(acldoc ? acldoc->getDocumentElement() : nullptr, nullptr, _type));
         if (t.empty())
             throw ConfigurationException("Missing type attribute in AccessControl plugin configuration.");
         scoped_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement()));
-		Locker acllock(aclplugin.get());
-		result = aclplugin->authorized(sta, session);
-	}
-	catch (std::exception& ex) {
-		sta.log(SPRequest::SPError, ex.what());
-	}
+        Locker acllock(aclplugin.get());
+        result = aclplugin->authorized(sta, session);
+    }
+    catch (std::exception& ex) {
+        sta.log(SPRequest::SPError, ex.what());
+    }
     return result;
 }
 
@@ -1247,8 +1294,8 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
     if (!reqs_arr)
         return shib_acl_indeterminate;  // should never happen
 
-	// Check for an "embedded" AccessControl plugin.
-	if (sta->m_dc->szAccessControl) {
+    // Check for an "embedded" AccessControl plugin.
+    if (sta->m_dc->szAccessControl) {
         aclresult_t result = doAccessControl(*sta, session, sta->m_dc->szAccessControl);
         if (result == shib_acl_true && sta->m_dc->bRequireAll != 1) {
             // If we're not insisting that all rules be met, then we're done.
@@ -1394,7 +1441,6 @@ public:
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=nullptr) const;
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
     pair<bool,int> getInt(const char* name, const char* ns=nullptr) const;
-    void getAll(map<string,const char*>& properties) const;
     const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const;
     const xercesc::DOMElement* getElement() const;
 
@@ -1446,7 +1492,7 @@ pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) c
                 return make_pair(true, !strcmp(prop, "true") || !strcmp(prop, "1") || !strcmp(prop, "On"));
         }
     }
-    return s ? s->getBool(name,ns) : make_pair(false,false);
+    return s && (!sta->m_dc->tUnsettings || !ap_table_get(sta->m_dc->tUnsettings, name)) ? s->getBool(name,ns) : make_pair(false,false);
 }
 
 pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const char* ns) const
@@ -1476,13 +1522,14 @@ pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const ch
                 return make_pair(true, prop);
         }
     }
-    return s ? s->getString(name,ns) : pair<bool,const char*>(false,nullptr);
+    return s && (!sta->m_dc->tUnsettings || !ap_table_get(sta->m_dc->tUnsettings, name)) ? s->getString(name,ns) : pair<bool,const char*>(false,nullptr);
 }
 
 pair<bool,const XMLCh*> ApacheRequestMapper::getXMLString(const char* name, const char* ns) const
 {
+    const ShibTargetApache* sta = reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,nullptr);
+    return s && (!sta->m_dc->tUnsettings || !ap_table_get(sta->m_dc->tUnsettings, name)) ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,nullptr);
 }
 
 pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, const char* ns) const
@@ -1499,7 +1546,7 @@ pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, co
                 return pair<bool,unsigned int>(true, atoi(prop));
         }
     }
-    return s ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
+    return s && (!sta->m_dc->tUnsettings || !ap_table_get(sta->m_dc->tUnsettings, name)) ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
 }
 
 pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) const
@@ -1516,46 +1563,7 @@ pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) con
                 return make_pair(true, atoi(prop));
         }
     }
-    return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
-}
-
-static int _rm_get_all_table_walk(void *v, const char *key, const char *value)
-{
-    reinterpret_cast<map<string,const char*>*>(v)->insert(pair<string,const char*>(key, value));
-    return 1;
-}
-
-void ApacheRequestMapper::getAll(map<string,const char*>& properties) const
-{
-    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-
-    if (s)
-        s->getAll(properties);
-    if (!sta)
-        return;
-
-    const char* auth_type=ap_auth_type(sta->m_req);
-    if (auth_type) {
-        // Check for Basic Hijack
-        if (!strcasecmp(auth_type, "basic") && sta->m_dc->bBasicHijack == 1)
-            auth_type = "shibboleth";
-        properties["authType"] = auth_type;
-    }
-
-    if (sta->m_dc->szApplicationId)
-        properties["applicationId"] = sta->m_dc->szApplicationId;
-    if (sta->m_dc->szRequireWith)
-        properties["requireSessionWith"] = sta->m_dc->szRequireWith;
-    if (sta->m_dc->szRedirectToSSL)
-        properties["redirectToSSL"] = sta->m_dc->szRedirectToSSL;
-    if (sta->m_dc->bRequireSession != 0)
-        properties["requireSession"] = (sta->m_dc->bRequireSession==1) ? "true" : "false";
-    if (sta->m_dc->bExportAssertion != 0)
-        properties["exportAssertion"] = (sta->m_dc->bExportAssertion==1) ? "true" : "false";
-
-    if (sta->m_dc->tSettings)
-        ap_table_do(_rm_get_all_table_walk, &properties, sta->m_dc->tSettings, NULL);
+    return s && (!sta->m_dc->tUnsettings || !ap_table_get(sta->m_dc->tUnsettings, name)) ? s->getInt(name,ns) : pair<bool,int>(false,0);
 }
 
 const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
@@ -1677,7 +1685,7 @@ extern "C" authz_status shib_user_check_authz(request_rec* r, const char* requir
     if (!r->user) {
         return AUTHZ_DENIED_NO_USER;
     }
- 	
+     
     const char* t = require_line;
     const char *w;
     while ((w = ap_getword_conf(r->pool, &t)) && w[0]) {
@@ -1685,12 +1693,12 @@ extern "C" authz_status shib_user_check_authz(request_rec* r, const char* requir
             return AUTHZ_GRANTED;
         }
     }
- 	
+     
     ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r, APLOGNO(01663)
         "access to %s failed, reason: user '%s' does not meet "
         "'require'ments for user to be allowed access",
         r->uri, r->user);
- 	
+     
     return AUTHZ_DENIED;
 }
 
@@ -1815,11 +1823,11 @@ extern "C" const char* shib_set_server_flag_slot(cmd_parms* parms, void*, int ar
 
 extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms,
 #ifdef SHIB_APACHE_13
-					     char* arg1, char* arg2
+                         char* arg1, char* arg2
 #else
-					     void* arg1, const char* arg2
+                         void* arg1, const char* arg2
 #endif
-					     )
+                         )
 {
   ap_set_file_slot(parms, arg1, arg2);
   return DECLINE_CMD;
@@ -1830,6 +1838,14 @@ extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, con
     if (!dc->tSettings)
         dc->tSettings = ap_make_table(parms->pool, 4);
     ap_table_set(dc->tSettings, arg1, arg2);
+    return nullptr;
+}
+
+extern "C" const char* shib_table_unset(cmd_parms* parms, shib_dir_config* dc, const char* arg1)
+{
+    if (!dc->tUnsettings)
+        dc->tUnsettings = ap_make_table(parms->pool, 4);
+    ap_table_set(dc->tUnsettings, arg1, "");
     return nullptr;
 }
 
@@ -2083,6 +2099,8 @@ static command_rec shire_cmds[] = {
 
   {"ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
    OR_AUTHCFG, TAKE2, "Set arbitrary Shibboleth request property for content"},
+  {"ShibRequestUnset", (config_fn_t)shib_table_unset, nullptr,
+   OR_AUTHCFG, TAKE1, "Unset an arbitrary Shibboleth request property (blocking inheritance)" },
 
   {"ShibAccessControl", (config_fn_t)shib_set_acl_slot, nullptr,
    OR_AUTHCFG, TAKE1, "Set arbitrary Shibboleth access control plugin for content"},
@@ -2092,22 +2110,22 @@ static command_rec shire_cmds[] = {
    OR_AUTHCFG, FLAG, "Disable all Shib module activity here to save processing effort"},
   {"ShibApplicationId", (config_fn_t)ap_set_string_slot,
    (void *) XtOffsetOf (shib_dir_config, szApplicationId),
-   OR_AUTHCFG, TAKE1, "Set Shibboleth applicationId property for content"},
+   OR_AUTHCFG, TAKE1, "(DEPRECATED) Set Shibboleth applicationId property for content"},
   {"ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bBasicHijack),
    OR_AUTHCFG, FLAG, "(DEPRECATED) Respond to AuthType Basic and convert to shibboleth"},
   {"ShibRequireSession", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bRequireSession),
-   OR_AUTHCFG, FLAG, "Initiates a new session if one does not exist"},
+   OR_AUTHCFG, FLAG, "(DEPRECATED) Initiates a new session if one does not exist"},
   {"ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
    (void *) XtOffsetOf (shib_dir_config, szRequireWith),
-   OR_AUTHCFG, TAKE1, "Initiates a new session if one does not exist using a specific SessionInitiator"},
+   OR_AUTHCFG, TAKE1, "(DEPRECATED) Initiates a new session if one does not exist using a specific SessionInitiator"},
   {"ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
    (void *) XtOffsetOf (shib_dir_config, bExportAssertion),
-   OR_AUTHCFG, FLAG, "Export SAML attribute assertion(s) to Shib-Attributes header"},
+   OR_AUTHCFG, FLAG, "(DEPRECATED) Export SAML attribute assertion(s) to Shib-Attributes header"},
   {"ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
    (void *) XtOffsetOf (shib_dir_config, szRedirectToSSL),
-   OR_AUTHCFG, TAKE1, "Redirect non-SSL requests to designated port" },
+   OR_AUTHCFG, TAKE1, "(DEPRECATED) Redirect non-SSL requests to designated port" },
   {"AuthGroupFile", (config_fn_t)shib_ap_set_file_slot,
    (void *) XtOffsetOf (shib_dir_config, szAuthGrpFile),
    OR_AUTHCFG, TAKE1, "text file containing group names and member user IDs"},
@@ -2142,23 +2160,23 @@ handler_rec shib_handlers[] = {
 module MODULE_VAR_EXPORT mod_shib = {
     STANDARD_MODULE_STUFF,
     nullptr,                        /* initializer */
-    create_shib_dir_config,	/* dir config creater */
-    merge_shib_dir_config,	/* dir merger --- default is to override */
+    create_shib_dir_config,    /* dir config creater */
+    merge_shib_dir_config,    /* dir merger --- default is to override */
     create_shib_server_config, /* server config */
     merge_shib_server_config,   /* merge server config */
-    shire_cmds,			/* command table */
-    shib_handlers,		/* handlers */
-    nullptr,			/* filename translation */
-    shib_check_user,		/* check_user_id */
-    shib_auth_checker,		/* check auth */
-    nullptr,			/* check access */
-    nullptr,			/* type_checker */
-    shib_fixups,		/* fixups */
-    nullptr,			/* logger */
-    nullptr,			/* header parser */
-    shib_child_init,		/* child_init */
-    shib_child_exit,		/* child_exit */
-    shib_post_read		/* post read-request */
+    shire_cmds,            /* command table */
+    shib_handlers,        /* handlers */
+    nullptr,            /* filename translation */
+    shib_check_user,        /* check_user_id */
+    shib_auth_checker,        /* check auth */
+    nullptr,            /* check access */
+    nullptr,            /* type_checker */
+    shib_fixups,        /* fixups */
+    nullptr,            /* logger */
+    nullptr,            /* header parser */
+    shib_child_init,        /* child_init */
+    shib_child_exit,        /* child_exit */
+    shib_post_read        /* post read-request */
 };
 
 #else
@@ -2241,28 +2259,30 @@ static command_rec shib_cmds[] = {
 
     AP_INIT_TAKE2("ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
         OR_AUTHCFG, "Set arbitrary Shibboleth request property for content"),
+    AP_INIT_TAKE1("ShibRequestUnset", (config_fn_t)shib_table_unset, nullptr,
+        OR_AUTHCFG, "Unset an arbitrary Shibboleth request property (blocking inheritance)"),
 
     AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bOff),
         OR_AUTHCFG, "Disable all Shib module activity here to save processing effort"),
     AP_INIT_TAKE1("ShibApplicationId", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szApplicationId),
-        OR_AUTHCFG, "Set Shibboleth applicationId property for content"),
+        OR_AUTHCFG, "(DEPRECATED) Set Shibboleth applicationId property for content"),
     AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bBasicHijack),
         OR_AUTHCFG, "(DEPRECATED) Respond to AuthType Basic and convert to shibboleth"),
     AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireSession),
-        OR_AUTHCFG, "Initiates a new session if one does not exist"),
+        OR_AUTHCFG, "(DEPRECATED) Initiates a new session if one does not exist"),
     AP_INIT_TAKE1("ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szRequireWith),
-        OR_AUTHCFG, "Initiates a new session if one does not exist using a specific SessionInitiator"),
+        OR_AUTHCFG, "(DEPRECATED) Initiates a new session if one does not exist using a specific SessionInitiator"),
     AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bExportAssertion),
-        OR_AUTHCFG, "Export SAML attribute assertion(s) to Shib-Attributes header"),
+        OR_AUTHCFG, "(DEPRECATED) Export SAML attribute assertion(s) to Shib-Attributes header"),
     AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szRedirectToSSL),
-        OR_AUTHCFG, "Redirect non-SSL requests to designated port"),
+        OR_AUTHCFG, "(DEPRECATED) Redirect non-SSL requests to designated port"),
 #ifdef SHIB_APACHE_24
     AP_INIT_FLAG("ShibRequestMapperAuthz", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequestMapperAuthz),

@@ -217,7 +217,8 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
     : m_unicodeAware(unicodeAware)
 {
     // Load the property set.
-    load(e, nullptr, this);
+    xmltooling::QName unsetter(nullptr, "unset");
+    load(e, nullptr, this, nullptr, &unsetter);
     setParent(base);
 
     // Load any AccessControl provider.
@@ -475,7 +476,8 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     }
 
     // Load the property set.
-    load(e, nullptr, this);
+    xmltooling::QName unsetter(nullptr, "unset");
+    load(e, nullptr, this, nullptr, &unsetter);
 
     // Inject "default" app ID if not explicit.
     if (!getString("applicationId").first)

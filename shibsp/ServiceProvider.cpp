@@ -429,7 +429,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                 initiator=app->getSessionInitiatorById(requireSessionWith.second);
                 if (!initiator) {
                     throw ConfigurationException(
-                        "No session initiator found with id ($1), check requireSessionWith command.", params(1, requireSessionWith.second)
+                        "No session initiator found with id ($1), check requireSessionWith setting.", params(1, requireSessionWith.second)
                         );
                 }
             }

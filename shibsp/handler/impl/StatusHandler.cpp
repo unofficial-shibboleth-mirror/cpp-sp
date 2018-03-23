@@ -270,9 +270,6 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         // RequestMap query, so handle it inproc.
         DummyRequest dummy(target);
         RequestMapper::Settings settings = request.getApplication().getServiceProvider().getRequestMapper()->getSettings(dummy);
-        map<string,const char*> props;
-        settings.first->getAll(props);
-
         XMLDateTime now(time(nullptr), false);
         now.parseDateTime();
         auto_ptr_char timestamp(now.getFormattedString());
@@ -286,10 +283,14 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
                 << "' OpenSAML-C='" << gOpenSAMLDotVersionStr
 #endif
                 << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
-            systemInfo(msg) << "<RequestSettings";
-            for (map<string,const char*>::const_iterator p = props.begin(); p != props.end(); ++p)
-                msg << ' ' << p->first << "='" << p->second << "'";
-            msg << '>' << target << "</RequestSettings>";
+            const char* setting = request.getParameter("setting");
+                systemInfo(msg) << "<RequestSettings";
+                if (setting) {
+                    pair<bool, const char*> prop = settings.first->getString(setting);
+                    if (prop.first)
+                        msg << ' ' << setting << "='" << prop.second << "'";
+                }
+                msg << '>' << target << "</RequestSettings>";
             msg << "<Status><OK/></Status>";
         msg << "</StatusHandler>";
         return make_pair(true, request.sendResponse(msg));

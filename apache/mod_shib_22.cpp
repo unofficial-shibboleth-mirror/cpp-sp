@@ -32,6 +32,7 @@
 #define SH_AP_TABLE apr_table_t
 #define SH_AP_CONFIGFILE ap_configfile_t
 #define array_header apr_array_header_t
+#define table_entry apr_table_entry_t
 
 #define SH_AP_R(r) 0,r
 #define SH_AP_USER(r) r->user

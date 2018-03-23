@@ -106,13 +106,6 @@ namespace shibsp {
         virtual std::pair<bool,int> getInt(const char* name, const char* ns=nullptr) const=0;
 
         /**
-         * Returns a map of all known properties in string form.
-         *
-         * @param properties    map to populate
-         */
-        virtual void getAll(std::map<std::string,const char*>& properties) const=0;
-
-        /**
          * Returns a nested property set.
          * 
          * @param name  nested property set name

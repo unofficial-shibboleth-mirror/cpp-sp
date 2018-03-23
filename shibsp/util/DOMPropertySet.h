@@ -32,6 +32,10 @@
 #include <boost/shared_ptr.hpp>
 #include <xmltooling/logging.h>
 
+namespace xmltooling {
+	class QName;
+}
+
 namespace shibsp {
 
     /**
@@ -51,7 +55,6 @@ namespace shibsp {
         std::pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=nullptr) const;
         std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
         std::pair<bool,int> getInt(const char* name, const char* ns=nullptr) const;
-        void getAll(std::map<std::string,const char*>& properties) const;
         const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const;
         const xercesc::DOMElement* getElement() const;
 
@@ -105,12 +108,14 @@ namespace shibsp {
          * @param log       optional log object for tracing
          * @param filter    optional filter controls what child elements to include as nested PropertySets
          * @param remapper  optional mapper of property rename rules for legacy property support
+		 * @param unsetter  optional name of a property containing a list of property names to "unset"
          */
         void load(
             const xercesc::DOMElement* e,
             xmltooling::logging::Category* log=nullptr,
             xercesc::DOMNodeFilter* filter=nullptr,
-            const Remapper* remapper=nullptr
+            const Remapper* remapper=nullptr,
+			const xmltooling::QName* unsetter=nullptr
             );
 
     protected:
@@ -128,6 +133,7 @@ namespace shibsp {
         const PropertySet* m_parent;
         const xercesc::DOMElement* m_root;
         std::map<std::string,std::pair<char*,const XMLCh*> > m_map;
+		std::set<std::string> m_unset;
         std::map< std::string,boost::shared_ptr<DOMPropertySet> > m_nested;
         std::vector<xmltooling::xstring> m_injected;
     };

@@ -29,8 +29,10 @@
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
+#include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -103,7 +105,8 @@ void DOMPropertySet::load(
     const DOMElement* e,
     Category* log,
     DOMNodeFilter* filter,
-    const Remapper* remapper
+    const Remapper* remapper,
+    const xmltooling::QName* unsetter
     )
 {
 #ifdef _DEBUG
@@ -119,8 +122,16 @@ void DOMPropertySet::load(
     DOMNamedNodeMap* attrs=m_root->getAttributes();
     for (XMLSize_t i=0; i<attrs->getLength(); i++) {
         DOMNode* a=attrs->item(i);
-        if (!XMLString::compareString(a->getNamespaceURI(),xmlconstants::XMLNS_NS))
+        if (!XMLString::compareString(a->getNamespaceURI(), xmlconstants::XMLNS_NS)) {
             continue;
+        }
+        else if (unsetter && XMLHelper::isNodeNamed(a, unsetter->getNamespaceURI(), unsetter->getLocalPart())) {
+            auto_ptr_char val(a->getNodeValue());
+            string dup(val.get());
+            split(m_unset, dup, is_space(), algorithm::token_compress_on);
+            continue;
+        }
+
         char* val=XMLString::transcode(a->getNodeValue());
         if (val && *val) {
             auto_ptr_char ns(a->getNamespaceURI());
@@ -196,10 +207,12 @@ pair<bool,bool> DOMPropertySet::getBool(const char* name, const char* ns) const
     else
         i=m_map.find(name);
 
+
     if (i!=m_map.end())
         return make_pair(true,(!strcmp(i->second.first,"true") || !strcmp(i->second.first,"1")));
-    else if (m_parent)
-        return m_parent->getBool(name,ns);
+    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end()) {
+        return m_parent->getBool(name, ns);
+    }
     return make_pair(false,false);
 }
 
@@ -215,7 +228,7 @@ pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* n
 
     if (i!=m_map.end())
         return pair<bool,const char*>(true,i->second.first);
-    else if (m_parent)
+    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end())
         return m_parent->getString(name,ns);
     return pair<bool,const char*>(false,nullptr);
 }
@@ -231,7 +244,7 @@ pair<bool,const XMLCh*> DOMPropertySet::getXMLString(const char* name, const cha
 
     if (i!=m_map.end())
         return make_pair(true,i->second.second);
-    else if (m_parent)
+    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end())
         return m_parent->getXMLString(name,ns);
     return pair<bool,const XMLCh*>(false,nullptr);
 }
@@ -253,7 +266,7 @@ pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const c
             return pair<bool,unsigned int>(false,0);
         }
     }
-    else if (m_parent)
+    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end())
         return m_parent->getUnsignedInt(name,ns);
     return pair<bool,unsigned int>(false,0);
 }
@@ -269,17 +282,9 @@ pair<bool,int> DOMPropertySet::getInt(const char* name, const char* ns) const
 
     if (i!=m_map.end())
         return pair<bool,int>(true,atoi(i->second.first));
-    else if (m_parent)
+    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end())
         return m_parent->getInt(name,ns);
     return pair<bool,int>(false,0);
-}
-
-void DOMPropertySet::getAll(std::map<std::string,const char*>& properties) const
-{
-    if (m_parent)
-        m_parent->getAll(properties);
-    for (map< string,pair<char*,const XMLCh*> >::const_iterator i = m_map.begin(); i != m_map.end(); ++i)
-        properties[i->first] = i->second.first;
 }
 
 const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* ns) const

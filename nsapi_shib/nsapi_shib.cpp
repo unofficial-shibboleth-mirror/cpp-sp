@@ -570,7 +570,6 @@ public:
     pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=nullptr) const;
     pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
     pair<bool,int> getInt(const char* name, const char* ns=nullptr) const;
-    void getAll(map<string,const char*>& properties) const;
     const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const;
     const xercesc::DOMElement* getElement() const;
 
@@ -606,8 +605,8 @@ pair<bool,bool> SunRequestMapper::getBool(const char* name, const char* ns) cons
     if (stn && !ns && name) {
         // Override boolean properties.
         const char* param=pblock_findval(name,stn->m_pb);
-        if (param && (!strcmp(param,"1") || !strcasecmp(param,"true")))
-            return make_pair(true,true);
+		if (param)
+			return make_pair(true, !strcmp(param, "1") || !strcasecmp(param, "true"));
     }
     return s ? s->getBool(name,ns) : make_pair(false,false);
 }
@@ -665,25 +664,6 @@ pair<bool,int> SunRequestMapper::getInt(const char* name, const char* ns) const
             return pair<bool,int>(true,atoi(param));
     }
     return s ? s->getInt(name,ns) : pair<bool,int>(false,0);
-}
-
-void SunRequestMapper::getAll(map<string,const char*>& properties) const
-{
-    const ShibTargetNSAPI* stn=reinterpret_cast<const ShibTargetNSAPI*>(m_stKey->getData());
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (s)
-        s->getAll(properties);
-    if (!stn)
-        return;
-    properties["authType"] = "shibboleth";
-    const pb_entry* entry;
-    for (int i=0; i<stn->m_pb->hsize; ++i) {
-        entry = stn->m_pb->ht[i];
-        while (entry) {
-            properties[entry->param->name] = entry->param->value;
-            entry = entry->next;
-        }
-    }
 }
 
 const PropertySet* SunRequestMapper::getPropertySet(const char* name, const char* ns) const
