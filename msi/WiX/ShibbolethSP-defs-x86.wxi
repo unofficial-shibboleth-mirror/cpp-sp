@@ -9,6 +9,7 @@
   <ComponentRef Id="README.txt" />
   <ComponentRef Id="RELEASE.txt" />
 
+  <ComponentRef Id="SetPermissions" />
   <ComponentRef Id="example_metadata.xml" />
   <ComponentRef Id="example_shibboleth3.xml" />
   <ComponentRef Id="keygen.bat" />
