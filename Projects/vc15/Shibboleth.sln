@@ -15,6 +15,11 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "fastcgi", "fastcgi", "{8E1AF2CF-24E1-4983-8681-394D89DF9AD2}"
 	ProjectSection(SolutionItems) = preProject
 		fastcgi\Makefile.am = fastcgi\Makefile.am
+		..\..\fastcgi\resource.h = ..\..\fastcgi\resource.h
+		..\..\fastcgi\shibauthorizer.cpp = ..\..\fastcgi\shibauthorizer.cpp
+		..\..\fastcgi\shibauthorizer.rc = ..\..\fastcgi\shibauthorizer.rc
+		..\..\fastcgi\shibresponder.cpp = ..\..\fastcgi\shibresponder.cpp
+		..\..\fastcgi\shibresponder.rc = ..\..\fastcgi\shibresponder.rc
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Schemas", "Schemas", "{0F172F71-BDD7-44D1-9147-061DC20683BD}"
@@ -51,7 +56,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		..\..\configs\example-shibboleth2.xml = ..\..\configs\example-shibboleth2.xml
 		..\..\configs\globalLogout.html = ..\..\configs\globalLogout.html
 		..\..\configs\keygen.bat = ..\..\configs\keygen.bat
-		..\..\configs\seckeygen.bat = ..\..\configs\seckeygen.bat
 		..\..\configs\keygen.sh = ..\..\configs\keygen.sh
 		..\..\configs\localLogout.html = ..\..\configs\localLogout.html
 		..\..\configs\Makefile.am = ..\..\configs\Makefile.am
@@ -61,6 +65,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		..\..\configs\partialLogout.html = ..\..\configs\partialLogout.html
 		..\..\configs\postTemplate.html = ..\..\configs\postTemplate.html
 		..\..\configs\protocols.xml = ..\..\configs\protocols.xml
+		..\..\configs\seckeygen.bat = ..\..\configs\seckeygen.bat
 		..\..\configs\security-policy.xml = ..\..\configs\security-policy.xml
 		..\..\configs\shibboleth3.xml = ..\..\configs\shibboleth3.xml
 		..\..\configs\shibd-debian.in = ..\..\configs\shibd-debian.in
