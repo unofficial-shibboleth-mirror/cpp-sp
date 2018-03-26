@@ -427,11 +427,11 @@ long IIS7Request::sendResponse(istream& in, long status)
 }
 
 // XMLTooing:: HTTPResponse
-void IIS7Request::setResponseHeader(const char* name, const char* value)
+void IIS7Request::setResponseHeader(const char* name, const char* value, bool replace)
 {
-    HTTPResponse::setResponseHeader(name, value);
+    HTTPResponse::setResponseHeader(name, value, replace);
 
-    size_t sz = strlen(value);
+    size_t sz = value ? strlen(value) : 0;
 
     if (sz > USHRT_MAX) {
         // TODO Do this elsewhere?
@@ -439,7 +439,7 @@ void IIS7Request::setResponseHeader(const char* name, const char* value)
         sz = USHRT_MAX;
     }
 
-    HRESULT hr = m_response->SetHeader(name, value,  static_cast<USHORT>(sz), FALSE);
+    HRESULT hr = m_response->SetHeader(name, value, static_cast<USHORT>(sz), replace || !value ? TRUE : FALSE);
     if (FAILED(hr)) {
         throwError("setResponseHeader", hr);
     }

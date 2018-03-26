@@ -519,14 +519,14 @@ public:
   string getRemoteUser() const {
     return getSecureHeader("remote-user");
   }
-  void setResponseHeader(const char* name, const char* value) {
-    HTTPResponse::setResponseHeader(name, value);
-    if (name) {
+  void setResponseHeader(const char* name, const char* value, bool replace=false) {
+    HTTPResponse::setResponseHeader(name, value, replace);
+    if (name && *name) {
         // Set for later.
-        if (value)
-            m_headers.insert(make_pair(name,value));
-        else
+        if (replace || !value)
             m_headers.erase(name);
+        if (value && *value)
+            m_headers.insert(make_pair(name,value));
     }
   }
   long sendResponse(istream& in, long status) {
@@ -895,15 +895,15 @@ public:
     GetServerVariable(const_cast<char*>(hdr.c_str()), buf, 128, false);
     return buf.empty() ? "" : buf;
   }
-  void setResponseHeader(const char* name, const char* value) {
-    HTTPResponse::setResponseHeader(name, value);
-    if (name) {
-        // Set for later.
-        if (value)
-            m_headers.insert(make_pair(name,value));
-        else
-            m_headers.erase(name);
-    }
+  void setResponseHeader(const char* name, const char* value, bool replace = false) {
+      HTTPResponse::setResponseHeader(name, value, replace);
+      if (name && *name) {
+          // Set for later.
+          if (replace || !value)
+              m_headers.erase(name);
+          if (value && *value)
+              m_headers.insert(make_pair(name, value));
+      }
   }
   const char* getQueryString() const {
     return m_lpECB->lpszQueryString;

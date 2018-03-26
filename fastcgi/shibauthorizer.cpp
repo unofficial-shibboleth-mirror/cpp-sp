@@ -196,14 +196,14 @@ public:
         }
         return "";
     }
-    void setResponseHeader(const char* name, const char* value) {
-        HTTPResponse::setResponseHeader(name, value);
-        if (name) {
+    void setResponseHeader(const char* name, const char* value, bool replace=false) {
+        HTTPResponse::setResponseHeader(name, value, replace);
+        if (name && *name) {
             // Set for later.
-            if (value)
-                m_response_headers.insert(make_pair(name,value));
-            else
+            if (replace || !value)
                 m_response_headers.erase(name);
+            if (value && *value)
+                m_response_headers.insert(make_pair(name,value));
         }
     }
     const char* getQueryString() const {

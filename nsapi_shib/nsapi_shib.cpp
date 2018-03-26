@@ -425,10 +425,13 @@ public:
       param_free(pblock_remove("content-type", m_rq->srvhdrs));
       setResponseHeader("Content-Type", type);
   }
-  void setResponseHeader(const char* name, const char* value) {
-    HTTPResponse::setResponseHeader(name, value);
-    if (name) {
-        pblock_nvinsert(name, value, m_rq->srvhdrs);
+  void setResponseHeader(const char* name, const char* value, bool replace=false) {
+    HTTPResponse::setResponseHeader(name, value, replace);
+    if (name && *name) {
+        if (replace || !value)
+            param_free(pblock_remove(name, m_rq->srvhdrs));
+        if (value && *value)
+            pblock_nvinsert(name, value, m_rq->srvhdrs);
     }
   }
 

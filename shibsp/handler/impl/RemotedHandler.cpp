@@ -166,7 +166,7 @@ namespace shibsp {
         long sendResponse(std::istream& inputStream, long status);
         
         // HTTPResponse
-        void setResponseHeader(const char* name, const char* value);
+        void setResponseHeader(const char* name, const char* value, bool replace=false);
         long sendRedirect(const char* url);
     };
 }
@@ -294,15 +294,28 @@ long RemotedResponse::sendResponse(std::istream& in, long status)
     return status;
 }
 
-void RemotedResponse::setResponseHeader(const char* name, const char* value)
+void RemotedResponse::setResponseHeader(const char* name, const char* value, bool replace)
 {
+    HTTPResponse::setResponseHeader(name, value, replace);
+
     if (!m_output.isstruct())
         m_output.structure();
     DDF hdrs = m_output["headers"];
     if (hdrs.isnull())
         hdrs = m_output.addmember("headers").list();
-    DDF h = DDF(name).string(value);
-    hdrs.add(h);
+    if (replace || !value) {
+        DDF hdr = hdrs.first();
+        while (!hdr.isnull()) {
+            if (hdr.name() && !strcmp(hdr.name(), name))
+                hdr.destroy();
+            hdr = hdrs.next();
+        }
+    }
+
+    if (value && *value) {
+        DDF h = DDF(name).string(value);
+        hdrs.add(h);
+    }
 }
 
 long RemotedResponse::sendRedirect(const char* url)

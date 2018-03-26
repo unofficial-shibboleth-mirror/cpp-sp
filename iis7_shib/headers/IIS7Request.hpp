@@ -79,7 +79,7 @@ protected:
 
     // XMLTooing:: HTTPResponse, GenericResponse
     long sendResponse(istream& in, long status);
-    void setResponseHeader(const char* name, const char* value);
+    void setResponseHeader(const char* name, const char* value, bool replace=false);
     long sendRedirect(const char* url);
 
 private:

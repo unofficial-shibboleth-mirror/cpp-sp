@@ -648,9 +648,9 @@ public:
   void setContentType(const char* type) {
       m_req->content_type = ap_psprintf(m_req->pool, "%s", type);
   }
-  void setResponseHeader(const char* name, const char* value) {
-    HTTPResponse::setResponseHeader(name, value);
-    if (name) {
+  void setResponseHeader(const char* name, const char* value, bool replace=false) {
+    HTTPResponse::setResponseHeader(name, value, replace);
+    if (name && *name) {
 #ifdef SHIB_DEFERRED_HEADERS
         if (!m_rc) {
             // this happens on subrequests
@@ -660,11 +660,23 @@ public:
             if (!m_rc->hdr_out) {
                 m_rc->hdr_out = ap_make_table(m_req->pool, 5);
             }
-            ap_table_add(m_rc->hdr_out, name, value);
+            if (replace || !value)
+                ap_table_unset(m_rc->hdr_out, name);
+            if (value && *value)
+                ap_table_add(m_rc->hdr_out, name, value);
         }
-        else
-#endif
+        else {
+            if (replace || !value)
+                ap_table_unset(m_req->err_headers_out, name);
+            if (value && *value)
+                ap_table_add(m_req->err_headers_out, name, value);
+        }
+#else
+        if (replace || !value)
+            ap_table_unset(m_req->err_headers_out, name);
+        if (value && *value)
             ap_table_add(m_req->err_headers_out, name, value);
+#endif
     }
   }
   long sendResponse(istream& in, long status) {
