@@ -143,10 +143,10 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
             m_hashed = XMLHelper::getAttrString(child, nullptr, hashed);
             if (!m_subst.empty() &&
                 XMLString::startsWithI(m_subst.c_str(), "file://")) {
-                throw ConfigurationException("DynamicMetadataProvider: <Subst> cannot be a file:// URL");
+                throw ConfigurationException("Dynamic MetadataProvider: <Subst> cannot be a file:// URL");
             }
             if (m_isMDQ)
-                throw ConfigurationException("DynamicMetadataProvider: <Subst> is incompatible with type=\"MDQ\"");
+                throw ConfigurationException("Dynamic MetadataProvider: <Subst> is incompatible with type=\"MDQ\"");
         }
     }
 
@@ -159,10 +159,10 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
                 m_regex = repl.get();
                 if (!m_regex.empty() &&
                     XMLString::startsWithI(m_regex.c_str(), "file://")) {
-                    throw ConfigurationException("DynamicMetadataProvider: <Regex> cannot be a file:// URL");
+                    throw ConfigurationException("Dynamic MetadataProvider: <Regex> cannot be a file:// URL");
                 }
                 if (m_isMDQ)
-                    throw ConfigurationException("DynamicMetadataProvider: <Regex> is incompatible with type=\"MDQ\"");
+                    throw ConfigurationException("Dynamic MetadataProvider: <Regex> is incompatible with type=\"MDQ\"");
             }
         }
     }
@@ -170,7 +170,7 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
     if (m_isMDQ) {
         string theBaseUrl(XMLHelper::getAttrString(e, nullptr, baseUrl));
         if (theBaseUrl.empty())
-            throw ConfigurationException("DynamicMetadataProvider: type=\"MDQ\" must also contain baseUrl=\"whatever\"");
+            throw ConfigurationException("Dynamic MetadataProvider: type=\"MDQ\" must also contain baseUrl=\"whatever\"");
         m_subst = theBaseUrl + (boost::algorithm::ends_with(theBaseUrl, "/") ? "entities/$entityID" : "/entities/$entityID");
         m_hashed = "";
     }
@@ -182,14 +182,14 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
             TrustEngine* trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child);
             if (!dynamic_cast<X509TrustEngine*>(trust)) {
                 delete trust;
-                throw ConfigurationException("DynamicMetadataProvider requires an X509TrustEngine plugin.");
+                throw ConfigurationException("Dynamic MetadataProvider requires X509TrustEngine plugin.");
             }
             m_trust.reset(dynamic_cast<X509TrustEngine*>(trust));
             m_dummyCR.reset(XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(DUMMY_CREDENTIAL_RESOLVER, nullptr));
         }
 
         if (!m_trust.get() || !m_dummyCR.get())
-            throw ConfigurationException("DynamicMetadataProvider requires an X509TrustEngine plugin unless ignoreTransport is true.");
+            throw ConfigurationException("Dynamic MetadataProvider requires X509TrustEngine plugin unless ignoreTransport is set.");
     }
 
     if (!m_cacheDir.empty()) {
@@ -455,7 +455,7 @@ void *DynamicMetadataProvider::init_fn(void* pv)
 
     if (dirHandle == INVALID_HANDLE_VALUE) {
         if (GetLastError() != ERROR_FILE_NOT_FOUND)
-            throw MetadataException("Folder DyanmicMetadataProvider unable to open directory ($1)", params(1, me->m_cacheDir.c_str()));
+            throw MetadataException("Dynamic MetadataProvider unable to open directory ($1)", params(1, me->m_cacheDir.c_str()));
         me->m_log.debug("no files found in cache (%s)", me->m_cacheDir.c_str());
         return nullptr;
     }
@@ -470,7 +470,7 @@ void *DynamicMetadataProvider::init_fn(void* pv)
 #else
     DIR* d = opendir(me->m_cacheDir.c_str());
     if (!d) {
-        throw MetadataException("Folder DyanmicMetadataProvider unable to open directory ($1)", params(1, me->m_cacheDir.c_str()));
+        throw MetadataException("Dynamic MetadataProvider unable to open directory ($1)", params(1, me->m_cacheDir.c_str()));
     }
     char dir_buf[sizeof(struct dirent) + PATH_MAX];
     struct dirent* ent = (struct dirent*)dir_buf;
