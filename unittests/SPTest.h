@@ -26,7 +26,7 @@ public:
             return false;
         }
 
-        if (!conf.instantiate("./configs/shibboleth2.xml")) {
+        if (!conf.instantiate("./configs/shibboleth3.xml")) {
             fprintf(stderr, "configuration is invalid, see console for specific problems\n");
             return false;
         }
