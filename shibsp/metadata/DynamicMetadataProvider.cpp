@@ -52,21 +52,11 @@
 #include <xmltooling/security/SecurityHelper.h>
 #include <xmltooling/security/X509TrustEngine.h>
 #include <xmltooling/soap/HTTPSOAPTransport.h>
+#include <xmltooling/util/DirectoryWalker.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
-
-#ifndef WIN32
-# if defined(HAVE_SYS_TYPES_H) && defined(HAVE_DIRENT_H)
-#  include <dirent.h>
-#  include <sys/types.h>
-#  include <sys/stat.h>
-#  include <errno.h>
-# else
-#  error Unsupported directory library headers.
-# endif
-#endif
 
 using namespace shibsp;
 using namespace opensaml;
@@ -81,7 +71,7 @@ namespace shibsp {
     public:
         DynamicMetadataProvider(const xercesc::DOMElement* e=nullptr);
 
-        virtual ~DynamicMetadataProvider() { delete m_init_thread; }
+        virtual ~DynamicMetadataProvider() {}
 
         virtual void indexEntity(EntityDescriptor* site, time_t& validUntil, bool replace=false) const;
 
@@ -99,9 +89,11 @@ namespace shibsp {
         string m_subst, m_match, m_regex, m_hashed, m_cacheDir;
         boost::scoped_ptr<X509TrustEngine> m_trust;
         boost::scoped_ptr<CredentialResolver> m_dummyCR;
-        Thread* m_init_thread;
+        auto_ptr<Thread> m_init_thread;
         Category & m_log;
+
         static void* init_fn(void*);
+        static void FolderCallback(const char* pathname, struct stat& stat_buf, void* data);
 
     };
 
@@ -132,7 +124,7 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
         m_log( Category::getInstance(SHIBSP_LOGCAT ".MetadataProvider.Dynamic")),
         m_cacheDir(XMLHelper::getAttrString(e, "", cacheDirectory)),
         m_ignoreTransport(XMLHelper::getAttrBool(e, false, ignoreTransport)),
-        m_encoded(true), m_trust(nullptr), m_init_thread(nullptr), m_isMDQ(XMLHelper::getAttrString(e, "Dyanamic", _type) == "MDQ")
+        m_encoded(true), m_trust(nullptr), m_isMDQ(XMLHelper::getAttrString(e, "Dyanamic", _type) == "MDQ")
 {
     const DOMElement* child = XMLHelper::getFirstChildElement(e, Subst);
     if (child && child->hasChildNodes()) {
@@ -205,17 +197,18 @@ void DynamicMetadataProvider::init()
 
 #ifdef WIN32
     if (!CreateDirectoryA(m_cacheDir.c_str(), NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
-        m_log.warn("Could not create cache directory %s (%d)", m_cacheDir.c_str(), GetLastError());
+        m_log.warn("Could not create cache directory %s (%ld)", m_cacheDir.c_str(), GetLastError());
 #else
     if (mkdir(m_cacheDir.c_str(), S_IRWXU))
         m_log.warn("Could not create cache directory %s (%d)", m_cacheDir.c_str(), errno);
 #endif
     if (m_backgroundInit) {
-        m_init_thread = Thread::create(&init_fn, this);
+        m_init_thread.reset(Thread::create(&init_fn, this));
         m_init_thread->detach();
     }
-    else
+    else {
         init_fn(this);
+    }
 }
 
 
@@ -436,98 +429,53 @@ void DynamicMetadataProvider::indexEntity(EntityDescriptor* site, time_t& validU
     XMLHelper::serialize(site->marshall(), out, false);
 }
 
-void *DynamicMetadataProvider::init_fn(void* pv)
+void* DynamicMetadataProvider::init_fn(void* pv)
 {
-    DynamicMetadataProvider * me = reinterpret_cast<DynamicMetadataProvider*>(pv);
+    DynamicMetadataProvider* me = reinterpret_cast<DynamicMetadataProvider*>(pv);
 
 #ifndef WIN32
     // First, let's block all signals
     Thread::mask_all_signals();
 #endif
 
-    if (me->m_cacheDir.empty())
-       return nullptr;
-
-    string fullname;
-#ifdef WIN32
-    WIN32_FIND_DATA entry;
-    HANDLE dirHandle = FindFirstFile((me->m_cacheDir + "/*").c_str(), &entry);
-
-    if (dirHandle == INVALID_HANDLE_VALUE) {
-        if (GetLastError() != ERROR_FILE_NOT_FOUND)
-            throw MetadataException("Dynamic MetadataProvider unable to open directory ($1)", params(1, me->m_cacheDir.c_str()));
-        me->m_log.debug("no files found in cache (%s)", me->m_cacheDir.c_str());
-        return nullptr;
+    if (!me->m_cacheDir.empty()) {
+        DirectoryWalker walker(me->m_log, me->m_cacheDir.c_str(), true);
+        walker.walk(FolderCallback, me);
     }
-
-    do {
-        if (entry.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            if (strcmp(entry.cFileName, ".") && strcmp(entry.cFileName, ".."))
-                me->m_log.warn("Invalid directory format, skipping (%s)", entry.cFileName);
-            continue;
-        }
-        fullname = me->m_cacheDir + '/' + entry.cFileName;
-#else
-    DIR* d = opendir(me->m_cacheDir.c_str());
-    if (!d) {
-        throw MetadataException("Dynamic MetadataProvider unable to open directory ($1)", params(1, me->m_cacheDir.c_str()));
-    }
-    char dir_buf[sizeof(struct dirent) + PATH_MAX];
-    struct dirent* ent = (struct dirent*)dir_buf;
-    struct dirent* entptr = nullptr;
-    while (readdir_r(d, ent, &entptr) == 0 && entptr) {
-        if (!strcmp(entptr->d_name, ".") || !strcmp(entptr->d_name, ".."))
-            continue;
-        fullname = me->m_cacheDir + '/' + entptr->d_name;
-        struct stat stat_buf;
-        if (stat(fullname.c_str(), &stat_buf) != 0) {
-            me->m_log.warn("unable to access (%s)", entptr->d_name);
-            continue;
-        }
-        else if (S_ISDIR(stat_buf.st_mode)) {
-            me->m_log.warn("Invalid directory format, skipping (%s)", entptr->d_name);
-            continue;
-        }
-#endif
-        try {
-            me->m_log.info("Reload from %s", fullname.c_str());
-            ifstream thisFileEntry(fullname.c_str());
-            if (thisFileEntry) {
-                auto_ptr<EntityDescriptor> entity (me->entityFromStream(thisFileEntry));
-                thisFileEntry.close();
-                if (entity.get()) {
-                    const BatchLoadMetadataFilterContext bc(true);
-                    me->doFilters(&bc, *entity);
-                    me->cacheEntity(entity.get());
-                    entity.release();
-                }
-            }
-        }
-        catch (XMLException& e) {
-            auto_ptr_char msg(e.getMessage());
-            me->m_log.error("Xerces error while reloading from cache (%s): %s ", fullname.c_str(), msg.get());
-            remove(fullname.c_str());
-        }
-        catch (MetadataException& e) {
-            auto_ptr_char msg(e.getMessage());
-            me->m_log.error("Filter error while reloading from cache (%s): %s", fullname.c_str(), msg.get());
-            remove(fullname.c_str());
-        }
-        catch (exception& e) {
-            me->m_log.error("Other error while reloading from cache (%s): %s", fullname.c_str(), e.what());
-            remove(fullname.c_str());
-        }
-
-#ifdef WIN32
-    } while (FindNextFile(dirHandle, &entry));
-    if (ERROR_NO_MORE_FILES != GetLastError())
-        me->m_log.error("Error enumerating directory '%s' (%d)", me->m_cacheDir, GetLastError());
-    FindClose(dirHandle);
-#else
-}
-    closedir(d);
-#endif
 
     return nullptr;
 }
 
+void DynamicMetadataProvider::FolderCallback(const char* pathname, struct stat& stat_buf, void* data)
+{
+    DynamicMetadataProvider* me = reinterpret_cast<DynamicMetadataProvider*>(data);
+
+    try {
+        me->m_log.info("Reload from %s", pathname);
+        ifstream thisFileEntry(pathname);
+        if (thisFileEntry) {
+            auto_ptr<EntityDescriptor> entity(me->entityFromStream(thisFileEntry));
+            thisFileEntry.close();
+            if (entity.get()) {
+                const BatchLoadMetadataFilterContext bc(true);
+                me->doFilters(&bc, *entity);
+                me->cacheEntity(entity.get());
+                entity.release();
+            }
+        }
+    }
+    catch (XMLException& e) {
+        auto_ptr_char msg(e.getMessage());
+        me->m_log.error("Xerces error while reloading from cache (%s): %s ", pathname, msg.get());
+        remove(pathname);
+    }
+    catch (MetadataException& e) {
+        auto_ptr_char msg(e.getMessage());
+        me->m_log.error("Filter error while reloading from cache (%s): %s", pathname, msg.get());
+        remove(pathname);
+    }
+    catch (exception& e) {
+        me->m_log.error("Other error while reloading from cache (%s): %s", pathname, e.what());
+        remove(pathname);
+    }
+}
