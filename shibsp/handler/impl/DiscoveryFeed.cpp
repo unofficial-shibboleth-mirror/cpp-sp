@@ -88,10 +88,11 @@ namespace shibsp {
         bool m_cacheToClient;
 #ifndef SHIBSP_LITE
         // Application-specific queues of feed files, linked to the last time of "access".
+        // The key to the map is the application's "hash" code, not the ID itself.
         // Each filename is also a cache tag.
         typedef queue< pair<string, time_t> > feedqueue_t;
         mutable map<string,feedqueue_t> m_feedQueues;
-        scoped_ptr<Mutex> m_feedLock;
+        auto_ptr<Mutex> m_feedLock;
 #endif
     };
 
@@ -134,13 +135,12 @@ DiscoveryFeed::DiscoveryFeed(const DOMElement* e, const char* appId)
 DiscoveryFeed::~DiscoveryFeed()
 {
 #ifndef SHIBSP_LITE
-    if (m_feedLock) {
+    if (m_feedLock.get()) {
         // Remove any files unused for more than a couple of minutes.
-        // Anything left will be orphaned, but that shouldn't happen too often.
         time_t now = time(nullptr);
         for (map<string, feedqueue_t>::iterator i = m_feedQueues.begin(); i != m_feedQueues.end(); ++i) {
-            while (!i->second.empty() && now - i->second.front().second > 120) {
-                string fname = m_dir + '/' + i->second.front().first + ".json";
+            while (!i->second.empty() && now - i->second.front().second > 60) {
+                string fname = m_dir + '/' + i->first + '_' + i->second.front().first + ".json";
                 remove(fname.c_str());
                 i->second.pop();
             }
@@ -292,9 +292,9 @@ void DiscoveryFeed::feedToFile(const Application& application, string& cacheTag)
     Lock lock(m_feedLock);
     time_t now = time(nullptr);
 
-    // Clean up any old files.
-    feedqueue_t q = m_feedQueues[application.getId()];
-    while (q.size() > 1 && (now - q.front().second > 120)) {
+    // Clean up as many old files as it's safe to do.
+    feedqueue_t& q = m_feedQueues[application.getHash()];
+    while (q.size() > 1 && (now - q.front().second > 60)) {
         string fname = m_dir + '/' + application.getHash() + '_' + q.front().first + ".json";
         remove(fname.c_str());
         q.pop();
