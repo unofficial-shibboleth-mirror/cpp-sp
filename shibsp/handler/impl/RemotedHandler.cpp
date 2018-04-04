@@ -289,7 +289,7 @@ long RemotedResponse::sendResponse(std::istream& in, long status)
     }
     if (!m_output.isstruct())
         m_output.structure();
-    m_output.addmember("response.data").string(msg.c_str());
+    m_output.addmember("response.data").unsafe_string(msg.c_str());
     m_output.addmember("response.status").integer(status);
     return status;
 }
@@ -313,7 +313,7 @@ void RemotedResponse::setResponseHeader(const char* name, const char* value, boo
     }
 
     if (value && *value) {
-        DDF h = DDF(name).string(value);
+        DDF h = DDF(name).unsafe_string(value);
         hdrs.add(h);
     }
 }
