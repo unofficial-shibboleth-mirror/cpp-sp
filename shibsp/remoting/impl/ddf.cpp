@@ -804,28 +804,6 @@ void DDF::dump(FILE* f, int indent) const
 // wddxPacket XML fragment, with some simple extensions. We escape the four major
 // special characters, which requires that we output strings one char at a time.
 
-void xml_encode(ostream& os, const char* start)
-{
-    size_t pos;
-    while (start && *start) {
-        pos = strcspn(start, "\"<>&");
-        if (pos > 0) {
-            os.write(start,pos);
-            start += pos;
-        }
-        else {
-            switch (*start) {
-                case '"':   os << "&quot;";     break;
-                case '<':   os << "&lt;";       break;
-                case '>':   os << "&gt;";       break;
-                case '&':   os << "&amp;";      break;
-                default:    os << *start;
-            }
-            start++;
-        }
-    }
-}
-
 static
 bool
 is32bitSafe(long what)
@@ -847,17 +825,17 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
                 os << "<string";
                 if (name_attr && p->name) {
                     os << " name=\"";
-                    xml_encode(os,p->name);
+                    XMLHelper::encode(os,p->name);
                     os << '"';
                 }
                 if (p->value.string) {
                     if (p->type == ddf_body_t::DDF_STRING) {
                         os << '>';
-                        xml_encode(os,p->value.string);
+                        XMLHelper::encode(os,p->value.string);
                     }
                     else {
                         os << " unsafe=\"1\">";
-                        xml_encode(os,XMLToolingConfig::getConfig().getURLEncoder()->encode(p->value.string).c_str());
+                        XMLHelper::encode(os,XMLToolingConfig::getConfig().getURLEncoder()->encode(p->value.string).c_str());
                     }
                     os << "</string>";
                 }
@@ -871,7 +849,7 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
                 os << "<number";
                 if (name_attr && p->name) {
                     os << " name=\"";
-                    xml_encode(os,p->name);
+                    XMLHelper::encode(os,p->name);
                     os << '"';
                 }
                 os << '>' << p->value.integer << "</number>";
@@ -881,7 +859,7 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
                 os << "<number";
                 if (name_attr && p->name) {
                     os << " name=\"";
-                    xml_encode(os,p->name);
+                    XMLHelper::encode(os,p->name);
                     os << '"';
                 }
                 os << '>' << fixed << p->value.floating << dec << "</number>";
@@ -892,14 +870,14 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
                 os << "<struct";
                 if (name_attr && p->name) {
                     os << " name=\"";
-                    xml_encode(os,p->name);
+                    XMLHelper::encode(os,p->name);
                     os << '"';
                 }
                 os << '>';
                 ddf_body_t* child=p->value.children.first;
                 while (child) {
                     os << "<var name=\"";
-                    xml_encode(os,child->name);
+                    XMLHelper::encode(os,child->name);
                     os << "\">";
                     serialize(child,os,false);
                     os << "</var>";
@@ -914,7 +892,7 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
                 os << "<array length=\"" << p->value.children.count << '"';
                 if (name_attr && p->name) {
                     os << " name=\"";
-                    xml_encode(os,p->name);
+                    XMLHelper::encode(os,p->name);
                     os << '"';
                 }
                 os << '>';
@@ -933,7 +911,7 @@ void serialize(ddf_body_t* p, ostream& os, bool name_attr=true)
                 os << "<null";
                 if (name_attr && p->name) {
                     os << " name=\"";
-                    xml_encode(os,p->name);
+                    XMLHelper::encode(os,p->name);
                     os << '"';
                 }
                 os << "/>";
