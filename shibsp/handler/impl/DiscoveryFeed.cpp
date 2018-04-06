@@ -92,7 +92,7 @@ namespace shibsp {
         // Each filename is also a cache tag.
         typedef queue< pair<string, time_t> > feedqueue_t;
         mutable map<string,feedqueue_t> m_feedQueues;
-        auto_ptr<Mutex> m_feedLock;
+        scoped_ptr<Mutex> m_feedLock;
 #endif
     };
 

@@ -249,8 +249,7 @@ void MetadataPKIXIterator::populate()
             // Copy over the information.
             for (vector< boost::shared_ptr<X509Credential> >::const_iterator c = cached->second.begin(); c != cached->second.end(); ++c) {
                 m_certs.insert(m_certs.end(), (*c)->getEntityCertificateChain().begin(), (*c)->getEntityCertificateChain().end());
-                if ((*c)->getCRL())
-                    m_crls.push_back((*c)->getCRL());
+                m_crls.insert(m_crls.end(), (*c)->getCRLs().begin(), (*c)->getCRLs().end());
             }
             return;
         }
@@ -268,8 +267,7 @@ void MetadataPKIXIterator::populate()
     // Copy over the new information.
     for (vector< boost::shared_ptr<X509Credential> >::const_iterator c = m_ownedCreds.begin(); c != m_ownedCreds.end(); ++c) {
         m_certs.insert(m_certs.end(), (*c)->getEntityCertificateChain().begin(), (*c)->getEntityCertificateChain().end());
-        if ((*c)->getCRL())
-            m_crls.push_back((*c)->getCRL());
+        m_crls.insert(m_crls.end(), (*c)->getCRLs().begin(), (*c)->getCRLs().end());
     }
 
     // As a last step, if we're caching, try and elevate to a write lock for cache insertion.
