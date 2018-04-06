@@ -315,9 +315,11 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
         auto_ptr<ArtifactResponse> resp(ArtifactResponseBuilder::buildArtifactResponse());
         resp->setInResponseTo(req->getID());
         Issuer* me = IssuerBuilder::buildIssuer();
+        resp->setIssuer(me);
         me->setName(application.getRelyingParty(entity)->getXMLString("entityID").second);
         resp->setPayload(payload.get());
         payload.release();
+        fillStatus(*resp, StatusCode::SUCCESS);
 
         long ret = sendMessage(
             *m_encoder, resp.get(), relayState.c_str(), nullptr, policy->getIssuerMetadata(), application, httpResponse, "conditional"
@@ -343,6 +345,7 @@ pair<bool,long> SAML2ArtifactResolution::emptyResponse(
     auto_ptr<ArtifactResponse> resp(ArtifactResponseBuilder::buildArtifactResponse());
     resp->setInResponseTo(request.getID());
     Issuer* me = IssuerBuilder::buildIssuer();
+    resp->setIssuer(me);
     me->setName(app.getRelyingParty(recipient)->getXMLString("entityID").second);
     fillStatus(*resp, StatusCode::SUCCESS);
     long ret = m_encoder->encode(httpResponse, resp.get(), nullptr);
