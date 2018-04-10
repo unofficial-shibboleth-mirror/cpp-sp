@@ -273,7 +273,7 @@ pair<bool,long> ExternalAuth::processMessage(
         Wrapper4InputSource dsrc(&src, false);
         DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(dsrc);
         XercesJanitor<DOMDocument> janitor(doc);
-        auto_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
+        scoped_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
         janitor.release();
 
         saml2::Assertion* token = dynamic_cast<saml2::Assertion*>(xmlObject.get());

@@ -49,13 +49,15 @@ using namespace opensaml::saml2md;
 using namespace opensaml::saml2p;
 using namespace shibsp;
 
+using boost::scoped_ptr;
+
 extern string data_path;
 
 class DynamicMetadataTest : public CxxTest::TestSuite {
  private:
     const string m_entityId;
     const string m_entityIdFail;
-    auto_ptr<SAML2ArtifactType0004> m_artifact;
+    scoped_ptr<SAML2ArtifactType0004> m_artifact;
 public:
     DynamicMetadataTest() : CxxTest::TestSuite(), m_entityId("https://idp.shibboleth.net/idp/shibboleth"),
         m_entityIdFail("https://idp.shibboleth.net/idp/shibboleth/Fail"), m_artifact(nullptr)
@@ -77,7 +79,7 @@ private:
         const XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
         ParserPool& pool = xcf.getParser();
         XercesJanitor<DOMDocument> janitor(pool.parse(in));
-        auto_ptr<MetadataProvider> metadataProvider(
+        scoped_ptr<MetadataProvider> metadataProvider(
             opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(type, janitor.get()->getDocumentElement())
         );
 
@@ -142,7 +144,7 @@ private:
         XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
         ParserPool& pool = xcf.getParser();
         XercesJanitor<DOMDocument> janitor(pool.parse(in));
-        auto_ptr<MetadataProvider> metadataProvider(
+        scoped_ptr<MetadataProvider> metadataProvider(
             opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, janitor.get()->getDocumentElement())
         );
 
@@ -159,11 +161,11 @@ private:
                 TS_ASSERT(nullptr == thePair.first);
             }
 
-            auto_ptr<SAML2ArtifactType0004> testArtifact(new SAML2ArtifactType0004(SecurityHelper::doHash("SHA1", testEntity.data(), testEntity.length(), false), 666));
+            scoped_ptr<SAML2ArtifactType0004> testArtifact(new SAML2ArtifactType0004(SecurityHelper::doHash("SHA1", testEntity.data(), testEntity.length(), false), 666));
             MetadataProviderCriteria artifactCrit(testApp, testArtifact.get());
             pair<const EntityDescriptor*, const RoleDescriptor*>  artefactPair = metadataProvider->getEntityDescriptor(artifactCrit);
             TS_ASSERT(nullptr != artefactPair.first);
-        } catch (XMLToolingException& ex) {
+        } catch (const XMLToolingException& ex) {
             TS_TRACE(ex.what());
             throw;
         }
@@ -187,7 +189,7 @@ public:
         XMLToolingConfig& xcf = XMLToolingConfig::getConfig();
         ParserPool& pool = xcf.getParser();
         XercesJanitor<DOMDocument> janitor(pool.parse(in));
-        auto_ptr<MetadataProvider> metadataProvider(
+        scoped_ptr<MetadataProvider> metadataProvider(
             opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, janitor.get()->getDocumentElement())
         );
 
@@ -198,7 +200,7 @@ public:
             MetadataProviderCriteria crit(testApp, testEntity.c_str());
             pair<const EntityDescriptor*, const RoleDescriptor*>  thePair = metadataProvider->getEntityDescriptor(crit);
             TS_ASSERT(nullptr == thePair.first);
-        } catch (XMLToolingException& ex) {
+        } catch (const XMLToolingException& ex) {
             TS_TRACE(ex.what());
             throw;
         }

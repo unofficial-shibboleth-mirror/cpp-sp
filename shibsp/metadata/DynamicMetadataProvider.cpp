@@ -89,7 +89,7 @@ namespace shibsp {
         string m_subst, m_match, m_regex, m_hashed, m_cacheDir;
         boost::scoped_ptr<X509TrustEngine> m_trust;
         boost::scoped_ptr<CredentialResolver> m_dummyCR;
-        auto_ptr<Thread> m_init_thread;
+        boost::scoped_ptr<Thread> m_init_thread;
         Category & m_log;
 
         static void* init_fn(void*);

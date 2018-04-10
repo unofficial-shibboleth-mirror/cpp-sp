@@ -1151,7 +1151,7 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
             return false;
         }
 
-        auto_ptr<saml2::NameID> nameidObject;
+        scoped_ptr<saml2::NameID> nameidObject;
         const char* nameid = obj["nameid"].string();
         if (nameid) {
             // Parse and bind the document into an XMLObject.
@@ -1171,7 +1171,7 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
         }
 
         // Store the reverse mapping for logout.
-        auto_ptr_char name(nameidObject.get() ? nameidObject->getName() : nullptr);
+        auto_ptr_char name(nameidObject ? nameidObject->getName() : nullptr);
         if (name.get() && *name.get() && m_reverseIndex
             && (m_excludedNames.size() == 0 || m_excludedNames.count(nameidObject->getName()) == 0)) {
             try {

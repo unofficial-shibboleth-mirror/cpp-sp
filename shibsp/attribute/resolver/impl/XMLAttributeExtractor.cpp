@@ -310,9 +310,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
         try {
             DOMElement* dchild = XMLHelper::getFirstChildElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, _AttributeDecoder);
             if (dchild) {
-                auto_ptr<xmltooling::QName> q(XMLHelper::getXSIType(dchild));
-                if (q.get())
-                    decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q.get(), dchild));
+                scoped_ptr<xmltooling::QName> q(XMLHelper::getXSIType(dchild));
+                if (q)
+                    decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q, dchild));
             }
             if (!decoder)
                 decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(StringAttributeDecoderType, nullptr));

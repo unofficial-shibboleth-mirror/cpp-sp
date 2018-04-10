@@ -124,7 +124,7 @@ saml1p::Response* ArtifactResolver::resolve(
         throw BindingException("Unable to resolve artifact(s) into a SAML response.");
     const xmltooling::QName* code = (response->getStatus() && response->getStatus()->getStatusCode()) ? response->getStatus()->getStatusCode()->getValue() : nullptr;
     if (!code || *code != saml1p::StatusCode::SUCCESS) {
-        auto_ptr<saml1p::Response> wrapper(response);
+        scoped_ptr<saml1p::Response> wrapper(response);
         BindingException ex("Identity provider returned a SAML error during artifact resolution.");
         annotateException(&ex, &idpDescriptor, response->getStatus());  // rethrow
     }
@@ -248,7 +248,7 @@ ArtifactResponse* ArtifactResolver::resolve(
         throw BindingException("Unable to resolve artifact(s) into a SAML response.");
     else if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
            !XMLString::equals(response->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
-        auto_ptr<ArtifactResponse> wrapper(response);
+        scoped_ptr<ArtifactResponse> wrapper(response);
         BindingException ex("Identity provider returned a SAML error during artifact resolution.");
         annotateException(&ex, &ssoDescriptor, response->getStatus());  // rethrow
     }
