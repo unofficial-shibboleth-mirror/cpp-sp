@@ -218,7 +218,6 @@ pair<bool,bool> DOMPropertySet::getBool(const char* name, const char* ns) const
 
 pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* ns) const
 {
-    pair<bool,const char*> ret(false,nullptr);
     map< string,pair<char*,const XMLCh*> >::const_iterator i;
 
     if (ns)

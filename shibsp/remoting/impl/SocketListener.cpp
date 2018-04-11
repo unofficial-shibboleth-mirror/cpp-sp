@@ -546,14 +546,14 @@ int ServerThread::job()
         // Dispatch the message.
         m_listener->receive(in, sink);
     }
-    catch (XMLToolingException& e) {
+    catch (const XMLToolingException& e) {
         if (incomingError)
             log.error("error processing incoming message: %s", e.what());
         DDF out=DDF("exception").string(e.toString().c_str());
         DDFJanitor jout(out);
         sink << out;
     }
-    catch (exception& e) {
+    catch (const exception& e) {
         if (incomingError)
             log.error("error processing incoming message: %s", e.what());
         ListenerException ex(e.what());

@@ -210,7 +210,7 @@ pair<bool,long> AttributeResolverHandler::run(SPRequest& request, bool isHandler
             // When not out of process, we remote all the message processing.
             DDF out, in = wrap(request);
             DDFJanitor jin(in), jout(out);
-            out=request.getServiceProvider().getListenerService()->send(in);
+            out = send(request, in);
             return unwrap(request, out);
         }
     }

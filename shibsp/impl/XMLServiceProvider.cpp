@@ -170,6 +170,10 @@ namespace {
         const vector<const XMLCh*>* getAudiences() const {
             return (m_audiences.empty() && m_base) ? m_base->getAudiences() : &m_audiences;
         }
+
+        // PropertySet overrides.
+        pair<bool, const char*> getString(const char* name, const char* ns = nullptr) const;
+        pair<bool, const XMLCh*> getXMLString(const char* name, const char* ns = nullptr) const;
 #endif
         string getNotificationURL(const char* resource, bool front, unsigned int index) const;
 
@@ -1549,6 +1553,40 @@ DOMNodeFilter::FilterAction XMLApplication::acceptNode(const DOMNode* node) cons
 }
 
 #ifndef SHIBSP_LITE
+
+pair<bool, const char*> XMLApplication::getString(const char* name, const char* ns) const
+{
+    if (!SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+        if (!ns && !strcmp(name, "entityID")) {
+            const ListenerService* listener = getServiceProvider().getListenerService(false);
+            DDF* in = listener ? listener->getInput() : nullptr;
+            if (in) {
+                const char* entityID = in->getmember("_mapped")["entityID"].string();
+                if (entityID)
+                    return make_pair(true, entityID);
+            }
+        }
+    }
+
+    return DOMPropertySet::getString(name, ns);
+}
+
+pair<bool, const XMLCh*> XMLApplication::getXMLString(const char* name, const char* ns) const
+{
+    if (!SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+        if (!ns && !strcmp(name, "entityID")) {
+            const ListenerService* listener = getServiceProvider().getListenerService(false);
+            DDF* in = listener ? listener->getInput() : nullptr;
+            if (in) {
+                void* entityID = in->getmember("_mapped")["entityID-16"].pointer();
+                if (entityID)
+                    return make_pair(true, reinterpret_cast<const XMLCh*>(entityID));
+            }
+        }
+    }
+
+    return DOMPropertySet::getXMLString(name, ns);
+}
 
 const PropertySet* XMLApplication::getRelyingParty(const EntityDescriptor* provider) const
 {

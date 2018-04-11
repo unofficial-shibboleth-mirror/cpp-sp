@@ -176,7 +176,7 @@ pair<bool,long> TransformSessionInitiator::run(SPRequest& request, string& entit
         in.addmember("entity_id").string(entityID.c_str());
     
         // Remote the processing.
-        out = request.getServiceProvider().getListenerService()->send(in);
+        out = send(request, in);
         if (out.isstring())
             entityID = out.string();
     }

@@ -171,7 +171,7 @@ pair<bool,long> SAML2ArtifactResolution::run(SPRequest& request, bool isHandler)
             DDF out,in = wrap(request, nullptr, true);
             DDFJanitor jin(in), jout(out);
             
-            out = request.getServiceProvider().getListenerService()->send(in);
+            out = send(request, in);
             return unwrap(request, out);
         }
     }

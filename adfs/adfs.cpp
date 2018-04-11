@@ -438,7 +438,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
         in.addmember("authnContextClassRef").string(acClass.second);
 
     // Remote the processing.
-    out = request.getServiceProvider().getListenerService()->send(in);
+    out = send(request, in);
     return unwrap(request, out);
 }
 
@@ -871,7 +871,7 @@ pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) con
         headers.push_back("User-Agent");
         DDF out,in = wrap(request, &headers);
         DDFJanitor jin(in), jout(out);
-        out=request.getServiceProvider().getListenerService()->send(in);
+        out = send(request, in);
         return unwrap(request, out);
     }
 }

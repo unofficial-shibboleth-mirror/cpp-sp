@@ -198,7 +198,7 @@ pair<bool,long> ExternalAuth::run(SPRequest& request, bool isHandler) const
             headers.push_back("Cookie");
             DDF out,in = wrap(request, &headers);
             DDFJanitor jin(in), jout(out);
-            out=request.getServiceProvider().getListenerService()->send(in);
+            out = send(request, in);
             return unwrap(request, out);
         }
     }

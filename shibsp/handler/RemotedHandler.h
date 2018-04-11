@@ -67,6 +67,14 @@ namespace shibsp {
         void setAddress(const char* address);
 
         /**
+        * Send a remoted message and return the response.
+        *
+        * @param in    input message to send
+        * @return      response from remote service
+        */
+        virtual DDF send(const SPRequest& request, DDF& in) const;
+
+        /**
          * Wraps a request by creating an outgoing data flow with the data needed
          * to remote the request information.
          *

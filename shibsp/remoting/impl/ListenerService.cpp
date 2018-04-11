@@ -31,6 +31,7 @@
 
 #include <xercesc/dom/DOM.hpp>
 #include <xmltooling/security/SecurityHelper.h>
+#include <xmltooling/util/Threads.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -61,7 +62,7 @@ Remoted::~Remoted()
 {
 }
 
-ListenerService::ListenerService()
+ListenerService::ListenerService() : m_threadLocalKey(ThreadKey::create(nullptr))
 {
 }
 
@@ -136,7 +137,27 @@ void ListenerService::receive(DDF &in, ostream& out)
             throw ListenerException("No destination registered for incoming message addressed to ($1).", params(1,in.name()));
     }
 
-    dest->receive(in, out);
+    try {
+        // Input is saved for surreptitious access by components without direct API access to the data.
+        m_threadLocalKey->setData(&in);
+        auto_ptr_XMLCh selfEntityID(in["_mapped.entityID"].string());
+        if (selfEntityID.get()) {
+            in.addmember("_mapped.entityID-16").pointer(const_cast<XMLCh*>(selfEntityID.get()));
+        }
+
+        dest->receive(in, out);
+        m_threadLocalKey->setData(nullptr);
+    }
+    catch (...) {
+        // Clear on error.
+        m_threadLocalKey->setData(nullptr);
+        throw;
+    }
+}
+
+DDF* ListenerService::getInput() const
+{
+    return reinterpret_cast<DDF*>(m_threadLocalKey->getData());
 }
 
 bool ListenerService::init(bool force)

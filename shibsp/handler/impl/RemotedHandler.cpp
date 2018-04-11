@@ -362,6 +362,16 @@ void RemotedHandler::addRemotedHeader(const char* header)
     m_remotedHeaders.insert(header);
 }
 
+DDF RemotedHandler::send(const SPRequest& request, DDF& in) const
+{
+    // Capture and forward entityIDSelf content setting, if set.
+    pair<bool, const char*> entityID = request.getRequestSettings().first->getString("entityIDSelf");
+    if (entityID.first)
+        in.addmember("_mapped.entityID").string(entityID.second);
+
+    return request.getServiceProvider().getListenerService()->send(in);
+}
+
 DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers, bool certs) const
 {
     DDF in = DDF(m_address.c_str()).structure();

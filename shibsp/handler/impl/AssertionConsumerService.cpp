@@ -121,7 +121,7 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
         headers.push_back("Accept-Language");
         DDF out,in = wrap(request, &headers);
         DDFJanitor jin(in), jout(out);
-        out = request.getServiceProvider().getListenerService()->send(in);
+        out = send(request, in);
         return unwrap(request, out);
     }
 }

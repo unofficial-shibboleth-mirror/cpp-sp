@@ -305,7 +305,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
             // When not out of process, we remote all the message processing.
             DDF out,in = wrap(request);
             DDFJanitor jin(in), jout(out);
-            out=request.getServiceProvider().getListenerService()->send(in);
+            out = send(request, in);
             return unwrap(request, out);
         }
     }

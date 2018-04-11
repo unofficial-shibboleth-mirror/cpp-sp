@@ -123,7 +123,7 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         headers.push_back("User-Agent");
         DDF out,in = wrap(request,&headers);
         DDFJanitor jin(in), jout(out);
-        out=request.getServiceProvider().getListenerService()->send(in);
+        out = send(request, in);
         return unwrap(request, out);
     }
 }

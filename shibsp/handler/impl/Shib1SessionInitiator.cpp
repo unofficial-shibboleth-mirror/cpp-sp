@@ -219,7 +219,7 @@ pair<bool,long> Shib1SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("RelayState").unsafe_string(target.c_str());
 
     // Remote the processing. Our unwrap method will handle POST data if necessary.
-    out = request.getServiceProvider().getListenerService()->send(in);
+    out = send(request, in);
     return unwrap(request, out);
 }
 

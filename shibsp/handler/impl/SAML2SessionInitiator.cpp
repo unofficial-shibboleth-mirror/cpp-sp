@@ -490,7 +490,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("RelayState").unsafe_string(target.c_str());
 
     // Remote the processing.
-    out = request.getServiceProvider().getListenerService()->send(in);
+    out = send(request, in);
     return unwrap(request, out);
 }
 

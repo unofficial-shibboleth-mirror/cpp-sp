@@ -272,7 +272,12 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
          }
     }
 
-    string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "entityID=" + urlenc->encode(app.getString("entityID").second) +
+    // Check for content-specific SP entityID before falling back to app default.
+    prop = getString("entityIDSelf", request, HANDLER_PROPERTY_MAP);
+    if (!prop.first)
+    	prop = app.getString("entityID");
+
+    string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "entityID=" + urlenc->encode(prop.second) +
         "&return=" + urlenc->encode(returnURL.c_str());
     if (m_returnParam)
         req = req + "&returnIDParam=" + m_returnParam;

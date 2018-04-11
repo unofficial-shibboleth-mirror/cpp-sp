@@ -106,7 +106,7 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
             DDF out,in = wrap(request);
             DDFJanitor jin(in), jout(out);
 
-            out=request.getServiceProvider().getListenerService()->send(in);
+            out = send(request, in);
             return unwrap(request, out);
         }
     }

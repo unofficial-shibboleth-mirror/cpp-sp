@@ -186,7 +186,7 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
             if (!s.empty())
                 in.addmember("cache_tag").string(s.c_str());
             DDFJanitor jin(in), jout(out);
-            out = request.getServiceProvider().getListenerService()->send(in);
+            out = send(request, in);
             s.erase();
             if (m_dir.empty()) {
                 // The cache tag and feed are in the response struct.

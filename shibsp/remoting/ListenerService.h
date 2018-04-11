@@ -28,7 +28,13 @@
 #define __shibsp_listener_h__
 
 #include <shibsp/remoting/ddf.h>
+
 #include <map>
+#include <boost/scoped_ptr.hpp>
+
+namespace xmltooling {
+    class ThreadKey;
+}
 
 namespace shibsp {
 
@@ -89,7 +95,20 @@ namespace shibsp {
          */
         virtual DDF send(const DDF& in)=0;
 
+        /**
+        * Receive a remoted message and write the response.
+        *
+        * @param in    input message
+        * @param out   output stream to write to
+        */
         void receive(DDF& in, std::ostream& out);
+
+        /**
+         * Access the input message being processed by the active worker thread.
+         *
+         * @return a reference to the input object
+         */
+        DDF* getInput() const;
 
         // Remoted classes register and unregister for messages using these methods.
         // Registration returns any existing listeners, allowing message hooking.
@@ -150,6 +169,7 @@ namespace shibsp {
 
     private:
         std::map<std::string,Remoted*> m_listenerMap;
+        boost::scoped_ptr<xmltooling::ThreadKey> m_threadLocalKey;
     };
 
 #if defined (_MSC_VER)

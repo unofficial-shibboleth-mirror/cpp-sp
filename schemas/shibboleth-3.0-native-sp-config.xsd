@@ -274,6 +274,7 @@
     <attribute name="exportDuplicateValues" type="boolean"/>
     <attribute name="redirectToSSL" type="unsignedInt"/>
     <attribute name="entityID" type="anyURI"/>
+    <attribute name="entityIDSelf" type="anyURI"/>
     <attribute name="discoveryURL" type="anyURI"/>
     <attribute name="discoveryPolicy" type="conf:string"/>
     <attribute name="isPassive" type="boolean"/>

@@ -381,7 +381,7 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
                 in.addmember("entity_id").string(request.getParameter("entityID"));
             DDFJanitor jin(in), jout(out);
 
-            out = request.getServiceProvider().getListenerService()->send(in);
+            out = send(request, in);
             return unwrap(request, out);
         }
     }
