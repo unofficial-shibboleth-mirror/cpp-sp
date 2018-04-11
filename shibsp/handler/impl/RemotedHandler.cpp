@@ -366,8 +366,13 @@ DDF RemotedHandler::send(const SPRequest& request, DDF& in) const
 {
     // Capture and forward entityIDSelf content setting, if set.
     pair<bool, const char*> entityID = request.getRequestSettings().first->getString("entityIDSelf");
-    if (entityID.first)
-        in.addmember("_mapped.entityID").string(entityID.second);
+    if (entityID.first) {
+        string s(entityID.second);
+        string::size_type pos = s.find("$hostname");
+        if (pos != string::npos)
+            s.replace(pos, 9, request.getHostname());
+        in.addmember("_mapped.entityID").string(s.c_str());
+    }
 
     return request.getServiceProvider().getListenerService()->send(in);
 }

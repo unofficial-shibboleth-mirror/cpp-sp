@@ -273,9 +273,19 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
     }
 
     // Check for content-specific SP entityID before falling back to app default.
+    string transformed;
     prop = getString("entityIDSelf", request, HANDLER_PROPERTY_MAP);
-    if (!prop.first)
-    	prop = app.getString("entityID");
+    if (prop.first) {
+        transformed = prop.second;
+        string::size_type pos = transformed.find("$hostname");
+        if (pos != string::npos) {
+            transformed.replace(pos, 9, request.getHostname());
+            prop.second = transformed.c_str();
+        }
+    }
+    else {
+        prop = app.getString("entityID");
+    }
 
     string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "entityID=" + urlenc->encode(prop.second) +
         "&return=" + urlenc->encode(returnURL.c_str());

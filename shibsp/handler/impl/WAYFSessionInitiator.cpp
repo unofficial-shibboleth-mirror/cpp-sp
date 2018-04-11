@@ -178,9 +178,19 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         target = "default";
 
     // Check for content-specific SP entityID before falling back to app default.
+    string transformed;
     prop = getString("entityIDSelf", request, HANDLER_PROPERTY_MAP);
-    if (!prop.first)
-    	prop = app.getString("entityID");
+    if (prop.first) {
+        transformed = prop.second;
+        string::size_type pos = transformed.find("$hostname");
+        if (pos != string::npos) {
+            transformed.replace(pos, 9, request.getHostname());
+            prop.second = transformed.c_str();
+        }
+    }
+    else {
+        prop = app.getString("entityID");
+    }
 
     const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
     string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "shire=" + urlenc->encode(ACSloc.c_str()) +
