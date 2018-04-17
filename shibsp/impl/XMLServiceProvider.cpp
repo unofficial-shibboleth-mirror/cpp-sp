@@ -2053,7 +2053,11 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
     // Initialize logging manually in order to redirect log messages as soon as possible.
     // If no explicit config is supplied, we now assume the caller has done this, so that
     // setuid processes can potentially do this as root.
-    if (conf.isEnabled(SPConfig::Logging)) {
+
+    // We also no longer do this on reloads, as this results in race conditions that could
+    // crash the process.
+
+    if (first && conf.isEnabled(SPConfig::Logging)) {
         string logconf;
         if (conf.isEnabled(SPConfig::OutOfProcess))
             logconf = XMLHelper::getAttrString(SHAR, nullptr, logger);
