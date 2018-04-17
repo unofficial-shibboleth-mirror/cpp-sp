@@ -88,16 +88,6 @@ if (Err = 0) then
   End If
   FileSystemObj.MoveFile ConfigFile, DistDir & "shibd.logger"
 
-  ConfigFile = DistDir & "native.logger.in"
-  ReplaceInFile ConfigFile, "@-SHIRELOGDIR-@", ConvertedDir & "/var/log/shibboleth"
-  If (NOT FileSystemObj.FileExists(ConfigDir & "native.logger")) then
-    FileSystemObj.CopyFile ConfigFile, ConfigDir & "native.logger", false
-  End If
-  If (FileSystemObj.FileExists(DistDir & "native.logger")) then
-    FileSystemObj.DeleteFile DistDir & "native.logger", true
-  End If
-  FileSystemObj.MoveFile ConfigFile, DistDir & "native.logger"
-
   ConfigFile = DistDir & "apache.config.in"
   ReplaceInFile ConfigFile, "@-PKGLIBDIR-@", ConvertedDir & "/" & LibDir & "/shibboleth"
   ReplaceInFile ConfigFile, "@-PKGWEBDIR-@", ConvertedDir & "/doc/shibboleth"
@@ -148,6 +138,10 @@ if (Err = 0) then
     If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
       FileSystemObj.CopyFile DistDir & "shibboleth3.xml", ConfigDir, false
     End If
+  End If
+
+  If (NOT FileSystemObj.FileExists(ConfigDir & "native.logger")) then
+    FileSystemObj.CopyFile DistDir & "native.logger", ConfigDir, false
   End If
 
   If (NOT FileSystemObj.FileExists(ConfigDir & "accessError.html")) then
