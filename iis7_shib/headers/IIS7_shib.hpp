@@ -45,8 +45,9 @@
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/util/PropertySet.h>
 
-#include <xmltooling/util/XMLHelper.h>
 #include <xmltooling/Lockable.h>
+#include <xmltooling/logging.h>
+#include <xmltooling/util/XMLHelper.h>
 #include <shibsp/exceptions.h>
 
 #include <message.h>
@@ -115,8 +116,7 @@ namespace Config {
 }
 
 BOOL LogEvent(
-    LPCSTR  lpUNCServerName,
     WORD  wType,
     DWORD  dwEventID,
-    PSID  lpUserSid,
+    xmltooling::logging::Priority::PriorityLevel priority,
     LPCSTR  message);

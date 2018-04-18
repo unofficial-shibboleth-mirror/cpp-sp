@@ -34,6 +34,7 @@
 #include "ShibUser.hpp"
 
 using namespace Config;
+using xmltooling::logging::Priority;
 
 IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
     m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
@@ -263,7 +264,7 @@ void IIS7Request::log(SPLogLevel level, const string& msg) const
 {
     AbstractSPRequest::log(level, msg);
     if (level >= SPCrit)
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CRITICAL, nullptr, msg.c_str());
+        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CRITICAL, Priority::CRIT, msg.c_str());
 }
 
 string IIS7Request::getRemoteAddr() const
@@ -470,9 +471,9 @@ string IIS7Request::makeSafeHeader(const char* rawname) const
 void IIS7Request::logFatal(const string& operation, HRESULT hr) const
 {
     string msg(operation + " failed: " + lexical_cast<string>(hr));
-    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CRITICAL, nullptr, msg.c_str());
+    LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CRITICAL, Priority::FATAL, msg.c_str());
     if (m_response) {
-        (void)m_response->SetStatus(static_cast<USHORT>(XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
+        m_response->SetStatus(static_cast<USHORT>(XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
     }
 }
 

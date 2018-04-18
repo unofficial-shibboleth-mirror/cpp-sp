@@ -32,6 +32,7 @@
 #include <codecvt> // 16 bit to 8 bit and vice versa chars
 #include <boost/algorithm/string.hpp>
 
+using xmltooling::logging::Priority;
 
 namespace Config {
     HINSTANCE g_hinstDLL;
@@ -92,19 +93,16 @@ RegisterModule(
 )
 {
     if (g_Config) {
-        LogEvent(nullptr, EVENTLOG_WARNING_TYPE, SHIB_NATIVE_REENTRANT_INIT, nullptr,
-                 "Reentrant filter initialization, ignoring...");
+        LogEvent(EVENTLOG_WARNING_TYPE, SHIB_NATIVE_REENTRANT_INIT, Priority::WARN, "SHIB_NATIVE_REENTRANT_INIT");
         return S_OK;
     }
 
     RegistrySignature::CheckSigResult checkSig = RegistrySignature::CheckSignature('IIS7');
     if (RegistrySignature::CheckSigResult::Failed == checkSig) {
-        LogEvent(nullptr, EVENTLOG_WARNING_TYPE, SHIB_NATIVE_CANNOT_CHECK_SIGNATURE, nullptr,
-                 "Couldn't Check signature");
+        LogEvent(EVENTLOG_WARNING_TYPE, SHIB_NATIVE_CANNOT_CHECK_SIGNATURE, Priority::WARN, "SHIB_NATIVE_CANNOT_CHECK_SIGNATURE");
     }
     else if (RegistrySignature::CheckSigResult::Mismatched == checkSig) {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CANNOT_CHECK_SIGNATURE, nullptr,
-                 "ISAPI Filter is already running, exiting");
+        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_SIGNATURE_MISMATCH, Priority::FATAL, "SHIB_NATIVE_SIGNATURE_MISMATCH");
         return FALSE;
     }
 
@@ -119,18 +117,17 @@ RegisterModule(
     );
     if (!g_Config->init()) {
         g_Config = nullptr;
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_STARTUP_FAILED, nullptr,
-                 "Filter startup failed during library initialization, check native log for help.");
+        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_STARTUP_FAILED, Priority::FATAL, "SHIB_NATIVE_STARTUP_FAILED");
         return E_FAIL;
     }
 
     try {
         if (!g_Config->instantiate(nullptr, true))
             throw runtime_error("unknown error");
-    } catch (std::exception& ex) {
+    } catch (const std::exception& ex) {
         g_Config->term();
         g_Config=nullptr;
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_STARTUP_FAILED_EXCEPTION, nullptr, ex.what());
+        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_STARTUP_FAILED_EXCEPTION, Priority::FATAL, ex.what());
         return FALSE;
     }
 
@@ -161,8 +158,7 @@ RegisterModule(
                 }
                 else {
                     _set_invalid_parameter_handler(old);
-                    LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CANNOT_CREATE_ANTISPOOF, nullptr,
-                             "Filter failed to generate a random anti-spoofing key (if this is Windows 2000 set one manually).");
+                    LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CANNOT_CREATE_ANTISPOOF, Priority::FATAL, "SHIB_NATIVE_CANNOT_CREATE_ANTISPOOF");
                     locker.assign();    // pops lock on SP config
                     g_Config->term();
                     g_Config = nullptr;
@@ -213,24 +209,21 @@ RegisterModule(
                                                       RQ_AUTHENTICATE_REQUEST);
 
     if (SUCCEEDED(hr))
-    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, SHIB_NATIVE_INITIALIZED, nullptr, "Filter initialized...");
+        LogEvent(EVENTLOG_INFORMATION_TYPE, SHIB_NATIVE_INITIALIZED, Priority::INFO, "SHIB_NATIVE_INITIALIZED");
 
     return hr;
 }
 
 BOOL LogEvent(
-    LPCSTR  lpUNCServerName,
     WORD  wType,
     DWORD  dwEventID,
-    PSID  lpUserSid,
+    Priority::PriorityLevel priority,
     LPCSTR  message)
 {
     LPCSTR  messages[] ={ message, nullptr };
     DWORD gle = GetLastError();
 
-    HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth NATIVE Filter");
-    BOOL res = ReportEvent(hElog, wType, CATEGORY_NATIVE, dwEventID, lpUserSid, 1, sizeof(DWORD), messages, &gle);
-    return (DeregisterEventSource(hElog) && res);
+    HANDLE hElog = ::RegisterEventSource(nullptr, SHIBSP_EVENTLOGSOURCE);
+    BOOL res = ::ReportEvent(hElog, wType, (priority / 100) + 1, dwEventID, nullptr, 1, sizeof(DWORD), messages, &gle);
+    return (::DeregisterEventSource(hElog) && res);
 }
-
-

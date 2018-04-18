@@ -35,8 +35,9 @@
 #include <string>
 #include <windows.h>
 
-using namespace xmltooling::logging;
 using namespace std;
+
+using xmltooling::logging::Priority;
 
 extern bool shibd_shutdown;                    // signals shutdown to Unix side
 extern const char* shar_schemadir;

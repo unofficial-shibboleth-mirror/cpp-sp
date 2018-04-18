@@ -1,37 +1,16 @@
 LanguageNames=(Neutral=0x0:MSG00)
 
-MessageIdTypedef=WORD
-
-MessageId=1
-SymbolicName=CATEGORY_SHIBD
-Language=Neutral
-Shibboleth Daemon
-.
-
-MessageId=
-SymbolicName=CATEGORY_ISAPI
-Language=Neutral
-Shibboleth Daemon ISAPI plugin
-.
-
-MessageId=
-SymbolicName=CATEGORY_NATIVE
-Language=Neutral
-Shibboleth Daemon Ntaive IIS plugin
-.
-
-
 MessageIdTypedef=DWORD
 
-SeverityNames=(Success=0x0:STATUS_SEVERITY_SUCCESS
-               Informational=0x1:STATUS_SEVERITY_INFORMATIONAL
-               Warning=0x2:STATUS_SEVERITY_WARNING
-               Error=0x3:STATUS_SEVERITY_ERROR
+SeverityNames=(Success=0x0
+               Informational=0x1
+               Warning=0x2
+               Error=0x3
               )
 
-FacilityNames=(Shibboleth=0x231:FACILITY_SYSTEM
-               ShibbolethISAPI=0x232:FACILITY_RUNTIME
-               ShibbolethNative=0x233:FACILITY_RUNTIME
+FacilityNames=(Shibboleth=0x231
+               ShibbolethISAPI=0x232
+               ShibbolethNative=0x233
                )
 
 
