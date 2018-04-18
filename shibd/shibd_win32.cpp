@@ -27,11 +27,15 @@
 #define _CRT_NONSTDC_NO_DEPRECATE 1
 #define _CRT_SECURE_NO_DEPRECATE 1
 
-#include <message.h>
 #include <shibsp/base.h>
+#include <xmltooling/logging.h>
+
+#include <message.h>
+
 #include <string>
 #include <windows.h>
 
+using namespace xmltooling::logging;
 using namespace std;
 
 extern bool shibd_shutdown;                    // signals shutdown to Unix side
@@ -60,16 +64,14 @@ VOID CmdRemoveService(LPCSTR);
 LPTSTR GetLastErrorText( LPSTR lpszBuf, DWORD dwSize );
 
 BOOL LogEvent(
-    LPCTSTR  lpUNCServerName,
-    WORD  wType,
-    DWORD  dwEventID,
-    PSID  lpUserSid,
-    LPCTSTR  message);
+    WORD wType,
+    Priority::PriorityLevel priority,
+    DWORD dwEventID,
+    LPCTSTR message);
 
 VOID ServiceStart(DWORD dwArgc, LPSTR *lpszArgv);
 VOID ServiceStop();
 BOOL ReportStatusToSCMgr(DWORD dwCurrentState, DWORD dwWin32ExitCode, DWORD dwWaitHint);
-void AddToMessageLog(LPSTR lpszMsg);
 
 BOOL WINAPI BreakHandler(DWORD dwCtrlType)
 {
@@ -159,7 +161,8 @@ int main(int argc, char *argv[])
         SetConsoleCtrlHandler(&BreakHandler,TRUE);
         if ((i=real_main(1))!=0)
         {
-            LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIBD_STARTUP_FAILED, nullptr, "shibd startup failed, check shibd.log for further details");
+            LogEvent(EVENTLOG_ERROR_TYPE, Priority::FATAL, SHIBD_STARTUP_FAILED,
+                "shibd startup failed, check shibd.log for further details");
             return i;
         }
         return real_main(0);
@@ -200,7 +203,7 @@ int main(int argc, char *argv[])
     };
 
     if (!StartServiceCtrlDispatcher(dispatchTable))
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIBD_SERVICE_START_FAILED, nullptr, "StartServiceCtrlDispatcher failed.");
+        LogEvent(EVENTLOG_ERROR_TYPE, Priority::FATAL, SHIBD_SERVICE_START_FAILED, "SHIBD_SERVICE_START_FAILED");
     return 0;
 }
 
@@ -215,11 +218,11 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 
     if (real_main(1)!=0)
     {
-        LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIBD_STARTUP_FAILED, nullptr, "shibd startup failed, check shibd.log for further details");
+        LogEvent(EVENTLOG_ERROR_TYPE, Priority::FATAL, SHIBD_STARTUP_FAILED, "SHIBD_STARTUP_FAILED");
         return;
     }
 
-    LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, SHIBD_SERVICE_STARTED, nullptr, "shibd started successfully.");
+    LogEvent(EVENTLOG_INFORMATION_TYPE, Priority::INFO, SHIBD_SERVICE_STARTED, "SHIBD_SERVICE_STARTED");
 
     if (!ReportStatusToSCMgr(SERVICE_RUNNING, NO_ERROR, 0))
         return;
@@ -236,7 +239,7 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 VOID ServiceStop()
 {
     if (!bConsole)
-        LogEvent(nullptr, EVENTLOG_INFORMATION_TYPE, SHIBD_SERVICE_STOPPING, nullptr, "shibd stopping...");
+        LogEvent(EVENTLOG_INFORMATION_TYPE, Priority::INFO, SHIBD_SERVICE_STOPPING, "SHIBD_SERVICE_STOPPING");
     shibd_shutdown=true;
 }
 
@@ -363,7 +366,7 @@ BOOL ReportStatusToSCMgr(DWORD dwCurrentState,
         // Report the status of the service to the service control manager.
         //
         if (!(fResult = SetServiceStatus(sshStatusHandle, &ssStatus)))
-            LogEvent(nullptr, EVENTLOG_ERROR_TYPE, SHIBD_SET_SERVICE_STATUS_FAILED, nullptr, "SetServiceStatus failed.");
+            LogEvent(EVENTLOG_ERROR_TYPE, Priority::ERROR, SHIBD_SET_SERVICE_STATUS_FAILED, "SHIBD_SET_SERVICE_STATUS_FAILED");
     }
     return fResult;
 }
@@ -546,16 +549,15 @@ LPTSTR GetLastErrorText( LPSTR lpszBuf, DWORD dwSize )
 }
 
 BOOL LogEvent(
-    LPCSTR  lpUNCServerName,
     WORD  wType,
+    Priority::PriorityLevel priority,
     DWORD  dwEventID,
-    PSID  lpUserSid,
     LPCSTR  message)
 {
     LPCSTR  messages[] = {message, nullptr};
-    DWORD gle = {GetLastError()};
+    DWORD gle = ::GetLastError();
     
-    HANDLE hElog = RegisterEventSource(lpUNCServerName, "Shibboleth Daemon");
-    BOOL res = ReportEvent(hElog, wType, CATEGORY_SHIBD, dwEventID, lpUserSid, 1, sizeof(DWORD), messages, &gle);
-    return (DeregisterEventSource(hElog) && res);
+    HANDLE hElog = ::RegisterEventSource(nullptr, SHIBSP_EVENTLOGSOURCE);
+    BOOL res = ::ReportEvent(hElog, wType, (priority / 100) + 1, dwEventID, nullptr, 1, sizeof(DWORD), messages, &gle);
+    return (::DeregisterEventSource(hElog) && res);
 }

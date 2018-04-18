@@ -102,6 +102,9 @@
 
 #ifdef WIN32
 
+/** Name of source to register with Windows Event Log. */
+#define SHIBSP_EVENTLOGSOURCE "Shibboleth Service Provider"
+
 /** Default catalog path on Windows. */
 # define SHIBSP_SCHEMAS "%PROGRAMDATA%/Shibboleth/SP/xml/xmltooling/catalog.xml;%PROGRAMDATA%/Shibboleth/SP/xml/opensaml/saml20-catalog.xml;%PROGRAMDATA%/Shibboleth/SP/xml/opensaml/saml11-catalog.xml;%PROGRAMDATA%/Shibboleth/SP/xml/shibboleth/catalog.xml"
 

@@ -75,6 +75,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BC
 		..\..\configs\shibd.logger.in = ..\..\configs\shibd.logger.in
 		..\..\configs\sslError.html = ..\..\configs\sslError.html
 		..\..\configs\syslog.logger = ..\..\configs\syslog.logger
+		..\..\configs\win-native.logger = ..\..\configs\win-native.logger
 		..\..\configs\win-shibboleth3.xml = ..\..\configs\win-shibboleth3.xml
 	EndProjectSection
 EndProject

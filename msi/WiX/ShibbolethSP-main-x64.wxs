@@ -186,35 +186,13 @@
       <!-- 
          We put the messages for IIS7 and Shibd in this module since all others are shared with x86
         -->
-      <Component Id="messageFile" Guid="{3FF89632-9F39-4B1B-AA3E-3AF6C8155B92}" Win64="yes" Directory="bin64">
-        <File Id="Messages" KeyPath="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\Messages.dll" />
+      <Component Id="messageFile" Guid="{3FF89632-9F39-4B1B-AA3E-3AF6C8155B92}" Win64="yes" Directory="lib64">
+        <File Id="Messages" KeyPath="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\messages.dll" />
         <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider">
           <RegistryValue Name="CategoryCount" Type="integer" Value="8" />
           <RegistryValue Name="TypesSupported" Type="integer" Value="7" />
           <RegistryValue Name="CategoryMessageFile" Type="string" Value="[ProgramFilesFolder]Shibboleth\SP\lib\NTEventLogAppender.dll" />
-          <RegistryValue Name="EventMessageFile" Type="string" Value="[ProgramFilesFolder]Shibboleth\SP\lib\NTEventLogAppender.dll" />
-        </RegistryKey>
-        <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth Daemon">
-          <RegistryValue Name="CategoryCount" Type="integer" Value="2" />
-          <RegistryValue Name="TypesSupported" Type="integer" Value="15" />
-          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[#Messages]" />
-          <RegistryValue Name="EventMessageFile" Type="string" Value="[#Messages]" />
-          <RegistryValue Name="ParameterMessageFile" Type="string" Value="[#Messages]" />
-        </RegistryKey>
-        <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth ISAPI Filter">
-          <RegistryValue Name="CategoryCount" Type="integer" Value="2" />
-          <RegistryValue Name="TypesSupported" Type="integer" Value="15" />
-          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[#Messages]" />
-          <RegistryValue Name="EventMessageFile" Type="string" Value="[#Messages]" />
-          <RegistryValue Name="ParameterMessageFile" Type="string" Value="[#Messages]" />
-        </RegistryKey>
-      </Component>
-      <Component Id="messageIIS7" Guid="{1CC5CF4A-6203-4ab8-9743-4A79C95D30CE}" Win64="yes" Directory="bin64">
-        <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\services\eventlog\Application\Shibboleth NATIVE Filter">
-          <RegistryValue Name="CategoryCount" Type="integer" Value="2" />
-          <RegistryValue Name="TypesSupported" Type="integer" Value="15" />
-          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[#Messages]" />
-          <RegistryValue Name="EventMessageFile" Type="string" Value="[#Messages]" />
+          <RegistryValue Name="EventMessageFile" Type="string" Value="[ProgramFilesFolder]Shibboleth\SP\lib\NTEventLogAppender.dll;[#Messages]" />
           <RegistryValue Name="ParameterMessageFile" Type="string" Value="[#Messages]" />
         </RegistryKey>
       </Component>
