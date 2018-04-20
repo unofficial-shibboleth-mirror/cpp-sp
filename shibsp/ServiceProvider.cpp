@@ -325,6 +325,9 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
 
+        string appid(string("[") + app->getId() + "]");
+        xmltooling::NDC ndc(appid.c_str());
+
         // If not SSL, check to see if we should block or redirect it.
         if (!request.isSecure()) {
             pair<bool,const char*> redirectToSSL = settings.first->getString("redirectToSSL");
@@ -485,6 +488,9 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
 
+        string appid(string("[") + app->getId() + "]");
+        xmltooling::NDC ndc(appid.c_str());
+
         // Three settings dictate how to proceed.
         pair<bool,const char*> authType = settings.first->getString("authType");
         pair<bool,bool> requireSession = settings.first->getBool("requireSession");
@@ -554,6 +560,9 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
+
+        string appid(string("[") + app->getId() + "]");
+        xmltooling::NDC ndc(appid.c_str());
 
         try {
             session = request.getSession(false, false, false);  // ignore timeout and do not cache
@@ -663,6 +672,9 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
+
+        string appid(string("[") + app->getId() + "]");
+        xmltooling::NDC ndc(appid.c_str());
 
         // If not SSL, check to see if we should block or redirect it.
         if (!request.isSecure()) {
