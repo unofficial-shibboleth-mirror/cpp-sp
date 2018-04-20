@@ -44,7 +44,7 @@ CONFIGFILES = \
 	example-metadata.xml \
 	example-shibboleth3.xml \
 	console.logger \
-	syslog.logger \
+	native.logger \
 	accessError.html \
 	attrChecker.html \
 	sessionError.html \
@@ -108,9 +108,6 @@ shibd-osx.plist: ${srcdir}/shibd-osx.plist.in Makefile ${top_builddir}/config.st
 shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
-native.logger: ${srcdir}/native.logger.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
 all-data-local: $(BUILTCONFIGFILES)
 
 install-data-local:	all-data-local
@@ -152,11 +149,9 @@ CLEANFILES = \
 	shibd-suse \
 	shibd-debian \
 	shibd-osx.plist \
-	shibd.logger \
-	native.logger
+	shibd.logger
 
 EXTRA_DIST = \
-	native.logger.in \
 	shibd.logger.in \
 	apache.config.in \
 	apache2.config.in \

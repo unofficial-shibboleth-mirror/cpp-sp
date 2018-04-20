@@ -415,16 +415,6 @@ exit 0
 %dir %{_libdir}/shibboleth
 %{_libdir}/shibboleth/*
 %attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/shibboleth
-%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon" || "%{_vendor}" == "suse"
-%if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
-%attr(0750,apache,apache) %dir %{_localstatedir}/log/shibboleth-www
-%endif
-%if "%{_vendor}" == "suse"
-%attr(0750,wwwrun,www) %dir %{_localstatedir}/log/shibboleth-www
-%endif
-%else
-%attr(0750,-,-) %dir %{_localstatedir}/log/shibboleth-www
-%endif
 %if 0%{?suse_version} < 1300
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/shibboleth
 %endif
