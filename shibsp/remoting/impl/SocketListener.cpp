@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <stack>
 #include <sstream>
+#include <boost/lexical_cast.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #include <xmltooling/util/NDC.h>
@@ -49,7 +50,9 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
+
 using xercesc::DOMElement;
+using boost::lexical_cast;
 
 namespace shibsp {
 
@@ -429,9 +432,7 @@ ServerThread::ServerThread(SocketListener::ShibSocket& s, SocketListener* listen
     : m_sock(s), m_child(nullptr), m_listener(listener)
 {
 
-    ostringstream buf;
-    buf << "[" << id << "]";
-    m_id = buf.str();
+    m_id = string("[") + lexical_cast<string>(id) + "]";
 
     // Create the child thread
     m_child = Thread::create(server_thread_fn, (void*)this, m_listener->m_stackSize);
@@ -538,6 +539,12 @@ int ServerThread::job()
         DDF in;
         DDFJanitor jin(in);
         is >> in;
+
+        string appid;
+        const char* aid = in["application_id"].string();
+        if (aid)
+            appid = string("[") + aid + "]";
+        NDC ndc(appid);
 
         log.debug("dispatching message (%s)", in.name() ? in.name() : "unnamed");
 
