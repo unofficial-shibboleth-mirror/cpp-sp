@@ -303,7 +303,6 @@ namespace {
         }
 
 #ifndef SHIBSP_LITE
-        scoped_ptr<TransactionLog> m_tranLog;
         scoped_ptr<SecurityPolicyProvider> m_policy;
         vector< boost::tuple<string,string,string> > m_transportOptions;
 #endif
@@ -381,8 +380,8 @@ namespace {
         void receive(DDF& in, ostream& out);
 
         TransactionLog* getTransactionLog() const {
-            if (m_impl->m_tranLog)
-                return m_impl->m_tranLog.get();
+            if (m_tranLog)
+                return m_tranLog.get();
             throw ConfigurationException("No TransactionLog available.");
         }
 
@@ -451,6 +450,7 @@ namespace {
         // Storage is the lowest, then remoting, then the cache, and finally the rest.
 #ifndef SHIBSP_LITE
         map< string,boost::shared_ptr<StorageService> > m_storage;
+        scoped_ptr<TransactionLog> m_tranLog;
 #endif
         scoped_ptr<ListenerService> m_listener;
         scoped_ptr<SessionCache> m_sessionCache;
@@ -2072,7 +2072,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         }
 
 #ifndef SHIBSP_LITE
-        m_tranLog.reset(
+        outer->m_tranLog.reset(
             new TransactionLog(
                 XMLHelper::getAttrString(SHAR, nullptr, tranLogFormat).c_str(),
                 XMLHelper::getAttrString(SHAR, nullptr, tranLogFiller).c_str()
