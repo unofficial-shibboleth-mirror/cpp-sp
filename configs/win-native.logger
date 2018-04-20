@@ -29,3 +29,5 @@ log4j.category.XMLTooling.libcurl=WARN
 
 log4j.appender.native_log=org.apache.log4j.NTEventLogAppender
 log4j.appender.native_log.source=Shibboleth Service Provider
+log4j.appender.native_log.layout=org.apache.log4j.PatternLayout
+log4j.appender.native_log.layout.ConversionPattern=%c %x: %m
