@@ -111,6 +111,7 @@ namespace shibsp {
             const char* NameIDFormat,
             const char* SPNameQualifier,
             const char* requestTemplate,
+            const char* outgoingBinding,
             string& relayState
             ) const;
 
@@ -256,6 +257,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     const Handler* ACS = nullptr;
     pair<bool,const char*> acClass, acComp, nidFormat, spQual;
     const char* requestTemplate = nullptr;
+    const char* outgoingBinding = nullptr;
     bool isPassive=false,forceAuthn=false;
     const Application& app = request.getApplication();
 
@@ -289,6 +291,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             settingMask |= HANDLER_PROPERTY_REQUEST;
             requestTemplate = request.getParameter("template");
         }
+
+        outgoingBinding = request.getParameter("outgoingBinding");
 
         pair<bool,bool> flag = getBool("isPassive", request, settingMask);
         isPassive = (flag.first && flag.second);
@@ -396,6 +400,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 nidFormat.first ? nidFormat.second : nullptr,
                 spQual.first ? spQual.second : nullptr,
                 requestTemplate,
+                outgoingBinding,
                 target
                 );
         }
@@ -426,6 +431,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             nidFormat.first ? nidFormat.second : nullptr,
             spQual.first ? spQual.second : nullptr,
             requestTemplate,
+            outgoingBinding,
             target
             );
     }
@@ -450,6 +456,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("SPNameQualifier").string(spQual.second);
     if (requestTemplate)
         in.addmember("template").string(requestTemplate);
+    if (outgoingBinding)
+        in.addmember("outgoingBinding").string(outgoingBinding);
     if (acsByIndex.first && acsByIndex.second) {
         // Determine index to use.
         pair<bool,const char*> ix = pair<bool,const char*>(false,nullptr);
@@ -542,6 +550,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         in["NameIDFormat"].string(),
         in["SPNameQualifier"].string(),
         in["template"].string(),
+        in["outgoingBinding"].string(),
         relayState
         );
     if (!ret.isstruct())
@@ -566,6 +575,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     const char* NameIDFormat,
     const char* SPNameQualifier,
     const char* requestTemplate,
+    const char* outgoingBinding,
     string& relayState
     ) const
 {
@@ -612,6 +622,8 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         // Loop over the supportable outgoing bindings.
         role = dynamic_cast<const IDPSSODescriptor*>(entity.second);
         for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
+            if (outgoingBinding && *b != outgoingBinding)
+                continue;
             auto_ptr_XMLCh wideb(b->c_str());
             ep = EndpointManager<SingleSignOnService>(role->getSingleSignOnServices()).getByBinding(wideb.get());
             if (ep) {
