@@ -209,7 +209,8 @@ namespace shibsp {
         void resolveAttributes(ResolutionContext& ctx) const;
 
         void getAttributeIds(vector<string>& attributes) const {
-            // Nothing to do, only the extractor would actually generate them.
+            if (!m_exceptionId.empty())
+                attributes.push_back(m_exceptionId.front());
         }
 
     private:

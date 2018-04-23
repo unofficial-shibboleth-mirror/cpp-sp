@@ -191,6 +191,8 @@ namespace shibsp {
         void getAttributeIds(vector<string>& attributes) const {
             if (m_extractor)
                 m_extractor->getAttributeIds(attributes);
+            if (!m_exceptionId.empty())
+                attributes.push_back(m_exceptionId.front());
         }
 
     private:
