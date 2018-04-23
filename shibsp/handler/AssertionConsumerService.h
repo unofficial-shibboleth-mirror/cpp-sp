@@ -137,29 +137,6 @@ namespace shibsp {
             ) const;
 
         /**
-         * Implement protocol-specific handling of the incoming decoded message.
-         * 
-         * <p>The result of implementing the protocol should be an exception or
-         * modifications to the request/response objects to reflect processing
-         * of the message.
-         * 
-         * @param application   reference to application receiving message
-         * @param httpRequest   client request that included message
-         * @param httpResponse  response to client
-         * @param policy        the SecurityPolicy in effect, after having evaluated the message
-         * @param reserved      ignore this parameter
-         * @param xmlObject     a protocol-specific message object
-         */
-        virtual void implementProtocol(
-            const Application& application,
-            const xmltooling::HTTPRequest& httpRequest,
-            xmltooling::HTTPResponse& httpResponse,
-            opensaml::SecurityPolicy& policy,
-            const PropertySet* reserved,
-            const xmltooling::XMLObject& xmlObject
-            ) const=0;
-
-        /**
          * Extracts policy-relevant assertion details.
          * 
          * @param assertion the incoming assertion

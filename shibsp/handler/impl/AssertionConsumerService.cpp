@@ -417,33 +417,6 @@ vector<Assertion*> DummyContext::m_tokens;
 
 ResolutionContext* AssertionConsumerService::resolveAttributes(
     const Application& application,
-    const saml2md::RoleDescriptor* issuer,
-    const XMLCh* protocol,
-    const saml1::NameIdentifier* v1nameid,
-    const saml2::NameID* nameid,
-    const XMLCh* authncontext_class,
-    const XMLCh* authncontext_decl,
-    const vector<const Assertion*>* tokens
-    ) const
-{
-    return resolveAttributes(
-        application,
-        nullptr,
-        issuer,
-        protocol,
-        nullptr,
-        v1nameid,
-        nullptr,
-        nameid,
-        nullptr,
-        authncontext_class,
-        authncontext_decl,
-        tokens
-        );
-}
-
-ResolutionContext* AssertionConsumerService::resolveAttributes(
-    const Application& application,
     const GenericRequest* request,
     const RoleDescriptor* issuer,
     const XMLCh* protocol,

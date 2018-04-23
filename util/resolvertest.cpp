@@ -88,7 +88,7 @@ public:
         const vector<const Assertion*>* tokens
         ) const {
         return shibsp::AssertionConsumerService::resolveAttributes(
-            application, issuer, protocol, v1nameid, nameid, authncontext_class, authncontext_decl, tokens
+            application, nullptr, issuer, protocol, nullptr, v1nameid, nullptr, nameid, nullptr, authncontext_class, authncontext_decl, tokens
             );
     }
 
