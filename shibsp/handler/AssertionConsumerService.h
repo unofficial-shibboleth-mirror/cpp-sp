@@ -137,6 +137,29 @@ namespace shibsp {
             ) const;
 
         /**
+         * Implement protocol-specific handling of the incoming decoded message.
+         * 
+         * <p>The result of implementing the protocol should be an exception or
+         * modifications to the request/response objects to reflect processing
+         * of the message.
+         * 
+         * @param application   reference to application receiving message
+         * @param httpRequest   client request that included message
+         * @param httpResponse  response to client
+         * @param policy        the SecurityPolicy in effect, after having evaluated the message
+         * @param reserved      ignore this parameter
+         * @param xmlObject     a protocol-specific message object
+         */
+        virtual void implementProtocol(
+            const Application& application,
+            const xmltooling::HTTPRequest& httpRequest,
+            xmltooling::HTTPResponse& httpResponse,
+            opensaml::SecurityPolicy& policy,
+            const PropertySet* reserved,
+            const xmltooling::XMLObject& xmlObject
+            ) const=0;
+
+        /**
          * Extracts policy-relevant assertion details.
          * 
          * @param assertion the incoming assertion
@@ -145,34 +168,6 @@ namespace shibsp {
          */
         virtual void extractMessageDetails(
             const opensaml::Assertion& assertion, const XMLCh* protocol, opensaml::SecurityPolicy& policy
-            ) const;
-
-        /**
-         * @deprecated
-         * Attempt SSO-initiated attribute resolution using the supplied information,
-         * including NameID and token extraction and filtering followed by
-         * secondary resolution.
-         * 
-         * <p>The caller must free the returned context handle.
-         * 
-         * @param application           reference to application receiving message
-         * @param issuer                source of SSO tokens
-         * @param protocol              SSO protocol used
-         * @param v1nameid              identifier of principal in SAML 1.x form, if any
-         * @param nameid                identifier of principal in SAML 2.0 form
-         * @param authncontext_class    method/category of authentication event, if known
-         * @param authncontext_decl     specifics of authentication event, if known
-         * @param tokens                available assertions, if any
-         */
-        ResolutionContext* resolveAttributes(
-            const Application& application,
-            const opensaml::saml2md::RoleDescriptor* issuer=nullptr,
-            const XMLCh* protocol=nullptr,
-            const opensaml::saml1::NameIdentifier* v1nameid=nullptr,
-            const opensaml::saml2::NameID* nameid=nullptr,
-            const XMLCh* authncontext_class=nullptr,
-            const XMLCh* authncontext_decl=nullptr,
-            const std::vector<const opensaml::Assertion*>* tokens=nullptr
             ) const;
 
         /**
