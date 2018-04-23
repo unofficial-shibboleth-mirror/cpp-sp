@@ -120,6 +120,7 @@ namespace shibsp {
 
         void extractAttributes(
             const Application& application,
+            const GenericRequest* request,
             const RoleDescriptor* issuer,
             const XMLObject& xmlObject,
             vector<Attribute*>& attributes
@@ -319,7 +320,7 @@ void GSSAPIExtractorImpl::extractAttributes(
 }
 
 void GSSAPIExtractor::extractAttributes(
-    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
+    const Application& application, const GenericRequest* request, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
     ) const
 {
     if (!m_impl)

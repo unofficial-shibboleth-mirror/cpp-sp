@@ -68,7 +68,7 @@ namespace shibsp {
         }
 
         void extractAttributes(
-            const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
+            const Application& application, const GenericRequest* request, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
             ) const;
 
         void getAttributeIds(std::vector<std::string>& attributes) const {
@@ -99,7 +99,7 @@ DelegationExtractor::DelegationExtractor(const DOMElement* e)
 }
 
 void DelegationExtractor::extractAttributes(
-    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
+    const Application& application, const GenericRequest* request, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
     ) const
 {
     const saml2::Assertion* assertion = dynamic_cast<const saml2::Assertion*>(&xmlObject);

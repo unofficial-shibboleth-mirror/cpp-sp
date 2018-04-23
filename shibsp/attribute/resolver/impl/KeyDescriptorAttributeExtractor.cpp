@@ -68,7 +68,7 @@ namespace shibsp {
         }
 
         void extractAttributes(
-            const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
+            const Application& application, const GenericRequest* request, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
             ) const;
 
         void getAttributeIds(std::vector<std::string>& attributes) const {
@@ -120,7 +120,7 @@ KeyDescriptorExtractor::KeyDescriptorExtractor(const DOMElement* e) : m_hashAlg(
 }
 
 void KeyDescriptorExtractor::extractAttributes(
-    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
+    const Application& application, const GenericRequest* request, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
     ) const
 {
     const RoleDescriptor* role = dynamic_cast<const RoleDescriptor*>(&xmlObject);

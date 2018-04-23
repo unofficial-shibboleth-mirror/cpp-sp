@@ -188,20 +188,6 @@ namespace shibsp {
         Lockable* lock() {return this;}
         void unlock() {}
 
-        // deprecated method
-        ResolutionContext* createResolutionContext(
-            const Application& application,
-            const EntityDescriptor* issuer,
-            const XMLCh* protocol,
-            const NameID* nameid=nullptr,
-            const XMLCh* authncontext_class=nullptr,
-            const XMLCh* authncontext_decl=nullptr,
-            const vector<const opensaml::Assertion*>* tokens=nullptr,
-            const vector<shibsp::Attribute*>* attributes=nullptr
-            ) const {
-            return createResolutionContext(application, nullptr, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens);
-        }
-
         ResolutionContext* createResolutionContext(
             const Application& application,
             const GenericRequest* request,
@@ -277,7 +263,7 @@ QueryResolver::QueryResolver(const DOMElement* e)
                 }
             }
         }
-        catch (exception& ex) {
+        catch (const exception& ex) {
             m_log.error("exception loading attribute designator: %s", ex.what());
         }
         child = XMLHelper::getNextSiblingElement(child);
@@ -299,7 +285,7 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
         find_if(ctx.getEntityDescriptor()->getAttributeAuthorityDescriptors(), isValidForProtocol(ctx.getProtocol()));
     if (!AA) {
         m_log.warn("no SAML 1.%d AttributeAuthority role found in metadata", version);
-        return;
+        throw MetadataException("Unable to locate SAML 1 AttributeAuthority role.");
     }
 
     const Application& application = ctx.getApplication();
@@ -347,7 +333,7 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
             client.sendSAML(request, application.getId(), mcc, loc.get());
             response.reset(client.receiveSAML());
         }
-        catch (exception& ex) {
+        catch (const exception& ex) {
             m_log.error("exception during SAML query to %s: %s", loc.get(), ex.what());
             soaper.reset();
         }
@@ -393,7 +379,7 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
         if (!policy->isAuthenticated())
             throw SecurityPolicyException("Security of SAML 1.x query result not established.");
     }
-    catch (exception& ex) {
+    catch (const exception& ex) {
         m_log.error("assertion failed policy validation: %s", ex.what());
         throw;
     }
@@ -435,7 +421,7 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }
     }
-    catch (exception& ex) {
+    catch (const exception& ex) {
         m_log.error("caught exception extracting/filtering attributes from query result: %s", ex.what());
         for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), xmltooling::cleanup<shibsp::Attribute>());
         ctx.getResolvedAttributes().clear();
@@ -453,7 +439,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
         find_if(ctx.getEntityDescriptor()->getAttributeAuthorityDescriptors(), isValidForProtocol(samlconstants::SAML20P_NS));
     if (!AA) {
         m_log.warn("no SAML 2 AttributeAuthority role found in metadata");
-        return;
+        throw MetadataException("Unable to locate SAML 2.0 AttributeAuthority role.");
     }
 
     const Application& application = ctx.getApplication();
@@ -497,7 +483,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
                     subject->setEncryptedID(encrypted.get());
                     encrypted.release();
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     // If we're encrypting deliberately, failure should be fatal.
                     if (encryption.first && strcmp(encryption.second, "conditional")) {
                         throw;
@@ -530,7 +516,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
             client.sendSAML(query, application.getId(), mcc, loc.get());
             srt.reset(client.receiveSAML());
         }
-        catch (exception& ex) {
+        catch (const exception& ex) {
             m_log.error("exception during SAML query to %s: %s", loc.get(), ex.what());
             soaper.reset();
         }
@@ -594,7 +580,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
                     m_log.debugStream() << "decrypted assertion: " << *newtoken << logging::eol;
             }
         }
-        catch (exception& ex) {
+        catch (const exception& ex) {
             m_log.error("failed to decrypt assertion: %s", ex.what());
             throw;
         }
@@ -661,7 +647,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
             }
         }
     }
-    catch (exception& ex) {
+    catch (const exception& ex) {
         m_log.error("assertion failed policy validation: %s", ex.what());
         throw;
     }
@@ -690,7 +676,7 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }
     }
-    catch (exception& ex) {
+    catch (const exception& ex) {
         m_log.error("caught exception extracting/filtering attributes from query result: %s", ex.what());
         for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), xmltooling::cleanup<shibsp::Attribute>());
         ctx.getResolvedAttributes().clear();
@@ -729,13 +715,16 @@ void QueryResolver::resolveAttributes(ResolutionContext& ctx) const
             m_log.warn("can't attempt attribute query, either no NameID or no metadata to use");
         }
     }
-    catch (exception& ex) {
+    catch (const exception& ex) {
         // Already logged.
         if (!m_exceptionId.empty()) {
             auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_exceptionId));
             attr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
             qctx.getResolvedAttributes().push_back(attr.get());
             attr.release();
+        }
+        else {
+            throw; // not exposing the exception as an attribute, so just surface to caller
         }
     }
 }

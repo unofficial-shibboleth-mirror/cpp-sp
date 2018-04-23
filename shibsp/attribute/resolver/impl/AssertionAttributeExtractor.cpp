@@ -66,6 +66,7 @@ namespace shibsp {
 
         void extractAttributes(
             const Application& application,
+            const GenericRequest* request,
             const RoleDescriptor* issuer,
             const XMLObject& xmlObject,
             vector<shibsp::Attribute*>& attributes
@@ -113,7 +114,7 @@ AssertionExtractor::AssertionExtractor(const DOMElement* e)
 }
 
 void AssertionExtractor::extractAttributes(
-    const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<shibsp::Attribute*>& attributes
+    const Application& application, const GenericRequest* request, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<shibsp::Attribute*>& attributes
     ) const
 {
     const saml2p::StatusResponseType* srt = dynamic_cast<const saml2p::StatusResponseType*>(&xmlObject);

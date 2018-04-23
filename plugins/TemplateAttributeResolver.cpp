@@ -87,20 +87,6 @@ namespace shibsp {
 
         ResolutionContext* createResolutionContext(
             const Application& application,
-            const opensaml::saml2md::EntityDescriptor* issuer,
-            const XMLCh* protocol,
-            const opensaml::saml2::NameID* nameid=nullptr,
-            const XMLCh* authncontext_class=nullptr,
-            const XMLCh* authncontext_decl=nullptr,
-            const vector<const opensaml::Assertion*>* tokens=nullptr,
-            const vector<Attribute*>* attributes=nullptr
-            ) const {
-            // Make sure new method gets run.
-            return createResolutionContext(application, nullptr, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
-        }
-
-        ResolutionContext* createResolutionContext(
-            const Application& application,
             const GenericRequest* request,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const XMLCh* protocol,

@@ -67,16 +67,6 @@ namespace shibsp {
         void unlock() {
         }
 
-        // deprecated
-        void extractAttributes(
-            const Application& application,
-            const RoleDescriptor* issuer,
-            const XMLObject& xmlObject,
-            vector<shibsp::Attribute*>& attributes
-            ) const {
-            extractAttributes(application, nullptr, issuer, xmlObject, attributes);
-        }
-
         void extractAttributes(
             const Application& application,
             const GenericRequest* request,

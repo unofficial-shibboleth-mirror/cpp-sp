@@ -214,7 +214,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
                     recoverRelayState(application, httpRequest, httpResponse, relayState, false);
                     hook += "&target=" + encoder->encode(relayState.c_str());
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.warn("error recovering relay state: %s", ex.what());
                 }
             }
@@ -230,7 +230,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
             try {
                 recoverRelayState(application, httpRequest, httpResponse, relayState, false);
             }
-            catch (std::exception& rsex) {
+            catch (const std::exception& rsex) {
                 m_log.warn("error recovering relay state: %s", rsex.what());
                 relayState.erase();
                 recoverRelayState(application, httpRequest, httpResponse, relayState, false);
@@ -275,7 +275,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
                 m_log.warn("unable to audit event, log event object was of an incorrect type");
             }
         }
-        catch (std::exception& ex2) {
+        catch (const std::exception& ex2) {
             m_log.warn("exception auditing event: %s", ex2.what());
         }
 
@@ -449,7 +449,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                             *id = mprefix.second + *id;
                     }
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.error("caught exception extracting attributes: %s", ex.what());
                 }
             }
@@ -461,7 +461,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             try {
                 extractor->extractAttributes(application, request, issuer, *protmsg, resolvedAttributes);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
@@ -473,7 +473,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                 else
                     extractor->extractAttributes(application, request, issuer, *nameid, resolvedAttributes);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
@@ -485,7 +485,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                 else
                     extractor->extractAttributes(application, request, issuer, *statement, resolvedAttributes);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
@@ -496,7 +496,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
                 try {
                     extractor->extractAttributes(application, request, issuer, *t, resolvedAttributes);
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.error("caught exception extracting attributes: %s", ex.what());
                 }
             }
@@ -509,7 +509,7 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             try {
                 filter->filterAttributes(fc, resolvedAttributes);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("caught exception filtering attributes: %s", ex.what());
                 m_log.error("dumping extracted attributes due to filtering exception");
                 for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
@@ -549,16 +549,17 @@ ResolutionContext* AssertionConsumerService::resolveAttributes(
             return ctx.release();
         }
     }
-    catch (std::exception& ex) {
-        m_log.error("attribute resolution failed: %s", ex.what());
+    catch (const std::exception&) {
+        // Logging should be handled by the resolver plugin at whatever level is appropriate.
     }
 
     if (!resolvedAttributes.empty()) {
         try {
             return new DummyContext(resolvedAttributes);
         }
-        catch (bad_alloc&) {
+        catch (...) {
             for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
+            throw;
         }
     }
     return nullptr;
@@ -627,7 +628,7 @@ LoginEvent* AssertionConsumerService::newLoginEvent(const Application& applicati
             m_log.warn("unable to audit event, log event object was of an incorrect type");
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.warn("exception auditing event: %s", ex.what());
     }
     return nullptr;

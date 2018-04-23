@@ -164,13 +164,6 @@ namespace shibsp {
             shutdown();
         }
 
-        // deprecated method
-        void extractAttributes(
-            const Application& application, const RoleDescriptor* issuer, const XMLObject& xmlObject, vector<Attribute*>& attributes
-            ) const {
-            extractAttributes(application, nullptr, issuer, xmlObject, attributes);
-        }
-
         void extractAttributes(const Application&, const GenericRequest*, const RoleDescriptor*, const XMLObject&, vector<Attribute*>&) const;
 
         void getAttributeIds(std::vector<std::string>& attributes) const {

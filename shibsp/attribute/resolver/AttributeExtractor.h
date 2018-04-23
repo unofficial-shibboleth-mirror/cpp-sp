@@ -61,24 +61,6 @@ namespace shibsp {
         virtual ~AttributeExtractor();
 
         /**
-         * @deprecated
-         * Extracts the attributes found in an XMLObject.
-         *
-         * @param application   Application performing the extraction
-         * @param issuer        source of object, if known
-         * @param xmlObject     object to extract
-         * @param attributes    an array to populate with the extracted attributes
-         *
-         * @throws AttributeExtractionException thrown if there is a problem extracting attributes
-         */
-        virtual void extractAttributes(
-            const Application& application,
-            const opensaml::saml2md::RoleDescriptor* issuer,
-            const xmltooling::XMLObject& xmlObject,
-            std::vector<Attribute*>& attributes
-            ) const;
-
-        /**
          * Extracts the attributes found in an XMLObject.
          *
          * @param application   Application performing the extraction
@@ -95,7 +77,7 @@ namespace shibsp {
             const opensaml::saml2md::RoleDescriptor* issuer,
             const xmltooling::XMLObject& xmlObject,
             std::vector<Attribute*>& attributes
-            ) const;
+            ) const=0;
 
         /**
          * Populates an array with the set of Attribute IDs that might be generated.

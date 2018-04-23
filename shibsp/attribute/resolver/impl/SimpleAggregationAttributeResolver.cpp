@@ -166,20 +166,6 @@ namespace shibsp {
         Lockable* lock() {return this;}
         void unlock() {}
 
-        // deprecated method
-        ResolutionContext* createResolutionContext(
-            const Application& application,
-            const EntityDescriptor* issuer,
-            const XMLCh* protocol,
-            const NameID* nameid=nullptr,
-            const XMLCh* authncontext_class=nullptr,
-            const XMLCh* authncontext_decl=nullptr,
-            const vector<const opensaml::Assertion*>* tokens=nullptr,
-            const vector<shibsp::Attribute*>* attributes=nullptr
-            ) const {
-            return createResolutionContext(application, nullptr, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
-        }
-
         ResolutionContext* createResolutionContext(
             const Application& application,
             const GenericRequest* request,
@@ -330,7 +316,7 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
                     obj.release();
                 }
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("exception loading attribute designator: %s", ex.what());
             }
         }
@@ -351,11 +337,11 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
         (m_metadata ? m_metadata.get() : application.getMetadataProvider())->getEntityDescriptor(mc);
     if (!mdresult.first) {
         m_log.warn("unable to locate metadata for provider (%s)", entityID);
-        return;
+        throw MetadataException("Unable to locate metadata for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
     else if (!(AA=dynamic_cast<const AttributeAuthorityDescriptor*>(mdresult.second))) {
         m_log.warn("no SAML 2 AttributeAuthority role found in metadata for (%s)", entityID);
-        return;
+        throw MetadataException("Unable to locate SAML 2.0 AttributeAuthority role for provider ($entityID)", namedparams(1, "entityID", entityID));
     }
 
     const PropertySet* relyingParty = application.getRelyingParty(mdresult.first);
@@ -403,7 +389,7 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
                     subject->setEncryptedID(encrypted.get());
                     encrypted.release();
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     // If we're encrypting deliberately, failure should be fatal.
                     if (encryption.first && strcmp(encryption.second, "conditional")) {
                         throw;
@@ -436,7 +422,7 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
             client.sendSAML(query, application.getId(), mcc, loc.get());
             srt.reset(client.receiveSAML());
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("exception during SAML query to %s: %s", loc.get(), ex.what());
             soaper.reset();
         }
@@ -501,7 +487,7 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
                     m_log.debugStream() << "decrypted assertion: " << *newtoken << logging::eol;
             }
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("failed to decrypt assertion: %s", ex.what());
             throw;
         }
@@ -568,7 +554,7 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
             }
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("assertion failed policy validation: %s", ex.what());
         throw;
     }
@@ -597,7 +583,7 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
             filter->filterAttributes(fc, ctx.getResolvedAttributes());
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("caught exception extracting/filtering attributes from query result: %s", ex.what());
         for_each(ctx.getResolvedAttributes().begin(), ctx.getResolvedAttributes().end(), xmltooling::cleanup<shibsp::Attribute>());
         ctx.getResolvedAttributes().clear();
@@ -703,7 +689,7 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
                 try {
                     doQuery(qctx, source->first.c_str(), n ? n.get() : qctx.getNameID());
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     if (exceptAttr.get())
                         exceptAttr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
                 }
@@ -727,7 +713,7 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
                             try {
                                 doQuery(qctx, link->c_str(), n ? n.get() : qctx.getNameID());
                             }
-                            catch (std::exception& ex) {
+                            catch (const std::exception& ex) {
                                 if (exceptAttr.get())
                                     exceptAttr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
                             }
@@ -752,7 +738,7 @@ void SimpleAggregationResolver::resolveAttributes(ResolutionContext& ctx) const
                                 try {
                                     doQuery(qctx, link->c_str(), n ? n.get() : qctx.getNameID());
                                 }
-                                catch (std::exception& ex) {
+                                catch (const std::exception& ex) {
                                     if (exceptAttr.get())
                                         exceptAttr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
                                 }

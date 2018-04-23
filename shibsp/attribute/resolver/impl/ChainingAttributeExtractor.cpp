@@ -56,16 +56,6 @@ namespace shibsp {
 
         void extractAttributes(
             const Application& application,
-            const RoleDescriptor* issuer,
-            const XMLObject& xmlObject,
-            vector<Attribute*>& attributes
-            ) const {
-            // Make sure new version gets run.
-            extractAttributes(application, nullptr, issuer, xmlObject, attributes);
-        }
-
-        void extractAttributes(
-            const Application& application,
             const GenericRequest* request,
             const RoleDescriptor* issuer,
             const XMLObject& xmlObject,
@@ -131,28 +121,6 @@ void AttributeExtractor::generateMetadata(SPSSODescriptor& role) const
 {
 }
 
-void AttributeExtractor::extractAttributes(
-    const Application& application,
-    const GenericRequest* request,
-    const RoleDescriptor* issuer,
-    const XMLObject& xmlObject,
-    vector<Attribute*>& attributes
-    ) const
-{
-    // Default call into deprecated method.
-    extractAttributes(application, issuer, xmlObject, attributes);
-}
-
-void AttributeExtractor::extractAttributes(
-    const Application& application,
-    const RoleDescriptor* issuer,
-    const XMLObject& xmlObject,
-    vector<Attribute*>& attributes
-    ) const
-{
-    // Empty default for deprecated method.
-}
-
 ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
 {
     SPConfig& conf = SPConfig::getConfig();
@@ -170,7 +138,7 @@ ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
                 m_extractors.push_back(np.get());
                 np.release();
             }
-            catch (exception& ex) {
+            catch (const exception& ex) {
                 Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.Chaining").error(
                     "caught exception processing embedded AttributeExtractor element: %s", ex.what()
                     );

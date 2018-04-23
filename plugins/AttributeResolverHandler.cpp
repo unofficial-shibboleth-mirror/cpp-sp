@@ -319,13 +319,18 @@ pair<bool,long> AttributeResolverHandler::processMessage(
             v1name->setNameQualifier(nameQualifier.get());
         }
 
-        scoped_ptr<ResolutionContext> ctx;
-        ctx.reset(resolveAttributes(application, httpRequest, site.second, protocol.get(), v1name.get(), v2name.get()));
+        scoped_ptr<ResolutionContext> ctx(resolveAttributes(application, httpRequest, site.second, protocol.get(), v1name.get(), v2name.get()));
 
-        buildJSON(msg, ctx->getResolvedAttributes(), param_encoding.second);
+        if (ctx) {
+            buildJSON(msg, ctx->getResolvedAttributes(), param_encoding.second);
+        }
+        else {
+            vector<Attribute*> noattrs;
+            buildJSON(msg, noattrs, param_encoding.second);
+        }
     }
-    catch (std::exception& ex) {
-        m_log.error("error while processing request: %s", ex.what());
+    catch (const std::exception& ex) {
+        // Logging should be handled by the resolver plugin at whatever level is appropriate.        
         msg << "{}";
         return make_pair(true, httpResponse.sendError(msg));
     }
@@ -400,44 +405,40 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
         }
     }
 
-    try {
-        AttributeResolver* resolver = application.getAttributeResolver();
-        if (resolver) {
-            m_log.debug("resolving attributes...");
+    AttributeResolver* resolver = application.getAttributeResolver();
+    if (resolver) {
+        m_log.debug("resolving attributes...");
 
-            Locker locker(resolver);
-            auto_ptr<ResolutionContext> ctx(
-                resolver->createResolutionContext(
-                    application,
-                    &httpRequest,
-                    issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : nullptr,
-                    protocol,
-                    nameid,
-                    nullptr,
-                    nullptr,
-                    nullptr,
-                    &resolvedAttributes
-                    )
-                );
-            resolver->resolveAttributes(*ctx);
-            // Copy over any pushed attributes.
-            while (!resolvedAttributes.empty()) {
-                ctx->getResolvedAttributes().push_back(resolvedAttributes.back());
-                resolvedAttributes.pop_back();
-            }
-            return ctx.release();
+        Locker locker(resolver);
+        auto_ptr<ResolutionContext> ctx(
+            resolver->createResolutionContext(
+                application,
+                &httpRequest,
+                issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : nullptr,
+                protocol,
+                nameid,
+                nullptr,
+                nullptr,
+                nullptr,
+                &resolvedAttributes
+                )
+            );
+        resolver->resolveAttributes(*ctx);
+        // Copy over any pushed attributes.
+        while (!resolvedAttributes.empty()) {
+            ctx->getResolvedAttributes().push_back(resolvedAttributes.back());
+            resolvedAttributes.pop_back();
         }
-    }
-    catch (std::exception& ex) {
-        m_log.error("attribute resolution failed: %s", ex.what());
+        return ctx.release();
     }
 
     if (!resolvedAttributes.empty()) {
         try {
             return new DummyContext(resolvedAttributes);
         }
-        catch (bad_alloc&) {
+        catch (...) {
             for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
+            throw;
         }
     }
     return nullptr;

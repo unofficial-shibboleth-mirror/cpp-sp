@@ -113,20 +113,6 @@ namespace shibsp {
 
         ResolutionContext* createResolutionContext(
             const Application& application,
-            const EntityDescriptor* issuer,
-            const XMLCh* protocol,
-            const NameID* nameid=nullptr,
-            const XMLCh* authncontext_class=nullptr,
-            const XMLCh* authncontext_decl=nullptr,
-            const vector<const opensaml::Assertion*>* tokens=nullptr,
-            const vector<shibsp::Attribute*>* attributes=nullptr
-            ) const {
-            // Make sure new method gets run.
-            return createResolutionContext(application, nullptr, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
-        }
-
-        ResolutionContext* createResolutionContext(
-            const Application& application,
             const GenericRequest* request,
             const EntityDescriptor* issuer,
             const XMLCh* protocol,
@@ -191,38 +177,6 @@ AttributeResolver::~AttributeResolver()
 {
 }
 
-ResolutionContext* AttributeResolver::createResolutionContext(
-    const Application& application,
-    const GenericRequest* request,
-    const EntityDescriptor* issuer,
-    const XMLCh* protocol,
-    const NameID* nameid,
-    const XMLCh* authncontext_class,
-    const XMLCh* authncontext_decl,
-    const vector<const opensaml::Assertion*>* tokens,
-    const vector<shibsp::Attribute*>* attributes
-    ) const
-{
-    // Default call into deprecated method.
-    return createResolutionContext(application, issuer, protocol, nameid, authncontext_class, authncontext_decl, tokens, attributes);
-}
-
-ResolutionContext* AttributeResolver::createResolutionContext(
-    const Application& application,
-    const EntityDescriptor* issuer,
-    const XMLCh* protocol,
-    const NameID* nameid,
-    const XMLCh* authncontext_class,
-    const XMLCh* authncontext_decl,
-    const vector<const opensaml::Assertion*>* tokens,
-    const vector<shibsp::Attribute*>* attributes
-    ) const
-{
-    // Default for deprecated method.
-    throw ConfigurationException("Deprecated method implementation should always be overridden.");
-}
-
-
 ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
 {
     SPConfig& conf = SPConfig::getConfig();
@@ -240,7 +194,7 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
                 m_resolvers.push_back(np.get());
                 np.release();
             }
-            catch (exception& ex) {
+            catch (const exception& ex) {
                 Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver." CHAINING_ATTRIBUTE_RESOLVER).error(
                     "caught exception processing embedded AttributeResolver element: %s", ex.what()
                     );
@@ -274,7 +228,7 @@ void ChainingAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
             chain.m_ownedAssertions.insert(chain.m_ownedAssertions.end(), context->getResolvedAssertions().begin(), context->getResolvedAssertions().end());
             context->getResolvedAssertions().clear();
         }
-        catch (exception& ex) {
+        catch (const exception& ex) {
             Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver." CHAINING_ATTRIBUTE_RESOLVER).error(
                 "caught exception applying AttributeResolver in chain: %s", ex.what()
                 );
