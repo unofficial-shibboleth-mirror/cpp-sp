@@ -140,9 +140,11 @@ namespace shibsp {
 
     private:
         mutable ptr_vector<AttributeResolver> m_resolvers;
+        bool m_failFast;
     };
 
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
+    static const XMLCh failFast[] =             UNICODE_LITERAL_8(f,a,i,l,F,a,s,t);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 
     SHIBSP_DLLLOCAL PluginManager<AttributeResolver,string,const DOMElement*>::Factory QueryResolverFactory;
@@ -178,6 +180,7 @@ AttributeResolver::~AttributeResolver()
 }
 
 ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
+    : m_failFast(XMLHelper::getAttrBool(e, false, failFast))
 {
     SPConfig& conf = SPConfig::getConfig();
 
@@ -232,6 +235,8 @@ void ChainingAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
             Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver." CHAINING_ATTRIBUTE_RESOLVER).error(
                 "caught exception applying AttributeResolver in chain: %s", ex.what()
                 );
+            if (failFast)
+                throw;
         }
     }
 }
