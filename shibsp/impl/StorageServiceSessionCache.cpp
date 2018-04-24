@@ -953,7 +953,7 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
 
             if (0 == lastAccess) {
                 m_log.error("session (ID: %s) did not report time of last access", key);
-                throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+                throw RetryableProfileException("Your session's last access time was missing, and you must re-authenticate.");
             }
 
             m_log.debug("reconstituting session and checking validity");
@@ -981,7 +981,8 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
                 }
                 string eid2(eid);
                 obj.destroy();
-                throw RetryableProfileException("Your session has expired, and you must re-authenticate.", namedparams(1, "entityID", eid2.c_str()));
+                throw RetryableProfileException("Your session has timed out due to inactivity, and you must re-authenticate.",
+                    namedparams(1, "entityID", eid2.c_str()));
             }
 
             if (timeout) {
@@ -1412,7 +1413,7 @@ void SSCache::receive(DDF& in, ostream& out)
         
         if (lastAccess == 0) {
             m_log.error("session (ID: %s) did not report time of last access", key);
-            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            throw RetryableProfileException("Your session's last access time was missing, and you must re-authenticate.");
         }
 
         // Adjust for expiration to recover last access time and check timeout.
@@ -1437,7 +1438,7 @@ void SSCache::receive(DDF& in, ostream& out)
                     app->getServiceProvider().getTransactionLog()->write(*logout_event);
                 }
                 remove(*app, key);
-                throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+                throw RetryableProfileException("Your session has timed out due to inactivity, and you must re-authenticate.");
             }
 
             // Update storage expiration, if possible.
@@ -1465,11 +1466,11 @@ void SSCache::receive(DDF& in, ostream& out)
         int ver = m_storage->readText(key, "session", &record, &lastAccess, client_addr ? 0 : curver);
         if (ver == 0) {
             m_log.info("session (ID: %s) no longer in storage", key);
-            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            throw RetryableProfileException("Your session is not available in the session store, and you must re-authenticate.");
         }
         else if (lastAccess == 0) {
             m_log.error("session (ID: %s) did not report time of last access", key);
-            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            throw RetryableProfileException("Your session's last access time was missing, and you must re-authenticate.");
         }
 
         // Adjust for expiration to recover last access time and check timeout.
@@ -1488,7 +1489,7 @@ void SSCache::receive(DDF& in, ostream& out)
 
         if (timeout > 0 && now - lastAccess >= timeout) {
             m_log.info("session timed out (ID: %s)", key);
-            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            throw RetryableProfileException("Your session has timed out due to inactivity, and you must re-authenticate.");
         }
 
         // Update storage expiration, if possible.

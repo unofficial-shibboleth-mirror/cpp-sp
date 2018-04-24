@@ -252,20 +252,20 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         int ver = m_cache->m_storage->readText(getID(), "session", &record, &lastAccess, curver);
         if (ver == 0) {
             m_cache->m_log.info("session (ID: %s) no longer in storage", getID());
-            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            throw RetryableProfileException("Your session is not available in the session store, and you must re-authenticate.");
         }
 
         if (timeout) {
             if (lastAccess == 0) {
                 m_cache->m_log.error("session (ID: %s) did not report time of last access", getID());
-                throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+                throw RetryableProfileException("Your session's last access time was missing, and you must re-authenticate.");
             }
             // Adjust for expiration to recover last access time and check timeout.
             unsigned long cacheTimeout = m_cache->getCacheTimeout(app);
             lastAccess -= cacheTimeout;
             if (*timeout > 0 && now - lastAccess >= *timeout) {
                 m_cache->m_log.info("session timed out (ID: %s)", getID());
-                throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+                throw RetryableProfileException("Your session has timed out due to inactivity, and you must re-authenticate.");
             }
 
             // Update storage expiration, if possible.
