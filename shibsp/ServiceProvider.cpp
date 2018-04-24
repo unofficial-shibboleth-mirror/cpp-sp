@@ -38,6 +38,7 @@
 #include <fstream>
 #include <sstream>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #ifndef SHIBSP_LITE
 # include <saml/exceptions.h>
 # include <saml/saml2/metadata/MetadataProvider.h>
@@ -85,7 +86,7 @@ namespace shibsp {
             if (mayRedirect)
                 redirectErrors = settings.first->getString("redirectErrors");
         }
-        catch (exception& ex) {
+        catch (const exception& ex) {
             log.error(ex.what());
         }
 
@@ -152,6 +153,8 @@ namespace shibsp {
         app.clearHeader(request, "Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
         app.clearHeader(request, "Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
         app.clearHeader(request, "Shib-Session-Index", "HTTP_SHIB_SESSION_INDEX");
+        app.clearHeader(request, "Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
+        app.clearHeader(request, "Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
         app.clearHeader(request, "Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
         app.clearHeader(request, "Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
         app.clearHeader(request, "Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
@@ -386,10 +389,10 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         try {
             session = request.getSession(true, false, false);   // don't cache it
         }
-        catch (exception& e) {
+        catch (const exception& e) {
             log.warn("error during session lookup: %s", e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
-            if (dynamic_cast<opensaml::RetryableProfileException*>(&e) == nullptr)
+            if (dynamic_cast<const opensaml::RetryableProfileException*>(&e) == nullptr)
                 throw;
         }
 
@@ -464,7 +467,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         log.debug("doAuthentication succeeded");
         return make_pair(false,0L);
     }
-    catch (exception& e) {
+    catch (const exception& e) {
         request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
@@ -510,7 +513,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
                 if (session)
                     slocker.assign(session, false); // assign to lock popper
             }
-            catch (exception& e) {
+            catch (const exception& e) {
                 log.warn("unable to obtain session to pass to access control provider: %s", e.what());
             }
 
@@ -537,7 +540,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
             return make_pair(true, request.returnDecline());
         }
     }
-    catch (exception& e) {
+    catch (const exception& e) {
         request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
@@ -569,7 +572,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             if (session)
                 slocker.assign(session, false); // assign to lock popper
         }
-        catch (exception& e) {
+        catch (const exception& e) {
             log.warn("unable to obtain session to export to request: %s", e.what());
         	// If we have to have a session, then this is a fatal error.
         	if (requireSession)
@@ -586,6 +589,8 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
         app->setHeader(request, "Shib-Application-ID", app->getId());
         app->setHeader(request, "Shib-Session-ID", session->getID());
+
+        const PropertySet* sessionProps = app->getPropertySet("Sessions");
 
         // Check for export of "standard" variables.
         // A 3.0 release would switch this default to false and rely solely on the
@@ -609,6 +614,12 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             hval = session->getSessionIndex();
             if (hval)
                 app->setHeader(request, "Shib-Session-Index", hval);
+
+            app->setHeader(request, "Shib-Session-Expires", boost::lexical_cast<string>(session->getExpiration()).c_str());
+            pair<bool,unsigned int> timeout = sessionProps ? sessionProps->getUnsignedInt("timeout") : make_pair(false, 0);
+            if (timeout.first && timeout.second > 0) {
+                app->setHeader(request, "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout.second).c_str());
+            }
         }
 
         // Check for export of algorithmically-derived portion of cookie names.
@@ -621,8 +632,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         // Maybe export the assertion keys.
         pair<bool,bool> exp = settings.first->getBool("exportAssertion");
         if (exp.first && exp.second) {
-            const PropertySet* sessions = app->getPropertySet("Sessions");
-            pair<bool,const char*> exportLocation = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,nullptr);
+            pair<bool,const char*> exportLocation = sessionProps ? sessionProps->getString("exportLocation") : pair<bool,const char*>(false,nullptr);
             if (!exportLocation.first)
                 log.warn("can't export assertions without an exportLocation Sessions property");
             else {
@@ -651,7 +661,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
         return make_pair(false,0L);
     }
-    catch (exception& e) {
+    catch (const exception& e) {
         request.log(SPRequest::SPError, e.what());
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
@@ -739,13 +749,13 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
             throw;
         }
     }
-    catch (exception& e) {
+    catch (const exception& e) {
         request.log(SPRequest::SPError, e.what());
         Session* session = nullptr;
         try {
             session = request.getSession(false, true, false);   // do not cache
         }
-        catch (exception&) {
+        catch (const exception&) {
         }
         Locker slocker(session, false); // pop existing lock on exit
         TemplateParameters tp(&e, nullptr, session);
