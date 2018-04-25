@@ -196,6 +196,7 @@
     <ClCompile Include="..\..\..\shibsp\AbstractSPRequest.cpp" />
     <ClCompile Include="..\..\..\shibsp\Application.cpp" />
     <ClCompile Include="..\..\..\shibsp\binding\impl\XMLProtocolProvider.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\AdminLogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\DiscoveryFeed.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\ExternalAuthHandler.cpp" />

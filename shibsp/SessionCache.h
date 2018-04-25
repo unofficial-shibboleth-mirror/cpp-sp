@@ -368,9 +368,6 @@ namespace shibsp {
         /**
         * Locates an existing session by ID.
         *
-        * <p>If the client address is supplied, then a check will be performed against
-        * the address recorded in the record.</p>
-        *
         * @param application   reference to Application that owns the Session
         * @param key           session key
         * @return  pointer to locked Session, or nullptr

@@ -93,6 +93,9 @@
             <!-- SAML and local-only logout. -->
             <Logout>SAML2 Local</Logout>
 
+            <!-- Administrative logout. -->
+            <LogoutInitiator type="Admin" Location="/Logout/Admin" acl="127.0.0.1 ::1" />
+
             <!-- Extension service that generates "approximate" metadata based on SP configuration. -->
             <Handler type="MetadataGenerator" Location="/Metadata" signing="false"/>
 

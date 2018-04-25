@@ -58,13 +58,6 @@ const char* LogoutHandler::getEventType() const {
 }
 
 pair<bool,long> LogoutHandler::sendLogoutPage(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response, bool local, const char* status
-    ) const
-{
-    return sendLogoutPage(application, request, response, local ? "local" : "global");
-}
-
-pair<bool,long> LogoutHandler::sendLogoutPage(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* type
     ) const
 {

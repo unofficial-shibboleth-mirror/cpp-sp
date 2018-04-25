@@ -49,6 +49,9 @@ namespace shibsp {
     /** Registers LogoutInitiator implementations. */
     void SHIBSP_API registerLogoutInitiators();
 
+    /** LogoutInitiator that supports administrative logout. */
+    #define ADMIN_LOGOUT_INITIATOR "Admin"
+
     /** LogoutInitiator that iterates through a set of protocol-specific versions. */
     #define CHAINING_LOGOUT_INITIATOR "Chaining"
 

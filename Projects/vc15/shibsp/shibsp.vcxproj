@@ -205,6 +205,7 @@
     <ClCompile Include="..\..\..\shibsp\attribute\resolver\impl\AssertionAttributeExtractor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\resolver\impl\MetadataAttributeExtractor.cpp" />
     <ClCompile Include="..\..\..\shibsp\binding\impl\XMLProtocolProvider.cpp" />
+    <ClCompile Include="..\..\..\shibsp\handler\impl\AdminLogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\DiscoveryFeed.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\ExternalAuthHandler.cpp" />

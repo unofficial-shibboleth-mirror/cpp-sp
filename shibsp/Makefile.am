@@ -124,6 +124,7 @@ common_sources = \
 	attribute/XMLAttribute.cpp \
 	binding/impl/XMLProtocolProvider.cpp \
 	handler/impl/AbstractHandler.cpp \
+	handler/impl/AdminLogout.cpp \
 	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/AssertionLookup.cpp \
     handler/impl/AttributeCheckerHandler.cpp \
