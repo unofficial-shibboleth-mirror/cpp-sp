@@ -163,7 +163,7 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
                     log.debug("loaded %s extension library (%s)", label, path.c_str());
                 }
             }
-            catch (std::exception& e) {
+            catch (const std::exception& e) {
                 if (XMLHelper::getAttrBool(exts, false, _fatal)) {
                     log.fatal("unable to load mandatory %s extension library %s: %s", label, path.c_str(), e.what());
                     throw;
@@ -207,7 +207,7 @@ void XMLConfigImpl::doListener(const DOMElement* e, XMLConfig* conf, Category& l
 
 void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& log)
 {
-    SPConfig& spConf = SPConfig::getConfig();
+    const SPConfig& spConf = SPConfig::getConfig();
 #ifndef SHIBSP_LITE
     SAMLConfig& samlConf = SAMLConfig::getConfig();
 #endif
@@ -226,7 +226,7 @@ void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& lo
                     log.info("building StorageService (%s) of type %s...", id.c_str(), t.c_str());
                     conf->m_storage[id] = boost::shared_ptr<StorageService>(xmlConf.StorageServiceManager.newPlugin(t.c_str(), child));
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     log.crit("failed to instantiate StorageService (%s): %s", id.c_str(), ex.what());
                 }
             }
@@ -309,7 +309,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLConfigImpl");
 #endif
-    SPConfig& conf=SPConfig::getConfig();
+    const SPConfig& conf=SPConfig::getConfig();
     XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
     const DOMElement* SHAR=XMLHelper::getFirstChildElement(e, OutOfProcess);
     const DOMElement* SHIRE=XMLHelper::getFirstChildElement(e, InProcess);

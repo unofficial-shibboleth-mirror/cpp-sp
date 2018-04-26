@@ -148,7 +148,7 @@ namespace shibsp {
 
     private:
         template <class T> T* doChainedPlugins(
-            xmltooling::PluginManager<T, std::string, const xercesc::DOMElement*>& pluginMgr,
+            const xmltooling::PluginManager<T, std::string, const xercesc::DOMElement*>& pluginMgr,
             const char* pluginType,
             const char* chainingType,
             const XMLCh* localName,

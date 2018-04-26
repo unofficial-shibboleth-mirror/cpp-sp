@@ -208,7 +208,7 @@ XMLApplication::XMLApplication(
         doHandlers(pp, e, log);
 
     // Notification.
-    DOMNodeList* nlist = e->getElementsByTagNameNS(e->getNamespaceURI(), Notify);
+    const DOMNodeList* nlist = e->getElementsByTagNameNS(e->getNamespaceURI(), Notify);
     for (XMLSize_t i = 0; nlist && i < nlist->getLength(); ++i) {
         if (nlist->item(i)->getParentNode()->isSameNode(e)) {
             const XMLCh* channel = static_cast<DOMElement*>(nlist->item(i))->getAttributeNS(nullptr, Channel);
@@ -243,7 +243,7 @@ XMLApplication::XMLApplication(
             else if (!m_base)
                 log.warn("no MetadataProvider available, configure at least one for standard SSO usage");
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             log.crit("error initializing MetadataProvider: %s", ex.what());
         }
     }
@@ -251,15 +251,21 @@ XMLApplication::XMLApplication(
     if (conf.isEnabled(SPConfig::Trust)) {
         m_trust.reset(doChainedPlugins(xmlConf.TrustEngineManager, "TrustEngine", CHAINING_TRUSTENGINE, _TrustEngine, e, log));
         if (!m_trust && !m_base) {
-            log.info(
-                "no TrustEngine specified or installed, using default chain {%s, %s}",
-                EXPLICIT_KEY_TRUSTENGINE, SHIBBOLETH_PKIX_TRUSTENGINE
-                );
-            m_trust.reset(xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE, nullptr));
-            ChainingTrustEngine* trustchain = dynamic_cast<ChainingTrustEngine*>(m_trust.get());
-            if (trustchain) {
-                trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr));
-                trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(SHIBBOLETH_PKIX_TRUSTENGINE, nullptr));
+            if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
+                log.info(
+                    "no TrustEngine specified or installed in legacy config, using default chain {%s, %s}",
+                    EXPLICIT_KEY_TRUSTENGINE, SHIBBOLETH_PKIX_TRUSTENGINE
+                    );
+                m_trust.reset(xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE, nullptr));
+                ChainingTrustEngine* trustchain = dynamic_cast<ChainingTrustEngine*>(m_trust.get());
+                if (trustchain) {
+                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr));
+                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(SHIBBOLETH_PKIX_TRUSTENGINE, nullptr));
+                }
+            }
+            else {
+                log.info("no TrustEngine specified or installed, using default of %s", EXPLICIT_KEY_TRUSTENGINE);
+                m_trust.reset(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr));
             }
         }
     }
@@ -341,7 +347,7 @@ XMLApplication::~XMLApplication()
 }
 
 template <class T> T* XMLApplication::doChainedPlugins(
-    PluginManager<T,string,const DOMElement*>& pluginMgr,
+    const PluginManager<T,string,const DOMElement*>& pluginMgr,
     const char* pluginType,
     const char* chainingType,
     const XMLCh* localName,
@@ -379,7 +385,7 @@ template <class T> T* XMLApplication::doChainedPlugins(
                 throw ConfigurationException("$1 element had no type attribute.", params(1, pluginType));
             }
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             log.crit("error building %s: %s", pluginType, ex.what());
             if (dummyType) {
                 // Install a dummy version as a safety valve.
@@ -482,7 +488,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
             else
                 m_handlerMap[string("/") + location.second] = exportHandler.get();
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             log.error("caught exception installing assertion lookup handler: %s", ex.what());
         }
     }
@@ -647,7 +653,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
             else if (location.first)
                 m_handlerMap[string("/") + location.second] = handler.get();
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             log.error("caught exception processing handler element: %s", ex.what());
         }
 
@@ -659,10 +665,10 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
 {
     if (!e->hasChildNodes())
         return;
-    DOMNamedNodeMap* ssoprops = e->getAttributes();
+    const DOMNamedNodeMap* ssoprops = e->getAttributes();
     XMLSize_t ssopropslen = ssoprops ? ssoprops->getLength() : 0;
 
-    SPConfig& conf = SPConfig::getConfig();
+    const SPConfig& conf = SPConfig::getConfig();
 
     int index = 0; // track ACS indexes globally across all protocols
 
@@ -797,10 +803,10 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
 {
     if (!e->hasChildNodes())
         return;
-    DOMNamedNodeMap* sloprops = e->getAttributes();
+    const DOMNamedNodeMap* sloprops = e->getAttributes();
     XMLSize_t slopropslen = sloprops ? sloprops->getLength() : 0;
 
-    SPConfig& conf = SPConfig::getConfig();
+    const SPConfig& conf = SPConfig::getConfig();
 
     // Tokenize the protocol list inside the element.
     XMLStringTokenizer prottokens(e->getTextContent());
@@ -903,10 +909,10 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
 {
     if (!e->hasChildNodes())
         return;
-    DOMNamedNodeMap* nimprops = e->getAttributes();
+    const DOMNamedNodeMap* nimprops = e->getAttributes();
     XMLSize_t nimpropslen = nimprops ? nimprops->getLength() : 0;
 
-    SPConfig& conf = SPConfig::getConfig();
+    const SPConfig& conf = SPConfig::getConfig();
 
     // Tokenize the protocol list inside the element.
     XMLStringTokenizer prottokens(e->getTextContent());
@@ -973,7 +979,7 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
 
 void XMLApplication::doArtifactResolution(const ProtocolProvider& pp, const char* protocol, DOMElement* e, Category& log)
 {
-    SPConfig& conf = SPConfig::getConfig();
+    const SPConfig& conf = SPConfig::getConfig();
 
     int index = 0; // track indexes globally across all protocols
 
@@ -1021,7 +1027,7 @@ void XMLApplication::doArtifactResolution(const ProtocolProvider& pp, const char
 
 void XMLApplication::doAttributePlugins(DOMElement* e, Category& log)
 {
-    SPConfig& conf = SPConfig::getConfig();
+    const SPConfig& conf = SPConfig::getConfig();
 
     m_attrExtractor.reset(
         doChainedPlugins(conf.AttributeExtractorManager, "AttributeExtractor", CHAINING_ATTRIBUTE_EXTRACTOR, _AttributeExtractor, e, log)
