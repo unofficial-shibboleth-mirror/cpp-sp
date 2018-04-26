@@ -13,6 +13,7 @@
   <ComponentRef Id="example_metadata.xml" />
   <ComponentRef Id="example_shibboleth3.xml" />
   <ComponentRef Id="keygen.bat" />
+  <ComponentRef Id="seckeygen.bat" />
   <ComponentRef Id="attrChecker.html" />
   <ComponentRef Id="sslError.html" />
   <ComponentRef Id="bindingTemplate.html" />
