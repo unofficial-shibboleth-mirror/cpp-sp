@@ -180,7 +180,7 @@ void SAML2LogoutInitiator::init(const char* location)
                     m_log.warn("skipping outgoing binding (%s), not a SAML 2.0 front-channel mechanism", b->c_str());
                 }
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("error building MessageEncoder: %s", ex.what());
             }
         }
@@ -211,7 +211,7 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
             return make_pair(false, 0L);
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
         return make_pair(false, 0L);
     }
@@ -272,9 +272,10 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
             doRequest(*app, *req, *resp, session);
         }
         else {
+            time_t revocationExp = session->getExpiration();
             session->unlock();
             m_log.log(getParent() ? Priority::WARN : Priority::ERROR, "bypassing SAML 2.0 logout, no NameID or issuing entityID found in session");
-            app->getServiceProvider().getSessionCache()->remove(*app, *req, resp.get());
+            app->getServiceProvider().getSessionCache()->remove(*app, *req, resp.get(), revocationExp);
         }
     }
     out << ret;
@@ -301,9 +302,10 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             application.getServiceProvider().getTransactionLog()->write(*logout_event);
         }
 #endif
+        time_t revocationExp = session->getExpiration();
         sessionLocker.assign();
         session = nullptr;
-        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
         return sendLogoutPage(application, httpRequest, httpResponse, "partial");
     }
 
@@ -378,7 +380,7 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                         break;
                     }
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.error("error sending LogoutRequest message: %s", ex.what());
                     soaper.reset();
                 }
@@ -439,9 +441,10 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             }
 
             if (session) {
+                time_t revocationExp = session->getExpiration();
                 sessionLocker.assign();
                 session = nullptr;
-                application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+                application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
             }
 
             return ret;
@@ -474,16 +477,17 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
         msg.release();  // freed by encoder
 
         if (session) {
+            time_t revocationExp = session->getExpiration();
             sessionLocker.assign();
             session = nullptr;
-            application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+            application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
         }
     }
-    catch (MetadataException& mex) {
+    catch (const MetadataException& mex) {
         // Less noise for IdPs that don't support logout (i.e. most)
         m_log.info("unable to issue SAML 2.0 logout request: %s", mex.what());
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("error issuing SAML 2.0 logout request: %s", ex.what());
     }
 

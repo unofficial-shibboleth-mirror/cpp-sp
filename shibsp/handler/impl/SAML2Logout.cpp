@@ -190,7 +190,7 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId)
                         m_log.warn("skipping outgoing binding (%s), not a SAML 2.0 front-channel mechanism", b->c_str());
                     }
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.error("error building MessageEncoder: %s", ex.what());
                 }
             }
@@ -286,7 +286,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
                 cache->remove(application, request, &response);
                 worked2 = true;
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("error removing session (%s): %s", session_id.c_str(), ex.what());
             }
         }
@@ -406,7 +406,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
                             );
                         nameid = dynamic_cast<NameID*>(decryptedID.get());
                     }
-                    catch (std::exception& ex) {
+                    catch (const std::exception& ex) {
                         m_log.error(ex.what());
                     }
                 }
@@ -471,7 +471,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
                 if (*sit != session_id)
                     cache->remove(application, sit->c_str()); // using the ID-based removal operation
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("error while logging out matching sessions: %s", ex.what());
             if (logout_event) {
                 logout_event->m_nameID = nameid;
@@ -562,7 +562,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
         try {
             checkError(logoutResponse, policy->getIssuerMetadata()); // throws if Status doesn't look good...
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             if (logout_event) {
                 logout_event->m_exception = &ex;
                 application.getServiceProvider().getTransactionLog()->write(*logout_event);

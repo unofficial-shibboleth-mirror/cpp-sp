@@ -104,12 +104,18 @@ namespace shibsp {
 #endif
         std::string active(const Application& app, const xmltooling::HTTPRequest& request);
         Session* find(const Application& app, xmltooling::HTTPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr);
-        void remove(const Application& app, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse* response=nullptr);
+
+        void remove(
+            const Application& app,
+            const xmltooling::HTTPRequest& request,
+            xmltooling::HTTPResponse* response=nullptr,
+            time_t revocationExp=0
+            );
 
         Session* find(const Application& app, const char* key) {
             return _find(app, key, nullptr, nullptr, nullptr);
         }
-        void remove(const Application& app, const char* key);
+        void remove(const Application& app, const char* key, time_t revocationExp=0);
         void test();
 
         unsigned long getCacheTimeout(const Application& app) const;
@@ -138,7 +144,10 @@ namespace shibsp {
         bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const opensaml::saml2::NameID& n1, const opensaml::saml2::NameID& n2) const;
         LogoutEvent* newLogoutEvent(const Application& app) const;
 
-        bool m_cacheAssertions,m_reverseIndex;
+        xmltooling::StorageService* m_storage;
+        xmltooling::StorageService* m_storage_lite;
+        bool m_cacheAssertions,m_reverseIndex,m_softRevocation;
+        unsigned long m_reverseIndexMaxSize;
         std::set<xmltooling::xstring> m_excludedNames;
         std::set<std::string> m_persistedAttributeIds;
 #endif
@@ -162,11 +171,6 @@ namespace shibsp {
 
         xmltooling::logging::Category& m_log;
         bool inproc;
-#ifndef SHIBSP_LITE
-        xmltooling::StorageService* m_storage;
-        xmltooling::StorageService* m_storage_lite;
-#endif
-
         bool shutdown;
         boost::scoped_ptr<xmltooling::CondWait> shutdown_wait;
         boost::scoped_ptr<xmltooling::Thread> cleanup_thread;

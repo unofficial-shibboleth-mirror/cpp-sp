@@ -94,11 +94,12 @@ SessionCache::~SessionCache()
 }
 
 SSCache::SSCache(const DOMElement* e)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache")), inproc(true),
+    :
 #ifndef SHIBSP_LITE
-      m_storage(nullptr), m_storage_lite(nullptr), m_cacheAssertions(true), m_reverseIndex(true),
+      m_storage(nullptr), m_storage_lite(nullptr), m_cacheAssertions(true), m_reverseIndex(true), m_softRevocation(true), m_reverseIndexMaxSize(0),
 #endif
-      m_root(e), m_inprocTimeout(900), m_cacheTimeout(0), m_cacheAllowance(0), shutdown(false)
+      m_root(e), m_inprocTimeout(900), m_cacheTimeout(0), m_cacheAllowance(0),
+      m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache")), inproc(true), shutdown(false)
 {
     SPConfig& conf = SPConfig::getConfig();
     inproc = conf.isEnabled(SPConfig::InProcess);
@@ -111,6 +112,8 @@ SSCache::SSCache(const DOMElement* e)
     static const XMLCh inprocTimeout[] =        UNICODE_LITERAL_13(i,n,p,r,o,c,T,i,m,e,o,u,t);
     static const XMLCh inboundHeader[] =        UNICODE_LITERAL_13(i,n,b,o,u,n,d,H,e,a,d,e,r);
     static const XMLCh maintainReverseIndex[] = UNICODE_LITERAL_20(m,a,i,n,t,a,i,n,R,e,v,e,r,s,e,I,n,d,e,x);
+    static const XMLCh reverseIndexMaxSize[] =  UNICODE_LITERAL_19(r,e,v,e,r,s,e,I,n,d,e,x,M,a,x,S,i,z,e);
+    static const XMLCh softRevocation[] =       UNICODE_LITERAL_14(s,o,f,t,R,e,v,o,c,a,t,i,o,n);
     static const XMLCh outboundHeader[] =       UNICODE_LITERAL_14(o,u,t,b,o,u,n,d,H,e,a,d,e,r);
     static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh _StorageServiceLite[] =  UNICODE_LITERAL_18(S,t,o,r,a,g,e,S,e,r,v,i,c,e,L,i,t,e);
@@ -158,8 +161,10 @@ SSCache::SSCache(const DOMElement* e)
             m_storage_lite = m_storage;
         }
 
+        m_softRevocation = XMLHelper::getAttrBool(e, true, softRevocation);
         m_cacheAssertions = XMLHelper::getAttrBool(e, true, cacheAssertions);
         m_reverseIndex = XMLHelper::getAttrBool(e, true, maintainReverseIndex);
+        m_reverseIndexMaxSize = XMLHelper::getAttrInt(e, 0, reverseIndexMaxSize);
         const XMLCh* excludedNames = e ? e->getAttributeNS(nullptr, excludeReverseIndex) : nullptr;
         if (excludedNames && *excludedNames) {
             XMLStringTokenizer toks(excludedNames);
@@ -324,10 +329,11 @@ void SSCache::insert(const char* key, time_t expires, const char* name, const ch
     if (!index || !*index)
         index = "_shibnull";
     DDF sessions = obj.addmember(index);
-    if (!sessions.islist())
-        sessions.list();
-    DDF session = DDF(nullptr).string(key);
-    sessions.add(session);
+    if (!sessions.isstruct())
+        sessions.structure();
+    else if (sessions.integer() == m_reverseIndexMaxSize)
+        sessions.first().destroy();
+    sessions.addmember(key);
 
     // Remarshall the record.
     ostringstream out;
@@ -492,7 +498,7 @@ void SSCache::insert(
         try {
             insert(key.get(), expires, name.get(), index.get());
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
         }
     }
@@ -509,7 +515,7 @@ void SSCache::insert(
                     throw IOException("Duplicate assertion ID ($1)", params(1, tokenid.get()));
             }
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("error storing assertion along with session: %s", ex.what());
         }
     }
@@ -603,7 +609,7 @@ void SSCache::persist(const Application& app, HTTPResponse& httpResponse, DDF& s
         }
         httpResponse.setCookie(shib_cookie.first.c_str(), sealed.c_str());
     }
-    catch (std::exception& e) {
+    catch (const std::exception& e) {
         m_log.error("failed to wrap session (%s) with DataSealer: %s", session.name(), e.what());
     }
 }
@@ -627,7 +633,7 @@ bool SSCache::matches(
             }
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("error while matching session: %s", ex.what());
     }
     return false;
@@ -733,20 +739,20 @@ vector<string>::size_type SSCache::_logout(
     istringstream in(record);
     in >> obj;
 
-    // The record contains child lists for each known session index.
+    // The record contains child structs for each known session index.
     DDF key;
     DDF sessions = obj.first();
-    while (sessions.islist()) {
+    while (sessions.isstruct()) {
         if (!indexes || indexes->empty() || indexes->count(sessions.name())) {
             key = sessions.first();
-            while (key.isstring()) {
+            while (!key.isnull()) {
                 // Fetch the session for comparison.
                 Session* session = nullptr;
                 try {
-                    session = find(app, key.string());
+                    session = find(app, key.name());
                 }
-                catch (std::exception& ex) {
-                    m_log.error("error locating session (%s): %s", key.string(), ex.what());
+                catch (const std::exception& ex) {
+                    m_log.error("error locating session (%s): %s", key.name(), ex.what());
                 }
 
                 if (session) {
@@ -755,15 +761,15 @@ vector<string>::size_type SSCache::_logout(
                     if (XMLString::equals(session->getEntityID(), entityID.get())) {
                         // Same NameID?
                         if (stronglyMatches(issuer->getEntityID(), app.getRelyingParty(issuer)->getXMLString("entityID").second, nameid, *session->getNameID())) {
-                            sessionsKilled.push_back(key.string());
+                            sessionsKilled.push_back(key.name());
                             key.destroy();
                         }
                         else {
-                            m_log.debug("session (%s) contained a non-matching NameID, leaving it alone", key.string());
+                            m_log.debug("session (%s) contained a non-matching NameID, leaving it alone", key.name());
                         }
                     }
                     else {
-                        m_log.debug("session (%s) established by different IdP, leaving it alone", key.string());
+                        m_log.debug("session (%s) established by different IdP, leaving it alone", key.name());
                     }
                 }
                 else {
@@ -771,7 +777,7 @@ vector<string>::size_type SSCache::_logout(
                     // To be conservative, we'll leave it alone. This isn't really increasing our security
                     // risk, because if we can't lookup the session, it's unlikely the calling logout code
                     // can either, so there's no chance of removing the session anyway.
-                    m_log.warn("session (%s) not accessible for logout, may be gone, or associated with a different application", key.string());
+                    m_log.warn("session (%s) not accessible for logout, may be gone, or associated with a different application", key.name());
                 }
                 key = sessions.next();
             }
@@ -798,7 +804,7 @@ vector<string>::size_type SSCache::_logout(
                 m_log.warn("logout mapping record changed behind us, leaving it alone");
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("error updating logout mapping record: %s", ex.what());
     }
 
@@ -856,7 +862,7 @@ LogoutEvent* SSCache::newLogoutEvent(const Application& app) const
             m_log.warn("unable to audit event, log event object was of an incorrect type");
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.warn("exception auditing event: %s", ex.what());
     }
     return nullptr;
@@ -990,7 +996,7 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
                 try {
                     m_storage->updateContext(key, now + cacheTimeout);
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.error("failed to update session expiration: %s", ex.what());
                 }
             }
@@ -1078,7 +1084,7 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
             response->setCookie(shib_cookie.first.c_str(), exp.c_str());
         }
     }
-    catch (std::exception&) {
+    catch (const std::exception&) {
         HTTPResponse* response = dynamic_cast<HTTPResponse*>(&request);
         if (response) {
             if (!m_outboundHeader.empty())
@@ -1124,6 +1130,22 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
     else {
         // We're out of process, so we can recover the session.
 #ifndef SHIBSP_LITE
+        m_log.debug("checking for revocation of session (%s)", key);
+        try {
+            if (m_storage_lite->readString("Revoked", key) > 0) {
+                m_log.warn("blocked recovery of revoked session (%s)", key);
+                return false;
+            }
+        }
+        catch (const std::exception& ex) {
+            if (m_softRevocation)
+                m_log.warn("ignoring failed check for revocation of session (%s): %s", ex.what());
+            else {
+                m_log.warn("check for revocation of session (%s) failed, treating as revoked: %s", ex.what());
+                return false;
+            }
+        }
+
         m_log.debug("attempting recovery of session (%s)", key);
 
         DDF obj;
@@ -1140,7 +1162,7 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
             stringstream str(unwrapped);
             str >> obj;
         }
-        catch (std::exception& e) {
+        catch (const std::exception& e) {
             if (dup)
                 free(dup);
             m_log.error("failed to unwrap sealed session data with DataSealer: %s", e.what());
@@ -1183,7 +1205,7 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
                     insert(key, iso.getEpoch(), name.get(), obj["session_index"].string());
                 }
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
             }
         }
@@ -1200,7 +1222,7 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
     return true;
 }
 
-void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPResponse* response)
+void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPResponse* response, time_t revocationExp)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("remove");
@@ -1227,11 +1249,11 @@ void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPRes
             shib_cookie = app.getCookieNameProps("_shibsealed_");
             response->setCookie(shib_cookie.first.c_str(), exp.c_str());
         }
-        remove(app, session_id.c_str());
+        remove(app, session_id.c_str(), revocationExp);
     }
 }
 
-void SSCache::remove(const Application& app, const char* key)
+void SSCache::remove(const Application& app, const char* key, time_t revocationExp)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("remove");
@@ -1245,6 +1267,24 @@ void SSCache::remove(const Application& app, const char* key)
 #ifndef SHIBSP_LITE
         m_storage->deleteContext(key);
         m_log.info("removed session (%s)", key);
+
+        if (!m_persistedAttributeIds.empty()) {
+            if (!revocationExp) {
+                const PropertySet* props = app.getPropertySet("Sessions");
+                if (props)
+                    revocationExp = props->getUnsignedInt("lifetime").second;
+                if (!revocationExp)
+                    revocationExp = 28800;
+                revocationExp += time(nullptr);
+            }
+            try {
+                if (!m_storage_lite->createString("Revoked", key, "1", revocationExp))
+                    m_log.warn("duplicate insertion of revocation for session (%s)", key);
+            }
+            catch (const std::exception& ex) {
+                m_log.warn("error recording revocation of session (%s): %s", key, ex.what());
+            }
+        }
 #else
         throw ConfigurationException("SessionCache removal requires a StorageService.");
 #endif
@@ -1445,7 +1485,7 @@ void SSCache::receive(DDF& in, ostream& out)
             try {
                 m_storage->updateContext(key, now + cacheTimeout);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("failed to update session expiration: %s", ex.what());
             }
         }
@@ -1496,7 +1536,7 @@ void SSCache::receive(DDF& in, ostream& out)
         try {
             m_storage->updateContext(key, now + cacheTimeout);
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("failed to update session expiration: %s", ex.what());
         }
 
@@ -1573,8 +1613,15 @@ void SSCache::receive(DDF& in, ostream& out)
         const char* key=in["key"].string();
         if (!key)
             throw ListenerException("Required parameter missing for session removal.");
+        time_t revocationExp = 0;
+        auto_ptr_XMLCh dt(in["revocationExp"].string());
+        if (dt.get()) {
+            XMLDateTime dtobj(dt.get());
+            dtobj.parseDateTime();
+            revocationExp = dtobj.getEpoch();
+        }
 
-        remove(*app, key);
+        remove(*app, key, revocationExp);
         DDF ret(nullptr);
         DDFJanitor jan(ret);
         out << ret;

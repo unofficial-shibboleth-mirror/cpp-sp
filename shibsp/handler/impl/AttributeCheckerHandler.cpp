@@ -76,11 +76,11 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        void flushSession(SPRequest& request) const {
+        void flushSession(SPRequest& request, time_t exp) const {
             try {
-                request.getApplication().getServiceProvider().getSessionCache()->remove(request.getApplication(), request, &request);
+                request.getApplication().getServiceProvider().getSessionCache()->remove(request.getApplication(), request, &request, exp);
             }
-            catch (std::exception&) {
+            catch (const std::exception&) {
             }
         }
 
@@ -151,7 +151,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         if (!session)
             request.log(SPRequest::SPWarn, "AttributeChecker found session unavailable immediately after creation");
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         request.log(SPRequest::SPWarn, string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
     }
 
@@ -191,16 +191,18 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         tp.m_request = &request;
         stringstream str;
         XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
-        if (m_flushSession) {
+        if (m_flushSession && session) {
+            time_t revocationExp = session->getExpiration();
             sessionLocker.assign(); // unlock the session
-            flushSession(request);
+            flushSession(request, revocationExp);
         }
         return make_pair(true, request.sendError(str));
     }
 
-    if (m_flushSession) {
+    if (m_flushSession && session) {
+        time_t revocationExp = session->getExpiration();
         sessionLocker.assign(); // unlock the session
-        flushSession(request);
+        flushSession(request, revocationExp);
     }
     m_log.error("could not process error template (%s)", m_template.c_str());
     istringstream msg("Internal Server Error. Please contact the site administrator.");

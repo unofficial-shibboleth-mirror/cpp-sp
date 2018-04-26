@@ -355,14 +355,18 @@ namespace shibsp {
         /**
          * Deletes an existing session bound to a request.
          *
+         * <p>Revocation may be supported by some implementations.</p>
+         *
          * @param application   reference to Application that owns the Session
          * @param request       request from client containing session, or a reference to it
          * @param response      optional response to client enabling removal of session or reference
+         * @param revocationExp optional indicator for length of time to track revocation of this session
          */
         virtual void remove(
             const Application& application,
             const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse* response=nullptr
+            xmltooling::HTTPResponse* response=nullptr,
+            time_t revocationExp=0
         )=0;
 
         /**
@@ -377,10 +381,13 @@ namespace shibsp {
         /**
         * Deletes an existing session.
         *
+        * <p>Revocation may be supported by some implementations.</p>
+        *
         * @param application   reference to Application that owns the Session
         * @param key           session key
+        * @param revocationExp optional indicator for length of time to track revocation of this session
         */
-        virtual void remove(const Application& application, const char* key)=0;
+        virtual void remove(const Application& application, const char* key, time_t revocationExp=0)=0;
     };
 
     /** SessionCache implementation backed by a StorageService. */

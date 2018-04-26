@@ -75,7 +75,7 @@ handinclude_HEADERS = \
 	handler/LogoutHandler.h \
 	handler/LogoutInitiator.h \
 	handler/RemotedHandler.h \
-    handler/SecuredHandler.h \
+	handler/SecuredHandler.h \
 	handler/SessionInitiator.h
 
 liteinclude_HEADERS = \
@@ -105,8 +105,8 @@ utilinclude_HEADERS = \
 
 noinst_HEADERS = \
 	internal.h \
-    impl/StoredSession.h \
-    impl/StorageServiceSessionCache.h \
+	impl/StoredSession.h \
+	impl/StorageServiceSessionCache.h \
 	remoting/impl/SocketListener.h
 
 common_sources = \
@@ -114,7 +114,7 @@ common_sources = \
 	Application.cpp \
 	ServiceProvider.cpp \
 	SPConfig.cpp \
-    version.cpp \
+	version.cpp \
 	attribute/Attribute.cpp \
 	attribute/BinaryAttribute.cpp \
 	attribute/ExtensibleAttribute.cpp \
@@ -124,15 +124,15 @@ common_sources = \
 	attribute/XMLAttribute.cpp \
 	binding/impl/XMLProtocolProvider.cpp \
 	handler/impl/AbstractHandler.cpp \
-	handler/impl/AdminLogout.cpp \
+	handler/impl/AdminLogoutInitiator.cpp \
 	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/AssertionLookup.cpp \
-    handler/impl/AttributeCheckerHandler.cpp \
+	handler/impl/AttributeCheckerHandler.cpp \
 	handler/impl/ChainingLogoutInitiator.cpp \
 	handler/impl/ChainingSessionInitiator.cpp \
 	handler/impl/CookieSessionInitiator.cpp \
 	handler/impl/DiscoveryFeed.cpp \
-    handler/impl/ExternalAuthHandler.cpp \
+	handler/impl/ExternalAuthHandler.cpp \
 	handler/impl/FormSessionInitiator.cpp \
 	handler/impl/LocalLogoutInitiator.cpp \
 	handler/impl/LogoutHandler.cpp \
@@ -147,7 +147,7 @@ common_sources = \
 	handler/impl/SAML2NameIDMgmt.cpp \
 	handler/impl/SAML2SessionInitiator.cpp \
 	handler/impl/SAMLDSSessionInitiator.cpp \
-    handler/impl/SecuredHandler.cpp \
+	handler/impl/SecuredHandler.cpp \
 	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/Shib1SessionInitiator.cpp \
@@ -155,8 +155,8 @@ common_sources = \
 	handler/impl/TransformSessionInitiator.cpp \
 	handler/impl/WAYFSessionInitiator.cpp \
 	impl/ChainingAccessControl.cpp \
-    impl/StoredSession.cpp \
-    impl/StorageServiceSessionCache.cpp \
+	impl/StoredSession.cpp \
+	impl/StorageServiceSessionCache.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \
@@ -215,7 +215,7 @@ libshibsp_la_SOURCES = \
 	attribute/filtering/impl/AttributeIssuerEntityMatcherFunctor.cpp \
 	attribute/filtering/impl/AttributeRequesterEntityMatcherFunctor.cpp \
 	attribute/filtering/impl/AttributeMatchesShibMDScopeFunctor.cpp \
-    attribute/filtering/impl/RegistrationAuthorityFunctor.cpp \
+	attribute/filtering/impl/RegistrationAuthorityFunctor.cpp \
 	attribute/resolver/impl/ChainingAttributeResolver.cpp \
 	attribute/resolver/impl/QueryAttributeResolver.cpp \
 	attribute/resolver/impl/SimpleAggregationAttributeResolver.cpp \

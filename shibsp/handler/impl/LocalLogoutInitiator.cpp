@@ -112,7 +112,7 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         try {
             session = request.getSession(false, true, false);  // don't cache it and ignore all checks
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("error accessing current session: %s", ex.what());
         }
         return doRequest(request.getApplication(), request, request, session);
@@ -156,7 +156,7 @@ void LocalLogoutInitiator::receive(DDF& in, ostream& out)
     try {
          session = app->getServiceProvider().getSessionCache()->find(*app, *req, nullptr, nullptr);
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
     }
 
@@ -188,8 +188,9 @@ pair<bool,long> LocalLogoutInitiator::doRequest(
             application.getServiceProvider().getTransactionLog()->write(*logout_event);
         }
 #endif
+        time_t revocationExp = session->getExpiration();
         locker.assign();    // unlock the session
-        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
         if (!result)
             return sendLogoutPage(application, httpRequest, httpResponse, "partial");
     }

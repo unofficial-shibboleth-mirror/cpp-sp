@@ -918,8 +918,9 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
         }
         else {
             m_log.error("no issuing entityID found in session");
+            time_t revocationExp = session->getExpiration();
             session->unlock();
-            app->getServiceProvider().getSessionCache()->remove(*app, *req, resp.get());
+            app->getServiceProvider().getSessionCache()->remove(*app, *req, resp.get(), revocationExp);
         }
     }
     out << ret;
@@ -944,9 +945,10 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
             application.getServiceProvider().getTransactionLog()->write(*logout_event);
         }
 #endif
+        time_t revocationExp = session->getExpiration();
         sessionLocker.assign();
         session = nullptr;
-        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
         return sendLogoutPage(application, httpRequest, httpResponse, "partial");
     }
 
@@ -1008,16 +1010,17 @@ pair<bool,long> ADFSLogoutInitiator::doRequest(
         ret.first = true;
 
         if (session) {
+            time_t revocationExp = session->getExpiration();
             sessionLocker.assign();
             session = nullptr;
-            application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse);
+            application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
         }
     }
-    catch (MetadataException& mex) {
+    catch (const MetadataException& mex) {
         // Less noise for IdPs that don't support logout
         m_log.info("unable to issue ADFS logout request: %s", mex.what());
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("error issuing ADFS logout request: %s", ex.what());
     }
 
@@ -1070,7 +1073,7 @@ pair<bool,long> ADFSLogout::run(SPRequest& request, bool isHandler) const
         try {
             app.getServiceProvider().getSessionCache()->remove(app, request, &request);
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("error removing session (%s): %s", session_id.c_str(), ex.what());
         }
     }
