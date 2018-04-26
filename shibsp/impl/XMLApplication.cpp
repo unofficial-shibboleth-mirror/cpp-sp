@@ -225,7 +225,7 @@ XMLApplication::XMLApplication(
 #ifndef SHIBSP_LITE
     nlist = e->getElementsByTagNameNS(samlconstants::SAML20_NS, Audience::LOCAL_NAME);
     if (nlist && nlist->getLength()) {
-        log.warn("use of <saml:Audience> elements outside of a Security Policy Rule is deprecated");
+        log.warn("DEPRECATED: use of <saml:Audience> elements outside of a Security Policy Rule");
         for (XMLSize_t i = 0; i < nlist->getLength(); ++i)
             if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                 m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());

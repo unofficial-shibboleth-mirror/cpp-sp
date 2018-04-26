@@ -425,7 +425,6 @@
       <choice minOccurs="0" maxOccurs="unbounded">
         <element name="RelyingParty" type="conf:RelyingPartyType"/>
         <element name="Notify" type="conf:NotifyType"/>
-        <element ref="saml:Audience"/>
         <element name="MetadataProvider" type="conf:PluggableType"/>
         <element name="TrustEngine" type="conf:PluggableType"/>
         <element name="AttributeExtractor" type="conf:PluggableType"/>
@@ -452,7 +451,6 @@
       <choice minOccurs="0" maxOccurs="unbounded">
         <element name="RelyingParty" type="conf:RelyingPartyType"/>
         <element name="Notify" type="conf:NotifyType"/>
-        <element ref="saml:Audience"/>
         <element name="MetadataProvider" type="conf:PluggableType"/>
         <element name="TrustEngine" type="conf:PluggableType"/>
         <element name="AttributeExtractor" type="conf:PluggableType"/>
