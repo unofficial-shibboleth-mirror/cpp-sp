@@ -212,6 +212,7 @@
     <ClCompile Include="..\..\..\shibsp\handler\impl\LogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\SecuredHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\impl\StoredSession.cpp" />
+    <ClCompile Include="..\..\..\shibsp\impl\XMLApplication.cpp" />
     <ClCompile Include="..\..\..\shibsp\impl\XMLSecurityPolicyProvider.cpp" />
     <ClCompile Include="..\..\..\shibsp\ServiceProvider.cpp" />
     <ClCompile Include="..\..\..\shibsp\SPConfig.cpp" />
@@ -315,6 +316,8 @@
     <ClInclude Include="..\..\..\shibsp\handler\SecuredHandler.h" />
     <ClInclude Include="..\..\..\shibsp\impl\StorageServiceSessionCache.h" />
     <ClInclude Include="..\..\..\shibsp\impl\StoredSession.h" />
+    <ClInclude Include="..\..\..\shibsp\impl\XMLApplication.h" />
+    <ClInclude Include="..\..\..\shibsp\impl\XMLServiceProvider.h" />
     <ClInclude Include="..\..\..\shibsp\remoting\impl\SocketListener.h" />
     <ClInclude Include="..\..\..\shibsp\AbstractSPRequest.h" />
     <ClInclude Include="..\..\..\shibsp\AccessControl.h" />

@@ -435,6 +435,9 @@
     <ClCompile Include="..\..\..\shibsp\handler\impl\AdminLogoutInitiator.cpp">
       <Filter>Source Files\handler\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\shibsp\impl\XMLApplication.cpp">
+      <Filter>Source Files\impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\shibsp\GSSRequest.h">
@@ -612,6 +615,12 @@
       <Filter>Header Files\remoting</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\impl\StorageServiceSessionCache.h">
+      <Filter>Source Files\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\impl\XMLApplication.h">
+      <Filter>Source Files\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\shibsp\impl\XMLServiceProvider.h">
       <Filter>Source Files\impl</Filter>
     </ClInclude>
   </ItemGroup>
