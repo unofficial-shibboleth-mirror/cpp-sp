@@ -27,8 +27,8 @@
 #ifndef __shibsp_storedsession_h__
 #define __shibsp_storedsession_h__
 
-#include <shibsp/SessionCache.h>
-#include <shibsp/remoting/ddf.h>
+#include "SessionCache.h"
+#include "remoting/ddf.h"
 
 #include <ctime>
 #include <boost/scoped_ptr.hpp>

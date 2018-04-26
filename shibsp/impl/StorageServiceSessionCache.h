@@ -27,8 +27,8 @@
 #ifndef __shibsp_sscache_h__
 #define __shibsp_sscache_h__
 
-#include <shibsp/SessionCache.h>
-#include <shibsp/remoting/ListenerService.h>
+#include "SessionCache.h"
+#include "remoting/ListenerService.h"
 
 #include <ctime>
 #include <boost/shared_ptr.hpp>
