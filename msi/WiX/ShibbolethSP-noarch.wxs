@@ -130,7 +130,7 @@
             <Component Id="metadataError.html" Guid="{8C46D04A-A943-4FA4-AFCB-9B040306C2C0}">
               <File KeyPath="yes" Name="metadataError.html" />
             </Component>
-            <Component Id="win-native.logger" Guid="{B2EBC853-279B-4EA1-BC84-A0EC0E5F3676}">
+            <Component Id="win_native.logger" Guid="{B2EBC853-279B-4EA1-BC84-A0EC0E5F3676}">
               <File KeyPath="yes" Name="native.logger" Source="$(var.SPBuildDirectory)\cpp-sp\configs\win-native.logger" />
             </Component>
             <Component Id="sessionError.html" Guid="{8AA240B3-DC5D-4687-B321-4F5E1BAEA820}">

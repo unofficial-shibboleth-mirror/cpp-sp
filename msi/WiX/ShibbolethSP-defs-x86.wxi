@@ -34,7 +34,7 @@
   <ComponentRef Id="apache22.config.in" />
   <ComponentRef Id="apache24.config.in" />
   <ComponentRef Id="metadataError.html" />
-  <ComponentRef Id="win-native.logger" />
+  <ComponentRef Id="win_native.logger" />
   <ComponentRef Id="sessionError.html" />
   <ComponentRef Id="shibd.logger.in" />
   <ComponentRef Id="var_cache_shibboleth_folder" />

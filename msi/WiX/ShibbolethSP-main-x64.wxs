@@ -191,8 +191,8 @@
         <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider">
           <RegistryValue Name="CategoryCount" Type="integer" Value="8" />
           <RegistryValue Name="TypesSupported" Type="integer" Value="7" />
-          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[ProgramFilesFolder]Shibboleth\SP\lib\NTEventLogAppender.dll" />
-          <RegistryValue Name="EventMessageFile" Type="string" Value="[ProgramFilesFolder]Shibboleth\SP\lib\NTEventLogAppender.dll;[#Messages]" />
+          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[ProgramFiles64Folder]Shibboleth\SP\lib\NTEventLogAppender.dll" />
+          <RegistryValue Name="EventMessageFile" Type="string" Value="[ProgramFiles64Folder]Shibboleth\SP\lib\NTEventLogAppender.dll;[#Messages]" />
           <RegistryValue Name="ParameterMessageFile" Type="string" Value="[#Messages]" />
         </RegistryKey>
       </Component>
