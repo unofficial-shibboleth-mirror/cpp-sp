@@ -503,20 +503,6 @@ long AbstractHandler::sendMessage(
     const saml2md::RoleDescriptor* role,
     const Application& application,
     HTTPResponse& httpResponse,
-    bool signIfPossible
-) const
-{
-    return sendMessage(encoder, msg, relayState, destination, role, application, httpResponse, signIfPossible ? "true" : "conditional");
-}
-
-long AbstractHandler::sendMessage(
-    const MessageEncoder& encoder,
-    XMLObject* msg,
-    const char* relayState,
-    const char* destination,
-    const saml2md::RoleDescriptor* role,
-    const Application& application,
-    HTTPResponse& httpResponse,
     const char* defaultSigningProperty
     ) const
 {

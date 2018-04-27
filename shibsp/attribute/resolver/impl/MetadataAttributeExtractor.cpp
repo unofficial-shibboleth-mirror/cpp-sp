@@ -92,7 +92,7 @@ namespace shibsp {
         vector<logo_tuple_t> m_logos;       // tuple is attributeID, height, width, decoder
 
         template <class T> void doLangSensitive(const GenericRequest*, const vector<T*>&, const string&, vector<shibsp::Attribute*>&) const;
-        void doContactPerson(const RoleDescriptor*, const contact_tuple_t&, vector<shibsp::Attribute*>&) const;
+        void doContactPerson(const GenericRequest* request, const RoleDescriptor*, const contact_tuple_t&, vector<shibsp::Attribute*>&) const;
         void doLogo(const GenericRequest*, const vector<Logo*>&,const logo_tuple_t&, vector<shibsp::Attribute*>&) const;
     };
 
@@ -255,7 +255,7 @@ void MetadataExtractor::extractAttributes(
 
     for_each(
         m_contacts.begin(), m_contacts.end(),
-        boost::bind(&MetadataExtractor::doContactPerson, this, roleToExtract, _1, boost::ref(attributes))
+        boost::bind(&MetadataExtractor::doContactPerson, this, request, roleToExtract, _1, boost::ref(attributes))
         );
 }
 
@@ -349,7 +349,7 @@ void MetadataExtractor::doLogo(
         match->marshall();
     }
     vector<string> ids(1, params.get<0>());
-    auto_ptr<Attribute> attr(params.get<3>()->decode(ids, match));
+    auto_ptr<Attribute> attr(params.get<3>()->decode(request, ids, match));
     if (attr.get()) {
         attributes.push_back(attr.get());
         attr.release();
@@ -357,7 +357,7 @@ void MetadataExtractor::doLogo(
 }
 
 void MetadataExtractor::doContactPerson(
-    const RoleDescriptor* role, const contact_tuple_t& params, vector<shibsp::Attribute*>& attributes
+    const GenericRequest* request, const RoleDescriptor* role, const contact_tuple_t& params, vector<shibsp::Attribute*>& attributes
     ) const
 {
     const XMLCh* ctype = params.get<1>().c_str();
@@ -373,7 +373,7 @@ void MetadataExtractor::doContactPerson(
             cp->marshall();
         }
         vector<string> ids(1, params.get<0>());
-        auto_ptr<Attribute> attr(params.get<2>()->decode(ids, cp));
+        auto_ptr<Attribute> attr(params.get<2>()->decode(request, ids, cp));
         if (attr.get()) {
             attributes.push_back(attr.get());
             attr.release();

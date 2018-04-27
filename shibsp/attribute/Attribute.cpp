@@ -114,29 +114,6 @@ AttributeDecoder::~AttributeDecoder()
 {
 }
 
-Attribute* AttributeDecoder::decode(
-    const GenericRequest* request,
-    const std::vector<std::string>& ids,
-    const xmltooling::XMLObject* xmlObject,
-    const char* assertingParty,
-    const char* relyingParty
-    ) const
-{
-    // Default call into deprecated method.
-    return decode(ids, xmlObject, assertingParty, relyingParty);
-}
-
-Attribute* AttributeDecoder::decode(
-    const std::vector<std::string>& ids,
-    const xmltooling::XMLObject* xmlObject,
-    const char* assertingParty,
-    const char* relyingParty
-    ) const
-{
-    // Default for deprecated method.
-    return nullptr;
-}
-
 Attribute* AttributeDecoder::_decode(Attribute* attr) const
 {
     if (attr) {

@@ -98,10 +98,9 @@ namespace ta {
         return nullptr;
     }
 
-    const vector<const Handler*>& TestApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
+    const Handler* TestApplication::getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding) const
     {
-        static const vector<const Handler*> retVal(0);
-        return retVal;
+        return nullptr;
     }
 
     const Handler* TestApplication::getHandler(const char* path) const

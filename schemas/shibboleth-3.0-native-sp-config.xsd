@@ -256,7 +256,6 @@
     <simpleContent>
       <extension base="conf:string">
         <attribute name="require" type="conf:string" use="required"/>
-        <attribute name="ignoreCase" type="boolean"/>
         <attribute name="caseSensitive" type="boolean"/>
       </extension>
     </simpleContent>
@@ -364,7 +363,6 @@
       </choice>
     </sequence>
     <attribute name="regex" type="conf:string" use="required"/>
-    <attribute name="ignoreCase" type="boolean"/>
     <attribute name="caseSensitive" type="boolean"/>
     <attributeGroup ref="conf:ContentSettings"/>
   </complexType>
@@ -396,7 +394,6 @@
       <element name="Query" type="conf:QueryType" minOccurs="0" maxOccurs="unbounded"/>
     </sequence>
     <attribute name="regex" type="conf:string" use="required"/>
-    <attribute name="ignoreCase" type="boolean"/>
     <attribute name="caseSensitive" type="boolean"/>
     <attributeGroup ref="conf:ContentSettings"/>
   </complexType>

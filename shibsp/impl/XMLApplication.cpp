@@ -1399,14 +1399,6 @@ const Handler* XMLApplication::getAssertionConsumerServiceByProtocol(const XMLCh
     return m_base ? m_base->getAssertionConsumerServiceByProtocol(protocol, binding) : nullptr;
 }
 
-const vector<const Handler*>& XMLApplication::getAssertionConsumerServicesByBinding(const XMLCh* binding) const
-{
-    ACSBindingMap::const_iterator i = m_acsBindingMap.find(binding);
-    if (i != m_acsBindingMap.end())
-        return i->second;
-    return m_base ? m_base->getAssertionConsumerServicesByBinding(binding) : g_noHandlers;
-}
-
 const Handler* XMLApplication::getHandler(const char* path) const
 {
     string wrap(path);

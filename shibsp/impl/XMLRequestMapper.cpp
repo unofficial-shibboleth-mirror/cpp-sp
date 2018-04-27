@@ -315,7 +315,7 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
             if (path && path->hasAttributeNS(nullptr, ignoreCase)) {
                 // In this one case, we've left ignoreCase reversed (true means case sensitive, false means insensitive).
                 // This was to protect people who followed the security advisory for SSPCPP-691 and reversed their setting.
-                log.error("Deprecated ignoreCase attribute in PathRegex element will be interpreted backwards. Replace with caseSensitive");
+                log.error("DEPRECATED: ignoreCase attribute in PathRegex element will be interpreted backwards. Replace with caseSensitive");
                 caseSensitive = XMLHelper::getAttrBool(path, true, ignoreCase);
             } else {
                 // If the old ignoreCase setting isn't set, then we just process normally.

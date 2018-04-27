@@ -382,13 +382,6 @@ void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const cha
     role.getAssertionConsumerServices().push_back(ep);
 }
 
-opensaml::SecurityPolicy* AssertionConsumerService::createSecurityPolicy(
-    const Application& application, const xmltooling::QName* role, bool validate, const char* policyId
-    ) const
-{
-    return new SecurityPolicy(application, role, validate, policyId);
-}
-
 namespace {
     class SHIBSP_DLLLOCAL DummyContext : public ResolutionContext
     {

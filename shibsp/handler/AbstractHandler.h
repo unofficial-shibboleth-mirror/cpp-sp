@@ -134,33 +134,6 @@ namespace shibsp {
             xmltooling::HTTPResponse& httpResponse,
             const char* defaultSigningProperty
         ) const;
-
-        /**
-         * @deprecated
-         *
-         * Encodes and sends SAML 2.0 message, optionally signing it in the process.
-         * If the method returns, the message MUST NOT be freed by the caller.
-         *
-         * @param encoder           the MessageEncoder to use
-         * @param msg               the message to send
-         * @param relayState        any RelayState to include with the message
-         * @param destination       location to send message, if not a backchannel response
-         * @param role              recipient of message, if known
-         * @param application       the Application sending the message
-         * @param httpResponse      channel for sending message
-         * @param signIfPossible    true iff signing should be attempted regardless of "signing" property
-         * @return  the result of sending the message using the encoder
-         */
-        long sendMessage(
-            const opensaml::MessageEncoder& encoder,
-            xmltooling::XMLObject* msg,
-            const char* relayState,
-            const char* destination,
-            const opensaml::saml2md::RoleDescriptor* role,
-            const Application& application,
-            xmltooling::HTTPResponse& httpResponse,
-            bool signIfPossible=false
-            ) const;
 #endif
 
         /**

@@ -264,7 +264,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
 
         if (rules.second.size() == 0) {
             // Process Rule elements.
-            log.warn("detected deprecated Policy configuration, consider converting to new PolicyRule syntax");
+            log.warn("DEPRECATED: Rule elements detected, convert to PolicyRule syntax");
             rule = XMLHelper::getFirstChildElement(e, Rule);
             while (rule) {
                 string t(XMLHelper::getAttrString(rule, nullptr, _type));
@@ -282,7 +282,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
             }
 
             // Manually add a basic Conditions rule.
-            log.info("installing a default Conditions rule in policy (%s) for compatibility with legacy configuration", id.c_str());
+            log.warn("installing a default Conditions rule in policy (%s) for compatibility with legacy configuration", id.c_str());
             boost::shared_ptr<SecurityPolicyRule> cptr(samlConf.SecurityPolicyRuleManager.newPlugin(CONDITIONS_POLICY_RULE, nullptr));
             m_ruleJanitor.push_back(cptr);
             rules.second.push_back(cptr.get());

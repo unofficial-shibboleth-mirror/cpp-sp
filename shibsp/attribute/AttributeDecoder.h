@@ -107,24 +107,7 @@ namespace shibsp {
             const xmltooling::XMLObject* xmlObject,
             const char* assertingParty=nullptr,
             const char* relyingParty=nullptr
-            ) const;
-
-        /**
-         * @deprecated
-         * Decodes an XMLObject into a resolved Attribute.
-         *
-         * @param ids               array containing primary identifier in first position, followed by any aliases
-         * @param xmlObject         XMLObject to decode
-         * @param assertingParty    name of the party asserting the attribute
-         * @param relyingParty      name of the party relying on the attribute
-         * @return a resolved Attribute, or nullptr
-         */
-        virtual Attribute* decode(
-            const std::vector<std::string>& ids,
-            const xmltooling::XMLObject* xmlObject,
-            const char* assertingParty=nullptr,
-            const char* relyingParty=nullptr
-            ) const;
+            ) const=0;
     };
 
 

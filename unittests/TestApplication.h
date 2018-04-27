@@ -38,7 +38,7 @@ namespace ta {
         virtual const SessionInitiator* getSessionInitiatorById(const char* id) const;
         virtual const Handler* getDefaultAssertionConsumerService() const;
         virtual const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
-        virtual const vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
+        virtual const Handler* getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding=nullptr) const;
         virtual const Handler* getHandler(const char* path) const;
         virtual void getHandlers(vector<const Handler*>& handlers) const;
         virtual SAMLArtifact* generateSAML1Artifact(const EntityDescriptor* relyingParty) const;

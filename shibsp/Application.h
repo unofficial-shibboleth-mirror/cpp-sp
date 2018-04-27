@@ -294,17 +294,7 @@ namespace shibsp {
          * @param binding   a binding identifier
          * @return a matching AssertionConsumerService, or nullptr
          */
-        virtual const Handler* getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding=nullptr) const;
-
-        /**
-         * @deprecated
-         * Returns one or more AssertionConsumerService Handlers that support
-         * a particular protocol binding.
-         *
-         * @param binding   a protocol binding identifier
-         * @return a set of qualifying AssertionConsumerServices
-         */
-        virtual const std::vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const=0;
+        virtual const Handler* getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding=nullptr) const=0;
 
         /**
          * Returns the Handler associated with a particular path/location.

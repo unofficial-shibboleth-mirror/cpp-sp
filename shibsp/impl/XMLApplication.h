@@ -135,8 +135,7 @@ namespace shibsp {
         const SessionInitiator* getSessionInitiatorById(const char* id) const;
         const Handler* getDefaultAssertionConsumerService() const;
         const Handler* getAssertionConsumerServiceByIndex(unsigned short index) const;
-        const Handler* getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding = nullptr) const;
-        const std::vector<const Handler*>& getAssertionConsumerServicesByBinding(const XMLCh* binding) const;
+        const Handler* getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding=nullptr) const;
         const Handler* getHandler(const char* path) const;
         void getHandlers(std::vector<const Handler*>& handlers) const;
         void limitRedirect(const xmltooling::GenericRequest& request, const char* url) const;

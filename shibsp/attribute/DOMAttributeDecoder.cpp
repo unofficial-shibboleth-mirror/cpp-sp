@@ -44,13 +44,6 @@ namespace shibsp {
         DOMAttributeDecoder(const DOMElement* e);
         ~DOMAttributeDecoder() {}
 
-        // deprecated method
-        Attribute* decode(
-            const vector<string>& ids, const XMLObject* xmlObject, const char* assertingParty=nullptr, const char* relyingParty=nullptr
-            ) const {
-            return decode(nullptr, ids, xmlObject, assertingParty, relyingParty);
-        }
-
         Attribute* decode(
             const GenericRequest*, const vector<string>&, const XMLObject*, const char* assertingParty=nullptr, const char* relyingParty=nullptr
             ) const;

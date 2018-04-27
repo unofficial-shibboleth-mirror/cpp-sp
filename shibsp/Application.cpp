@@ -159,13 +159,6 @@ void Application::clearAttributeHeaders(SPRequest& request) const
         );
 }
 
-const Handler* Application::getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding) const
-{
-    auto_ptr_XMLCh b(binding);
-    const vector<const Handler*>& handlers = getAssertionConsumerServicesByBinding(b.get());
-    return handlers.empty() ? nullptr : handlers.front();
-}
-
 void Application::limitRedirect(const GenericRequest& request, const char* url) const
 {
 }

@@ -119,24 +119,6 @@ namespace shibsp {
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
         
         /**
-         * @deprecated
-         * Returns a SecurityPolicy instance to use for an incoming request.
-         *
-         * <p>Allows handlers to customize the type of policy object their policy rules might require.
-         * <p>The caller <strong>MUST</strong> lock the application's MetadataProvider for the life
-         * of the returned object.
-         *
-         * @param application   reference to application receiving message
-         * @param role          identifies the role (generally IdP or SP) of the policy peer
-         * @param validate      true iff XML parsing should be done with validation
-         * @param policyId      identifies policy rules to auto-attach, defaults to the application's set
-         * @return  a new policy instance, which the caller is responsible for freeing
-         */
-        virtual opensaml::SecurityPolicy* createSecurityPolicy(
-            const Application& application, const xmltooling::QName* role, bool validate, const char* policyId
-            ) const;
-
-        /**
          * Implement protocol-specific handling of the incoming decoded message.
          * 
          * <p>The result of implementing the protocol should be an exception or
