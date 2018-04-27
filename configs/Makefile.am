@@ -36,7 +36,6 @@ BUILTCONFIGFILES = \
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
 CONFIGFILES = \
-	shibboleth3.xml \
 	attribute-map.xml \
 	attribute-policy.xml \
 	protocols.xml \
@@ -122,13 +121,19 @@ install-data-local:	all-data-local
 			$(INSTALL_DATA) $$f $(DESTDIR)${pkgsysconfdir}; \
 		fi; \
 		$(INSTALL_DATA) $$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
-        done
+		done
 	for f in $(CONFIGFILES); do \
 		if test ! -f $(DESTDIR)${pkgsysconfdir}/$$f; then \
 			$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)${pkgsysconfdir}; \
 		fi; \
 		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
-        done
+		done
+	if test ! -f $(DESTDIR)${pkgsysconfdir}/shibboleth3.xml; then \
+		if test ! -f $(DESTDIR)${pkgsysconfdir}/shibboleth2.xml; then \
+			$(INSTALL_DATA) $(srcdir)/shibboleth3.xml $(DESTDIR)${pkgsysconfdir}; \
+		fi; \
+	fi; \
+	$(INSTALL_DATA) $(srcdir)/shibboleth3.xml $(DESTDIR)${pkgsysconfdir}/shibboleth3.xml.dist
 
 install-data-hook:
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/keygen.sh
@@ -168,6 +173,7 @@ EXTRA_DIST = \
 	keygen.sh \
 	metagen.sh \
 	seckeygen.sh \
-	SetService32.bat \
-	SetService64.bat \
+	shibboleth3.xml \
+	win-shibboleth3.xml \
+	win-native.logger \
 	$(CONFIGFILES)
