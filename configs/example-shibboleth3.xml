@@ -3,7 +3,7 @@
     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
     xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"    
     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
-    logger="syslog.logger" clockSkew="180">
+    clockSkew="180">
 
     <!-- The OutOfProcess section contains properties affecting the shibd daemon. -->
     <OutOfProcess logger="shibd.logger">
@@ -62,12 +62,8 @@
     -->
 
     <!--
-    To customize behavior for specific resources on Apache, and to link vhosts or
-    resources to ApplicationOverride settings below, use web server options/commands.
-    See https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPConfigurationElements for help.
-    
-    For examples with the RequestMap XML syntax instead, see the example-shibboleth2.xml
-    file, and the https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPRequestMapHowTo topic.
+    To customize behavior for specific resources on Apache, use web server options/commands
+    instead of this mechanism, which is meant for IIS usage.
     -->
     <RequestMapper type="Native">
         <RequestMap>
@@ -92,10 +88,10 @@
     points into to this section (or to the defaults here).
     -->
     <ApplicationDefaults entityID="https://sp.example.org/shibboleth"
-                         REMOTE_USER="eppn persistent-id targeted-id"
-                         metadataAttributePrefix="Meta-"
-                         sessionHook="/Shibboleth.sso/AttrChecker"
-                         cipherSuites="DEFAULT:!EXP:!LOW:!aNULL:!eNULL:!DES:!IDEA:!SEED:!RC4:!3DES:!kRSA:!SSLv2:!SSLv3:!TLSv1:!TLSv1.1">
+        REMOTE_USER="eppn persistent-id targeted-id"
+        metadataAttributePrefix="Meta-"
+        sessionHook="/Shibboleth.sso/AttrChecker"
+        cipherSuites="DEFAULT:!EXP:!LOW:!aNULL:!eNULL:!DES:!IDEA:!SEED:!RC4:!3DES:!kRSA:!SSLv2:!SSLv3:!TLSv1:!TLSv1.1">
 
         <!--
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
@@ -113,22 +109,24 @@
 
             <!--
             The "stripped down" files use the shorthand syntax for configuring handlers.
-            This uses the old "every handler specified directly" syntax. You can replace
-            or supplement the new syntax following these examples.
+            This uses the old "every handler specified directly" syntax. You can supplement
+            the new syntax following these examples but it is NOT advisable to use this
+            approach wholesale.
             -->
           
             <!--
             SessionInitiators handle session requests and relay them to a Discovery page,
-            or to an IdP if possible. Automatic session setup will use the default or first
-            element (or requireSessionWith can specify a specific id to use).
+            or to an IdP if possible. Automatic/active session  rules will use the default
+            or first element (or requireSessionWith can specify a specific id to use).
             -->
 
-            <!-- Default directs to a specific IdP (favoring SAML 2 over Shib 1). -->
+            <!-- Default directs to a specific IdP. -->
             <SessionInitiator type="Chaining" Location="/Login" isDefault="true" id="Login"
                               entityID="https://idp.example.org/idp/shibboleth">
               
                 <SessionInitiator type="SAML2" template="bindingTemplate.html"/>
                 <SessionInitiator type="Shib1"/>
+              
                 <!--
                 To allow for >1 IdP, remove entityID property from Chaining element and add
                 *either* of the SAMLDS or WAYF handlers below:
@@ -162,6 +160,9 @@
                 <LogoutInitiator type="SAML2" template="bindingTemplate.html"/>
                 <LogoutInitiator type="Local"/>
             </LogoutInitiator>
+
+            <!-- Administrative logout, separate from user-driven logout above. -->
+            <LogoutInitiator type="Admin" Location="/Logout/Admin" acl="127.0.0.1 ::1" />
 
             <!-- md:SingleLogoutService locations handle single logout (SLO) protocol messages. -->
             <md:SingleLogoutService Location="/SLO/SOAP"
@@ -209,7 +210,8 @@
 
         <!--
         Allows overriding of error template information/filenames. You can
-        also add attributes with values that can be plugged into the templates.
+        also add your own attributes with values that can be plugged into the
+        templates, e.g., helpLocation below.
         -->
         <Errors supportContact="root@localhost"
             helpLocation="/about.html"
@@ -229,7 +231,7 @@
 	      uri="http://federation.org/federation-metadata.xml"
               backingFilePath="federation-metadata.xml" reloadInterval="7200">
             <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
-            <MetadataFilter type="Signature" certificate="fedsigner.pem"/>
+            <MetadataFilter type="Signature" certificate="fedsigner.pem" veryifyBackup="false"/>
             <DiscoveryFilter type="Blacklist" matcher="EntityAttributes" trimTags="true" 
               attributeName="http://macedir.org/entity-category"
               attributeNameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"
@@ -262,13 +264,16 @@
         <CredentialResolver type="File" key="sp-key.pem" certificate="sp-cert.pem"/>
 
         <!--
-        The default settings can be overridden by creating ApplicationOverride elements (see
-        the https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApplicationOverride topic).
+        The default settings can be overridden by creating ApplicationOverride elements.
         Resource requests are mapped by web server commands, or the RequestMapper, to an
         applicationId setting.
         
-        Example of a second application (for a second vhost) that has a different entityID.
-        Resources on the vhost would map to an applicationId of "admin":
+        This "canonical" use case of overriding the SP's entityID alone is now obsolete;
+        you can apply selfEntityID as a content setting based on host or path to control
+        the SP's own identity.
+        
+        Avoid overrides: ask on the list or refer to the wiki for examples of how to do
+        whatever you want to do without them.
         -->
         <!--
         <ApplicationOverride id="admin" entityID="https://admin.example.org/shibboleth"/>
