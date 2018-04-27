@@ -540,8 +540,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     continue;
                 }
                 handler.reset(conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId())));
-                // Map by binding and protocol (may be > 1 per protocol and binding)
-                m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler.get());
+                // Map by protocol.
                 const XMLCh* protfamily = handler->getProtocolFamily();
                 if (protfamily)
                     m_acsProtocolMap[protfamily].push_back(handler.get());
@@ -737,7 +736,6 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                     m_handlers.push_back(handler);
 
                     // Setup maps and defaults.
-                    m_acsBindingMap[handler->getXMLString("Binding").second].push_back(handler.get());
                     const XMLCh* protfamily = handler->getProtocolFamily();
                     if (protfamily)
                         m_acsProtocolMap[protfamily].push_back(handler.get());

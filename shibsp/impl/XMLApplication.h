@@ -192,10 +192,6 @@ namespace shibsp {
         // pointer to default consumer service
         const Handler* m_acsDefault;
 
-        // maps binding strings to supporting consumer service(s)
-        typedef std::map< xmltooling::xstring, std::vector<const Handler*> > ACSBindingMap;
-        ACSBindingMap m_acsBindingMap;
-
         // maps protocol strings to supporting consumer service(s)
         typedef std::map< xmltooling::xstring, std::vector<const Handler*> > ACSProtocolMap;
         ACSProtocolMap m_acsProtocolMap;
