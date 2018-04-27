@@ -616,7 +616,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
                 app->setHeader(request, "Shib-Session-Index", hval);
 
             app->setHeader(request, "Shib-Session-Expires", boost::lexical_cast<string>(session->getExpiration()).c_str());
-            pair<bool,unsigned int> timeout = sessionProps ? sessionProps->getUnsignedInt("timeout") : make_pair(false, 0);
+            pair<bool,unsigned int> timeout = sessionProps ? sessionProps->getUnsignedInt("timeout") : pair<bool,unsigned int>(false, 0);
             if (timeout.first && timeout.second > 0) {
                 app->setHeader(request, "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout.second).c_str());
             }
