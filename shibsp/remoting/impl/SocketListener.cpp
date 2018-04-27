@@ -395,6 +395,10 @@ bool SocketListener::log_error(const char* fn) const
         fn = "unknown";
 #ifdef WIN32
     int rc=WSAGetLastError();
+    if (rc == WSAECONNRESET) {
+        log->debug("socket connection reset");
+        return false;
+    }
 #else
     int rc=errno;
 #endif
@@ -402,11 +406,10 @@ bool SocketListener::log_error(const char* fn) const
     char buf[256];
     memset(buf,0,sizeof(buf));
     strerror_r(rc,buf,sizeof(buf));
-    log->error("socket call (%s) resulted in error (%d): %s",fn, rc, isprint(*buf) ? buf : "no message");
 #else
     const char* buf=strerror(rc);
-    log->error("socket call (%s) resulted in error (%d): %s", fn, rc, isprint(*buf) ? buf : "no message");
 #endif
+    log->error("failed socket call (%s), result (%d): %s", fn, rc, isprint(*buf) ? buf : "no message");
     return false;
 }
 
