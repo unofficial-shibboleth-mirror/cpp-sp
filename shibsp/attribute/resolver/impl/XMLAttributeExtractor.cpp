@@ -362,7 +362,7 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
 
         name = child->getAttributeNS(nullptr, _aliases);
         if (name && *name) {
-            m_log.warn("attribute mapping rule (%s) uses deprecated aliases feature, consider revising", id.get());
+            m_log.warn("DEPRECATED: attribute mapping rule (%s) uses deprecated aliases feature", id.get());
             auto_ptr_char aliases(name);
             string dup(aliases.get());
             set<string> new_aliases;
