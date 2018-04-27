@@ -124,7 +124,6 @@ namespace shibsp {
         }
         
     protected:
-        pair<bool,DOMElement*> load(bool backup);
         pair<bool,DOMElement*> background_load();
 
     private:
@@ -297,10 +296,10 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
 
 vector<xstring> XMLSecurityPolicyProvider::m_empty;
 
-pair<bool,DOMElement*> XMLSecurityPolicyProvider::load(bool backup)
+pair<bool,DOMElement*> XMLSecurityPolicyProvider::background_load()
 {
     // Load from source using base class.
-    pair<bool,DOMElement*> raw = ReloadableXMLFile::load(backup);
+    pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
 
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
@@ -317,23 +316,4 @@ pair<bool,DOMElement*> XMLSecurityPolicyProvider::load(bool backup)
     m_impl.swap(impl);
 
     return make_pair(false,(DOMElement*)nullptr);
-}
-
-pair<bool,DOMElement*> XMLSecurityPolicyProvider::background_load()
-{
-    try {
-        return load(false);
-    }
-    catch (long& ex) {
-        if (ex == HTTPResponse::XMLTOOLING_HTTP_STATUS_NOTMODIFIED)
-            m_log.info("remote resource (%s) unchanged", m_source.c_str());
-        if (!m_loaded && !m_backing.empty())
-            return load(true);
-        throw;
-    }
-    catch (std::exception&) {
-        if (!m_loaded && !m_backing.empty())
-            return load(true);
-        throw;
-    }
 }

@@ -109,7 +109,6 @@ namespace shibsp {
         }
 
     protected:
-        pair<bool,DOMElement*> load(bool backup);
         pair<bool,DOMElement*> background_load();
 
     private:
@@ -188,24 +187,10 @@ XMLProtocolProviderImpl::XMLProtocolProviderImpl(const DOMElement* e, Category& 
     }
 }
 
-
-pair<bool,DOMElement*> XMLProtocolProvider::load(bool backup)
+pair<bool,DOMElement*> XMLProtocolProvider::background_load()
 {
     // Load from source using base class.
-    pair<bool,DOMElement*> raw = ReloadableXMLFile::load(backup);
-
-    if (!backup && !m_backing.empty()) {
-        m_log.debug("backing up remote resource to (%s)", m_backing.c_str());
-        try {
-            Locker locker(getBackupLock());
-            ofstream backer(m_backing.c_str());
-            backer << *(raw.second->getOwnerDocument());
-            preserveCacheTag();
-        }
-        catch (std::exception& ex) {
-            m_log.crit("exception while backing up resource: %s", ex.what());
-        }
-    }
+    pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
 
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
@@ -221,25 +206,5 @@ pair<bool,DOMElement*> XMLProtocolProvider::load(bool backup)
     SharedLock locker(m_lock, false);
     m_impl.swap(impl);
 
-
     return make_pair(false,(DOMElement*)nullptr);
-}
-
-pair<bool,DOMElement*> XMLProtocolProvider::background_load()
-{
-    try {
-        return load(false);
-    }
-    catch (long& ex) {
-        if (ex == HTTPResponse::XMLTOOLING_HTTP_STATUS_NOTMODIFIED)
-            m_log.info("remote resource (%s) unchanged", m_source.c_str());
-        if (!m_loaded && !m_backing.empty())
-            return load(true);
-        throw;
-    }
-    catch (std::exception&) {
-        if (!m_loaded && !m_backing.empty())
-            return load(true);
-        throw;
-    }
 }
