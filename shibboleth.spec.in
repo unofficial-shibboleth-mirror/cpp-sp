@@ -26,7 +26,7 @@ BuildRequires:	libxml-security-c-devel >= 2.0.0
 BuildRequires:	libxmltooling-devel >= 3.0.0
 BuildRequires:	libsaml-devel >= 3.0.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
-%{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.4}
+%{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.10}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 Requires:	libcurl-openssl%{?_isa} >= 7.21.7
 BuildRequires:	chrpath
@@ -90,7 +90,7 @@ Requires: 	libxml-security-c-devel >= 2.0.0
 Requires: 	libxmltooling-devel >= 3.0.0
 Requires: 	libsaml-devel >= 3.0.0
 %{?_with_log4cpp:Requires: liblog4cpp-devel >= 1.0}
-%{!?_with_log4cpp:Requires: liblog4shib-devel >= 1.0.4}
+%{!?_with_log4cpp:Requires: liblog4shib-devel >= 1.0.10}
 
 %description devel
 Shibboleth is a Web Single Sign-On implementations based on OpenSAML
@@ -288,8 +288,8 @@ fi
 %{__chown} %{runuser}:%{runuser} %{_localstatedir}/log/shibboleth/* 2>/dev/null || :
 
 # Install config file if no existing files are found.
-if [ -f %{_sysconfdir}/shibboleth/shibboleth3.xml ] ; then
-	if [ -f %{_sysconfdir}/shibboleth/shibboleth2.xml ] ; then
+if [ ! -f %{_sysconfdir}/shibboleth/shibboleth3.xml ] ; then
+	if [ ! -f %{_sysconfdir}/shibboleth/shibboleth2.xml ] ; then
 		install $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibboleth3.xml %{_sysconfdir}/shibboleth/
 	fi
 fi
