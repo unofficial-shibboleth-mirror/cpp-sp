@@ -138,9 +138,12 @@
         <!-- Default filtering policy for recognized attributes, lets other data pass. -->
         <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
 
-        <!-- Simple file-based resolver for using a single keypair. -->
-        <CredentialResolver type="File" key="sp-key.pem" certificate="sp-cert.pem"/>
-
+        <!-- Simple file-based resolvers for separate signing/encryption keys. -->
+        <CredentialResolver type="File" use="signing"
+            key="sp-signing-key.pem" certificate="sp-signing-cert.pem"/>
+        <CredentialResolver type="File" use="encryption"
+            key="sp-encrypt-key.pem" certificate="sp-encrypt-cert.pem"/>
+        
     </ApplicationDefaults>
     
     <!-- Policies that determine how to process and authenticate runtime messages. -->

@@ -140,7 +140,8 @@ install-data-hook:
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/metagen.sh
 	if test -z "$(NOKEYGEN)"; then \
 		cd $(DESTDIR)$(pkgsysconfdir); \
-		sh ./keygen.sh -b ; \
+		/bin/sh ./keygen.sh -b -n sp-signing ; \
+		/bin/sh ./keygen.sh -b -n sp-encrypt ; \
 	fi
 
 CLEANFILES = \

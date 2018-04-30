@@ -276,21 +276,21 @@ exit 0
 /sbin/ldconfig
 %endif
 
-# Key generation or ownership fix
-cd %{_sysconfdir}/shibboleth
-if [ -f sp-key.pem ] ; then
-	%{__chown} %{runuser}:%{runuser} sp-key.pem sp-cert.pem 2>/dev/null || :
-else
-	/bin/sh ./keygen.sh -b -u %{runuser} -g %{runuser}
+# Key ownership fix.
+if [ -f %{_sysconfdir}/shibboleth/sp-key.pem ] ; then
+	%{__chown} %{runuser}:%{runuser} %{_sysconfdir}/shibboleth/sp-key.pem %{_sysconfdir}/shibboleth/sp-cert.pem 2>/dev/null || :
 fi
 
 # Fix ownership of log files (even on new installs, if they're left from an older one).
 %{__chown} %{runuser}:%{runuser} %{_localstatedir}/log/shibboleth/* 2>/dev/null || :
 
-# Install config file if no existing files are found.
+# Install config file and generate new keys if no existing config is found.
 if [ ! -f %{_sysconfdir}/shibboleth/shibboleth3.xml ] ; then
 	if [ ! -f %{_sysconfdir}/shibboleth/shibboleth2.xml ] ; then
 		install $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibboleth3.xml %{_sysconfdir}/shibboleth/
+		cd %{_sysconfdir}/shibboleth
+		/bin/sh ./keygen.sh -b -n sp-signing -u %{runuser} -g %{runuser}
+		/bin/sh ./keygen.sh -b -n sp-encrypt -u %{runuser} -g %{runuser}
 	fi
 fi
 
@@ -465,10 +465,11 @@ exit 0
 %doc %{pkgdocdir}/api
 
 %changelog
-* Tue Nov 21 2017 Scott Cantor <cantor.2@osu.edu> - 3.0.0-1
+* Mon Apr 30 2018 Scott Cantor <cantor.2@osu.edu> - 3.0.0-1
 - Bump dependency versions
-- Require Xerces 3.2 as shipped by me on all platforms
+- Require updated libraries across the board
 - Add logic to handle new config outside of RPM scope
+- Generate two keys on new installs
 
 * Tue May 03 2016 Scott Cantor <cantor.2@osu.edu> - 2.6.0-1
 - Bump opensaml dependency version

@@ -177,8 +177,11 @@
     <CustomAction Id="EditConfigFiles" BinaryKey="EditConfigFileSrc" VBScriptCall="" Execute="deferred" Impersonate="no" />
     <CustomAction Id="SetEditConfigFiles" Property="EditConfigFiles" Value="[INSTALLDIR];@;[IS64BITINSTALL]" />
 
-    <CustomAction Id="KeyGen" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" />
-    <CustomAction Id="SetKeyGen" Property="KeyGen" Value="&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot; [KEYGEN_EXTRA]" />
+    <CustomAction Id="KeyGenSigning" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" />
+    <CustomAction Id="SetKeyGenSigning" Property="KeyGenSigning" Value="&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot; -n sp-signing [KEYGEN_EXTRA]" />
+
+    <CustomAction Id="KeyGenEncrypt" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" />
+    <CustomAction Id="SetKeyGenEncrypt" Property="KeyGenEncrypt" Value="&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot; -n sp-encrypt [KEYGEN_EXTRA]" />
 
     <!-- Inherit the installation dir if one was set -->
     <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
@@ -200,11 +203,13 @@
       <Custom Action="SetEditConfigFiles" Before="CostInitialize">NOT Installed</Custom>
       <Custom Action="EditConfigFiles" After="InstallFiles">NOT Installed</Custom>
 
-      <Custom Action="SetKeyGen" Before="CostInitialize">NOT Installed</Custom>
+      <Custom Action="SetKeyGenSigning" Before="CostInitialize">NOT Installed</Custom>
+      <Custom Action="SetKeyGenEncrypt" Before="CostInitialize">NOT Installed</Custom>
       <!-- Run KeyGen after WriteEnvironmentStrings so the path is set -->
-      <Custom Action="KeyGen" After="WriteEnvironmentStrings">NOT Installed</Custom>
+      <Custom Action="KeyGenSigning" After="WriteEnvironmentStrings">NOT Installed</Custom>
+      <Custom Action="KeyGenEncrypt" After="WriteEnvironmentStrings">NOT Installed</Custom>
 
-      <!-- IIS handling is no longer architecture independant and happens in ShibbolethSP-main-x?? -->
+      <!-- IIS handling is no longer architecture independent and happens in ShibbolethSP-main-x?? -->
 
       <!-- Duplicate actions from the UI case -->
       <Custom Action="InheritInstallDir" After="AppSearch">
