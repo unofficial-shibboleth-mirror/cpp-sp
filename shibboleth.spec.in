@@ -287,10 +287,10 @@ fi
 # Fix ownership of log files (even on new installs, if they're left from an older one).
 %{__chown} %{runuser}:%{runuser} %{_localstatedir}/log/shibboleth/* 2>/dev/null || :
 
-# On upgrades, check for shibboleth2.xml and remove shibboleth3.xml for compatibility.
-if [ $1 -gt 1 ] ; then
+# Install config file if no existing files are found.
+if [ -f %{_sysconfdir}/shibboleth/shibboleth3.xml ] ; then
 	if [ -f %{_sysconfdir}/shibboleth/shibboleth2.xml ] ; then
-		%{__rm} %{_sysconfdir}/shibboleth/shibboleth3.xml
+		install $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibboleth3.xml %{_sysconfdir}/shibboleth/
 	fi
 fi
 
@@ -424,7 +424,6 @@ exit 0
 %dir %{_datadir}/shibboleth
 %{_datadir}/shibboleth/*
 %dir %{_sysconfdir}/shibboleth
-%config(missingok, noreplace) %{_sysconfdir}/shibboleth/shibboleth3.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/attribute-map.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/attribute-policy.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/example-metadata.xml
@@ -451,6 +450,7 @@ exit 0
 %{_sysconfdir}/shibboleth/*.dist
 %{_sysconfdir}/shibboleth/apache*.config
 %{_sysconfdir}/shibboleth/shibd-*
+%exclude %{_sysconfdir}/shibboleth/shibboleth3.xml
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/keygen.sh
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/metagen.sh
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/seckeygen.sh
@@ -468,7 +468,7 @@ exit 0
 * Tue Nov 21 2017 Scott Cantor <cantor.2@osu.edu> - 3.0.0-1
 - Bump dependency versions
 - Require Xerces 3.2 as shipped by me on all platforms
-- Add logic to remove new config if upgrading with old config
+- Add logic to handle new config outside of RPM scope
 
 * Tue May 03 2016 Scott Cantor <cantor.2@osu.edu> - 2.6.0-1
 - Bump opensaml dependency version
