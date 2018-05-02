@@ -427,6 +427,7 @@ exit 0
 %config(noreplace) %{_sysconfdir}/shibboleth/attribute-map.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/attribute-policy.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/example-metadata.xml
+%config(noreplace) %{_sysconfdir}/shibboleth/example-shibboleth3.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/protocols.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/security-policy.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/*.html
