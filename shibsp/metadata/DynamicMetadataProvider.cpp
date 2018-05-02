@@ -23,15 +23,19 @@
  *
  * Advanced implementation of a dynamic caching MetadataProvider.
  */
-#include <fstream>
-
 
 #include "internal.h"
 #include "exceptions.h"
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "metadata/MetadataProviderCriteria.h"
+
+#include <fstream>
+#ifndef WIN32
+# include <errno.h>
+#endif
 #include <boost/algorithm/string.hpp>
+
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 #include <xsec/framework/XSECDefs.hpp>
@@ -83,14 +87,13 @@ namespace shibsp {
         EntityDescriptor* resolve(const MetadataProvider::Criteria& criteria) const;
 
     private:
-        bool m_verifyHost, m_ignoreTransport, m_encoded, m_backgroundInit;
-        const bool m_isMDQ;
+        Category& m_log;
+        bool m_verifyHost, m_ignoreTransport, m_encoded, m_backgroundInit, m_isMDQ;
         static bool s_artifactWarned;
         string m_subst, m_match, m_regex, m_hashed, m_cacheDir;
         boost::scoped_ptr<X509TrustEngine> m_trust;
         boost::scoped_ptr<CredentialResolver> m_dummyCR;
         boost::scoped_ptr<Thread> m_init_thread;
-        Category & m_log;
 
         static void* init_fn(void*);
         static void FolderCallback(const char* pathname, struct stat& stat_buf, void* data);
@@ -120,11 +123,12 @@ bool DynamicMetadataProvider::s_artifactWarned(false);
 
 DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
     : MetadataProvider(e), AbstractDynamicMetadataProvider(true, e),
+      m_log( Category::getInstance(SHIBSP_LOGCAT ".MetadataProvider.Dynamic")),
         m_verifyHost(XMLHelper::getAttrBool(e, true, verifyHost)),
-        m_log( Category::getInstance(SHIBSP_LOGCAT ".MetadataProvider.Dynamic")),
-        m_cacheDir(XMLHelper::getAttrString(e, "", cacheDirectory)),
         m_ignoreTransport(XMLHelper::getAttrBool(e, false, ignoreTransport)),
-        m_encoded(true), m_trust(nullptr), m_isMDQ(XMLHelper::getAttrString(e, "Dyanamic", _type) == "MDQ")
+        m_encoded(true), m_backgroundInit(false),
+        m_isMDQ(XMLHelper::getAttrString(e, "Dyanamic", _type) == "MDQ"),
+        m_cacheDir(XMLHelper::getAttrString(e, "", cacheDirectory))
 {
     const DOMElement* child = XMLHelper::getFirstChildElement(e, Subst);
     if (child && child->hasChildNodes()) {

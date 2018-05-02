@@ -109,6 +109,7 @@ noinst_HEADERS = \
 	impl/StoredSession.h \
 	impl/StorageServiceSessionCache.h \
 	impl/XMLApplication.h \
+	impl/XMLServiceProvider.h \
 	remoting/impl/SocketListener.h
 
 common_sources = \
