@@ -19,7 +19,7 @@
 */
 #include <fstream>
 
-#include "BaseTestCase.h"
+#include <cxxtest/TestSuite.h>
 
 #include <xercesc/dom/DOMDocument.hpp>
 

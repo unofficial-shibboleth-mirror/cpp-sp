@@ -1302,6 +1302,24 @@ else
   CPPFLAGS="$save_CPPFLAGS"
 fi
 
+# Check for unit test support
+AC_CONFIG_FILES([unittests/Makefile])
+CXXTEST="/usr/bin/cxxtestgen.pl"
+CXXTESTFLAGS=""
+AC_ARG_WITH(cxxtest,
+    AS_HELP_STRING([--with-cxxtest=PATH], [where cxxtest is installed]),
+    [if test x_$with_cxxtest != x_/usr; then
+        CXXTEST="${with_cxxtest}/cxxtestgen.pl"
+        CXXTESTFLAGS="-I${with_cxxtest}"
+    fi])
+if ! test -f "${CXXTEST}"; then
+    AC_MSG_WARN([cxxtestgen not found, won't build unit tests])
+fi
+
+AC_SUBST(CXXTEST)
+AC_SUBST(CXXTESTFLAGS)
+AM_CONDITIONAL(BUILD_UNITTEST,test -f ${CXXTEST})
+WANT_SUBDIRS="$WANT_SUBDIRS unittests"
 
 AC_SUBST(WANT_SUBDIRS)
 

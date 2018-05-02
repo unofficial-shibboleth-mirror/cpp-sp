@@ -23,7 +23,8 @@ DIST_SUBDIRS = \
 	fastcgi \
 	odbc-store \
 	memcache-store \
-	selinux
+	selinux \
+	unittests
 
 if DX_COND_doc
 all-local: doxygen-doc
