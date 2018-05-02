@@ -24,12 +24,13 @@ secincludedir = $(includedir)/shibsp/security
 
 utilincludedir = $(includedir)/shibsp/util
 
+nodist_libshibspinclude_HEADERS = config_pub.h
+
 libshibspinclude_HEADERS = \
 	AbstractSPRequest.h \
 	AccessControl.h \
 	Application.h \
 	base.h \
-	config_pub.h \
 	exceptions.h \
 	paths.h \
 	GSSRequest.h \
