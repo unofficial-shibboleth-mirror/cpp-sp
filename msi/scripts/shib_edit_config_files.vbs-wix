@@ -134,10 +134,8 @@ if (Err = 0) then
 
   'Now just copy the other non-edited files over as well (if possible)
 
-  If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth3.xml")) then
-    If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
-      FileSystemObj.CopyFile DistDir & "shibboleth3.xml", ConfigDir, false
-    End If
+  If (NOT FileSystemObj.FileExists(ConfigDir & "shibboleth2.xml")) then
+    FileSystemObj.CopyFile DistDir & "shibboleth2.xml", ConfigDir, false
   End If
 
   If (NOT FileSystemObj.FileExists(ConfigDir & "native.logger")) then

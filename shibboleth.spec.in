@@ -284,15 +284,11 @@ fi
 # Fix ownership of log files (even on new installs, if they're left from an older one).
 %{__chown} %{runuser}:%{runuser} %{_localstatedir}/log/shibboleth/* 2>/dev/null || :
 
-# Install config file and generate new keys if no existing config is found.
-# Note we have to copy from the .dist version because of RPM exclusion below.
-if [ ! -f %{_sysconfdir}/shibboleth/shibboleth3.xml ] ; then
-	if [ ! -f %{_sysconfdir}/shibboleth/shibboleth2.xml ] ; then
-		install -m 0644 $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibboleth3.xml.dist %{_sysconfdir}/shibboleth/shibboleth3.xml
-		cd %{_sysconfdir}/shibboleth
-		/bin/sh ./keygen.sh -b -n sp-signing -u %{runuser} -g %{runuser}
-		/bin/sh ./keygen.sh -b -n sp-encrypt -u %{runuser} -g %{runuser}
-	fi
+# Generate two keys on new installs.
+if [ $1 -eq 1 ] ; then
+	cd %{_sysconfdir}/shibboleth
+	/bin/sh ./keygen.sh -b -n sp-signing -u %{runuser} -g %{runuser}
+	/bin/sh ./keygen.sh -b -n sp-encrypt -u %{runuser} -g %{runuser}
 fi
 
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
@@ -425,10 +421,10 @@ exit 0
 %dir %{_datadir}/shibboleth
 %{_datadir}/shibboleth/*
 %dir %{_sysconfdir}/shibboleth
+%config(missingok, noreplace) %{_sysconfdir}/shibboleth/shibboleth2.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/attribute-map.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/attribute-policy.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/example-metadata.xml
-%config(noreplace) %{_sysconfdir}/shibboleth/example-shibboleth3.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/protocols.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/security-policy.xml
 %config(noreplace) %{_sysconfdir}/shibboleth/*.html
@@ -449,10 +445,10 @@ exit 0
 %if 0%{?suse_version} >= 1210 || 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
 %{_tmpfilesdir}/%{name}.conf
 %endif
+%{_sysconfdir}/shibboleth/example-shibboleth2.xml
 %{_sysconfdir}/shibboleth/*.dist
 %{_sysconfdir}/shibboleth/apache*.config
 %{_sysconfdir}/shibboleth/shibd-*
-%exclude %{_sysconfdir}/shibboleth/shibboleth3.xml
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/keygen.sh
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/metagen.sh
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/seckeygen.sh
@@ -470,7 +466,6 @@ exit 0
 * Mon Apr 30 2018 Scott Cantor <cantor.2@osu.edu> - 3.0.0-1
 - Bump dependency versions
 - Require updated libraries across the board
-- Add logic to handle new config outside of RPM scope
 - Generate two keys on new installs
 
 * Tue May 03 2016 Scott Cantor <cantor.2@osu.edu> - 2.6.0-1

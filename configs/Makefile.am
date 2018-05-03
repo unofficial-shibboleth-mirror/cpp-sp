@@ -1,10 +1,7 @@
-## $Id$ 
-
 AUTOMAKE_OPTIONS = foreign
 
 pkglibdir = ${libdir}/@PACKAGE_NAME@
 pkglogdir = ${localstatedir}/log/@PACKAGE_NAME@
-shirelogdir = ${localstatedir}/log/@PACKAGE_NAME@-www
 pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@
 pkgwebdir = $(datadir)/@PACKAGE_NAME@
 pkgrundir = $(localstatedir)/run/@PACKAGE_NAME@
@@ -36,12 +33,13 @@ BUILTCONFIGFILES = \
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
 CONFIGFILES = \
+	shibboleth2.xml \
 	attribute-map.xml \
 	attribute-policy.xml \
 	protocols.xml \
 	security-policy.xml \
 	example-metadata.xml \
-	example-shibboleth3.xml \
+	example-shibboleth2.xml \
 	console.logger \
 	native.logger \
 	accessError.html \
@@ -68,7 +66,6 @@ do-build-file:
 		-e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
 		-e 's:@-PKGWEBDIR-@:${pkgwebdir}:g' \
 		-e 's:@-PKGLOGDIR-@:${pkglogdir}:g' \
-		-e 's:@-SHIRELOGDIR-@:${shirelogdir}:g' \
 		-e 's:@-PKGRUNDIR-@:${pkgrundir}:g' \
 		-e 's:@-PKGCACHEDIR-@:${pkgcachedir}:g'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
@@ -111,7 +108,6 @@ all-data-local: $(BUILTCONFIGFILES)
 
 install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(pkglogdir)
-	$(mkinstalldirs) $(DESTDIR)$(shirelogdir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgrundir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgcachedir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgxmldir)
@@ -121,27 +117,23 @@ install-data-local:	all-data-local
 			$(INSTALL_DATA) $$f $(DESTDIR)${pkgsysconfdir}; \
 		fi; \
 		$(INSTALL_DATA) $$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
-		done
+	done
 	for f in $(CONFIGFILES); do \
 		if test ! -f $(DESTDIR)${pkgsysconfdir}/$$f; then \
 			$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)${pkgsysconfdir}; \
 		fi; \
 		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
-		done
-	if test ! -f $(DESTDIR)${pkgsysconfdir}/shibboleth3.xml; then \
-		if test ! -f $(DESTDIR)${pkgsysconfdir}/shibboleth2.xml; then \
-			$(INSTALL_DATA) $(srcdir)/shibboleth3.xml $(DESTDIR)${pkgsysconfdir}; \
-		fi; \
-	fi; \
-	$(INSTALL_DATA) $(srcdir)/shibboleth3.xml $(DESTDIR)${pkgsysconfdir}/shibboleth3.xml.dist
+	done
 
 install-data-hook:
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/keygen.sh
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/metagen.sh
 	if test -z "$(NOKEYGEN)"; then \
-		cd $(DESTDIR)$(pkgsysconfdir); \
-		/bin/sh ./keygen.sh -b -n sp-signing ; \
-		/bin/sh ./keygen.sh -b -n sp-encrypt ; \
+		if test ! -f $(DESTDIR)$(pkgsysconfdir)/sp-key.gen; then \
+			cd $(DESTDIR)$(pkgsysconfdir); \
+			/bin/sh ./keygen.sh -b -n sp-signing ; \
+			/bin/sh ./keygen.sh -b -n sp-encrypt ; \
+		fi; \
 	fi
 
 CLEANFILES = \
@@ -174,7 +166,6 @@ EXTRA_DIST = \
 	keygen.sh \
 	metagen.sh \
 	seckeygen.sh \
-	shibboleth3.xml \
-	win-shibboleth3.xml \
+	win-shibboleth2.xml \
 	win-native.logger \
 	$(CONFIGFILES)

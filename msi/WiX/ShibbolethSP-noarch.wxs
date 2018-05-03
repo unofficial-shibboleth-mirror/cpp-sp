@@ -60,8 +60,8 @@
           <Component Id="example_metadata.xml" Guid="{D9852008-249D-405D-8059-5DAD307D2723}" Permanent="yes">
             <File KeyPath="yes" Name="example-metadata.xml" />
           </Component>
-          <Component Id="example_shibboleth3.xml" Guid="{BD582026-0DB4-4664-A36F-0AC646596641}" Permanent="yes">
-            <File KeyPath="yes" Name="example-shibboleth3.xml" />
+          <Component Id="example_shibboleth2.xml" Guid="{85415A41-2B4E-406F-9CFC-63CFC360A9C7}" Permanent="yes">
+            <File KeyPath="yes" Name="example-shibboleth2.xml" />
           </Component>
           <Component Id="keygen.bat" Guid="{A5BBCB8B-42B3-4402-B66D-66D2971F509F}">
             <File KeyPath="yes" Name="keygen.bat" />
@@ -100,8 +100,8 @@
             <Component Id="attribute_policy.xml" Guid="{55B88F7B-E2EA-4B70-87B7-33C566B9F992}">
               <File KeyPath="yes" Name="attribute-policy.xml" />
             </Component>
-            <Component Id="shibboleth3.xml" Guid="{E7AA9D74-4A67-4FED-BEAB-6DCD2B2EB9FA}">
-              <File KeyPath="yes" Name="shibboleth3.xml" Source="$(var.SPBuildDirectory)\cpp-sp\configs\win-shibboleth3.xml" />
+            <Component Id="shibboleth2.xml" Guid="{E520FEDE-3F0E-47C6-9345-47223B82825A}">
+              <File KeyPath="yes" Name="shibboleth2.xml" Source="$(var.SPBuildDirectory)\cpp-sp\configs\win-shibboleth2.xml" />
             </Component>
             <Component Id="console.logger" Guid="{8AC85980-32B9-4EA2-9245-167FB1AB2570}">
               <File KeyPath="yes" Name="console.logger" />

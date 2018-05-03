@@ -405,13 +405,10 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
     NDC ndc("instantiate");
 #endif
 
-    bool retry = false;
-
     if (!config)
         config = getenv("SHIBSP_CONFIG");
     if (!config) {
         config = SHIBSP_CONFIG;
-        retry = true;
     }
     try {
         xercesc::DOMDocument* dummydoc;
@@ -451,14 +448,8 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
         getServiceProvider()->init();
         return true;
     }
-    catch (std::exception& ex) {
-        if (retry) {
-            Category::getInstance(SHIBSP_LOGCAT ".Config").warn(
-                "failed to load default configuration (%s), retrying with legacy default (%s)", config, SHIBSP2_CONFIG
-            );
-            return instantiate(SHIBSP2_CONFIG, rethrow);
-        }
-        else if (rethrow) {
+    catch (const std::exception& ex) {
+        if (rethrow) {
             throw;
         }
         else {
