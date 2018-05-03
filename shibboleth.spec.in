@@ -11,7 +11,7 @@ BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
 Requires:	openssl
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
-PreReq:		xmltooling-schemas%{?_isa} >= 1.6.0, opensaml-schemas%{?_isa} >= 2.6.0
+PreReq:		xmltooling-schemas%{?_isa} >= 3.0.0, opensaml-schemas%{?_isa} >= 3.0.0
 %else
 PreReq:		xmltooling-schemas >= 3.0.0, opensaml-schemas >= 3.0.0
 %endif
