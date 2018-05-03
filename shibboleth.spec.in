@@ -451,7 +451,6 @@ exit 0
 %{_sysconfdir}/shibboleth/*.dist
 %{_sysconfdir}/shibboleth/apache*.config
 %{_sysconfdir}/shibboleth/shibd-*
-%exclude %{_sysconfdir}/shibboleth/shibboleth3.xml
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/keygen.sh
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/metagen.sh
 %attr(0755,root,root) %{_sysconfdir}/shibboleth/seckeygen.sh
