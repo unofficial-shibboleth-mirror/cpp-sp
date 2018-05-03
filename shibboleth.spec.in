@@ -288,7 +288,7 @@ fi
 # Note we have to copy from the .dist version because of RPM exclusion below.
 if [ ! -f %{_sysconfdir}/shibboleth/shibboleth3.xml ] ; then
 	if [ ! -f %{_sysconfdir}/shibboleth/shibboleth2.xml ] ; then
-		install $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibboleth3.xml.dist %{_sysconfdir}/shibboleth/shibboleth3.xml
+		install -m 0644 $RPM_BUILD_ROOT%{_sysconfdir}/shibboleth/shibboleth3.xml.dist %{_sysconfdir}/shibboleth/shibboleth3.xml
 		cd %{_sysconfdir}/shibboleth
 		/bin/sh ./keygen.sh -b -n sp-signing -u %{runuser} -g %{runuser}
 		/bin/sh ./keygen.sh -b -n sp-encrypt -u %{runuser} -g %{runuser}
