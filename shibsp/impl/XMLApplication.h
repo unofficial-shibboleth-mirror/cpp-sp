@@ -77,7 +77,12 @@ namespace shibsp {
         : public Application, public Remoted, public DOMPropertySet, public xercesc::DOMNodeFilter
     {
     public:
-        XMLApplication(const ServiceProvider*, const ProtocolProvider*, xercesc::DOMElement*, const XMLApplication* base=nullptr);
+        XMLApplication(
+            const ServiceProvider*,
+            const ProtocolProvider*,
+            xercesc::DOMElement*,
+            const XMLApplication* base=nullptr,
+            xercesc::DOMDocument* doc=nullptr);
         virtual ~XMLApplication();
 
         const char* getHash() const {
@@ -221,6 +226,7 @@ namespace shibsp {
         } m_redirectLimit;
 
         std::vector<std::string> m_redirectWhitelist;
+        xercesc::DOMDocument* m_doc;
     };
 
 #if defined (_MSC_VER)

@@ -165,7 +165,12 @@ namespace {
 ExternalAuth::ExternalAuth(const DOMElement* e, const char* appId)
     : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.ExternalAuth"), "acl", "127.0.0.1 ::1")
 {
-    setAddress("run::ExternalAuth");
+    pair<bool,const char*> prop = getString("Location");
+    if (!prop.first)
+        throw ConfigurationException("ExternalAuth handler requires Location property.");
+    string address(appId);
+    address += prop.second;
+    setAddress(address.c_str());
 }
 
 pair<bool,long> ExternalAuth::run(SPRequest& request, bool isHandler) const
@@ -202,7 +207,7 @@ pair<bool,long> ExternalAuth::run(SPRequest& request, bool isHandler) const
             return unwrap(request, out);
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
         istringstream msg("External Authentication Failed");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
@@ -234,7 +239,7 @@ void ExternalAuth::receive(DDF& in, ostream& out)
     try {
         processMessage(*app, *req, *resp, in, &ret);
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("raising exception: %s", ex.what());
         throw;
     }
@@ -489,7 +494,7 @@ pair<bool,long> ExternalAuth::processMessage(
                     }
                 }
             }
-            catch (std::exception&) {
+            catch (const std::exception&) {
                 for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
                 throw;
             }
@@ -561,7 +566,7 @@ pair<bool,long> ExternalAuth::processMessage(
     try {
         recoverRelayState(application, httpRequest, httpResponse, target);
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("error recovering relay state: %s", ex.what());
         target.erase();
     }
@@ -701,7 +706,7 @@ ResolutionContext* ExternalAuth::resolveAttributes(
                             *id = mprefix.second + *id;
                     }
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.error("caught exception extracting attributes: %s", ex.what());
                 }
             }
@@ -713,7 +718,7 @@ ResolutionContext* ExternalAuth::resolveAttributes(
             try {
                 extractor->extractAttributes(application, request, issuer, *nameid, resolvedAttributes);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
@@ -722,7 +727,7 @@ ResolutionContext* ExternalAuth::resolveAttributes(
             try {
                 extractor->extractAttributes(application, request, issuer, *statement, resolvedAttributes);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("caught exception extracting attributes: %s", ex.what());
             }
         }
@@ -733,7 +738,7 @@ ResolutionContext* ExternalAuth::resolveAttributes(
                 try {
                     extractor->extractAttributes(application, request, issuer, *t, resolvedAttributes);
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.error("caught exception extracting attributes: %s", ex.what());
                 }
             }
@@ -746,7 +751,7 @@ ResolutionContext* ExternalAuth::resolveAttributes(
             try {
                 filter->filterAttributes(fc, resolvedAttributes);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("caught exception filtering attributes: %s", ex.what());
                 m_log.error("dumping extracted attributes due to filtering exception");
                 for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
@@ -786,7 +791,7 @@ ResolutionContext* ExternalAuth::resolveAttributes(
             return ctx.release();
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.error("attribute resolution failed: %s", ex.what());
     }
 
@@ -794,7 +799,7 @@ ResolutionContext* ExternalAuth::resolveAttributes(
         try {
             return new DummyContext(resolvedAttributes);
         }
-        catch (bad_alloc&) {
+        catch (const bad_alloc&) {
             for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
         }
     }
@@ -819,7 +824,7 @@ LoginEvent* ExternalAuth::newLoginEvent(const Application& application, const HT
             m_log.warn("unable to audit event, log event object was of an incorrect type");
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         m_log.warn("exception auditing event: %s", ex.what());
     }
     return nullptr;

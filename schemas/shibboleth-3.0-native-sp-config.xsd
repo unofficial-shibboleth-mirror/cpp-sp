@@ -428,7 +428,8 @@
         <element name="AttributeResolver" type="conf:PluggableType"/>
         <element name="AttributeFilter" type="conf:PluggableType"/>
         <element name="CredentialResolver" type="conf:PluggableType"/>
-        <element name="ApplicationOverride" type="conf:ApplicationOverrideType"/>
+        <element ref="conf:ApplicationOverride"/>
+        <element name="ExternalApplicationOverrides" type="conf:ExternalApplicationOverridesType"/>
       </choice>
     </sequence>
     <attribute name="id" type="conf:string" fixed="default"/>
@@ -437,6 +438,8 @@
     <attributeGroup ref="conf:RelyingPartyGroup"/>
     <anyAttribute namespace="##other" processContents="lax"/>
   </complexType>
+
+  <element name="ApplicationOverride" type="conf:ApplicationOverrideType"/>
 
   <complexType name="ApplicationOverrideType">
     <annotation>
@@ -463,6 +466,14 @@
     <anyAttribute namespace="##other" processContents="lax"/>
   </complexType>
 
+  <complexType name="ExternalApplicationOverridesType">
+    <annotation>
+      <documentation>Externalized application overrides.</documentation>
+    </annotation>
+    <sequence/>
+    <attribute name="path" type="conf:string" use="required" />
+  </complexType>
+  
   <attributeGroup name="ApplicationGroup">
     <attribute name="homeURL" type="anyURI"/>
     <attribute name="policyId" type="conf:string"/>

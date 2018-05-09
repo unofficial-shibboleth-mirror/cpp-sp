@@ -86,7 +86,14 @@ namespace shibsp {
 AssertionLookup::AssertionLookup(const DOMElement* e, const char* appId)
     : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.AssertionLookup"), "exportACL", "127.0.0.1 ::1")
 {
-    setAddress("run::AssertionLookup");
+    pair<bool,const char*> prop = getString("Location");
+    if (!prop.first)
+        throw ConfigurationException("AssertionLookup handler requires Location property.");
+    string address(appId);
+    if (*prop.second != '/')
+        address += '/';
+    address += prop.second;
+    setAddress(address.c_str());
 }
 
 pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const

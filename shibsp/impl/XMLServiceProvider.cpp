@@ -41,11 +41,14 @@
 #else
 # error "Supported logging library not available."
 #endif
+#include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/version.h>
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/util/ParserPool.h>
+#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/TemplateEngine.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -88,6 +91,7 @@ namespace {
     static const XMLCh _DataSealer[] =          UNICODE_LITERAL_10(D,a,t,a,S,e,a,l,e,r);
     static const XMLCh _default[] =             UNICODE_LITERAL_7(d,e,f,a,u,l,t);
     static const XMLCh _Extensions[] =          UNICODE_LITERAL_10(E,x,t,e,n,s,i,o,n,s);
+    static const XMLCh ExternalApplicationOverrides[] = UNICODE_LITERAL_28(E,x,t,e,r,n,a,l,A,p,p,l,i,c,a,t,i,o,n,O,v,e,r,r,i,d,e,s);
     static const XMLCh _fatal[] =               UNICODE_LITERAL_5(f,a,t,a,l);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
     static const XMLCh InProcess[] =            UNICODE_LITERAL_9(I,n,P,r,o,c,e,s,s);
@@ -304,7 +308,7 @@ void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& lo
     }
 }
 
-XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, Category& log) : m_document(nullptr)
+XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, Category& log) : m_document(nullptr), m_defaultApplication(nullptr)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLConfigImpl");
@@ -531,17 +535,16 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
     }
 #endif
 
-    scoped_ptr<ProtocolProvider> pp;
     if (conf.isEnabled(SPConfig::Handlers)) {
         if (child = XMLHelper::getLastChildElement(e, _ProtocolProvider)) {
             string t(XMLHelper::getAttrString(child, nullptr, _type));
             if (!t.empty()) {
                 log.info("building ProtocolProvider of type %s...", t.c_str());
-                pp.reset(conf.ProtocolProviderManager.newPlugin(t.c_str(), child));
+                m_protocolProvider.reset(conf.ProtocolProviderManager.newPlugin(t.c_str(), child));
             }
         }
     }
-    Locker pplocker(pp.get());
+    Locker pplocker(m_protocolProvider.get());
 
     // Load the default application.
     child = XMLHelper::getLastChildElement(e, ApplicationDefaults);
@@ -549,20 +552,37 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");
         throw ConfigurationException("can't build default Application object, missing conf:ApplicationDefaults element?");
     }
-    boost::shared_ptr<XMLApplication> defapp(new XMLApplication(outer, pp.get(), child));
+    boost::shared_ptr<XMLApplication> defapp(new XMLApplication(outer, m_protocolProvider.get(), child));
     m_appmap[defapp->getId()] = defapp;
+    m_defaultApplication = defapp.get();
 
     // Load any overrides.
-    child = XMLHelper::getFirstChildElement(child, ApplicationOverride);
-    while (child) {
-        boost::shared_ptr<XMLApplication> iapp(new XMLApplication(outer, pp.get(), child, defapp.get()));
+    DOMElement* override = XMLHelper::getFirstChildElement(child, ApplicationOverride);
+    while (override) {
+        boost::shared_ptr<XMLApplication> iapp(new XMLApplication(outer, m_protocolProvider.get(), override, defapp.get()));
         if (m_appmap.count(iapp->getId()))
             log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
         else
             m_appmap[iapp->getId()] = iapp;
 
-        child = XMLHelper::getNextSiblingElement(child, ApplicationOverride);
+        override = XMLHelper::getNextSiblingElement(override, ApplicationOverride);
     }
+
+    // Save off any external override paths.
+    override = XMLHelper::getFirstChildElement(child, ExternalApplicationOverrides);
+    while (override) {
+        string extoverridepath(XMLHelper::getAttrString(override, nullptr, _path));
+        XMLToolingConfig::getConfig().getPathResolver()->resolve(extoverridepath, PathResolver::XMLTOOLING_CFG_FILE);
+        if (!extoverridepath.empty()) {
+            log.info("adding external ApplicationOverride search path: %s", extoverridepath.c_str());
+            m_externalAppPaths.push_back(extoverridepath);
+        }
+
+        override = XMLHelper::getNextSiblingElement(override, ApplicationOverride);
+    }
+
+    if (!m_externalAppPaths.empty())
+        m_appMapLock.reset(Mutex::create());
 
     // Check for extra AuthTypes to recognize.
     if (conf.isEnabled(SPConfig::InProcess)) {
@@ -577,6 +597,64 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             }
         }
     }
+}
+
+boost::shared_ptr<Application> XMLConfigImpl::findExternalOverride(const char* id, const XMLConfig* config)
+{
+    Locker pplocker(m_protocolProvider.get());
+
+    for (vector<string>::const_iterator i = m_externalAppPaths.begin(); i != m_externalAppPaths.end(); ++i) {
+        string path(*i);
+        if (!ends_with(path, "/"))
+            path += '/';
+        path = path + id + "-override.xml";
+        try {
+            ifstream in(path.c_str());
+            if (in) {
+                DOMDocument* doc = XMLToolingConfig::getConfig().getValidatingParser().parse(in);
+                if (!XMLHelper::isNodeNamed(doc->getDocumentElement(), shibspconstants::SHIB3SPCONFIG_NS, ApplicationOverride)) {
+                    throw ConfigurationException("External override not rooted in conf:ApplicationOverride element.");
+                }
+
+                string id2(XMLHelper::getAttrString(doc->getDocumentElement(), nullptr, _id));
+                if (id2 != id)
+                    throw ConfigurationException("External override's id ($1) did not match the expected value", params(1, id2.c_str()));
+
+                boost::shared_ptr<XMLApplication> iapp(
+                    new XMLApplication(config, m_protocolProvider.get(), doc->getDocumentElement(), m_defaultApplication, doc)
+                    );
+                return iapp;
+            }
+        }
+        catch (const std::exception& ex) {
+            config->m_log.error("Exception creating ApplicationOverride: %s", ex.what());
+        }
+    }
+
+    return nullptr;
+}
+
+const Application* XMLConfig::getApplication(const char* applicationId) const
+{
+    Lock locker(m_impl->m_appMapLock);
+
+    map< string, boost::shared_ptr<Application> >::const_iterator i = m_impl->m_appmap.find(applicationId ? applicationId : "default");
+    Application* ret = (i != m_impl->m_appmap.end()) ? i->second.get() : nullptr;
+
+    if (!ret && m_impl->m_appMapLock && applicationId) {
+        m_log.info("application override (%s) not found, searching external sources", applicationId);
+        boost::shared_ptr<Application> newapp = m_impl->findExternalOverride(applicationId, this);
+        if (newapp) {
+            m_log.info("storing externally defined application override (%s)", applicationId);
+            ret = newapp.get();
+            m_impl->m_appmap[applicationId] = newapp;
+        }
+        else {
+            m_log.warn("application override (%s) not found in external sources", applicationId);
+        }
+    }
+
+    return ret;
 }
 
 #ifndef SHIBSP_LITE
@@ -720,6 +798,101 @@ void XMLConfig::receive(DDF& in, ostream& out)
 }
 
 #endif
+
+void XMLConfig::regListener(const char* address, Remoted* listener)
+{
+    m_listenerLock->wrlock();
+    SharedLock locker(m_listenerLock, false);
+
+    map< string,pair<Remoted*,Remoted*> >::iterator i = m_listenerMap.find(address);
+    if (i != m_listenerMap.end()) {
+        if (!i->second.first) {
+            // First slot is null. Look for second slot and move up if needed.
+            if (i->second.second) {
+                i->second.first = i->second.second;
+                i->second.second = listener;
+                Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").debug("registered second remoted message endpoint (%s)",address);
+            }
+            else {
+                // Both slots null, so put into first slot.
+                i->second.first = listener;
+                Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").debug("registered remoted message endpoint (%s)",address);
+            }
+        }
+        else if (!i->second.second) {
+            // First slot occupied, so put into empty second slot.
+            i->second.second = listener;
+            Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").debug("registered second remoted message endpoint (%s)",address);
+        }
+        else {
+            // This should never happen...?
+            throw new ConfigurationException("Attempted to register more than two endpoints for a single listener address.");
+        }
+    }
+    else {
+        // Stick it in the first slot.
+        m_listenerMap[address] = pair<Remoted*, Remoted*>(listener, nullptr);
+        Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").debug("registered remoted message endpoint (%s)",address);
+    }
+}
+
+bool XMLConfig::unregListener(const char* address, Remoted* current)
+{
+    m_listenerLock->wrlock();
+    SharedLock locker(m_listenerLock, false);
+
+    map< string,pair<Remoted*,Remoted*> >::iterator i = m_listenerMap.find(address);
+    if (i != m_listenerMap.end()) {
+        if (i->second.first == current) {
+            if (i->second.second) {
+                // Promote second slot to first.
+                i->second.first = i->second.second;
+                i->second.second = nullptr;
+            }
+            else {
+                // Remove entirely.
+                m_listenerMap.erase(address);
+            }
+        }
+        else if (i->second.second = current) {
+            if (!i->second.first)
+                m_listenerMap.erase(address);
+            else
+                i->second.second = nullptr;
+        }
+        else {
+            return false;
+        }
+        Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider").debug("unregistered remoted message endpoint (%s)", address);
+        return true;
+    }
+    return false;
+}
+
+Remoted* XMLConfig::lookupListener(const char* address) const
+{
+    SharedLock locker(m_listenerLock, true);
+    map< string,pair<Remoted*,Remoted*> >::const_iterator i = m_listenerMap.find(address);
+    if (i != m_listenerMap.end())
+        return i->second.first ? i->second.first : i->second.second;
+
+    const char* colons = strstr(address, "::");
+    if (colons) {
+        string appId(address, colons - address);
+        locker.release()->unlock();   // free up the listener map
+        getApplication(appId.c_str());
+        SharedLock sublocker(m_listenerLock, true); // relock and check again
+        i = m_listenerMap.find(address);
+        if (i != m_listenerMap.end())
+            return i->second.first ? i->second.first : i->second.second;
+    }
+    return nullptr;
+}
+
+XMLConfig::XMLConfig(const DOMElement* e)
+    : ReloadableXMLFile(e, xmltooling::logging::Category::getInstance(SHIBSP_LOGCAT ".Config")), m_listenerLock(RWLock::create())
+{
+}
 
 XMLConfig::~XMLConfig()
 {

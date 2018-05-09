@@ -84,6 +84,7 @@ namespace {
     static const XMLCh Channel[]=               UNICODE_LITERAL_7(C,h,a,n,n,e,l);
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
     static const XMLCh _default[] =             UNICODE_LITERAL_7(d,e,f,a,u,l,t);
+    static const XMLCh ExternalApplicationOverrides[] = UNICODE_LITERAL_28(E,x,t,e,r,n,a,l,A,p,p,l,i,c,a,t,i,o,n,O,v,e,r,r,i,d,e,s);
     static const XMLCh _Handler[] =             UNICODE_LITERAL_7(H,a,n,d,l,e,r);
     static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
     static const XMLCh _index[] =               UNICODE_LITERAL_5(i,n,d,e,x);
@@ -107,8 +108,9 @@ XMLApplication::XMLApplication(
     const ServiceProvider* sp,
     const ProtocolProvider* pp,
     DOMElement* e,
-    const XMLApplication* base
-    ) : Application(sp), m_base(base), m_acsDefault(nullptr), m_sessionInitDefault(nullptr), m_artifactResolutionDefault(nullptr)
+    const XMLApplication* base,
+    DOMDocument* doc
+    ) : Application(sp), m_base(base), m_acsDefault(nullptr), m_sessionInitDefault(nullptr), m_artifactResolutionDefault(nullptr), m_doc(doc)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
@@ -326,24 +328,19 @@ XMLApplication::XMLApplication(
 
     // Out of process only, we register a listener endpoint.
     if (!conf.isEnabled(SPConfig::InProcess)) {
-        ListenerService* listener = sp->getListenerService(false);
-        if (listener) {
-            string addr=string(getId()) + "::getHeaders::Application";
-            listener->regListener(addr.c_str(), this);
-        }
-        else {
-            log.info("no ListenerService available, Application remoting disabled");
-        }
+        string addr=string(getId()) + "::getHeaders::Application";
+        const_cast<ServiceProvider*>(sp)->regListener(addr.c_str(), this);
     }
 }
 
 XMLApplication::~XMLApplication()
 {
-    ListenerService* listener=getServiceProvider().getListenerService(false);
-    if (listener && SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess) && !SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess) && !SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
         string addr=string(getId()) + "::getHeaders::Application";
-        listener->unregListener(addr.c_str(), this);
+        const_cast<ServiceProvider&>(getServiceProvider()).unregListener(addr.c_str(), this);
     }
+    if (m_doc)
+        m_doc->release();
 }
 
 template <class T> T* XMLApplication::doChainedPlugins(
@@ -1140,7 +1137,8 @@ DOMNodeFilter::FilterAction XMLApplication::acceptNode(const DOMNode* node) cons
         XMLString::equals(name, _CredentialResolver) ||
         XMLString::equals(name, _AttributeFilter) ||
         XMLString::equals(name, _AttributeExtractor) ||
-        XMLString::equals(name, _AttributeResolver)) {
+        XMLString::equals(name, _AttributeResolver) ||
+        XMLString::equals(name, ExternalApplicationOverrides)) {
         return FILTER_REJECT;
     }
 

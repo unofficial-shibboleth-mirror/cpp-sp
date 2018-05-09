@@ -33,6 +33,7 @@
 #include <boost/scoped_ptr.hpp>
 
 namespace xmltooling {
+    class RWLock;
     class ThreadKey;
 }
 
@@ -111,26 +112,23 @@ namespace shibsp {
         DDF* getInput() const;
 
         // Remoted classes register and unregister for messages using these methods.
-        // Registration returns any existing listeners, allowing message hooking.
 
         /**
          * Register for a message. Returns existing remote service, allowing message hooking.
          *
          * @param address   message address to register
          * @param svc       pointer to remote service
-         * @return  previous service registered for message, if any
          */
-        virtual Remoted* regListener(const char* address, Remoted* svc);
+        virtual void regListener(const char* address, Remoted* svc);
 
         /**
          * Unregisters service from an address, possibly restoring an original.
          *
          * @param address   message address to modify
          * @param current   pointer to unregistering service
-         * @param restore   service to "restore" registration for
          * @return  true iff the current service was still registered
          */
-        virtual bool unregListener(const char* address, Remoted* current, Remoted* restore=nullptr);
+        virtual bool unregListener(const char* address, Remoted* current);
 
         /**
          * Returns current service registered at an address, if any.
@@ -169,6 +167,7 @@ namespace shibsp {
 
     private:
         std::map<std::string,Remoted*> m_listenerMap;
+        boost::scoped_ptr<xmltooling::RWLock> m_listenerLock;
         boost::scoped_ptr<xmltooling::ThreadKey> m_threadLocalKey;
     };
 

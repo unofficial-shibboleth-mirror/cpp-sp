@@ -62,7 +62,7 @@ Remoted::~Remoted()
 {
 }
 
-ListenerService::ListenerService() : m_threadLocalKey(ThreadKey::create(nullptr))
+ListenerService::ListenerService() : m_listenerLock(RWLock::create()), m_threadLocalKey(ThreadKey::create(nullptr))
 {
 }
 
@@ -70,26 +70,28 @@ ListenerService::~ListenerService()
 {
 }
 
-Remoted* ListenerService::regListener(const char* address, Remoted* listener)
+void ListenerService::regListener(const char* address, Remoted* listener)
 {
+    m_listenerLock->wrlock();
+    SharedLock locker(m_listenerLock, false);
+
     Remoted* ret=nullptr;
     map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
     if (i!=m_listenerMap.end())
         ret=i->second;
     m_listenerMap[address]=listener;
-    Category::getInstance(SHIBSP_LOGCAT ".Listener").info("registered remoted message endpoint (%s)",address);
-    return ret;
+    Category::getInstance(SHIBSP_LOGCAT ".Listener").debug("registered remoted message endpoint (%s)",address);
 }
 
-bool ListenerService::unregListener(const char* address, Remoted* current, Remoted* restore)
+bool ListenerService::unregListener(const char* address, Remoted* current)
 {
+    m_listenerLock->wrlock();
+    SharedLock locker(m_listenerLock, false);
+
     map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
     if (i!=m_listenerMap.end() && i->second==current) {
-        if (restore)
-            m_listenerMap[address]=restore;
-        else
-            m_listenerMap.erase(address);
-        Category::getInstance(SHIBSP_LOGCAT ".Listener").info("unregistered remoted message endpoint (%s)",address);
+        m_listenerMap.erase(address);
+        Category::getInstance(SHIBSP_LOGCAT ".Listener").debug("unregistered remoted message endpoint (%s)",address);
         return true;
     }
     return false;
@@ -97,6 +99,7 @@ bool ListenerService::unregListener(const char* address, Remoted* current, Remot
 
 Remoted* ListenerService::lookup(const char *address) const
 {
+    SharedLock locker(m_listenerLock, true);
     map<string,Remoted*>::const_iterator i=m_listenerMap.find(address);
     return (i==m_listenerMap.end()) ? nullptr : i->second;
 }

@@ -30,7 +30,6 @@
 #include <shibsp/util/PropertySet.h>
 
 #include <set>
-#include <vector>
 #include <xmltooling/Lockable.h>
 
 namespace xmltooling {
@@ -210,23 +209,21 @@ namespace shibsp {
         virtual std::pair<bool,long> doHandler(SPRequest& request) const;
 
         /**
-         * Register for a message. Returns existing remote service, allowing message hooking.
+         * Register for a message.
          *
-         * @param address   message address to register
-         * @param svc       pointer to remote service
-         * @return  previous service registered for message, if any
+         * @param address       message address to register
+         * @param svc           pointer to remote service
          */
-        virtual Remoted* regListener(const char* address, Remoted* svc);
+        virtual void regListener(const char* address, Remoted* svc)=0;
 
         /**
          * Unregisters service from an address, possibly restoring an original.
          *
          * @param address   message address to modify
          * @param current   pointer to unregistering service
-         * @param restore   service to "restore" registration for
          * @return  true iff the current service was still registered
          */
-        virtual bool unregListener(const char* address, Remoted* current, Remoted* restore=nullptr);
+        virtual bool unregListener(const char* address, Remoted* current)=0;
 
         /**
          * Returns current service registered at an address, if any.
@@ -234,14 +231,11 @@ namespace shibsp {
          * @param address message address to access
          * @return  registered service, or nullptr
          */
-        virtual Remoted* lookupListener(const char* address) const;
+        virtual Remoted* lookupListener(const char* address) const=0;
 
     protected:
         /** The AuthTypes to "recognize" (defaults to "shibboleth"). */
         std::set<std::string> m_authTypes;
-
-    private:
-        std::map<std::string,Remoted*> m_listenerMap;
     };
 
 #if defined (_MSC_VER)

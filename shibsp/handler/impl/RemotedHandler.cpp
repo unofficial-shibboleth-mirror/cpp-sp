@@ -334,13 +334,8 @@ void RemotedHandler::setAddress(const char* address)
         throw ConfigurationException("Cannot register a remoting address twice for the same Handler.");
     m_address = address;
     SPConfig& conf = SPConfig::getConfig();
-    if (!conf.isEnabled(SPConfig::InProcess)) {
-        ListenerService* listener = conf.getServiceProvider()->getListenerService(false);
-        if (listener)
-            listener->regListener(m_address.c_str(), this);
-        else
-            Category::getInstance(SHIBSP_LOGCAT ".Handler").info("no ListenerService available, handler remoting disabled");
-    }
+    if (conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess))
+        conf.getServiceProvider()->regListener(address, this);
 }
 
 set<string> RemotedHandler::m_remotedHeaders;
@@ -352,9 +347,8 @@ RemotedHandler::RemotedHandler()
 RemotedHandler::~RemotedHandler()
 {
     SPConfig& conf = SPConfig::getConfig();
-    ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
-    if (listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess))
-        listener->unregListener(m_address.c_str(),this);
+    if (conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess))
+        conf.getServiceProvider()->unregListener(m_address.c_str(), this);
 }
 
 void RemotedHandler::addRemotedHeader(const char* header)

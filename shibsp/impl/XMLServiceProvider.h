@@ -44,6 +44,11 @@
 # include <boost/tuple/tuple.hpp>
 #endif
 
+namespace xmltooling {
+    class Mutex;
+    class RWLock;
+}
+
 namespace shibsp {
 
 #if defined (_MSC_VER)
@@ -66,8 +71,14 @@ namespace shibsp {
         boost::scoped_ptr<SecurityPolicyProvider> m_policy;
         std::vector< boost::tuple<std::string, std::string, std::string> > m_transportOptions;
 #endif
+        std::map<std::string,Remoted*> m_listenerMap;
         boost::scoped_ptr<RequestMapper> m_requestMapper;
+        boost::scoped_ptr<ProtocolProvider> m_protocolProvider;
+        boost::scoped_ptr<xmltooling::Mutex> m_appMapLock;
         std::map< std::string, boost::shared_ptr<Application> > m_appmap;
+        std::vector<std::string> m_externalAppPaths;
+
+        boost::shared_ptr<Application> findExternalOverride(const char*, const XMLConfig*);
 
         // Provides filter to exclude special config elements.
         xercesc::DOMNodeFilter::FilterAction acceptNode(const xercesc::DOMNode* node) const;
@@ -82,6 +93,7 @@ namespace shibsp {
         void doCaching(const xercesc::DOMElement*, XMLConfig*, xmltooling::logging::Category&);
 
         xercesc::DOMDocument* m_document;
+        const XMLApplication* m_defaultApplication;
     };
 
     class SHIBSP_DLLLOCAL XMLConfig : public ServiceProvider, public xmltooling::ReloadableXMLFile
@@ -90,7 +102,7 @@ namespace shibsp {
 #endif
     {
     public:
-        XMLConfig(const xercesc::DOMElement* e) : ReloadableXMLFile(e, xmltooling::logging::Category::getInstance(SHIBSP_LOGCAT ".Config")) {}
+        XMLConfig(const xercesc::DOMElement* e);
         virtual ~XMLConfig();
 
         void init() {
@@ -150,10 +162,7 @@ namespace shibsp {
             return m_impl->m_requestMapper.get();
         }
 
-        const Application* getApplication(const char* applicationId) const {
-            std::map< std::string, boost::shared_ptr<Application> >::const_iterator i = m_impl->m_appmap.find(applicationId ? applicationId : "default");
-            return (i != m_impl->m_appmap.end()) ? i->second.get() : nullptr;
-        }
+        const Application* getApplication(const char* applicationId) const;
 
 #ifndef SHIBSP_LITE
         SecurityPolicyProvider* getSecurityPolicyProvider(bool required=true) const {
@@ -165,11 +174,19 @@ namespace shibsp {
         bool setTransportOptions(xmltooling::SOAPTransport& transport) const;
 #endif
 
+        void regListener(const char* address, Remoted* svc);
+        bool unregListener(const char* address, Remoted* current);
+        Remoted* lookupListener(const char* address) const;
+
     protected:
         std::pair<bool,xercesc::DOMElement*> background_load();
 
     private:
         friend class XMLConfigImpl;
+
+        boost::scoped_ptr<xmltooling::RWLock> m_listenerLock;
+        std::map< std::string,std::pair<Remoted*,Remoted*> > m_listenerMap;
+
         // The order of these members actually matters. If we want to rely on auto-destruction, then
         // anything dependent on anything else has to come later in the object so it will pop first.
         // Storage is the lowest, then remoting, then the cache, and finally the rest.
