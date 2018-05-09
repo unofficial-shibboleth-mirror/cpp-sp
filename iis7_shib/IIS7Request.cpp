@@ -36,7 +36,7 @@
 using namespace Config;
 using xmltooling::logging::Priority;
 
-IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".NATIVE"),
+IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".IISNative"),
     m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
     m_firsttime(true), m_gotBody(false), m_event(pEventProvider)
 {

@@ -83,7 +83,6 @@ public:
 };
 
 extern "C"
-_declspec(dllexport)
 HRESULT
 __stdcall
 RegisterModule(

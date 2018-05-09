@@ -50,13 +50,6 @@
       </Directory><!-- doc -->
       <Directory Id="etc" Name="etc">
         <Directory Id="etc_shibboleth" Name="shibboleth" FileSource="$(var.SPBuildDirectory)\cpp-sp\configs">
-          <Component Id="SetPermissions" Guid="{14FBE93B-B06B-4BDE-AF6C-C34289CA98F9}">
-            <RegistryValue Id="SetPermissions" Root="HKLM" Key="SOFTWARE\Shibboleth\SP" Name="SetPermissions" Value="TRUE" Type="string" KeyPath="yes" />
-            <CreateFolder>
-              <Permission User="Administrators" GenericAll="yes" />
-            </CreateFolder>
-            <Condition>(NOT Installed) AND (NOT ALREADYINSTALLED)</Condition>
-          </Component>
           <Component Id="example_metadata.xml" Guid="{D9852008-249D-405D-8059-5DAD307D2723}" Permanent="yes">
             <File KeyPath="yes" Name="example-metadata.xml" />
           </Component>

@@ -173,7 +173,7 @@ Severity=Error
 Facility=ShibbolethISAPI
 SymbolicName=SHIB_ISAPI_CANNOT_CHECK_SIGNATURE
 Language=Neutral
-Shibboleth ISAPI filter: Failed when looking for signature (check the status).
+Shibboleth ISAPI filter: Failed when looking for signature.
 .
 
 MessageId=
