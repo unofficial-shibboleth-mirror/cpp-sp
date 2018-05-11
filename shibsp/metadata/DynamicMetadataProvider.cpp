@@ -47,8 +47,8 @@
 #include <saml/saml2/metadata/AbstractDynamicMetadataProvider.h>
 #include <saml/saml2/metadata/MetadataFilter.h>
 
-#include <xmltooling/util/Threads.h>
 #include <xmltooling/logging.h>
+#include <xmltooling/version.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/security/Credential.h>
 #include <xmltooling/security/CredentialCriteria.h>
@@ -59,6 +59,7 @@
 #include <xmltooling/util/DirectoryWalker.h>
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/PathResolver.h>
+#include <xmltooling/util/Threads.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -175,16 +176,15 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
         child = XMLHelper::getFirstChildElement(e, _TrustEngine);
         string t = XMLHelper::getAttrString(child, nullptr, _type);
         if (!t.empty()) {
-            TrustEngine* trust = XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child);
-            if (!dynamic_cast<X509TrustEngine*>(trust)) {
-                delete trust;
+            auto_ptr<TrustEngine> trust(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child));
+            if (!dynamic_cast<X509TrustEngine*>(trust.get())) {
                 throw ConfigurationException("Dynamic MetadataProvider requires X509TrustEngine plugin.");
             }
-            m_trust.reset(dynamic_cast<X509TrustEngine*>(trust));
+            m_trust.reset(dynamic_cast<X509TrustEngine*>(trust.release()));
             m_dummyCR.reset(XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(DUMMY_CREDENTIAL_RESOLVER, nullptr));
         }
 
-        if (!m_trust.get() || !m_dummyCR.get())
+        if (!m_trust || !m_dummyCR)
             throw ConfigurationException("Dynamic MetadataProvider requires X509TrustEngine plugin unless ignoreTransport is set.");
     }
 
@@ -201,10 +201,10 @@ void DynamicMetadataProvider::init()
 
 #ifdef WIN32
     if (!CreateDirectoryA(m_cacheDir.c_str(), NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
-        m_log.warn("Could not create cache directory %s (%ld)", m_cacheDir.c_str(), GetLastError());
+        m_log.warn("could not create cache directory %s (%ld)", m_cacheDir.c_str(), GetLastError());
 #else
     if (mkdir(m_cacheDir.c_str(), S_IRWXU))
-        m_log.warn("Could not create cache directory %s (%d)", m_cacheDir.c_str(), errno);
+        m_log.warn("could not create cache directory %s (%d)", m_cacheDir.c_str(), errno);
 #endif
     if (m_backgroundInit) {
         m_init_thread.reset(Thread::create(&init_fn, this));
@@ -262,7 +262,7 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
                 }
             }
         }
-        catch (XMLException& ex) {
+        catch (const XMLException& ex) {
             auto_ptr_char msg(ex.getMessage());
             m_log.error("caught error applying regular expression: %s", msg.get());
         }
@@ -290,13 +290,13 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
     SOAPTransport::Address addr(relyingParty->getString("entityID").second, name.c_str(), name.c_str());
     const char* pch = strchr(addr.m_endpoint,':');
     if (!pch)
-        throw IOException("location was not a URL.");
-    string scheme(addr.m_endpoint, pch-addr.m_endpoint);
+        throw IOException("Location was not a URL.");
+    string scheme(addr.m_endpoint, pch - addr.m_endpoint);
     boost::scoped_ptr<SOAPTransport> transport;
     try {
         transport.reset(XMLToolingConfig::getConfig().SOAPTransportManager.newPlugin(scheme.c_str(), addr));
     }
-    catch (exception& ex) {
+    catch (const exception& ex) {
         m_log.error("exception while building transport object to resolve URL: %s", ex.what());
         throw IOException("Unable to resolve entityID with a known transport protocol.");
     }
@@ -307,7 +307,7 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
     if (httpTransport) {
         httpTransport->setAcceptEncoding("");
     }
-    if (m_trust.get() && m_dummyCR.get() && !transport->setTrustEngine(m_trust.get(), m_dummyCR.get()))
+    if (m_trust && m_dummyCR && !transport->setTrustEngine(m_trust.get(), m_dummyCR.get()))
         throw IOException("Unable to install X509TrustEngine into transport object.");
 
     Locker credlocker(nullptr, false);
@@ -373,6 +373,7 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
         http->useChunkedEncoding(flag.first && flag.second);
         http->setRequestHeader("Xerces-C", XERCES_FULLVERSIONDOT);
         http->setRequestHeader("XML-Security-C", XSEC_FULLVERSIONDOT);
+        http->setRequestHeader("XMLTooling-C", gXMLToolingDotVersionStr);
         http->setRequestHeader("OpenSAML-C", gOpenSAMLDotVersionStr);
         http->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION);
     }
@@ -391,7 +392,7 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
 
         return entity;
     }
-    catch (XMLException& e) {
+    catch (const XMLException& e) {
         auto_ptr_char msg(e.getMessage());
         m_log.error("Xerces error while resolving location (%s): %s", name.c_str(), msg.get());
         throw MetadataException(msg.get());
@@ -407,7 +408,7 @@ void DynamicMetadataProvider::unindex(const XMLCh* entityID, bool freeSites) con
     auto_ptr_char id(entityID);
 
     const string backingFile(m_cacheDir + "/" + SecurityHelper::doHash("SHA1", id.get(), strlen(id.get())) + ".xml");
-    m_log.debug("Removing %s", backingFile.c_str());
+    m_log.debug("removing from cache: %s", backingFile.c_str());
     remove(backingFile.c_str());
 }
 
@@ -420,7 +421,7 @@ void DynamicMetadataProvider::indexEntity(EntityDescriptor* site, time_t& validU
 
     const auto_ptr_char temp(site->getEntityID());
     const string hashed(SecurityHelper::doHash("SHA1", temp.get(), strlen(temp.get()), true));
-    const string backingFile(m_cacheDir.empty() ? "" : m_cacheDir + "/" + hashed + ".xml");
+    const string backingFile(m_cacheDir + "/" + hashed + ".xml");
 
     if (!replace) {
         struct stat buffer;
@@ -455,7 +456,7 @@ void DynamicMetadataProvider::FolderCallback(const char* pathname, struct stat& 
     DynamicMetadataProvider* me = reinterpret_cast<DynamicMetadataProvider*>(data);
 
     try {
-        me->m_log.info("Reload from %s", pathname);
+        me->m_log.info("reload metadata from %s", pathname);
         ifstream thisFileEntry(pathname);
         if (thisFileEntry) {
             auto_ptr<EntityDescriptor> entity(me->entityFromStream(thisFileEntry));
@@ -468,17 +469,17 @@ void DynamicMetadataProvider::FolderCallback(const char* pathname, struct stat& 
             }
         }
     }
-    catch (XMLException& e) {
+    catch (const XMLException& e) {
         auto_ptr_char msg(e.getMessage());
         me->m_log.error("Xerces error while reloading from cache (%s): %s ", pathname, msg.get());
         remove(pathname);
     }
-    catch (MetadataException& e) {
+    catch (const MetadataException& e) {
         auto_ptr_char msg(e.getMessage());
         me->m_log.error("Filter error while reloading from cache (%s): %s", pathname, msg.get());
         remove(pathname);
     }
-    catch (exception& e) {
+    catch (const exception& e) {
         me->m_log.error("Other error while reloading from cache (%s): %s", pathname, e.what());
         remove(pathname);
     }
