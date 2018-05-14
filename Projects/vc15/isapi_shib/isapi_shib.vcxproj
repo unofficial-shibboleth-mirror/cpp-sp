@@ -234,7 +234,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Isapi_Shib\isapi_shib.cpp" />
-    <ClCompile Include="..\..\..\util\RegistrySignature.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\Isapi_Shib\isapi_shib.rc">

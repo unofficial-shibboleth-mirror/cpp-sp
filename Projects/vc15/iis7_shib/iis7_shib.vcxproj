@@ -209,7 +209,6 @@
     <ClCompile Include="..\..\..\iis7_shib\register.cpp" />
     <ClCompile Include="..\..\..\iis7_shib\ShibHttpModule.cpp" />
     <ClCompile Include="..\..\..\iis7_shib\ShibUser.cpp" />
-    <ClCompile Include="..\..\..\util\RegistrySignature.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\Iis7_Shib\iis7_shib.rc">

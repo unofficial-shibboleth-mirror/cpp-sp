@@ -56,8 +56,6 @@
 #include <httpext.h>
 #include <message.h>
 
-#include "../util/RegistrySignature.h"
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace xercesc;
@@ -171,14 +169,6 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     else if (g_Config) {
         LogEvent(EVENTLOG_WARNING_TYPE, SHIB_ISAPI_REENTRANT_INIT, Priority::WARN, "SHIB_ISAPI_REENTRANT_INIT");
         return TRUE;
-    }
-
-    RegistrySignature::CheckSigResult checkSig = RegistrySignature::CheckSignature('IIS6');
-    if (RegistrySignature::Failed == checkSig) {
-        LogEvent(EVENTLOG_WARNING_TYPE, SHIB_ISAPI_CANNOT_CHECK_SIGNATURE, Priority::WARN, "SHIB_ISAPI_CANNOT_CHECK_SIGNATURE");
-    } else if (RegistrySignature::Mismatched == checkSig) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_SIGNATURE_MISMATCH, Priority::FATAL, "SHIB_ISAPI_SIGNATURE_MISMATCH");
-        return FALSE;
     }
 
     g_Config = &SPConfig::getConfig();

@@ -26,7 +26,6 @@
 // Project
 #include "IIS7_shib.hpp"
 #include "ShibHttpModule.hpp"
-#include "../util/RegistrySignature.h"
 #include <xmltooling/logging.h>
 #pragma warning(disable: 4996)
 #include <codecvt> // 16 bit to 8 bit and vice versa chars
@@ -94,15 +93,6 @@ RegisterModule(
     if (g_Config) {
         LogEvent(EVENTLOG_WARNING_TYPE, SHIB_NATIVE_REENTRANT_INIT, Priority::WARN, "SHIB_NATIVE_REENTRANT_INIT");
         return S_OK;
-    }
-
-    RegistrySignature::CheckSigResult checkSig = RegistrySignature::CheckSignature('IIS7');
-    if (RegistrySignature::CheckSigResult::Failed == checkSig) {
-        LogEvent(EVENTLOG_WARNING_TYPE, SHIB_NATIVE_CANNOT_CHECK_SIGNATURE, Priority::WARN, "SHIB_NATIVE_CANNOT_CHECK_SIGNATURE");
-    }
-    else if (RegistrySignature::CheckSigResult::Mismatched == checkSig) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_SIGNATURE_MISMATCH, Priority::FATAL, "SHIB_NATIVE_SIGNATURE_MISMATCH");
-        return FALSE;
     }
 
     g_Config = &SPConfig::getConfig();

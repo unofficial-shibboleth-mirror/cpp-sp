@@ -169,23 +169,6 @@ Shibboleth ISAPI filter: Caught an Unknown Exception.
 .
 
 MessageId=
-Severity=Error
-Facility=ShibbolethISAPI
-SymbolicName=SHIB_ISAPI_CANNOT_CHECK_SIGNATURE
-Language=Neutral
-Shibboleth ISAPI filter: Failed when looking for signature.
-.
-
-MessageId=
-Severity=Error
-Facility=ShibbolethISAPI
-SymbolicName=SHIB_ISAPI_SIGNATURE_MISMATCH
-Language=Neutral
-Shibboleth ISAPI filter: Native Filter is already running, exiting.
-.
-
-
-MessageId=
 Severity=Warning
 Facility=ShibbolethNative
 SymbolicName=SHIB_NATIVE_REENTRANT_INIT
@@ -233,18 +216,3 @@ Language=Neutral
 Shibboleth Native filter: Critical Error: %0!s!
 .
 
-MessageId=
-Severity=Error
-Facility=ShibbolethNative
-SymbolicName=SHIB_NATIVE_CANNOT_CHECK_SIGNATURE
-Language=Neutral
-Shibboleth Native filter: Failed when looking for signature (check the status).
-.
-
-MessageId=
-Severity=Error
-Facility=ShibbolethNative
-SymbolicName=SHIB_NATIVE_SIGNATURE_MISMATCH
-Language=Neutral
-Shibboleth ISAPI filter: ISAPI Filter is already running, exiting.
-.
