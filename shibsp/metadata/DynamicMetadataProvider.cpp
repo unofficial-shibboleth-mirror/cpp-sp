@@ -80,12 +80,11 @@ namespace shibsp {
 
         virtual void indexEntity(EntityDescriptor* site, time_t& validUntil, bool replace=false) const;
 
-        virtual void unindex(const XMLCh* entityID, bool freeSites=false) const;
-
         void init();
 
     protected:
-        EntityDescriptor* resolve(const MetadataProvider::Criteria& criteria) const;
+        virtual EntityDescriptor* resolve(const MetadataProvider::Criteria& criteria, string& cacheTag) const;
+        virtual void unindex(const XMLCh* entityID, bool freeSites=false) const;
 
     private:
         Category& m_log;
@@ -216,7 +215,7 @@ void DynamicMetadataProvider::init()
 }
 
 
-EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Criteria& criteria) const
+EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Criteria& criteria, string& cacheTag) const
 {
 #ifdef _DEBUG
     xmltooling::NDC("resolve");
@@ -464,7 +463,7 @@ void DynamicMetadataProvider::FolderCallback(const char* pathname, struct stat& 
             if (entity.get()) {
                 const BatchLoadMetadataFilterContext bc(true);
                 me->doFilters(&bc, *entity);
-                me->cacheEntity(entity.get());
+                me->cacheEntity(entity.get(), "");
                 entity.release();
             }
         }
