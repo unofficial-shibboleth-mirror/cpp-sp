@@ -50,6 +50,7 @@
 #include <xmltooling/logging.h>
 #include <xmltooling/version.h>
 #include <xmltooling/XMLToolingConfig.h>
+#include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/security/Credential.h>
 #include <xmltooling/security/CredentialCriteria.h>
 #include <xmltooling/security/CredentialResolver.h>
@@ -301,6 +302,7 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
     }
 
     // Apply properties as directed.
+    transport->setCacheTag(&cacheTag);
     transport->setVerifyHost(m_verifyHost);
     HTTPSOAPTransport *httpTransport = dynamic_cast<HTTPSOAPTransport*>(transport.get());
     if (httpTransport) {
@@ -380,12 +382,22 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
     try {
         // Use a nullptr stream to trigger a body-less "GET" operation.
         transport->send();
+        long status = transport->getStatusCode();
+        if (status == HTTPResponse::XMLTOOLING_HTTP_STATUS_NOTMODIFIED) {
+            m_log.info("metadata resource (%s) was unmodified", name.c_str());
+            return nullptr;
+        }
+        else if (status != HTTPResponse::XMLTOOLING_HTTP_STATUS_OK) {
+            m_log.warn("HTTP status (%ld) resolving metadata resource (%s)", status, name.c_str());
+            throw MetadataException("Unsuccessful HTTP request for metadata resource.");
+        }
+
         istream& msg = transport->receive();
 
         EntityDescriptor* entity = entityFromStream(msg);
 
         if (nullptr != entity && !m_isMDQ && criteria.artifact && !s_artifactWarned) {
-            m_log.warn("Successful resolution of an artifact by a non-MDQ dynamic server is not guaranteed to work");
+            m_log.warn("Successful resolution of an artifact by a non-MDQ dynamic server is not guaranteed to work.");
             s_artifactWarned = true;
         }
 
@@ -393,7 +405,6 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
     }
     catch (const XMLException& e) {
         auto_ptr_char msg(e.getMessage());
-        m_log.error("Xerces error while resolving location (%s): %s", name.c_str(), msg.get());
         throw MetadataException(msg.get());
     }
 }
