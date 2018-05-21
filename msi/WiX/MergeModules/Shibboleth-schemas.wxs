@@ -28,6 +28,9 @@
                 <Component Id="catalog.xml" Guid="{C6EA59A2-0A86-4F5F-B5F8-E37A2310A793}">
                   <File KeyPath="yes" Name="catalog.xml" Source="$(var.SPBuildDirectory)\cpp-sp\schemas\catalog.xml.in" />
                 </Component>
+                <Component Id="catalog.xml.in" Guid="{0CC7F113-DC35-4A6F-8ECA-ED214B4BA720}">
+                  <File KeyPath="yes" Name="catalog.xml.in" />
+                </Component>
                 <Component Id="shibboleth.xsd" Guid="{18F3DD83-0C0A-480E-8C87-043C9296DFE5}">
                   <File KeyPath="yes" Name="shibboleth.xsd" />
                 </Component>

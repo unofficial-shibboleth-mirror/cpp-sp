@@ -3,6 +3,7 @@ Function ReadFile( filePath )
 
    'OpenTextFile args: <path>, 1 = ForReading
    'If you read an empty file, VBScript throws an error for some reason
+
    if (FileSystemObj.FileExists(filePath)) then
      Set theFile = FileSystemObj.GetFile(filePath)
      if (theFile.size > 0) then
@@ -25,13 +26,15 @@ Sub WriteFile( filePath, contents )
 End Sub
 
 Sub ReplaceInFile( filePath, lookForStr, replaceWithStr )
-  Dim buffer
+ Dim buffer
+ inpath = filePath & ".in"
 
-  buffer = ReadFile(filePath)
+  buffer = ReadFile(inpath)
   if (buffer <> "") then
     buffer = Replace(buffer, lookForStr, replaceWithStr)
     WriteFile filePath, buffer
-  end if
+
+ end if
 End Sub
 
 
@@ -40,13 +43,11 @@ Dim FileSystemObj, ConfigFile, ConfigFileName, XMLDir, WshShell
 on error resume next
 Set FileSystemObj = CreateObject("Scripting.FileSystemObject")
 if (Err = 0) then
-
   'Get the parameters via CustomActionData
   customData = Session.Property("CustomActionData")
   msiProperties = split(customData,";@;")
   XMLDir = msiProperties(0) ' \programdata\shibboleth\sp\xml\opensaml\
   ConfigFile = msiProperties(1) 'catalog
-
   ReplaceInFile ConfigFile, "@-PKGXMLDIR-@/", XMLDir
 
 'Last End If

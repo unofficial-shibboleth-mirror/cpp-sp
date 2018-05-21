@@ -81,6 +81,7 @@ nmake /f Installer.make BuildSP=$(BuildRoot) SolutionDir=$(SolutionDir)..\..\ Sh
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\..\..\msi\scripts\shib_edit_config_files.vbs-wix" />
     <None Include="H:\Perforce\devel\cpp-sp\msi\wix\Dialog.bmp" />
     <None Include="..\..\..\msi\wix\Installer.make" />
     <None Include="..\..\..\msi\wix\license.rtf" />

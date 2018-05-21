@@ -42,11 +42,20 @@
                 <Component Id="saml10_catalog.xml" Guid="{7E08BA59-AC67-4FEF-A3C4-DA01F59E16E0}">
                   <File KeyPath="yes" Name="saml10-catalog.xml" Source="$(var.SPBuildDirectory)\cpp-opensaml\schemas\saml10-catalog.xml.in" />
                 </Component>
+                <Component Id="saml10_catalog.xml.in" Guid="{A39E0CB9-2E80-4205-82F7-6A66E50D3B6E}">
+                  <File KeyPath="yes" Name="saml10-catalog.xml.in" />
+                </Component>
                 <Component Id="saml11_catalog.xml" Guid="{4D599268-82B3-4C69-BB24-8E3D0FC79BE1}">
                   <File KeyPath="yes" Name="saml11-catalog.xml" Source="$(var.SPBuildDirectory)\cpp-opensaml\schemas\saml11-catalog.xml.in" />
                 </Component>
+                <Component Id="saml11_catalog.xml.in" Guid="{B804D093-7608-4D18-BEAE-C0FC65A43AB3}">
+                  <File KeyPath="yes" Name="saml11-catalog.xml.in" />
+                </Component>
                 <Component Id="saml20_catalog.xml" Guid="{2A9829FE-518F-478B-B116-5B6A3087A6C9}">
                   <File KeyPath="yes" Name="saml20-catalog.xml" Source="$(var.SPBuildDirectory)\cpp-opensaml\schemas\saml20-catalog.xml.in" />
+                </Component>
+                <Component Id="saml20_catalog.xml.in" Guid="{EBFD82A6-8B4F-44F1-8304-254904E7E432}">
+                  <File KeyPath="yes" Name="saml20-catalog.xml.in" />
                 </Component>
                 <Component Id="assertion_2.0.xsd" Guid="{6A785715-2E2E-4DFC-948B-94711E1DC355}">
                   <File KeyPath="yes" Id="assertion_2.0.xsd" Name="saml-schema-assertion-2.0.xsd" />
@@ -208,6 +217,9 @@
                 </Component>
                 <Component Id="catalog.xml" Guid="{CD84FD26-CCB0-4FC6-9B51-E72CC23046D8}">
                   <File KeyPath="yes" Name="catalog.xml" Source="$(var.SPBuildDirectory)\cpp-xmltooling\schemas\catalog.xml.in" />
+                </Component>
+                <Component Id="catalog.xml.in" Guid="{FE4B0B0F-0782-44C1-B8DB-AD4675D2C375}">
+                  <File KeyPath="yes" Name="catalog.xml.in" />
                 </Component>
               </Directory><!-- xmltooling -->
             </Directory><!-- xml -->

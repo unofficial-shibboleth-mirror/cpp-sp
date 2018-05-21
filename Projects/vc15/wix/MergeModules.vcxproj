@@ -93,6 +93,7 @@ nmake /f MergeModules.make BuildSP=$(BuildRoot) CurlVersion=$(CurlVersion) CurlF
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\..\..\msi\scripts\shib_edit_catalog.vbs" />
     <None Include="..\..\..\msi\Wix\MergeModules\Curl-x64.wxs">
       <SubType>Designer</SubType>
     </None>
