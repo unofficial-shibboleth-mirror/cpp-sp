@@ -384,7 +384,7 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
         transport->send();
         long status = transport->getStatusCode();
         if (status == HTTPResponse::XMLTOOLING_HTTP_STATUS_NOTMODIFIED) {
-            m_log.info("metadata resource (%s) was unmodified", name.c_str());
+            m_log.debug("metadata resource (%s) was unmodified", name.c_str());
             return nullptr;
         }
         else if (status != HTTPResponse::XMLTOOLING_HTTP_STATUS_OK) {
