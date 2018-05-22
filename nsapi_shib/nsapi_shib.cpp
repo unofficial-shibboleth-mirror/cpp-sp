@@ -57,6 +57,7 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #ifdef WIN32
+# define WIN32_LEAN_AND_MEAN
 # include <process.h>
 # define XP_WIN32
 #else
@@ -113,6 +114,8 @@ extern "C" NSAPI_PUBLIC void nsapi_shib_exit(void*)
 
 extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* rq)
 {
+    static char _funcname[] = "nsapi_shib_init";
+
     // Save off a default hostname for this virtual server.
     char* name=pblock_findval("server-name",pb);
     if (name)
@@ -134,7 +137,8 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
         }
     }
 
-    log_error(LOG_INFORM,"nsapi_shib_init",sn,rq,"nsapi_shib loaded for host (%s)",g_ServerName.c_str());
+    static char _logmsg[] = "nsapi_shib loaded for host (%s)";
+    log_error(LOG_INFORM,_funcname,sn,rq,_logmsg,g_ServerName.c_str());
 
     const char* schemadir=pblock_findval("shib-schemas",pb);
     const char* prefix=pblock_findval("shib-prefix",pb);
@@ -297,16 +301,18 @@ public:
     return pblock_findval("method", m_rq->reqpb);
   }
   string getContentType() const {
+    static char _contenttype[] = "content-type";
     char* content_type = nullptr;
-    if (request_header("content-type", &content_type, m_sn, m_rq) != REQ_PROCEED)
+    if (request_header(_contenttype, &content_type, m_sn, m_rq) != REQ_PROCEED)
         return "";
     return content_type ? content_type : "";
   }
   long getContentLength() const {
+    static char _contentlen[] = "content-length";
     if (m_gotBody)
         return m_body.length();
     char* content_length=nullptr;
-    if (request_header("content-length", &content_length, m_sn, m_rq) != REQ_PROCEED)
+    if (request_header(_contentlen, &content_length, m_sn, m_rq) != REQ_PROCEED)
         return 0;
     return content_length ? atoi(content_length) : 0;
   }
@@ -315,18 +321,20 @@ public:
     return ret.empty() ? pblock_findval("ip", m_sn->client) : ret;
   }
   void log(SPLogLevel level, const string& msg) const {
+    static char _module[] = "nsapi_shib";
     AbstractSPRequest::log(level,msg);
     if (level>=SPError)
-        log_error(LOG_FAILURE, "nsapi_shib", m_sn, m_rq, const_cast<char*>(msg.c_str()));
+        log_error(LOG_FAILURE, _module, m_sn, m_rq, const_cast<char*>(msg.c_str()));
   }
   const char* getQueryString() const {
     return pblock_findval("query", m_rq->reqpb);
   }
   const char* getRequestBody() const {
+    static char _contentlen[] = "content-length";
     if (m_gotBody)
         return m_body.c_str();
     char* content_length=nullptr;
-    if (request_header("content-length", &content_length, m_sn, m_rq) != REQ_PROCEED || !content_length) {
+    if (request_header(_contentlen, &content_length, m_sn, m_rq) != REQ_PROCEED || !content_length) {
         m_gotBody = true;
         return nullptr;
     }
@@ -482,10 +490,10 @@ int WriteClientError(::Session* sn, Request* rq, char* func, char* msg)
     return REQ_ABORTED;
 }
 
-#undef FUNC
-#define FUNC "shibboleth"
 extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
 {
+  static char _func[] = "nsapi_shib";
+
   string threadid("[");
   threadid += lexical_cast<string>(getpid()) + "] nsapi_shib";
   xmltooling::NDC ndc(threadid.c_str());
@@ -515,23 +523,25 @@ extern "C" NSAPI_PUBLIC int nsapi_shib(pblock* pb, ::Session* sn, Request* rq)
     // this user is ok.
     return REQ_PROCEED;
   }
-  catch (std::exception& e) {
-    log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
-    return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an exception, see web server log for error.");
+  catch (const std::exception& e) {
+    log_error(LOG_FAILURE,_func,sn,rq,const_cast<char*>(e.what()));
+    static char _errmsg[] = "Shibboleth module threw an exception, see web server log for error.";
+    return WriteClientError(sn, rq, _func, _errmsg);
   }
   catch (...) {
-    log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>("Shibboleth module threw an unknown exception."));
+    static char _errmsg2[] = "Shibboleth module threw an unknown exception.";
+    log_error(LOG_FAILURE,_func,sn,rq,_errmsg2);
     if (g_catchAll)
-        return WriteClientError(sn, rq, FUNC, "Shibboleth module threw an unknown exception.");
+        return WriteClientError(sn, rq, _func, _errmsg2);
     throw;
   }
 }
 
 
-#undef FUNC
-#define FUNC "shib_handler"
 extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
 {
+  static char _func[] = "shib_handler";
+
   string threadid("[");
   threadid += lexical_cast<string>(getpid()) + "] shib_handler";
   xmltooling::NDC ndc(threadid.c_str());
@@ -542,16 +552,19 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
     pair<bool,long> res = stn.getServiceProvider().doHandler(stn);
     if (res.first) return (int)res.second;
 
-    return WriteClientError(sn, rq, FUNC, "Shibboleth handler did not do anything.");
+    static char _errmsg[] = "Shibboleth handler did not do anything.";
+    return WriteClientError(sn, rq, _func, _errmsg);
   }
-  catch (std::exception& e) {
-    log_error(LOG_FAILURE,FUNC,sn,rq,const_cast<char*>(e.what()));
-    return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an exception, see web server log for error.");
+  catch (const std::exception& e) {
+    static char _errmsg2[] = "Shibboleth handler threw an exception, see web server log for error.";
+    log_error(LOG_FAILURE,_func,sn,rq,const_cast<char*>(e.what()));
+    return WriteClientError(sn, rq, _func, _errmsg2);
   }
   catch (...) {
-    log_error(LOG_FAILURE,FUNC,sn,rq,"unknown exception caught in Shibboleth handler");
+    static char _errmsg3[] = "Shibboleth handler threw an unknown exception.";
+    log_error(LOG_FAILURE,_func,sn,rq,_errmsg3);
     if (g_catchAll)
-        return WriteClientError(sn, rq, FUNC, "Shibboleth handler threw an unknown exception.");
+        return WriteClientError(sn, rq, _func, _errmsg3);
     throw;
   }
 }

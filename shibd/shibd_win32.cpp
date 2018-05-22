@@ -197,9 +197,11 @@ int main(int argc, char *argv[])
         printf("\t-catalogs <catalog1:catalog2> to specify schema catalogs\n");
         printf("\nService starting.\nThis may take several seconds. Please wait.\n" );
 
+    static char svcname[] = "SHIBD";
+
     SERVICE_TABLE_ENTRY dispatchTable[] =
     {
-        { "SHIBD", (LPSERVICE_MAIN_FUNCTION)service_main },
+        { svcname, (LPSERVICE_MAIN_FUNCTION)service_main },
         { nullptr, nullptr }
     };
 

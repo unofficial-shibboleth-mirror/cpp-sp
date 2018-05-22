@@ -61,8 +61,14 @@ void usage()
 
 int main(int argc,char* argv[])
 {
+    static char _default[] = "default";
+    static char _idprole[] = "IDPSSODescriptor";
+    static char _aarole[] = "AttributeAuthorityDescriptor";
+    static char _pdprole[] = "PDPDescriptor";
+    static char _sprole[] = "SPSSODescriptor";
+
     char* entityID = nullptr;
-    char* appID = "default";
+    char* appID = _default;
     bool strict = true;
     char* prot = nullptr;
     const XMLCh* protocol = nullptr;
@@ -87,13 +93,13 @@ int main(int argc,char* argv[])
         else if (!strcmp(argv[i],"-saml2"))
             protocol=samlconstants::SAML20P_NS;
         else if (!strcmp(argv[i],"-idp"))
-            rname="IDPSSODescriptor";
+            rname=_idprole;
         else if (!strcmp(argv[i],"-aa"))
-            rname="AttributeAuthorityDescriptor";
+            rname=_aarole;
         else if (!strcmp(argv[i],"-pdp"))
-            rname="PDPDescriptor";
+            rname=_pdprole;
         else if (!strcmp(argv[i],"-sp"))
-            rname="SPSSODescriptor";
+            rname=_sprole;
         else if (!strcmp(argv[i],"-nostrict"))
             strict = false;
     }

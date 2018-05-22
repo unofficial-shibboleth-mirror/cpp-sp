@@ -117,6 +117,8 @@ void usage()
 
 int main(int argc,char* argv[])
 {
+    static char _default[] = "default";
+
     char* a_param=nullptr;
     char* n_param=nullptr;
     char* f_param=nullptr;
@@ -149,7 +151,7 @@ int main(int argc,char* argv[])
     }
 
     if (!a_param)
-        a_param="default";
+        a_param=_default;
 
     if (n_param) {
         if (!protocol) {

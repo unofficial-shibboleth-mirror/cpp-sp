@@ -105,6 +105,7 @@ ShibUser::IsInRole(_In_  PCWSTR  pszRoleName, _Out_ BOOL *  pfInRole)
 PVOID
 ShibUser::GetUserVariable(_In_ PCSTR    pszVariableName)
 {
-    return  "";
+    static char empty[] = "";
+    return  empty;
 }
 

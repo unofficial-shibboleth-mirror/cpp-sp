@@ -27,10 +27,11 @@
 #define SHIBSP_LITE
 
 #ifdef SOLARIS2
-#undef _XOPEN_SOURCE    // causes gethostname conflict in unistd.h
+# undef _XOPEN_SOURCE    // causes gethostname conflict in unistd.h
 #endif
 
 #ifdef WIN32
+# define WIN32_LEAN_AND_MEAN
 # define _CRT_NONSTDC_NO_DEPRECATE 1
 # define _CRT_SECURE_NO_DEPRECATE 1
 #endif
@@ -115,7 +116,8 @@ namespace {
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
 #ifndef SHIB_APACHE_13
-    char* g_szGSSContextKey = "mod_auth_gssapi:gss_ctx";
+    static char _defaultGSSKey[] = "mod_auth_gssapi:gss_ctx";
+    char* g_szGSSContextKey = _defaultGSSKey;
 #endif
     static const char* g_UserDataKey = "urn:mace:shibboleth:Apache:shib_check_user";
 }
@@ -772,6 +774,8 @@ static int shib_post_read(request_rec *r)
 // SP handler requests if it detects a handler URL.
 extern "C" int shib_check_user(request_rec* r)
 {
+    static char _emptystr[] = "";
+
     // Short-circuit entirely?
     if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &mod_shib))->bOff == 1)
         return DECLINED;
@@ -813,7 +817,7 @@ extern "C" int shib_check_user(request_rec* r)
             // for an empty string. If this turns out to cause trouble, there's no solution except
             // to set a dummy ID any time it's not set.
             if (res.second == OK && !r->user)
-                r->user = "";
+                r->user = _emptystr;
 #endif
             return res.second;
         }
@@ -824,7 +828,7 @@ extern "C" int shib_check_user(request_rec* r)
 #ifdef SHIB_APACHE_24
             // See above for explanation of this hack.
             if (res.second == OK && !r->user)
-                r->user = "";
+                r->user = _emptystr;
 #endif
             return res.second;
         }
@@ -832,7 +836,7 @@ extern "C" int shib_check_user(request_rec* r)
 #ifdef SHIB_APACHE_24
         // See above for explanation of this hack.
         if (!r->user)
-            r->user = "";
+            r->user = _emptystr;
 #endif
         return OK;
     }

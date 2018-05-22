@@ -350,14 +350,19 @@ public:
   ShibTargetIsapiF(PHTTP_FILTER_CONTEXT pfc, PHTTP_FILTER_PREPROC_HEADERS pn, const site_t& site)
       : AbstractSPRequest(SHIBSP_LOGCAT ".ISAPI"), m_pfc(pfc), m_pn(pn), m_allhttp(4096), m_firsttime(true) {
 
+    static char _url[] = "url";
+    static char _SERVER_PORT[] = "SERVER_PORT";
+    static char _SERVER_NAME[] = "SERVER_NAME";
+    static char _ShibSpoofCheck[] = "ShibSpoofCheck:";
+
     // URL path always come from IIS.
     dynabuf var(256);
-    GetHeader("url",var,256,false);
+    GetHeader(_url,var,256,false);
     setRequestURI(var);
 
     // Port may come from IIS or from site def.
     if (!g_bNormalizeRequest || (pfc->fIsSecurePort && site.m_sslport.empty()) || (!pfc->fIsSecurePort && site.m_port.empty())) {
-        GetServerVariable("SERVER_PORT",var,10);
+        GetServerVariable(_SERVER_PORT,var,10);
         if (var.empty()) {
             m_port = pfc->fIsSecurePort ? 443 : 80;
         }
@@ -377,7 +382,7 @@ public:
     if (m_scheme.empty() || !g_bNormalizeRequest)
         m_scheme=pfc->fIsSecurePort ? "https" : "http";
 
-    GetServerVariable("SERVER_NAME",var,32);
+    GetServerVariable(_SERVER_NAME,var,32);
 
     // Make sure SERVER_NAME is "authorized" for use on this site. If not, or empty, set to canonical name.
     if (var.empty()) {
@@ -390,7 +395,7 @@ public:
     }
 
     if (!g_spoofKey.empty()) {
-        GetHeader("ShibSpoofCheck:", var, 32, false);
+        GetHeader(_ShibSpoofCheck, var, 32, false);
         if (!var.empty() && g_spoofKey == (char*)var)
             m_firsttime = false;
     }
@@ -415,28 +420,31 @@ public:
       return uri ? (uri + 1) : nullptr;
   }
   const char* getMethod() const {
+    static char _HTTP_METHOD[] = "HTTP_METHOD";
     if (m_method.empty()) {
         dynabuf var(5);
-        GetServerVariable("HTTP_METHOD",var,5,false);
+        GetServerVariable(_HTTP_METHOD,var,5,false);
         if (!var.empty())
             m_method = var;
     }
     return m_method.c_str();
   }
   string getContentType() const {
+    static char _HTTP_CONTENT_TYPE[] = "HTTP_CONTENT_TYPE";
     if (m_content_type.empty()) {
         dynabuf var(32);
-        GetServerVariable("HTTP_CONTENT_TYPE",var,32,false);
+        GetServerVariable(_HTTP_CONTENT_TYPE,var,32,false);
         if (!var.empty())
             m_content_type = var;
     }
     return m_content_type;
   }
   string getRemoteAddr() const {
+    static char _REMOTE_ADDR[] = "REMOTE_ADDR";
     m_remote_addr = AbstractSPRequest::getRemoteAddr();
     if (m_remote_addr.empty()) {
         dynabuf var(16);
-        GetServerVariable("REMOTE_ADDR",var,16,false);
+        GetServerVariable(_REMOTE_ADDR,var,16,false);
         if (!var.empty())
             m_remote_addr = var;
     }
@@ -456,9 +464,12 @@ public:
       return (hdr + ':');
   }
   void clearHeader(const char* rawname, const char* cginame) {
+    static char _ALL_HTTP[] = "ALL_HTTP";
+    static char _REMOTE_USER[] = "remote-user:";
+
     if (g_checkSpoofing && m_firsttime) {
         if (m_allhttp.empty())
-	        GetServerVariable( "ALL_HTTP", m_allhttp, 4096, false);
+	        GetServerVariable(_ALL_HTTP, m_allhttp, 4096, false);
         if (!m_allhttp.empty()) {
             string hdr = g_bSafeHeaderNames ? ("HTTP_" + makeSafeHeader(cginame + 5)) : (string(cginame) + ':');
             if (strstr(m_allhttp, hdr.c_str()))
@@ -470,8 +481,8 @@ public:
         m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
     }
     else if (!strcmp(rawname,"REMOTE_USER")) {
-	    m_pn->SetHeader(m_pfc, "remote-user:", const_cast<char*>(g_unsetHeaderValue.c_str()));
-        m_pn->SetHeader(m_pfc, "remote_user:", const_cast<char*>(g_unsetHeaderValue.c_str()));
+	    m_pn->SetHeader(m_pfc, _REMOTE_USER, const_cast<char*>(g_unsetHeaderValue.c_str()));
+        m_pn->SetHeader(m_pfc, _REMOTE_USER, const_cast<char*>(g_unsetHeaderValue.c_str()));
 	}
 	else {
 	    string hdr = string(rawname) + ':';
@@ -486,14 +497,14 @@ public:
     string hdr = g_bSafeHeaderNames ? makeSafeHeader(name) : (string(name) + ':');
     dynabuf buf(256);
     GetHeader(const_cast<char*>(hdr.c_str()), buf, 256, false);
-    return string(buf.empty() ? "" : buf);
+    return string(buf.empty() ? "" : static_cast<char*>(buf));
   }
   string getHeader(const char* name) const {
     string hdr(name);
     hdr += ':';
     dynabuf buf(256);
     GetHeader(const_cast<char*>(hdr.c_str()), buf, 256, false);
-    return string(buf.empty() ? "" : buf);
+    return string(buf.empty() ? "" : static_cast<char*>(buf));
   }
   void setRemoteUser(const char* user) {
     setHeader("remote-user", user);
@@ -538,6 +549,7 @@ public:
     return SF_STATUS_REQ_FINISHED;
   }
   long sendRedirect(const char* url) {
+    static char _status[] = "302 Please Wait";
     HTTPResponse::sendRedirect(url);
     string hdr=string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
@@ -547,7 +559,7 @@ public:
     for (multimap<string,string>::const_iterator i = m_headers.begin(); i != m_headers.end(); ++i)
         hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
-    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, "302 Please Wait", (ULONG_PTR)hdr.c_str(), 0);
+    m_pfc->ServerSupportFunction(m_pfc, SF_REQ_SEND_RESPONSE_HEADER, _status, (ULONG_PTR)hdr.c_str(), 0);
     static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
     DWORD resplen=40;
     m_pfc->WriteClient(m_pfc, (LPVOID)redmsg, &resplen, 0);
@@ -605,19 +617,21 @@ public:
 
 DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg, DWORD eventID=SHIB_ISAPI_CLIENT_ERROR)
 {
+    static char _status[] = "200 OK";
+
     if (eventID)
         LogEvent(EVENTLOG_ERROR_TYPE, eventID, Priority::ERROR, msg);
-    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
-    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,"200 OK",(ULONG_PTR)ctype,0);
-    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
+    static char ctype[] = "Connection: close\r\nContent-Type: text/html\r\n\r\n";
+    pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,_status,(ULONG_PTR)ctype,0);
+    static char xmsg[] = "<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
                             "<H1>Shibboleth Filter Error</H1>";
     DWORD resplen=strlen(xmsg);
-    pfc->WriteClient(pfc,(LPVOID)xmsg,&resplen,0);
+    pfc->WriteClient(pfc,xmsg,&resplen,0);
     resplen=strlen(msg);
-    pfc->WriteClient(pfc,(LPVOID)msg,&resplen,0);
-    static const char* xmsg2="</BODY></HTML>";
+    pfc->WriteClient(pfc,const_cast<char*>(msg),&resplen,0);
+    static char xmsg2[] = "</BODY></HTML>";
     resplen=strlen(xmsg2);
-    pfc->WriteClient(pfc,(LPVOID)xmsg2,&resplen,0);
+    pfc->WriteClient(pfc,xmsg2,&resplen,0);
     return SF_STATUS_REQ_FINISHED;
 }
 
@@ -643,6 +657,9 @@ void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s,
 
 extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificationType, LPVOID pvNotification)
 {
+    static char _INSTANCE_ID[] = "INSTANCE_ID";
+    static char _ShibSpoofCheck[] = "ShibSpoofCheck:";
+
     // Is this a log notification?
     if (notificationType == SF_NOTIFY_LOG) {
         if (pfc->pFilterContext)
@@ -654,7 +671,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
     try {
         // Determine web site number. This can't really fail, I don't think.
         dynabuf buf(128);
-        GetServerVariable(pfc,"INSTANCE_ID",buf,10);
+        GetServerVariable(pfc,_INSTANCE_ID,buf,10);
         if (buf.empty())
             return WriteClientError(pfc, "Shibboleth Filter failed to obtain INSTANCE_ID server variable.");
 
@@ -671,7 +688,7 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
         pair<bool,long> res = stf.getServiceProvider().doAuthentication(stf);
         if (!g_spoofKey.empty())
-            pn->SetHeader(pfc, "ShibSpoofCheck:", const_cast<char*>(g_spoofKey.c_str()));
+            pn->SetHeader(pfc, _ShibSpoofCheck, const_cast<char*>(g_spoofKey.c_str()));
         if (res.first) return res.second;
 
         res = stf.getServiceProvider().doExport(stf);
@@ -710,18 +727,20 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 
 DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg, DWORD eventID=SHIB_ISAPI_CLIENT_ERROR)
 {
+    static char _status[] = "200 OK";
+
     if (eventID)
         LogEvent(EVENTLOG_ERROR_TYPE, eventID, Priority::ERROR, msg);
-    static const char* ctype="Connection: close\r\nContent-Type: text/html\r\n\r\n";
-    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,"200 OK",0,(LPDWORD)ctype);
-    static const char* xmsg="<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
+    static char ctype[] = "Connection: close\r\nContent-Type: text/html\r\n\r\n";
+    lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,_status,0,(LPDWORD)ctype);
+    static char xmsg[] = "<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
     DWORD resplen=strlen(xmsg);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg,&resplen,HSE_IO_SYNC);
+    lpECB->WriteClient(lpECB->ConnID,xmsg,&resplen,HSE_IO_SYNC);
     resplen=strlen(msg);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)msg,&resplen,HSE_IO_SYNC);
-    static const char* xmsg2="</BODY></HTML>";
+    lpECB->WriteClient(lpECB->ConnID,const_cast<char*>(msg),&resplen,HSE_IO_SYNC);
+    static char xmsg2[] = "</BODY></HTML>";
     resplen=strlen(xmsg2);
-    lpECB->WriteClient(lpECB->ConnID,(LPVOID)xmsg2,&resplen,HSE_IO_SYNC);
+    lpECB->WriteClient(lpECB->ConnID,xmsg2,&resplen,HSE_IO_SYNC);
     return HSE_STATUS_SUCCESS;
 }
 
@@ -740,8 +759,13 @@ class ShibTargetIsapiE : public AbstractSPRequest
 public:
   ShibTargetIsapiE(LPEXTENSION_CONTROL_BLOCK lpECB, const site_t& site)
       : AbstractSPRequest(SHIBSP_LOGCAT ".ISAPI"), m_lpECB(lpECB), m_gotBody(false) {
+    static char _HTTPS[] = "HTTPS";
+    static char _URL[] = "URL";
+    static char _SERVER_PORT[] = "SERVER_PORT";
+    static char _SERVER_NAME[] = "SERVER_NAME";
+
     dynabuf ssl(5);
-    GetServerVariable("HTTPS",ssl,5);
+    GetServerVariable(_HTTPS,ssl,5);
     bool SSL=(ssl=="on" || ssl=="ON");
 
     // Scheme may come from site def or be derived from IIS.
@@ -751,12 +775,12 @@ public:
 
     // URL path always come from IIS.
     dynabuf url(256);
-    GetServerVariable("URL",url,255);
+    GetServerVariable(_URL,url,255);
 
     // Port may come from IIS or from site def.
     if (!g_bNormalizeRequest || (SSL && site.m_sslport.empty()) || (!SSL && site.m_port.empty())) {
         dynabuf port(11);
-        GetServerVariable("SERVER_PORT",port,10);
+        GetServerVariable(_SERVER_PORT,port,10);
         if (port.empty()) {
             m_port = SSL ? 443 : 80;
         }
@@ -772,7 +796,7 @@ public:
     }
 
     dynabuf var(32);
-    GetServerVariable("SERVER_NAME", var, 32);
+    GetServerVariable(_SERVER_NAME, var, 32);
     if (var.empty()) {
         m_hostname = site.m_name;
     }
@@ -846,19 +870,21 @@ public:
       return m_lpECB->cbTotalBytes;
   }
   string getRemoteUser() const {
+    static char _REMOTE_USER[] = "REMOTE_USER";
     if (m_remote_user.empty()) {
         dynabuf var(16);
-        GetServerVariable("REMOTE_USER", var, 32, false);
+        GetServerVariable(_REMOTE_USER, var, 32, false);
         if (!var.empty())
             m_remote_user = var;
     }
     return m_remote_user;
   }
   string getRemoteAddr() const {
+      static char _REMOTE_ADDR[] = "REMOTE_ADDR";
     m_remote_addr = AbstractSPRequest::getRemoteAddr();
     if (m_remote_addr.empty()) {
         dynabuf var(16);
-        GetServerVariable("REMOTE_ADDR", var, 16, false);
+        GetServerVariable(_REMOTE_ADDR, var, 16, false);
         if (!var.empty())
             m_remote_addr = var;
     }
@@ -879,7 +905,7 @@ public:
     }
     dynabuf buf(128);
     GetServerVariable(const_cast<char*>(hdr.c_str()), buf, 128, false);
-    return buf.empty() ? "" : buf;
+    return buf.empty() ? "" : static_cast<char*>(buf);
   }
   void setResponseHeader(const char* name, const char* value, bool replace = false) {
       HTTPResponse::setResponseHeader(name, value, replace);
@@ -932,15 +958,26 @@ public:
     for (multimap<string,string>::const_iterator i = m_headers.begin(); i != m_headers.end(); ++i)
         hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
-    const char* codestr="200 OK";
+
+    static char okstr[] = "200 OK";
+    static char notmodstr[] = "304 Not Modified";
+    static char authzstr[] = "401 Authorization Required";
+    static char forbiddenstr[] = "403 Forbidden";
+    static char notfoundstr[] = "404 Not Found";
+    static char errorstr[] = "500 Server Error";
+    
+    char* str = nullptr;
+
     switch (status) {
-        case XMLTOOLING_HTTP_STATUS_NOTMODIFIED:    codestr="304 Not Modified"; break;
-        case XMLTOOLING_HTTP_STATUS_UNAUTHORIZED:   codestr="401 Authorization Required"; break;
-        case XMLTOOLING_HTTP_STATUS_FORBIDDEN:      codestr="403 Forbidden"; break;
-        case XMLTOOLING_HTTP_STATUS_NOTFOUND:       codestr="404 Not Found"; break;
-        case XMLTOOLING_HTTP_STATUS_ERROR:          codestr="500 Server Error"; break;
+        case XMLTOOLING_HTTP_STATUS_NOTMODIFIED:    str = notmodstr; break;
+        case XMLTOOLING_HTTP_STATUS_UNAUTHORIZED:   str = authzstr; break;
+        case XMLTOOLING_HTTP_STATUS_FORBIDDEN:      str = forbiddenstr; break;
+        case XMLTOOLING_HTTP_STATUS_NOTFOUND:       str = notfoundstr; break;
+        case XMLTOOLING_HTTP_STATUS_ERROR:          str = errorstr; break;
+
+        default: str = okstr;
     }
-    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, (void*)codestr, 0, (LPDWORD)hdr.c_str());
+    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, str, 0, (LPDWORD)hdr.c_str());
     char buf[1024];
     while (in) {
         in.read(buf,1024);
@@ -950,6 +987,8 @@ public:
     return HSE_STATUS_SUCCESS;
   }
   long sendRedirect(const char* url) {
+    static char _status[] = "302 Moved";
+
     HTTPResponse::sendRedirect(url);
     string hdr=string("Location: ") + url + "\r\n"
       "Content-Type: text/html\r\n"
@@ -959,10 +998,10 @@ public:
     for (multimap<string,string>::const_iterator i = m_headers.begin(); i != m_headers.end(); ++i)
         hdr += i->first + ": " + i->second + "\r\n";
     hdr += "\r\n";
-    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, "302 Moved", 0, (LPDWORD)hdr.c_str());
-    static const char* redmsg="<HTML><BODY>Redirecting...</BODY></HTML>";
+    m_lpECB->ServerSupportFunction(m_lpECB->ConnID, HSE_REQ_SEND_RESPONSE_HEADER, _status, 0, (LPDWORD)hdr.c_str());
+    static char redmsg[] = "<HTML><BODY>Redirecting...</BODY></HTML>";
     DWORD resplen=40;
-    m_lpECB->WriteClient(m_lpECB->ConnID, (LPVOID)redmsg, &resplen, HSE_IO_SYNC);
+    m_lpECB->WriteClient(m_lpECB->ConnID, redmsg, &resplen, HSE_IO_SYNC);
     return HSE_STATUS_SUCCESS;
   }
   // Decline happens in the POST processor if this isn't the handler url
@@ -1042,6 +1081,8 @@ void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dyna
 
 extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 {
+    static char _INSTANCE_ID[] = "INSTANCE_ID";
+
     try {
         string threadid("[");
         threadid += lexical_cast<string>(getpid()) + "] isapi_shib_extension";
@@ -1049,7 +1090,7 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
 
         // Determine web site number. This can't really fail, I don't think.
         dynabuf buf(128);
-        GetServerVariable(lpECB,"INSTANCE_ID",buf,10);
+        GetServerVariable(lpECB,_INSTANCE_ID,buf,10);
         if (buf.empty())
             return WriteClientError(lpECB, "Shibboleth Extension failed to obtain INSTANCE_ID server variable.");
 
