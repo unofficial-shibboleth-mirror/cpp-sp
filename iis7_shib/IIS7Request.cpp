@@ -36,98 +36,87 @@
 using namespace Config;
 using xmltooling::logging::Priority;
 
-IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser) : AbstractSPRequest(SHIBSP_LOGCAT ".IISNative"),
-    m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
-    m_firsttime(true), m_gotBody(false), m_event(pEventProvider)
+IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser, const site_t& site)
+    : AbstractSPRequest(SHIBSP_LOGCAT ".IISNative"),
+        m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
+        m_firsttime(true), m_port(0), m_gotBody(false), m_event(pEventProvider)
 {
-    DWORD len;
-
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     setRequestURI(converter.to_bytes(m_ctx->GetScriptName()).c_str());
 
-    PCSTR port;
-    HRESULT hr = m_ctx->GetServerVariable("SERVER_PORT_SECURE", &port, &len);
-
+    DWORD len;
+    PCSTR var;
+    bool bSSL = false;
+    HRESULT hr = m_ctx->GetServerVariable("SERVER_PORT_SECURE", &var, &len);
     if (SUCCEEDED(hr)) {
         if (len) {
-            int secure = lexical_cast<int>(port);
-            m_SSL = (0 != secure)? true:false;
+            try {
+                int secure = lexical_cast<int>(var);
+                bSSL = (0 != secure) ? true : false;
+            }
+            catch (const bad_lexical_cast&) {
+                log(SPRequest::SPError, "exception converting SERVER_PORT_SECURE value to int");
+                bSSL = (nullptr != m_request->GetRawHttpRequest()->pSslInfo);
+            }
         }
         else {
-            m_SSL = (nullptr == m_request->GetRawHttpRequest()->pSslInfo);
+            bSSL = (nullptr != m_request->GetRawHttpRequest()->pSslInfo);
         }
     }
     else {
         throwError("Get Server Secure", hr);
     }
 
-    map<string, site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(m_request->GetSiteId()));
-    bool setPort = false;
-    string thePort("");
-    if (!g_bNormalizeRequest) {
-        // Only grab the port from IIS if the user said no to normalization
-        hr = m_ctx->GetServerVariable("SERVER_PORT", &port, &len);
+    m_useHeaders = site.m_useHeaders;
+    m_useVariables = site.m_useVariables;
+
+    // Port may come from IIS or from site def.
+    if (!g_bNormalizeRequest || (bSSL && site.m_sslport.empty()) || (!bSSL && site.m_port.empty())) {
+        hr = m_ctx->GetServerVariable("SERVER_PORT", &var, &len);
         if (SUCCEEDED(hr)) {
-            thePort = port;
-        }
-    }
-
-    if (map_i == g_Sites.end()) {
-
-        log(SPRequest::SPDebug, "Site not found, using IIS provided information");
-
-        // ServerVariable SERVER_NAME is what the client sent.  So use the IIS site name (which needs to have been set to something sensible)
-        m_hostname = converter.to_bytes(m_ctx->GetSite()->GetSiteName());
-        to_lower(m_hostname);
-        log(SPRequest::SPDebug, "Host name: " + m_hostname);
-
-        m_useHeaders = g_bUseHeaders;
-        m_useVariables = g_bUseVariables;
-    }
-    else {
-        log(SPRequest::SPDebug, "Site found, using site informatiom");
-
-        site_t site = map_i->second;
-
-        m_useHeaders = site.m_useHeaders;
-        m_useVariables = site.m_useVariables;
-
-        // Grab the host from the site
-        m_hostname = site.m_name;
-
-        // Grab the port from the site - if present
-        if (m_SSL && !site.m_sslport.empty()) {
-            m_port = lexical_cast<int>(site.m_sslport);
-            setPort = true;
-        }
-        else if (!m_SSL && !site.m_port.empty()) {
-            m_port = lexical_cast<int>(site.m_port);
-            setPort = true;
-        }
-    }
-
-    if (!setPort) {
-        if (!thePort.empty()) {
-            // We've not set the port so far (from the site) *AND* we are not normalising, grab from IIS
-            setPort = true;
-            m_port = lexical_cast<int>(port);
+            try {
+                m_port = lexical_cast<int>(var);
+            }
+            catch (const bad_lexical_cast&) {
+                throwError("Get Port", hr);
+            }
         }
         else {
-            // hardwire.
-            if (m_SSL) {
-                m_port = 443;
-            }
-            else {
-                m_port = 80;
-            }
+            throwError("Get Port", hr);
         }
     }
+    else if (bSSL) {
+        m_port = atoi(site.m_sslport.c_str());
+    }
+    else {
+        m_port = atoi(site.m_port.c_str());
+    }
 
-    PCSTR ru;
-    hr = m_ctx->GetServerVariable("REMOTE_USER", &ru, &len);
+    // Scheme may come from site def or be derived from IIS.
+    m_scheme=site.m_scheme;
+    if (m_scheme.empty() || !g_bNormalizeRequest)
+        m_scheme = bSSL ? "https" : "http";
+
+    hr = m_ctx->GetServerVariable("SERVER_NAME", &var, &len);
+    if (SUCCEEDED(hr)) {
+        // Make sure SERVER_NAME is "authorized" for use on this site. If not, or empty, set to canonical name.
+        if (!len) {
+            m_hostname = site.m_name;
+        }
+        else {
+            m_hostname = var;
+            if (site.m_name != m_hostname && site.m_aliases.find(m_hostname) == site.m_aliases.end())
+                m_hostname = site.m_name;
+        }
+    }
+    else {
+        m_hostname = site.m_name;
+    }
+
+    hr = m_ctx->GetServerVariable("REMOTE_USER", &var, &len);
     if (SUCCEEDED(hr)) {
         if (len) {
-            m_remoteUser = ru;
+            m_remoteUser = var;
         }
         else {
             m_remoteUser = "";
@@ -180,6 +169,7 @@ void IIS7Request::setHeader(const char* name, const char* value)
 void IIS7Request::setRemoteUser(const char* user)
 {
     m_remoteUser = user;
+
     // Setting the variable REMOTE_USER fails, so set the Principal if we are called appropriately.
     // Getting REMOTE_USER goes via the Principal.
     auto_ptr_XMLCh widen(user);
@@ -192,7 +182,7 @@ void IIS7Request::setRemoteUser(const char* user)
         auth->SetUser(new ShibUser(user, m_roles));
     }
     else {
-        log(SPError, "Internal Error:  setting remote user in a non AuthN Context");
+        log(SPError, "attempt to set REMOTE_USER in an inappropriate context");
     }
 }
 
@@ -292,7 +282,7 @@ string IIS7Request::getSecureHeader(const char* name) const
 //
 const char* IIS7Request::getScheme() const
 {
-    return m_SSL ? "https" : "http";
+    return m_scheme.c_str();
 }
 
 const char* IIS7Request::getHostname() const
@@ -329,11 +319,12 @@ long IIS7Request::getContentLength() const
 
 string IIS7Request::getRemoteUser() const
 {
-    if (!m_remoteUser.empty()) {
-        return m_remoteUser;
+    if (m_remoteUser.empty()) {
+        // TODO: seems like this should be server-variable driven only?
+        PCSTR p = m_request->GetHeader("REMOTE_USER");
+        if (p)
+            m_remoteUser = p;
     }
-    PCSTR p = m_request->GetHeader("REMOTE_USER");
-    m_remoteUser = (nullptr == p) ? "" : p;
     return m_remoteUser;
 }
 
@@ -344,6 +335,7 @@ const char* IIS7Request::getRequestBody() const
     }
     // TODO Not Thread safe?
     DWORD totalBytesLeft = m_request->GetRemainingEntityBytes();
+    // TODO: this check was specific to the old handler logic, so do we keep this or make it configurable?
     if (totalBytesLeft > 1024 * 1024) {
         throw opensaml::SecurityPolicyException("Size of request body exceeded 1M size limit.");
     }
@@ -367,9 +359,6 @@ const char* IIS7Request::getRequestBody() const
     return m_body.c_str();
 }
 
-//
-// XMLTooing:: HTTPRequest
-//
 const char* IIS7Request::getQueryString() const
 {
     PCSTR qs;
@@ -387,7 +376,6 @@ string IIS7Request::getHeader(const char* name) const
     return  (nullptr == p) ? "" : p;
 }
 
-// XMLTooing:: HTTPResponse, GenericResponse
 long IIS7Request::sendResponse(istream& in, long status)
 {
     const char* codestr="200 OK";

@@ -24,15 +24,13 @@
 class IIS7Request : public AbstractSPRequest {
 
 private:
-    IHttpContext  *m_ctx;
-    IHttpRequest  *m_request;
-    IHttpResponse  *m_response;
-    IHttpEventProvider *m_event;
+    IHttpContext* m_ctx;
+    IHttpRequest* m_request;
+    IHttpResponse* m_response;
+    IHttpEventProvider* m_event;
     bool m_firsttime;
-    // TODO
     int m_port;
-    string m_hostname;
-    bool m_SSL;
+    string m_hostname, m_scheme;
     bool m_useVariables;
     bool m_useHeaders;
     mutable string m_remoteUser;
@@ -43,7 +41,12 @@ private:
     set<wstring> m_roles;
 
 public:
-    IIS7Request(_In_ IHttpContext *pHttpContext, _In_ IHttpEventProvider *pEventProvider, _In_ bool checkUser);
+    IIS7Request(
+        _In_ IHttpContext *pHttpContext,
+        _In_ IHttpEventProvider *pEventProvider,
+        _In_ bool checkUser,
+        _In_ const Config::site_t& site
+        );
     string makeSafeHeader(const char* rawname) const;
     bool isUseHeaders() { return m_useHeaders; }
 

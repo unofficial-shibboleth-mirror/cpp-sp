@@ -23,6 +23,7 @@
 #include <process.h>
 
 #include <xmltooling/util/NDC.h>
+
 #include "ShibHttpModule.hpp"
 #include "IIS7Request.hpp"
 
@@ -34,12 +35,16 @@ ShibHttpModule::DoHandler(
     _In_ IHttpEventProvider *   pProvider
 )
 {
+
+    map<string,site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()));
+    if (map_i == g_Sites.end())
+        return RQ_NOTIFICATION_CONTINUE;
+
     string threadid("[");
-    threadid += lexical_cast<string>(_getpid()) + "] native_shib";
+    threadid += lexical_cast<string>(_getpid()) + "] iis_shib";
     xmltooling::NDC ndc(threadid.c_str());
 
-    // TODO the handler and the Filter both use the same class.  Should it?
-    IIS7Request handler(pHttpContext, pProvider, false);
+    IIS7Request handler(pHttpContext, pProvider, false, map_i->second);
 
     pair<bool, long> res = handler.getServiceProvider().doHandler(handler);
 
@@ -55,14 +60,18 @@ ShibHttpModule::DoFilter(
     _In_ IHttpEventProvider *  pProvider
 )
 {
-    const IHttpRequest *req(pHttpContext->GetRequest());
+    const IHttpRequest* req = pHttpContext->GetRequest();
+
+    map<string,site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()));
+    if (map_i == g_Sites.end())
+        return RQ_NOTIFICATION_CONTINUE;
+
 
     string threadid("[");
-    threadid += lexical_cast<string>(_getpid()) + "] native_shib";
+    threadid += lexical_cast<string>(_getpid()) + "] iis_shib";
     xmltooling::NDC ndc(threadid.c_str());
 
-    // TODO Different class?
-    IIS7Request filter(pHttpContext, pProvider, true);
+    IIS7Request filter(pHttpContext, pProvider, true, map_i->second);
 
     pair<bool, long> res = filter.getServiceProvider().doAuthentication(filter);
     if (res.first) {
