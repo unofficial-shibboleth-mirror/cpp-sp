@@ -219,22 +219,25 @@ void IIS7Request::clearHeader(const char* rawname, const char* cginame)
     if (m_useHeaders) {
         if (g_checkSpoofing && m_firsttime) {
             if (m_allhttp.empty()) {
-                PCSTR all = m_request->GetHeader("ALL_HTTP");
-                m_allhttp =  (nullptr == all) ? "" : all;
+                PCSTR val = nullptr;
+                DWORD len = 0;
+                HRESULT hr = m_ctx->GetServerVariable("ALL_HTTP", &val, &len);
+                if (FAILED(hr)) {
+                    throwError("clearHeader", hr);
+                }
+                m_allhttp =  (nullptr == val) ? "" : val;
             }
             if (!m_allhttp.empty()) {
-                string hdr = g_bSafeHeaderNames ? ("HTTP_" + makeSafeHeader(cginame + 5)) : (string(cginame) + ':');
+                string hdr = (g_bSafeHeaderNames ? ("HTTP_" + makeSafeHeader(cginame + 5)) : string(cginame)) + ':';
                 if (strstr(m_allhttp.c_str(), hdr.c_str())) {
                     throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, hdr.c_str()));
                 }
             }
         }
-        if (g_bSafeHeaderNames) {
-            string hdr = makeSafeHeader(rawname);
-            HRESULT hr = m_request->SetHeader(hdr.c_str(), g_unsetHeaderValue.c_str(), static_cast<USHORT>(g_unsetHeaderValue.length()), TRUE);
-            if (FAILED(hr)) {
-                throwError("clearHeader", hr);
-            }
+        HRESULT hr = m_request->SetHeader(g_bSafeHeaderNames ? makeSafeHeader(rawname).c_str() : rawname,
+            g_unsetHeaderValue.c_str(), static_cast<USHORT>(g_unsetHeaderValue.length()), TRUE);
+        if (FAILED(hr)) {
+            throwError("clearHeader", hr);
         }
     }
 }
@@ -413,15 +416,12 @@ long IIS7Request::sendResponse(istream& in, long status)
     return RQ_NOTIFICATION_FINISH_REQUEST;
 }
 
-// XMLTooing:: HTTPResponse
 void IIS7Request::setResponseHeader(const char* name, const char* value, bool replace)
 {
     HTTPResponse::setResponseHeader(name, value, replace);
 
     size_t sz = value ? strlen(value) : 0;
-
     if (sz > USHRT_MAX) {
-        // TODO Do this elsewhere?
         log(SPWarn, "Header value overflow");
         sz = USHRT_MAX;
     }
