@@ -466,6 +466,7 @@ public:
   void clearHeader(const char* rawname, const char* cginame) {
     static char _ALL_HTTP[] = "ALL_HTTP";
     static char _REMOTE_USER[] = "remote-user:";
+    static char _REMOTE_USER2[] = "remote_user:";
 
     if (g_checkSpoofing && m_firsttime) {
         if (m_allhttp.empty())
@@ -481,12 +482,12 @@ public:
         m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
     }
     else if (!strcmp(rawname,"REMOTE_USER")) {
-	    m_pn->SetHeader(m_pfc, _REMOTE_USER, const_cast<char*>(g_unsetHeaderValue.c_str()));
         m_pn->SetHeader(m_pfc, _REMOTE_USER, const_cast<char*>(g_unsetHeaderValue.c_str()));
+        m_pn->SetHeader(m_pfc, _REMOTE_USER2, const_cast<char*>(g_unsetHeaderValue.c_str()));
 	}
 	else {
-	    string hdr = string(rawname) + ':';
-	    m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
+        string hdr = string(rawname) + ':';
+        m_pn->SetHeader(m_pfc, const_cast<char*>(hdr.c_str()), const_cast<char*>(g_unsetHeaderValue.c_str()));
 	}
   }
   void setHeader(const char* name, const char* value) {
