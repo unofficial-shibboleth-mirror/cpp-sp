@@ -140,8 +140,7 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
 void IIS7Request::setHeader(const char* name, const char* value)
 {
     if (m_useHeaders) {
-        const string hdr = g_bSafeHeaderNames ? makeSafeHeader(name) : (string(name) + ':');
-        const HRESULT hr (m_request->SetHeader(hdr.c_str(), value, static_cast<USHORT>(strlen(value)), TRUE));
+        const HRESULT hr (m_request->SetHeader(g_bSafeHeaderNames ? makeSafeHeader(name).c_str() : name, value, static_cast<USHORT>(strlen(value)), TRUE));
         if (FAILED(hr)) {
             throwError("setHeader (Header)", hr);
         }
@@ -273,8 +272,7 @@ string IIS7Request::getRemoteAddr() const
 
 string IIS7Request::getSecureHeader(const char* name) const
 {
-    string hdr = g_bSafeHeaderNames ? makeSafeHeader(name) : (string(name) + ':');
-    PCSTR p = m_request->GetHeader(hdr.c_str());
+    PCSTR p = m_request->GetHeader(g_bSafeHeaderNames ? makeSafeHeader(name).c_str() : name);
     return (nullptr == p) ? "" : p;
 }
 //
@@ -452,7 +450,7 @@ string IIS7Request::makeSafeHeader(const char* rawname) const
         if (isalnum(*rawname))
             hdr += *rawname;
     }
-    return (hdr + ':');
+    return hdr;
 }
 
 // TODO We need a strategy for what is logged, what is fatal and how.
