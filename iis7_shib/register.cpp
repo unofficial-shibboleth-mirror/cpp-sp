@@ -193,9 +193,7 @@ RegisterModule(
         }
     }
 
-    HRESULT hr = pModuleInfo->SetRequestNotifications(new ShibModuleFactory(), 
-                                                      RQ_BEGIN_REQUEST | RQ_AUTHENTICATE_REQUEST | RQ_PRE_EXECUTE_REQUEST_HANDLER,
-                                                      RQ_AUTHENTICATE_REQUEST);
+    HRESULT hr = pModuleInfo->SetRequestNotifications(new ShibModuleFactory(), RQ_BEGIN_REQUEST | RQ_AUTHENTICATE_REQUEST, 0);
 
     if (SUCCEEDED(hr))
         LogEvent(EVENTLOG_INFORMATION_TYPE, SHIB_NATIVE_INITIALIZED, Priority::INFO, "SHIB_NATIVE_INITIALIZED");

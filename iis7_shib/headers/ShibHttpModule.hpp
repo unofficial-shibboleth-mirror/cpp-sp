@@ -36,25 +36,11 @@ public:
             _In_ IHttpEventProvider *   pProvider
         );
 
-    // RQ_PRE_EXECUTE_REQUEST_HANDLER
-    REQUEST_NOTIFICATION_STATUS
-        OnPreExecuteRequestHandler(
-            _In_ IHttpContext *         pHttpContext,
-            _In_ IHttpEventProvider *   pProvider
-        );
-
     // RQ_AUTHENTICATE_REQUEST
     REQUEST_NOTIFICATION_STATUS
         OnAuthenticateRequest(
             _In_ IHttpContext *             pHttpContext,
             _In_ IAuthenticationProvider *  pProvider
-        );
-
-    // RQ_AUTHENTICATE_REQUEST
-    REQUEST_NOTIFICATION_STATUS
-        OnPostAuthenticateRequest(
-            _In_ IHttpContext *             pHttpContext,
-            _In_ IHttpEventProvider *       pProvider
         );
 
 private:

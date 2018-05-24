@@ -117,23 +117,3 @@ ShibHttpModule::OnAuthenticateRequest(
     return DoFilter(pHttpContext, pProvider);
 }
 
-// RQ_AUTHENTICATE_REQUEST 
-REQUEST_NOTIFICATION_STATUS
-ShibHttpModule::OnPostAuthenticateRequest(
-    _In_ IHttpContext *             pHttpContext,
-    _In_ IHttpEventProvider *       pProvider
-)
-{
-    return RQ_NOTIFICATION_CONTINUE;
-}
-
-// RQ_PRE_EXECUTE_REQUEST_HANDLER
-REQUEST_NOTIFICATION_STATUS
-ShibHttpModule::OnPreExecuteRequestHandler(
-    _In_ IHttpContext *         pHttpContext,
-    _In_ IHttpEventProvider *   pProvider
-)
-{
-    return RQ_NOTIFICATION_CONTINUE;
-}
-
