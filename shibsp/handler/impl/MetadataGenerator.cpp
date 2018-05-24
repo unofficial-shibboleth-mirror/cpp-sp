@@ -327,29 +327,34 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
     }
 
     if (m_digests.empty()) {
+#ifdef XSEC_OPENSSL_HAVE_SHA2
         registerDigestMethod(DSIGConstants::s_unicodeStrURISHA512);
         registerDigestMethod(DSIGConstants::s_unicodeStrURISHA384);
         registerDigestMethod(DSIGConstants::s_unicodeStrURISHA256);
         registerDigestMethod(DSIGConstants::s_unicodeStrURISHA224);
+#endif
         registerDigestMethod(DSIGConstants::s_unicodeStrURISHA1);
     }
 
     if (m_signings.empty()) {
-#ifdef XSEC_OPENSSL_HAVE_EC
+#ifdef XSEC_OPENSSL_HAVE_SHA2
+# ifdef XSEC_OPENSSL_HAVE_EC
         registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA512);
         registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA384);
         registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA256);
-# ifdef URI_ID_ECDSA_SHA224
+#  ifdef URI_ID_ECDSA_SHA224
         registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA224);
+#  endif
 # endif
-#endif
         registerSigningMethod(DSIGConstants::s_unicodeStrURIRSA_SHA512);
         registerSigningMethod(DSIGConstants::s_unicodeStrURIRSA_SHA384);
         registerSigningMethod(DSIGConstants::s_unicodeStrURIRSA_SHA256);
 
-#ifdef URI_ID_DSA_SHA256
+# ifdef URI_ID_DSA_SHA256
         registerSigningMethod(DSIGConstants::s_unicodeStrURIDSA_SHA256);
+# endif
 #endif
+
 
 #ifdef XSEC_OPENSSL_HAVE_EC
         registerSigningMethod(DSIGConstants::s_unicodeStrURIECDSA_SHA1);
