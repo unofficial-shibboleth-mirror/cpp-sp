@@ -336,10 +336,7 @@ const char* IIS7Request::getRequestBody() const
     }
     // TODO Not Thread safe?
     DWORD totalBytesLeft = m_request->GetRemainingEntityBytes();
-    // TODO: this check was specific to the old handler logic, so do we keep this or make it configurable?
-    if (totalBytesLeft > 1024 * 1024) {
-        throw opensaml::SecurityPolicyException("Size of request body exceeded 1M size limit.");
-    }
+
     while (totalBytesLeft) {
         char buf[8192];
         DWORD bytesRead;
