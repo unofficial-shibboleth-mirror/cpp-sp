@@ -320,12 +320,6 @@ long IIS7Request::getContentLength() const
 
 string IIS7Request::getRemoteUser() const
 {
-    if (m_remoteUser.empty()) {
-        // TODO: seems like this should be server-variable driven only?
-        PCSTR p = m_request->GetHeader("REMOTE_USER");
-        if (p)
-            m_remoteUser = p;
-    }
     return m_remoteUser;
 }
 
