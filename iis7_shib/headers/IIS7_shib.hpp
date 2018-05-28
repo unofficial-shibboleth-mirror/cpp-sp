@@ -68,6 +68,7 @@ namespace Config {
     static const XMLCh id[] =               UNICODE_LITERAL_2(i, d);
     static const XMLCh useHeaders[] =       UNICODE_LITERAL_10(u, s, e, H, e, a, d, e, r, s);
     static const XMLCh useVariables[] =     UNICODE_LITERAL_12(u, s, e, V, a, r, i, a, b, l, e, s);
+    static const XMLCh handlerPrefix[] =    UNICODE_LITERAL_13(h, a, n, d, l, e, r, P, r, e, f, i, x);
     static const XMLCh Alias[] =            UNICODE_LITERAL_5(A, l, i, a, s);
     static const XMLCh Site[] =             UNICODE_LITERAL_4(S, i, t, e);
     static const XMLCh Role[] =             UNICODE_LITERAL_4(R, o, l, e);
@@ -84,7 +85,7 @@ namespace Config {
     extern bool g_bUseHeaders;
     extern bool g_bUseVariables;
     extern vector<string> g_NoCerts;
-
+    extern wstring g_handlerPrefix;
 
     struct site_t {
         site_t(const DOMElement* e)

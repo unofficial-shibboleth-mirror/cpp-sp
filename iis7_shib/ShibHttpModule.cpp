@@ -20,14 +20,18 @@
 
 #include "IIS7_shib.hpp"
 
-#include <process.h>
-
 #include <xmltooling/util/NDC.h>
 
 #include "ShibHttpModule.hpp"
 #include "IIS7Request.hpp"
 
+#include <process.h>
+#include <winreg.h>
+
+#include <boost/algorithm/string.hpp>
+
 using namespace Config;
+using namespace std;
 
 REQUEST_NOTIFICATION_STATUS
 ShibHttpModule::DoHandler(
@@ -35,6 +39,14 @@ ShibHttpModule::DoHandler(
     _In_ IHttpEventProvider *   pProvider
 )
 {
+    // Quickly check the URL
+    const wstring url(pHttpContext->GetScriptName());
+    if (url.length() < g_handlerPrefix.length())
+        return RQ_NOTIFICATION_CONTINUE;
+
+    const wstring cmp(url.substr(0, g_handlerPrefix.length()));
+    if (cmp != g_handlerPrefix)
+        return RQ_NOTIFICATION_CONTINUE;
 
     map<string,site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()));
     if (map_i == g_Sites.end())
@@ -116,4 +128,3 @@ ShibHttpModule::OnAuthenticateRequest(
 {
     return DoFilter(pHttpContext, pProvider);
 }
-

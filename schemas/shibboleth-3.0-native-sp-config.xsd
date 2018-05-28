@@ -205,6 +205,7 @@
           <attribute name="safeHeaderNames" type="boolean"/>
           <attribute name="useHeaders" type="boolean"/>
           <attribute name="useVariables" type="boolean"/>
+          <attribute name="handlerPrefix" type="conf:string" use="optional"/>
           <anyAttribute namespace="##other" processContents="lax"/>
         </complexType>
       </element>

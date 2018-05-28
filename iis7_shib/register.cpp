@@ -43,6 +43,7 @@ namespace Config {
     bool g_catchAll = false;
     bool g_bSafeHeaderNames = false;
     bool g_bUseHeaders = false;
+    wstring g_handlerPrefix(L"");
     bool g_bUseVariables = true;
     vector<string> g_NoCerts;
     vector<string> g_RoleAttributeNames;
@@ -65,7 +66,8 @@ static void _my_invalid_parameter_handler(
 
 class ShibModuleFactory : public IHttpModuleFactory {
 public:
-    ShibModuleFactory() {};
+    ShibModuleFactory() {
+    };
     virtual HRESULT GetHttpModule(
         CHttpModule **  ppModule,
         _In_ IModuleAllocator *     pAllocator
@@ -167,6 +169,10 @@ RegisterModule(
             flag = props->getBool("useVariables");
             g_bUseVariables= !flag.first || flag.second;
 
+            const string prefix(XMLHelper::getAttrString(props->getElement(), "/Shibboleth.sso", handlerPrefix));
+            std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+            g_handlerPrefix = converter.from_bytes(prefix);
+
             const DOMElement* site = XMLHelper::getFirstChildElement(props->getElement(), Site);
             while (site) {
                 string id(XMLHelper::getAttrString(site, "", id));
@@ -179,7 +185,6 @@ RegisterModule(
                 const pair<bool, const char*> authNRoleFlag = roles->getString("authNRole");
 
                 if (authNRoleFlag.first) {
-                    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
                     wstring rolestr(converter.from_bytes(string(authNRoleFlag.second)));
 
                     g_authNRole = rolestr;
