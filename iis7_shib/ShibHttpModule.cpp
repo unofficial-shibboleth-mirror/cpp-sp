@@ -41,11 +41,7 @@ ShibHttpModule::DoHandler(
 {
     // Quickly check the URL
     const wstring url(pHttpContext->GetScriptName());
-    if (url.length() < g_handlerPrefix.length())
-        return RQ_NOTIFICATION_CONTINUE;
-
-    const wstring cmp(url.substr(0, g_handlerPrefix.length()));
-    if (cmp != g_handlerPrefix)
+    if (url.length() < g_handlerPrefix.length() || !starts_with(url, g_handlerPrefix))
         return RQ_NOTIFICATION_CONTINUE;
 
     map<string,site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()));
