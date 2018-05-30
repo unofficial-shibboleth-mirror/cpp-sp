@@ -213,7 +213,7 @@ BOOL LogEvent(
     LPCSTR  message)
 {
     LPCSTR  messages[] ={ message, nullptr };
-    DWORD gle = GetLastError();
+    DWORD gle = ::GetLastError();
 
     HANDLE hElog = ::RegisterEventSource(nullptr, SHIBSP_EVENTLOGSOURCE);
     BOOL res = ::ReportEvent(hElog, wType, (priority / 100) + 1, dwEventID, nullptr, 1, sizeof(DWORD), messages, &gle);

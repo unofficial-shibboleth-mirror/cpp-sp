@@ -168,7 +168,8 @@ Language=Neutral
 Shibboleth ISAPI filter: Caught an Unknown Exception.
 .
 
-MessageId=
+
+MessageId=300
 Severity=Warning
 Facility=ShibbolethNative
 SymbolicName=SHIB_NATIVE_REENTRANT_INIT
