@@ -119,7 +119,7 @@ RegisterModule(
         g_Config->term();
         g_Config=nullptr;
         LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_STARTUP_FAILED_EXCEPTION, Priority::FATAL, ex.what());
-        return FALSE;
+        return E_FAIL;
     }
 
     // Access implementation-specifics and site mappings.
@@ -153,7 +153,7 @@ RegisterModule(
                     locker.assign();    // pops lock on SP config
                     g_Config->term();
                     g_Config = nullptr;
-                    return FALSE;
+                    return E_FAIL;
                 }
             }
         }
