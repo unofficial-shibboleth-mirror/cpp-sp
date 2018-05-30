@@ -167,7 +167,6 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <BrowseInformation>false</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <ResourceCompile>
@@ -197,7 +196,6 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <BrowseInformation>false</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <ResourceCompile>

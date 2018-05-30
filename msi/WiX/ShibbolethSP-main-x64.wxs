@@ -183,20 +183,6 @@
 
       <?include ShibbolethSP-defs-x86.wxi ?>
 
-      <!-- 
-         We put the messages for IIS7 and Shibd in this module since all others are shared with x86
-        -->
-      <Component Id="messageFile" Guid="{3FF89632-9F39-4B1B-AA3E-3AF6C8155B92}" Win64="yes" Directory="lib64">
-        <File Id="Messages" KeyPath="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\messages.dll" />
-        <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider">
-          <RegistryValue Name="CategoryCount" Type="integer" Value="8" />
-          <RegistryValue Name="TypesSupported" Type="integer" Value="7" />
-          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[ProgramFiles64Folder]Shibboleth\SP\lib\NTEventLogAppender.dll" />
-          <RegistryValue Name="EventMessageFile" Type="string" Value="[ProgramFiles64Folder]Shibboleth\SP\lib\NTEventLogAppender.dll;[#Messages]" />
-          <RegistryValue Name="ParameterMessageFile" Type="string" Value="[#Messages]" />
-        </RegistryKey>
-      </Component>
-
       <Component Id="shibd.exe" Guid="{2476BB80-9384-4026-86F5-E1569A685187}" Directory="sbin">
         <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe" />
       </Component>
@@ -206,6 +192,13 @@
         <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
         <ServiceInstall Id="shibd" Name="shibd_Default" DisplayName="Shibboleth 2 Daemon (Default)" Description="Manages shared state and offloads SAML processing from Shibboleth web server modules." Arguments="-stdout &quot;[INSTALLDIR]var\log\shibboleth\stdout.log&quot; -stderr &quot;[INSTALLDIR]var\log\shibboleth\stderr.log&quot;" Type="ownProcess" Start="auto" ErrorControl="ignore" />
         <ServiceControl Id="shibd_Default" Name="shibd_Default" Stop="both" Remove="uninstall" Start="install" Wait="no" />
+        <!-- We put in the messages for Isapi and Shibd in this module since all others are shared with x64 -->
+        <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider">
+          <RegistryValue Name="CategoryCount" Type="integer" Value="8" />
+          <RegistryValue Name="TypesSupported" Type="integer" Value="7" />
+          <RegistryValue Name="CategoryMessageFile" Type="string" Value="[ProgramFiles64Folder]Shibboleth\SP\lib\NTEventLogAppender.dll" />
+          <RegistryValue Name="EventMessageFile" Type="string" Value="[ProgramFiles64Folder]Shibboleth\SP\lib\NTEventLogAppender.dll" />
+        </RegistryKey>
       </Component>
 
     </Feature>

@@ -50,8 +50,6 @@
 #include <xmltooling/util/XMLHelper.h>
 #include <shibsp/exceptions.h>
 
-#include <message.h>
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace xercesc;

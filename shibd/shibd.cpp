@@ -144,19 +144,19 @@ int real_main(int preinit)
             (shar_checkonly ? SPConfig::RequestMapping : SPConfig::Logging)
             );
         if (!conf.init(shar_schemadir, shar_prefix)) {
-            fprintf(stderr, "configuration is invalid, see console for specific problems\n");
+            fprintf(stderr, "configuration is invalid, see console or log for specific problems\n");
             return -1;
         }
 
         if (!conf.instantiate(shar_config)) {
-            fprintf(stderr, "configuration is invalid, check console for specific problems\n");
+            fprintf(stderr, "configuration is invalid, check console or log for specific problems\n");
             conf.term();
             return -2;
         }
 
         // If just a test run, bail.
         if (shar_checkonly) {
-            fprintf(stdout, "overall configuration is loadable, check console for non-fatal problems\n");
+            fprintf(stdout, "overall configuration is loadable, check console or log for non-fatal problems\n");
             return 0;
         }
     }
@@ -393,7 +393,7 @@ int main(int argc, char *argv[])
         (shar_checkonly ? SPConfig::RequestMapping : SPConfig::Logging)
         );
     if (!conf.init(shar_schemadir, shar_prefix)) {
-        fprintf(stderr, SD_ERR "configuration is invalid, check console for specific problems\n");
+        fprintf(stderr, SD_ERR "configuration is invalid, check console or log for specific problems\n");
         return -1;
     }
 
@@ -413,13 +413,13 @@ int main(int argc, char *argv[])
     }
 
     if (!conf.instantiate(shar_config)) {
-        fprintf(stderr, SD_ERR "configuration is invalid, check console for specific problems\n");
+        fprintf(stderr, SD_ERR "configuration is invalid, check console or log for specific problems\n");
         conf.term();
         return -2;
     }
 
     if (shar_checkonly)
-        fprintf(stderr, "overall configuration is loadable, check console for non-fatal problems\n");
+        fprintf(stderr, "overall configuration is loadable, check console or log for non-fatal problems\n");
     else {
         // Init the listener.
         ListenerService* listener = conf.getServiceProvider()->getListenerService();

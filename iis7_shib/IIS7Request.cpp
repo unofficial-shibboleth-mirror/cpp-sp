@@ -252,13 +252,6 @@ long IIS7Request::returnOK()
     return RQ_NOTIFICATION_CONTINUE;
 }
 
-void IIS7Request::log(SPLogLevel level, const string& msg) const
-{
-    AbstractSPRequest::log(level, msg);
-    if (level >= SPCrit)
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CRITICAL, Priority::CRIT, msg.c_str());
-}
-
 string IIS7Request::getRemoteAddr() const
 {
     string ret = AbstractSPRequest::getRemoteAddr();
@@ -444,11 +437,10 @@ string IIS7Request::makeSafeHeader(const char* rawname) const
     return hdr;
 }
 
-// TODO We need a strategy for what is logged, what is fatal and how.
 void IIS7Request::logFatal(const string& operation, HRESULT hr) const
 {
     string msg(operation + " failed: " + lexical_cast<string>(hr));
-    LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CRITICAL, Priority::FATAL, msg.c_str());
+    log(SPRequest::SPCrit, msg.c_str());
     if (m_response) {
         m_response->SetStatus(static_cast<USHORT>(XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
     }

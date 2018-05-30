@@ -31,6 +31,7 @@
 #include <codecvt> // 16 bit to 8 bit and vice versa chars
 #include <boost/algorithm/string.hpp>
 
+using xmltooling::logging::Category;
 using xmltooling::logging::Priority;
 
 namespace Config {
@@ -79,6 +80,7 @@ public:
 
     virtual VOID Terminate()
     {
+        Category::getInstance(SHIBSP_LOGCAT ".IISNative").info("IIS module is terminating");
         delete this;
     }
 };
@@ -92,8 +94,10 @@ RegisterModule(
     IHttpServer *                   pHttpServer
 )
 {
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".IISNative");
+
     if (g_Config) {
-        LogEvent(EVENTLOG_WARNING_TYPE, SHIB_NATIVE_REENTRANT_INIT, Priority::WARN, "SHIB_NATIVE_REENTRANT_INIT");
+        log.warn("reentrant IIS module initialization, ignoring...");
         return S_OK;
     }
 
@@ -108,7 +112,7 @@ RegisterModule(
     );
     if (!g_Config->init()) {
         g_Config = nullptr;
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_STARTUP_FAILED, Priority::FATAL, "SHIB_NATIVE_STARTUP_FAILED");
+        log.fatal("IIS module failed during library initialization, check native log for help");
         return E_FAIL;
     }
 
@@ -116,9 +120,9 @@ RegisterModule(
         if (!g_Config->instantiate(nullptr, true))
             throw runtime_error("unknown error");
     } catch (const std::exception& ex) {
+        log.fatal("IIS module failed during library initialization: %s", ex.what());
         g_Config->term();
         g_Config=nullptr;
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_STARTUP_FAILED_EXCEPTION, Priority::FATAL, ex.what());
         return E_FAIL;
     }
 
@@ -149,7 +153,7 @@ RegisterModule(
                 }
                 else {
                     _set_invalid_parameter_handler(old);
-                    LogEvent(EVENTLOG_ERROR_TYPE, SHIB_NATIVE_CANNOT_CREATE_ANTISPOOF, Priority::FATAL, "SHIB_NATIVE_CANNOT_CREATE_ANTISPOOF");
+                    log.fatal("IIS module failed to generate a random anti-spoofing key");
                     locker.assign();    // pops lock on SP config
                     g_Config->term();
                     g_Config = nullptr;
@@ -201,21 +205,7 @@ RegisterModule(
     HRESULT hr = pModuleInfo->SetRequestNotifications(new ShibModuleFactory(), RQ_BEGIN_REQUEST | RQ_AUTHENTICATE_REQUEST, 0);
 
     if (SUCCEEDED(hr))
-        LogEvent(EVENTLOG_INFORMATION_TYPE, SHIB_NATIVE_INITIALIZED, Priority::INFO, "SHIB_NATIVE_INITIALIZED");
+        log.info("IIS module initialized");
 
     return hr;
-}
-
-BOOL LogEvent(
-    WORD  wType,
-    DWORD  dwEventID,
-    Priority::PriorityLevel priority,
-    LPCSTR  message)
-{
-    LPCSTR  messages[] ={ message, nullptr };
-    DWORD gle = ::GetLastError();
-
-    HANDLE hElog = ::RegisterEventSource(nullptr, SHIBSP_EVENTLOGSOURCE);
-    BOOL res = ::ReportEvent(hElog, wType, (priority / 100) + 1, dwEventID, nullptr, 1, sizeof(DWORD), messages, &gle);
-    return (::DeregisterEventSource(hElog) && res);
 }

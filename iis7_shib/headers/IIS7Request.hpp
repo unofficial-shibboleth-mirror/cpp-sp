@@ -61,7 +61,6 @@ protected:
     void  clearHeader(const char* rawname, const char* cginame);
     long  returnDecline();
     long  returnOK();
-    void  log(SPLogLevel level, const string& msg) const;
     string getRemoteAddr() const;
     string getSecureHeader(const char* name) const;
     //

@@ -54,7 +54,6 @@
 #include <windows.h>
 #include <httpfilt.h>
 #include <httpext.h>
-#include <message.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -110,20 +109,6 @@ namespace {
     vector<string> g_NoCerts;
 }
 
-BOOL LogEvent(
-    WORD  wType,
-    DWORD  dwEventID,
-    Priority::PriorityLevel priority,
-    LPCSTR  message)
-{
-    LPCSTR  messages[] = {message, nullptr};
-    DWORD gle = ::GetLastError();
-
-    HANDLE hElog = ::RegisterEventSource(nullptr, SHIBSP_EVENTLOGSOURCE);
-    BOOL res = ::ReportEvent(hElog, wType, (priority / 100) + 1, dwEventID, nullptr, 1, sizeof(DWORD), messages, &gle);
-    return (::DeregisterEventSource(hElog) && res);
-}
-
 void _my_invalid_parameter_handler(
    const wchar_t * expression,
    const wchar_t * function,
@@ -148,12 +133,12 @@ extern "C" BOOL WINAPI GetExtensionVersion(HSE_VERSION_INFO* pVer)
         return FALSE;
 
     if (!g_Config) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_CANNOT_LOAD, Priority::FATAL, "SHIB_ISAPI_CANNOT_LOAD");
+        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").fatal("extension mode startup not possible, is the DLL loaded as a filter?");
         return FALSE;
     }
 
     pVer->dwExtensionVersion = HSE_VERSION;
-    strncpy(pVer->lpszExtensionDesc,"Shibboleth ISAPI Extension",HSE_MAX_EXT_DLL_NAME_LEN-1);
+    strncpy(pVer->lpszExtensionDesc, "Shibboleth ISAPI Extension", HSE_MAX_EXT_DLL_NAME_LEN-1);
     return TRUE;
 }
 
@@ -164,10 +149,12 @@ extern "C" BOOL WINAPI TerminateExtension(DWORD)
 
 extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
 {
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ISAPI");
+
     if (!pVer)
         return FALSE;
     else if (g_Config) {
-        LogEvent(EVENTLOG_WARNING_TYPE, SHIB_ISAPI_REENTRANT_INIT, Priority::WARN, "SHIB_ISAPI_REENTRANT_INIT");
+        log.warn("reentrant ISAPI filter initialization, ignoring...");
         return TRUE;
     }
 
@@ -182,7 +169,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
         );
     if (!g_Config->init()) {
         g_Config = nullptr;
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_STARTUP_FAILED, Priority::FATAL, "SHIB_ISAPI_STARTUP_FAILED");
+        log.fatal("ISAPI filter startup failed during library initialization, check native log for help");
         return FALSE;
     }
 
@@ -191,9 +178,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             throw runtime_error("unknown error");
     }
     catch (const std::exception& ex) {
+        log.fatal("ISAPI filter startup failed: %s", ex.what());
         g_Config->term();
         g_Config=nullptr;
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_STARTUP_FAILED_EXCEPTION, Priority::FATAL, ex.what());
         return FALSE;
     }
 
@@ -224,7 +211,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 }
                 else {
                     _set_invalid_parameter_handler(old);
-                    LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_CANNOT_CREATE_ANTISPOOF, Priority::FATAL, "SHIB_ISAPI_CANNOT_CREATE_ANTISPOOF");
+                    log.fatal("ISAPI filter failed to generate a random anti-spoofing key");
                     locker.assign();    // pops lock on SP config
                     g_Config->term();
                     g_Config = nullptr;
@@ -240,9 +227,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             flag = props->getBool("safeHeaderNames");
             g_bSafeHeaderNames = flag.first && flag.second;
             if (props->getString("useHeaders").first)
-                Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("useHeaders attribute not valid for this filter");
+                log.warn("useHeaders attribute not valid for this filter");
             if (props->getString("useVariables").first)
-                Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("useVariables attribute not valid for this filter");
+                log.warn("useVariables attribute not valid for this filter");
 
             const DOMElement* child = XMLHelper::getFirstChildElement(props->getElement(), Site);
             while (child) {
@@ -250,15 +237,15 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                 if (!id.empty()) {
                     g_Sites.insert(make_pair(id, site_t(child)));
                     if (!XMLHelper::getAttrString(child, "", useHeaders).empty())
-                        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("useHeaders attribute not valid for this filter");
+                        log.warn("useHeaders attribute not valid for this filter");
                     if (!XMLHelper::getAttrString(child, "", useVariables).empty())
-                        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("useVariables attribute not valid for this filter");
+                        log.warn("useVariables attribute not valid for this filter");
                 }
                 child = XMLHelper::getNextSiblingElement(child, Site);
             }
 
             if (nullptr != props->getPropertySet("Roles"))
-                Category::getInstance(SHIBSP_LOGCAT ".ISAPI").warn("<Roles> element not valid for this filter");
+                log.warn("<Roles> element not valid for this filter");
         }
     }
 
@@ -269,7 +256,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
                    SF_NOTIFY_NONSECURE_PORT |
                    SF_NOTIFY_PREPROC_HEADERS |
                    SF_NOTIFY_LOG);
-    LogEvent(EVENTLOG_INFORMATION_TYPE, SHIB_ISAPI_INITIALIZED, Priority::INFO, "SHIB_ISAPI_INITIALIZED");
+    log.info("ISAPI filter initialized");
     return TRUE;
 }
 
@@ -278,7 +265,7 @@ extern "C" BOOL WINAPI TerminateFilter(DWORD)
     if (g_Config)
         g_Config->term();
     g_Config = nullptr;
-    LogEvent(EVENTLOG_INFORMATION_TYPE, SHIB_ISAPI_SHUTDOWN, Priority::INFO, "SHIB_ISAPI_SHUTDOWN");
+    Category::getInstance(SHIBSP_LOGCAT ".ISAPI").info("ISAPI filter shutting down");
     return TRUE;
 }
 
@@ -450,11 +437,6 @@ public:
     }
     return m_remote_addr;
   }
-  void log(SPLogLevel level, const string& msg) const {
-    AbstractSPRequest::log(level,msg);
-    if (level >= SPCrit)
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_CRITICAL, Priority::CRIT, msg.c_str());
-  }
   string makeSafeHeader(const char* rawname) const {
       string hdr;
       for (; *rawname; ++rawname) {
@@ -616,12 +598,9 @@ public:
   }
 };
 
-DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg, DWORD eventID=SHIB_ISAPI_CLIENT_ERROR)
+DWORD WriteClientError(PHTTP_FILTER_CONTEXT pfc, const char* msg)
 {
     static char _status[] = "200 OK";
-
-    if (eventID)
-        LogEvent(EVENTLOG_ERROR_TYPE, eventID, Priority::ERROR, msg);
     static char ctype[] = "Connection: close\r\nContent-Type: text/html\r\n\r\n";
     pfc->ServerSupportFunction(pfc,SF_REQ_SEND_RESPONSE_HEADER,_status,(ULONG_PTR)ctype,0);
     static char xmsg[] = "<HTML><HEAD><TITLE>Shibboleth Filter Error</TITLE></HEAD><BODY>"
@@ -651,7 +630,7 @@ void GetServerVariable(PHTTP_FILTER_CONTEXT pfc, LPSTR lpszVariable, dynabuf& s,
             break;
     }
     if (bRequired && s.empty()) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_MISSING_VARIABLE, Priority::ERROR, lpszVariable);
+        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").error("missing server variable: %s", lpszVariable);
     }
 }
 
@@ -710,13 +689,13 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
             return WriteClientError(pfc, "Shibboleth Filter detected unexpected IIS error.");
     }
     catch (const std::exception& e) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_EXCEPTION, Priority::ERROR, e.what());
-        return WriteClientError(pfc, "Shibboleth Filter caught an exception, check Event Log for details.", 0);
+        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").error("ISAPI filter caught an exception: %s", e.what());
+        return WriteClientError(pfc, "Shibboleth Filter caught an exception, check Event Log for details.");
     }
     catch(...) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_UNKNOWN_EXCEPTION, Priority::ERROR, "SHIB_ISAPI_UNKNOWN_EXCEPTION");
+        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").crit("ISAPI extension caught an unknown exception");
         if (g_catchAll)
-            return WriteClientError(pfc, "Shibboleth Filter threw an unknown exception.", 0);
+            return WriteClientError(pfc, "Shibboleth Filter threw an unknown exception.");
         throw;
     }
     return WriteClientError(pfc, "Shibboleth Filter reached unreachable code, save my walrus!");
@@ -726,12 +705,9 @@ extern "C" DWORD WINAPI HttpFilterProc(PHTTP_FILTER_CONTEXT pfc, DWORD notificat
 /****************************************************************************/
 // ISAPI Extension
 
-DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg, DWORD eventID=SHIB_ISAPI_CLIENT_ERROR)
+DWORD WriteClientError(LPEXTENSION_CONTROL_BLOCK lpECB, const char* msg)
 {
     static char _status[] = "200 OK";
-
-    if (eventID)
-        LogEvent(EVENTLOG_ERROR_TYPE, eventID, Priority::ERROR, msg);
     static char ctype[] = "Connection: close\r\nContent-Type: text/html\r\n\r\n";
     lpECB->ServerSupportFunction(lpECB->ConnID,HSE_REQ_SEND_RESPONSE_HEADER,_status,0,(LPDWORD)ctype);
     static char xmsg[] = "<HTML><HEAD><TITLE>Shibboleth Error</TITLE></HEAD><BODY><H1>Shibboleth Error</H1>";
@@ -890,11 +866,6 @@ public:
             m_remote_addr = var;
     }
     return m_remote_addr;
-  }
-  void log(SPLogLevel level, const string& msg) const {
-      AbstractSPRequest::log(level,msg);
-      if (level >= SPCrit)
-          LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_CRITICAL, Priority::CRIT, msg.c_str());
   }
   string getHeader(const char* name) const {
     string hdr("HTTP_");
@@ -1056,8 +1027,9 @@ public:
         else
             break;
     }
-    if (bRequired && s.empty())
+    if (bRequired && s.empty()) {
         log(SPRequest::SPError, string("missing required server variable: ") + lpszVariable);
+    }
   }
 };
 
@@ -1076,7 +1048,7 @@ void GetServerVariable(LPEXTENSION_CONTROL_BLOCK lpECB, LPSTR lpszVariable, dyna
             break;
     }
     if (bRequired && s.empty()) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_MISSING_VARIABLE, Priority::ERROR, lpszVariable);
+        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").error("missing required server variable: %s", lpszVariable);
     }
 }
 
@@ -1117,13 +1089,13 @@ extern "C" DWORD WINAPI HttpExtensionProc(LPEXTENSION_CONTROL_BLOCK lpECB)
             return WriteClientError(lpECB, "Server detected unexpected IIS error.");
     }
     catch (const std::exception& e) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_EXCEPTION, Priority::ERROR, e.what());
-        return WriteClientError(lpECB, "Shibboleth Extension caught an exception, check Event Log for details.", 0);
+        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").error("ISAPI extension caught an exception: %s", e.what());
+        return WriteClientError(lpECB, "Shibboleth Extension caught an exception, check native log for details.");
     }
     catch(...) {
-        LogEvent(EVENTLOG_ERROR_TYPE, SHIB_ISAPI_UNKNOWN_EXCEPTION, Priority::ERROR, "SHIB_ISAPI_UNKNOWN_EXCEPTION");
+        Category::getInstance(SHIBSP_LOGCAT ".ISAPI").crit("ISAPI filter caught an unknown exception");
         if (g_catchAll)
-            return WriteClientError(lpECB, "Shibboleth Extension threw an unknown exception.", 0);
+            return WriteClientError(lpECB, "Shibboleth Extension threw an unknown exception.");
         throw;
     }
 

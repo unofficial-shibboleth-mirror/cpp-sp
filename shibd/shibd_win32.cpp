@@ -30,14 +30,13 @@
 #include <shibsp/base.h>
 #include <xmltooling/logging.h>
 
-#include <message.h>
-
 #include <string>
 #include <windows.h>
 
 using namespace std;
 
 using xmltooling::logging::Priority;
+using xmltooling::logging::Category;
 
 extern bool shibd_shutdown;                    // signals shutdown to Unix side
 extern const char* shar_schemadir;
@@ -162,8 +161,7 @@ int main(int argc, char *argv[])
         SetConsoleCtrlHandler(&BreakHandler,TRUE);
         if ((i=real_main(1))!=0)
         {
-            LogEvent(EVENTLOG_ERROR_TYPE, Priority::FATAL, SHIBD_STARTUP_FAILED,
-                "shibd startup failed, check shibd.log for further details");
+            Category::getInstance(SHIBSP_LOGCAT ".shibd").fatal("daemon startup failed, check log for details");
             return i;
         }
         return real_main(0);
@@ -206,7 +204,7 @@ int main(int argc, char *argv[])
     };
 
     if (!StartServiceCtrlDispatcher(dispatchTable))
-        LogEvent(EVENTLOG_ERROR_TYPE, Priority::FATAL, SHIBD_SERVICE_START_FAILED, "SHIBD_SERVICE_START_FAILED");
+        Category::getInstance(SHIBSP_LOGCAT ".shibd").fatal("StartServiceCtrlDispatcher failed");
     return 0;
 }
 
@@ -221,11 +219,11 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 
     if (real_main(1)!=0)
     {
-        LogEvent(EVENTLOG_ERROR_TYPE, Priority::FATAL, SHIBD_STARTUP_FAILED, "SHIBD_STARTUP_FAILED");
+        Category::getInstance(SHIBSP_LOGCAT ".shibd").fatal("daemon startup failed, check log for details");
         return;
     }
 
-    LogEvent(EVENTLOG_INFORMATION_TYPE, Priority::INFO, SHIBD_SERVICE_STARTED, "SHIBD_SERVICE_STARTED");
+    Category::getInstance(SHIBSP_LOGCAT ".shibd").info("daemon service startup complete");
 
     if (!ReportStatusToSCMgr(SERVICE_RUNNING, NO_ERROR, 0))
         return;
@@ -242,7 +240,7 @@ VOID ServiceStart (DWORD dwArgc, LPSTR *lpszArgv)
 VOID ServiceStop()
 {
     if (!bConsole)
-        LogEvent(EVENTLOG_INFORMATION_TYPE, Priority::INFO, SHIBD_SERVICE_STOPPING, "SHIBD_SERVICE_STOPPING");
+        Category::getInstance(SHIBSP_LOGCAT ".shibd").info("daemon service stopping...");
     shibd_shutdown=true;
 }
 
@@ -369,7 +367,7 @@ BOOL ReportStatusToSCMgr(DWORD dwCurrentState,
         // Report the status of the service to the service control manager.
         //
         if (!(fResult = SetServiceStatus(sshStatusHandle, &ssStatus)))
-            LogEvent(EVENTLOG_ERROR_TYPE, Priority::ERROR, SHIBD_SET_SERVICE_STATUS_FAILED, "SHIBD_SET_SERVICE_STATUS_FAILED");
+            Category::getInstance(SHIBSP_LOGCAT ".shibd").error("SetServiceStatus failed");
     }
     return fResult;
 }
@@ -393,7 +391,7 @@ void CmdInstallService(LPCSTR name)
         return;
     }
     
-    string dispName = string("Shibboleth 2 Daemon (") + name + ")";
+    string dispName = string("Shibboleth SP Daemon (") + name + ")";
     string realName = string("shibd_") + name;
     string cmd(szPath);
     if (shar_prefix)
@@ -549,18 +547,4 @@ LPTSTR GetLastErrorText( LPSTR lpszBuf, DWORD dwSize )
         LocalFree((HLOCAL) lpszTemp );
 
     return lpszBuf;
-}
-
-BOOL LogEvent(
-    WORD  wType,
-    Priority::PriorityLevel priority,
-    DWORD  dwEventID,
-    LPCSTR  message)
-{
-    LPCSTR  messages[] = {message, nullptr};
-    DWORD gle = ::GetLastError();
-    
-    HANDLE hElog = ::RegisterEventSource(nullptr, SHIBSP_EVENTLOGSOURCE);
-    BOOL res = ::ReportEvent(hElog, wType, (priority / 100) + 1, dwEventID, nullptr, 1, sizeof(DWORD), messages, &gle);
-    return (::DeregisterEventSource(hElog) && res);
 }
