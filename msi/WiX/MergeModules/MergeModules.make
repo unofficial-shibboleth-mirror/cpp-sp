@@ -68,7 +68,7 @@ FastCGI-x64.wixobj: FastCGI-x64.wxs\
 					-dShibbolethMsVersion=$(MsVCVersion) -dBuildDebug=$(DebugInstaller)
 
 #
-# Log 4 shib.  More complicated since it has a version and a file version (and hence 2 components per architecture)
+# Log4shib.  More complicated since it has a version and a file version (and hence 2 components per architecture)
 #
 Log4Shib-x64.msm: Log4Shib-x64.wixobj
 	light Log4Shib-x64.wixobj
@@ -207,8 +207,8 @@ Xerces-x64.msm: Xerces-x64.wixobj
 	light Xerces-x64.wixobj
 	del ..\*64*.msi
 
-XercesDll32=$(BuildSP)$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
-XercesDebugDll32=$(BuildSP)$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
+XercesDll32=$(BuildSP)\$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
+XercesDebugDll32=$(BuildSP)\$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
 
 Xerces-x86.wixobj: Xerces-x86.wxs $(XercesDll32) Xerces-x86.wxs
 	wixcop -indent:2 Xerces-x86.wxs
@@ -217,8 +217,8 @@ Xerces-x86.wixobj: Xerces-x86.wxs $(XercesDll32) Xerces-x86.wxs
                           -dXerces32Component=$(Xerces32Component) -dXerces32Componentd=$(Xerces32Componentd)\
                           -dShibbolethMsVersion=$(MsVCVersion) -dxerces=$(Xerces) -dBuildDebug=$(DebugInstaller)
 
-XercesDll64=$(BuildSP)$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
-XercesDebugDll64=$(BuildSP)$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
+XercesDll64=$(BuildSP)\$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
+XercesDebugDll64=$(BuildSP)\$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
 
 Xerces-x64.wixobj: Xerces-x64.wxs $(XercesDll64) Xerces-x86.wxs
 	wixcop -indent:2 Xerces-x64.wxs
