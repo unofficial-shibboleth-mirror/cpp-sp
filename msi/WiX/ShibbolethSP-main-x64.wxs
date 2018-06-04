@@ -211,6 +211,12 @@
     <CustomAction Id="QtInstallIIS32" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Impersonate="no" />
     <CustomAction Id="QtInstallIIS64" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Impersonate="no" />
 
+    <!-- Uninstall -->
+    <CustomAction Id="SetQtUninstallIIS32" Property="QtUninstallIIS32" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative32" />
+    <CustomAction Id="SetQtUninstallIIS64" Property="QtUninstallIIS64" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative" />
+    <CustomAction Id="QtUninstallIIS32" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Impersonate="no" Return="ignore" />
+    <CustomAction Id="QtUninstallIIS64" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Impersonate="no" Return="ignore" />
+
     <InstallExecuteSequence>
       <!-- Install IIS if
            - this is an install
@@ -229,6 +235,20 @@
       <Custom Action="QtInstallIIS64" After="SetQtInstallIIS64">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </Custom>
+
+      <Custom Action="SetQtUninstallIIS32" After="StopServices">
+        Installed AND IISMAJORVERSION  AND (IISMAJORVERSION &lt;&gt; "#6") AND (REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)
+      </Custom>
+      <Custom Action="SetQtUninstallIIS64" After="StopServices">
+        Installed AND IISMAJORVERSION  AND (IISMAJORVERSION &lt;&gt; "#6") AND (REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)
+      </Custom>
+      <Custom Action="QtUninstallIIS32" After="SetQtUninstallIIS32">
+        Installed AND IISMAJORVERSION  AND (IISMAJORVERSION &lt;&gt; "#6") AND (REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)
+      </Custom>
+      <Custom Action="QtUninstallIIS64" After="SetQtUninstallIIS64">
+        Installed AND IISMAJORVERSION  AND (IISMAJORVERSION &lt;&gt; "#6") AND (REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)
+      </Custom>
+
       <ScheduleReboot Before="InstallFinalize">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </ScheduleReboot>

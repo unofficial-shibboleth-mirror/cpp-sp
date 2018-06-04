@@ -116,8 +116,10 @@
          between 32 and 64 bit registration -->
 
     <CustomAction Id="SetQtInstallIIS" Property="QtInstallIIS" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative /image:&quot;[#iis7_shib.dll]&quot;" />
-
     <CustomAction Id="QtInstallIIS" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="deferred" Impersonate="no" />
+
+    <CustomAction Id="SetQtUninstallIIS" Property="QtUninstallIIS" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative" />
+    <CustomAction Id="QtUninstallIIS" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="deferred" Impersonate="no" Return="ignore" />
 
     <InstallExecuteSequence>
       <!-- Install IIS if
@@ -131,6 +133,15 @@
       <Custom Action="QtInstallIIS" After="SetQtInstallIIS">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </Custom>
+
+      <Custom Action="SetQtUninstallIIS" After="StopServices">
+        Installed AND IISMAJORVERSION  AND (IISMAJORVERSION &lt;&gt; "#6") AND (REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)
+      </Custom>
+
+      <Custom Action="QtUninstallIIS" After="SetQtUninstallIIS">
+          Installed AND IISMAJORVERSION  AND (IISMAJORVERSION &lt;&gt; "#6") AND (REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)
+      </Custom>
+
       <ScheduleReboot Before="InstallFinalize">
         (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
       </ScheduleReboot>
