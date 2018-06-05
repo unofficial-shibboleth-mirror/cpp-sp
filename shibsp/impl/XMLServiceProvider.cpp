@@ -631,7 +631,7 @@ boost::shared_ptr<Application> XMLConfigImpl::findExternalOverride(const char* i
         }
     }
 
-    return nullptr;
+    return boost::shared_ptr<XMLApplication>();
 }
 
 const Application* XMLConfig::getApplication(const char* applicationId) const
@@ -854,7 +854,7 @@ bool XMLConfig::unregListener(const char* address, Remoted* current)
                 m_listenerMap.erase(address);
             }
         }
-        else if (i->second.second = current) {
+        else if (i->second.second == current) {
             if (!i->second.first)
                 m_listenerMap.erase(address);
             else
