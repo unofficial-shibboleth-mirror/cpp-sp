@@ -425,7 +425,7 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
                 << "' validate='1'/>";
             dummydoc = XMLToolingConfig::getConfig().getParser().parse(snippet);
             XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
-            setServiceProvider(ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER, dummydoc->getDocumentElement()));
+            setServiceProvider(ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER, dummydoc->getDocumentElement(), true));
             if (m_configDoc)
                 m_configDoc->release();
             m_configDoc = docjanitor.release();
@@ -437,7 +437,7 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
             static const XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
             auto_ptr_char type(dummydoc->getDocumentElement()->getAttributeNS(nullptr,_type));
             if (type.get() && *type.get())
-                setServiceProvider(ServiceProviderManager.newPlugin(type.get(), dummydoc->getDocumentElement()));
+                setServiceProvider(ServiceProviderManager.newPlugin(type.get(), dummydoc->getDocumentElement(), true));
             else
                 throw ConfigurationException("The supplied XML bootstrapping configuration did not include a type attribute.");
             if (m_configDoc)

@@ -57,7 +57,7 @@ namespace shibsp {
     class MetadataExtractor : public AttributeExtractor
     {
     public:
-        MetadataExtractor(const DOMElement* e);
+        MetadataExtractor(const DOMElement* e, bool deprecationSupport=true);
         ~MetadataExtractor() {}
 
         Lockable* lock() {
@@ -100,16 +100,16 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    AttributeExtractor* SHIBSP_DLLLOCAL MetadataAttributeExtractorFactory(const DOMElement* const & e)
+    AttributeExtractor* SHIBSP_DLLLOCAL MetadataAttributeExtractorFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new MetadataExtractor(e);
+        return new MetadataExtractor(e, deprecationSupport);
     }
 
     static const XMLCh _id[] = UNICODE_LITERAL_2(i,d);
     static const XMLCh _formatter[] = UNICODE_LITERAL_9(f,o,r,m,a,t,t,e,r);
 };
 
-MetadataExtractor::MetadataExtractor(const DOMElement* e)
+MetadataExtractor::MetadataExtractor(const DOMElement* e, bool deprecationSupport)
     : m_attributeProfiles(XMLHelper::getAttrString(e, nullptr, AttributeProfile::LOCAL_NAME)),
         m_errorURL(XMLHelper::getAttrString(e, nullptr, RoleDescriptor::ERRORURL_ATTRIB_NAME)),
         m_displayName(XMLHelper::getAttrString(e, nullptr, DisplayName::LOCAL_NAME)),
@@ -126,7 +126,7 @@ MetadataExtractor::MetadataExtractor(const DOMElement* e)
             string id(XMLHelper::getAttrString(child, nullptr, _id));
             const XMLCh* type = child->getAttributeNS(nullptr, ContactPerson::CONTACTTYPE_ATTRIB_NAME);
             if (!id.empty() && type && *type) {
-                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, child));
+                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, child, deprecationSupport));
                 m_contacts.push_back(contact_tuple_t(id, type, decoder));
             }
         }
@@ -135,7 +135,7 @@ MetadataExtractor::MetadataExtractor(const DOMElement* e)
             int h(XMLHelper::getAttrInt(child, 0, Logo::HEIGHT_ATTRIB_NAME));
             int w(XMLHelper::getAttrInt(child, 0, Logo::WIDTH_ATTRIB_NAME));
             if (!id.empty()) {
-                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, child));
+                boost::shared_ptr<AttributeDecoder> decoder(SPConfig::getConfig().AttributeDecoderManager.newPlugin(DOMAttributeDecoderType, child, deprecationSupport));
                 m_logos.push_back(logo_tuple_t(id, h, w, decoder));
             }
         }

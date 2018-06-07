@@ -89,8 +89,8 @@ namespace shibsp {
     class XMLProtocolProvider : public ProtocolProvider, public ReloadableXMLFile
     {
     public:
-        XMLProtocolProvider(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".ProtocolProvider.XML")) {
+        XMLProtocolProvider(const DOMElement* e, bool deprecationSupport=true)
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".ProtocolProvider.XML"), true, deprecationSupport) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 
@@ -120,9 +120,9 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    ProtocolProvider* SHIBSP_DLLLOCAL XMLProtocolProviderFactory(const DOMElement* const & e)
+    ProtocolProvider* SHIBSP_DLLLOCAL XMLProtocolProviderFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new XMLProtocolProvider(e);
+        return new XMLProtocolProvider(e, deprecationSupport);
     }
 }
 

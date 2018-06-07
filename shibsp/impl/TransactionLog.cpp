@@ -57,17 +57,17 @@ using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
-    TransactionLog::Event* SHIBSP_DLLLOCAL LoginEventFactory(void* const &)
+    TransactionLog::Event* SHIBSP_DLLLOCAL LoginEventFactory(void* const &, bool)
     {
         return new LoginEvent();
     }
 
-    TransactionLog::Event* SHIBSP_DLLLOCAL LogoutEventFactory(void* const &)
+    TransactionLog::Event* SHIBSP_DLLLOCAL LogoutEventFactory(void* const &, bool)
     {
         return new LogoutEvent();
     }
 
-    TransactionLog::Event* SHIBSP_DLLLOCAL AuthnRequestEventFactory(void* const &)
+    TransactionLog::Event* SHIBSP_DLLLOCAL AuthnRequestEventFactory(void* const &, bool)
     {
         return new AuthnRequestEvent();
     }

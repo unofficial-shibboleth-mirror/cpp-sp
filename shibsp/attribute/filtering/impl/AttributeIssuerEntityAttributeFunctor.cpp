@@ -48,8 +48,8 @@ namespace shibsp {
     {
         boost::scoped_ptr<EntityMatcher> m_matcher;
     public:
-        AttributeIssuerEntityAttributeFunctor(const DOMElement* e)
-            : m_matcher(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(ENTITYATTR_ENTITY_MATCHER, e)) {
+        AttributeIssuerEntityAttributeFunctor(const DOMElement* e, bool deprecationSupport=true)
+            : m_matcher(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(ENTITYATTR_ENTITY_MATCHER, e, deprecationSupport)) {
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
@@ -66,14 +66,18 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerEntityAttributeExactMatchFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerEntityAttributeExactMatchFactory(
+        const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool deprecationSupport
+        )
     {
-        return new AttributeIssuerEntityAttributeFunctor(p.second);
+        return new AttributeIssuerEntityAttributeFunctor(p.second, deprecationSupport);
     }
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerEntityAttributeRegexMatchFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerEntityAttributeRegexMatchFactory(
+        const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool deprecationSupport
+    )
     {
-        return new AttributeIssuerEntityAttributeFunctor(p.second);
+        return new AttributeIssuerEntityAttributeFunctor(p.second, deprecationSupport);
     }
 
 };

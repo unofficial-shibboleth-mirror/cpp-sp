@@ -65,7 +65,7 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerStringFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerStringFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AttributeIssuerStringFunctor(p.second);
     }

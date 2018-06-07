@@ -110,8 +110,8 @@ namespace shibsp {
     class XMLAccessControl : public AccessControl, public ReloadableXMLFile
     {
     public:
-        XMLAccessControl(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML")) {
+        XMLAccessControl(const DOMElement* e, bool deprecationSupport=true)
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML"), true, deprecationSupport) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 
@@ -132,9 +132,9 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const DOMElement* const & e)
+    AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new XMLAccessControl(e);
+        return new XMLAccessControl(e, deprecationSupport);
     }
 
     static const XMLCh _AccessControl[] =        UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);

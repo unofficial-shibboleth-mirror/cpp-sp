@@ -46,7 +46,7 @@ namespace shibsp {
     class ChainingAccessControl : public AccessControl
     {
     public:
-        ChainingAccessControl(const DOMElement* e);
+        ChainingAccessControl(const DOMElement* e, bool deprecationSupport);
 
         ~ChainingAccessControl() {}
 
@@ -65,9 +65,9 @@ namespace shibsp {
         ptr_vector<AccessControl> m_ac;
     };
 
-    AccessControl* SHIBSP_DLLLOCAL ChainingAccessControlFactory(const DOMElement* const & e)
+    AccessControl* SHIBSP_DLLLOCAL ChainingAccessControlFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new ChainingAccessControl(e);
+        return new ChainingAccessControl(e, deprecationSupport);
     }
 
     static const XMLCh _AccessControl[] =   UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
@@ -76,7 +76,7 @@ namespace shibsp {
     static const XMLCh AND[] =              UNICODE_LITERAL_3(A,N,D);
     static const XMLCh OR[] =               UNICODE_LITERAL_2(O,R);
 
-    extern AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const DOMElement* const & e);
+    extern AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const DOMElement* const & e, bool);
 }
 
 void SHIBSP_API shibsp::registerAccessControls()
@@ -95,7 +95,7 @@ AccessControl::~AccessControl()
 {
 }
 
-ChainingAccessControl::ChainingAccessControl(const DOMElement* e) : m_op(OP_AND)
+ChainingAccessControl::ChainingAccessControl(const DOMElement* e, bool deprecationSupport) : m_op(OP_AND)
 {
     const XMLCh* op = e ? e->getAttributeNS(nullptr, _operator) : nullptr;
     if (XMLString::equals(op, OR))
@@ -108,7 +108,7 @@ ChainingAccessControl::ChainingAccessControl(const DOMElement* e) : m_op(OP_AND)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             Category::getInstance(SHIBSP_LOGCAT ".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", t.c_str());
-            auto_ptr<AccessControl> np(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e));
+            auto_ptr<AccessControl> np(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e, deprecationSupport));
             m_ac.push_back(np.get());
             np.release();
         }

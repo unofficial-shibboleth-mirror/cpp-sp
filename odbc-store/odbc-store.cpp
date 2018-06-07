@@ -211,7 +211,7 @@ namespace {
         vector<SQLINTEGER> m_retries;
     };
 
-    StorageService* ODBCStorageServiceFactory(const DOMElement* const & e)
+    StorageService* ODBCStorageServiceFactory(const DOMElement* const & e, bool)
     {
         return new ODBCStorageService(e);
     }

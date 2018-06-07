@@ -120,9 +120,9 @@ namespace {
 };
 
 namespace shibsp {
-    ServiceProvider* XMLServiceProviderFactory(const DOMElement* const & e)
+    ServiceProvider* XMLServiceProviderFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new XMLConfig(e);
+        return new XMLConfig(e, deprecationSupport);
     }
 };
 
@@ -206,7 +206,7 @@ void XMLConfigImpl::doListener(const DOMElement* e, XMLConfig* conf, Category& l
     }
 
     log.info("building ListenerService of type %s...", plugtype.c_str());
-    conf->m_listener.reset(SPConfig::getConfig().ListenerServiceManager.newPlugin(plugtype.c_str(), child));
+    conf->m_listener.reset(SPConfig::getConfig().ListenerServiceManager.newPlugin(plugtype.c_str(), child, m_deprecationSupport));
 }
 
 void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& log)
@@ -228,7 +228,8 @@ void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& lo
             if (!t.empty()) {
                 try {
                     log.info("building StorageService (%s) of type %s...", id.c_str(), t.c_str());
-                    conf->m_storage[id] = boost::shared_ptr<StorageService>(xmlConf.StorageServiceManager.newPlugin(t.c_str(), child));
+                    conf->m_storage[id] =
+                        boost::shared_ptr<StorageService>(xmlConf.StorageServiceManager.newPlugin(t.c_str(), child, m_deprecationSupport));
                 }
                 catch (const std::exception& ex) {
                     log.crit("failed to instantiate StorageService (%s): %s", id.c_str(), ex.what());
@@ -239,7 +240,9 @@ void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& lo
 
         if (conf->m_storage.empty()) {
             log.info("no StorageService plugin(s) installed, using (mem) in-memory instance");
-            conf->m_storage["mem"] = boost::shared_ptr<StorageService>(xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr));
+            conf->m_storage["mem"] = boost::shared_ptr<StorageService>(
+                xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr, m_deprecationSupport)
+                );
         }
 
         // Replay cache.
@@ -299,16 +302,17 @@ void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& lo
         string t(XMLHelper::getAttrString(child, nullptr, _type));
         if (!t.empty()) {
             log.info("building SessionCache of type %s...", t.c_str());
-            conf->m_sessionCache.reset(spConf.SessionCacheManager.newPlugin(t.c_str(), child));
+            conf->m_sessionCache.reset(spConf.SessionCacheManager.newPlugin(t.c_str(), child, m_deprecationSupport));
         }
     }
     if (!conf->m_sessionCache) {
         log.info("no SessionCache specified, using StorageService-backed instance");
-        conf->m_sessionCache.reset(spConf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE, nullptr));
+        conf->m_sessionCache.reset(spConf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE, nullptr, m_deprecationSupport));
     }
 }
 
-XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, Category& log) : m_document(nullptr), m_defaultApplication(nullptr)
+XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, Category& log)
+    : m_document(nullptr), m_defaultApplication(nullptr), m_deprecationSupport(false)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLConfigImpl");
@@ -378,7 +382,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 #endif
 
     if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
-        log.warn("detected legacy 2.0 configuration, support will be removed from a future version of the software");
+        log.warn("DEPRECATED: legacy 2.0 configuration, support will be removed from a future version of the software");
+        m_deprecationSupport = true;
     }
 
     // First load any property sets.
@@ -440,7 +445,9 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             string t(XMLHelper::getAttrString(child, nullptr, _type));
             if (!t.empty()) {
                 log.info("building DataSealer of type %s...", t.c_str());
-                auto_ptr<DataSealerKeyStrategy> strategy(XMLToolingConfig::getConfig().DataSealerKeyStrategyManager.newPlugin(t, child));
+                auto_ptr<DataSealerKeyStrategy> strategy(
+                    XMLToolingConfig::getConfig().DataSealerKeyStrategyManager.newPlugin(t, child, m_deprecationSupport)
+                    );
                 auto_ptr<DataSealer> sealer(new DataSealer(strategy.get()));
                 strategy.release();
                 XMLToolingConfig::getConfig().setDataSealer(sealer.get());
@@ -458,7 +465,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             string t(XMLHelper::getAttrString(child, nullptr, _type));
             if (!t.empty()) {
                 log.info("building RequestMapper of type %s...", t.c_str());
-                m_requestMapper.reset(conf.RequestMapperManager.newPlugin(t.c_str(), child));
+                m_requestMapper.reset(conf.RequestMapperManager.newPlugin(t.c_str(), child, m_deprecationSupport));
             }
         }
         if (!m_requestMapper) {
@@ -467,7 +474,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             DOMElement* mapperDummy = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), RequestMap);
             mapperDummy->setAttributeNS(nullptr, applicationId, _default);
             child->appendChild(mapperDummy);
-            m_requestMapper.reset(conf.RequestMapperManager.newPlugin(NATIVE_REQUEST_MAPPER, child));
+            m_requestMapper.reset(conf.RequestMapperManager.newPlugin(NATIVE_REQUEST_MAPPER, child, m_deprecationSupport));
         }
     }
 
@@ -477,7 +484,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         string t(XMLHelper::getAttrString(child, nullptr, _type));
         if (!t.empty()) {
             log.info("building SecurityPolicyProvider of type %s...", t.c_str());
-            m_policy.reset(conf.SecurityPolicyProviderManager.newPlugin(t.c_str(), child));
+            m_policy.reset(conf.SecurityPolicyProviderManager.newPlugin(t.c_str(), child, m_deprecationSupport));
         }
         else {
             throw ConfigurationException("can't build SecurityPolicyProvider, no type specified");
@@ -488,7 +495,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         DOMElement* polwrapper = e->getOwnerDocument()->createElementNS(nullptr, _SecurityPolicyProvider);
         polwrapper->appendChild(child);
         log.warn("DEPRECATED: inline SecurityPolicy configuration, externalize via <SecurityPolicyProvider>");
-        m_policy.reset(conf.SecurityPolicyProviderManager.newPlugin(XML_SECURITYPOLICY_PROVIDER, polwrapper));
+        m_policy.reset(conf.SecurityPolicyProviderManager.newPlugin(XML_SECURITYPOLICY_PROVIDER, polwrapper, m_deprecationSupport));
     }
     else {
         log.fatal("can't build SecurityPolicyProvider, missing conf:SecurityPolicyProvider element?");
@@ -540,7 +547,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             string t(XMLHelper::getAttrString(child, nullptr, _type));
             if (!t.empty()) {
                 log.info("building ProtocolProvider of type %s...", t.c_str());
-                m_protocolProvider.reset(conf.ProtocolProviderManager.newPlugin(t.c_str(), child));
+                m_protocolProvider.reset(conf.ProtocolProviderManager.newPlugin(t.c_str(), child, m_deprecationSupport));
             }
         }
     }
@@ -552,14 +559,14 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");
         throw ConfigurationException("can't build default Application object, missing conf:ApplicationDefaults element?");
     }
-    boost::shared_ptr<XMLApplication> defapp(new XMLApplication(outer, m_protocolProvider.get(), child));
+    boost::shared_ptr<XMLApplication> defapp(new XMLApplication(outer, m_protocolProvider.get(), child, m_deprecationSupport));
     m_appmap[defapp->getId()] = defapp;
     m_defaultApplication = defapp.get();
 
     // Load any overrides.
     DOMElement* override = XMLHelper::getFirstChildElement(child, ApplicationOverride);
     while (override) {
-        boost::shared_ptr<XMLApplication> iapp(new XMLApplication(outer, m_protocolProvider.get(), override, defapp.get()));
+        boost::shared_ptr<XMLApplication> iapp(new XMLApplication(outer, m_protocolProvider.get(), override, m_deprecationSupport, defapp.get()));
         if (m_appmap.count(iapp->getId()))
             log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
         else
@@ -621,7 +628,7 @@ boost::shared_ptr<Application> XMLConfigImpl::findExternalOverride(const char* i
                     throw ConfigurationException("External override's id ($1) did not match the expected value", params(1, id2.c_str()));
 
                 boost::shared_ptr<XMLApplication> iapp(
-                    new XMLApplication(config, m_protocolProvider.get(), doc->getDocumentElement(), m_defaultApplication, doc)
+                    new XMLApplication(config, m_protocolProvider.get(), doc->getDocumentElement(), m_deprecationSupport, m_defaultApplication, doc)
                     );
                 return iapp;
             }
@@ -889,8 +896,9 @@ Remoted* XMLConfig::lookupListener(const char* address) const
     return nullptr;
 }
 
-XMLConfig::XMLConfig(const DOMElement* e)
-    : ReloadableXMLFile(e, xmltooling::logging::Category::getInstance(SHIBSP_LOGCAT ".Config")), m_listenerLock(RWLock::create())
+XMLConfig::XMLConfig(const DOMElement* e, bool deprecationSupport)
+    : ReloadableXMLFile(e, xmltooling::logging::Category::getInstance(SHIBSP_LOGCAT ".Config"), true, deprecationSupport),
+        m_listenerLock(RWLock::create())
 {
 }
 

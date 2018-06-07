@@ -70,12 +70,12 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SAML1Consumer : public AssertionConsumerService
     {
     public:
-        SAML1Consumer(const DOMElement* e, const char* appId)
-            : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".SSO.SAML1")) {
+        SAML1Consumer(const DOMElement* e, const char* appId, bool deprecationSupport=true)
+            : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".SSO.SAML1"), nullptr, nullptr, deprecationSupport) {
 #ifndef SHIBSP_LITE
             m_post = XMLString::equals(getString("Binding").second, samlconstants::SAML1_PROFILE_BROWSER_POST);
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-                m_ssoRule.reset(SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(SAML1BROWSERSSO_POLICY_RULE, e));
+                m_ssoRule.reset(SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(SAML1BROWSERSSO_POLICY_RULE, e, deprecationSupport));
 #endif
         }
         virtual ~SAML1Consumer() {}
@@ -110,9 +110,9 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL SAML1ConsumerFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* SHIBSP_DLLLOCAL SAML1ConsumerFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new SAML1Consumer(p.first, p.second);
+        return new SAML1Consumer(p.first, p.second, deprecationSupport);
     }
 
 #ifndef SHIBSP_LITE

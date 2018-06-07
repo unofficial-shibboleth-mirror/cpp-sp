@@ -81,6 +81,7 @@ namespace shibsp {
             const ServiceProvider*,
             const ProtocolProvider*,
             xercesc::DOMElement*,
+            bool deprecationSupport,
             const XMLApplication* base=nullptr,
             xercesc::DOMDocument* doc=nullptr);
         virtual ~XMLApplication();
@@ -226,6 +227,7 @@ namespace shibsp {
         } m_redirectLimit;
 
         std::vector<std::string> m_redirectWhitelist;
+        bool m_deprecationSupport;
         xercesc::DOMDocument* m_doc;
     };
 

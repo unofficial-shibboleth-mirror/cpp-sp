@@ -160,7 +160,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SimpleAggregationResolver : public AttributeResolver
     {
     public:
-        SimpleAggregationResolver(const DOMElement* e);
+        SimpleAggregationResolver(const DOMElement* e, bool deprecationSupport=true);
         ~SimpleAggregationResolver() {}
 
         Lockable* lock() {return this;}
@@ -212,9 +212,9 @@ namespace shibsp {
         vector<string> m_exceptionId;
     };
 
-    AttributeResolver* SHIBSP_DLLLOCAL SimpleAggregationResolverFactory(const DOMElement* const & e)
+    AttributeResolver* SHIBSP_DLLLOCAL SimpleAggregationResolverFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new SimpleAggregationResolver(e);
+        return new SimpleAggregationResolver(e, deprecationSupport);
     }
 
     static const XMLCh _AttributeExtractor[] =  UNICODE_LITERAL_18(A,t,t,r,i,b,u,t,e,E,x,t,r,a,c,t,o,r);
@@ -231,7 +231,7 @@ namespace shibsp {
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
 };
 
-SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
+SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e, bool deprecationSupport)
     : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver.SimpleAggregation")),
         m_policyId(XMLHelper::getAttrString(e, nullptr, policyId)),
         m_subjectMatch(XMLHelper::getAttrBool(e, false, subjectMatch))
@@ -262,7 +262,7 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
         if (t.empty())
             throw ConfigurationException("MetadataProvider element missing type attribute.");
         m_log.info("building MetadataProvider of type %s...", t.c_str());
-        m_metadata.reset(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(t.c_str(), child));
+        m_metadata.reset(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(t.c_str(), child, deprecationSupport));
         m_metadata->init();
     }
 
@@ -272,7 +272,7 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
         if (t.empty())
             throw ConfigurationException("TrustEngine element missing type attribute.");
         m_log.info("building TrustEngine of type %s...", t.c_str());
-        m_trust.reset(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child));
+        m_trust.reset(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child, deprecationSupport));
     }
 
     child = XMLHelper::getFirstChildElement(e,  _AttributeExtractor);
@@ -281,7 +281,7 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
         if (t.empty())
             throw ConfigurationException("AttributeExtractor element missing type attribute.");
         m_log.info("building AttributeExtractor of type %s...", t.c_str());
-        m_extractor.reset(SPConfig::getConfig().AttributeExtractorManager.newPlugin(t.c_str(), child));
+        m_extractor.reset(SPConfig::getConfig().AttributeExtractorManager.newPlugin(t.c_str(), child, deprecationSupport));
     }
 
     child = XMLHelper::getFirstChildElement(e,  _AttributeFilter);
@@ -290,7 +290,7 @@ SimpleAggregationResolver::SimpleAggregationResolver(const DOMElement* e)
         if (t.empty())
             throw ConfigurationException("AttributeFilter element missing type attribute.");
         m_log.info("building AttributeFilter of type %s...", t.c_str());
-        m_filter.reset(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), child));
+        m_filter.reset(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), child, deprecationSupport));
     }
 
     child = XMLHelper::getFirstChildElement(e);

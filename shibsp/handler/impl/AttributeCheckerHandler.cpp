@@ -70,7 +70,7 @@ namespace shibsp {
     class SHIBSP_API AttributeCheckerHandler : public AbstractHandler
     {
     public:
-        AttributeCheckerHandler(const DOMElement* e, const char* appId);
+        AttributeCheckerHandler(const DOMElement* e, const char* appId, bool deprecationSupport=true);
         virtual ~AttributeCheckerHandler() {}
 
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
@@ -94,9 +94,9 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL AttributeCheckerFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* SHIBSP_DLLLOCAL AttributeCheckerFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new AttributeCheckerHandler(p.first, p.second);
+        return new AttributeCheckerHandler(p.first, p.second, deprecationSupport);
     }
 
     static const XMLCh attributes[] =   UNICODE_LITERAL_10(a,t,t,r,i,b,u,t,e,s);
@@ -104,7 +104,7 @@ namespace shibsp {
     static const XMLCh _template[] =    UNICODE_LITERAL_8(t,e,m,p,l,a,t,e);
 };
 
-AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char* appId)
+AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.AttributeChecker"), &g_Blocker)
 {
     if (!SPConfig::getConfig().isEnabled(SPConfig::InProcess))
@@ -127,7 +127,7 @@ AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char
         throw ConfigurationException("AttributeChecker requires either the attributes setting or an ACL");
     }
     else {
-        m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, e));
+        m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, e, deprecationSupport));
     }
 }
 

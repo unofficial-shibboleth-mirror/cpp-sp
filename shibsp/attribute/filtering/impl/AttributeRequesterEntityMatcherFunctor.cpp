@@ -48,11 +48,11 @@ namespace shibsp {
     {
         boost::scoped_ptr<EntityMatcher> m_matcher;
     public:
-        AttributeRequesterEntityMatcherFunctor(const DOMElement* e) {
+        AttributeRequesterEntityMatcherFunctor(const DOMElement* e, bool deprecationSupport=true) {
             static const XMLCh matcher[] = UNICODE_LITERAL_7(m,a,t,c,h,e,r);
             std::string type(XMLHelper::getAttrString(e, nullptr, matcher));
             if (!type.empty())
-                m_matcher.reset(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(type.c_str(), e));
+                m_matcher.reset(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(type.c_str(), e, deprecationSupport));
             else
                 throw ConfigurationException("AttributeRequesterEntityMatcher MatchFunctor requires a matcher attribute.");
         }
@@ -71,9 +71,9 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeRequesterEntityMatcherFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeRequesterEntityMatcherFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool deprecationSupport)
     {
-        return new AttributeRequesterEntityMatcherFunctor(p.second);
+        return new AttributeRequesterEntityMatcherFunctor(p.second, deprecationSupport);
     }
 
 };

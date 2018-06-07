@@ -70,7 +70,7 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerRegexFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerRegexFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AttributeIssuerRegexFunctor(p.second);
     }

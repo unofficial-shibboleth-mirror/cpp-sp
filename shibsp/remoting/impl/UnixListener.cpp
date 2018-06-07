@@ -79,7 +79,7 @@ namespace shibsp {
         mutable bool m_bound;
     };
 
-    ListenerService* SHIBSP_DLLLOCAL UnixListenerServiceFactory(const DOMElement* const & e)
+    ListenerService* SHIBSP_DLLLOCAL UnixListenerServiceFactory(const DOMElement* const & e, bool)
     {
         return new UnixListener(e);
     }

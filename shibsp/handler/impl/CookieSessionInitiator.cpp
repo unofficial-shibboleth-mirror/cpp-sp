@@ -71,7 +71,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    SessionInitiator* SHIBSP_DLLLOCAL CookieSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* SHIBSP_DLLLOCAL CookieSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new CookieSessionInitiator(p.first, p.second);
     }

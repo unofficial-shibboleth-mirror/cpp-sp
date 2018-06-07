@@ -68,7 +68,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    SessionInitiator* SHIBSP_DLLLOCAL FormSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* SHIBSP_DLLLOCAL FormSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new FormSessionInitiator(p.first, p.second);
     }

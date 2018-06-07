@@ -45,7 +45,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL ChainingAttributeExtractor : public AttributeExtractor
     {
     public:
-        ChainingAttributeExtractor(const DOMElement* e);
+        ChainingAttributeExtractor(const DOMElement* e, bool deprecationSupport=true);
         virtual ~ChainingAttributeExtractor() {}
 
         Lockable* lock() {
@@ -93,9 +93,10 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory DelegationAttributeExtractorFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory KeyDescriptorAttributeExtractorFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeExtractor,string,const DOMElement*>::Factory XMLAttributeExtractorFactory;
-    AttributeExtractor* SHIBSP_DLLLOCAL ChainingExtractorFactory(const DOMElement* const & e)
+
+    AttributeExtractor* SHIBSP_DLLLOCAL ChainingExtractorFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new ChainingAttributeExtractor(e);
+        return new ChainingAttributeExtractor(e, deprecationSupport);
     }
 };
 
@@ -121,7 +122,7 @@ void AttributeExtractor::generateMetadata(SPSSODescriptor& role) const
 {
 }
 
-ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
+ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e, bool deprecationSupport)
 {
     SPConfig& conf = SPConfig::getConfig();
 
@@ -134,7 +135,7 @@ ChainingAttributeExtractor::ChainingAttributeExtractor(const DOMElement* e)
                 Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.Chaining").info(
                     "building AttributeExtractor of type (%s)...", t.c_str()
                     );
-                auto_ptr<AttributeExtractor> np(conf.AttributeExtractorManager.newPlugin(t.c_str(), e));
+                auto_ptr<AttributeExtractor> np(conf.AttributeExtractorManager.newPlugin(t.c_str(), e, deprecationSupport));
                 m_extractors.push_back(np.get());
                 np.release();
             }

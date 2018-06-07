@@ -46,7 +46,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL NotMatchFunctor : public MatchFunctor
     {
     public:
-        NotMatchFunctor(const pair<const FilterPolicyContext*,const DOMElement*>& p);
+        NotMatchFunctor(const pair<const FilterPolicyContext*,const DOMElement*>& p, bool deprecationSupport=true);
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
             if (m_functor)
@@ -61,14 +61,14 @@ namespace shibsp {
         }
 
     private:
-        MatchFunctor* buildFunctor(const DOMElement* e, const FilterPolicyContext* functorMap);
+        MatchFunctor* buildFunctor(const DOMElement* e, const FilterPolicyContext* functorMap, bool deprecationSupport);
 
         const MatchFunctor* m_functor;
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL NotMatchFunctorFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL NotMatchFunctorFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p, bool deprecationSupport)
     {
-        return new NotMatchFunctor(p);
+        return new NotMatchFunctor(p, deprecationSupport);
     }
 
     static XMLCh _id[] =            UNICODE_LITERAL_2(i,d);
@@ -77,12 +77,12 @@ namespace shibsp {
     static XMLCh RuleReference[] =  UNICODE_LITERAL_13(R,u,l,e,R,e,f,e,r,e,n,c,e);
 };
 
-NotMatchFunctor::NotMatchFunctor(const pair<const FilterPolicyContext*,const DOMElement*>& p) : m_functor(nullptr)
+NotMatchFunctor::NotMatchFunctor(const pair<const FilterPolicyContext*,const DOMElement*>& p, bool deprecationSupport) : m_functor(nullptr)
 {
     const DOMElement* e = XMLHelper::getFirstChildElement(p.second);
     if (e) {
         if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, Rule)) {
-            m_functor = buildFunctor(e, p.first);
+            m_functor = buildFunctor(e, p.first, deprecationSupport);
         }
         else if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, RuleReference)) {
             string ref = XMLHelper::getAttrString(e, nullptr, _ref);
@@ -97,7 +97,7 @@ NotMatchFunctor::NotMatchFunctor(const pair<const FilterPolicyContext*,const DOM
         throw ConfigurationException("No child Rule installed into NotMatchFunctor.");
 }
 
-MatchFunctor* NotMatchFunctor::buildFunctor(const DOMElement* e, const FilterPolicyContext* functorMap)
+MatchFunctor* NotMatchFunctor::buildFunctor(const DOMElement* e, const FilterPolicyContext* functorMap, bool deprecationSupport)
 {
     // We'll track and map IDs just for consistency, but don't require them or worry about dups.
     string id = XMLHelper::getAttrString(e, nullptr, _id);
@@ -108,7 +108,7 @@ MatchFunctor* NotMatchFunctor::buildFunctor(const DOMElement* e, const FilterPol
     if (!type)
         throw ConfigurationException("Child Rule found with no xsi:type.");
 
-    auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(functorMap,e)));
+    auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(functorMap,e), deprecationSupport));
     functorMap->getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func.get()));
     return func.release();
 }

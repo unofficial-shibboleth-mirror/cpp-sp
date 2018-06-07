@@ -91,7 +91,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    AttributeExtractor* SHIBSP_DLLLOCAL AssertionAttributeExtractorFactory(const DOMElement* const & e)
+    AttributeExtractor* SHIBSP_DLLLOCAL AssertionAttributeExtractorFactory(const DOMElement* const & e, bool)
     {
         return new AssertionExtractor(e);
     }

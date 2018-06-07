@@ -109,7 +109,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL AttributeResolverHandlerFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* SHIBSP_DLLLOCAL AttributeResolverHandlerFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new AttributeResolverHandler(p.first, p.second);
     }

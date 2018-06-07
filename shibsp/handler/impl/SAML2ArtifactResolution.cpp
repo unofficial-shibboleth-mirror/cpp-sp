@@ -73,7 +73,7 @@ namespace shibsp {
     class SHIBSP_API SAML2ArtifactResolution : public AbstractHandler, public RemotedHandler 
     {
     public:
-        SAML2ArtifactResolution(const DOMElement* e, const char* appId);
+        SAML2ArtifactResolution(const DOMElement* e, const char* appId, bool deprecationSupport=true);
         virtual ~SAML2ArtifactResolution() {}
 
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
@@ -134,20 +134,20 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL SAML2ArtifactResolutionFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* SHIBSP_DLLLOCAL SAML2ArtifactResolutionFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new SAML2ArtifactResolution(p.first, p.second);
+        return new SAML2ArtifactResolution(p.first, p.second, deprecationSupport);
     }
 
 };
 
-SAML2ArtifactResolution::SAML2ArtifactResolution(const DOMElement* e, const char* appId)
+SAML2ArtifactResolution::SAML2ArtifactResolution(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".ArtifactResolution.SAML2"))
 {
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        m_encoder.reset(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(getString("Binding").second, e));
-        m_decoder.reset(SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second, e));
+        m_encoder.reset(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(getString("Binding").second, e, deprecationSupport));
+        m_decoder.reset(SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second, e, deprecationSupport));
     }
 #endif
     string address(appId);

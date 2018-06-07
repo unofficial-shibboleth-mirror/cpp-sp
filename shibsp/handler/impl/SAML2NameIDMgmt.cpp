@@ -73,7 +73,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SAML2NameIDMgmt : public AbstractHandler, public RemotedHandler
     {
     public:
-        SAML2NameIDMgmt(const DOMElement* e, const char* appId);
+        SAML2NameIDMgmt(const DOMElement* e, const char* appId, bool deprecationSupport=true);
         virtual ~SAML2NameIDMgmt() {}
 
         void receive(DDF& in, ostream& out);
@@ -134,13 +134,13 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL SAML2NameIDMgmtFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* SHIBSP_DLLLOCAL SAML2NameIDMgmtFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new SAML2NameIDMgmt(p.first, p.second);
+        return new SAML2NameIDMgmt(p.first, p.second, deprecationSupport);
     }
 };
 
-SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
+SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".NameIDMgmt.SAML2"))
 {
 #ifndef SHIBSP_LITE
@@ -148,7 +148,7 @@ SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
         SAMLConfig& conf = SAMLConfig::getConfig();
 
         // Handle incoming binding.
-        m_decoder.reset(conf.MessageDecoderManager.newPlugin(getString("Binding").second, e));
+        m_decoder.reset(conf.MessageDecoderManager.newPlugin(getString("Binding").second, e, deprecationSupport));
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
 
         if (m_decoder->isUserAgentPresent()) {
@@ -168,7 +168,7 @@ SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
             split(m_bindings, dupBindings, is_space(), algorithm::token_compress_on);
             for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
                 try {
-                    boost::shared_ptr<MessageEncoder> encoder(conf.MessageEncoderManager.newPlugin(*b, e));
+                    boost::shared_ptr<MessageEncoder> encoder(conf.MessageEncoderManager.newPlugin(*b, e, deprecationSupport));
                     if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                         m_encoders[*b] = encoder;
                         m_log.debug("supporting outgoing binding (%s)", b->c_str());
@@ -184,7 +184,7 @@ SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId)
         }
         else {
             pair<bool,const char*> b = getString("Binding");
-            boost::shared_ptr<MessageEncoder> encoder(conf.MessageEncoderManager.newPlugin(b.second, e));
+            boost::shared_ptr<MessageEncoder> encoder(conf.MessageEncoderManager.newPlugin(b.second, e, deprecationSupport));
             m_encoders[b.second] = encoder;
         }
     }

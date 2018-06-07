@@ -120,7 +120,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL ExternalAuthFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* SHIBSP_DLLLOCAL ExternalAuthFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new ExternalAuth(p.first, p.second);
     }
@@ -259,7 +259,7 @@ pair<bool,long> ExternalAuth::processMessage(
     scoped_ptr<TransactionLog::Event> event;
     LoginEvent* login_event = nullptr;
     if (SPConfig::getConfig().isEnabled(SPConfig::Logging)) {
-        event.reset(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
+        event.reset(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr, false));
         login_event = dynamic_cast<LoginEvent*>(event.get());
         if (login_event)
             login_event->m_app = &application;
@@ -811,7 +811,7 @@ LoginEvent* ExternalAuth::newLoginEvent(const Application& application, const HT
     if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
         return nullptr;
     try {
-        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
+        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr, false));
         LoginEvent* login_event = dynamic_cast<LoginEvent*>(event.get());
         if (login_event) {
             login_event->m_request = &request;

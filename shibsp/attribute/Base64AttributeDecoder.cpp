@@ -52,7 +52,7 @@ namespace shibsp {
             ) const;
     };
 
-    AttributeDecoder* SHIBSP_DLLLOCAL Base64AttributeDecoderFactory(const DOMElement* const & e)
+    AttributeDecoder* SHIBSP_DLLLOCAL Base64AttributeDecoderFactory(const DOMElement* const & e, bool)
     {
         return new Base64AttributeDecoder(e);
     }

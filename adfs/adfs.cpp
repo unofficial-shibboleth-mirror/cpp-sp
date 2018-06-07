@@ -108,7 +108,7 @@ namespace {
         }
     };
 
-    MessageDecoder* ADFSDecoderFactory(const DOMElement* const &)
+    MessageDecoder* ADFSDecoderFactory(const DOMElement* const &, bool)
     {
         return new ADFSDecoder();
     }
@@ -177,8 +177,9 @@ namespace {
     {
         auto_ptr_XMLCh m_protocol;
     public:
-        ADFSConsumer(const DOMElement* e, const char* appId)
-            : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".SSO.ADFS")), m_protocol(WSFED_NS) {}
+        ADFSConsumer(const DOMElement* e, const char* appId, bool deprecationSupport)
+            : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".SSO.ADFS"), nullptr, nullptr, deprecationSupport),
+                m_protocol(WSFED_NS) {}
         virtual ~ADFSConsumer() {}
 
 #ifndef SHIBSP_LITE
@@ -246,8 +247,8 @@ namespace {
     class SHIBSP_DLLLOCAL ADFSLogout : public AbstractHandler, public LogoutHandler
     {
     public:
-        ADFSLogout(const DOMElement* e, const char* appId)
-                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Logout.ADFS")), m_login(e, appId) {
+        ADFSLogout(const DOMElement* e, const char* appId, bool deprecationSupport)
+                : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Logout.ADFS")), m_login(e, appId, deprecationSupport) {
             m_initiator = false;
 #ifndef SHIBSP_LITE
             m_preserve.push_back("wreply");
@@ -290,17 +291,17 @@ namespace {
     #pragma warning( pop )
 #endif
 
-    SessionInitiator* ADFSSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* ADFSSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new ADFSSessionInitiator(p.first, p.second);
     }
 
-    Handler* ADFSLogoutFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* ADFSLogoutFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new ADFSLogout(p.first, p.second);
+        return new ADFSLogout(p.first, p.second, deprecationSupport);
     }
 
-    Handler* ADFSLogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* ADFSLogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new ADFSLogoutInitiator(p.first, p.second);
     }

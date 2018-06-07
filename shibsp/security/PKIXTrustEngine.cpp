@@ -82,7 +82,7 @@ namespace shibsp {
     
     SHIBSP_DLLLOCAL PluginManager<TrustEngine,string,const DOMElement*>::Factory PKIXTrustEngineFactory;
 
-    TrustEngine* SHIBSP_DLLLOCAL PKIXTrustEngineFactory(const DOMElement* const & e)
+    TrustEngine* SHIBSP_DLLLOCAL PKIXTrustEngineFactory(const DOMElement* const & e, bool)
     {
         return new PKIXTrustEngine(e);
     }

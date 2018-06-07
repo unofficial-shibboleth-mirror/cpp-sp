@@ -68,7 +68,7 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AuthenticationMethodStringFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AuthenticationMethodStringFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AuthenticationMethodStringFunctor(p.second);
     }

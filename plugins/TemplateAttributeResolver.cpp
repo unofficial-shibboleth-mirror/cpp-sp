@@ -119,7 +119,7 @@ namespace shibsp {
     static const XMLCh _sources[] = UNICODE_LITERAL_7(s,o,u,r,c,e,s);
     static const XMLCh Template[] = UNICODE_LITERAL_8(T,e,m,p,l,a,t,e);
 
-    AttributeResolver* SHIBSP_DLLLOCAL TemplateAttributeResolverFactory(const DOMElement* const & e)
+    AttributeResolver* SHIBSP_DLLLOCAL TemplateAttributeResolverFactory(const DOMElement* const & e, bool)
     {
         return new TemplateAttributeResolver(e);
     }

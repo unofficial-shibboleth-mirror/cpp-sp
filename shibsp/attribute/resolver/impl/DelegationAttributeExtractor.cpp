@@ -83,7 +83,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    AttributeExtractor* SHIBSP_DLLLOCAL DelegationAttributeExtractorFactory(const DOMElement* const & e)
+    AttributeExtractor* SHIBSP_DLLLOCAL DelegationAttributeExtractorFactory(const DOMElement* const & e, bool)
     {
         return new DelegationExtractor(e);
     }

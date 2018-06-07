@@ -70,7 +70,7 @@ namespace shibsp {
         bool m_defaultQualifiers;
     };
 
-    AttributeDecoder* SHIBSP_DLLLOCAL NameIDFromScopedAttributeDecoderFactory(const DOMElement* const & e)
+    AttributeDecoder* SHIBSP_DLLLOCAL NameIDFromScopedAttributeDecoderFactory(const DOMElement* const & e, bool)
     {
         return new NameIDFromScopedAttributeDecoder(e);
     }

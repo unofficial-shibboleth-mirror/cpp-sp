@@ -94,6 +94,7 @@ namespace shibsp {
 
         xercesc::DOMDocument* m_document;
         const XMLApplication* m_defaultApplication;
+        bool m_deprecationSupport;
     };
 
     class SHIBSP_DLLLOCAL XMLConfig : public ServiceProvider, public xmltooling::ReloadableXMLFile
@@ -102,7 +103,7 @@ namespace shibsp {
 #endif
     {
     public:
-        XMLConfig(const xercesc::DOMElement* e);
+        XMLConfig(const xercesc::DOMElement* e, bool deprecationSupport=true);
         virtual ~XMLConfig();
 
         void init() {

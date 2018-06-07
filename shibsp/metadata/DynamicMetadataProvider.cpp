@@ -75,7 +75,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL DynamicMetadataProvider : public AbstractDynamicMetadataProvider
     {
     public:
-        DynamicMetadataProvider(const xercesc::DOMElement* e=nullptr);
+        DynamicMetadataProvider(const xercesc::DOMElement* e=nullptr, bool deprecationSupport=true);
 
         virtual ~DynamicMetadataProvider() {}
 
@@ -101,9 +101,9 @@ namespace shibsp {
 
     };
 
-    MetadataProvider* SHIBSP_DLLLOCAL DynamicMetadataProviderFactory(const DOMElement* const & e)
+    MetadataProvider* SHIBSP_DLLLOCAL DynamicMetadataProviderFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new DynamicMetadataProvider(e);
+        return new DynamicMetadataProvider(e, deprecationSupport);
     }
 
     static const XMLCh encoded[] =          UNICODE_LITERAL_7(e,n,c,o,d,e,d);
@@ -122,8 +122,8 @@ namespace shibsp {
 
 bool DynamicMetadataProvider::s_artifactWarned(false);
 
-DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
-    : MetadataProvider(e), AbstractDynamicMetadataProvider(true, e),
+DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e, bool deprecationSupport)
+    : MetadataProvider(e, deprecationSupport), AbstractDynamicMetadataProvider(true, e, deprecationSupport),
       m_log( Category::getInstance(SHIBSP_LOGCAT ".MetadataProvider.Dynamic")),
         m_verifyHost(XMLHelper::getAttrBool(e, true, verifyHost)),
         m_ignoreTransport(XMLHelper::getAttrBool(e, false, ignoreTransport)),
@@ -176,12 +176,12 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e)
         child = XMLHelper::getFirstChildElement(e, _TrustEngine);
         string t = XMLHelper::getAttrString(child, nullptr, _type);
         if (!t.empty()) {
-            auto_ptr<TrustEngine> trust(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child));
+            auto_ptr<TrustEngine> trust(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child, deprecationSupport));
             if (!dynamic_cast<X509TrustEngine*>(trust.get())) {
                 throw ConfigurationException("Dynamic MetadataProvider requires X509TrustEngine plugin.");
             }
             m_trust.reset(dynamic_cast<X509TrustEngine*>(trust.release()));
-            m_dummyCR.reset(XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(DUMMY_CREDENTIAL_RESOLVER, nullptr));
+            m_dummyCR.reset(XMLToolingConfig::getConfig().CredentialResolverManager.newPlugin(DUMMY_CREDENTIAL_RESOLVER, nullptr, deprecationSupport));
         }
 
         if (!m_trust || !m_dummyCR)
@@ -294,7 +294,7 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
     string scheme(addr.m_endpoint, pch - addr.m_endpoint);
     boost::scoped_ptr<SOAPTransport> transport;
     try {
-        transport.reset(XMLToolingConfig::getConfig().SOAPTransportManager.newPlugin(scheme.c_str(), addr));
+        transport.reset(XMLToolingConfig::getConfig().SOAPTransportManager.newPlugin(scheme.c_str(), addr, false));
     }
     catch (const exception& ex) {
         m_log.error("exception while building transport object to resolve URL: %s", ex.what());

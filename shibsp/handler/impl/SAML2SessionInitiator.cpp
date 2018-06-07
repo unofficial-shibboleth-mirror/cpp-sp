@@ -74,7 +74,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SAML2SessionInitiator : public SessionInitiator, public AbstractHandler, public RemotedHandler
     {
     public:
-        SAML2SessionInitiator(const DOMElement* e, const char* appId);
+        SAML2SessionInitiator(const DOMElement* e, const char* appId, bool deprecationSupport);
         virtual ~SAML2SessionInitiator() {}
 
         void init(const char* location);    // encapsulates actions that need to run either in the c'tor or setParent
@@ -116,6 +116,7 @@ namespace shibsp {
             ) const;
 
         string m_appId;
+        bool m_deprecationSupport;
         auto_ptr_char m_paosNS,m_ecpNS;
         auto_ptr_XMLCh m_paosBinding;
 #ifndef SHIBSP_LITE
@@ -142,15 +143,16 @@ namespace shibsp {
 
     static SHIBSP_DLLLOCAL SessionInitiatorNodeFilter g_SINFilter;
 
-    SessionInitiator* SHIBSP_DLLLOCAL SAML2SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* SHIBSP_DLLLOCAL SAML2SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new SAML2SessionInitiator(p.first, p.second);
+        return new SAML2SessionInitiator(p.first, p.second, deprecationSupport);
     }
 
 };
 
-SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAML2"), &g_SINFilter, this), m_appId(appId),
+SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId, bool deprecationSupport)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAML2"), &g_SINFilter, this),
+        m_appId(appId), m_deprecationSupport(deprecationSupport),
         m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS)
 #ifdef SHIBSP_LITE
         ,m_ecp(false)
@@ -200,7 +202,7 @@ void SAML2SessionInitiator::init(const char* location)
         // If directed, build an ECP encoder.
         if (flag.first && flag.second) {
             try {
-                m_ecp.reset(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(samlconstants::SAML20_BINDING_PAOS, getElement()));
+                m_ecp.reset(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(samlconstants::SAML20_BINDING_PAOS, getElement(), m_deprecationSupport));
             }
             catch (std::exception& ex) {
                 m_log.error("error building PAOS/ECP MessageEncoder: %s", ex.what());
@@ -221,7 +223,7 @@ void SAML2SessionInitiator::init(const char* location)
         split(m_bindings, dupBindings, is_space(), algorithm::token_compress_on);
         for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
             try {
-                boost::shared_ptr<MessageEncoder> encoder(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(*b, getElement()));
+                boost::shared_ptr<MessageEncoder> encoder(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(*b, getElement(), m_deprecationSupport));
                 if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                     m_encoders[*b] = encoder;
                     m_log.debug("supporting outgoing binding (%s)", b->c_str());

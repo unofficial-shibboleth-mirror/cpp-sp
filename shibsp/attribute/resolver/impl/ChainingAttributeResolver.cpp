@@ -102,7 +102,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL ChainingAttributeResolver : public AttributeResolver
     {
     public:
-        ChainingAttributeResolver(const DOMElement* e);
+        ChainingAttributeResolver(const DOMElement* e, bool deprecationSupport=true);
         virtual ~ChainingAttributeResolver() {}
 
         Lockable* lock() {
@@ -150,9 +150,9 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<AttributeResolver,string,const DOMElement*>::Factory QueryResolverFactory;
     SHIBSP_DLLLOCAL PluginManager<AttributeResolver,string,const DOMElement*>::Factory SimpleAggregationResolverFactory;
 
-    AttributeResolver* SHIBSP_DLLLOCAL ChainingResolverFactory(const DOMElement* const & e)
+    AttributeResolver* SHIBSP_DLLLOCAL ChainingResolverFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new ChainingAttributeResolver(e);
+        return new ChainingAttributeResolver(e, deprecationSupport);
     }
 };
 
@@ -179,7 +179,7 @@ AttributeResolver::~AttributeResolver()
 {
 }
 
-ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
+ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e, bool deprecationSupport)
     : m_failFast(XMLHelper::getAttrBool(e, false, failFast))
 {
     SPConfig& conf = SPConfig::getConfig();
@@ -193,7 +193,7 @@ ChainingAttributeResolver::ChainingAttributeResolver(const DOMElement* e)
                 Category::getInstance(SHIBSP_LOGCAT ".AttributeResolver." CHAINING_ATTRIBUTE_RESOLVER).info(
                     "building AttributeResolver of type (%s)...", t.c_str()
                     );
-                auto_ptr<AttributeResolver> np(conf.AttributeResolverManager.newPlugin(t.c_str(), e));
+                auto_ptr<AttributeResolver> np(conf.AttributeResolverManager.newPlugin(t.c_str(), e, deprecationSupport));
                 m_resolvers.push_back(np.get());
                 np.release();
             }

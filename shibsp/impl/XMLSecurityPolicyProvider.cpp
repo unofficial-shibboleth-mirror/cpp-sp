@@ -87,8 +87,8 @@ namespace shibsp {
     class XMLSecurityPolicyProvider : public SecurityPolicyProvider, public ReloadableXMLFile
     {
     public:
-        XMLSecurityPolicyProvider(const DOMElement* e)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".SecurityPolicyProvider.XML")) {
+        XMLSecurityPolicyProvider(const DOMElement* e, bool deprecationSupport=true)
+                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".SecurityPolicyProvider.XML"), true, deprecationSupport) {
             background_load(); // guarantees an exception or the policy is loaded
         }
 
@@ -135,9 +135,9 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    SecurityPolicyProvider* SHIBSP_DLLLOCAL XMLSecurityPolicyProviderFactory(const DOMElement* const & e)
+    SecurityPolicyProvider* SHIBSP_DLLLOCAL XMLSecurityPolicyProviderFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new XMLSecurityPolicyProvider(e);
+        return new XMLSecurityPolicyProvider(e, deprecationSupport);
     }
 
     class SHIBSP_DLLLOCAL PolicyNodeFilter : public DOMNodeFilter
@@ -200,8 +200,10 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
         throw ConfigurationException("XML SecurityPolicyProvider requires conf:SecurityPolicies at root of configuration.");
     }
 
+    bool deprecationSupport = false;
     if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
-        log.warn("detected legacy 2.0 configuration, support will be removed from a future version of the software");
+        log.warn("DEPRECATED: legacy 2.0 configuration, support will be removed from a future version of the software");
+        deprecationSupport = true;
     }
 
     const XMLCh* algs = nullptr;
@@ -250,7 +252,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
             string t(XMLHelper::getAttrString(rule, nullptr, _type));
             if (!t.empty()) {
                 try {
-                    boost::shared_ptr<SecurityPolicyRule> ptr(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule));
+                    boost::shared_ptr<SecurityPolicyRule> ptr(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule, deprecationSupport));
                     m_ruleJanitor.push_back(ptr);
                     rules.second.push_back(ptr.get());
                 }
@@ -269,7 +271,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
                 string t(XMLHelper::getAttrString(rule, nullptr, _type));
                 if (!t.empty()) {
                     try {
-                        boost::shared_ptr<SecurityPolicyRule> ptr(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule));
+                        boost::shared_ptr<SecurityPolicyRule> ptr(samlConf.SecurityPolicyRuleManager.newPlugin(t.c_str(), rule, deprecationSupport));
                         m_ruleJanitor.push_back(ptr);
                         rules.second.push_back(ptr.get());
                     }
@@ -282,7 +284,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
 
             // Manually add a basic Conditions rule.
             log.warn("installing a default Conditions rule in policy (%s) for compatibility with legacy configuration", id.c_str());
-            boost::shared_ptr<SecurityPolicyRule> cptr(samlConf.SecurityPolicyRuleManager.newPlugin(CONDITIONS_POLICY_RULE, nullptr));
+            boost::shared_ptr<SecurityPolicyRule> cptr(samlConf.SecurityPolicyRuleManager.newPlugin(CONDITIONS_POLICY_RULE, nullptr, deprecationSupport));
             m_ruleJanitor.push_back(cptr);
             rules.second.push_back(cptr.get());
         }

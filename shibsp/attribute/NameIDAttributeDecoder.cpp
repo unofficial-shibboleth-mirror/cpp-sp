@@ -66,7 +66,7 @@ namespace shibsp {
         bool m_defaultQualifiers;
     };
 
-    AttributeDecoder* SHIBSP_DLLLOCAL NameIDAttributeDecoderFactory(const DOMElement* const & e)
+    AttributeDecoder* SHIBSP_DLLLOCAL NameIDAttributeDecoderFactory(const DOMElement* const & e, bool)
     {
         return new NameIDAttributeDecoder(e);
     }

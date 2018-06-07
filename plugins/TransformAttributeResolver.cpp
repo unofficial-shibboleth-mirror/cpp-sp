@@ -128,7 +128,7 @@ namespace shibsp {
     static const XMLCh source[] =           UNICODE_LITERAL_6(s,o,u,r,c,e);
     static const XMLCh Regex[] =            UNICODE_LITERAL_5(R,e,g,e,x);
 
-    AttributeResolver* SHIBSP_DLLLOCAL TransformAttributeResolverFactory(const DOMElement* const & e)
+    AttributeResolver* SHIBSP_DLLLOCAL TransformAttributeResolverFactory(const DOMElement* const & e, bool)
     {
         return new TransformAttributeResolver(e);
     }

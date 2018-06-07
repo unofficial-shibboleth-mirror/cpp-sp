@@ -129,12 +129,12 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AttributeScopeMatchesShibMDScopeFunctor();
     }
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AttributeValueMatchesShibMDScopeFunctor();
     }

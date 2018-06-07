@@ -87,7 +87,7 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueRegexFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueRegexFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AttributeValueRegexFunctor(p.second);
     }

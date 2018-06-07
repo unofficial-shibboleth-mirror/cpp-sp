@@ -108,9 +108,11 @@ XMLApplication::XMLApplication(
     const ServiceProvider* sp,
     const ProtocolProvider* pp,
     DOMElement* e,
+    bool deprecationSupport,
     const XMLApplication* base,
     DOMDocument* doc
-    ) : Application(sp), m_base(base), m_acsDefault(nullptr), m_sessionInitDefault(nullptr), m_artifactResolutionDefault(nullptr), m_doc(doc)
+    ) : Application(sp), m_base(base), m_acsDefault(nullptr), m_sessionInitDefault(nullptr), m_artifactResolutionDefault(nullptr),
+        m_deprecationSupport(deprecationSupport), m_doc(doc)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLApplication");
@@ -258,16 +260,16 @@ XMLApplication::XMLApplication(
                     "no TrustEngine specified or installed in legacy config, using default chain {%s, %s}",
                     EXPLICIT_KEY_TRUSTENGINE, SHIBBOLETH_PKIX_TRUSTENGINE
                     );
-                m_trust.reset(xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE, nullptr));
+                m_trust.reset(xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE, nullptr, m_deprecationSupport));
                 ChainingTrustEngine* trustchain = dynamic_cast<ChainingTrustEngine*>(m_trust.get());
                 if (trustchain) {
-                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr));
-                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(SHIBBOLETH_PKIX_TRUSTENGINE, nullptr));
+                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr, m_deprecationSupport));
+                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(SHIBBOLETH_PKIX_TRUSTENGINE, nullptr, m_deprecationSupport));
                 }
             }
             else {
                 log.info("no TrustEngine specified or installed, using default of %s", EXPLICIT_KEY_TRUSTENGINE);
-                m_trust.reset(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr));
+                m_trust.reset(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr, m_deprecationSupport));
             }
         }
     }
@@ -293,7 +295,7 @@ XMLApplication::XMLApplication(
         }
         else if (child->hasAttributeNS(nullptr, _type)) {
             string emtype(XMLHelper::getAttrString(child, nullptr, _type));
-            boost::shared_ptr<EntityMatcher> em(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(emtype, child));
+            boost::shared_ptr<EntityMatcher> em(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(emtype, child, m_deprecationSupport));
             boost::shared_ptr<DOMPropertySet> rp(new DOMPropertySet());
             rp->load(child, nullptr, this);
             rp->setParent(this);
@@ -315,7 +317,7 @@ XMLApplication::XMLApplication(
             else if (child->hasAttributeNS(nullptr, _type)) {
                 DOMElement* rpclone = static_cast<DOMElement*>(child->cloneNode(true));
                 string emtype(XMLHelper::getAttrString(rpclone, nullptr, _type));
-                boost::shared_ptr<EntityMatcher> em(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(emtype, rpclone));
+                boost::shared_ptr<EntityMatcher> em(SAMLConfig::getConfig().EntityMatcherManager.newPlugin(emtype, rpclone, m_deprecationSupport));
                 boost::shared_ptr<DOMPropertySet> rp(new DOMPropertySet());
                 rp->load(rpclone, nullptr, this);
                 rp->setParent(this);
@@ -376,7 +378,7 @@ template <class T> T* XMLApplication::doChainedPlugins(
         try {
             if (!t.empty()) {
                 log.info("building %s of type %s...", pluginType, t.c_str());
-                return pluginMgr.newPlugin(t.c_str(), child);
+                return pluginMgr.newPlugin(t.c_str(), child, m_deprecationSupport);
             }
             else {
                 throw ConfigurationException("$1 element had no type attribute.", params(1, pluginType));
@@ -387,7 +389,7 @@ template <class T> T* XMLApplication::doChainedPlugins(
             if (dummyType) {
                 // Install a dummy version as a safety valve.
                 log.crit("installing safe %s in place of failed version", pluginType);
-                return pluginMgr.newPlugin(dummyType, nullptr);
+                return pluginMgr.newPlugin(dummyType, nullptr, m_deprecationSupport);
             }
         }
     }
@@ -469,7 +471,9 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                 exportElement->setAttributeNS(nullptr,_acl,exportACL.second);
             }
             boost::shared_ptr<Handler> exportHandler(
-                conf.HandlerManager.newPlugin(samlconstants::SAML20_BINDING_URI, pair<const DOMElement*,const char*>(exportElement, getId()))
+                conf.HandlerManager.newPlugin(
+                    samlconstants::SAML20_BINDING_URI, pair<const DOMElement*,const char*>(exportElement, getId()), m_deprecationSupport
+                    )
                 );
             m_handlers.push_back(exportHandler);
 
@@ -536,7 +540,9 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler.reset(conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId())));
+                handler.reset(
+                    conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
+                    );
                 // Map by protocol.
                 const XMLCh* protfamily = handler->getProtocolFamily();
                 if (protfamily)
@@ -563,7 +569,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     continue;
                 }
                 boost::shared_ptr<SessionInitiator> sihandler(
-                    conf.SessionInitiatorManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId()))
+                    conf.SessionInitiatorManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
                     );
                 handler = sihandler;
                 pair<bool,const char*> si_id = handler->getString("id");
@@ -589,7 +595,9 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler.reset(conf.LogoutInitiatorManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId())));
+                handler.reset(
+                    conf.LogoutInitiatorManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
+                    );
             }
             else if (XMLString::equals(child->getLocalName(), _ArtifactResolutionService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
@@ -598,7 +606,9 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler.reset(conf.ArtifactResolutionServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId())));
+                handler.reset(
+                    conf.ArtifactResolutionServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
+                    );
 
                 if (!hardArt) {
                     pair<bool,bool> defprop = handler->getBool("isDefault");
@@ -619,7 +629,9 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler.reset(conf.SingleLogoutServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId())));
+                handler.reset(
+                    conf.SingleLogoutServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
+                    );
             }
             else if (XMLString::equals(child->getLocalName(), _ManageNameIDService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
@@ -628,7 +640,9 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler.reset(conf.ManageNameIDServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId())));
+                handler.reset(
+                    conf.ManageNameIDServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
+                    );
             }
             else {
                 string t(XMLHelper::getAttrString(child, nullptr, _type));
@@ -637,7 +651,7 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                handler.reset(conf.HandlerManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId())));
+                handler.reset(conf.HandlerManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport));
             }
 
             m_handlers.push_back(handler);
@@ -727,7 +741,7 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                     log.info("adding AssertionConsumerService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
                         conf.AssertionConsumerServiceManager.newPlugin(
-                            (*b)->getString("id").second, pair<const DOMElement*,const char*>(acsdom, getId())
+                            (*b)->getString("id").second, pair<const DOMElement*,const char*>(acsdom, getId()), m_deprecationSupport
                             )
                         );
                     m_handlers.push_back(handler);
@@ -787,7 +801,7 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
 
     // Instantiate Chaining initiator around the SSO element.
     boost::shared_ptr<SessionInitiator> chain(
-        conf.SessionInitiatorManager.newPlugin(CHAINING_SESSION_INITIATOR, pair<const DOMElement*,const char*>(e, getId()))
+        conf.SessionInitiatorManager.newPlugin(CHAINING_SESSION_INITIATOR, pair<const DOMElement*,const char*>(e, getId()), m_deprecationSupport)
         );
     m_handlers.push_back(chain);
     m_sessionInitDefault = chain.get();
@@ -861,7 +875,7 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
 
                     log.info("adding SingleLogoutService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
-                        conf.SingleLogoutServiceManager.newPlugin((*b)->getString("id").second, pair<const DOMElement*,const char*>(slodom, getId()))
+                        conf.SingleLogoutServiceManager.newPlugin((*b)->getString("id").second, pair<const DOMElement*,const char*>(slodom, getId()), m_deprecationSupport)
                         );
                     m_handlers.push_back(handler);
 
@@ -894,7 +908,7 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
 
     // Instantiate Chaining initiator around the SSO element.
     boost::shared_ptr<Handler> chain(
-        conf.LogoutInitiatorManager.newPlugin(CHAINING_LOGOUT_INITIATOR, pair<const DOMElement*,const char*>(e, getId()))
+        conf.LogoutInitiatorManager.newPlugin(CHAINING_LOGOUT_INITIATOR, pair<const DOMElement*,const char*>(e, getId()), m_deprecationSupport)
         );
     m_handlers.push_back(chain);
     m_handlerMap["/Logout"] = chain.get();
@@ -945,7 +959,9 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
 
                     log.info("adding ManageNameIDService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                     boost::shared_ptr<Handler> handler(
-                        conf.ManageNameIDServiceManager.newPlugin((*b)->getString("id").second, pair<const DOMElement*,const char*>(nimdom, getId()))
+                        conf.ManageNameIDServiceManager.newPlugin(
+                            (*b)->getString("id").second, pair<const DOMElement*,const char*>(nimdom, getId()), m_deprecationSupport
+                            )
                         );
                     m_handlers.push_back(handler);
 
@@ -997,7 +1013,9 @@ void XMLApplication::doArtifactResolution(const ProtocolProvider& pp, const char
 
                 log.info("adding ArtifactResolutionService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
                 boost::shared_ptr<Handler> handler(
-                    conf.ArtifactResolutionServiceManager.newPlugin((*b)->getString("id").second, pair<const DOMElement*,const char*>(artdom, getId()))
+                    conf.ArtifactResolutionServiceManager.newPlugin(
+                        (*b)->getString("id").second, pair<const DOMElement*,const char*>(artdom, getId()), m_deprecationSupport
+                        )
                     );
                 m_handlers.push_back(handler);
 

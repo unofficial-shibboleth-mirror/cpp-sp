@@ -54,7 +54,7 @@ namespace shibsp {
         map<pair<xstring,xstring>,string> m_tagMap;
     };
 
-    AttributeDecoder* SHIBSP_DLLLOCAL DOMAttributeDecoderFactory(const DOMElement* const & e)
+    AttributeDecoder* SHIBSP_DLLLOCAL DOMAttributeDecoderFactory(const DOMElement* const & e, bool)
     {
         return new DOMAttributeDecoder(e);
     }

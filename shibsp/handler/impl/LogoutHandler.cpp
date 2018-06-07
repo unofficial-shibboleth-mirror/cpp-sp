@@ -291,7 +291,7 @@ LogoutEvent* LogoutHandler::newLogoutEvent(
     if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
         return nullptr;
     try {
-        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGOUT_EVENT, nullptr));
+        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGOUT_EVENT, nullptr, false));
         LogoutEvent* logout_event = dynamic_cast<LogoutEvent*>(event.get());
         if (logout_event) {
             logout_event->m_request = request;

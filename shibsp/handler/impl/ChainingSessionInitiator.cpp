@@ -50,7 +50,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL ChainingSessionInitiator : public SessionInitiator, public AbstractHandler
     {
     public:
-        ChainingSessionInitiator(const DOMElement* e, const char* appId);
+        ChainingSessionInitiator(const DOMElement* e, const char* appId, bool deprecationSupport=true);
         virtual ~ChainingSessionInitiator() {}
         
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
@@ -85,13 +85,13 @@ namespace shibsp {
 
     static SHIBSP_DLLLOCAL SessionInitiatorNodeFilter g_SINFilter;
 
-    SessionInitiator* SHIBSP_DLLLOCAL ChainingSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* SHIBSP_DLLLOCAL ChainingSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new ChainingSessionInitiator(p.first, p.second);
+        return new ChainingSessionInitiator(p.first, p.second, deprecationSupport);
     }
 };
 
-ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const char* appId)
+ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.Chaining"), &g_SINFilter)
 {
     SPConfig& conf = SPConfig::getConfig();
@@ -102,7 +102,7 @@ ChainingSessionInitiator::ChainingSessionInitiator(const DOMElement* e, const ch
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
-                auto_ptr<SessionInitiator> np(conf.SessionInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId)));
+                auto_ptr<SessionInitiator> np(conf.SessionInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId), deprecationSupport));
                 m_handlers.push_back(np.get());
                 np.release();
                 m_handlers.back().setParent(this);

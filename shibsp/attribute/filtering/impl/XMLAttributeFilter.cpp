@@ -71,7 +71,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL XMLFilterImpl
     {
     public:
-        XMLFilterImpl(const DOMElement* e, Category& log);
+        XMLFilterImpl(const DOMElement* e, Category& log, bool deprecationSupport);
         ~XMLFilterImpl() {
             if (m_document)
                 m_document->release();
@@ -88,10 +88,10 @@ namespace shibsp {
 
     private:
         MatchFunctor* buildFunctor(
-            const DOMElement* e, const FilterPolicyContext& functorMap, const char* logname, bool standalone
+            const DOMElement* e, const FilterPolicyContext& functorMap, const char* logname, bool standalone, bool deprecationSupport
             );
         boost::tuple<string,const MatchFunctor*,const MatchFunctor*> buildAttributeRule(
-            const DOMElement* e, const FilterPolicyContext& permMap, const FilterPolicyContext& denyMap, bool standalone
+            const DOMElement* e, const FilterPolicyContext& permMap, const FilterPolicyContext& denyMap, bool standalone, bool deprecationSupport
             );
 
         Category& m_log;
@@ -106,7 +106,8 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL XMLFilter : public AttributeFilter, public ReloadableXMLFile
     {
     public:
-        XMLFilter(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter")) {
+        XMLFilter(const DOMElement* e, bool deprecationSupport=true)
+            : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter"), true, deprecationSupport), m_deprecationSupport(deprecationSupport) {
             background_load();
         }
         ~XMLFilter() {
@@ -121,6 +122,7 @@ namespace shibsp {
         pair<bool,DOMElement*> background_load();
 
     private:
+        bool m_deprecationSupport;
         scoped_ptr<XMLFilterImpl> m_impl;
     };
 
@@ -128,7 +130,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    AttributeFilter* SHIBSP_DLLLOCAL XMLAttributeFilterFactory(const DOMElement* const & e)
+    AttributeFilter* SHIBSP_DLLLOCAL XMLAttributeFilterFactory(const DOMElement* const & e, bool)
     {
         return new XMLFilter(e);
     }
@@ -149,7 +151,7 @@ namespace shibsp {
     static const XMLCh _ref[] =                         UNICODE_LITERAL_3(r,e,f);
 };
 
-XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m_document(nullptr)
+XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log, bool deprecationSupport) : m_log(log), m_document(nullptr)
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLFilterImpl");
@@ -165,22 +167,22 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
     DOMElement* child = XMLHelper::getFirstChildElement(e);
     while (child) {
         if (XMLHelper::isNodeNamed(child, SHIB2ATTRIBUTEFILTER_NS, PolicyRequirementRule)) {
-            buildFunctor(child, reqFunctors, "PolicyRequirementRule", true);
+            buildFunctor(child, reqFunctors, "PolicyRequirementRule", true, deprecationSupport);
         }
         else if (XMLHelper::isNodeNamed(child, SHIB2ATTRIBUTEFILTER_NS, PermitValueRule)) {
-            buildFunctor(child, permFunctors, "PermitValueRule", true);
+            buildFunctor(child, permFunctors, "PermitValueRule", true, deprecationSupport);
         }
         else if (XMLHelper::isNodeNamed(child, SHIB2ATTRIBUTEFILTER_NS, DenyValueRule)) {
-            buildFunctor(child, denyFunctors, "DenyValueRule", true);
+            buildFunctor(child, denyFunctors, "DenyValueRule", true, deprecationSupport);
         }
         else if (XMLHelper::isNodeNamed(child, SHIB2ATTRIBUTEFILTER_NS, AttributeRule)) {
-            buildAttributeRule(child, permFunctors, denyFunctors, true);
+            buildAttributeRule(child, permFunctors, denyFunctors, true, deprecationSupport);
         }
         else if (XMLHelper::isNodeNamed(child, SHIB2ATTRIBUTEFILTER_NS, AttributeFilterPolicy)) {
             e = XMLHelper::getFirstChildElement(child);
             MatchFunctor* func = nullptr;
             if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, PolicyRequirementRule)) {
-                func = buildFunctor(e, reqFunctors, "PolicyRequirementRule", false);
+                func = buildFunctor(e, reqFunctors, "PolicyRequirementRule", false, deprecationSupport);
             }
             else if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, PolicyRequirementRuleReference)) {
                 string ref(XMLHelper::getAttrString(e, nullptr, _ref));
@@ -195,7 +197,7 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
                 e = XMLHelper::getNextSiblingElement(e);
                 while (e) {
                     if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, AttributeRule)) {
-                        boost::tuple<string,const MatchFunctor*,const MatchFunctor*> rule = buildAttributeRule(e, permFunctors, denyFunctors, false);
+                        boost::tuple<string,const MatchFunctor*,const MatchFunctor*> rule = buildAttributeRule(e, permFunctors, denyFunctors, false, deprecationSupport);
                         if (rule.get<1>() || rule.get<2>())
                             m_policies.back().m_rules.insert(Policy::rules_t::value_type(rule.get<0>(), make_pair(rule.get<1>(), rule.get<2>())));
                     }
@@ -225,7 +227,7 @@ XMLFilterImpl::XMLFilterImpl(const DOMElement* e, Category& log) : m_log(log), m
 }
 
 MatchFunctor* XMLFilterImpl::buildFunctor(
-    const DOMElement* e, const FilterPolicyContext& functorMap, const char* logname, bool standalone
+    const DOMElement* e, const FilterPolicyContext& functorMap, const char* logname, bool standalone, bool deprecationSupport
     )
 {
     string id(XMLHelper::getAttrString(e, nullptr, _id));
@@ -246,11 +248,11 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
     scoped_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
     if (type) {
         try {
-            auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(&functorMap,e)));
+            auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(&functorMap,e), deprecationSupport));
             functorMap.getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func.get()));
             return func.release();
         }
-        catch (exception& ex) {
+        catch (const exception& ex) {
             m_log.error("error building %s with type (%s): %s", logname, type->toString().c_str(), ex.what());
         }
     }
@@ -263,7 +265,7 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
 }
 
 boost::tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buildAttributeRule(
-    const DOMElement* e, const FilterPolicyContext& permMap, const FilterPolicyContext& denyMap, bool standalone
+    const DOMElement* e, const FilterPolicyContext& permMap, const FilterPolicyContext& denyMap, bool standalone, bool deprecationSupport
     )
 {
     string id(XMLHelper::getAttrString(e, nullptr, _id));
@@ -290,13 +292,13 @@ boost::tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buil
 
     if (XMLHelper::getAttrBool(e, false, permitAny)) {
         m_log.debug("installing implicit ANY permit rule for attribute (%s)", attrID.c_str());
-        perm = SPConfig::getConfig().MatchFunctorManager.newPlugin(AnyMatchFunctorType, make_pair(&permMap,(const DOMElement*)nullptr));
+        perm = SPConfig::getConfig().MatchFunctorManager.newPlugin(AnyMatchFunctorType, make_pair(&permMap,(const DOMElement*)nullptr), deprecationSupport);
         return boost::make_tuple(attrID, perm, deny);
     }
 
     e = XMLHelper::getFirstChildElement(e);
     if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, PermitValueRule)) {
-        perm = buildFunctor(e, permMap, "PermitValueRule", false);
+        perm = buildFunctor(e, permMap, "PermitValueRule", false, deprecationSupport);
         e = XMLHelper::getNextSiblingElement(e);
     }
     else if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, PermitValueRuleReference)) {
@@ -309,7 +311,7 @@ boost::tuple<string,const MatchFunctor*,const MatchFunctor*> XMLFilterImpl::buil
     }
 
     if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, DenyValueRule)) {
-        deny = buildFunctor(e, denyMap, "DenyValueRule", false);
+        deny = buildFunctor(e, denyMap, "DenyValueRule", false, deprecationSupport);
     }
     else if (e && XMLHelper::isNodeNamed(e, SHIB2ATTRIBUTEFILTER_NS, DenyValueRuleReference)) {
         string ref(XMLHelper::getAttrString(e, nullptr, _ref));
@@ -489,7 +491,7 @@ pair<bool,DOMElement*> XMLFilter::background_load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    scoped_ptr<XMLFilterImpl> impl(new XMLFilterImpl(raw.second, m_log));
+    scoped_ptr<XMLFilterImpl> impl(new XMLFilterImpl(raw.second, m_log, m_deprecationSupport));
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());

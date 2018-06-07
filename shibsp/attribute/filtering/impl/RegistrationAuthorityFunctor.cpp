@@ -136,12 +136,12 @@ namespace shibsp {
     };
 
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerRegistrationAuthorityFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeIssuerRegistrationAuthorityFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AttributeIssuerRegistrationAuthorityFunctor(p.second);
     }
 
-    MatchFunctor* SHIBSP_DLLLOCAL RegistrationAuthorityFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL RegistrationAuthorityFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AttributeRequesterRegistrationAuthorityFunctor(p.second);
     }

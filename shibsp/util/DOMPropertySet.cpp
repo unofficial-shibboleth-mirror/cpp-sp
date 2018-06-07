@@ -68,7 +68,7 @@ const char* DOMPropertySet::STLRemapper::remap(const char* src, xmltooling::logg
 {
     map<string,string>::const_iterator i = src ? m_rules.find(src) : m_rules.end();
     if (i != m_rules.end()) {
-        log.warn("DEPRECATED configuration - remapping property/set (%s) to (%s)", src, i->second.c_str());
+        log.info("DEPRECATED: legacy configuration, remapping property/set (%s) to (%s)", src, i->second.c_str());
         return i->second.c_str();
     }
     else {

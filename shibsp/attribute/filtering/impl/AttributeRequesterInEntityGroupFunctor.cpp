@@ -71,7 +71,7 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeRequesterInEntityGroupFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeRequesterInEntityGroupFactory(const std::pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
     {
         return new AttributeRequesterInEntityGroupFunctor(p.second);
     }

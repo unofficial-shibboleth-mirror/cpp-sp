@@ -47,7 +47,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL KeyInfoAttributeDecoder : virtual public AttributeDecoder
     {
     public:
-        KeyInfoAttributeDecoder(const DOMElement* e);
+        KeyInfoAttributeDecoder(const DOMElement* e, bool deprecationSupport=true);
         ~KeyInfoAttributeDecoder() {}
 
         Attribute* decode(
@@ -74,9 +74,9 @@ namespace shibsp {
         scoped_ptr<KeyInfoResolver> m_keyInfoResolver;
     };
 
-    AttributeDecoder* SHIBSP_DLLLOCAL KeyInfoAttributeDecoderFactory(const DOMElement* const & e)
+    AttributeDecoder* SHIBSP_DLLLOCAL KeyInfoAttributeDecoderFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new KeyInfoAttributeDecoder(e);
+        return new KeyInfoAttributeDecoder(e, deprecationSupport);
     }
 
     static const XMLCh _KeyInfoResolver[] = UNICODE_LITERAL_15(K,e,y,I,n,f,o,R,e,s,o,l,v,e,r);
@@ -85,7 +85,7 @@ namespace shibsp {
     static const XMLCh _type[] =            UNICODE_LITERAL_4(t,y,p,e);
 };
 
-KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e)
+KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e, bool deprecationSupport)
     : AttributeDecoder(e),
         m_hash(XMLHelper::getAttrBool(e, false, _hash)),
         m_keyInfoHashAlg(XMLHelper::getAttrString(e, "SHA1", keyInfoHashAlg)) {
@@ -94,7 +94,7 @@ KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (t.empty())
             throw UnknownExtensionException("<KeyInfoResolver> element found with no type attribute");
-        m_keyInfoResolver.reset(XMLToolingConfig::getConfig().KeyInfoResolverManager.newPlugin(t.c_str(), e));
+        m_keyInfoResolver.reset(XMLToolingConfig::getConfig().KeyInfoResolverManager.newPlugin(t.c_str(), e, deprecationSupport));
     }
 }
 

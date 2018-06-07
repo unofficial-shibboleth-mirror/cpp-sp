@@ -80,7 +80,7 @@ private:
         ParserPool& pool = xcf.getParser();
         XercesJanitor<DOMDocument> janitor(pool.parse(in));
         scoped_ptr<MetadataProvider> metadataProvider(
-            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(type, janitor.get()->getDocumentElement())
+            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(type, janitor.get()->getDocumentElement(), false)
         );
 
         ta::TestApplication testApp(SPConfig::getConfig().getServiceProvider(), metadataProvider.get());
@@ -145,7 +145,7 @@ private:
         ParserPool& pool = xcf.getParser();
         XercesJanitor<DOMDocument> janitor(pool.parse(in));
         scoped_ptr<MetadataProvider> metadataProvider(
-            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, janitor.get()->getDocumentElement())
+            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, janitor.get()->getDocumentElement(), false)
         );
 
         ta::TestApplication testApp(SPConfig::getConfig().getServiceProvider(), metadataProvider.get());
@@ -190,7 +190,7 @@ public:
         ParserPool& pool = xcf.getParser();
         XercesJanitor<DOMDocument> janitor(pool.parse(in));
         scoped_ptr<MetadataProvider> metadataProvider(
-            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, janitor.get()->getDocumentElement())
+            opensaml::SAMLConfig::getConfig().MetadataProviderManager.newPlugin(DYNAMIC_METADATA_PROVIDER, janitor.get()->getDocumentElement(), false)
         );
 
         ta::TestApplication testApp(SPConfig::getConfig().getServiceProvider(), metadataProvider.get());

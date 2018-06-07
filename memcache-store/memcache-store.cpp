@@ -145,7 +145,7 @@ namespace {
         bool m_buildMap;
     };
 
-    StorageService* MemcacheStorageServiceFactory(const DOMElement* const & e) {
+    StorageService* MemcacheStorageServiceFactory(const DOMElement* const & e, bool) {
         return new MemcacheStorageService(e);
     }
 };

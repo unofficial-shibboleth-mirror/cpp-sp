@@ -122,12 +122,12 @@ namespace shibsp {
     static const XMLCh dest[] =             UNICODE_LITERAL_4(d,e,s,t);
     static const XMLCh source[] =           UNICODE_LITERAL_6(s,o,u,r,c,e);
 
-    AttributeResolver* SHIBSP_DLLLOCAL UpperCaseAttributeResolverFactory(const DOMElement* const & e)
+    AttributeResolver* SHIBSP_DLLLOCAL UpperCaseAttributeResolverFactory(const DOMElement* const & e, bool)
     {
         return new CaseFoldingAttributeResolver(e, CaseFoldingAttributeResolver::_up);
     }
 
-    AttributeResolver* SHIBSP_DLLLOCAL LowerCaseAttributeResolverFactory(const DOMElement* const & e)
+    AttributeResolver* SHIBSP_DLLLOCAL LowerCaseAttributeResolverFactory(const DOMElement* const & e, bool)
     {
         return new CaseFoldingAttributeResolver(e, CaseFoldingAttributeResolver::_down);
     }

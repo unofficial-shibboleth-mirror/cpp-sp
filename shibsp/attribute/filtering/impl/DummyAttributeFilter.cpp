@@ -55,7 +55,7 @@ namespace shibsp {
         }
     };
 
-    AttributeFilter* SHIBSP_DLLLOCAL DummyAttributeFilterFactory(const DOMElement* const & e)
+    AttributeFilter* SHIBSP_DLLLOCAL DummyAttributeFilterFactory(const DOMElement* const & e, bool)
     {
         return new DummyAttributeFilter(e);
     }

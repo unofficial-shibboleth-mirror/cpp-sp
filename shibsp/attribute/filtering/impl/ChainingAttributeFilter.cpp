@@ -43,7 +43,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL ChainingAttributeFilter : public AttributeFilter
     {
     public:
-        ChainingAttributeFilter(const DOMElement* e);
+        ChainingAttributeFilter(const DOMElement* e, bool deprecationSupport=true);
         virtual ~ChainingAttributeFilter() {}
         
         Lockable* lock() {
@@ -66,13 +66,13 @@ namespace shibsp {
     static const XMLCh _AttributeFilter[] = UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
     static const XMLCh _type[] =            UNICODE_LITERAL_4(t,y,p,e);
 
-    AttributeFilter* SHIBSP_DLLLOCAL ChainingAttributeFilterFactory(const DOMElement* const & e)
+    AttributeFilter* SHIBSP_DLLLOCAL ChainingAttributeFilterFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new ChainingAttributeFilter(e);
+        return new ChainingAttributeFilter(e, deprecationSupport);
     }
 };
 
-ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
+ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e, bool deprecationSupport)
 {
     // Load up the chain of handlers.
     e = XMLHelper::getFirstChildElement(e, _AttributeFilter);
@@ -80,7 +80,7 @@ ChainingAttributeFilter::ChainingAttributeFilter(const DOMElement* e)
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.Chaining").info("building AttributeFilter of type (%s)...", t.c_str());
-            auto_ptr<AttributeFilter> np(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), e));
+            auto_ptr<AttributeFilter> np(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), e, deprecationSupport));
             m_filters.push_back(np.get());
             np.release();
         }

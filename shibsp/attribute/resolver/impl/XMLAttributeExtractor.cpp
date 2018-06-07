@@ -77,7 +77,7 @@ namespace shibsp {
     class XMLExtractorImpl : public ObservableMetadataProvider::Observer
     {
     public:
-        XMLExtractorImpl(const DOMElement* e, Category& log);
+        XMLExtractorImpl(const DOMElement* e, Category& log, bool deprecationSupport);
         ~XMLExtractorImpl() {
             for (map<const ObservableMetadataProvider*,decoded_t>::iterator i=m_decodedMap.begin(); i!=m_decodedMap.end(); ++i) {
                 i->first->removeObserver(this);
@@ -155,11 +155,15 @@ namespace shibsp {
     class XMLExtractor : public AttributeExtractor, public ReloadableXMLFile
     {
     public:
-        XMLExtractor(const DOMElement* e) : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.XML")) {
+        XMLExtractor(const DOMElement* e, bool deprecationSupport=true)
+            : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AttributeExtractor.XML"), true, deprecationSupport),
+                m_deprecationSupport(deprecationSupport)
+        {
             if (m_local && m_lock)
                 m_log.warn("attribute mappings are reloadable; be sure to restart web server when adding new attribute IDs");
             background_load();
         }
+
         ~XMLExtractor() {
             shutdown();
         }
@@ -180,6 +184,7 @@ namespace shibsp {
         pair<bool,DOMElement*> background_load();
 
     private:
+        bool m_deprecationSupport;
         scoped_ptr<XMLExtractorImpl> m_impl;
 
         void extractAttributes(const Application&, const GenericRequest*, const RoleDescriptor*, const XMLObject&, ptr_vector<Attribute>&) const;
@@ -189,7 +194,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    AttributeExtractor* SHIBSP_DLLLOCAL XMLAttributeExtractorFactory(const DOMElement* const & e)
+    AttributeExtractor* SHIBSP_DLLLOCAL XMLAttributeExtractorFactory(const DOMElement* const & e, bool)
     {
         return new XMLExtractor(e);
     }
@@ -209,7 +214,7 @@ namespace shibsp {
     static const XMLCh _type[] =                    UNICODE_LITERAL_4(t,y,p,e);
 };
 
-XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
+XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log, bool deprecationSupport)
     : m_log(log),
         m_document(nullptr),
         m_policyId(XMLHelper::getAttrString(e, nullptr, metadataPolicyId)),
@@ -230,10 +235,10 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             if (t.empty())
                 throw ConfigurationException("MetadataProvider element missing type attribute.");
             m_log.info("building MetadataProvider of type %s...", t.c_str());
-            m_metadata.reset(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(t.c_str(), child));
+            m_metadata.reset(SAMLConfig::getConfig().MetadataProviderManager.newPlugin(t.c_str(), child, deprecationSupport));
             m_metadata->init();
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_metadata.reset();
             m_entityAssertions = false;
             m_log.crit("error building/initializing dedicated MetadataProvider: %s", ex.what());
@@ -249,9 +254,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                 if (t.empty())
                     throw ConfigurationException("TrustEngine element missing type attribute.");
                 m_log.info("building TrustEngine of type %s...", t.c_str());
-                m_trust.reset(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child));
+                m_trust.reset(XMLToolingConfig::getConfig().TrustEngineManager.newPlugin(t.c_str(), child, deprecationSupport));
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_entityAssertions = false;
                 m_log.crit("error building/initializing dedicated TrustEngine: %s", ex.what());
                 m_log.crit("disabling support for Assertions in EntityAttributes extension");
@@ -267,9 +272,9 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
                 if (t.empty())
                     throw ConfigurationException("AttributeFilter element missing type attribute.");
                 m_log.info("building AttributeFilter of type %s...", t.c_str());
-                m_filter.reset(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), child));
+                m_filter.reset(SPConfig::getConfig().AttributeFilterManager.newPlugin(t.c_str(), child, deprecationSupport));
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_entityAssertions = false;
                 m_log.crit("error building/initializing dedicated AttributeFilter: %s", ex.what());
                 m_log.crit("disabling support for Assertions in EntityAttributes extension");
@@ -305,12 +310,12 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log)
             if (dchild) {
                 scoped_ptr<xmltooling::QName> q(XMLHelper::getXSIType(dchild));
                 if (q)
-                    decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q, dchild));
+                    decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(*q, dchild, deprecationSupport));
             }
             if (!decoder)
-                decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(StringAttributeDecoderType, nullptr));
+                decoder.reset(SPConfig::getConfig().AttributeDecoderManager.newPlugin(StringAttributeDecoderType, nullptr, deprecationSupport));
         }
-        catch (std::exception& ex) {
+        catch (const std::exception& ex) {
             m_log.error("skipping Attribute (%s), error building AttributeDecoder: %s", id.get(), ex.what());
         }
 
@@ -1045,7 +1050,7 @@ pair<bool,DOMElement*> XMLExtractor::background_load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    scoped_ptr<XMLExtractorImpl> impl(new XMLExtractorImpl(raw.second, m_log));
+    scoped_ptr<XMLExtractorImpl> impl(new XMLExtractorImpl(raw.second, m_log, m_deprecationSupport));
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());

@@ -83,7 +83,7 @@ namespace shibsp {
         ptr_vector<Rule> m_rules;
     };
 
-    AccessControl* SHIBSP_DLLLOCAL TimeAccessControlFactory(const DOMElement* const & e)
+    AccessControl* SHIBSP_DLLLOCAL TimeAccessControlFactory(const DOMElement* const & e, bool)
     {
         return new TimeAccessControl(e);
     }

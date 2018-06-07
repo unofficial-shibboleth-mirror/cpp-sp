@@ -68,7 +68,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL SAML2LogoutInitiator : public AbstractHandler, public LogoutInitiator
     {
     public:
-        SAML2LogoutInitiator(const DOMElement* e, const char* appId);
+        SAML2LogoutInitiator(const DOMElement* e, const char* appId, bool deprecationSupport=true);
         virtual ~SAML2LogoutInitiator() {}
 
         void init(const char* location);    // encapsulates actions that need to run either in the c'tor or setParent
@@ -87,6 +87,7 @@ namespace shibsp {
             ) const;
 
         string m_appId;
+        bool m_deprecationSupport;
         auto_ptr_char m_protocol;
 #ifndef SHIBSP_LITE
         auto_ptr<LogoutRequest> buildRequest(
@@ -116,14 +117,15 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL SAML2LogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* SHIBSP_DLLLOCAL SAML2LogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new SAML2LogoutInitiator(p.first, p.second);
+        return new SAML2LogoutInitiator(p.first, p.second, deprecationSupport);
     }
 };
 
-SAML2LogoutInitiator::SAML2LogoutInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.SAML2")), m_appId(appId), m_protocol(samlconstants::SAML20P_NS)
+SAML2LogoutInitiator::SAML2LogoutInitiator(const DOMElement* e, const char* appId, bool deprecationSupport)
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.SAML2")),
+        m_appId(appId), m_deprecationSupport(deprecationSupport), m_protocol(samlconstants::SAML20P_NS)
 #ifndef SHIBSP_LITE
         ,m_async(true)
 #endif
@@ -171,7 +173,7 @@ void SAML2LogoutInitiator::init(const char* location)
         split(m_bindings, dupBindings, is_space(), algorithm::token_compress_on);
         for (vector<string>::const_iterator b = m_bindings.begin(); b != m_bindings.end(); ++b) {
             try {
-                boost::shared_ptr<MessageEncoder> encoder(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(*b, getElement()));
+                boost::shared_ptr<MessageEncoder> encoder(SAMLConfig::getConfig().MessageEncoderManager.newPlugin(*b, getElement(), m_deprecationSupport));
                 if (encoder->isUserAgentPresent() && XMLString::equals(getProtocolFamily(), encoder->getProtocolFamily())) {
                     m_encoders[*b] = encoder;
                     m_log.debug("supporting outgoing binding (%s)", b->c_str());

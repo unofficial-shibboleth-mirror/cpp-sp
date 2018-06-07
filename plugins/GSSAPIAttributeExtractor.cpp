@@ -142,7 +142,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    AttributeExtractor* GSSAPIExtractorFactory(const DOMElement* const & e)
+    AttributeExtractor* GSSAPIExtractorFactory(const DOMElement* const & e, bool)
     {
         return new GSSAPIExtractor(e);
     }

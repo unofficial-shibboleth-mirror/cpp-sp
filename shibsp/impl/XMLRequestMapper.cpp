@@ -122,7 +122,8 @@ namespace shibsp {
     class XMLRequestMapper : public RequestMapper, public ReloadableXMLFile
     {
     public:
-        XMLRequestMapper(const DOMElement* e) : ReloadableXMLFile(e,Category::getInstance(SHIBSP_LOGCAT ".RequestMapper")) {
+        XMLRequestMapper(const DOMElement* e, bool deprecationSupport=true)
+            : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".RequestMapper"), true, deprecationSupport) {
             background_load();
         }
 
@@ -143,9 +144,9 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    RequestMapper* SHIBSP_DLLLOCAL XMLRequestMapperFactory(const DOMElement* const & e)
+    RequestMapper* SHIBSP_DLLLOCAL XMLRequestMapperFactory(const DOMElement* const & e, bool deprecationSupport)
     {
-        return new XMLRequestMapper(e);
+        return new XMLRequestMapper(e, deprecationSupport);
     }
 
     static const XMLCh _AccessControl[] =           UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
@@ -180,17 +181,18 @@ RequestMapper::~RequestMapper()
 
 void Override::loadACL(const DOMElement* e, Category& log)
 {
+    bool deprecationSupport = e ? XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS) : false;
     try {
         const DOMElement* acl = XMLHelper::getFirstChildElement(e,htaccess);
         if (acl) {
             log.info("building Apache htaccess AccessControl provider...");
-            m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(HT_ACCESS_CONTROL,acl));
+            m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(HT_ACCESS_CONTROL,acl, deprecationSupport));
         }
         else {
             acl = XMLHelper::getFirstChildElement(e,_AccessControl);
             if (acl) {
                 log.info("building XML-based AccessControl provider...");
-                m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL,acl));
+                m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL,acl, deprecationSupport));
             }
             else {
                 acl = XMLHelper::getFirstChildElement(e,AccessControlProvider);
@@ -198,7 +200,7 @@ void Override::loadACL(const DOMElement* e, Category& log)
                     string t(XMLHelper::getAttrString(acl, nullptr, _type));
                     if (!t.empty()) {
                         log.info("building AccessControl provider of type %s...", t.c_str());
-                        m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acl));
+                        m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acl, deprecationSupport));
                     }
                     else {
                         throw ConfigurationException("<AccessControlProvider> missing type attribute.");
@@ -207,7 +209,7 @@ void Override::loadACL(const DOMElement* e, Category& log)
             }
         }
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         log.crit("exception building AccessControl provider: %s", ex.what());
         m_acl.reset(new AccessControlDummy());
     }
@@ -293,7 +295,7 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
             }
             free(dup);
         }
-        catch (std::exception&) {
+        catch (const std::exception&) {
             free(dup);
             throw;
         }
@@ -325,7 +327,7 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
                 boost::shared_ptr<RegularExpression> re(new RegularExpression(n, caseSensitive ? &chNull : caseInsensitiveOption));
                 m_regexps.push_back(make_pair(re, o));
             }
-            catch (XMLException& ex) {
+            catch (const XMLException& ex) {
                 auto_ptr_char tmp(ex.getMessage());
                 log.error("caught exception while parsing PathRegex regular expression (%d): %s", i, tmp.get());
                 throw ConfigurationException("Invalid regular expression in PathRegex element.");
@@ -352,7 +354,7 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
             boost::shared_ptr<RegularExpression> re((v && *v) ? new RegularExpression(v) : nullptr);
             m_queries.push_back(boost::make_tuple(string(ntemp.get()), re, o));
         }
-        catch (XMLException& ex) {
+        catch (const XMLException& ex) {
             auto_ptr_char tmp(ex.getMessage());
             log.error("caught exception while parsing Query regular expression (%d): %s", i, tmp.get());
             throw ConfigurationException("Invalid regular expression in Query element.");
@@ -413,7 +415,7 @@ const Override* Override::locate(const HTTPRequest& request) const
                     o = re->second.get();
                     break;
                 }
-            } catch (XMLException& ex) {
+            } catch (const XMLException& ex) {
                 auto_ptr_char tmp(ex.getMessage());
                 throw ConfigurationException("Caught exception while matching PathRegex : $1", params(1, tmp.get()));
             }
@@ -472,7 +474,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
     }
 
     if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
-        log.warn("detected legacy 2.0 configuration, support will be removed from a future version of the software");
+        log.warn("DEPRECATED: legacy 2.0 configuration, support will be removed from a future version of the software");
     }
 
     // Load the property set.
@@ -507,7 +509,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) :
                 );
             m_regexps.push_back(make_pair(re, o));
         }
-        catch (XMLException& ex) {
+        catch (const XMLException& ex) {
             auto_ptr_char tmp(ex.getMessage());
             log.error("caught exception while parsing HostRegex regular expression (%d): %s", i, tmp.get());
         }
@@ -676,7 +678,7 @@ RequestMapper::Settings XMLRequestMapper::getSettings(const HTTPRequest& request
         const Override* o = m_impl->findOverride(vhost.c_str(), request);
         return Settings(o, o->getAC());
     }
-    catch (XMLException& ex) {
+    catch (const XMLException& ex) {
         auto_ptr_char tmp(ex.getMessage());
         m_log.error("caught exception while locating content settings: %s", tmp.get());
         throw ConfigurationException("XML-based RequestMapper failed to retrieve content settings.");

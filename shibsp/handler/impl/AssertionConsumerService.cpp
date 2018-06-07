@@ -74,7 +74,7 @@ using namespace boost;
 using namespace std;
 
 AssertionConsumerService::AssertionConsumerService(
-    const DOMElement* e, const char* appId, Category& log, DOMNodeFilter* filter, const Remapper* remapper
+    const DOMElement* e, const char* appId, Category& log, DOMNodeFilter* filter, const Remapper* remapper, bool deprecationSupport
     ) : AbstractHandler(e, log, filter, remapper)
 {
     if (!e)
@@ -84,7 +84,7 @@ AssertionConsumerService::AssertionConsumerService(
     setAddress(address.c_str());
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        m_decoder.reset(SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second, e));
+        m_decoder.reset(SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second, e, deprecationSupport));
         m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
     }
 #endif
@@ -255,7 +255,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
 
         // Log the error.
         try {
-            scoped_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
+            scoped_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr, false));
             LoginEvent* error_event = dynamic_cast<LoginEvent*>(event.get());
             if (error_event) {
                 error_event->m_exception = &ex;
@@ -608,7 +608,7 @@ LoginEvent* AssertionConsumerService::newLoginEvent(const Application& applicati
     if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
         return nullptr;
     try {
-        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr));
+        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr, false));
         LoginEvent* login_event = dynamic_cast<LoginEvent*>(event.get());
         if (login_event) {
             login_event->m_request = &request;

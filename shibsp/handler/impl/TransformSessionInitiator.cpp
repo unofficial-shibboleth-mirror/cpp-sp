@@ -136,7 +136,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    SessionInitiator* SHIBSP_DLLLOCAL TransformSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* SHIBSP_DLLLOCAL TransformSessionInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new TransformSessionInitiator(p.first, p.second);
     }

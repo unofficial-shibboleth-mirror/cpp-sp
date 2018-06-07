@@ -81,13 +81,15 @@ namespace shibsp {
          * @param log       a logging object to use
          * @param filter    optional filter controls what child elements to include as nested PropertySets
          * @param remapper  optional property rename mapper for legacy property support
+         * @param deprecationSupport true iff deprecated settings and features should be supported
          */
         AssertionConsumerService(
             const xercesc::DOMElement* e,
             const char* appId,
             xmltooling::logging::Category& log,
             xercesc::DOMNodeFilter* filter=nullptr,
-            const Remapper* remapper=nullptr
+            const Remapper* remapper=nullptr,
+            bool deprecationSupport=true
             );
 
         /**

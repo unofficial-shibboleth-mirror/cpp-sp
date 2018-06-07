@@ -50,7 +50,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL ChainingLogoutInitiator : public AbstractHandler, public LogoutInitiator
     {
     public:
-        ChainingLogoutInitiator(const DOMElement* e, const char* appId);
+        ChainingLogoutInitiator(const DOMElement* e, const char* appId, bool deprecationSupport=true);
         virtual ~ChainingLogoutInitiator() {}
         
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
@@ -84,13 +84,13 @@ namespace shibsp {
 
     static SHIBSP_DLLLOCAL LogoutInitiatorNodeFilter g_LINFilter;
 
-    Handler* SHIBSP_DLLLOCAL ChainingLogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    Handler* SHIBSP_DLLLOCAL ChainingLogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
-        return new ChainingLogoutInitiator(p.first, p.second);
+        return new ChainingLogoutInitiator(p.first, p.second, deprecationSupport);
     }
 };
 
-ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char* appId)
+ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.Chaining"), &g_LINFilter)
 {
     SPConfig& conf = SPConfig::getConfig();
@@ -101,7 +101,7 @@ ChainingLogoutInitiator::ChainingLogoutInitiator(const DOMElement* e, const char
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             try {
-                auto_ptr<Handler> np(conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId)));
+                auto_ptr<Handler> np(conf.LogoutInitiatorManager.newPlugin(t.c_str(), make_pair(e, appId), deprecationSupport));
                 m_handlers.push_back(np.get());
                 np.release();
                 m_handlers.back().setParent(this);

@@ -106,7 +106,7 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    SessionInitiator* SHIBSP_DLLLOCAL Shib1SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p)
+    SessionInitiator* SHIBSP_DLLLOCAL Shib1SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new Shib1SessionInitiator(p.first, p.second);
     }

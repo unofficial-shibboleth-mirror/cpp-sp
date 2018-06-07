@@ -1019,7 +1019,7 @@ private:
     bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const;
 };
 
-AccessControl* htAccessFactory(const xercesc::DOMElement* const & e)
+AccessControl* htAccessFactory(const xercesc::DOMElement* const & e, bool)
 {
     return new htAccessControl();
 }
@@ -1037,7 +1037,7 @@ AccessControl::aclresult_t htAccessControl::doAccessControl(const ShibTargetApac
         string t(XMLHelper::getAttrString(acldoc ? acldoc->getDocumentElement() : nullptr, nullptr, _type));
         if (t.empty())
             throw ConfigurationException("Missing type attribute in AccessControl plugin configuration.");
-        scoped_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement()));
+        scoped_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement(), true));
         Locker acllock(aclplugin.get());
         result = aclplugin->authorized(sta, session);
     }
@@ -1444,7 +1444,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
 class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet
 {
 public:
-    ApacheRequestMapper(const xercesc::DOMElement* e);
+    ApacheRequestMapper(const xercesc::DOMElement* e, bool deprecationSupport=true);
     ~ApacheRequestMapper() {}
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_staKey->setData(nullptr); m_propsKey->setData(nullptr); m_mapper->unlock(); }
@@ -1468,14 +1468,15 @@ private:
     mutable htAccessControl m_htaccess;
 };
 
-RequestMapper* ApacheRequestMapFactory(const xercesc::DOMElement* const & e)
+RequestMapper* ApacheRequestMapFactory(const xercesc::DOMElement* const & e, bool deprecationSupport)
 {
-    return new ApacheRequestMapper(e);
+    return new ApacheRequestMapper(e, deprecationSupport);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e)
-    : m_mapper(SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e)),
-        m_staKey(ThreadKey::create(nullptr)), m_propsKey(ThreadKey::create(nullptr))
+ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e, bool deprecationSupport)
+    : m_mapper(SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e, deprecationSupport)),
+        m_staKey(ThreadKey::create(nullptr)),
+        m_propsKey(ThreadKey::create(nullptr))
 {
 }
 

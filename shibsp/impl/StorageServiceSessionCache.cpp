@@ -75,7 +75,7 @@ using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
-SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e)
+SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e, bool)
 {
     return new SSCache(e);
 }
@@ -851,7 +851,7 @@ LogoutEvent* SSCache::newLogoutEvent(const Application& app) const
     if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
         return nullptr;
     try {
-        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGOUT_EVENT, nullptr));
+        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGOUT_EVENT, nullptr, false));
         LogoutEvent* logout_event = dynamic_cast<LogoutEvent*>(event.get());
         if (logout_event) {
             logout_event->m_app = &app;

@@ -225,7 +225,7 @@ namespace shibsp {
         vector<string> m_exceptionId;
     };
 
-    AttributeResolver* SHIBSP_DLLLOCAL QueryResolverFactory(const DOMElement* const & e)
+    AttributeResolver* SHIBSP_DLLLOCAL QueryResolverFactory(const DOMElement* const & e, bool)
     {
         return new QueryResolver(e);
     }

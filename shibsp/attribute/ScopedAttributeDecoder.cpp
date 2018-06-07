@@ -60,7 +60,7 @@ namespace shibsp {
         char m_delimiter;
     };
 
-    AttributeDecoder* SHIBSP_DLLLOCAL ScopedAttributeDecoderFactory(const DOMElement* const & e)
+    AttributeDecoder* SHIBSP_DLLLOCAL ScopedAttributeDecoderFactory(const DOMElement* const & e, bool)
     {
         return new ScopedAttributeDecoder(e);
     }

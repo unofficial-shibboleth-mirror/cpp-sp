@@ -573,7 +573,7 @@ extern "C" NSAPI_PUBLIC int shib_handler(pblock* pb, ::Session* sn, Request* rq)
 class SunRequestMapper : public virtual RequestMapper, public virtual PropertySet
 {
 public:
-    SunRequestMapper(const xercesc::DOMElement* e);
+    SunRequestMapper(const xercesc::DOMElement* e, bool deprecationSupport=true);
     ~SunRequestMapper() {}
     Lockable* lock() { return m_mapper->lock(); }
     void unlock() { m_stKey->setData(nullptr); m_propsKey->setData(nullptr); m_mapper->unlock(); }
@@ -594,13 +594,13 @@ private:
     scoped_ptr<ThreadKey> m_stKey, m_propsKey;
 };
 
-RequestMapper* SunRequestMapFactory(const xercesc::DOMElement* const & e)
+RequestMapper* SunRequestMapFactory(const xercesc::DOMElement* const & e, bool deprecationSupport)
 {
     return new SunRequestMapper(e);
 }
 
-SunRequestMapper::SunRequestMapper(const xercesc::DOMElement* e)
-    : m_mapper(SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e)),
+SunRequestMapper::SunRequestMapper(const xercesc::DOMElement* e, bool deprecationSupport)
+    : m_mapper(SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e, deprecationSupport)),
         m_stKey(ThreadKey::create(nullptr)),
         m_propsKey(ThreadKey::create(nullptr))
 {

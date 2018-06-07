@@ -97,7 +97,7 @@ namespace shibsp {
 #endif
     };
 
-    ListenerService* SHIBSP_DLLLOCAL TCPListenerServiceFactory(const DOMElement* const & e)
+    ListenerService* SHIBSP_DLLLOCAL TCPListenerServiceFactory(const DOMElement* const & e, bool)
     {
         return new TCPListener(e);
     }

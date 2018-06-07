@@ -228,7 +228,7 @@ AuthnRequestEvent* SessionInitiator::newAuthnRequestEvent(const Application& app
     if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
         return nullptr;
     try {
-        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(AUTHNREQUEST_EVENT, nullptr));
+        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(AUTHNREQUEST_EVENT, nullptr, false));
         AuthnRequestEvent* ar_event = dynamic_cast<AuthnRequestEvent*>(event.get());
         if (ar_event) {
             ar_event->m_request = request;

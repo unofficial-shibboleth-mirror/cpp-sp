@@ -49,7 +49,7 @@ namespace shibsp {
             ) const;
     };
 
-    AttributeDecoder* SHIBSP_DLLLOCAL StringAttributeDecoderFactory(const DOMElement* const & e)
+    AttributeDecoder* SHIBSP_DLLLOCAL StringAttributeDecoderFactory(const DOMElement* const & e, bool)
     {
         return new StringAttributeDecoder(e);
     }
