@@ -45,6 +45,14 @@
         <afp:AttributeRule attributeID="primary-affiliation">
             <afp:PermitValueRuleReference ref="eduPersonAffiliationValues"/>
         </afp:AttributeRule>
+
+        <afp:AttributeRule attributeID="subject-id">
+            <afp:PermitValueRuleReference ref="ScopingRules"/>
+        </afp:AttributeRule>
+
+        <afp:AttributeRule attributeID="pairwise-id">
+            <afp:PermitValueRuleReference ref="ScopingRules"/>
+        </afp:AttributeRule>
         
         <afp:AttributeRule attributeID="eppn">
             <afp:PermitValueRuleReference ref="ScopingRules"/>
