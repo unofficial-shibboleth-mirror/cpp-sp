@@ -56,7 +56,7 @@
 
     <!--
     The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined.
-    Resource requests are mapped by the RequestMapper to an applicationId that
+    With IIS, resource requests are mapped by the RequestMapper to an applicationId that
     points into to this section (or to the defaults here).
     -->
     <ApplicationDefaults entityID="https://sp.example.org/shibboleth"
@@ -65,12 +65,11 @@
 
         <!--
         Controls session lifetimes, address checks, cookie handling, and the protocol handlers.
-        You MUST supply an effectively unique handlerURL value for each of your applications.
-        The value defaults to /Shibboleth.sso, and should be a relative path, with the SP computing
-        a relative value based on the virtual host. Using handlerSSL="true", the default, will force
-        the protocol to be https. You should also set cookieProps to "https" for SSL-only sites.
-        Note that while we default checkAddress to "false", this has a negative impact on the
-        security of your site. Stealing sessions via cookie theft is much easier with this disabled.
+        Each Application has an effectively unique handlerURL, which defaults to "/Shibboleth.sso"
+        and should be a relative path, with the SP computing the full value based on the virtual
+        host. Using handlerSSL="true" will force the protocol to be https. You should also set
+        cookieProps to "https" for SSL-only sites. Note that while we default checkAddress to
+        "false", this makes an assertion stolen in transit easier for attackers to misuse.
         -->
         <Sessions lifetime="28800" timeout="3600" relayState="ss:mem"
                   checkAddress="false" handlerSSL="false" cookieProps="http">
@@ -112,11 +111,17 @@
         <Errors supportContact="root@localhost"
             helpLocation="/about.html"
             styleSheet="/shibboleth-sp/main.css"/>
-        
+
+        <!-- Example of locally maintained metadata. -->
+        <!--
+        <MetadataProvider type="XML" validate="true" path="partner-metadata.xml"/>
+        -->
+
         <!-- Example of remotely supplied batch of signed metadata. -->
         <!--
-        <MetadataProvider type="XML" uri="http://federation.org/federation-metadata.xml"
-              backingFilePath="federation-metadata.xml" reloadInterval="7200">
+        <MetadataProvider type="XML" validate="true"
+	            url="http://federation.org/federation-metadata.xml"
+              backingFilePath="federation-metadata.xml" maxRefreshDelay="7200">
             <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
             <MetadataFilter type="Signature" certificate="fedsigner.pem" veryifyBackup="false"/>
             <DiscoveryFilter type="Blacklist" matcher="EntityAttributes" trimTags="true" 
@@ -126,12 +131,16 @@
         </MetadataProvider>
         -->
 
-        <!-- Example of locally maintained metadata. -->
+        <!-- Example of remotely supplied "on-demand" signed metadata. -->
         <!--
-        <MetadataProvider type="XML" file="partner-metadata.xml"/>
+        <MetadataProvider type="MDQ" validate="true" cacheDirectory="mdq"
+	            baseUrl="http://mdq.federation.org" ignoreTransport="true">
+            <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
+            <MetadataFilter type="Signature" certificate="mdqsigner.pem" />
+        </MetadataProvider>
         -->
 
-        <!-- Map to extract attributes from SAML assertions. -->
+      <!-- Map to extract attributes from SAML assertions. -->
         <AttributeExtractor type="XML" validate="true" reloadChanges="false" path="attribute-map.xml"/>
         
         <!-- Default filtering policy for recognized attributes, lets other data pass. -->
