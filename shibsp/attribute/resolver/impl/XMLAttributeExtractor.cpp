@@ -365,20 +365,22 @@ XMLExtractorImpl::XMLExtractorImpl(const DOMElement* e, Category& log, bool depr
             m_requestedAttrs.push_back(boost::tuple<xstring,xstring,bool>(entryKey.first, entryKey.second, required));
         }
 
-        name = child->getAttributeNS(nullptr, _aliases);
-        if (name && *name) {
-            m_log.warn("DEPRECATED: attribute mapping rule (%s) uses deprecated aliases feature", id.get());
-            auto_ptr_char aliases(name);
-            string dup(aliases.get());
-            set<string> new_aliases;
-            split(new_aliases, dup, is_space(), algorithm::token_compress_on);
-            set<string>::iterator ru = new_aliases.find("REMOTE_USER");
-            if (ru != new_aliases.end()) {
-                m_log.warn("skipping alias, REMOTE_USER is a reserved name");
-                new_aliases.erase(ru);
+        if (deprecationSupport) {
+            name = child->getAttributeNS(nullptr, _aliases);
+            if (name && *name) {
+                m_log.warn("DEPRECATED: attribute mapping rule (%s) uses deprecated aliases feature", id.get());
+                auto_ptr_char aliases(name);
+                string dup(aliases.get());
+                set<string> new_aliases;
+                split(new_aliases, dup, is_space(), algorithm::token_compress_on);
+                set<string>::iterator ru = new_aliases.find("REMOTE_USER");
+                if (ru != new_aliases.end()) {
+                    m_log.warn("skipping alias, REMOTE_USER is a reserved name");
+                    new_aliases.erase(ru);
+                }
+                decl.second.insert(decl.second.end(), new_aliases.begin(), new_aliases.end());
+                m_attributeIds.insert(m_attributeIds.end(), new_aliases.begin(), new_aliases.end());
             }
-            decl.second.insert(decl.second.end(), new_aliases.begin(), new_aliases.end());
-            m_attributeIds.insert(m_attributeIds.end(), new_aliases.begin(), new_aliases.end());
         }
 
         child = XMLHelper::getNextSiblingElement(child, shibspconstants::SHIB2ATTRIBUTEMAP_NS, saml1::Attribute::LOCAL_NAME);
