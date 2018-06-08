@@ -86,7 +86,7 @@
     points into to this section (or to the defaults here).
     -->
     <ApplicationDefaults entityID="https://sp.example.org/shibboleth"
-        REMOTE_USER="eppn persistent-id targeted-id"
+        REMOTE_USER="eppn subject-id pairwise-id persistent-id"
         metadataAttributePrefix="Meta-"
         sessionHook="/Shibboleth.sso/AttrChecker"
         cipherSuites="DEFAULT:!EXP:!LOW:!aNULL:!eNULL:!DES:!IDEA:!SEED:!RC4:!3DES:!kRSA:!SSLv2:!SSLv3:!TLSv1:!TLSv1.1">
