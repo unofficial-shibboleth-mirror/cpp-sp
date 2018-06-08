@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>Label</key> <string>edu.internet2.shibboleth.shibd</string>
-	<key>ServiceDescription</key> <string>Shibboleth 2 Service Provider daemon</string>
+	<key>Label</key> <string>net.shibboleth.sp.shibd</string>
+	<key>ServiceDescription</key> <string>Shibboleth 3 Service Provider daemon</string>
 
 	<key>ProgramArguments</key>
 	<array>
