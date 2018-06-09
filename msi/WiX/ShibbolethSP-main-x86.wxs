@@ -100,7 +100,7 @@
       <Component Id="shibd.exe" Guid="{2476BB80-9384-4026-86F5-E1569A685187}" Directory="sbin">
         <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe" />
         <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
-        <ServiceInstall Id="shibd" Name="shibd_Default" DisplayName="Shibboleth 2 Daemon (Default)" Description="Manages shared state and offloads SAML processing from Shibboleth web server modules." Arguments="-stdout &quot;[INSTALLDIR]var\log\shibboleth\stdout.log&quot; -stderr &quot;[INSTALLDIR]var\log\shibboleth\stderr.log&quot;" Type="ownProcess" Start="auto" ErrorControl="ignore" />
+        <ServiceInstall Id="shibd" Name="shibd_Default" DisplayName="Shibboleth $(var.ShibbolethVersion) Daemon (Default)" Description="Manages shared state and offloads SAML processing from Shibboleth web server modules." Arguments="-stdout &quot;[INSTALLDIR]var\log\shibboleth\stdout.log&quot; -stderr &quot;[INSTALLDIR]var\log\shibboleth\stderr.log&quot;" Type="ownProcess" Start="auto" ErrorControl="ignore" />
         <ServiceControl Id="shibd_Default" Name="shibd_Default" Stop="both" Remove="uninstall" Start="install" Wait="no" />
         <!-- We put in the messages for Isapi and Shibd in this module since all others are shared with x64 -->
         <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider">
