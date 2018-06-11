@@ -27,7 +27,6 @@
   <ComponentRef Id="partialLogout.html" />
   <ComponentRef Id="protocols.xml" />
   <ComponentRef Id="security_policy.xml" />
-  <ComponentRef Id="accessError.html" />
   <ComponentRef Id="apache.config.in" />
   <ComponentRef Id="apache2.config.in" />
   <ComponentRef Id="apache22.config.in" />

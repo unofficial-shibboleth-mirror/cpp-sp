@@ -42,7 +42,6 @@ CONFIGFILES = \
 	example-shibboleth2.xml \
 	console.logger \
 	native.logger \
-	accessError.html \
 	attrChecker.html \
 	sessionError.html \
 	metadataError.html \

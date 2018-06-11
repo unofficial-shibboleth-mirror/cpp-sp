@@ -114,9 +114,6 @@
             <Component Id="security_policy.xml" Guid="{0EC04525-FCCF-4B60-8797-9B0CEC222B8C}">
               <File KeyPath="yes" Name="security-policy.xml" />
             </Component>
-            <Component Id="accessError.html" Guid="{6FAA81A0-A020-4E60-A37D-1EC4D0D5FD06}">
-              <File KeyPath="yes" Name="accessError.html" />
-            </Component>
             <Component Id="attrChecker.html" Guid="{BDF4837C-A887-4F1C-841C-DC13DFF8A46E}">
               <File KeyPath="yes" Name="attrChecker.html" />
             </Component>

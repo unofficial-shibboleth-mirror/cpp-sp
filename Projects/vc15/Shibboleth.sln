@@ -42,7 +42,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Schemas", "Schemas", "{0F17
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config", "Config", "{2543BCFE-B3D7-4D08-AAA5-2E284903890E}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\configs\accessError.html = ..\..\configs\accessError.html
 		..\..\configs\apache.config.in = ..\..\configs\apache.config.in
 		..\..\configs\apache2.config.in = ..\..\configs\apache2.config.in
 		..\..\configs\apache22.config.in = ..\..\configs\apache22.config.in

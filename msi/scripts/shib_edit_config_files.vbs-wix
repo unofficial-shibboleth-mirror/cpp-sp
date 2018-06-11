@@ -142,10 +142,6 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "native.logger", ConfigDir, false
   End If
 
-  If (NOT FileSystemObj.FileExists(ConfigDir & "accessError.html")) then
-    FileSystemObj.CopyFile DistDir & "accessError.html", ConfigDir, false
-  End If
-
   If (NOT FileSystemObj.FileExists(ConfigDir & "metadataError.html")) then
     FileSystemObj.CopyFile DistDir & "metadataError.html", ConfigDir, false
   End If
