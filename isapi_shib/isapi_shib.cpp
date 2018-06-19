@@ -227,9 +227,9 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
             flag = props->getBool("safeHeaderNames");
             g_bSafeHeaderNames = flag.first && flag.second;
             if (props->getString("useHeaders").first)
-                log.warn("useHeaders attribute not valid for this filter");
+                log.warn("useHeaders attribute not supported by ISAPI filter, ignored");
             if (props->getString("useVariables").first)
-                log.warn("useVariables attribute not valid for this filter");
+                log.warn("useVariables attribute not supported by ISAPI filter, ignored");
 
             const DOMElement* child = XMLHelper::getFirstChildElement(props->getElement(), Site);
             while (child) {

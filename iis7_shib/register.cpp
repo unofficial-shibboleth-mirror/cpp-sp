@@ -166,12 +166,15 @@ RegisterModule(
         if (props) {
             flag = props->getBool("normalizeRequest");
             g_bNormalizeRequest = !flag.first || flag.second;
-            flag = props->getBool("safeHeaderNames");
-            g_bSafeHeaderNames = flag.first && flag.second;
             flag = props->getBool("useHeaders");
             g_bUseHeaders = flag.first && flag.second;
             flag = props->getBool("useVariables");
             g_bUseVariables= !flag.first || flag.second;
+            flag = props->getBool("safeHeaderNames");
+            if (g_bUseHeaders)
+            	g_bSafeHeaderNames = !flag.first || flag.second;
+            else
+            	g_bSafeHeaderNames = flag.first && flag.second;
 
             const string prefix(XMLHelper::getAttrString(props->getElement(), "/Shibboleth.sso", handlerPrefix));
             std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
