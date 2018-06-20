@@ -225,6 +225,8 @@ pair<bool,long> AssertionConsumerService::processMessage(
         return finalizeResponse(application, httpRequest, httpResponse, relayState);
     }
     catch (XMLToolingException& ex) {
+        m_log.warn("error processing incoming assertion: %s", ex.what());
+
         // Recover relay state.
         if (!relayState.empty()) {
             try {
