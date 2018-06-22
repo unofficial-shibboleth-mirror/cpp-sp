@@ -8,7 +8,7 @@ noinst_HEADERS = \
 
 common_sources = \
 	plugins.cpp \
-    AttributeResolverHandler.cpp \
+	AttributeResolverHandler.cpp \
 	TimeAccessControl.cpp
 
 plugins_la_SOURCES = \
@@ -30,8 +30,5 @@ plugins_lite_la_LIBADD = $(LITE_LIBS) \
 plugins_la_LDFLAGS = -module -avoid-version
 plugins_lite_la_LDFLAGS = -module -avoid-version
 plugins_lite_la_CPPFLAGS = -DSHIBSP_LITE
-
-install-data-hook:
-	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
 
 EXTRA_DIST = resource.h plugins.rc

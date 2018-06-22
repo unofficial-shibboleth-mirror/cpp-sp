@@ -40,12 +40,6 @@ mod_shib_24_la_LIBADD = $(LITE_LIBS) \
   $(top_builddir)/shibsp/libshibsp-lite.la
 endif
 
-install-data-hook:
-	for la in $(modshib13_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib13dir)/$$la ; done
-	for la in $(modshib20_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib20dir)/$$la ; done
-	for la in $(modshib22_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib22dir)/$$la ; done
-	for la in $(modshib24_LTLIBRARIES) ; do rm -f $(DESTDIR)$(modshib24dir)/$$la ; done
-
 EXTRA_DIST = mod_shib.cpp \
 	mod_shib_13.cpp mod_shib_20.cpp mod_shib_22.cpp mod_shib_24.cpp \
 	resource.h mod_shib_13.rc mod_shib_20.rc mod_shib_22.rc mod_shib_24.rc

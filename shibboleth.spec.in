@@ -19,7 +19,7 @@ PreReq:		xmltooling-schemas >= 3.0.0, opensaml-schemas >= 3.0.0
 PreReq:		%{insserv_prereq} %{fillup_prereq}
 %endif
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
-BuildRequires:  systemd-devel, pkgconfig
+BuildRequires:  systemd-devel
 %endif
 BuildRequires:  libxerces-c-devel >= 3.2
 BuildRequires:	libxml-security-c-devel >= 2.0.0
@@ -34,7 +34,7 @@ BuildRequires:	chrpath
 %if 0%{?suse_version} > 1300
 BuildRequires:	libtool
 %endif
-BuildRequires:  gcc-c++, zlib-devel, boost-devel >= 1.32.0
+BuildRequires:  gcc-c++, pkgconfig, boost-devel >= 1.32.0
 %{!?_without_gssapi:BuildRequires: krb5-devel}
 %{!?_without_doxygen:BuildRequires: doxygen}
 %{!?_without_odbc:BuildRequires:unixODBC-devel}
@@ -59,7 +59,7 @@ Requires(pre): pwdutils
 %{!?_without_builtinapache:BuildRequires: apache2-devel}
 %{?systemd_requires}
 %if 0%{?suse_version} >= 1210
-BuildRequires: systemd-rpm-macros, systemd-devel, pkgconfig
+BuildRequires: systemd-rpm-macros, systemd-devel
 %endif
 %endif
 
@@ -409,8 +409,10 @@ exit 0
 %{_bindir}/resolvertest
 %{_libdir}/libshibsp.so.*
 %{_libdir}/libshibsp-lite.so.*
+%exclude %{_libdir}/*.la
 %dir %{_libdir}/shibboleth
-%{_libdir}/shibboleth/*
+%{_libdir}/shibboleth/*.so
+%exclude %{_libdir}/shibboleth/*.la
 %attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/shibboleth
 %if 0%{?suse_version} < 1300
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/shibboleth

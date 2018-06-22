@@ -19,7 +19,4 @@ adfs_la_LDFLAGS = -module -avoid-version
 adfs_lite_la_LDFLAGS = -module -avoid-version
 adfs_lite_la_CPPFLAGS = -DSHIBSP_LITE
 
-install-data-hook:
-	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
-
 EXTRA_DIST = resource.h adfs.rc

@@ -12,7 +12,4 @@ memcache_store_la_LIBADD = $(XMLSEC_LIBS) $(MEMCACHED_LIBS)
 memcache_store_la_SOURCES = \
 	memcache-store.cpp
 
-install-data-hook:
-	for la in $(plugin_LTLIBRARIES) ; do rm -f $(DESTDIR)$(plugindir)/$$la ; done
-
 EXTRA_DIST = memcache-store.rc resource.h

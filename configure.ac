@@ -300,15 +300,14 @@ AC_CHECK_HEADER([xmltooling/base.h],,AC_MSG_ERROR([unable to find xmltooling hea
 save_LIBS="$LIBS"
 LIBS="$XMLSEC_LIBS $LIBS"
 
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([[#include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/version.h>]],
-        [[#if _XMLTOOLING_VERSION >= 10500
-xmltooling::XMLToolingConfig::getConfig();
+AC_PREPROC_IFELSE(
+    [AC_LANG_PROGRAM([[#include <xmltooling/version.h>]],
+        [[#if _XMLTOOLING_VERSION >= 30000
+int i = 0;
 #else
-#error Need XMLTooling version 1.5 or higher
+#error Need XMLTooling version 3.0 or higher
 #endif]])],
-    ,[AC_MSG_ERROR([unable to link with XMLTooling, or version was too old])])
+    ,[AC_MSG_ERROR([XMLTooling version 3.0.0 or greater is required.])])
 
 # restore master libs
 LIBS="$save_LIBS"
@@ -348,15 +347,14 @@ save_LIBS="$LIBS"
 LIBS="$XMLSEC_LIBS $LIBS"
 
 AC_CHECK_HEADER([saml/saml2/metadata/Metadata.h],,AC_MSG_ERROR([unable to find OpenSAML header files]))
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([[#include <saml/SAMLConfig.h>
-#include <saml/version.h>]],
-[[#if _OPENSAML_VERSION >= 20500
-opensaml::SAMLConfig::getConfig();
+AC_PREPROC_IFELSE(
+    [AC_LANG_PROGRAM([[#include <saml/version.h>]],
+[[#if _OPENSAML_VERSION >= 30000
+int i = 0;
 #else
-#error Need OpenSAML version 2.5 or higher
+#error Need OpenSAML version 3.0 or higher
 #endif]])],
-    ,[AC_MSG_ERROR([unable to link with OpenSAML, or version was too old])
+    ,[AC_MSG_ERROR([OpenSAML version 3.0.0 or greater is required.])
 	])
 
 # restore master libs

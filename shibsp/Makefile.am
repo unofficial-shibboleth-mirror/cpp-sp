@@ -272,9 +272,6 @@ paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	cmp -s $@ $@.tmp || mv $@.tmp $@
 	rm -f $@.tmp
 
-install-exec-hook:
-	for la in $(lib_LTLIBRARIES) ; do rm -f $(DESTDIR)$(libdir)/$$la ; done
-
 EXTRA_DIST = \
 	config_pub.h.in \
 	config_pub_win32.h\
