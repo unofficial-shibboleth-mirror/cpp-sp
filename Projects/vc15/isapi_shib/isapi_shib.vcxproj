@@ -124,7 +124,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/export:GetExtensionVersion /export:GetFilterVersion /export:TerminateExtension /export:TerminateFilter /export:HttpFilterProc /export:HttpExtensionProc %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>xerces-c_3.lib;xmltooling-lite3.lib;log4shib1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xerces-c_3.lib;xmltooling-lite3.lib;log4shib2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\cpp-xmltooling\Build\VC15\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
@@ -160,7 +160,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/export:GetExtensionVersion /export:GetFilterVersion /export:TerminateExtension /export:TerminateFilter /export:HttpFilterProc /export:HttpExtensionProc %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>xerces-c_3.lib;xmltooling-lite3.lib;log4shib1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xerces-c_3.lib;xmltooling-lite3.lib;log4shib2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\cpp-xmltooling\Build\VC15\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>
@@ -193,7 +193,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/export:GetExtensionVersion /export:GetFilterVersion /export:TerminateExtension /export:TerminateFilter /export:HttpFilterProc /export:HttpExtensionProc %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>xerces-c_3D.lib;xmltooling-lite3D.lib;log4shib1D.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xerces-c_3D.lib;xmltooling-lite3D.lib;log4shib2D.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\cpp-xmltooling\Build\VC15\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
@@ -226,7 +226,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/export:GetExtensionVersion /export:GetFilterVersion /export:TerminateExtension /export:TerminateFilter /export:HttpFilterProc /export:HttpExtensionProc %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>xerces-c_3D.lib;xmltooling-lite3D.lib;log4shib1D.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xerces-c_3D.lib;xmltooling-lite3D.lib;log4shib2D.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\cpp-xmltooling\Build\VC15\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
