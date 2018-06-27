@@ -62,7 +62,7 @@ namespace shibsp {
 #endif
     {
     public:
-        SSCache(const xercesc::DOMElement* e);
+        SSCache(const xercesc::DOMElement* e, bool deprecationSupport);
         virtual ~SSCache();
 
 #ifndef SHIBSP_LITE

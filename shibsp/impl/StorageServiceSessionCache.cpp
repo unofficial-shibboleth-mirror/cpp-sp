@@ -75,9 +75,9 @@ using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
-SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e, bool)
+SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e, bool deprecationSupport)
 {
-    return new SSCache(e);
+    return new SSCache(e, deprecationSupport);
 }
 
 void SHIBSP_API shibsp::registerSessionCaches()
@@ -93,7 +93,7 @@ SessionCache::~SessionCache()
 {
 }
 
-SSCache::SSCache(const DOMElement* e)
+SSCache::SSCache(const DOMElement* e, bool deprecationSupport)
     :
 #ifndef SHIBSP_LITE
       m_storage(nullptr), m_storage_lite(nullptr), m_cacheAssertions(true), m_reverseIndex(true), m_softRevocation(true), m_reverseIndexMaxSize(0),
@@ -162,7 +162,7 @@ SSCache::SSCache(const DOMElement* e)
         }
 
         m_softRevocation = XMLHelper::getAttrBool(e, true, softRevocation);
-        m_cacheAssertions = XMLHelper::getAttrBool(e, true, cacheAssertions);
+        m_cacheAssertions = XMLHelper::getAttrBool(e, deprecationSupport, cacheAssertions);
         m_reverseIndex = XMLHelper::getAttrBool(e, true, maintainReverseIndex);
         m_reverseIndexMaxSize = XMLHelper::getAttrInt(e, 0, reverseIndexMaxSize);
         const XMLCh* excludedNames = e ? e->getAttributeNS(nullptr, excludeReverseIndex) : nullptr;
