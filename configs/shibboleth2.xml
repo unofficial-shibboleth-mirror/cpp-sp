@@ -6,7 +6,7 @@
   
     <!--
     By default, in-memory StorageService, ReplayCache, ArtifactMap, and SessionCache
-    are used. See example-shibboleth3.xml for samples of explicitly configuring them.
+    are used. See example-shibboleth2.xml for samples of explicitly configuring them.
     -->
 
     <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
