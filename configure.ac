@@ -157,7 +157,7 @@ PKG_CHECK_VAR([xmltooling_includedir],[xmltooling],[includedir])
 PKG_CHECK_VAR([XMLTOOLINGXMLDIR],[xmltooling],[pkgxmldir])
 DX_INCLUDE="$DX_INCLUDE $xmltooling_includedir"
 
-AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite],,,
+AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite >= 3],,,
     [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
 AX_PKG_CHECK_MODULES([opensaml],,[opensaml >= 3],,,
@@ -927,6 +927,9 @@ AS_IF([test "x$with_gssapi" != xno],
      [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
    AS_IF([test "x$with_gssapi" != xno],
      [AC_DEFINE([SHIBSP_HAVE_GSSAPI],[1],[if you have the gssapi libraries])
+      AX_SAVE_FLAGS
+        CXXFLAGS="$gss_CFLAGS $gnu_gss_CFLAGS $CXXFLAGS"
+        LIBS="$gss_LIBS $gnu_gss_LIBS $LIBS"
       AC_CHECK_DECLS([gss_get_name_attribute,GSS_C_NT_EXPORT_NAME_COMPOSITE],,,[[
 #ifdef SHIBSP_HAVE_GSSGNU
 # include <gss.h>
@@ -937,6 +940,7 @@ AS_IF([test "x$with_gssapi" != xno],
 # include <gssapi.h>
 #endif
 ]])
+      AX_RESTORE_FLAGS
      ])
   ])
 AM_CONDITIONAL([GSSAPI_NAMINGEXTS],[test "x$ac_cv_have_decl_gss_get_name_attribute" = xyes])

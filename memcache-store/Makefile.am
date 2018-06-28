@@ -9,6 +9,7 @@ AM_CXXFLAGS = $(MEMCACHED_INCLUDE)
 memcache_store_la_LDFLAGS = $(MEMCACHED_LDFLAGS) -module -avoid-version
 memcache_store_la_CXXFLAGS = \
 	$(PTHREAD_CFLAGS) \
+        $(BOOST_CPPFLAGS) \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)

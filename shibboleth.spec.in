@@ -26,7 +26,7 @@ BuildRequires:	libxml-security-c-devel >= 2.0.0
 BuildRequires:	libxmltooling-devel >= 3.0.0
 BuildRequires:	libsaml-devel >= 3.0.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
-%{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 1.0.10}
+%{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 2}
 %if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600 || 0%{?amzn} >= 1
 Requires:	libcurl-openssl%{?_isa} >= 7.21.7
 BuildRequires:	chrpath
@@ -90,7 +90,7 @@ Requires: 	libxml-security-c-devel >= 2.0.0
 Requires: 	libxmltooling-devel >= 3.0.0
 Requires: 	libsaml-devel >= 3.0.0
 %{?_with_log4cpp:Requires: liblog4cpp-devel >= 1.0}
-%{!?_with_log4cpp:Requires: liblog4shib-devel >= 1.0.10}
+%{!?_with_log4cpp:Requires: liblog4shib-devel >= 2}
 
 %description devel
 Shibboleth is a Web Single Sign-On implementations based on OpenSAML
@@ -107,10 +107,10 @@ This package includes files needed for development with Shibboleth.
 	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_systemd:--enable-systemd} %{?shib_options}
 %else
 %if 0%{?rhel} >= 7 || 0%{?centos_version} >= 700
-	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_memcached:--with-memcached} %{!?_without_systemd:--enable-systemd} %{?shib_options}
+	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_memcached:--with-memcached} %{!?_without_systemd:--enable-systemd} %{?shib_options} PKG_CONFIG_PATH=/opt/shibboleth/%{_lib}/pkgconfig
 %else
-%if 0%{?centos_version} >= 600
-	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_memcached:--with-memcached} %{?shib_options}
+%if 0%{?rhel} >= 6 || 0%{?centos_version} >= 600
+	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{!?_without_memcached:--with-memcached} %{?shib_options} PKG_CONFIG_PATH=/opt/shibboleth/%{_lib}/pkgconfig
 %else
 	%configure %{?_without_odbc:--disable-odbc} %{?_without_adfs:--disable-adfs} %{?_with_fastcgi} %{!?_without_gssapi:--with-gssapi} %{?_with_memcached} %{?shib_options}
 %endif
@@ -192,6 +192,7 @@ if [ "$SYSTEMD_SHIBD" != "no" ] ; then
 	cat > $SYSTEMD_SHIBD <<EOF
 [Unit]
 Description=Shibboleth Service Provider Daemon
+Documentation=https://wiki.shibboleth.net/confluence/display/SP3/Home
 After=network.target
 Before=httpd.service
 
@@ -206,8 +207,8 @@ ExecStart=%{_sbindir}/shibd -f -F
 StandardInput=null
 StandardOutput=null
 StandardError=journal
-TimeoutStopSec=5s
-TimeoutStartSec=150s
+TimeoutStopSec=1m
+TimeoutStartSec=5m
 Restart=on-failure
 RestartSec=30s
 

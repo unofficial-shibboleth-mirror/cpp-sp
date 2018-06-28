@@ -8,6 +8,7 @@ fastcgi_PROGRAMS = shibauthorizer shibresponder
 
 shibauthorizer_SOURCES = shibauthorizer.cpp
 shibauthorizer_CXXFLAGS = $(FASTCGI_INCLUDE) \
+  $(BOOST_CPPFLAGS) \
   $(xerces_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 shibauthorizer_LDFLAGS = $(FASTCGI_LDFLAGS)
@@ -18,6 +19,7 @@ shibauthorizer_LDADD = $(FASTCGI_LIBS) \
 
 shibresponder_SOURCES = shibresponder.cpp
 shibresponder_CXXFLAGS = $(FASTCGI_INCLUDE) \
+  $(BOOST_CPPFLAGS) \
   $(xerces_CFLAGS) \
   $(xmltooling_lite_CFLAGS)
 shibresponder_LDFLAGS = $(FASTCGI_LDFLAGS)

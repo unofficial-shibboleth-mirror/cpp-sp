@@ -18,6 +18,7 @@
 *.opensdf
 *.suo
 *.aps
+*.pc
 *~
 *.#*
 .*.swp

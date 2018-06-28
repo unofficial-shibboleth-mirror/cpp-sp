@@ -21,6 +21,7 @@ plugins_lite_la_SOURCES = \
 	${common_sources}
 
 plugins_la_CXXFLAGS = \
+        $(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
