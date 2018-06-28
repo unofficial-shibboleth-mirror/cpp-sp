@@ -173,7 +173,7 @@ AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
 ## ADFS?
 AC_CONFIG_FILES([adfs/Makefile])
 AC_ARG_ENABLE([adfs],
-    AS_HELP_STRING([--disable-adfs],[don't build the ADFS module]),
+    AS_HELP_STRING([--disable-adfs],[do not build the ADFS module]),
     [adfs_enabled=$enableval], [adfs_enabled=yes])
 if test "x$adfs_enabled" = "x" ; then
     adfs_enabled=yes
