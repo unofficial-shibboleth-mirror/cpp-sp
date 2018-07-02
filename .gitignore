@@ -18,7 +18,8 @@
 *.opensdf
 *.suo
 *.aps
-*.pc
+shibsp.pc
+shibsp-lite.pc
 *~
 *.#*
 .*.swp
