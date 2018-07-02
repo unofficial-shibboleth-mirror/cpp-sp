@@ -1,0 +1,7 @@
+Name: mit-krb5-gssapi
+Description: Kerberos implementation of the GSSAPI
+Version: 1.10.3
+Requires.private: mit-krb5
+Cflags:
+Libs: -lgssapi_krb5
+
