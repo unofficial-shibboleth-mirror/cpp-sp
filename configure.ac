@@ -96,9 +96,7 @@ if test "$shib_cv_sock_cloexec" = "yes"; then
 	AC_DEFINE([HAVE_SOCK_CLOEXEC], 1, [Define if the SOCK_CLOEXEC flag is supported])
 fi
 
-ACX_PTHREAD(
-    [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])],
-    [AC_MSG_ERROR([unable to find pthreads, currently this is required])])
+AX_PTHREAD(,[AC_MSG_ERROR([unable to find pthreads, currently this is required])])
 
 AC_LANG([C++])
 
