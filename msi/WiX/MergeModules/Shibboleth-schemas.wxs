@@ -49,9 +49,6 @@
                 <Component Id="afp_mf_saml.xsd" Guid="{40B8AEF3-0A31-4204-95E7-F8079CB55979}">
                   <File KeyPath="yes" Id="afp_mf_saml.xsd" Name="shibboleth-2.0-afp-mf-saml.xsd" />
                 </Component>
-                <Component Id="WSTrust.xsd" Guid="{91EA82B5-A19C-40C0-8D1C-40FA020A484E}">
-                  <File KeyPath="yes" Name="WS-Trust.xsd" />
-                </Component>
                 <Component Id="sp_notify.xsd" Guid="{65EBC9F1-C958-4B17-9554-7F86186A15C1}">
                   <File KeyPath="yes" Id="sp_notify.xsd" Name="shibboleth-2.0-sp-notify.xsd" />
                 </Component>
@@ -63,6 +60,30 @@
                 </Component>
                 <Component Id="native_sp_protocols.xsd" Guid="{AE42FFFB-1A59-4F1D-9935-15D727B99929}">
                   <File KeyPath="yes" Id="native_sp_protocols.xsd" Name="shibboleth-2.0-native-sp-protocols.xsd" />
+                </Component>
+                <Component Id="WSTrust.xsd" Guid="{91EA82B5-A19C-40C0-8D1C-40FA020A484E}">
+                  <File KeyPath="yes" Name="WS-Trust.xsd" />
+                </Component>
+                <Component Id="MetadataExchange.xsd" Guid="{B5DE4E0E-1426-4195-8ACD-7B320475E843}">
+                  <File KeyPath="yes" Name="MetadataExchange.xsd" />
+                </Component>
+                <Component Id="ws_sec_secext_1.0.xsd" Guid="{2F05116D-5F22-4AB3-A534-844ABA9E00F2}">
+                  <File KeyPath="yes" Name="oasis-200401-wss-wssecurity-secext-1.0.xsd" />
+                </Component>
+                <Component Id="ws_sec_util_1.0.xsd" Guid="{F6E06D89-8F8D-451F-A134-748ED283334B}">
+                  <File KeyPath="yes" Name="oasis-200401-wss-wssecurity-utility-1.0.xsd" />
+                </Component>
+                <Component Id="ws_addr.xsd" Guid="{7D4DC4F1-2963-4A36-B21E-2BF655EF0500}">
+                  <File KeyPath="yes" Name="ws-addr.xsd" />
+                </Component>
+                <Component Id="ws_authorization.xsd" Guid="{DD219CDF-6466-4EE7-A472-DDA42C75E38F}">
+                  <File KeyPath="yes" Name="ws-authorization.xsd" />
+                </Component>
+                <Component Id="ws_federation.xsd" Guid="{C7496788-5817-477A-AFCE-1C38FA52A7DC}">
+                  <File KeyPath="yes" Name="ws-federation.xsd" />
+                </Component>
+                <Component Id="ws_secpol_1.2.xsd" Guid="{7FEC0E0D-F911-4CF7-B2AB-8EB6499DAD98}">
+                  <File KeyPath="yes" Name="ws-securitypolicy-1.2.xsd" />
                 </Component>
               </Directory><!--xml_shibboleth-->
             </Directory><!--xml-->

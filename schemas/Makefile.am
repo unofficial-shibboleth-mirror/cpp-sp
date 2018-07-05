@@ -1,5 +1,3 @@
-## $Id$ 
-
 AUTOMAKE_OPTIONS = foreign
 
 pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@
@@ -15,7 +13,15 @@ schemafiles = \
     shibboleth-2.0-afp-mf-basic.xsd \
     shibboleth-2.0-afp-mf-saml.xsd \
     shibboleth-2.0-attribute-map.xsd \
-    WS-Trust.xsd
+    WS-Trust.xsd \
+    MetadataExchange.xsd \
+    oasis-200401-wss-wssecurity-secext-1.0.xsd \
+    oasis-200401-wss-wssecurity-utility-1.0.xsd \
+    ws-addr.xsd \
+    ws-authorization.xsd \
+    ws-federation.xsd \
+    ws-securitypolicy-1.2.xsd
+    
 
 pkgxml_DATA = \
 	catalog.xml \

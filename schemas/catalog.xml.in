@@ -11,4 +11,11 @@
     <system systemId="urn:mace:shibboleth:2.0:attribute-map" uri="@-PKGXMLDIR-@/shibboleth-2.0-attribute-map.xsd"/>
     <system systemId="urn:mace:shibboleth:1.0" uri="@-PKGXMLDIR-@/shibboleth.xsd"/>
     <system systemId="http://schemas.xmlsoap.org/ws/2005/02/trust" uri="@-PKGXMLDIR-@/WS-Trust.xsd"/>
+    <system systemId="http://schemas.xmlsoap.org/ws/2004/09/mex" uri="@-PKGXMLDIR-@/MetadataExchange.xsd"/>
+    <system systemId="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" uri="@-PKGXMLDIR-@/oasis-200401-wss-wssecurity-secext-1.0.xsd"/>
+    <system systemId="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" uri="@-PKGXMLDIR-@/oasis-200401-wss-wssecurity-utility-1.0.xsd"/>
+    <system systemId="http://www.w3.org/2005/08/addressing" uri="@-PKGXMLDIR-@/ws-addr.xsd"/>
+    <system systemId="http://docs.oasis-open.org/wsfed/authorization/200706" uri="@-PKGXMLDIR-@/ws-authorization.xsd"/>
+    <system systemId="http://docs.oasis-open.org/wsfed/federation/200706" uri="@-PKGXMLDIR-@/ws-federation.xsd"/>
+    <system systemId="http://docs.oasis-open.org/ws-sx/ws-securitypolicy/200702" uri="@-PKGXMLDIR-@/ws-securitypolicy-1.2.xsd"/>
 </catalog>
