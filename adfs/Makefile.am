@@ -15,6 +15,7 @@ adfs_la_LIBADD = \
 	$(opensaml_LIBS) \
 	$(xmltooling_LIBS) \
 	$(xerces_LIBS)
+adfs_la_LDFLAGS = -module -avoid-version
 
 adfs_la_SOURCES = \
 	adfs.cpp
@@ -22,16 +23,15 @@ adfs_la_SOURCES = \
 adfs_lite_la_SOURCES = \
 	adfs.cpp
 
-adfs_la_LDFLAGS = -module -avoid-version
-adfs_lite_la_LDFLAGS = -module -avoid-version
 adfs_lite_la_CXXFLAGS = -DSHIBSP_LITE \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(xmltooling_lite_CFLAGS) \
-	$(xerces_CFLAGS) \
+	$(xerces_CFLAGS)
 adfs_lite_la_LIBADD = $(top_builddir)/shibsp/libshibsp-lite.la \
 	$(PTHREAD_LIBS) \
 	$(xmltooling_lite_LIBS) \
 	$(xerces_LIBS)
+adfs_lite_la_LDFLAGS = -module -avoid-version
 
 EXTRA_DIST = resource.h adfs.rc
