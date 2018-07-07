@@ -53,7 +53,7 @@
         <Control Id="InstallShibd" Type="Text" X="25" Y="142" Height="17" Width="195" Text="The Shibboleth Daemon will be installed as a service." />
 
         <!-- IIS7 Plugin -->
-        <Control Id="InstallIIS7" Type="CheckBox" X="225" Y="140" Height="17" Width="120" Property="INSTALL_IIS7_PLUGIN" CheckBoxValue="TRUE" Text="Configure IIS7 modules">
+        <Control Id="InstallIIS7" Type="CheckBox" X="225" Y="140" Height="17" Width="120" Property="INSTALL_IIS7_PLUGIN" CheckBoxValue="TRUE" Text="Configure IIS7 module">
           <Condition Action="show">IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6")</Condition>
           <Condition Action="hide">NOT IISMAJORVERSION OR (IISMAJORVERSION = "#6")</Condition>
         </Control>
