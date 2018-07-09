@@ -193,11 +193,11 @@
       <Custom Action="SetEditConfigFiles" Before="CostInitialize">NOT Installed</Custom>
       <Custom Action="EditConfigFiles" After="InstallFiles">NOT Installed</Custom>
 
-      <Custom Action="SetKeyGenSigning" Before="CostInitialize">NOT Installed</Custom>
-      <Custom Action="SetKeyGenEncrypt" Before="CostInitialize">NOT Installed</Custom>
+      <Custom Action="SetKeyGenSigning" Before="CostInitialize">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
+      <Custom Action="SetKeyGenEncrypt" Before="CostInitialize">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
       <!-- Run KeyGen after WriteEnvironmentStrings so the path is set -->
-      <Custom Action="KeyGenSigning" After="WriteEnvironmentStrings">NOT Installed</Custom>
-      <Custom Action="KeyGenEncrypt" After="WriteEnvironmentStrings">NOT Installed</Custom>
+      <Custom Action="KeyGenSigning" After="WriteEnvironmentStrings">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
+      <Custom Action="KeyGenEncrypt" After="WriteEnvironmentStrings">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
 
       <!-- IIS handling is no longer architecture independent and happens in ShibbolethSP-main-x?? -->
 
