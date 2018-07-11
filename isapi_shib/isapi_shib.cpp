@@ -88,7 +88,7 @@ namespace {
             e = XMLHelper::getFirstChildElement(e, Alias);
             while (e) {
                 if (e->hasChildNodes()) {
-                    auto_ptr_char alias(e->getTextContent());
+                    auto_ptr_char alias(XMLHelper::getTextContent(e));
                     m_aliases.insert(alias.get());
                 }
                 e = XMLHelper::getNextSiblingElement(e, Alias);

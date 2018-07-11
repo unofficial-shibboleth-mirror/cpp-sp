@@ -683,7 +683,7 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
     int index = 0; // track ACS indexes globally across all protocols
 
     // Tokenize the protocol list inside the element.
-    XMLStringTokenizer prottokens(e->getTextContent());
+    XMLStringTokenizer prottokens(XMLHelper::getTextContent(e));
     while (prottokens.hasMoreTokens()) {
         auto_ptr_char prot(prottokens.nextToken());
 
@@ -818,7 +818,7 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
     const SPConfig& conf = SPConfig::getConfig();
 
     // Tokenize the protocol list inside the element.
-    XMLStringTokenizer prottokens(e->getTextContent());
+    XMLStringTokenizer prottokens(XMLHelper::getTextContent(e));
     while (prottokens.hasMoreTokens()) {
         auto_ptr_char prot(prottokens.nextToken());
 
@@ -924,7 +924,7 @@ void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& proto
     const SPConfig& conf = SPConfig::getConfig();
 
     // Tokenize the protocol list inside the element.
-    XMLStringTokenizer prottokens(e->getTextContent());
+    XMLStringTokenizer prottokens(XMLHelper::getTextContent(e));
     while (prottokens.hasMoreTokens()) {
         auto_ptr_char prot(prottokens.nextToken());
 

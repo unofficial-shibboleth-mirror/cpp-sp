@@ -307,7 +307,7 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
 
     // Grab connection string from the configuration.
     e = e ? XMLHelper::getFirstChildElement(e, ConnectionString) : nullptr;
-    auto_ptr_char arg(e ? e->getTextContent() : nullptr);
+    auto_ptr_char arg(XMLHelper::getTextContent(e));
     if (!arg.get() || !*arg.get()) {
         SQLFreeHandle(SQL_HANDLE_ENV, m_henv);
         throw XMLToolingException("ODBC StorageService requires ConnectionString element in configuration.");
@@ -335,7 +335,7 @@ ODBCStorageService::ODBCStorageService(const DOMElement* e) : m_log(Category::ge
     while (e) {
         if (e->hasChildNodes()) {
             try {
-                int code = XMLString::parseInt(e->getTextContent());
+                int code = XMLString::parseInt(XMLHelper::getTextContent(e));
                 m_retries.push_back(code);
                 m_log.info("will retry operations when native ODBC error (%d) is returned", code);
             }

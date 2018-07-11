@@ -147,7 +147,7 @@ TransformAttributeResolver::TransformAttributeResolver(const DOMElement* e)
     e = XMLHelper::getFirstChildElement(e, Regex);
     while (e) {
         if (e->hasChildNodes() && e->hasAttributeNS(nullptr, match)) {
-            const XMLCh* repl(e->getTextContent());
+            const XMLCh* repl(XMLHelper::getTextContent(e));
             string destId(XMLHelper::getAttrString(e, nullptr, dest));
             bool caseflag(XMLHelper::getAttrBool(e, true, caseSensitive));
             if (repl && *repl) {
@@ -167,7 +167,7 @@ TransformAttributeResolver::TransformAttributeResolver(const DOMElement* e)
     }
 
     if (m_regex.empty())
-        throw ConfigurationException("Transform AttributeResolver requires at least one Regex element.");
+        throw ConfigurationException("Transform AttributeResolver requires at least one non-empty Regex element.");
 }
 
 

@@ -191,9 +191,12 @@ DDF DOMAttributeDecoder::convert(DOMElement* e, bool nameit) const
     }
 
     DOMElement* child = XMLHelper::getFirstChildElement(e);
-    if (!child && e->hasChildNodes() && e->getFirstChild()->getNodeType() == DOMNode::TEXT_NODE) {
-        // Attach a _text member if a text node is present.
-        obj.addmember("_string").string(toUTF8(e->getFirstChild()->getTextContent(), true), false);
+    if (!child && e->hasChildNodes()) {
+        // Attach a _text member if text data is present.
+    	XMLCh* value = XMLHelper::getWholeTextContent(e);
+    	ArrayJanitor<XMLCh> jan(value);
+    	if (value && *value)
+    		obj.addmember("_string").string(toUTF8(value, true), false);
     }
     else {
         while (child) {

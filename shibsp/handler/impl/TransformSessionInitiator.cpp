@@ -96,13 +96,13 @@ namespace shibsp {
                     if (e->hasChildNodes()) {
                         bool flag = XMLHelper::getAttrBool(e, false, force);
                         if (XMLString::equals(e->getLocalName(), Subst)) {
-                            auto_ptr_char temp(e->getTextContent());
+                            auto_ptr_char temp(XMLHelper::getTextContent(e));
                             if (temp.get() && *temp.get())
                                 m_subst.push_back(pair<bool,string>(flag, temp.get()));
                         }
                         else if (XMLString::equals(e->getLocalName(), Regex) && e->hasAttributeNS(nullptr, match)) {
                             auto_ptr_char m(e->getAttributeNS(nullptr, match));
-                            auto_ptr_char repl(e->getTextContent());
+                            auto_ptr_char repl(XMLHelper::getTextContent(e));
                             if (m.get() && *m.get() && repl.get() && *repl.get())
                                 m_regex.push_back(boost::tuple<bool,string,string>(flag, m.get(), repl.get()));
                         }

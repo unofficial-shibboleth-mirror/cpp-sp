@@ -142,13 +142,13 @@ TemplateAttributeResolver::TemplateAttributeResolver(const DOMElement* e)
         throw ConfigurationException("Template AttributeResolver requires sources attribute.");
 
     e = e ? XMLHelper::getFirstChildElement(e, Template) : nullptr;
-    auto_ptr_char t(e ? e->getTextContent() : nullptr);
+    auto_ptr_char t(XMLHelper::getTextContent(e));
     if (t.get()) {
         m_template = t.get();
         trim(m_template);
     }
     if (m_template.empty())
-        throw ConfigurationException("Template AttributeResolver requires <Template> child element.");
+        throw ConfigurationException("Template AttributeResolver requires non-empty <Template> child element.");
 }
 
 

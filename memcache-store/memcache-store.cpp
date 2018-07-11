@@ -192,7 +192,7 @@ MemcacheBase::MemcacheBase(const DOMElement* e)
         memcached_free(memc);
         throw XMLToolingException("Memcache StorageService requires Hosts element in configuration.");
     }
-    auto_ptr_char h(e->getTextContent());
+    auto_ptr_char h(XMLHelper::getTextContent(e));
     m_log.debug("INIT: GOT Hosts: %s", h.get());
     memcached_server_st* servers;
     servers = memcached_servers_parse(const_cast<char*>(h.get()));

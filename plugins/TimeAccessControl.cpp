@@ -106,13 +106,13 @@ Rule::Rule(const DOMElement* e)
 {
     if (XMLString::equals(e->getLocalName(), TimeSinceAuthn)) {
         m_type = TM_AUTHN;
-        XMLDateTime dur(e->getTextContent());
+        XMLDateTime dur(XMLHelper::getTextContent(e));
         dur.parseDuration();
         m_value = dur.getEpoch(true);
         return;
     }
     
-    auto_ptr_char temp(e->getTextContent());
+    auto_ptr_char temp(XMLHelper::getTextContent(e));
     string s(temp.get() ? temp.get() : "");
     trim(s);
     vector<string> tokens;

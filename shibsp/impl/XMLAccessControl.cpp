@@ -156,7 +156,7 @@ Rule::Rule(const DOMElement* e) : m_alias(XMLHelper::getAttrString(e, nullptr, r
     if (!e->hasChildNodes())
         return; // empty rule
 
-    auto_arrayptr<char> vals(toUTF8(e->getTextContent()));
+    auto_arrayptr<char> vals(toUTF8(XMLHelper::getTextContent(e)));
     if (!vals.get() || !*vals.get())
         throw ConfigurationException("Unable to convert Rule content into UTF-8.");
 
