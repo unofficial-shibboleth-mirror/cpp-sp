@@ -120,8 +120,14 @@
             <Component Id="metadataError.html" Guid="{8C46D04A-A943-4FA4-AFCB-9B040306C2C0}">
               <File KeyPath="yes" Name="metadataError.html" />
             </Component>
+            <!-- native.logger used to be edited in place so this will never fire, but
+                 removing this will cause it to go away.  So we put it in two places and overwrite
+                 this with the known good one (via the script) -->
             <Component Id="win_native.logger" Guid="{B2EBC853-279B-4EA1-BC84-A0EC0E5F3676}">
               <File KeyPath="yes" Name="native.logger" Source="$(var.SPBuildDirectory)\cpp-sp\configs\win-native.logger" />
+            </Component>
+            <Component Id="win_native.logger_in" Guid="{B081C55E-8C30-4D5D-BAC0-CF0F24026E23}">
+              <File KeyPath="yes" Name="win-native.logger" />
             </Component>
             <Component Id="sessionError.html" Guid="{8AA240B3-DC5D-4687-B321-4F5E1BAEA820}">
               <File KeyPath="yes" Name="sessionError.html" />

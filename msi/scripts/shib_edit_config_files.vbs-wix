@@ -138,6 +138,9 @@ if (Err = 0) then
     FileSystemObj.CopyFile DistDir & "shibboleth2.xml", ConfigDir, false
   End If
 
+  ' native.logger used to be edited in place, so we cannot update it
+  ' copy it from a known good place
+  FileSystemObj.CopyFile  DistDir & "win-native.logger",  DistDir & "native.logger", true
   If (NOT FileSystemObj.FileExists(ConfigDir & "native.logger")) then
     FileSystemObj.CopyFile DistDir & "native.logger", ConfigDir, false
   End If
