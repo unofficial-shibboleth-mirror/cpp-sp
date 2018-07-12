@@ -190,7 +190,7 @@
       <Component Id="shibd64.exe" Guid="{707B57A2-CCA0-48A6-9F66-275EB04474AA}" Win64="yes" Directory="sbin64">
         <File KeyPath="yes" Checksum="yes" Id="shibd64.exe" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\shibd.exe" />
         <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
-        <ServiceInstall Id="shibd" Name="shibd_Default" DisplayName="Shibboleth $(var.ShibbolethVersion) Daemon (Default)" Description="Manages shared state and offloads SAML processing from Shibboleth web server modules." Arguments="-stdout &quot;[INSTALLDIR]var\log\shibboleth\stdout.log&quot; -stderr &quot;[INSTALLDIR]var\log\shibboleth\stderr.log&quot;" Type="ownProcess" Start="auto" ErrorControl="ignore" />
+        <ServiceInstall Id="shibd" Name="shibd_Default" DisplayName="Shibboleth Daemon (Default)" Description="Manages shared state and offloads SAML processing from Shibboleth web server modules." Arguments="-stdout &quot;[INSTALLDIR]var\log\shibboleth\stdout.log&quot; -stderr &quot;[INSTALLDIR]var\log\shibboleth\stderr.log&quot;" Type="ownProcess" Start="auto" ErrorControl="ignore" />
         <ServiceControl Id="shibd_Default" Name="shibd_Default" Stop="both" Remove="uninstall" Start="install" Wait="no" />
         <!-- We put in the messages for Isapi and Shibd in this module since all others are shared with x64 -->
         <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider">
@@ -216,6 +216,8 @@
     <CustomAction Id="SetQtUninstallIIS64" Property="QtUninstallIIS64" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative" />
     <CustomAction Id="QtUninstallIIS32" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Impersonate="no" Return="ignore" />
     <CustomAction Id="QtUninstallIIS64" BinaryKey="WixCA" DllEntry="CAQuietExec64" Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <CustomAction Id="SetDisplayName" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Impersonate="no" Return="ignore"/>
 
     <InstallExecuteSequence>
       <!-- Install IIS if

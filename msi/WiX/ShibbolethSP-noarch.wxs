@@ -179,6 +179,8 @@
     <CustomAction Id="KeyGenEncrypt" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" />
     <CustomAction Id="SetKeyGenEncrypt" Property="KeyGenEncrypt" Value="&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot; -n sp-encrypt [KEYGEN_EXTRA]" />
 
+    <CustomAction Id="SetSetDisplayName" Property="SetDisplayName" Value="&quot;[WindowsFolder]\System32\sc&quot; config shibd_default DisplayName= &quot;Shibboleth Daemon (Default)&quot;"  />
+
     <!-- Inherit the installation dir if one was set -->
     <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
     <CustomAction Id="InheritInstallDir64" Property="INSTALLDIR" Value="[OLD_INSTALLDIR64]" />
@@ -201,9 +203,14 @@
 
       <Custom Action="SetKeyGenSigning" Before="CostInitialize">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
       <Custom Action="SetKeyGenEncrypt" Before="CostInitialize">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
+
       <!-- Run KeyGen after WriteEnvironmentStrings so the path is set -->
       <Custom Action="KeyGenSigning" After="WriteEnvironmentStrings">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
       <Custom Action="KeyGenEncrypt" After="WriteEnvironmentStrings">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
+
+      <!-- Set name only on upgrade and after ServiceInstall -->
+      <Custom Action="SetSetDisplayName" Before="CostInitialize">ALREADYINSTALLED</Custom>
+      <Custom Action="SetDisplayName" After="InstallServices">ALREADYINSTALLED</Custom>
 
       <!-- IIS handling is no longer architecture independent and happens in ShibbolethSP-main-x?? -->
 

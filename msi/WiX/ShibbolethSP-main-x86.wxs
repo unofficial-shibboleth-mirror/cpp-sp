@@ -121,6 +121,8 @@
     <CustomAction Id="SetQtUninstallIIS" Property="QtUninstallIIS" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative" />
     <CustomAction Id="QtUninstallIIS" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="deferred" Impersonate="no" Return="ignore" />
 
+    <CustomAction Id="SetDisplayName" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore"/>
+
     <InstallExecuteSequence>
       <!-- Install IIS if
            - this is an install
