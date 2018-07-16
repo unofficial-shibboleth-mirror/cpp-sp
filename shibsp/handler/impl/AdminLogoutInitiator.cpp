@@ -409,6 +409,7 @@ auto_ptr<LogoutRequest> AdminLogoutInitiator::buildRequest(
     const PropertySet* relyingParty = application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role.getParent()));
 
     auto_ptr<LogoutRequest> msg(LogoutRequestBuilder::buildLogoutRequest());
+    msg->setReason(LogoutRequest::REASON_ADMIN);
     Issuer* issuer = IssuerBuilder::buildIssuer();
     msg->setIssuer(issuer);
     issuer->setName(relyingParty->getXMLString("entityID").second);
