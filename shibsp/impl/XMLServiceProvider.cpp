@@ -585,7 +585,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             m_externalAppPaths.push_back(extoverridepath);
         }
 
-        override = XMLHelper::getNextSiblingElement(override, ApplicationOverride);
+        override = XMLHelper::getNextSiblingElement(override, ExternalApplicationOverrides);
     }
 
     if (!m_externalAppPaths.empty())
