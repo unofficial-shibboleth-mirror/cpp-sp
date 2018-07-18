@@ -675,6 +675,10 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
 {
     if (!e->hasChildNodes())
         return;
+
+    // This denotes whether the SSO element has been processed before or is specific to an override.
+    bool hasChildElements = e->getFirstElementChild() != nullptr;
+
     const DOMNamedNodeMap* ssoprops = e->getAttributes();
     XMLSize_t ssopropslen = ssoprops ? ssoprops->getLength() : 0;
 
@@ -693,11 +697,13 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
             log.info("auto-configuring SSO initiation for protocol (%s)", prot.get());
             pair<bool,const XMLCh*> inittype = initiator->getXMLString("id");
             if (inittype.first) {
-                // Append a session initiator element of the designated type to the root element.
-                DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
-                sidom->setAttributeNS(nullptr, _type, inittype.second);
-                e->appendChild(sidom);
-                log.info("adding SessionInitiator of type (%s) to chain (/Login)", initiator->getString("id").second);
+                if (!hasChildElements) {
+                    // Append a session initiator element of the designated type to the root element.
+                    DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
+                    sidom->setAttributeNS(nullptr, _type, inittype.second);
+                    e->appendChild(sidom);
+                    log.info("adding SessionInitiator of type (%s) to chain (/Login)", initiator->getString("id").second);
+                }
 
                 doArtifactResolution(pp, prot.get(), e, log);
                 protocols.insert(prot.get());
@@ -776,28 +782,33 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
     static const XMLCh discoveryProtocol[] = UNICODE_LITERAL_17(d,i,s,c,o,v,e,r,y,P,r,o,t,o,c,o,l);
     static const XMLCh discoveryURL[] = UNICODE_LITERAL_12(d,i,s,c,o,v,e,r,y,U,R,L);
     static const XMLCh _URL[] = UNICODE_LITERAL_3(U,R,L);
-    const XMLCh* discop = e->getAttributeNS(nullptr, discoveryProtocol);
-    if (discop && *discop) {
-        const XMLCh* discou = e->getAttributeNS(nullptr, discoveryURL);
-        if (discou && *discou) {
-            // Append a session initiator element of the designated type to the root element.
-            DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
-            sidom->setAttributeNS(nullptr, _type, discop);
-            sidom->setAttributeNS(nullptr, _URL, discou);
-            e->appendChild(sidom);
-            if (log.isInfoEnabled()) {
-                auto_ptr_char dp(discop);
-                log.info("adding SessionInitiator of type (%s) to chain (/Login)", dp.get());
+
+    if (!hasChildElements) {
+        const XMLCh* discop = e->getAttributeNS(nullptr, discoveryProtocol);
+        if (discop && *discop) {
+            const XMLCh* discou = e->getAttributeNS(nullptr, discoveryURL);
+            if (discou && *discou) {
+                // Append a session initiator element of the designated type to the root element.
+                DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
+                sidom->setAttributeNS(nullptr, _type, discop);
+                sidom->setAttributeNS(nullptr, _URL, discou);
+                e->appendChild(sidom);
+                if (log.isInfoEnabled()) {
+                    auto_ptr_char dp(discop);
+                    log.info("adding SessionInitiator of type (%s) to chain (/Login)", dp.get());
+                }
             }
-        }
-        else {
-            log.error("SSO discoveryProtocol specified without discoveryURL");
+            else {
+                log.error("SSO discoveryProtocol specified without discoveryURL");
+            }
         }
     }
 
-    // Attach default Location to SSO element.
-    static const XMLCh _loc[] = { chForwardSlash, chLatin_L, chLatin_o, chLatin_g, chLatin_i, chLatin_n, chNull };
-    e->setAttributeNS(nullptr, Location, _loc);
+    if (!hasChildElements) {
+        // Attach default Location to SSO element.
+        static const XMLCh _loc[] = { chForwardSlash, chLatin_L, chLatin_o, chLatin_g, chLatin_i, chLatin_n, chNull };
+        e->setAttributeNS(nullptr, Location, _loc);
+    }
 
     // Instantiate Chaining initiator around the SSO element.
     boost::shared_ptr<SessionInitiator> chain(
@@ -812,6 +823,10 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
 {
     if (!e->hasChildNodes())
         return;
+
+    // This denotes whether the Logout element has been processed before or is specific to an override.
+    bool hasChildElements = e->getFirstElementChild() != nullptr;
+
     const DOMNamedNodeMap* sloprops = e->getAttributes();
     XMLSize_t slopropslen = sloprops ? sloprops->getLength() : 0;
 
@@ -828,11 +843,13 @@ void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols
             log.info("auto-configuring Logout initiation for protocol (%s)", prot.get());
             pair<bool,const XMLCh*> inittype = initiator->getXMLString("id");
             if (inittype.first) {
-                // Append a logout initiator element of the designated type to the root element.
-                DOMElement* lidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _LogoutInitiator);
-                lidom->setAttributeNS(nullptr, _type, inittype.second);
-                e->appendChild(lidom);
-                log.info("adding LogoutInitiator of type (%s) to chain (/Logout)", initiator->getString("id").second);
+                if (!hasChildElements) {
+                    // Append a logout initiator element of the designated type to the root element.
+                    DOMElement* lidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _LogoutInitiator);
+                    lidom->setAttributeNS(nullptr, _type, inittype.second);
+                    e->appendChild(lidom);
+                    log.info("adding LogoutInitiator of type (%s) to chain (/Logout)", initiator->getString("id").second);
+                }
 
                 if (protocols.count(prot.get()) == 0) {
                     doArtifactResolution(pp, prot.get(), e, log);

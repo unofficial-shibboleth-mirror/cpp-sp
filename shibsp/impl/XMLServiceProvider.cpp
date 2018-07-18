@@ -566,7 +566,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
     // Load any overrides.
     DOMElement* override = XMLHelper::getFirstChildElement(child, ApplicationOverride);
     while (override) {
-        boost::shared_ptr<XMLApplication> iapp(new XMLApplication(outer, m_protocolProvider.get(), override, m_deprecationSupport, defapp.get()));
+        boost::shared_ptr<XMLApplication> iapp(new XMLApplication(outer, m_protocolProvider.get(), override, m_deprecationSupport, m_defaultApplication));
         if (m_appmap.count(iapp->getId()))
             log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
         else
