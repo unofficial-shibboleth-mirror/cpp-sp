@@ -261,7 +261,7 @@ void SAML2Logout::receive(DDF& in, ostream& out)
 pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPRequest& request, HTTPResponse& response) const
 {
 #ifndef SHIBSP_LITE
-    // First capture the active session ID.
+    // First capture the active session ID, if any.
     SessionCache* cache = application.getServiceProvider().getSessionCache();
     string session_id = cache->active(application, request);
 
@@ -438,10 +438,11 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
             indexes.insert(sindex.get());
         }
 
-        // For a front-channel LogoutRequest, we have to match the information in the request
+        // For a front-channel non-admin LogoutRequest, we have to match the information in the request
         // against the current session, if one is known/available.
         if (!session_id.empty()) {
-            if (!cache->matches(application, request, entity, *nameid, &indexes)) {
+            if (!XMLString::equals(logoutRequest->getReason(),LogoutRequest::REASON_ADMIN)
+                    && !cache->matches(application, request, entity, *nameid, &indexes)) {
                 return sendResponse(
                     logout_event.get(),
                     logoutRequest->getID(),
