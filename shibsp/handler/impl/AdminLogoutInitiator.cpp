@@ -136,7 +136,12 @@ void AdminLogoutInitiator::init(const char* location)
 
 pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) const
 {
-    // No front-channel notifications, so skip calling base class.
+    // No front-channel notifications, so skip calling logout base class.
+
+    // Check ACL in base class.
+    pair<bool,long> ret = SecuredHandler::run(request, isHandler);
+    if (ret.first)
+        return ret;
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
