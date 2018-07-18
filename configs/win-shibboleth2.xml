@@ -123,7 +123,7 @@
 	            url="http://federation.org/federation-metadata.xml"
               backingFilePath="federation-metadata.xml" maxRefreshDelay="7200">
             <MetadataFilter type="RequireValidUntil" maxValidityInterval="2419200"/>
-            <MetadataFilter type="Signature" certificate="fedsigner.pem" veryifyBackup="false"/>
+            <MetadataFilter type="Signature" certificate="fedsigner.pem" verifyBackup="false"/>
             <DiscoveryFilter type="Blacklist" matcher="EntityAttributes" trimTags="true" 
               attributeName="http://macedir.org/entity-category"
               attributeNameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"
