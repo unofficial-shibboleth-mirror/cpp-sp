@@ -833,7 +833,7 @@ void XMLConfig::regListener(const char* address, Remoted* listener)
         }
         else {
             // This should never happen...?
-            throw new ConfigurationException("Attempted to register more than two endpoints for a single listener address.");
+            throw ConfigurationException("Attempted to register more than two endpoints for a single listener address.");
         }
     }
     else {
