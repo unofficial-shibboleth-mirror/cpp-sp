@@ -66,7 +66,7 @@ class ShibTargetFCGI : public AbstractSPRequest
 {
     FCGX_Request* m_req;
     const char* m_body;
-    multimap<string,string> m_headers;
+    multimap<string,string> m_response_headers;
     int m_port;
     string m_scheme,m_hostname;
 
@@ -169,7 +169,7 @@ public:
 
     long sendResponse(istream& in, long status) {
         string hdr = string("Connection: close\r\n");
-        for (multimap<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+        for (multimap<string,string>::const_iterator i=m_response_headers.begin(); i!=m_response_headers.end(); ++i)
             hdr += i->first + ": " + i->second + "\r\n";
 
         const char* codestr="Status: 200 OK";
@@ -196,7 +196,7 @@ public:
           "Content-Length: 40\r\n"
           "Expires: Wed, 01 Jan 1997 12:00:00 GMT\r\n"
           "Cache-Control: private,no-store,no-cache,max-age=0\r\n";
-        for (multimap<string,string>::const_iterator i=m_headers.begin(); i!=m_headers.end(); ++i)
+        for (multimap<string,string>::const_iterator i=m_response_headers.begin(); i!=m_response_headers.end(); ++i)
             hdr += i->first + ": " + i->second + "\r\n";
         hdr += "\r\n";
 
