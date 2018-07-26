@@ -508,8 +508,9 @@ long AbstractHandler::sendMessage(
 {
     const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : nullptr;
     const PropertySet* relyingParty = application.getRelyingParty(entity);
-    pair<bool,const char*> flag = getString("signing",
-        !getElement() || XMLString::equals(getElement()->getNamespaceURI(), shibspconstants::SHIBSPCONFIG_NS) ? nullptr : shibspconstants::ASCII_SHIBSPCONFIG_NS);
+    pair<bool, const char*> flag = getString("signing");
+    if (!flag.first)
+        flag = getString("signing", shibspconstants::ASCII_SHIBSPCONFIG_NS);
     if (!flag.first)
         flag = relyingParty->getString("signing");
     if (SPConfig::shouldSignOrEncrypt(flag.first ? flag.second : defaultSigningProperty, destination, encoder.isUserAgentPresent())) {
