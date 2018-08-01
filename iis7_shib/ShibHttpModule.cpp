@@ -39,7 +39,10 @@ ShibHttpModule::DoHandler(
     _In_ IHttpEventProvider *   pProvider
 )
 {
-    // Quickly check the URL
+    // Quickly check the URL.
+    // Calling GetScriptName is safe here since we don't care about "visible to other filters" paths, just our path.
+    // This saves us converting from 8 bit ascii up to 16 bit for the compare against something which was only in 16
+    // bits to speed this path.  In V4 we can look at the local request
     const wstring url(pHttpContext->GetScriptName());
     if (url.length() < g_handlerPrefix.length() || !starts_with(url, g_handlerPrefix))
         return RQ_NOTIFICATION_CONTINUE;

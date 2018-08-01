@@ -41,11 +41,11 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
         m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
         m_firsttime(true), m_port(0), m_gotBody(false), m_event(pEventProvider)
 {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-    setRequestURI(converter.to_bytes(m_ctx->GetScriptName()).c_str());
-
     DWORD len;
     PCSTR var;
+
+    setRequestURI(m_request->GetRawHttpRequest()->pRawUrl);
+
     bool bSSL = false;
     HRESULT hr = m_ctx->GetServerVariable("SERVER_PORT_SECURE", &var, &len);
     if (SUCCEEDED(hr)) {
