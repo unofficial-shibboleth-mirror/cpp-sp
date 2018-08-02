@@ -58,6 +58,10 @@
             <afp:PermitValueRuleReference ref="ScopingRules"/>
         </afp:AttributeRule>
 
+        <afp:AttributeRule attributeID="targeted-id">
+            <afp:PermitValueRuleReference ref="ScopingRules"/>
+        </afp:AttributeRule>
+
         <!-- Require NameQualifier/SPNameQualifier match IdP and SP entityID respectively. -->
         <afp:AttributeRule attributeID="persistent-id">
             <afp:PermitValueRule xsi:type="saml:NameIDQualifierString"/>
