@@ -2,7 +2,7 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 
 if BUILD_UNITTEST
 bin_PROGRAMS = shibsptest
-shibsptest_CXXFLAGS = $(CXXFLAGS) $(CXXTESTFLAGS)
+shibsptest_CXXFLAGS = $(AM_CXXFLAGS) $(CXXTESTFLAGS)
 else
 bin_PROGRAMS = 
 endif

@@ -4,6 +4,7 @@ plugindir = $(libdir)/@PACKAGE_NAME@
 plugin_LTLIBRARIES = adfs.la adfs-lite.la
 
 adfs_la_CXXFLAGS = \
+	$(AM_CXXFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(opensaml_CFLAGS) \
@@ -24,6 +25,7 @@ adfs_lite_la_SOURCES = \
 	adfs.cpp
 
 adfs_lite_la_CXXFLAGS = -DSHIBSP_LITE \
+	$(AM_CXXFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(xmltooling_lite_CFLAGS) \

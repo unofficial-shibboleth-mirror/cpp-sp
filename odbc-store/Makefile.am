@@ -3,10 +3,9 @@ AUTOMAKE_OPTIONS = foreign
 plugindir = $(libdir)/@PACKAGE_NAME@
 plugin_LTLIBRARIES = odbc-store.la
 
-AM_CFLAGS = $(ODBC_CFLAGS)
-AM_CXXFLAGS = $(ODBC_CFLAGS)
-
 odbc_store_la_CXXFLAGS = \
+	$(AM_CXXFLAGS) \
+	$(ODBC_CFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(opensaml_CFLAGS) \

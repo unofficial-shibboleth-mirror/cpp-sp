@@ -5,6 +5,7 @@ nsapi_shibdir = $(libdir)/@PACKAGE_NAME@
 nsapi_shib_LTLIBRARIES = nsapi_shib.la
 nsapi_shib_la_SOURCES = nsapi_shib.cpp
 nsapi_shib_la_CXXFLAGS = $(NSAPI_INCLUDE) \
+  $(AM_CXXFLAGS) \
   $(BOOST_CPPFLAGS) \
   $(PTHREAD_CFLAGS) \
   $(xerces_CFLAGS) \

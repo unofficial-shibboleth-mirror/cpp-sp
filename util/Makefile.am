@@ -5,6 +5,7 @@ bin_PROGRAMS = mdquery resolvertest
 resolvertest_SOURCES = resolvertest.cpp
 
 resolvertest_CXXFLAGS = \
+	$(AM_CXXFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
 	$(opensaml_CFLAGS) \
@@ -25,6 +26,7 @@ EXTRA_DIST = \
 	resolvertest.rc
 
 mdquery_CXXFLAGS = \
+	$(AM_CXXFLAGS) \
 	$(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \

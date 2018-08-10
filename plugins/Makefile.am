@@ -21,6 +21,7 @@ plugins_lite_la_SOURCES = \
 	${common_sources}
 
 plugins_la_CXXFLAGS = \
+	$(AM_CXXFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(opensaml_CFLAGS) \
@@ -48,6 +49,7 @@ plugins_lite_la_LIBADD = \
 plugins_la_LDFLAGS = -module -avoid-version
 plugins_lite_la_LDFLAGS = -module -avoid-version
 plugins_lite_la_CXXFLAGS = -DSHIBSP_LITE \
+	$(AM_CXXFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
 	$(xerces_CFLAGS) \

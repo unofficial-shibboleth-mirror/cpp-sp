@@ -5,6 +5,7 @@ sbin_PROGRAMS = shibd
 shibd_SOURCES = shibd.cpp
 
 shibd_CXXFLAGS = \
+  $(AM_CXXFLAGS) \
   $(PTHREAD_CFLAGS) \
   $(SYSTEMD_CFLAGS) \
   $(opensaml_CFLAGS) \
