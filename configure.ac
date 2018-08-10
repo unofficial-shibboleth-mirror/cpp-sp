@@ -53,11 +53,8 @@ if test "$GCC" = "yes" ; then
 fi
 
 # Fix for Sun Workshop compiler in debug mode, may be Sun case #6360993
-# Also enables POSIX semantics for some functions.
 case "${host_cpu}-${host_os}" in
     *solaris*)
-	CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS"
-	CXXFLAGS="$CXXFLAGS -D_POSIX_PTHREAD_SEMANTICS"
 	if test "$CXX" = "CC" ; then
 		CXXFLAGS="$CXXFLAGS -Qoption ccfe -stabs=no%dfltlit+no%dflthlp"
 	fi
