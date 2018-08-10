@@ -4,8 +4,6 @@ AC_CONFIG_SRCDIR(shibsp)
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_MACRO_DIR(m4)
 AM_INIT_AUTOMAKE
-AC_DISABLE_STATIC
-AC_PROG_LIBTOOL
 PKG_INSTALLDIR
 
 # Docygen features
@@ -63,6 +61,8 @@ case "${host_cpu}-${host_os}" in
 	CXXFLAGS="$CXXFLAGS -D_POSIX_PII_SOCKET"
 	;;
 esac
+
+LT_INIT([disable-static])
 
 AC_LANG(C)
 
