@@ -24,7 +24,9 @@ secincludedir = $(includedir)/shibsp/security
 
 utilincludedir = $(includedir)/shibsp/util
 
-nodist_libshibspinclude_HEADERS = config_pub.h
+nodist_libshibspinclude_HEADERS = \
+	config_pub.h \
+	paths.h
 
 libshibspinclude_HEADERS = \
 	AbstractSPRequest.h \
@@ -32,7 +34,6 @@ libshibspinclude_HEADERS = \
 	Application.h \
 	base.h \
 	exceptions.h \
-	paths.h \
 	GSSRequest.h \
 	RequestMapper.h \
 	ServiceProvider.h \
@@ -309,3 +310,5 @@ EXTRA_DIST = \
 	shibsp.rc
 
 BUILT_SOURCES = paths.h
+
+CLEANFILES = paths.h
