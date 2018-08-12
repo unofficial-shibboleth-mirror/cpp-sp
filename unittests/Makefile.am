@@ -2,7 +2,12 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 
 if BUILD_UNITTEST
 bin_PROGRAMS = shibsptest
-shibsptest_CXXFLAGS = $(AM_CXXFLAGS) $(CXXTESTFLAGS)
+shibsptest_CXXFLAGS = \
+    $(AM_CXXFLAGS) \
+    $(CXXTESTFLAGS) \
+    $(opensaml_CFLAGS) \
+    $(xerces_CFLAGS) \
+    $(xmltooling_CFLAGS)
 else
 bin_PROGRAMS = 
 endif
@@ -33,6 +38,10 @@ do-cxxtestgen:
 $(nodist_shibsptest_SOURCES): %.cpp: %.h
 	$(MAKE) do-cxxtestgen HFILE=$< CPPFILE=$@
 
-shibsptest_LDADD = $(top_builddir)/shibsp/libshibsp.la
+shibsptest_LDADD = \
+    $(top_builddir)/shibsp/libshibsp.la \
+    $(opensaml_LIBS) \
+    $(xerces_LIBS) \
+    $(xmltooling_LIBS)
 
 EXTRA_DIST = data
