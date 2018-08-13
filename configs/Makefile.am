@@ -126,6 +126,7 @@ install-data-local:	all-data-local
 
 install-data-hook:
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/keygen.sh
+	chmod +x $(DESTDIR)$(pkgsysconfdir)/seckeygen.sh
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/metagen.sh
 	if test -z "$(NOKEYGEN)"; then \
 		if test ! -f $(DESTDIR)$(pkgsysconfdir)/sp-key.gen; then \
