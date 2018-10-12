@@ -527,10 +527,26 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
     while (child) {
         if (!child->hasAttributeNS(nullptr, Location)) {
             auto_ptr_char hclass(child->getLocalName());
-            log.error("%s handler with no Location property cannot be processed", hclass.get());
+            log.error("%s handler with no Location property cannot be processed for application (%s)",
+                hclass.get(), getId());
             child = XMLHelper::getNextSiblingElement(child);
             continue;
         }
+
+        auto_ptr_char dupcheck(child->getAttributeNS(nullptr, Location));
+        if (dupcheck.get() && *dupcheck.get()) {
+            string _dupcheck(dupcheck.get());
+            if (*_dupcheck.begin() != '/')
+                _dupcheck.insert(_dupcheck.begin(), '/');
+            if (m_handlerMap.find(_dupcheck) != m_handlerMap.end()) {
+                auto_ptr_char hclass(child->getLocalName());
+                log.error("%s handler at duplicate Location (%s) will not be processed for application (%s)",
+                    hclass.get(), _dupcheck.c_str(), getId());
+                child = XMLHelper::getNextSiblingElement(child);
+                continue;
+            }
+        }
+
         try {
             boost::shared_ptr<Handler> handler;
             if (XMLString::equals(child->getLocalName(), _AssertionConsumerService)) {
