@@ -129,7 +129,7 @@ install-data-hook:
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/seckeygen.sh
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/metagen.sh
 	if test -z "$(NOKEYGEN)"; then \
-		if test ! -f $(DESTDIR)$(pkgsysconfdir)/sp-key.gen; then \
+		if test ! -f $(DESTDIR)$(pkgsysconfdir)/sp-key.pem; then \
 			cd $(DESTDIR)$(pkgsysconfdir); \
 			/bin/sh ./keygen.sh -b -n sp-signing ; \
 			/bin/sh ./keygen.sh -b -n sp-encrypt ; \
