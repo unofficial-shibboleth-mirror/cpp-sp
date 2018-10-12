@@ -369,7 +369,7 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
                             *id = mprefix.second + *id;
                     }
                 }
-                catch (std::exception& ex) {
+                catch (const std::exception& ex) {
                     m_log.error("caught exception extracting attributes: %s", ex.what());
                 }
             }
@@ -396,7 +396,7 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
             try {
                 filter->filterAttributes(fc, resolvedAttributes);
             }
-            catch (std::exception& ex) {
+            catch (const std::exception& ex) {
                 m_log.error("caught exception filtering attributes: %s", ex.what());
                 m_log.error("dumping extracted attributes due to filtering exception");
                 for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
@@ -409,27 +409,35 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
     if (resolver) {
         m_log.debug("resolving attributes...");
 
-        Locker locker(resolver);
-        auto_ptr<ResolutionContext> ctx(
-            resolver->createResolutionContext(
-                application,
-                &httpRequest,
-                issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : nullptr,
-                protocol,
-                nameid,
-                nullptr,
-                nullptr,
-                nullptr,
-                &resolvedAttributes
-                )
-            );
-        resolver->resolveAttributes(*ctx);
-        // Copy over any pushed attributes.
-        while (!resolvedAttributes.empty()) {
-            ctx->getResolvedAttributes().push_back(resolvedAttributes.back());
-            resolvedAttributes.pop_back();
+        try {
+			Locker locker(resolver);
+			auto_ptr<ResolutionContext> ctx(
+				resolver->createResolutionContext(
+					application,
+					&httpRequest,
+					issuer ? dynamic_cast<const saml2md::EntityDescriptor*>(issuer->getParent()) : nullptr,
+					protocol,
+					nameid,
+					nullptr,
+					nullptr,
+					nullptr,
+					&resolvedAttributes
+					)
+				);
+			resolver->resolveAttributes(*ctx);
+
+			// Copy over any previous attributes.
+			while (!resolvedAttributes.empty()) {
+				ctx->getResolvedAttributes().push_back(resolvedAttributes.back());
+				resolvedAttributes.pop_back();
+			}
+			return ctx.release();
         }
-        return ctx.release();
+        catch (...) {
+            for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
+            resolvedAttributes.clear();
+            throw;
+        }
     }
 
     if (!resolvedAttributes.empty()) {
@@ -438,9 +446,11 @@ ResolutionContext* AttributeResolverHandler::resolveAttributes(
         }
         catch (...) {
             for_each(resolvedAttributes.begin(), resolvedAttributes.end(), xmltooling::cleanup<shibsp::Attribute>());
+            resolvedAttributes.clear();
             throw;
         }
     }
+
     return nullptr;
 }
 
