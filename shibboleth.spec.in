@@ -426,6 +426,8 @@ exit 0
 %dir %{_libdir}/shibboleth
 %{_libdir}/shibboleth/*.so
 %exclude %{_libdir}/shibboleth/*.la
+%{?_with_fastcgi:%{_libdir}/shibboleth/shibauthorizer}
+%{?_with_fastcgi:%{_libdir}/shibboleth/shibresponder} 
 %attr(0750,%{runuser},%{runuser}) %dir %{_localstatedir}/log/shibboleth
 %if 0%{?suse_version} < 1300
 %attr(0755,%{runuser},%{runuser}) %dir %{_localstatedir}/run/shibboleth
