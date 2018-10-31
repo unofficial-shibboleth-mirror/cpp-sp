@@ -26,7 +26,6 @@
 
 #include "internal.h"
 
-#include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 #include <shibsp/exceptions.h>
 #include <shibsp/SessionCache.h>
@@ -159,9 +158,16 @@ void TemplateAttributeResolver::resolveAttributes(ResolutionContext& ctx) const
         return;
 
     map<string,const Attribute*> attrmap;
+
     for (vector<string>::const_iterator a = m_sources.begin(); a != m_sources.end(); ++a) {
-        static bool (*eq)(const string&, const char*) = operator==;
-        const Attribute* attr = find_if(*tctx.getInputAttributes(), boost::bind(eq, boost::cref(*a), boost::bind(&Attribute::getId, _1)));
+        const Attribute* attr = nullptr;
+        for (vector<Attribute*>::const_iterator b = tctx.getInputAttributes()->begin(); b != tctx.getInputAttributes()->end(); ++b) {
+            if (*a == (*b)->getId()) {
+                attr = *b;
+                break;
+            }
+        }
+
         if (!attr) {
             m_log.warn("source attribute (%s) missing, cannot resolve attribute (%s)", a->c_str(), m_dest.front().c_str());
             return;
