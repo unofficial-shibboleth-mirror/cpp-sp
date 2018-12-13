@@ -376,7 +376,7 @@ DDF SocketListener::send(const DDF& in)
             except=XMLToolingException::fromString(out.string());
             log->error("remoted message returned an error: %s", except->what());
         }
-        catch (XMLToolingException& e) {
+        catch (const XMLToolingException& e) {
             log->error("caught XMLToolingException while building the XMLToolingException: %s", e.what());
             log->error("XML was: %s", out.string());
             throw ListenerException("Remote call failed with an unparsable exception.");
@@ -559,6 +559,15 @@ int ServerThread::job()
 
         // Dispatch the message.
         m_listener->receive(in, sink);
+    }
+    catch (const xercesc::XMLException& e) {
+        auto_ptr_char temp(e.getMessage());
+        if (incomingError)
+            log.error("error processing incoming message: %s", temp.get() ? temp.get() : "no message");
+        XMLParserException ex(string("Xerces error: ") + (temp.get() ? temp.get() : "no message"));
+        DDF out=DDF("exception").string(ex.toString().c_str());
+        DDFJanitor jout(out);
+        sink << out;
     }
     catch (const XMLToolingException& e) {
         if (incomingError)
