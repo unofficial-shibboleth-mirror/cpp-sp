@@ -450,8 +450,14 @@ pair<bool,long> ExternalAuth::processMessage(
         param = httpRequest.getParameter("AuthnInstant");
         if (param && *param) {
             auto_ptr_XMLCh d(param);
-            authn_instant.reset(new XMLDateTime(d.get()));
-            authn_instant->parseDateTime();
+            try {
+                authn_instant.reset(new XMLDateTime(d.get()));
+                authn_instant->parseDateTime();
+            }
+            catch (const XMLException& e) {
+                auto_ptr_char temp(e.getMessage());
+                throw XMLObjectException(temp.get() ? temp.get() : "XMLException parsing date/time value.");
+            }
         }
 
         auto_ptr_XMLCh session_index(httpRequest.getParameter("SessionIndex"));

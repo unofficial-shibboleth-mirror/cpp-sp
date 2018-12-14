@@ -106,10 +106,16 @@ Rule::Rule(const DOMElement* e)
 {
     if (XMLString::equals(e->getLocalName(), TimeSinceAuthn)) {
         m_type = TM_AUTHN;
-        XMLDateTime dur(XMLHelper::getTextContent(e));
-        dur.parseDuration();
-        m_value = dur.getEpoch(true);
-        return;
+        try {
+            XMLDateTime dur(XMLHelper::getTextContent(e));
+            dur.parseDuration();
+            m_value = dur.getEpoch(true);
+            return;
+        }
+        catch (const XMLException& e) {
+            auto_ptr_char temp(e.getMessage());
+            throw ConfigurationException(temp.get() ? temp.get() : "XMLException parsing duration in TimeSinceAuthn rule");
+        }
     }
     
     auto_ptr_char temp(XMLHelper::getTextContent(e));
@@ -130,10 +136,16 @@ Rule::Rule(const DOMElement* e)
     if (XMLString::equals(e->getLocalName(), Time)) {
         m_type = TM_TIME;
         auto_ptr_XMLCh widen(tokens.back().c_str());
-        XMLDateTime dt(widen.get());
-        dt.parseDateTime();
-        m_value = dt.getEpoch(false);
-        return;
+        try {
+            XMLDateTime dt(widen.get());
+            dt.parseDateTime();
+            m_value = dt.getEpoch(false);
+            return;
+        }
+        catch (const XMLException& e) {
+            auto_ptr_char temp(e.getMessage());
+            throw ConfigurationException(temp.get() ? temp.get() : "XMLException parsing duration in Time rule");
+        }
     }
 
     m_value = lexical_cast<time_t>(tokens.back());
@@ -179,8 +191,9 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
                     request.log(SPRequest::SPDebug, "elapsed time since authentication exceeds limit");
                     return shib_acl_false;
                 }
-                catch (std::exception& e) {
-                    request.log(SPRequest::SPError, e.what());
+                catch (const XMLException& e) {
+                    auto_ptr_char temp(e.getMessage());
+                    request.log(SPRequest::SPError, temp.get() ? temp.get() : "XMLException parsing AuthnInstant from session");
                 }
             }
         }
