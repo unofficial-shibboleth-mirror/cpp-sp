@@ -34,7 +34,9 @@
 #include <stack>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
+#include <xercesc/sax/SAXException.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
+#include <xercesc/util/OutOfMemoryException.hpp>
 
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -560,11 +562,38 @@ int ServerThread::job()
         // Dispatch the message.
         m_listener->receive(in, sink);
     }
+    catch (const xercesc::DOMException& e) {
+        auto_ptr_char temp(e.getMessage());
+        if (incomingError)
+            log.error("error processing incoming message: %s", temp.get() ? temp.get() : "no message");
+        XMLParserException ex(string("DOM error: ") + (temp.get() ? temp.get() : "no message"));
+        DDF out=DDF("exception").string(ex.toString().c_str());
+        DDFJanitor jout(out);
+        sink << out;
+    }
+    catch (const xercesc::SAXException& e) {
+        auto_ptr_char temp(e.getMessage());
+        if (incomingError)
+            log.error("error processing incoming message: %s", temp.get() ? temp.get() : "no message");
+        XMLParserException ex(string("SAX error: ") + (temp.get() ? temp.get() : "no message"));
+        DDF out=DDF("exception").string(ex.toString().c_str());
+        DDFJanitor jout(out);
+        sink << out;
+    }
     catch (const xercesc::XMLException& e) {
         auto_ptr_char temp(e.getMessage());
         if (incomingError)
             log.error("error processing incoming message: %s", temp.get() ? temp.get() : "no message");
         XMLParserException ex(string("Xerces error: ") + (temp.get() ? temp.get() : "no message"));
+        DDF out=DDF("exception").string(ex.toString().c_str());
+        DDFJanitor jout(out);
+        sink << out;
+    }
+    catch (const xercesc::OutOfMemoryException& e) {
+        auto_ptr_char temp(e.getMessage());
+        if (incomingError)
+            log.error("error processing incoming message: %s", temp.get() ? temp.get() : "no message");
+        XMLParserException ex(string("Out of memory error: ") + (temp.get() ? temp.get() : "no message"));
         DDF out=DDF("exception").string(ex.toString().c_str());
         DDFJanitor jout(out);
         sink << out;
