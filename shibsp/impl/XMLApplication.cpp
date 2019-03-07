@@ -716,6 +716,21 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                 if (!hasChildElements) {
                     // Append a session initiator element of the designated type to the root element.
                     DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
+
+                    // Copy in any attributes from the <SSO> element so they can be accessed as properties in the SI handler
+                    // but more importantly the MessageEncoders, which are DOM-aware only, not SP property-aware.
+                    // The property-based lookups will walk up the DOM tree but the DOM-only code won't.
+                    for (XMLSize_t p = 0; p < ssopropslen; ++p) {
+                        DOMNode* ssoprop = ssoprops->item(p);
+                        if (ssoprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
+                            sidom->setAttributeNS(
+                                ((DOMAttr*)ssoprop)->getNamespaceURI(),
+                                ((DOMAttr*)ssoprop)->getLocalName(),
+                                ((DOMAttr*)ssoprop)->getValue()
+                            );
+                        }
+                    }
+
                     sidom->setAttributeNS(nullptr, _type, inittype.second);
                     e->appendChild(sidom);
                     log.info("adding SessionInitiator of type (%s) to chain (/Login)", initiator->getString("id").second);
@@ -740,7 +755,8 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                 if (idprop.first && pathprop.first) {
                     DOMElement* acsdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _AssertionConsumerService);
 
-                    // Copy in any attributes from the <SSO> element so they can be accessed as properties in the ACS handler.
+                    // Copy in any attributes from the <SSO> element so they can be accessed as properties in the ACS handler,
+                    // since the handlers aren't attached to the SSO element.
                     for (XMLSize_t p = 0; p < ssopropslen; ++p) {
                         DOMNode* ssoprop = ssoprops->item(p);
                         if (ssoprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
