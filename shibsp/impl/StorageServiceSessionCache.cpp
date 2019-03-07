@@ -1402,7 +1402,9 @@ void* SSCache::cleanup_fn(void* p)
             pcache->m_log.info("purging %d old sessions", stale_keys.size());
 
             // Pass 2: walk through the list of stale entries and remove them from the cache
-            for_each(stale_keys.begin(), stale_keys.end(), boost::bind(&SSCache::dormant, pcache, boost::bind(&string::c_str, _1)));
+            for (vector<string>::const_iterator i = stale_keys.begin(); i != stale_keys.end(); ++i) {
+                pcache->dormant(i->c_str());
+            }
         }
 
         pcache->m_log.debug("cleanup thread completed");

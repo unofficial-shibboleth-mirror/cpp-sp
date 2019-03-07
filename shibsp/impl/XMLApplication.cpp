@@ -1545,14 +1545,20 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
             whitelist.push_back(string("http://") + request.getHostname() + ':');
         }
 
-        static bool (*startsWithI)(const char*,const char*) = XMLString::startsWithI;
-        if (!whitelist.empty() && find_if(whitelist.begin(), whitelist.end(),
-                boost::bind(startsWithI, url, boost::bind(&string::c_str, _1))) != whitelist.end()) {
-            return;
+        if (!whitelist.empty()) {
+            for (vector<string>::const_iterator i = whitelist.begin(); i != whitelist.end(); ++i) {
+                if (XMLString::startsWithI(url, i->c_str())) {
+                    return;
+                }
+            }
         }
-        else if (!m_redirectWhitelist.empty() && find_if(m_redirectWhitelist.begin(), m_redirectWhitelist.end(),
-                boost::bind(startsWithI, url, boost::bind(&string::c_str, _1))) != m_redirectWhitelist.end()) {
-            return;
+
+        if (!m_redirectWhitelist.empty()) {
+            for (vector<string>::const_iterator i = m_redirectWhitelist.begin(); i != m_redirectWhitelist.end(); ++i) {
+                if (XMLString::startsWithI(url, i->c_str())) {
+                    return;
+                }
+            }
         }
         Category::getInstance(SHIBSP_LOGCAT ".Application").warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
         throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
