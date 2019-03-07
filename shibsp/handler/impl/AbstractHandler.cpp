@@ -646,8 +646,35 @@ void AbstractHandler::preservePostData(
             postkey = string(mech.second-3) + ':' + out.string();
         }
 
-        // Set a cookie with key info.
         pair<string,const char*> shib_cookie = getPostCookieNameProps(application, relayState);
+
+        // Purge any cookies in excess of 25.
+        int maxCookies = 25,purgedCookies = 0;
+        string exp;
+
+        // Walk the list of cookies backwards by name.
+        const map<string,string>& cookies = request.getCookies();
+        for (map<string,string>::const_reverse_iterator i = cookies.rbegin(); i != cookies.rend(); ++i) {
+            // Process post data cookies only.
+            if (starts_with(i->first, "_shibpost_")) {
+                if (maxCookies > 0) {
+                    // Keep it, but count it against the limit.
+                    --maxCookies;
+                }
+                else {
+                    // We're over the limit, so everything here and older gets cleaned up.
+                    if (exp.empty())
+                        exp = string(shib_cookie.second) + "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
+                    response.setCookie(i->first.c_str(), exp.c_str());
+                    ++purgedCookies;
+                }
+            }
+        }
+
+        if (purgedCookies > 0)
+            log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedCookies) + " stale POST preservation cookie(s) from client");
+
+        // Set a cookie with key info.
         postkey += shib_cookie.second;
         response.setCookie(shib_cookie.first.c_str(), postkey.c_str());
     }
