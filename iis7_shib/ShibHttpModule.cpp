@@ -84,7 +84,7 @@ ShibHttpModule::DoFilter(
 
     IIS7Request filter(pHttpContext, pProvider, true, map_i->second);
 
-    pair<bool, long> res = filter.getServiceProvider().doAuthentication(filter);
+    pair<bool, long> res = filter.getServiceProvider().doAuthentication(filter, true);
     if (res.first) {
         return static_cast<REQUEST_NOTIFICATION_STATUS>(res.second);
     }
