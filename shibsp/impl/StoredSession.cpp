@@ -186,7 +186,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
     if (client_addr) {
         const char* saddr = getClientAddress(getAddressFamily(client_addr));
         if (saddr && *saddr) {
-            if (!XMLString::equals(saddr, client_addr)) {
+            if (!m_cache->compareAddresses(client_addr, saddr)) {
                 m_cache->m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, saddr);
                 throw RetryableProfileException(
                     "Your IP address ($1) does not match the address recorded at the time the session was established.",
@@ -297,7 +297,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
                 const char* saddr = getClientAddress(getAddressFamily(client_addr));
                 if (saddr) {
                     // Something snuck in and bound the session to this address type, so it better match what we have.
-                    if (!XMLString::equals(saddr, client_addr)) {
+                    if (!m_cache->compareAddresses(client_addr, saddr)) {
                         m_cache->m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, saddr);
                         throw RetryableProfileException(
                             "Your IP address ($1) does not match the address recorded at the time the session was established.",

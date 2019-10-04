@@ -55,8 +55,9 @@ namespace opensaml {
 
 namespace shibsp {
 
+    class IPRange;
     class StoredSession;
-    class SSCache : public SessionCache
+    class SHIBSP_DLLLOCAL SSCache : public SessionCache
 #ifndef SHIBSP_LITE
         ,public virtual Remoted
 #endif
@@ -154,10 +155,14 @@ namespace shibsp {
         const xercesc::DOMElement* m_root;         // Only valid during initialization
         unsigned long m_inprocTimeout,m_cacheTimeout,m_cacheAllowance;
         std::string m_inboundHeader,m_outboundHeader;
+        std::vector<IPRange> m_unreliableNetworks;
 
         // inproc means we buffer sessions in memory
         boost::scoped_ptr<xmltooling::RWLock> m_lock;
         std::map<std::string,StoredSession*> m_hashtable;
+
+        // handle potentially inexact address comparisons
+        bool compareAddresses(const char* client_addr, const char* session_addr) const;
 
         // management of buffered sessions
         void dormant(const char* key);

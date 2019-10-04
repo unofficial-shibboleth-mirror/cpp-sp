@@ -9,7 +9,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="3.0">
+	version="3.1">
 
   <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
   <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
@@ -130,6 +130,7 @@
         <attribute name="reverseIndexMaxSize" type="unsignedInt"/>
         <attribute name="excludeReverseIndex" type="conf:listOfStrings"/>
         <attribute name="persistedAttributes" type="conf:listOfStrings"/>
+        <attribute name="unreliableNetworks" type="conf:listOfStrings"/>
         <anyAttribute namespace="##any" processContents="lax"/>
       </restriction>
     </complexContent>

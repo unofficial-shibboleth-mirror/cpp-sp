@@ -42,6 +42,7 @@
 #include "handler/RemotedHandler.h"
 #include "impl/StoredSession.h"
 #include "impl/StorageServiceSessionCache.h"
+#include "util/IPRange.h"
 #include "util/SPConstants.h"
 
 #include <algorithm>
@@ -53,6 +54,7 @@
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
+#include <xercesc/util/XMLStringTokenizer.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 #ifndef SHIBSP_LITE
@@ -63,7 +65,6 @@
 # include <xmltooling/XMLToolingConfig.h>
 # include <xmltooling/util/ParserPool.h>
 # include <xmltooling/util/StorageService.h>
-# include <xercesc/util/XMLStringTokenizer.hpp>
 using namespace opensaml::saml2md;
 #else
 # include <xercesc/util/XMLDateTime.hpp>
@@ -117,6 +118,7 @@ SSCache::SSCache(const DOMElement* e, bool deprecationSupport)
     static const XMLCh outboundHeader[] =       UNICODE_LITERAL_14(o,u,t,b,o,u,n,d,H,e,a,d,e,r);
     static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh _StorageServiceLite[] =  UNICODE_LITERAL_18(S,t,o,r,a,g,e,S,e,r,v,i,c,e,L,i,t,e);
+    static const XMLCh _unreliableNetworks[] =  UNICODE_LITERAL_18(u,n,r,e,l,i,a,b,l,e,N,e,t,w,o,r,k,s);
 
     if (e && e->hasAttributeNS(nullptr, cacheTimeout)) {
         m_log.warn("DEPRECATED: cacheTimeout property is replaced by cacheAllowance (see documentation)");
@@ -188,6 +190,15 @@ SSCache::SSCache(const DOMElement* e, bool deprecationSupport)
         }
     }
 #endif
+
+    const XMLCh* unreliableNetworks = e ? e->getAttributeNS(nullptr, _unreliableNetworks) : nullptr;
+    if (unreliableNetworks && *unreliableNetworks) {
+        XMLStringTokenizer toks(unreliableNetworks);
+        while (toks.hasMoreTokens()) {
+            auto_ptr_char tok(toks.nextToken());
+            m_unreliableNetworks.push_back(IPRange::parseCIDRBlock(tok.get()));
+        }
+    }
 
     ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
     if (inproc) {
@@ -275,6 +286,21 @@ string SSCache::active(const Application& app, const HTTPRequest& request)
     pair<string, const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
     const char* session_id = request.getCookie(shib_cookie.first.c_str());
     return (session_id ? session_id : "");
+}
+
+bool SSCache::compareAddresses(const char* client_addr, const char* session_addr) const
+{
+    if (XMLString::equals(client_addr, session_addr)) {
+        return true;
+    }
+
+    for (vector<IPRange>::const_iterator i = m_unreliableNetworks.begin(); i != m_unreliableNetworks.end(); ++i) {
+        if (i->contains(client_addr) && i->contains(session_addr)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 #ifndef SHIBSP_LITE

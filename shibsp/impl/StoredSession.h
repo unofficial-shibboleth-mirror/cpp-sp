@@ -52,7 +52,7 @@ namespace shibsp {
 
     class SSCache;
 
-    class StoredSession : public virtual Session
+    class SHIBSP_DLLLOCAL StoredSession : public virtual Session
     {
     public:
         StoredSession(SSCache* cache, DDF& obj);
