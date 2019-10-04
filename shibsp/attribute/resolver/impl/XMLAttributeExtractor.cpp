@@ -444,7 +444,7 @@ void XMLExtractorImpl::extractAttributes(
     }
     else if (m_log.isDebugEnabled()) {
         auto_ptr_char temp(format);
-        m_log.debug("skipping unmapped NameIdentifier with format (%s)", temp.get());
+        m_log.debug("skipping NameIdentifier with format (%s)", temp.get());
     }
 }
 
@@ -469,7 +469,7 @@ void XMLExtractorImpl::extractAttributes(
     }
     else if (m_log.isDebugEnabled()) {
         auto_ptr_char temp(format);
-        m_log.debug("skipping unmapped NameID with format (%s)", temp.get());
+        m_log.debug("skipping NameID with format (%s)", temp.get());
     }
 }
 
@@ -499,7 +499,7 @@ void XMLExtractorImpl::extractAttributes(
     else if (m_log.isInfoEnabled()) {
         auto_ptr_char temp1(name);
         auto_ptr_char temp2(format);
-        m_log.info("skipping unmapped SAML 1.x Attribute with Name: %s%s%s", temp1.get(), *temp2.get() ? ", Namespace:" : "", temp2.get());
+        m_log.info("skipping SAML 1.x Attribute with Name: %s%s%s", temp1.get(), *temp2.get() ? ", Namespace:" : "", temp2.get());
     }
 }
 
@@ -544,7 +544,7 @@ void XMLExtractorImpl::extractAttributes(
     if (m_log.isInfoEnabled()) {
         auto_ptr_char temp1(name);
         auto_ptr_char temp2(format);
-        m_log.info("skipping unmapped SAML 2.0 Attribute with Name: %s%s%s", temp1.get(), *temp2.get() ? ", Format:" : "", temp2.get());
+        m_log.info("skipping SAML 2.0 Attribute with Name: %s%s%s", temp1.get(), *temp2.get() ? ", Format:" : "", temp2.get());
     }
 }
 

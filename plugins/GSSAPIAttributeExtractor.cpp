@@ -250,7 +250,7 @@ void GSSAPIExtractorImpl::extractAttributes(
     string attrname(reinterpret_cast<char*>(namingAttribute->value), namingAttribute->length);
     map<string,Rule>::const_iterator rule = m_attrMap.find(attrname);
     if (rule == m_attrMap.end()) {
-        m_log.info("skipping unmapped GSS-API attribute: %s", attrname.c_str());
+        m_log.info("skipping GSS-API attribute: %s", attrname.c_str());
         return;
     }
 
