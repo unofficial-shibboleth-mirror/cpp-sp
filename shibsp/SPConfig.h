@@ -194,7 +194,13 @@ namespace shibsp {
         const opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const;
 #endif
 
-        /** Separator for serialized values of multi-valued attributes. */
+        /**
+          * Separator for serialized values of multi-valued attributes.
+          *
+          * <p>This is deprecated, and was never actually read within the code.</p>
+          *
+          * @deprecated
+          */
         char attribute_value_delimeter;
 
         /**

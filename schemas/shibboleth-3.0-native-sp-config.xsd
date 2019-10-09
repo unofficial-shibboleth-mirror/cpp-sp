@@ -295,6 +295,7 @@
     <attribute name="acsIndex" type="unsignedShort"/>
     <attribute name="REMOTE_ADDR" type="conf:string"/>
     <attribute name="encoding" type="conf:string"/>
+    <attribute name="attributeValueDelimiter" type="conf:string"/>
     <attribute name="unset" type="conf:listOfStrings"/>
     <anyAttribute namespace="##other" processContents="lax"/>
   </attributeGroup>

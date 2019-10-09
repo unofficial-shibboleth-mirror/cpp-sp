@@ -313,16 +313,22 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
         }
 
         if (m_values) {
+            // Default delimiter is semicolon but is now configurable.
+            pair<bool,const char*> delim = request.getRequestSettings().first->getString("attributeValueDelimiter");
+            if (!delim.first)
+                delim.second = ";";
+            size_t delim_len = strlen(delim.second);
+
             const vector<string>& vals = a->second->getSerializedValues();
             for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
                 if (v != vals.begin() || a->first == key)
-                    s << ';';
-                string::size_type pos = v->find_first_of(';',string::size_type(0));
-                if (pos!=string::npos) {
+                    s << delim.second;
+                string::size_type pos = v->find(delim.second, string::size_type(0));
+                if (pos != string::npos) {
                     string value(*v);
-                    for (; pos != string::npos; pos = value.find_first_of(';',pos)) {
+                    for (; pos != string::npos; pos = value.find(delim.second, pos)) {
                         value.insert(pos, "\\");
-                        pos += 2;
+                        pos += delim_len + 1;
                     }
                     s << value;
                 }

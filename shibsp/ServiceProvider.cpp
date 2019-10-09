@@ -174,6 +174,13 @@ namespace shibsp {
 
         const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
 
+        // Default delimiter is semicolon but is now configurable.
+        pair<bool,const char*> delim = settings.first->getString("attributeValueDelimiter");
+        if (enc.first || !delim.first) {
+            delim.second = ";";
+        }
+        size_t delim_len = strlen(delim.second);
+
         pair<bool,bool> exportDups = settings.first->getBool("exportDuplicateValues");
         const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
 
@@ -186,18 +193,18 @@ namespace shibsp {
                 const vector<string>& vals = a->second->getSerializedValues();
                 for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
                     if (!header.empty())
-                        header += ';';
+                        header += delim.second;
                     if (enc.first) {
                         // If URL-encoding, any semicolons will get escaped anyway.
                         header += encoder->encode(v->c_str());
                     }
                     else {
-                        string::size_type pos = v->find_first_of(';', string::size_type(0));
+                        string::size_type pos = v->find(delim.second, string::size_type(0));
                         if (pos != string::npos) {
                             string value(*v);
-                            for (; pos != string::npos; pos = value.find_first_of(';', pos)) {
+                            for (; pos != string::npos; pos = value.find(delim.second, pos)) {
                                 value.insert(pos, "\\");
-                                pos += 2;
+                                pos += delim_len + 1;
                             }
                             header += value;
                         }
@@ -224,18 +231,18 @@ namespace shibsp {
                 string header;
                 for (set<string>::const_iterator v = deduped->second.begin(); v != deduped->second.end(); ++v) {
                     if (!header.empty())
-                        header += ';';
+                        header += delim.second;
                     if (enc.first) {
                         // If URL-encoding, any semicolons will get escaped anyway.
                         header += encoder->encode(v->c_str());
                     }
                     else {
-                        string::size_type pos = v->find_first_of(';', string::size_type(0));
+                        string::size_type pos = v->find(delim.second, string::size_type(0));
                         if (pos != string::npos) {
                             string value(*v);
-                            for (; pos != string::npos; pos = value.find_first_of(';', pos)) {
+                            for (; pos != string::npos; pos = value.find(delim.second, pos)) {
                                 value.insert(pos, "\\");
-                                pos += 2;
+                                pos += delim_len + 1;
                             }
                             header += value;
                         }
