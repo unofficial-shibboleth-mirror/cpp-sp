@@ -3,6 +3,7 @@ log4j.rootCategory=WARN, native_log
 
 # fairly verbose for DEBUG, so generally leave at WARN/INFO
 log4j.category.XMLTooling.XMLObject=WARN
+log4j.category.XMLTooling.XMLObjectBuilder=WARN
 log4j.category.XMLTooling.KeyInfoResolver=WARN
 log4j.category.Shibboleth.IPRange=WARN
 log4j.category.Shibboleth.PropertySet=WARN
