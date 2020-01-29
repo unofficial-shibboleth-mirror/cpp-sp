@@ -212,7 +212,7 @@ if [ "$SYSTEMD_SHIBD" != "no" ] ; then
 [Unit]
 Description=Shibboleth Service Provider Daemon
 Documentation=https://wiki.shibboleth.net/confluence/display/SP3/Home
-After=network.target
+After=network-online.target
 Before=httpd.service
 
 [Service]
