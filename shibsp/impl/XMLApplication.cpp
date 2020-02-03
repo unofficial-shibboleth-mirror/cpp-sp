@@ -863,6 +863,7 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
         );
     m_handlers.push_back(chain);
     m_sessionInitDefault = chain.get();
+    m_sessionInitMap["Login"] = chain.get();
     m_handlerMap["/Login"] = chain.get();
 }
 
