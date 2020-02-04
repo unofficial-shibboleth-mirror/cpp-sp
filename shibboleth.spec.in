@@ -11,9 +11,9 @@ BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
 Requires:	openssl
 %if 0%{?rhel} >= 6 || 0%{?amzn} >= 1
-PreReq:		xmltooling-schemas%{?_isa} >= 3.0.0, opensaml-schemas%{?_isa} >= 3.0.0
+PreReq:		xmltooling-schemas%{?_isa} >= 3.1.0, opensaml-schemas%{?_isa} >= 3.1.0
 %else
-PreReq:		xmltooling-schemas >= 3.0.0, opensaml-schemas >= 3.0.0
+PreReq:		xmltooling-schemas >= 3.1.0, opensaml-schemas >= 3.1.0
 %endif
 %if 0%{?suse_version} > 1030 && 0%{?suse_version} < 1130
 PreReq:		%{insserv_prereq} %{fillup_prereq}
@@ -26,8 +26,8 @@ BuildRequires:  gdb
 %endif
 BuildRequires:  libxerces-c-devel >= 3.2
 BuildRequires:	libxml-security-c-devel >= 2.0.0
-BuildRequires:	libxmltooling-devel >= 3.0.0
-BuildRequires:	libsaml-devel >= 3.0.0
+BuildRequires:	libxmltooling-devel >= 3.1.0
+BuildRequires:	libsaml-devel >= 3.1.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 2}
 %if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} >= 1
@@ -90,8 +90,8 @@ Requires:	%{name} = %{version}-%{release}
 Obsoletes:	shibboleth-sp-devel = 2.5.0
 Requires:	libxerces-c-devel >= 3.2
 Requires: 	libxml-security-c-devel >= 2.0.0
-Requires: 	libxmltooling-devel >= 3.0.0
-Requires: 	libsaml-devel >= 3.0.0
+Requires: 	libxmltooling-devel >= 3.1.0
+Requires: 	libsaml-devel >= 3.1.0
 %{?_with_log4cpp:Requires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:Requires: liblog4shib-devel >= 2}
 
@@ -476,6 +476,9 @@ exit 0
 %doc %{pkgdocdir}/api
 
 %changelog
+* Mon Feb 3 2020 Scott Cantor <cantor.2@osu.edu> - 3.1.0-1
+- Version and lib bump
+
 * Mon Sep 30 2019 Scott Cantor <cantor.2@osu.edu> - 3.0.4-1
 - CentOS 8 cleanup
 
