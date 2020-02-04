@@ -32,6 +32,7 @@
 
 #include <ctime>
 #include <boost/shared_ptr.hpp>
+#include <xmltooling/io/HTTPResponse.h>
 
 namespace xmltooling {
     class CondWait;
@@ -164,13 +165,21 @@ namespace shibsp {
         // handle potentially inexact address comparisons
         bool compareAddresses(const char* client_addr, const char* session_addr) const;
 
+        std::pair<bool,xmltooling::HTTPResponse::samesite_t> getSameSitePolicy(const Application& app) const;
+
         // management of buffered sessions
         void dormant(const char* key);
         static void* cleanup_fn(void*);
 
 #ifndef SHIBSP_LITE
         // persistence across nodes
-        void persist(const Application& app, xmltooling::HTTPResponse& httpResponse, DDF& session, time_t expires) const;
+        void persist(
+            const Application& app,
+            xmltooling::HTTPResponse& httpResponse,
+            DDF& session,
+            time_t expires,
+            std::pair<bool,xmltooling::HTTPResponse::samesite_t>& sameSitePolicy
+            ) const;
 #endif
         bool recover(const Application& app, const char* key, const char* data);
 

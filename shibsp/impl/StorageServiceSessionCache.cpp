@@ -283,8 +283,12 @@ string SSCache::active(const Application& app, const HTTPRequest& request)
         if (!session_id.empty())
             return session_id;
     }
+
+    const PropertySet* props = app.getPropertySet("Sessions");
+    pair<bool,bool> sameSiteFallback = props ? props->getBool("sameSiteFallback") : pair<bool,bool>(false, false);
+
     pair<string, const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
-    const char* session_id = request.getCookie(shib_cookie.first.c_str());
+    const char* session_id = request.getCookie(shib_cookie.first.c_str(), sameSiteFallback.first && sameSiteFallback.second);
     return (session_id ? session_id : "");
 }
 
@@ -571,16 +575,24 @@ void SSCache::insert(
         k += cookietimebuf;
     }
 
-    httpResponse.setCookie(shib_cookie.first.c_str(), k.c_str());
+    pair<bool,HTTPResponse::samesite_t> sameSitePolicy = getSameSitePolicy(app);
+
+    httpResponse.setCookie(shib_cookie.first.c_str(), k.c_str(), sameSitePolicy.second, sameSitePolicy.first);
     sessionID = key.get();
 
     // See if we need to persist the session data itself to a cookie for cross-node recovery.
     if (!m_persistedAttributeIds.empty()) {
-        persist(app, httpResponse, obj, expires);
+        persist(app, httpResponse, obj, expires, sameSitePolicy);
     }
 }
 
-void SSCache::persist(const Application& app, HTTPResponse& httpResponse, DDF& session, time_t expires) const
+void SSCache::persist(
+    const Application& app,
+    HTTPResponse& httpResponse,
+    DDF& session,
+    time_t expires,
+    pair<bool,HTTPResponse::samesite_t>& sameSitePolicy
+) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("persist");
@@ -633,7 +645,7 @@ void SSCache::persist(const Application& app, HTTPResponse& httpResponse, DDF& s
             strftime(cookietimebuf, 64, "; expires=%a, %d %b %Y %H:%M:%S GMT", ptime);
             sealed += cookietimebuf;
         }
-        httpResponse.setCookie(shib_cookie.first.c_str(), sealed.c_str());
+        httpResponse.setCookie(shib_cookie.first.c_str(), sealed.c_str(), sameSitePolicy.second, sameSitePolicy.first);
     }
     catch (const std::exception& e) {
         m_log.error("failed to wrap session (%s) with DataSealer: %s", session.name(), e.what());
@@ -896,6 +908,30 @@ LogoutEvent* SSCache::newLogoutEvent(const Application& app) const
 
 #endif
 
+pair<bool,HTTPResponse::samesite_t> SSCache::getSameSitePolicy(const Application& app) const
+{
+    HTTPResponse::samesite_t ss = HTTPResponse::SAMESITE_ABSENT;
+    pair<bool,bool> sameSiteFallback = pair<bool,bool>(false, false);
+
+    const PropertySet* props = app.getPropertySet("Sessions");
+    if (props) {
+        sameSiteFallback = props->getBool("sameSiteFallback");
+        pair<bool,const char*> sameSiteSession = props->getString("sameSiteSession");
+        if (sameSiteSession.first) {
+            if (!strcmp(sameSiteSession.second, "None")) {
+                ss = HTTPResponse::SAMESITE_NONE;
+            }
+            else if (!strcmp(sameSiteSession.second, "Lax")) {
+                ss = HTTPResponse::SAMESITE_LAX;
+            }
+            else if (!strcmp(sameSiteSession.second, "Strict")) {
+                ss = HTTPResponse::SAMESITE_STRICT;
+            }
+        }
+    }
+    return pair<bool,HTTPResponse::samesite_t>(sameSiteFallback.first && sameSiteFallback.second, ss);
+}
+
 Session* SSCache::_find(const Application& app, const char* key, const char* recovery, const char* client_addr, time_t* timeout)
 {
 #ifdef _DEBUG
@@ -1090,8 +1126,10 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
     if (id.empty())
         return nullptr;
 
+    pair<bool,HTTPResponse::samesite_t> sameSitePolicy = getSameSitePolicy(app);
+
     pair<string, const char*> shib_cookie = app.getCookieNameProps("_shibsealed_");
-    const char* c = request.getCookie(shib_cookie.first.c_str());
+    const char* c = request.getCookie(shib_cookie.first.c_str(), sameSitePolicy.first);
 
     try {
         Session* session = _find(app, id.c_str(), c, client_addr, timeout);
@@ -1105,9 +1143,9 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
             pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
             string exp(shib_cookie.second);
             exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str(), sameSitePolicy.second, sameSitePolicy.first);
             shib_cookie = app.getCookieNameProps("_shibsealed_");
-            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str(), sameSitePolicy.second, sameSitePolicy.first);
         }
     }
     catch (const std::exception&) {
@@ -1118,9 +1156,9 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
             pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
             string exp(shib_cookie.second);
             exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str(), sameSitePolicy.second, sameSitePolicy.first);
             shib_cookie = app.getCookieNameProps("_shibsealed_");
-            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str(), sameSitePolicy.second, sameSitePolicy.first);
         }
         throw;
     }
@@ -1256,10 +1294,12 @@ void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPRes
     string session_id;
     pair<string,const char*> shib_cookie = app.getCookieNameProps("_shibsession_");
 
+    pair<bool,HTTPResponse::samesite_t> sameSitePolicy = getSameSitePolicy(app);
+
     if (!m_inboundHeader.empty())
         session_id = request.getHeader(m_inboundHeader.c_str());
     if (session_id.empty()) {
-        const char* c = request.getCookie(shib_cookie.first.c_str());
+        const char* c = request.getCookie(shib_cookie.first.c_str(), sameSitePolicy.first);
         if (c && *c)
             session_id = c;
     }
@@ -1270,10 +1310,10 @@ void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPRes
                 response->setResponseHeader(m_outboundHeader.c_str(), nullptr);
             string exp(shib_cookie.second);
             exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str(), sameSitePolicy.second, sameSitePolicy.first);
 
             shib_cookie = app.getCookieNameProps("_shibsealed_");
-            response->setCookie(shib_cookie.first.c_str(), exp.c_str());
+            response->setCookie(shib_cookie.first.c_str(), exp.c_str(), sameSitePolicy.second, sameSitePolicy.first);
         }
         remove(app, session_id.c_str(), revocationExp);
     }

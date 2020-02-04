@@ -18,7 +18,7 @@
 
   <annotation>
     <documentation>
-      3.0 schema for XML-based configuration of Shibboleth Native SP instances.
+      3.x schema for XML-based configuration of Shibboleth Native SP instances.
       First appearing in Shibboleth 3.0 release.
     </documentation>
   </annotation>
@@ -55,6 +55,14 @@
       <enumeration value="whitelist"/>
       <enumeration value="exact+whitelist"/>
       <enumeration value="host+whitelist"/>
+    </restriction>
+  </simpleType>
+
+  <simpleType name="sameSiteType">
+    <restriction base="string">
+      <enumeration value="None"/>
+      <enumeration value="Lax"/>
+      <enumeration value="Strict"/>
     </restriction>
   </simpleType>
 
@@ -577,6 +585,8 @@
     <attribute name="exportACL" type="conf:listOfStrings"/>
     <attribute name="cookieName" type="conf:string"/>
     <attribute name="cookieProps" type="conf:string"/>
+    <attribute name="sameSiteSession" type="conf:sameSiteType"/>
+    <attribute name="sameSiteFallback" type="boolean"/>
     <attribute name="cookieLifetime" type="unsignedInt"/>
     <attribute name="idpHistory" type="boolean"/>
     <attribute name="idpHistoryDays" type="unsignedInt"/>
