@@ -165,7 +165,7 @@ namespace shibsp {
         // handle potentially inexact address comparisons
         bool compareAddresses(const char* client_addr, const char* session_addr) const;
 
-        std::pair<bool,xmltooling::HTTPResponse::samesite_t> getSameSitePolicy(const Application& app) const;
+        xmltooling::HTTPResponse::samesite_t getSameSitePolicy(const Application& app) const;
 
         // management of buffered sessions
         void dormant(const char* key);
@@ -178,7 +178,7 @@ namespace shibsp {
             xmltooling::HTTPResponse& httpResponse,
             DDF& session,
             time_t expires,
-            std::pair<bool,xmltooling::HTTPResponse::samesite_t>& sameSitePolicy
+            xmltooling::HTTPResponse::samesite_t sameSitePolicy
             ) const;
 #endif
         bool recover(const Application& app, const char* key, const char* data);

@@ -529,7 +529,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
     DDFJanitor jout(ret);
 
     // Wrap the outgoing object with a Response facade.
-    scoped_ptr<HTTPResponse> http(getResponse(ret));
+    scoped_ptr<HTTPResponse> http(getResponse(*app, ret));
 
     auto_ptr_XMLCh index(in["acsIndex"].string());
     auto_ptr_XMLCh bind(in["acsBinding"].string());

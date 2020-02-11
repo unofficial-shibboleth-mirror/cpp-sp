@@ -98,17 +98,41 @@ namespace shibsp {
         /**
          * Builds a new request instance around a remoted data object.
          * 
+         * @param app the application
          * @param in    the dataflow object containing the remoted request
          * @return  a call-specific request object based on the input, to be freed by the caller 
          */
-        xmltooling::HTTPRequest* getRequest(DDF& in) const;
+        xmltooling::HTTPRequest* getRequest(const Application& app, DDF& in) const;
         
         /**
          * Builds a new response instance around an outgoing data object.
          * 
+         * @param app   the application
          * @param out   the dataflow object to be returned by the caller
          * @return  a call-specific response object, to be freed by the caller 
          */
+        xmltooling::HTTPResponse* getResponse(const Application& app, DDF& out) const;
+
+        /**
+        * @Deprecated
+        *
+        * Builds a new request instance around a remoted data object.
+        * 
+        * @param app the application
+        * @param in    the dataflow object containing the remoted request
+        * @return  a call-specific request object based on the input, to be freed by the caller 
+        */
+        xmltooling::HTTPRequest* getRequest(DDF& in) const;
+
+        /**
+        * @Deprecated
+        *
+        * Builds a new response instance around an outgoing data object.
+        * 
+        * @param app   the application
+        * @param out   the dataflow object to be returned by the caller
+        * @return  a call-specific response object, to be freed by the caller 
+        */
         xmltooling::HTTPResponse* getResponse(DDF& out) const;
 
         /** Message address for remote half. */

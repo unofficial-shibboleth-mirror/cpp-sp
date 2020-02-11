@@ -253,7 +253,7 @@ void Shib1SessionInitiator::receive(DDF& in, ostream& out)
     DDFJanitor jout(ret);
 
     // Wrap the outgoing object with a Response facade.
-    scoped_ptr<HTTPResponse> http(getResponse(ret));
+    scoped_ptr<HTTPResponse> http(getResponse(*app, ret));
 
     string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
 

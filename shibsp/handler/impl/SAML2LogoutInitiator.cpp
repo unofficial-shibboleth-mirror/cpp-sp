@@ -250,12 +250,12 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
 
     // Set up a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
 
     Session* session = nullptr;
     try {

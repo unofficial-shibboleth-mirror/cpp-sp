@@ -192,7 +192,7 @@ pair<bool,long> ExternalAuth::run(SPRequest& request, bool isHandler) const
             headers.push_back("Cookie");
             DDF in = wrap(request, &headers);
             DDFJanitor jin(in);
-            scoped_ptr<HTTPRequest> fakedreq(getRequest(in));
+            scoped_ptr<HTTPRequest> fakedreq(getRequest(request.getApplication(), in));
             return processMessage(request.getApplication(), *fakedreq, request, in);
         }
         else {
@@ -226,12 +226,12 @@ void ExternalAuth::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
 
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
 
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,

@@ -66,6 +66,7 @@ namespace shibsp {
 #endif
         public HTTPRequest
     {
+        const Application* m_app;
         DDF& m_input;
         mutable scoped_ptr<CGIParser> m_parser;
         mutable vector<XSECCryptoX509*> m_certs;
@@ -74,7 +75,7 @@ namespace shibsp {
         mutable gss_name_t m_gssname;
 #endif
     public:
-        RemotedRequest(DDF& input) : m_input(input), m_parser(nullptr)
+        RemotedRequest(const Application* app, DDF& input) : m_app(app), m_input(input), m_parser(nullptr)
 #ifdef SHIBSP_HAVE_GSSAPI
             , m_gssctx(GSS_C_NO_CONTEXT), m_gssname(GSS_C_NO_NAME)
 #endif
@@ -153,19 +154,29 @@ namespace shibsp {
             DDF s = m_input["headers"][name];
             return s.string() ? s.string() : "";
         }
+        const char* getCookie(const char* name) const {
+            pair<bool,bool> sameSiteFallback = pair<bool,bool>(false, false);
+            const PropertySet* props = m_app ? m_app->getPropertySet("Sessions") : nullptr;
+            if (props) {
+                sameSiteFallback = props->getBool("sameSiteFallback");
+            }
+            return HTTPRequest::getCookie(name, sameSiteFallback.first && sameSiteFallback.second);
+        }
     };
 
     class SHIBSP_DLLLOCAL RemotedResponse : public virtual HTTPResponse 
     {
+        const Application* m_app;
         DDF& m_output;
     public:
-        RemotedResponse(DDF& output) : m_output(output) {}
+        RemotedResponse(const Application* app, DDF& output) : m_app(app), m_output(output) {}
         virtual ~RemotedResponse() {}
        
         // GenericResponse
         long sendResponse(std::istream& inputStream, long status);
         
         // HTTPResponse
+        void setCookie(const char* name, const char* value, time_t expires = 0, samesite_t sameSite = SAMESITE_ABSENT);
         void setResponseHeader(const char* name, const char* value, bool replace=false);
         long sendRedirect(const char* url);
     };
@@ -278,6 +289,44 @@ gss_name_t RemotedRequest::getGSSName() const
     return m_gssname;
 }
 #endif
+
+void RemotedResponse::setCookie(const char* name, const char* value, time_t expires, samesite_t sameSite)
+{
+    static const char* defProps="; path=/; HttpOnly";
+    static const char* sslProps="; path=/; secure; HttpOnly";
+
+    const char* cookieProps = defProps;
+    pair<bool,bool> sameSiteFallback = pair<bool,bool>(false, false);
+
+    const PropertySet* props = m_app ? m_app->getPropertySet("Sessions") : nullptr;
+    if (props) {
+        if (sameSite == SAMESITE_NONE) {
+            sameSiteFallback = props->getBool("sameSiteFallback");
+        }
+
+        pair<bool, const char*> p = props->getString("cookieProps");
+        if (p.first) {
+            if (!strcmp(p.second, "https"))
+                cookieProps = sslProps;
+            else if (strcmp(p.second, "http"))
+                cookieProps = p.second;
+        }
+    }
+
+    if (cookieProps) {
+        string decoratedValue(value ? value : "");
+        if (!value) {
+            decoratedValue += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
+        }
+        decoratedValue += cookieProps;
+        HTTPResponse::setCookie(name, decoratedValue.c_str(), expires, sameSite,
+            sameSiteFallback.first && sameSiteFallback.second);
+    }
+    else {
+        HTTPResponse::setCookie(name, value, expires, sameSite,
+            sameSiteFallback.first && sameSiteFallback.second);
+    }
+}
 
 long RemotedResponse::sendResponse(std::istream& in, long status)
 {
@@ -517,8 +566,9 @@ pair<bool,long> RemotedHandler::unwrap(SPRequest& request, DDF& out) const
 
 HTTPRequest* RemotedHandler::getRequest(DDF& in) const
 {
+    // TODO: remove in V4
 #ifndef SHIBSP_LITE
-    return new RemotedRequest(in);
+    return new RemotedRequest(nullptr, in);
 #else
     throw ConfigurationException("Cannot process message using lite version of shibsp library.");
 #endif
@@ -526,8 +576,27 @@ HTTPRequest* RemotedHandler::getRequest(DDF& in) const
 
 HTTPResponse* RemotedHandler::getResponse(DDF& out) const
 {
+    // TODO: remove in V4
 #ifndef SHIBSP_LITE
-    return new RemotedResponse(out);
+    return new RemotedResponse(nullptr, out);
+#else
+    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
+#endif
+}
+
+HTTPRequest* RemotedHandler::getRequest(const Application& app, DDF& in) const
+{
+#ifndef SHIBSP_LITE
+    return new RemotedRequest(&app, in);
+#else
+    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
+#endif
+}
+
+HTTPResponse* RemotedHandler::getResponse(const Application& app, DDF& out) const
+{
+#ifndef SHIBSP_LITE
+    return new RemotedResponse(&app, out);
 #else
     throw ConfigurationException("Cannot process message using lite version of shibsp library.");
 #endif

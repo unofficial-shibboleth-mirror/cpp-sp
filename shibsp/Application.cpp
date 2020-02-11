@@ -60,8 +60,31 @@ const char* Application::getId() const
     return ret.first ? ret.second : "default";
 }
 
+string Application::getCookieName(const char* prefix, time_t* lifetime) const
+{
+    if (lifetime)
+        *lifetime = 0;
+    if (!prefix)
+        prefix = "";
+    const PropertySet* props = getPropertySet("Sessions");
+    if (props) {
+        if (lifetime) {
+            pair<bool,unsigned int> lt = props->getUnsignedInt("cookieLifetime");
+            if (lt.first)
+                *lifetime = lt.second;
+        }
+        pair<bool,const char*> p = props->getString("cookieName");
+        if (p.first)
+            return string(prefix) + p.second;
+    }
+
+    return string(prefix) + getHash();
+}
+
 pair<string,const char*> Application::getCookieNameProps(const char* prefix, time_t* lifetime) const
 {
+    // TODO: remove in V4 if it ever drops.
+
     static const char* defProps="; path=/; HttpOnly";
     static const char* sslProps="; path=/; secure; HttpOnly";
 

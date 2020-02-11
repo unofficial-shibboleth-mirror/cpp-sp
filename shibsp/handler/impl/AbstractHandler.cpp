@@ -186,54 +186,60 @@ void Handler::cleanRelayState(
     const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse& response
     ) const
 {
-    const PropertySet* sessionprop = application.getPropertySet("Sessions");
-
-    // Only cookie-based relay state requires cleaning.
     pair<bool,const char*> mech = getString("relayState");
     if (!mech.first) {
         // Check for setting on Sessions element.
+        const PropertySet* sessionprop = application.getPropertySet("Sessions");
         if (sessionprop) {
             mech = sessionprop->getString("relayState");
         }
     }
-    if (!mech.first || !mech.second || strncmp(mech.second, "cookie", 6))
-        return;
 
-    int maxCookies = 20,purgedCookies = 0;
-    mech.second += 6;
-    if (*mech.second == ':' && isdigit(*(++mech.second))) {
-        maxCookies = atoi(mech.second);
-        if (maxCookies == 0)
-            maxCookies = 20;
+    int maxRSCookies = 20,purgedRSCookies = 0;
+    int maxOSCookies = 20,purgedOSCookies = 0;
+
+    if (mech.first && !strncmp(mech.second, "cookie", 6)) {
+        mech.second += 6;
+        if (*mech.second == ':' && isdigit(*(++mech.second))) {
+            maxRSCookies = maxOSCookies = atoi(mech.second);
+            if (maxRSCookies == 0) {
+                maxRSCookies = maxOSCookies = 20;
+            }
+        }
     }
-
-    pair<bool, bool> sameSiteFallback =
-        sessionprop ? sessionprop->getBool("sameSiteFallback") : pair<bool,bool>(false, false);
-
-    string exp;
 
     // Walk the list of cookies backwards by name.
     const map<string,string>& cookies = request.getCookies();
     for (map<string,string>::const_reverse_iterator i = cookies.rbegin(); i != cookies.rend(); ++i) {
         // Process relay state cookies only.
         if (starts_with(i->first, "_shibstate_")) {
-            if (maxCookies > 0) {
+            if (maxRSCookies > 0) {
                 // Keep it, but count it against the limit.
-                --maxCookies;
+                --maxRSCookies;
             }
             else {
                 // We're over the limit, so everything here and older gets cleaned up.
-                if (exp.empty())
-                    exp = string(application.getCookieNameProps("_shibstate_").second) + "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-                response.setCookie(i->first.c_str(), exp.c_str(), HTTPResponse::SAMESITE_NONE,
-                    sameSiteFallback.first && sameSiteFallback.second);
-                ++purgedCookies;
+                response.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
+                ++purgedRSCookies;
+            }
+        }
+        else if (starts_with(i->first, "_opensaml_req_")) {
+            if (maxOSCookies > 0) {
+                // Keep it, but count it against the limit.
+                --maxOSCookies;
+            }
+            else {
+                // We're over the limit, so everything here and older gets cleaned up.
+                response.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
+                ++purgedOSCookies;
             }
         }
     }
 
-    if (purgedCookies > 0)
-        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedCookies) + " stale relay state cookie(s) from client");
+    if (purgedRSCookies > 0)
+        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedRSCookies) + " stale relay state cookie(s) from client");
+    if (purgedOSCookies > 0)
+        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedOSCookies) + " stale request correlation cookie(s) from client");
 }
 
 void Handler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
@@ -242,12 +248,11 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
     if (relayState.empty())
         return;
 
-    const PropertySet* sessionprop = application.getPropertySet("Sessions");
-
     // No setting means just pass state by value.
     pair<bool,const char*> mech = getString("relayState");
     if (!mech.first) {
         // Check for setting on Sessions element.
+        const PropertySet* sessionprop = application.getPropertySet("Sessions");
         if (sessionprop)
             mech = sessionprop->getString("relayState");
     }
@@ -258,17 +263,14 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
         // Here we store the state in a cookie and send a fixed
         // value so we can recognize it on the way back.
         if (relayState.find("cookie:") != 0 && relayState.find("ss:") != 0) {
-            pair<bool, bool> sameSiteFallback =
-                sessionprop ? sessionprop->getBool("sameSiteFallback") : pair<bool,bool>(false, false);
-            pair<string,const char*> shib_cookie = application.getCookieNameProps("_shibstate_");
-            string stateval = XMLToolingConfig::getConfig().getURLEncoder()->encode(relayState.c_str()) + shib_cookie.second;
             // Generate a random key for the cookie name instead of the fixed name.
             string rsKey;
             generateRandomHex(rsKey, 4);
             rsKey = lexical_cast<string>(time(nullptr)) + '_' + rsKey;
-            shib_cookie.first = "_shibstate_" + rsKey;
-            response.setCookie(shib_cookie.first.c_str(), stateval.c_str(), HTTPResponse::SAMESITE_NONE,
-                sameSiteFallback.first && sameSiteFallback.second);
+            string shib_cookie_name = "_shibstate_" + rsKey;
+            response.setCookie(shib_cookie_name.c_str(),
+                XMLToolingConfig::getConfig().getURLEncoder()->encode(relayState.c_str()).c_str(),
+                0, HTTPResponse::SAMESITE_NONE);
             relayState = "cookie:" + rsKey;
         }
     }
@@ -392,14 +394,9 @@ void Handler::recoverRelayState(
     if (strstr(state,"cookie:") == state) {
         state += 7;
         if (*state) {
-            const PropertySet* sessionprop = application.getPropertySet("Sessions");
-            pair<bool, bool> sameSiteFallback =
-                sessionprop ? sessionprop->getBool("sameSiteFallback") : pair<bool,bool>(false, false);
-
             // Pull the value from the "relay state" cookie.
-            pair<string,const char*> relay_cookie = application.getCookieNameProps("_shibstate_");
-            relay_cookie.first = string("_shibstate_") + state;
-            state = request.getCookie(relay_cookie.first.c_str(), sameSiteFallback.first && sameSiteFallback.second);
+            string relay_cookie = string("_shibstate_") + state;
+            state = request.getCookie(relay_cookie.c_str());
             if (state && *state) {
                 // URL-decode the value.
                 char* rscopy = strdup(state);
@@ -407,10 +404,7 @@ void Handler::recoverRelayState(
                 relayState = rscopy;
                 free(rscopy);
                 if (clear) {
-                    string exp(relay_cookie.second);
-                    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-                    response.setCookie(relay_cookie.first.c_str(), exp.c_str(), HTTPResponse::SAMESITE_NONE,
-                        sameSiteFallback.first && sameSiteFallback.second);
+                    response.setCookie(relay_cookie.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
                 }
                 request.absolutize(relayState);
                 return;
@@ -661,13 +655,10 @@ void AbstractHandler::preservePostData(
             postkey = string(mech.second-3) + ':' + out.string();
         }
 
-        pair<string,const char*> shib_cookie = getPostCookieNameProps(application, relayState);
-
-        pair<bool,bool> sameSiteFallback = props ? props->getString("sameSiteFallback") : pair<bool,bool>(false, false);
+        string shib_cookie = getPostCookieName(application, relayState);
 
         // Purge any cookies in excess of 25.
         int maxCookies = 20,purgedCookies = 0;
-        string exp;
 
         // Walk the list of cookies backwards by name.
         const map<string,string>& cookies = request.getCookies();
@@ -680,10 +671,7 @@ void AbstractHandler::preservePostData(
                 }
                 else {
                     // We're over the limit, so everything here and older gets cleaned up.
-                    if (exp.empty())
-                        exp = string(shib_cookie.second) + "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-                    response.setCookie(i->first.c_str(), exp.c_str(), HTTPResponse::SAMESITE_NONE,
-                        sameSiteFallback.first && sameSiteFallback.second);
+                    response.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
                     ++purgedCookies;
                 }
             }
@@ -693,9 +681,7 @@ void AbstractHandler::preservePostData(
             log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedCookies) + " stale POST preservation cookie(s) from client");
 
         // Set a cookie with key info.
-        postkey += shib_cookie.second;
-        response.setCookie(shib_cookie.first.c_str(), postkey.c_str(), HTTPResponse::SAMESITE_NONE,
-            sameSiteFallback.first && sameSiteFallback.second);
+        response.setCookie(shib_cookie.c_str(), postkey.c_str(), 0, HTTPResponse::SAMESITE_NONE);
     }
     else {
         postData.destroy();
@@ -707,20 +693,15 @@ DDF AbstractHandler::recoverPostData(
     const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* relayState
     ) const
 {
-    const PropertySet* props = application.getPropertySet("Sessions");
-    pair<bool,bool> sameSiteFallback = props ? props->getString("sameSiteFallback") : pair<bool,bool>(false, false);
+    string shib_cookie = getPostCookieName(application, relayState);
 
     // First we need the post recovery cookie.
-    pair<string,const char*> shib_cookie = getPostCookieNameProps(application, relayState);
-    const char* cookie = request.getCookie(shib_cookie.first.c_str(), sameSiteFallback.first && sameSiteFallback.second);
+    const char* cookie = request.getCookie(shib_cookie.c_str());
     if (!cookie || !*cookie)
         return DDF();
 
     // Clear the cookie.
-    string exp(shib_cookie.second);
-    exp += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-    response.setCookie(shib_cookie.first.c_str(), exp.c_str(), HTTPResponse::SAMESITE_NONE,
-        sameSiteFallback.first && sameSiteFallback.second);
+    response.setCookie(shib_cookie.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
 
     // Look for StorageService-backed state of the form "ss:SSID:key".
     const char* state = cookie;
@@ -809,21 +790,20 @@ long AbstractHandler::sendPostResponse(
     return httpResponse.sendResponse(str);
 }
 
-pair<string,const char*> AbstractHandler::getPostCookieNameProps(const Application& app, const char* relayState) const
+string AbstractHandler::getPostCookieName(const Application& app, const char* relayState) const
 {
     // Decorates the name of the cookie with the relay state key, if any.
     // Doing so gives a better assurance that the recovered data really
     // belongs to the relayed request.
-    pair<string,const char*> shib_cookie=app.getCookieNameProps("_shibpost_");
     if (strstr(relayState, "cookie:") == relayState) {
-        shib_cookie.first = string("_shibpost_") + (relayState + 7);
+        return string("_shibpost_") + (relayState + 7);
     }
     else if (strstr(relayState, "ss:") == relayState) {
         const char* pch = strchr(relayState + 3, ':');
         if (pch)
-            shib_cookie.first = string("_shibpost_") + (pch + 1);
+            return string("_shibpost_") + (pch + 1);
     }
-    return shib_cookie;
+    return app.getCookieName("_shibpost_");
 }
 
 DDF AbstractHandler::getPostData(const Application& application, const HTTPRequest& request) const

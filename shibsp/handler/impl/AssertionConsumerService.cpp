@@ -138,12 +138,12 @@ void AssertionConsumerService::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
 
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
 
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,
@@ -178,7 +178,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
     scoped_ptr<XMLObject> msg;
     try {
         // Decode the message and process it in a protocol-specific way.
-        msg.reset(m_decoder->decode(relayState, httpRequest, *(policy.get())));
+        msg.reset(m_decoder->decode(relayState, httpRequest, &httpResponse, *(policy.get())));
         if (!msg)
             throw BindingException("Failed to decode an SSO protocol response.");
         implementProtocol(application, httpRequest, httpResponse, *policy, nullptr, *msg);

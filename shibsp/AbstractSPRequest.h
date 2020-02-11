@@ -75,7 +75,9 @@ namespace shibsp {
         std::vector<const char*>::size_type getParameters(const char* name, std::vector<const char*>& values) const;
         const char* getHandlerURL(const char* resource=nullptr) const;
         std::string getSecureHeader(const char* name) const;
+        const char* getCookie(const char* name) const;
         void setAuthType(const char* authtype);
+        void setCookie(const char* name, const char* value, time_t expires = 0, samesite_t sameSite = SAMESITE_ABSENT);
         void log(SPLogLevel level, const std::string& msg) const;
         bool isPriorityEnabled(SPLogLevel level) const;
 

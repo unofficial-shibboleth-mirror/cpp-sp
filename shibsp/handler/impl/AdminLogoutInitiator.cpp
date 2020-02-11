@@ -170,12 +170,12 @@ void AdminLogoutInitiator::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
 
     // Set up a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
 
     // Since we're remoted, the result should either be a throw, which we pass on,
     // a false/0 return, which we just return as an empty structure, or a response/redirect,

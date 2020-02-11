@@ -221,13 +221,13 @@ void SAML2ArtifactResolution::receive(DDF& in, ostream& out)
     }
     
     // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
     //m_log.debug("found %d client certificates", req->getClientCertificates().size());
 
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
         
     try {
         // Since we're remoted, the result should either be a throw, a false/0 return,
@@ -283,7 +283,7 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
     
     // Decode the message and verify that it's a secured ArtifactResolve request.
     string relayState;
-    scoped_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, *policy));
+    scoped_ptr<XMLObject> msg(m_decoder->decode(relayState, httpRequest, &httpResponse, *policy));
     if (!msg)
         throw BindingException("Failed to decode a SAML request.");
     const ArtifactResolve* req = dynamic_cast<const ArtifactResolve*>(msg.get());

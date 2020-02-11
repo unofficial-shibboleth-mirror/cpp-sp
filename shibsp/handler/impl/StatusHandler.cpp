@@ -363,8 +363,8 @@ void StatusHandler::receive(DDF& in, ostream& out)
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPRequest> req(getRequest(in));
-    scoped_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
+    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
 
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,

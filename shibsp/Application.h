@@ -125,6 +125,19 @@ namespace shibsp {
         virtual const char* getHash() const=0;
 
         /**
+        * @Deprecated
+        *
+        * Returns the cookies name to use for this Application.
+        *
+        * @param prefix    a value to prepend to the base cookie name
+        * @param lifetime  if non-null, will be populated with a suggested lifetime for the cookie, or 0 if session-bound
+        * @return  the assigned cookie name to use
+        */
+        virtual std::string getCookieName(const char* prefix, time_t* lifetime=nullptr) const;
+
+        /**
+         * @Deprecated
+         *
          * Returns the name and cookie properties to use for this Application.
          *
          * @param prefix    a value to prepend to the base cookie name

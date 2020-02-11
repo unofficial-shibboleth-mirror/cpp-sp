@@ -248,7 +248,7 @@ namespace shibsp {
         virtual ~AbstractHandler();
 
     private:
-        std::pair<std::string,const char*> getPostCookieNameProps(const Application& app, const char* relayState) const;
+        std::string getPostCookieName(const Application& app, const char* relayState) const;
         DDF getPostData(const Application& application, const xmltooling::HTTPRequest& request) const;
     };
 

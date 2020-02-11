@@ -99,7 +99,12 @@ namespace {
             return m_ns.get();
         }
 
-        XMLObject* decode(string& relayState, const GenericRequest& genericRequest, SecurityPolicy& policy) const;
+        XMLObject* decode(
+            string& relayState,
+            const GenericRequest& genericRequest,
+            const GenericResponse* genericResponse,
+            SecurityPolicy& policy
+        ) const;
 
     protected:
         void extractMessageDetails(
@@ -473,7 +478,7 @@ void ADFSSessionInitiator::receive(DDF& in, ostream& out)
     DDFJanitor jout(ret);
 
     // Wrap the outgoing object with a Response facade.
-    scoped_ptr<HTTPResponse> http(getResponse(ret));
+    scoped_ptr<HTTPResponse> http(getResponse(*app, ret));
 
     string relayState(in["RelayState"].string() ? in["RelayState"].string() : "");
 
@@ -574,7 +579,9 @@ pair<bool,long> ADFSSessionInitiator::doRequest(
 
 #ifndef SHIBSP_LITE
 
-XMLObject* ADFSDecoder::decode(string& relayState, const GenericRequest& genericRequest, SecurityPolicy& policy) const
+XMLObject* ADFSDecoder::decode(
+    string& relayState, const GenericRequest& genericRequest, const GenericResponse*, SecurityPolicy& policy
+    ) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("decode");
@@ -894,12 +901,12 @@ void ADFSLogoutInitiator::receive(DDF& in, ostream& out)
     }
 
     // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(in));
+    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
 
     // Set up a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(ret));
+    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
 
     Session* session = nullptr;
     try {
