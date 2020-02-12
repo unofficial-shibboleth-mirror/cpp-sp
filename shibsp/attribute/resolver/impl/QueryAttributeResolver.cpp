@@ -297,7 +297,9 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
 
     // Set up policy and SOAP client.
     scoped_ptr<SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, nullptr, policyId)
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(
+            samlconstants::SAML1_BINDING_SOAP, application, nullptr, policyId
+            )
         );
     policy->getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);
@@ -453,7 +455,9 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
 
     // Set up policy and SOAP client.
     scoped_ptr<SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, nullptr, policyId)
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(
+            samlconstants::SAML20_PROFILE_QUERY, application, nullptr, policyId
+            )
         );
     policy->getAudiences().push_back(relyingParty->getXMLString("entityID").second);
     MetadataCredentialCriteria mcc(*AA);

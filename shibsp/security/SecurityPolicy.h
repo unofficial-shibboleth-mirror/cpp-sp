@@ -47,8 +47,14 @@ namespace shibsp {
          * @param role              identifies the role (generally IdP or SP) of the policy peer
          * @param validate          true iff XML parsing should be done with validation
          * @param policyId          identifies policy rules to auto-attach, defaults to the application's set
+         * @param profile           identifies the profile of the transaction being performed
          */
-        SecurityPolicy(const Application& application, const xmltooling::QName* role=nullptr, bool validate=true, const char* policyId=nullptr);
+        SecurityPolicy(
+            const Application& application,
+            const xmltooling::QName* role=nullptr,
+            bool validate=true,
+            const char* policyId=nullptr,
+            const char* profile=nullptr);
 
         virtual ~SecurityPolicy();
 

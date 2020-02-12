@@ -170,7 +170,7 @@ pair<bool,long> AssertionConsumerService::processMessage(
     // Create the policy.
     scoped_ptr<opensaml::SecurityPolicy> policy(
         application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(
-            application, &IDPSSODescriptor::ELEMENT_QNAME, prop.second
+            getProfile(), application, &IDPSSODescriptor::ELEMENT_QNAME, prop.second
             )
         );
 
@@ -343,6 +343,11 @@ const char* AssertionConsumerService::getEventType() const
 }
 
 #ifndef SHIBSP_LITE
+
+const char* AssertionConsumerService::getProfile() const
+{
+    return nullptr;
+}
 
 const XMLCh* AssertionConsumerService::getProtocolFamily() const
 {

@@ -278,7 +278,9 @@ pair<bool,long> SAML2ArtifactResolution::processMessage(const Application& appli
 
     // Create the policy.
     scoped_ptr<SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second)
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(
+            samlconstants::SAML20_PROFILE_ARTIFACT, application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second
+            )
         );
     
     // Decode the message and verify that it's a secured ArtifactResolve request.

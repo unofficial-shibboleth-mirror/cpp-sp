@@ -73,6 +73,7 @@ namespace shibsp {
         SAML2Consumer(const DOMElement* e, const char* appId, bool deprecationSupport=true)
             : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".SSO.SAML2"), nullptr, nullptr, deprecationSupport) {
 #ifndef SHIBSP_LITE
+            m_paos = XMLString::equals(getString("Binding").second, samlconstants::SAML20_BINDING_PAOS);
             if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
                 m_ssoRule.reset(SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(BEARER_POLICY_RULE, e, deprecationSupport));
 #endif
@@ -86,6 +87,10 @@ namespace shibsp {
         }
 
     private:
+        const char* getProfile() const {
+            return m_paos ? samlconstants::SAML20_PROFILE_SSO_ECP : samlconstants::SAML20_PROFILE_SSO_BROWSER;
+        }
+
         void implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,
@@ -95,6 +100,7 @@ namespace shibsp {
             const XMLObject& xmlObject
             ) const;
 
+        bool m_paos;
         scoped_ptr<SecurityPolicyRule> m_ssoRule;
 #else
         const XMLCh* getProtocolFamily() const {

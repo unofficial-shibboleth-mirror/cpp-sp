@@ -357,7 +357,9 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
 
     // Create the policy.
     scoped_ptr<SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second)
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(
+            samlconstants::SAML20_PROFILE_SSO_LOGOUT, application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second
+            )
         );
 
     // Decode the message.

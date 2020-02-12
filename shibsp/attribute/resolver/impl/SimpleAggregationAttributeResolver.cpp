@@ -355,7 +355,9 @@ void SimpleAggregationResolver::doQuery(SimpleAggregationContext& ctx, const cha
 
     // Set up policy and SOAP client.
     scoped_ptr<SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, nullptr, policyId)
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(
+            samlconstants::SAML20_PROFILE_QUERY, application, nullptr, policyId
+            )
         );
     if (m_metadata)
         policy->setMetadataProvider(m_metadata.get());

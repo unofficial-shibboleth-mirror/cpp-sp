@@ -188,6 +188,15 @@ SecurityPolicy* SecurityPolicyProvider::createSecurityPolicy(
     return new SecurityPolicy(application, role, (validate.first && validate.second), policyId);
 }
 
+SecurityPolicy* SecurityPolicyProvider::createSecurityPolicy(
+    const char* profile, const Application& application, const xmltooling::QName* role, const char* policyId
+    ) const
+{
+    SecurityPolicy* policy = createSecurityPolicy(application, role, policyId);
+    policy->setProfile(profile);
+    return policy;
+}
+
 XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e, Category& log)
     : m_document(nullptr), m_includeDefaultBlacklist(true), m_defaultPolicy(m_policyMap.end())
 {

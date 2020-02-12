@@ -194,6 +194,10 @@ namespace {
         }
 
     private:
+        const char* getProfile() const {
+            return WSFED_NS;
+        }
+
         void implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,

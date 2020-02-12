@@ -256,7 +256,9 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(const Application& application, HTTPR
 
     // Create the policy.
     scoped_ptr<SecurityPolicy> policy(
-        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second)
+        application.getServiceProvider().getSecurityPolicyProvider()->createSecurityPolicy(
+            samlconstants::SAML20_PROFILE_SSO_NAMEID_MGMT, application, &IDPSSODescriptor::ELEMENT_QNAME, policyId.second
+            )
         );
 
     // Decode the message.

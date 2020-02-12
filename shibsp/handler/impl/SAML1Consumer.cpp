@@ -88,6 +88,10 @@ namespace shibsp {
         }
 
     private:
+        const char* getProfile() const {
+            return m_post ? samlconstants::SAML1_PROFILE_BROWSER_POST : samlconstants::SAML1_PROFILE_BROWSER_ARTIFACT;
+        }
+
         void implementProtocol(
             const Application& application,
             const HTTPRequest& httpRequest,

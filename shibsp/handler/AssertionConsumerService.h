@@ -121,11 +121,19 @@ namespace shibsp {
         void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
         
         /**
+         * Returns a profile identifier to inject into the SecurityPolicy created
+         * by the base class.
+         *
+         * @return profile identifier if any
+         */
+        virtual const char* getProfile() const;
+
+        /**
          * Implement protocol-specific handling of the incoming decoded message.
          * 
          * <p>The result of implementing the protocol should be an exception or
          * modifications to the request/response objects to reflect processing
-         * of the message.
+         * of the message.</p>
          * 
          * @param application   reference to application receiving message
          * @param httpRequest   client request that included message
@@ -159,7 +167,7 @@ namespace shibsp {
          * including NameID and token extraction and filtering followed by
          * secondary resolution.
          * 
-         * <p>The caller must free the returned context handle.
+         * <p>The caller must free the returned context handle.</p>
          * 
          * @param application           reference to application receiving message
          * @param request               request delivering message, if any

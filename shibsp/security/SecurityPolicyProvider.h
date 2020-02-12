@@ -102,19 +102,42 @@ namespace shibsp {
         virtual const std::vector<xmltooling::xstring>& getAlgorithmWhitelist() const=0;
 
         /**
+         * @Deprecated
+         *
          * Returns a SecurityPolicy applicable to an application and/or policy identifier.
          *
          * <p>The caller <strong>MUST</strong> lock the application's MetadataProvider for the life
-         * of the returned object.
+         * of the returned object.</p>
          *
          * @param application   reference to application applying policy
          * @param role          identifies the role (generally IdP or SP) of the policy peer
          * @param policyId      identifies policy, defaults to the application's default
+         * @param profle
          * @return  a new policy instance, which the caller is responsible for freeing
          */
         virtual SecurityPolicy* createSecurityPolicy(
             const Application& application, const xmltooling::QName* role, const char* policyId=nullptr
             ) const;
+
+        /**
+        * Returns a SecurityPolicy applicable to an application and/or policy identifier.
+        *
+        * <p>The caller <strong>MUST</strong> lock the application's MetadataProvider for the life
+        * of the returned object.</p>
+        *
+        * @param profile       profile identifier for the transaction
+        * @param application   reference to application applying policy
+        * @param role          identifies the role (generally IdP or SP) of the policy peer
+        * @param policyId      identifies policy, defaults to the application's default
+        * @param profle
+        * @return  a new policy instance, which the caller is responsible for freeing
+        */
+        virtual SecurityPolicy* createSecurityPolicy(
+            const char* profile,
+            const Application& application,
+            const xmltooling::QName* role,
+            const char* policyId=nullptr
+        ) const;
     };
 
     /**
