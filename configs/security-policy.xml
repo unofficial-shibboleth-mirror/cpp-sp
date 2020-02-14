@@ -18,7 +18,18 @@
         <PolicyRule type="SimpleSigning" errorFatal="true"/>
     </Policy>
 
-    <!--
+    <Policy id="blockUnsolicited" validate="false">
+        <PolicyRule type="MessageFlow" checkCorrelation="true" checkReplay="true" expires="60"/>
+        <PolicyRule type="Conditions">
+            <PolicyRule type="Audience"/>
+        </PolicyRule>
+        <PolicyRule type="ClientCertAuth" errorFatal="true"/>
+        <PolicyRule type="XMLSigning" errorFatal="true"/>
+        <PolicyRule type="SimpleSigning" errorFatal="true"/>
+        <PolicyRule type="Bearer"/>
+    </Policy>
+
+  <!--
     This policy is a place-holder for use of assertions in metadata
     as a way of attaching signed information about particular IdPs.
     -->
