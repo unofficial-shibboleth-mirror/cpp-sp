@@ -83,7 +83,6 @@ namespace {
     static const XMLCh _Audience[] =            UNICODE_LITERAL_8(A,u,d,i,e,n,c,e);
     static const XMLCh Binding[] =              UNICODE_LITERAL_7(B,i,n,d,i,n,g);
     static const XMLCh Channel[]=               UNICODE_LITERAL_7(C,h,a,n,n,e,l);
-    static const XMLCh checkCorrelation[] =     UNICODE_LITERAL_16(c,h,e,c,k,C,o,r,r,e,l,a,t,i,o,n);
     static const XMLCh _CredentialResolver[] =  UNICODE_LITERAL_18(C,r,e,d,e,n,t,i,a,l,R,e,s,o,l,v,e,r);
     static const XMLCh _default[] =             UNICODE_LITERAL_7(d,e,f,a,u,l,t);
     static const XMLCh ExternalApplicationOverrides[] = UNICODE_LITERAL_28(E,x,t,e,r,n,a,l,A,p,p,l,i,c,a,t,i,o,n,O,v,e,r,r,i,d,e,s);
@@ -558,9 +557,6 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
-                // Somewhat icky; we disable request/response correlation by default by injecting an attribute
-                // to be picked up by the auto-added BEARER policy rule that's wrapped around this same element.
-                child->setAttributeNS(nullptr, checkCorrelation, xmlconstants::XML_ZERO);
                 handler.reset(
                     conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
                     );
@@ -759,10 +755,6 @@ void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, D
                 pathprop = (*b)->getXMLString("path");
                 if (idprop.first && pathprop.first) {
                     DOMElement* acsdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _AssertionConsumerService);
-
-                    // Somewhat icky; we disable request/response correlation by default by injecting an attribute
-                    // to be picked up by the auto-added BEARER policy rule that's wrapped around this same element.
-                    acsdom->setAttributeNS(nullptr, checkCorrelation, xmlconstants::XML_ZERO);
 
                     // Copy in any attributes from the <SSO> element so they can be accessed as properties in the ACS handler,
                     // since the handlers aren't attached to the SSO element.

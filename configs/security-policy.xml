@@ -26,7 +26,7 @@
         <PolicyRule type="ClientCertAuth" errorFatal="true"/>
         <PolicyRule type="XMLSigning" errorFatal="true"/>
         <PolicyRule type="SimpleSigning" errorFatal="true"/>
-        <PolicyRule type="Bearer"/>
+        <PolicyRule type="Bearer" blockUnsolicited="true"/>
     </Policy>
 
   <!--
