@@ -494,6 +494,7 @@ pair<bool,long> StatusHandler::processMessage(
 
 #ifdef WIN32
 typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
+typedef BOOL (WINAPI *PGVEA)(LPOSVERSIONINFOA);
 #endif
 
 ostream& StatusHandler::systemInfo(ostream& os) const
@@ -518,7 +519,8 @@ ostream& StatusHandler::systemInfo(ostream& os) const
     OSVERSIONINFOEX osvi;
     memset(&osvi, 0, sizeof(OSVERSIONINFOEX));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-    if(GetVersionEx((OSVERSIONINFO*)&osvi)) {
+    PGVEA pGVEA = (PGVEA)GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "GetVersionExA");
+    if(pGVEA && pGVEA((OSVERSIONINFO*)&osvi)) {
         os << "<Windows"
            << " version='" << osvi.dwMajorVersion << "." << osvi.dwMinorVersion << "'"
            << " build='" << osvi.dwBuildNumber << "'";
@@ -562,6 +564,9 @@ ostream& StatusHandler::systemInfo(ostream& os) const
         }
 
         os << "/>";
+    }
+    else {
+	os << "<Windows/>";
     }
 #endif
     return os;
