@@ -210,22 +210,30 @@ Xerces-x64.msm: Xerces-x64.wixobj
 XercesDll32=$(BuildSP)\$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
 XercesDebugDll32=$(BuildSP)\$(Xerces)\Install32\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
 
+XercesPdb32=$(BuildSP)\$(Xerces)\Buildx86\src\Release\xerces-c_$(XercesFileVersion).pdb
+XercesDebugPdb32=$(BuildSP)\$(Xerces)\Buildx86\src\Debug\xerces-c_$(XercesFileVersion)D.pdb
+
 Xerces-x86.wixobj: Xerces-x86.wxs $(XercesDll32) Xerces-x86.wxs
 	wixcop -indent:2 Xerces-x86.wxs
 	candle Xerces-x86.wxs -dBuildDirectory=$(BuildSP) -dXercesDll=$(XercesDll32) -dXercesDebugDll=$(XercesDebugDll32) \
 						  -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) \
                           -dXerces32Component=$(Xerces32Component) -dXerces32Componentd=$(Xerces32Componentd)\
-                          -dShibbolethMsVersion=$(MsVCVersion) -dxerces=$(Xerces) -dBuildDebug=$(DebugInstaller)
+                          -dShibbolethMsVersion=$(MsVCVersion) -dxerces=$(Xerces) -dBuildDebug=$(DebugInstaller)\
+                          -dXercesDebugPdb=$(XercesDebugPdb32) -dXercesPdb=$(XercesPdb32)
 
 XercesDll64=$(BuildSP)\$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion).dll
 XercesDebugDll64=$(BuildSP)\$(Xerces)\Install64\$(MsVCVersion)\bin\xerces-c_$(XercesFileVersion)D.dll
+
+XercesPdb64=$(BuildSP)\$(Xerces)\Buildx64\src\Release\xerces-c_$(XercesFileVersion).pdb
+XercesDebugPdb64=$(BuildSP)\$(Xerces)\Buildx64\src\Debug\xerces-c_$(XercesFileVersion)D.pdb
 
 Xerces-x64.wixobj: Xerces-x64.wxs $(XercesDll64) Xerces-x86.wxs
 	wixcop -indent:2 Xerces-x64.wxs
 	candle Xerces-x64.wxs -dBuildDirectory=$(BuildSP) -dXercesDll=$(XercesDll64) -dXercesDebugDll=$(XercesDebugDll64) \
 						  -dXercesVersion=$(XercesVersion) -dXercesFileVersion=$(XercesFileVersion) \
 						  -dXerces64Component=$(Xerces64Component) -dXerces64Componentd=$(Xerces64Componentd)\
-                          -dShibbolethMsVersion=$(MsVCVersion)  -dxerces=$(Xerces) -dBuildDebug=$(DebugInstaller)
+                          -dShibbolethMsVersion=$(MsVCVersion)  -dxerces=$(Xerces) -dBuildDebug=$(DebugInstaller)\
+                          -dXercesDebugPdb=$(XercesDebugPdb64) -dXercesPdb=$(XercesPdb64)
 
 
 #

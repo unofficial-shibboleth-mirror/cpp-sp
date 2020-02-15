@@ -27,6 +27,7 @@
             <Directory Id="lib" Name="lib" FileSource="$(var.BuildDirectory)\$(var.log4shib)\ms$(var.ShibbolethMsVersion)\Release\">
               <Component Id="log4shib.dll" Guid="$(var.Log4ShibComponent32)">
                 <File KeyPath="yes" Checksum="yes" Name="log4shib$(var.Log4ShibFileVersion).dll" />
+                <File KeyPath="no"  Checksum="no"  Name="log4shib$(var.Log4ShibFileVersion).pdb" />
               </Component>
               <Component Id="NTEventLogAppender.dll" Guid="{43B944CB-E42A-4D17-A601-AC4E14DA2217}">
                 <File KeyPath="yes" Checksum="yes" Name="NTEventLogAppender.dll" />
@@ -35,6 +36,7 @@
               <Directory Id="lib_debug" Name="debug" FileSource="$(var.BuildDirectory)\$(var.log4shib)\ms$(var.ShibbolethMsVersion)\Debug\">
                 <Component Id="log4shibD.dll" Guid="$(var.Log4ShibComponent32d)">
                   <File KeyPath="yes" Checksum="yes" Name="log4shib$(var.Log4ShibFileVersion)D.dll" />
+                  <File KeyPath="no"  Checksum="no"  Name="log4shib$(var.Log4ShibFileVersion)D.pdb" />
                 </Component>
                 <Component Id="NTEventLogAppender.dll_debug" Guid="{5501F9FA-C6EC-48A7-8318-EA8C918DC8BF}">
                   <File Id="NTEventLogAppender.dll_debug" KeyPath="yes" Checksum="yes" Name="NTEventLogAppender.dll" />

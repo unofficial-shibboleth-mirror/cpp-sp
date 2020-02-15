@@ -27,29 +27,37 @@
             <Directory Id="lib" Name="lib" FileSource="$(var.SPBuildDirectory)\cpp-opensaml\Build\$(var.ShibbolethMsVersion)\x64\Release\">
               <Component Id="saml.dll" Guid="$(var.SamlComponent64)" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Name="saml$(var.OpenSAMLFileVersion).dll" />
+                <File KeyPath="no"  Checksum="no"  Name="saml$(var.OpenSAMLFileVersion).pdb" />
               </Component>
               <Component Id="samlsign.exe" Guid="{B89B1F75-9B8A-4A15-B141-4DC3F132CD47}" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Name="samlsign.exe" />
+                <File KeyPath="no"  Checksum="no"  Name="samlsign.pdb" />
               </Component>
               <Component Id="xmltooling.dll" Guid="$(var.XMLToolingComponent64)" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Release\xmltooling$(var.XmlToolingFileVersion).dll" />
+                <File KeyPath="no"  Checksum="no"  Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Release\xmltooling$(var.XmlToolingFileVersion).pdb" />
               </Component>
               <Component Id="xmltooling_lite.dll" Guid="$(var.XMLToolingLiteComponent64)" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Release\xmltooling-lite$(var.XmlToolingFileVersion).dll" />
+                <File KeyPath="no"  Checksum="no"  Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Release\xmltooling-lite$(var.XmlToolingFileVersion).pdb" />
               </Component>
               <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\cpp-opensaml\Build\$(var.ShibbolethMsVersion)\x64\Debug\">
                 <Component Id="samlD.dll" Guid="$(var.SamlComponent64d)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Name="saml$(var.OpenSAMLFileVersion)D.dll" />
+                  <File KeyPath="no"  Checksum="no"  Name="saml$(var.OpenSAMLFileVersion)D.pdb" />
                 </Component>
                 <Component Id="samlsign.exe_debug" Guid="{A6588914-93E1-4FAF-B237-39C0240EECB1}" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Id="samlsign.exe_debug" Name="samlsign.exe" />
+                  <File KeyPath="no"  Checksum="no"  Id="samlsign.pdb_debug" Name="samlsign.pdb" />
                 </Component>
                 <Component Id="xmltoolingD.dll" Guid="$(var.XMLToolingComponent64d)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Debug\xmltooling$(var.XmlToolingFileVersion)D.dll" />
+                  <File KeyPath="no"  Checksum="no"  Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Debug\xmltooling$(var.XmlToolingFileVersion)D.pdb" />
                 </Component>
                 <Component Id="xmltooling_liteD.dll" Guid="$(var.XMLToolingLiteComponent64d)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.dll" />
+                  <File KeyPath="no"  Checksum="no"  Source="$(var.SPBuildDirectory)\cpp-xmltooling\Build\$(var.ShibbolethMsVersion)\x64\Debug\xmltooling-lite$(var.XmlToolingFileVersion)D.pdb" />
                 </Component>
               </Directory><!-- lib_debug -->
               <?endif ?>

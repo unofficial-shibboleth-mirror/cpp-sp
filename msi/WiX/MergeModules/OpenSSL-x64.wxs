@@ -18,10 +18,15 @@
 
 <?define ReleaseDir="x64\bin"?>
 <?define DebugDir="x64Debug\bin"?>
-<?define LibEay="libcrypto-$(var.OpenSSLFileVersion)-x64.dll"?>
+<?define LibEay="libcrypto-$(var.OpenSSLFileVersion)-x64.dll"?> 
 <?define LibEayD="libcrypto-$(var.OpenSSLFileVersion)D-x64.dll"?>
 <?define SslEay="libssl-$(var.OpenSSLFileVersion)-x64.dll"?>
 <?define SslEayD="libssl-$(var.OpenSSLFileVersion)D-x64.dll"?>
+
+<?define LibEayPdb="libcrypto-$(var.OpenSSLFileVersion)-x64.pdb"?>
+<?define LibEayDPdb="libcrypto-$(var.OpenSSLFileVersion)D-x64.pdb"?>
+<?define SslEayPdb="libssl-$(var.OpenSSLFileVersion)-x64.pdb"?>
+<?define SslEayDPdb="libssl-$(var.OpenSSLFileVersion)D-x64.pdb"?>
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Module Id="OpenSSLMergeModule_x64" Language="1033" Version="$(var.OpenSSLVersion)">
@@ -33,23 +38,29 @@
             <Directory Id="lib" Name="lib" FileSource="$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\">
               <Component Id="libeay32.dll" Guid="$(var.LibEay64Component)" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Name="$(var.LibEay)" />
+                <!--<File KeyPath="no"  Checksum="no"  Name="$(var.LibEayPdb)" /> -->
               </Component>
               <Component Id="ssleay32.dll" Guid="$(var.SSlEay64Component)" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Name="$(var.SslEay)" />
+                <!--<File KeyPath="no"  Checksum="no"  Name="$(var.SslEayPdb)" /> -->
               </Component>
               <Component Id="openssl.exe" Guid="{AF6DBF01-02E0-4CA4-9466-2E95EAC1200E}" Win64="yes">
                 <File KeyPath="yes" Checksum="yes" Name="openssl.exe" />
+                <!-- <File KeyPath="no"  Checksum="no"  Name="openssl.pdb" /> -->
               </Component>
               <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug" FileSource="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\">
                 <Component Id="libeay32D.dll" Guid="$(var.LibEay64Componentd)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Name="$(var.LibEayD)" />
+                  <!-- <File KeyPath="no"  Checksum="no"  Name="$(var.LibEayDPdb)" /> -->
                 </Component>
                 <Component Id="ssleay32D.dll" Guid="$(var.SSlEay64Componentd)" Win64="yes">
                   <File KeyPath="yes" Checksum="yes" Name="$(var.SslEayD)" />
+                  <!-- <File KeyPath="no"  Checksum="no"  Name="$(var.SslEayDPdb)" /> -->
                 </Component>
                 <Component Id="openssl.exe_debug" Guid="{3555958C-C30D-4829-BC17-936D2EEC3EA4}" Win64="yes">
                   <File Id="openssl.exe_debug" KeyPath="yes" Checksum="yes" Name="openssl.exe" />
+                  <!-- <File Id="openssl.pdb_debug" KeyPath="no"  Checksum="no"  Name="openssl.pdb" /> -->
                 </Component>
               </Directory><!-- lib_debug-->
               <?endif ?>
