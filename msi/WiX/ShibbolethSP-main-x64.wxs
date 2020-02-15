@@ -190,6 +190,7 @@
 
       <Component Id="shibd64.exe" Guid="{707B57A2-CCA0-48A6-9F66-275EB04474AA}" Win64="yes" Directory="sbin64">
         <File KeyPath="yes" Checksum="yes" Id="shibd64.exe" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\shibd.exe" />
+        <File KeyPath="no"  Checksum="no"  Id="shibd64.pdb" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\shibd.pdb" />
         <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
         <ServiceInstall Id="shibd" Name="shibd_Default" DisplayName="Shibboleth Daemon (Default)" Description="Manages shared state and offloads SAML processing from Shibboleth web server modules." Arguments="-stdout &quot;[INSTALLDIR]var\log\shibboleth\stdout.log&quot; -stderr &quot;[INSTALLDIR]var\log\shibboleth\stderr.log&quot;" Type="ownProcess" Start="auto" ErrorControl="ignore" />
         <ServiceControl Id="shibd_Default" Name="shibd_Default" Stop="both" Remove="uninstall" Start="install" Wait="no" />
