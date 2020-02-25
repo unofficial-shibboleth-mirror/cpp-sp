@@ -195,38 +195,50 @@ void Handler::cleanRelayState(
         }
     }
 
-    if (!mech.first || !mech.second || strncmp(mech.second, "cookie", 6))
-        return;
+    int maxRSCookies = 20,purgedRSCookies = 0;
+    int maxOSCookies = 20,purgedOSCookies = 0;
 
-    int maxCookies = 20,purgedCookies = 0;
-
-    mech.second += 6;
-    if (*mech.second == ':' && isdigit(*(++mech.second))) {
-        maxCookies = atoi(mech.second);
-        if (maxCookies == 0) {
-            maxCookies = 20;
+    if (mech.first && !strncmp(mech.second, "cookie", 6)) {
+        mech.second += 6;
+        if (*mech.second == ':' && isdigit(*(++mech.second))) {
+            maxRSCookies = maxOSCookies = atoi(mech.second);
+            if (maxRSCookies == 0) {
+                maxRSCookies = maxOSCookies = 20;
+            }
         }
     }
 
     // Walk the list of cookies backwards by name.
     const map<string,string>& cookies = request.getCookies();
     for (map<string,string>::const_reverse_iterator i = cookies.rbegin(); i != cookies.rend(); ++i) {
-        // Process relay state cookies only.
         if (starts_with(i->first, "_shibstate_")) {
-            if (maxCookies > 0) {
+            if (maxRSCookies > 0) {
                 // Keep it, but count it against the limit.
-                --maxCookies;
+                --maxRSCookies;
             }
             else {
                 // We're over the limit, so everything here and older gets cleaned up.
                 response.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
-                ++purgedCookies;
+                ++purgedRSCookies;
+            }
+        }
+        else if (starts_with(i->first, "_opensaml_req_")) {
+            if (maxOSCookies > 0) {
+                // Keep it, but count it against the limit.
+                --maxOSCookies;
+            }
+            else {
+                // We're over the limit, so everything here and older gets cleaned up.
+                response.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
+                ++purgedOSCookies;
             }
         }
     }
 
-    if (purgedCookies > 0)
-        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedCookies) + " stale relay state cookie(s) from client");
+    if (purgedRSCookies > 0)
+        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedRSCookies) + " stale relay state cookie(s) from client");
+    if (purgedOSCookies > 0)
+        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedOSCookies) + " stale request correlation cookie(s) from client");
 }
 
 void Handler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
