@@ -19,7 +19,7 @@
     </Policy>
 
     <Policy id="blockUnsolicited" validate="false">
-        <PolicyRule type="MessageFlow" checkCorrelation="true" checkReplay="true" expires="60"/>
+        <PolicyRule type="MessageFlow" blockUnsolicited="true" checkReplay="true" expires="60"/>
         <PolicyRule type="Conditions">
             <PolicyRule type="Audience"/>
         </PolicyRule>
