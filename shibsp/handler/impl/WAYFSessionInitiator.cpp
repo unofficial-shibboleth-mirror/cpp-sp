@@ -99,7 +99,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     pair<bool,const char*> prop;
     const Handler* ACS = nullptr;
     const Application& app = request.getApplication();
-    pair<bool,const char*> discoveryURL = pair<bool,const char*>(true, m_url);
+    pair<bool,const char*> discoveryURL = pair<bool,const char*>(false, nullptr);
 
     if (isHandler) {
         prop.second = request.getParameter("acsIndex");
@@ -118,9 +118,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         recoverRelayState(request.getApplication(), request, request, target, false);
         request.getApplication().limitRedirect(request, target.c_str());
 
-        prop.second = request.getParameter("discoveryURL");
-        if (prop.second && *prop.second)
-            discoveryURL.second = prop.second;
+        discoveryURL = getString("discoveryURL");
     }
     else {
         // Check for a hardwired target value in the map or handler.

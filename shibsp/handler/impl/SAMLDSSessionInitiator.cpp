@@ -162,7 +162,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
     pair<bool,const char*> prop;
     bool isPassive = false;
     const Application& app = request.getApplication();
-    pair<bool,const char*> discoveryURL = pair<bool,const char*>(true, m_url);
+    pair<bool,const char*> discoveryURL = pair<bool,const char*>(false, nullptr);
 
     if (isHandler) {
         prop.second = request.getParameter("SAMLDS");
@@ -182,9 +182,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         pair<bool,bool> passopt = getBool("isPassive", request);
         isPassive = passopt.first && passopt.second;
 
-        prop.second = request.getParameter("discoveryURL");
-        if (prop.second && *prop.second)
-            discoveryURL.second = prop.second;
+        discoveryURL = getString("discoveryURL");
     }
     else {
         // Check for a hardwired target value in the map or handler.
