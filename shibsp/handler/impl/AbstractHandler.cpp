@@ -243,9 +243,12 @@ void Handler::cleanRelayState(
 
 void Handler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
 {
-    // The empty string implies no state to deal with.
-    if (relayState.empty())
+    // The empty string implies no state to deal with but we need to generate a correlation handle.
+    if (relayState.empty()) {
+        generateRandomHex(relayState, 4);
+        relayState = "corr:" + lexical_cast<string>(time(nullptr)) + '_' + relayState;
         return;
+    }
 
     // No setting means just pass state by value.
     pair<bool,const char*> mech = getString("relayState");
@@ -328,6 +331,12 @@ void Handler::recoverRelayState(
     ) const
 {
     SPConfig& conf = SPConfig::getConfig();
+
+    // Sentry value that signifies it was only a correlation tool.
+    if (starts_with(relayState, "corr:")) {
+        relayState.clear();
+        return;
+    }
 
     // Look for StorageService-backed state of the form "ss:SSID:key".
     const char* state = relayState.c_str();

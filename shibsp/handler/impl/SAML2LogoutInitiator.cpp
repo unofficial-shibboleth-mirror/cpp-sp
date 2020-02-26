@@ -459,9 +459,9 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
             application.limitRedirect(httpRequest, returnloc);
             relayState = returnloc;
             httpRequest.absolutize(relayState);
-            cleanRelayState(application, httpRequest, httpResponse);
-            preserveRelayState(application, httpResponse, relayState);
         }
+        cleanRelayState(application, httpRequest, httpResponse);
+        preserveRelayState(application, httpResponse, relayState);
 
         auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, ep->getLocation(), encoder));
         msg->setDestination(ep->getLocation());
