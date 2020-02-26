@@ -372,6 +372,9 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
     if (http) {
         pair<bool,bool> flag = relyingParty->getBool("chunkedEncoding");
         http->useChunkedEncoding(flag.first && flag.second);
+        if (m_isMDQ) {
+            http->setRequestHeader("Accept", "application/samlmetadata+xml");
+        }
         http->setRequestHeader("Xerces-C", XERCES_FULLVERSIONDOT);
         http->setRequestHeader("XML-Security-C", XSEC_FULLVERSIONDOT);
         http->setRequestHeader("XMLTooling-C", gXMLToolingDotVersionStr);
