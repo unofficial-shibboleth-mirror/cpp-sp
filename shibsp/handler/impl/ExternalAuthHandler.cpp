@@ -396,7 +396,7 @@ pair<bool,long> ExternalAuth::processMessage(
             authncontext_class,
             authncontext_decl,
             &tokens,
-            &ctx->getResolvedAttributes()
+            ctx ? &ctx->getResolvedAttributes() : nullptr
             );
 
         if (login_event) {
@@ -544,7 +544,7 @@ pair<bool,long> ExternalAuth::processMessage(
             authncontext_class.get(),
             authncontext_decl.get(),
             &tokens,
-            &ctx->getResolvedAttributes()
+            ctx ? &ctx->getResolvedAttributes() : nullptr
             );
 
         if (login_event) {
