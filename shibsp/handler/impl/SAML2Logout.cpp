@@ -132,6 +132,7 @@ namespace shibsp {
         vector<string> m_bindings;
         map< string,boost::shared_ptr<MessageEncoder> > m_encoders;
         auto_ptr_char m_protocol;
+        bool m_notifyWithoutSession;
 #endif
     };
 
@@ -156,6 +157,11 @@ SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId, bool deprecatio
     m_preserve.push_back("ID");
     m_preserve.push_back("entityID");
     m_preserve.push_back("RelayState");
+
+    pair<bool, bool> flag = getBool("notifyWithoutSession", shibspconstants::ASCII_SHIBSPCONFIG_NS);
+    if (!flag.first)
+        flag = getBool("notifyWithoutSession");
+    m_notifyWithoutSession = flag.first && flag.second;
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         SAMLConfig& conf = SAMLConfig::getConfig();
@@ -494,7 +500,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
         }
 
         if (m_decoder->isUserAgentPresent()) {
-            if (!session_id.empty()) {
+            if (!session_id.empty() || m_notifyWithoutSession) {
                 // Pass control to the first front channel notification point, if any.
                 map<string,string> parammap;
                 if (!relayState.empty())
