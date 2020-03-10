@@ -214,8 +214,8 @@ namespace shibsp {
         }
 
     private:
-        void SAML1Query(QueryContext& ctx) const;
-        void SAML2Query(QueryContext& ctx) const;
+        void SAML1Query(QueryContext& ctx, vector<string>& statusCodes) const;
+        void SAML2Query(QueryContext& ctx, vector<string>& statusCodes) const;
 
         Category& m_log;
         string m_policyId;
@@ -223,6 +223,7 @@ namespace shibsp {
         ptr_vector<AttributeDesignator> m_SAML1Designators;
         ptr_vector<saml2::Attribute> m_SAML2Designators;
         vector<string> m_exceptionId;
+        vector<string> m_statusId;
     };
 
     AttributeResolver* SHIBSP_DLLLOCAL QueryResolverFactory(const DOMElement* const & e, bool)
@@ -232,6 +233,7 @@ namespace shibsp {
 
     static const XMLCh exceptionId[] =  UNICODE_LITERAL_11(e,x,c,e,p,t,i,o,n,I,d);
     static const XMLCh policyId[] =     UNICODE_LITERAL_8(p,o,l,i,c,y,I,d);
+    static const XMLCh statusId[] =     UNICODE_LITERAL_8(s,t,a,t,u,s,I,d);
     static const XMLCh subjectMatch[] = UNICODE_LITERAL_12(s,u,b,j,e,c,t,M,a,t,c,h);
 };
 
@@ -273,9 +275,13 @@ QueryResolver::QueryResolver(const DOMElement* e)
     string exid(XMLHelper::getAttrString(e, nullptr, exceptionId));
     if (!exid.empty())
         m_exceptionId.push_back(exid);
+
+    string stid(XMLHelper::getAttrString(e, nullptr, statusId));
+    if (!stid.empty())
+        m_statusId.push_back(stid);
 }
 
-void QueryResolver::SAML1Query(QueryContext& ctx) const
+void QueryResolver::SAML1Query(QueryContext& ctx, vector<string>& statusCodes) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("query");
@@ -349,6 +355,13 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
     else if (!response->getStatus() || !response->getStatus()->getStatusCode() || response->getStatus()->getStatusCode()->getValue()==nullptr ||
             *(response->getStatus()->getStatusCode()->getValue()) != saml1p::StatusCode::SUCCESS) {
         m_log.error("attribute authority returned a SAML error");
+        const saml1p::StatusCode* statusCode = response->getStatus() ? response->getStatus()->getStatusCode() : nullptr;
+        while (statusCode && statusCode->getValue() && statusCode->getValue()->hasLocalPart()) {
+            auto_ptr_char code(statusCode->getValue()->getLocalPart());
+            if (code.get())
+                statusCodes.push_back(code.get());
+            statusCode = statusCode->getStatusCode();
+        }
         throw FatalProfileException("Attribute authority returned a SAML error.");
     }
 
@@ -432,7 +445,7 @@ void QueryResolver::SAML1Query(QueryContext& ctx) const
     }
 }
 
-void QueryResolver::SAML2Query(QueryContext& ctx) const
+void QueryResolver::SAML2Query(QueryContext& ctx, vector<string>& statusCodes) const
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("query");
@@ -540,6 +553,13 @@ void QueryResolver::SAML2Query(QueryContext& ctx) const
     else if (!response->getStatus() || !response->getStatus()->getStatusCode() ||
             !XMLString::equals(response->getStatus()->getStatusCode()->getValue(), saml2p::StatusCode::SUCCESS)) {
         m_log.error("attribute authority returned a SAML error");
+        const saml2p::StatusCode* statusCode = response->getStatus() ? response->getStatus()->getStatusCode() : nullptr;
+        while (statusCode) {
+            auto_ptr_char code(statusCode->getValue());
+            if (code.get())
+                statusCodes.push_back(code.get());
+            statusCode = statusCode->getStatusCode();
+        }
         throw FatalProfileException("Attribute authority returned a SAML error.");
     }
 
@@ -701,16 +721,18 @@ void QueryResolver::resolveAttributes(ResolutionContext& ctx) const
         return;
     }
 
+    vector<string> statusCodes;
+
     try {
         if (qctx.getNameID() && qctx.getEntityDescriptor()) {
             if (XMLString::equals(qctx.getProtocol(), samlconstants::SAML20P_NS)) {
                 m_log.debug("attempting SAML 2.0 attribute query");
-                SAML2Query(qctx);
+                SAML2Query(qctx, statusCodes);
             }
             else if (XMLString::equals(qctx.getProtocol(), samlconstants::SAML11_PROTOCOL_ENUM) ||
                     XMLString::equals(qctx.getProtocol(), samlconstants::SAML10_PROTOCOL_ENUM)) {
                 m_log.debug("attempting SAML 1.x attribute query");
-                SAML1Query(qctx);
+                SAML1Query(qctx, statusCodes);
             }
             else {
                 m_log.info("SSO protocol does not allow for attribute query");
@@ -727,6 +749,13 @@ void QueryResolver::resolveAttributes(ResolutionContext& ctx) const
             attr->getValues().push_back(XMLToolingConfig::getConfig().getURLEncoder()->encode(ex.what()));
             qctx.getResolvedAttributes().push_back(attr.get());
             attr.release();
+
+            if (!m_statusId.empty() && !statusCodes.empty()) {
+                auto_ptr<SimpleAttribute> attr(new SimpleAttribute(m_statusId));
+                attr->getValues().assign(statusCodes.begin(), statusCodes.end());
+                qctx.getResolvedAttributes().push_back(attr.get());
+                attr.release();
+            }
         }
         else {
             throw; // not exposing the exception as an attribute, so just surface to caller
