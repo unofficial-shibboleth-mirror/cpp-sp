@@ -91,7 +91,7 @@ namespace shibsp {
         Category& m_log;
         bool m_verifyHost, m_ignoreTransport, m_encoded, m_backgroundInit, m_isMDQ;
         static bool s_artifactWarned;
-        string m_subst, m_match, m_regex, m_hashed, m_cacheDir;
+        string m_subst, m_match, m_regex, m_hashed, m_cacheDir, m_acceptHeader;
         boost::scoped_ptr<X509TrustEngine> m_trust;
         boost::scoped_ptr<CredentialResolver> m_dummyCR;
         boost::scoped_ptr<Thread> m_init_thread;
@@ -106,6 +106,7 @@ namespace shibsp {
         return new DynamicMetadataProvider(e, deprecationSupport);
     }
 
+    static const XMLCh Accept[] =           UNICODE_LITERAL_6(A,c,c,e,p,t);
     static const XMLCh encoded[] =          UNICODE_LITERAL_7(e,n,c,o,d,e,d);
     static const XMLCh hashed[] =           UNICODE_LITERAL_6(h,a,s,h,e,d);
     static const XMLCh ignoreTransport[] =  UNICODE_LITERAL_15(i,g,n,o,r,e,T,r,a,n,s,p,o,r,t);
@@ -129,7 +130,8 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e, bool depre
         m_ignoreTransport(XMLHelper::getAttrBool(e, false, ignoreTransport)),
         m_encoded(true), m_backgroundInit(false),
         m_isMDQ(XMLHelper::getAttrString(e, "Dyanamic", _type) == "MDQ"),
-        m_cacheDir(XMLHelper::getAttrString(e, "", cacheDirectory))
+        m_cacheDir(XMLHelper::getAttrString(e, "", cacheDirectory)),
+        m_acceptHeader(XMLHelper::getAttrString(e, "application/samlmetadata+xml", Accept))
 {
     const DOMElement* child = XMLHelper::getFirstChildElement(e, Subst);
     if (child && child->hasChildNodes()) {
@@ -372,8 +374,8 @@ EntityDescriptor* DynamicMetadataProvider::resolve(const MetadataProvider::Crite
     if (http) {
         pair<bool,bool> flag = relyingParty->getBool("chunkedEncoding");
         http->useChunkedEncoding(flag.first && flag.second);
-        if (m_isMDQ) {
-            http->setRequestHeader("Accept", "application/samlmetadata+xml");
+        if (!m_acceptHeader.empty()) {
+            http->setRequestHeader("Accept", m_acceptHeader.c_str());
         }
         http->setRequestHeader("Xerces-C", XERCES_FULLVERSIONDOT);
         http->setRequestHeader("XML-Security-C", XSEC_FULLVERSIONDOT);
