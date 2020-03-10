@@ -9,7 +9,7 @@ URL:		http://shibboleth.net/
 Source:		%{name}-sp-%{version}.tar.bz2
 BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
-Requires:	openssl
+Requires:	openssl, hostname
 %if 0%{?rhel} >= 6 || 0%{?amzn} >= 1
 PreReq:		xmltooling-schemas%{?_isa} >= 3.1.0, opensaml-schemas%{?_isa} >= 3.1.0
 %else
@@ -478,6 +478,7 @@ exit 0
 %changelog
 * Mon Feb 3 2020 Scott Cantor <cantor.2@osu.edu> - 3.1.0-1
 - Version and lib bump
+- Add hostname dependency for keygen script
 
 * Mon Sep 30 2019 Scott Cantor <cantor.2@osu.edu> - 3.0.4-1
 - CentOS 8 cleanup
