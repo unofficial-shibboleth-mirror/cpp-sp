@@ -1531,6 +1531,15 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
     if (m_redirectLimit == REDIRECT_LIMIT_INHERIT)
         return m_base->limitRedirect(request, url);
     if (m_redirectLimit != REDIRECT_LIMIT_NONE) {
+
+        // This is ugly, but the purpose is to prevent blocking legitimate redirects
+        // that lack a trailing slash after the hostname. If there are fewer than 3
+        // slashes, we assume the hostname wasn't terminated.
+        string urlcopy(url);
+        if (count(urlcopy.begin(), urlcopy.end(), '/') < 3) {
+            urlcopy += '/';
+        }
+
         vector<string> whitelist;
         if (m_redirectLimit == REDIRECT_LIMIT_EXACT || m_redirectLimit == REDIRECT_LIMIT_EXACT_WHITELIST) {
             // Scheme and hostname have to match.
@@ -1549,7 +1558,7 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
 
         if (!whitelist.empty()) {
             for (vector<string>::const_iterator i = whitelist.begin(); i != whitelist.end(); ++i) {
-                if (XMLString::startsWithI(url, i->c_str())) {
+                if (istarts_with(urlcopy, *i)) {
                     return;
                 }
             }
@@ -1557,11 +1566,12 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
 
         if (!m_redirectWhitelist.empty()) {
             for (vector<string>::const_iterator i = m_redirectWhitelist.begin(); i != m_redirectWhitelist.end(); ++i) {
-                if (XMLString::startsWithI(url, i->c_str())) {
+                if (istarts_with(urlcopy, *i)) {
                     return;
                 }
             }
         }
+
         Category::getInstance(SHIBSP_LOGCAT ".Application").warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
         throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
     }
