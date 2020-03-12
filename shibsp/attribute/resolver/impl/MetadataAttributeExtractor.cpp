@@ -85,7 +85,8 @@ namespace shibsp {
             m_privacyURL,
             m_orgName,
             m_orgDisplayName,
-            m_orgURL;
+            m_orgURL,
+            m_registrationAuthority;
         typedef boost::tuple< string,xstring,boost::shared_ptr<AttributeDecoder> > contact_tuple_t;
         typedef boost::tuple< string,int,int,boost::shared_ptr<AttributeDecoder> > logo_tuple_t;
         vector<contact_tuple_t> m_contacts; // tuple is attributeID, contact type, decoder
@@ -118,7 +119,8 @@ MetadataExtractor::MetadataExtractor(const DOMElement* e, bool deprecationSuppor
         m_privacyURL(XMLHelper::getAttrString(e, nullptr, PrivacyStatementURL::LOCAL_NAME)),
         m_orgName(XMLHelper::getAttrString(e, nullptr, OrganizationName::LOCAL_NAME)),
         m_orgDisplayName(XMLHelper::getAttrString(e, nullptr, OrganizationDisplayName::LOCAL_NAME)),
-        m_orgURL(XMLHelper::getAttrString(e, nullptr, OrganizationURL::LOCAL_NAME))
+        m_orgURL(XMLHelper::getAttrString(e, nullptr, OrganizationURL::LOCAL_NAME)),
+        m_registrationAuthority(XMLHelper::getAttrString(e, nullptr, RegistrationInfo::REGAUTHORITY_ATTRIB_NAME))
 {
     const DOMElement* child = e ? XMLHelper::getFirstChildElement(e) : nullptr;
     while (child) {
@@ -163,6 +165,8 @@ void MetadataExtractor::getAttributeIds(vector<string>& attributes) const
         attributes.push_back(m_orgDisplayName);
     if (!m_orgURL.empty())
         attributes.push_back(m_orgURL);
+    if (!m_registrationAuthority.empty())
+        attributes.push_back(m_registrationAuthority);
     for (vector<contact_tuple_t>::const_iterator c = m_contacts.begin(); c != m_contacts.end(); ++c)
         attributes.push_back(c->get<0>());
     for (vector<logo_tuple_t>::const_iterator l = m_logos.begin(); l != m_logos.end(); ++l)
@@ -257,6 +261,25 @@ void MetadataExtractor::extractAttributes(
         m_contacts.begin(), m_contacts.end(),
         boost::bind(&MetadataExtractor::doContactPerson, this, request, roleToExtract, _1, boost::ref(attributes))
         );
+
+    if (!m_registrationAuthority.empty()) {
+        const Extensions* exts = dynamic_cast<EntityDescriptor*>(roleToExtract->getParent())->getExtensions();
+        if (exts) {
+            const RegistrationInfo* reginfo;
+            for (vector<XMLObject*>::const_iterator ext = exts->getUnknownXMLObjects().begin(); ext != exts->getUnknownXMLObjects().end(); ++ext) {
+                reginfo = dynamic_cast<const RegistrationInfo*>(*ext);
+                if (reginfo) {
+                    auto_ptr_char temp(reginfo->getRegistrationAuthority());
+                    if (temp.get()) {
+                        auto_ptr<SimpleAttribute> attr(new SimpleAttribute(vector<string>(1, m_registrationAuthority)));
+                        attr->getValues().push_back(temp.get());
+                        attributes.push_back(attr.get());
+                        attr.release();
+                    }
+                }
+            }
+        }
+    }
 }
 
 template <class T> void MetadataExtractor::doLangSensitive(
