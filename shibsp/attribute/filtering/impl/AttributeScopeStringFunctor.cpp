@@ -40,9 +40,10 @@ using namespace std;
 
 namespace shibsp {
 
-    static const XMLCh attributeID[] =  UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
-    static const XMLCh ignoreCase[] =   UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
-    static const XMLCh value[] =        UNICODE_LITERAL_5(v,a,l,u,e);
+    static const XMLCh attributeID[] =      UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
+    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh ignoreCase[] =       UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
+    static const XMLCh value[] =            UNICODE_LITERAL_5(v,a,l,u,e);
 
     /**
      * A match function that matches the scope of an attribute value against the specified value.
@@ -51,7 +52,7 @@ namespace shibsp {
     {
         string m_attributeID;
         auto_arrayptr<char> m_value;
-        bool m_ignoreCase;
+        bool m_caseSensitive;
 
         bool hasScope(const FilteringContext& filterContext) const;
 
@@ -59,9 +60,16 @@ namespace shibsp {
         AttributeScopeStringFunctor(const DOMElement* e)
             : m_attributeID(XMLHelper::getAttrString(e, nullptr, attributeID)),
                 m_value(e ? toUTF8(e->getAttributeNS(nullptr, value)) : nullptr),
-                m_ignoreCase(XMLHelper::getAttrBool(e, false, ignoreCase)) {
+                m_caseSensitive(true) {
             if (!m_value.get() || !*m_value.get()) {
                 throw ConfigurationException("AttributeScopeString MatchFunctor requires non-empty value attribute.");
+            }
+
+            if (e->hasAttributeNS(nullptr, caseSensitive)) {
+                m_caseSensitive = XMLHelper::getAttrBool(e, true, caseSensitive);
+            }
+            else if (e->hasAttributeNS(nullptr, ignoreCase)) {
+                m_caseSensitive = !XMLHelper::getAttrBool(e, false, ignoreCase);
             }
         }
 
@@ -79,7 +87,7 @@ namespace shibsp {
                 if (!scope) {
                     return false;
                 }
-                else if (m_ignoreCase) {
+                else if (!m_caseSensitive) {
 #ifdef HAVE_STRCASECMP
                     return !strcasecmp(scope, m_value.get());
 #else
@@ -114,7 +122,7 @@ bool AttributeScopeStringFunctor::hasScope(const FilteringContext& filterContext
             if (!scope) {
                 return false;
             }
-            else if (m_ignoreCase) {
+            else if (!m_caseSensitive) {
 #ifdef HAVE_STRCASECMP
                 if (!strcasecmp(scope, m_value.get()))
                     return true;

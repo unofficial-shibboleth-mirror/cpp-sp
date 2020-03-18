@@ -37,8 +37,9 @@ using xmltooling::XMLHelper;
 
 namespace shibsp {
 
-    static const XMLCh value[] = UNICODE_LITERAL_5(v,a,l,u,e);
-    static const XMLCh ignoreCase[] = UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
+    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh ignoreCase[] =       UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
+    static const XMLCh value[] =            UNICODE_LITERAL_5(v,a,l,u,e);
 
     /**
      * Match functor that compares the user's authentication method against a given string.
@@ -46,16 +47,23 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AuthenticationMethodStringFunctor : public MatchFunctor
     {
         const XMLCh* m_value;
-        bool m_ignoreCase;
+        bool m_caseSensitive;
     public:
         AuthenticationMethodStringFunctor(const DOMElement* e)
-            : m_value(e ? e->getAttributeNS(nullptr,value) : nullptr), m_ignoreCase(XMLHelper::getAttrBool(e, false, ignoreCase)) {
+            : m_value(e ? e->getAttributeNS(nullptr,value) : nullptr), m_caseSensitive(true) {
             if (!m_value || !*m_value)
                 throw ConfigurationException("AuthenticationMethodString MatchFunctor requires non-empty value attribute.");
+
+            if (e->hasAttributeNS(nullptr, caseSensitive)) {
+                m_caseSensitive = XMLHelper::getAttrBool(e, true, caseSensitive);
+            }
+            else if (e->hasAttributeNS(nullptr, ignoreCase)) {
+                m_caseSensitive = !XMLHelper::getAttrBool(e, false, ignoreCase);
+            }
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
-            if (m_ignoreCase)
+            if (!m_caseSensitive)
                 return (XMLString::compareIString(m_value, filterContext.getAuthnContextClassRef()) == 0 ||
                     XMLString::compareIString(m_value, filterContext.getAuthnContextDeclRef()) == 0);
             else

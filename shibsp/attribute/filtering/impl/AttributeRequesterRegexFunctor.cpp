@@ -31,12 +31,15 @@
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
 
+#include <xmltooling/util/XMLHelper.h>
+
 #include <xercesc/util/regx/RegularExpression.hpp>
 
 namespace shibsp {
 
-    static const XMLCh options[] =  UNICODE_LITERAL_7(o,p,t,i,o,n,s);
-    static const XMLCh regex[] =    UNICODE_LITERAL_5(r,e,g,e,x);
+    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh options[] =          UNICODE_LITERAL_7(o,p,t,i,o,n,s);
+    static const XMLCh regex[] =            UNICODE_LITERAL_5(r,e,g,e,x);
     
     /**
      * A match function that evaluates to true if the Attribute requester matches the provided regular
@@ -50,10 +53,20 @@ namespace shibsp {
             const XMLCh* r = e ? e->getAttributeNS(nullptr, regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AttributeRequesterRegex MatchFunctor requires non-empty regex attribute.");
+
             try {
-                m_regex.reset(new RegularExpression(r, e->getAttributeNS(nullptr, options)));
+                const XMLCh* opts = e->getAttributeNS(nullptr, options);
+                if (!opts) {
+                    bool flag = xmltooling::XMLHelper::getAttrBool(e, true, caseSensitive);
+                    if (!flag) {
+                        static const XMLCh i_option[] = UNICODE_LITERAL_1(i);
+                        opts = i_option;
+                    }
+                }
+
+                m_regex.reset(new RegularExpression(r, opts));
             }
-            catch (XMLException& ex) {
+            catch (const XMLException& ex) {
                 xmltooling::auto_ptr_char temp(ex.getMessage());
                 throw ConfigurationException(temp.get());
             }
@@ -62,11 +75,17 @@ namespace shibsp {
         virtual ~AttributeRequesterRegexFunctor() {}
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
-            return m_regex->matches(filterContext.getAttributeRequester());
+            try {
+                return m_regex->matches(filterContext.getAttributeRequester());
+            }
+            catch (const XMLException& ex) {
+                xmltooling::auto_ptr_char temp(ex.getMessage());
+                throw AttributeFilteringException(temp.get());
+            }
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {
-            return m_regex->matches(filterContext.getAttributeRequester());
+            return evaluatePolicyRequirement(filterContext);
         }
     };
 

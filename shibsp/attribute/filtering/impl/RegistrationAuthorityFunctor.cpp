@@ -88,7 +88,7 @@ namespace shibsp {
 
             if (info) {
                 auto_ptr_char authority(info->getRegistrationAuthority());
-                return authority.get() &&  m_registrars.find(authority.get()) != m_registrars.end();
+                return authority.get() && m_registrars.find(authority.get()) != m_registrars.end();
             }
             return m_matchIfMetadataSilent;
         }

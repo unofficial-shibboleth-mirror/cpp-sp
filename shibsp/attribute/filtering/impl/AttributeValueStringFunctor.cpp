@@ -40,9 +40,10 @@ using namespace std;
 
 namespace shibsp {
 
-    static const XMLCh attributeID[] =  UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
-    static const XMLCh value[] =        UNICODE_LITERAL_5(v,a,l,u,e);
-    static const XMLCh ignoreCase[] =   UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
+    static const XMLCh attributeID[] =      UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
+    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh ignoreCase[] =       UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
+    static const XMLCh value[] =            UNICODE_LITERAL_5(v,a,l,u,e);
 
     /**
      * A match function that matches the value of an attribute against the specified value.
@@ -62,10 +63,17 @@ namespace shibsp {
             if (!m_value.get() || !*m_value.get()) {
                 throw ConfigurationException("AttributeValueString MatchFunctor requires non-empty value attribute.");
             }
-            if (e && e->hasAttributeNS(nullptr, ignoreCase)) {
-                Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter").warn(
+
+            if (e->hasAttributeNS(nullptr, ignoreCase)) {
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.AttributeValueString").warn(
                     "ignoreCase property ignored by AttributeValueString MatchFunctor in favor of attribute's caseSensitive property"
                     );
+            }
+
+            if (e->hasAttributeNS(nullptr, caseSensitive)) {
+                Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.AttributeValueString").warn(
+                    "caseSensitive property ignored by AttributeValueString MatchFunctor in favor of attribute's caseSensitive property"
+                );
             }
         }
 

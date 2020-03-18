@@ -30,14 +30,21 @@
 #include "attribute/filtering/FilteringContext.h"
 #include "attribute/filtering/FilterPolicyContext.h"
 #include "attribute/filtering/MatchFunctor.h"
+#include "metadata/MetadataProviderCriteria.h"
 
+#include <xmltooling/Lockable.h>
+#include <xmltooling/util/XMLHelper.h>
 #include <saml/saml2/metadata/Metadata.h>
+#include <saml/saml2/metadata/MetadataProvider.h>
 
 using namespace opensaml::saml2md;
+using namespace xmltooling;
+using namespace std;
 
 namespace shibsp {
 
-    static const XMLCh groupID[] = UNICODE_LITERAL_7(g,r,o,u,p,I,D);
+    static const XMLCh checkAffiliations[] =    UNICODE_LITERAL_17(c,h,e,c,k,A,f,f,i,l,i,a,t,i,o,n,s);
+    static const XMLCh groupID[] =              UNICODE_LITERAL_7(g,r,o,u,p,I,D);
 
     /**
      * A match function that evaluates to true if the attribute issuer is found in metadata and is a member
@@ -46,8 +53,10 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AttributeIssuerInEntityGroupFunctor : public MatchFunctor
     {
         const XMLCh* m_group;
+        bool m_checkAffiliations;
     public:
-        AttributeIssuerInEntityGroupFunctor(const DOMElement* e) {
+        AttributeIssuerInEntityGroupFunctor(const DOMElement* e)
+                : m_checkAffiliations(XMLHelper::getAttrBool(e, false, checkAffiliations)) {
             m_group = e ? e->getAttributeNS(nullptr,groupID) : nullptr;
             if (!m_group || !*m_group)
                 throw ConfigurationException("AttributeIssuerInEntityGroup MatchFunctor requires non-empty groupID attribute.");
@@ -63,6 +72,26 @@ namespace shibsp {
                     return true;
                 group = dynamic_cast<const EntitiesDescriptor*>(group->getParent());
             }
+
+            if (m_checkAffiliations) {
+                // Use metadata to invoke the SSO service directly.
+                MetadataProvider* m = filterContext.getApplication().getMetadataProvider();
+                Locker locker(m);
+                MetadataProviderCriteria mc(filterContext.getApplication(), m_group);
+                pair<const EntityDescriptor*,const RoleDescriptor*> entity = m->getEntityDescriptor(mc);
+                if (entity.first) {
+                    const AffiliationDescriptor* affiliation = entity.first->getAffiliationDescriptor();
+                    if (affiliation) {
+                        const vector<AffiliateMember*>& members = affiliation->getAffiliateMembers();
+                        for (vector<AffiliateMember*>::const_iterator i = members.begin(); i != members.end(); ++i) {
+                            if (XMLString::equals(filterContext.getAttributeIssuer(), (*i)->getID())) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
             return false;
         }
 

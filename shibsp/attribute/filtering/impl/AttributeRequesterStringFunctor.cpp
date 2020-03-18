@@ -35,8 +35,9 @@ using xmltooling::XMLHelper;
 
 namespace shibsp {
 
-    static const XMLCh value[] = UNICODE_LITERAL_5(v,a,l,u,e);
-    static const XMLCh ignoreCase[] = UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
+    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh ignoreCase[] =       UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
+    static const XMLCh value[] =            UNICODE_LITERAL_5(v,a,l,u,e);
 
     /**
      * A match function that matches the attribute requester's name against the specified value.
@@ -44,20 +45,26 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AttributeRequesterStringFunctor : public MatchFunctor
     {
         const XMLCh* m_value;
-        bool m_ignoreCase;
+        bool m_caseSensitive;
     public:
         AttributeRequesterStringFunctor(const DOMElement* e)
-                : m_value(e ? e->getAttributeNS(nullptr,value) : nullptr),
-                    m_ignoreCase(XMLHelper::getAttrBool(e, false, ignoreCase)) {
+                : m_value(e ? e->getAttributeNS(nullptr,value) : nullptr), m_caseSensitive(true) {
             if (!m_value || !*m_value)
                 throw ConfigurationException("AttributeRequesterString MatchFunctor requires non-empty value attribute.");
+
+            if (e->hasAttributeNS(nullptr, caseSensitive)) {
+                m_caseSensitive = XMLHelper::getAttrBool(e, true, caseSensitive);
+            }
+            else if (e->hasAttributeNS(nullptr, ignoreCase)) {
+                m_caseSensitive = !XMLHelper::getAttrBool(e, false, ignoreCase);
+            }
         }
 
         bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
-            if (m_ignoreCase)
-                return (XMLString::compareIString(m_value, filterContext.getAttributeRequester()) == 0);
-            else
+            if (m_caseSensitive)
                 return XMLString::equals(m_value, filterContext.getAttributeRequester());
+            else
+                return (XMLString::compareIString(m_value, filterContext.getAttributeRequester()) == 0);
         }
 
         bool evaluatePermitValue(const FilteringContext& filterContext, const Attribute& attribute, size_t index) const {

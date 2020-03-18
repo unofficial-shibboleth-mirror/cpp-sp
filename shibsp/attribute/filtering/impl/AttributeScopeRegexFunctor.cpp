@@ -42,9 +42,10 @@ using namespace std;
 
 namespace shibsp {
 
-    static const XMLCh attributeID[] =  UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
-    static const XMLCh options[] =  UNICODE_LITERAL_7(o,p,t,i,o,n,s);
-    static const XMLCh regex[] =    UNICODE_LITERAL_5(r,e,g,e,x);
+    static const XMLCh attributeID[] =      UNICODE_LITERAL_11(a,t,t,r,i,b,u,t,e,I,D);
+    static const XMLCh caseSensitive[] =    UNICODE_LITERAL_13(c,a,s,e,S,e,n,s,i,t,i,v,e);
+    static const XMLCh options[] =          UNICODE_LITERAL_7(o,p,t,i,o,n,s);
+    static const XMLCh regex[] =            UNICODE_LITERAL_5(r,e,g,e,x);
 
     /**
      * A match function that evaluates an attribute value's scope against the provided regular expression.
@@ -62,10 +63,20 @@ namespace shibsp {
             const XMLCh* r = e ? e->getAttributeNS(nullptr, regex) : nullptr;
             if (!r || !*r)
                 throw ConfigurationException("AttributeScopeRegex MatchFunctor requires non-empty regex attribute.");
+
             try {
-                m_regex.reset(new RegularExpression(r, e->getAttributeNS(nullptr, options)));
+                const XMLCh* opts = e->getAttributeNS(nullptr, options);
+                if (!opts) {
+                    bool flag = xmltooling::XMLHelper::getAttrBool(e, true, caseSensitive);
+                    if (!flag) {
+                        static const XMLCh i_option[] = UNICODE_LITERAL_1(i);
+                        opts = i_option;
+                    }
+                }
+
+                m_regex.reset(new RegularExpression(r, opts));
             }
-            catch (XMLException& ex) {
+            catch (const XMLException& ex) {
                 xmltooling::auto_ptr_char temp(ex.getMessage());
                 throw ConfigurationException(temp.get());
             }
@@ -114,5 +125,11 @@ bool AttributeScopeRegexFunctor::matches(const Attribute& attribute, size_t inde
     if (!val)
         return false;
     auto_arrayptr<XMLCh> temp(fromUTF8(val));
-    return m_regex->matches(temp.get());
+    try {
+        return m_regex->matches(temp.get());
+    }
+    catch (const XMLException& ex) {
+        xmltooling::auto_ptr_char temp(ex.getMessage());
+        throw AttributeFilteringException(temp.get());
+    }
 }
