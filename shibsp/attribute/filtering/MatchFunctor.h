@@ -131,6 +131,12 @@ namespace shibsp {
     /** Matches based on entity attributes of requester and a regex. */
     extern SHIBSP_API xmltooling::QName AttributeRequesterEntityAttributeRegexMatchType;
 
+    /** Matches based on NameIDFormats of issuer. */
+    extern SHIBSP_API xmltooling::QName AttributeIssuerNameIDFormatType;
+
+    /** Matches based on NameIDFormats of requester. */
+    extern SHIBSP_API xmltooling::QName AttributeRequesterNameIDFormatType;
+
     /** Matches based on issuer and pluggable criteria. */
     extern SHIBSP_API xmltooling::QName AttributeIssuerEntityMatcherType;
 

@@ -73,6 +73,8 @@ namespace shibsp {
     DECL_FACTORY(AttributeRequesterEntityAttributeExactMatch);
     DECL_FACTORY(AttributeIssuerEntityAttributeRegexMatch);
     DECL_FACTORY(AttributeRequesterEntityAttributeRegexMatch);
+    DECL_FACTORY(AttributeIssuerNameIDFormat);
+    DECL_FACTORY(AttributeRequesterNameIDFormat);
     DECL_FACTORY(AttributeIssuerEntityMatcher);
     DECL_FACTORY(AttributeRequesterEntityMatcher);
     DECL_FACTORY(AttributeScopeMatchesShibMDScope);
@@ -129,6 +131,9 @@ namespace shibsp {
 
     static const XMLCh AttributeRequesterEntityAttributeRegexMatch[] = UNICODE_LITERAL_43(A,t,t,r,i,b,u,t,e,R,e,q,u,e,s,t,e,r,E,n,t,i,t,y,A,t,t,r,i,b,u,t,e,R,e,g,e,x,M,a,t,c,h);
     static const XMLCh EntityAttributeRegexMatch[] = 	UNICODE_LITERAL_25(E,n,t,i,t,y,A,t,t,r,i,b,u,t,e,R,e,g,e,x,M,a,t,c,h);
+
+    static const XMLCh IssuerNameIDFormatExactMatch[] = UNICODE_LITERAL_28(I,s,s,u,e,r,N,a,m,e,I,D,F,o,r,m,a,t,E,x,a,c,t,M,a,t,c,h);
+    static const XMLCh NameIDFormatExactMatch[] =       UNICODE_LITERAL_22(N,a,m,e,I,D,F,o,r,m,a,t,E,x,a,c,t,M,a,t,c,h);
 
     static const XMLCh AttributeIssuerInEntityGroup[] = UNICODE_LITERAL_28(A,t,t,r,i,b,u,t,e,I,s,s,u,e,r,I,n,E,n,t,i,t,y,G,r,o,u,p);
     static const XMLCh IssuerInEntityGroup[] =          UNICODE_LITERAL_19(I,s,s,u,e,r,I,n,E,n,t,i,t,y,G,r,o,u,p);
@@ -211,6 +216,9 @@ DECL_PUBLIC_QNAME(AttributeRequesterEntityAttributeRegexMatch, EntityAttributeRe
 DECL_SAML_QNAME(AttributeRequesterEntityAttributeRegexMatch, AttributeRequesterEntityAttributeRegexMatch);
 DECL_SAML_QNAME(EntityAttributeRegexMatch, EntityAttributeRegexMatch);
 
+DECL_PUBLIC_QNAME(AttributeIssuerNameIDFormat, IssuerNameIDFormatExactMatch);
+DECL_PUBLIC_QNAME(AttributeRequesterNameIDFormat, NameIDFormatExactMatch);
+
 DECL_PUBLIC_QNAME(AttributeIssuerInEntityGroup, IssuerInEntityGroup);
 DECL_SAML_QNAME(AttributeIssuerInEntityGroup, AttributeIssuerInEntityGroup);
 
@@ -273,6 +281,11 @@ void SHIBSP_API shibsp::registerMatchFunctors()
     REGISTER_FACTORY(AttributeIssuerEntityMatcher);
     REGISTER_FACTORY(AttributeRequesterEntityMatcher);
 
+    // Explicit because there are no deprecated versions to register.
+    mgr.registerFactory(AttributeIssuerNameIDFormatType, AttributeIssuerNameIDFormatFactory);
+    mgr.registerFactory(AttributeRequesterNameIDFormatType, AttributeRequesterNameIDFormatFactory);
+
+    // Extra aliases for some deprecated types.
     mgr.registerFactory(DeprecatedEntityAttributeExactMatchType, AttributeRequesterEntityAttributeExactMatchFactory);
     mgr.registerFactory(DeprecatedEntityAttributeRegexMatchType, AttributeRequesterEntityAttributeRegexMatchFactory);
     mgr.registerFactory(DeprecatedInEntityGroupType, AttributeRequesterInEntityGroupFactory);

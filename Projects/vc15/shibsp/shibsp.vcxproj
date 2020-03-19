@@ -202,6 +202,7 @@
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterEntityAttributeFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\AttributeRequesterEntityMatcherFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\DummyAttributeFilter.cpp" />
+    <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\NameIDFormatFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\NameIDQualifierStringFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\filtering\impl\RegistrationAuthorityFunctor.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\resolver\impl\AssertionAttributeExtractor.cpp" />
