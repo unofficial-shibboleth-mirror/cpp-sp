@@ -247,6 +247,13 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
 
     scoped_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
     if (type) {
+        if (XMLString::equals(type->getNamespaceURI(), shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS) ||
+            XMLString::equals(type->getNamespaceURI(), shibspconstants::SHIB2ATTRIBUTEFILTER_MF_SAML_NS)) {
+
+            auto_ptr_char ns(type->getNamespaceURI());
+            m_log.warn("Legacy filter namespace '%s' is DEPRECATED and will be removed from a future version.", ns.get());
+        }
+
         try {
             auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(&functorMap,e), deprecationSupport));
             functorMap.getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func.get()));

@@ -92,10 +92,17 @@ AndMatchFunctor::AndMatchFunctor(const pair<const FilterPolicyContext*,const DOM
     const DOMElement* e = XMLHelper::getFirstChildElement(p.second);
     while (e) {
         func = nullptr;
-        if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, Rule)) {
+
+        if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS)) {
+            auto_ptr_char ns(e->getNamespaceURI());
+            Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.AND").warn(
+                "Legacy filter namespace '%s' is DEPRECATED and will be removed from a future version.", ns.get());
+        }
+
+        if (XMLString::equals(e->getLocalName(), Rule)) {
             func = buildFunctor(e, p.first, deprecationSupport);
         }
-        else if (XMLHelper::isNodeNamed(e, shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS, RuleReference)) {
+        else if (XMLString::equals(e->getLocalName(), RuleReference)) {
             string ref = XMLHelper::getAttrString(e, nullptr, _ref);
             if (!ref.empty()) {
                 multimap<string,MatchFunctor*>::const_iterator rule = p.first->getMatchFunctors().find(ref);
@@ -120,6 +127,14 @@ MatchFunctor* AndMatchFunctor::buildFunctor(const DOMElement* e, const FilterPol
     scoped_ptr<xmltooling::QName> type(XMLHelper::getXSIType(e));
     if (!type)
         throw ConfigurationException("Child Rule found with no xsi:type.");
+
+    if (XMLString::equals(type->getNamespaceURI(), shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS) ||
+        XMLString::equals(type->getNamespaceURI(), shibspconstants::SHIB2ATTRIBUTEFILTER_MF_SAML_NS)) {
+
+        auto_ptr_char ns(type->getNamespaceURI());
+        Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.AND").warn(
+            "Legacy filter namespace '%s' is DEPRECATED and will be removed from a future version.", ns.get());
+    }
 
     auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(functorMap,e), deprecationSupport));
     functorMap->getMatchFunctors().insert(multimap<string,MatchFunctor*>::value_type(id, func.get()));

@@ -22,7 +22,7 @@
         <Rule xsi:type="NOT">
             <Rule xsi:type="ValueRegex" regex="@"/>
         </Rule>
-        <Rule xsi:type="saml:AttributeScopeMatchesShibMDScope"/>
+        <Rule xsi:type="ScopeMatchesShibMDScope"/>
     </PermitValueRule>
 
     <AttributeFilterPolicy>
@@ -61,12 +61,12 @@
 
         <!-- Require NameQualifier/SPNameQualifier match IdP and SP entityID respectively. -->
         <AttributeRule attributeID="persistent-id">
-            <PermitValueRule xsi:type="saml:NameIDQualifierString"/>
+            <PermitValueRule xsi:type="NameIDQualifierString"/>
         </AttributeRule>
         
         <!-- Enforce that the values of schacHomeOrganization are a valid Scope. -->
         <AttributeRule attributeID="schacHomeOrganization">
-            <PermitValueRule xsi:type="saml:AttributeValueMatchesShibMDScope" />
+            <PermitValueRule xsi:type="ValueMatchesShibMDScope" />
         </AttributeRule>
 
         <!-- Catch-all that passes everything else through unmolested. -->
