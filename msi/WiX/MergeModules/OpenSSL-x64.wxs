@@ -28,10 +28,10 @@
 <?define SslEayPdb="libssl-$(var.OpenSSLFileVersion)-x64.pdb"?>
 <?define SslEayDPdb="libssl-$(var.OpenSSLFileVersion)D-x64.pdb"?>
 
-<?define LibEayPdbSrc ="$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\libcrypto-$(var.OpenSSLFileVersion)-x64.pdb-sv"?>
-<?define LibEayDPdbSrc="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\libcrypto-$(var.OpenSSLFileVersion)D-x64.pdb-sv"?>
-<?define SslEayPdbSrc = "$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\libssl-$(var.OpenSSLFileVersion)-x64.pdb-sv"?>
-<?define SslEayDPdbSrc="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\libssl-$(var.OpenSSLFileVersion)D-x64.pdb-sv"?>
+<?define LibEayPdbSrc ="$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\libcrypto-$(var.OpenSSLFileVersion)-x64.pdb"?>
+<?define LibEayDPdbSrc="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\libcrypto-$(var.OpenSSLFileVersion)D-x64.pdb"?>
+<?define SslEayPdbSrc = "$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\libssl-$(var.OpenSSLFileVersion)-x64.pdb"?>
+<?define SslEayDPdbSrc="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\libssl-$(var.OpenSSLFileVersion)D-x64.pdb"?>
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Module Id="OpenSSLMergeModule_x64" Language="1033" Version="$(var.OpenSSLVersion)">

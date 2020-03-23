@@ -28,10 +28,10 @@
 <?define SslEayPdb  ="libssl-$(var.OpenSSLFileVersion).pdb"?>
 <?define SslEayDPdb ="libssl-$(var.OpenSSLFileVersion)D.pdb"?>
 
-<?define LibEayPdbSrc  ="$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\libcrypto-$(var.OpenSSLFileVersion).pdb-sv"?>
-<?define SslEayPdbSrc  ="$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\libssl-$(var.OpenSSLFileVersion).pdb-sv"?>
-<?define LibEayDPdbSrc ="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\libcrypto-$(var.OpenSSLFileVersion)D.pdb-sv"?>
-<?define SslEayDPdbSrc ="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\libssl-$(var.OpenSSLFileVersion)D.pdb-sv"?>
+<?define LibEayPdbSrc  ="$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\libcrypto-$(var.OpenSSLFileVersion).pdb"?>
+<?define SslEayPdbSrc  ="$(var.BuildDirectory)\$(var.openssl)\$(var.ReleaseDir)\libssl-$(var.OpenSSLFileVersion).pdb"?>
+<?define LibEayDPdbSrc ="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\libcrypto-$(var.OpenSSLFileVersion)D.pdb"?>
+<?define SslEayDPdbSrc ="$(var.BuildDirectory)\$(var.openssl)\$(var.DebugDir)\libssl-$(var.OpenSSLFileVersion)D.pdb"?>
 
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
