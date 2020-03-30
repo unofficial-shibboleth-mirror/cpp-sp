@@ -101,6 +101,7 @@
         -->
         <Sessions lifetime="28800" timeout="3600" checkAddress="false"
             handlerURL="/Shibboleth.sso" handlerSSL="false" cookieProps="http" relayState="ss:mem"
+            redirectLimit="exact"
             exportLocation="http://localhost/Shibboleth.sso/GetAssertion" exportACL="127.0.0.1"
             idpHistory="false" idpHistoryDays="7">
 
