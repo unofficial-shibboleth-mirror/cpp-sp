@@ -135,7 +135,7 @@ namespace {
             return deleteString(context, key);
         }
     
-        void reap(const char* context) {}
+        void reap(const char*) {}
 
         void updateContext(const char* context, time_t expiration);
         void deleteContext(const char* context);

@@ -142,7 +142,7 @@ struct shib_server_config
 };
 
 // creates the per-server configuration
-extern "C" void* create_shib_server_config(SH_AP_POOL* p, server_rec* s)
+extern "C" void* create_shib_server_config(SH_AP_POOL* p, server_rec*)
 {
     shib_server_config* sc=(shib_server_config*)ap_pcalloc(p,sizeof(shib_server_config));
     sc->szScheme = nullptr;
@@ -200,7 +200,7 @@ struct shib_dir_config
 };
 
 // creates per-directory config structure
-extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char* d)
+extern "C" void* create_shib_dir_config (SH_AP_POOL* p, char*)
 {
     shib_dir_config* dc=(shib_dir_config*)ap_pcalloc(p,sizeof(shib_dir_config));
     dc->tSettings = nullptr;
@@ -1019,7 +1019,7 @@ private:
     bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const;
 };
 
-AccessControl* htAccessFactory(const xercesc::DOMElement* const & e, bool)
+AccessControl* htAccessFactory(const xercesc::DOMElement* const &, bool)
 {
     return new htAccessControl();
 }
@@ -1616,7 +1616,7 @@ pair<ShibTargetApache*,authz_status> shib_base_check_authz(request_rec* r)
     return make_pair(rc->sta, AUTHZ_GRANTED);
 }
 
-extern "C" authz_status shib_shibboleth_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_shibboleth_check_authz(request_rec* r, const char*, const void*)
 {
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)
@@ -1624,7 +1624,7 @@ extern "C" authz_status shib_shibboleth_check_authz(request_rec* r, const char* 
     return AUTHZ_GRANTED;
 }
 
-extern "C" authz_status shib_session_check_authz(request_rec* r, const char* require_line, const void*)
+extern "C" authz_status shib_session_check_authz(request_rec* r, const char*, const void*)
 {
     pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
     if (!sta.first)

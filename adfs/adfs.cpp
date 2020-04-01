@@ -847,7 +847,7 @@ void ADFSConsumer::implementProtocol(
 
 #endif
 
-pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool isHandler) const
+pair<bool,long> ADFSLogoutInitiator::run(SPRequest& request, bool) const
 {
     // Normally we'd do notifications and session clearage here, but ADFS logout
     // is missing the needed request/response features, so we have to rely on

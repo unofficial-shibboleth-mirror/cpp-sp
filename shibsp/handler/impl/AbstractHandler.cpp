@@ -155,7 +155,7 @@ Handler::~Handler()
 
 #ifndef SHIBSP_LITE
 
-void Handler::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const
+void Handler::generateMetadata(SPSSODescriptor&, const char*) const
 {
 }
 
