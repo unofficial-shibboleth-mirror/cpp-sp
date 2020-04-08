@@ -9,7 +9,7 @@ URL:		http://shibboleth.net/
 Source:		%{name}-sp-%{version}.tar.bz2
 BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
-Requires:	openssl, hostname
+Requires:	openssl
 %if 0%{?rhel} >= 6 || 0%{?amzn} >= 1
 PreReq:		xmltooling-schemas%{?_isa} >= 3.1.0, opensaml-schemas%{?_isa} >= 3.1.0
 %else
@@ -19,7 +19,10 @@ PreReq:		xmltooling-schemas >= 3.1.0, opensaml-schemas >= 3.1.0
 PreReq:		%{insserv_prereq} %{fillup_prereq}
 %endif
 %if 0%{?rhel} >= 7
+Requires: hostname
 BuildRequires:  systemd-devel
+%else
+Requires: net-tools
 %endif
 %if 0%{?rhel} >= 8
 BuildRequires:  gdb
