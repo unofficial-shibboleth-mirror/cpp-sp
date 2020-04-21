@@ -131,16 +131,16 @@ AX_PKG_CHECK_MODULES([xerces],,[xerces-c >= 3.2],,,
 AX_PKG_CHECK_MODULES([xmlsec],,[xml-security-c >= 2],,,
     [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
 
-AX_PKG_CHECK_MODULES([xmltooling],,[xmltooling >= 3],,,
+AX_PKG_CHECK_MODULES([xmltooling],,[xmltooling >= 3.1],,,
     [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
 PKG_CHECK_VAR([xmltooling_includedir],[xmltooling],[includedir])
 PKG_CHECK_VAR([XMLTOOLINGXMLDIR],[xmltooling],[pkgxmldir])
 DX_INCLUDE="$DX_INCLUDE $xmltooling_includedir"
 
-AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite >= 3],,,
+AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite >= 3.1],,,
     [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
-AX_PKG_CHECK_MODULES([opensaml],,[opensaml >= 3],,,
+AX_PKG_CHECK_MODULES([opensaml],,[opensaml >= 3.1],,,
     [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
 PKG_CHECK_VAR([OPENSAMLXMLDIR],[opensaml],[pkgxmldir])
 
