@@ -121,13 +121,6 @@ case "$1" in
 start)
     prepare_environment
 
-    # Don't start shibd if NO_START is set.
-    if [ "$NO_START" = 1 ] ; then
-        if [ "$VERBOSE" != no ] ; then
-            echo "Not starting $DESC (see /etc/default/$NAME)"
-        fi
-        exit 0
-    fi
     [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
     do_start
     case "$?" in
