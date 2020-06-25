@@ -1,16 +1,16 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
 if BUILD_UNITTEST
-bin_PROGRAMS = shibsptest
+TESTS = shibsptest
+check_PROGRAMS = shibsptest
+endif
+
 shibsptest_CXXFLAGS = \
     $(AM_CXXFLAGS) \
     $(CXXTESTFLAGS) \
     $(opensaml_CFLAGS) \
     $(xerces_CFLAGS) \
     $(xmltooling_CFLAGS)
-else
-bin_PROGRAMS = 
-endif
 
 shibsptest_h = \
     SPTest.h \
