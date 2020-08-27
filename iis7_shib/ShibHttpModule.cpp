@@ -21,9 +21,11 @@
 #include "IIS7_shib.hpp"
 
 #include <xmltooling/util/NDC.h>
+#include <xmltooling/io/HTTPResponse.h>
 
 #include "ShibHttpModule.hpp"
 #include "IIS7Request.hpp"
+#include "IIS7_shib.hpp"
 
 #include <process.h>
 #include <winreg.h>
@@ -115,7 +117,29 @@ ShibHttpModule::OnBeginRequest(
     _In_ IHttpEventProvider *   pProvider
 )
 {
-    return DoHandler(pHttpContext, pProvider);
+    IHttpResponse* res = pHttpContext->GetResponse();
+    try {
+        return DoHandler(pHttpContext, pProvider);
+    }
+    catch (const bad_alloc&) {
+        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Memory Error", 0, E_OUTOFMEMORY);
+    }
+    catch (long e) {
+        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Win32 Error", 0, HRESULT_FROM_WIN32(e));
+    }
+    catch (const std::exception& e) {
+        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), e.what());
+    }
+    catch (...) {
+        if (g_catchAll) {
+            res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error Caught");
+        }
+        else {
+            throw;
+        }
+    }
+    pHttpContext->SetRequestHandled();
+    return RQ_NOTIFICATION_FINISH_REQUEST;
 }
 
 // RQ_AUTHENTICATE_REQUEST 
@@ -125,5 +149,27 @@ ShibHttpModule::OnAuthenticateRequest(
     _In_ IAuthenticationProvider *  pProvider
 )
 {
-    return DoFilter(pHttpContext, pProvider);
+    IHttpResponse* res = pHttpContext->GetResponse();
+    try {
+        return DoFilter(pHttpContext, pProvider);
+    }
+    catch (const bad_alloc&) {
+        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Memory Error", 0, E_OUTOFMEMORY);
+    }
+    catch (long e) {
+        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Win32 Error", 0, HRESULT_FROM_WIN32(e));
+    }
+    catch (const std::exception& e) {
+        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), e.what());
+    }
+    catch (...) {
+        if (g_catchAll) {
+            res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error Caught");
+        }
+        else {
+            throw;
+        }
+    }
+    pHttpContext->SetRequestHandled();
+    return RQ_NOTIFICATION_FINISH_REQUEST;
 }

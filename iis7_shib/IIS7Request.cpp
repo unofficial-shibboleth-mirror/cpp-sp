@@ -448,6 +448,7 @@ void IIS7Request::logFatal(const string& operation, HRESULT hr) const
 
 void IIS7Request::throwError(const string& operation, HRESULT hr) const
 {
+    logFatal(operation, hr);
     string msg(operation + " failed: " + lexical_cast<string>(hr));
     throw IOException(msg.c_str());
 }
