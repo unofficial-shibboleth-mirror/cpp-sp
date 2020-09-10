@@ -214,6 +214,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 flag = request.getParameter("target");
                 string target(flag ? flag : "");
                 recoverRelayState(request.getApplication(), request, request, target, false);
+                request.getApplication().limitRedirect(request, target.c_str());
                 return make_pair(true, request.sendRedirect(target.c_str()));
             }
         }
