@@ -364,6 +364,16 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
     }
 }
 
+static char _x2c(const char *what)
+{
+    register char digit;
+
+    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
+    digit *= 16;
+    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
+    return(digit);
+}
+
 const Override* Override::locate(const HTTPRequest& request) const
 {
     // This function is confusing because it's *not* recursive.
@@ -371,11 +381,34 @@ const Override* Override::locate(const HTTPRequest& request) const
     // path parameter starts with the entire request path and
     // we can skip the leading slash as irrelevant.
     const char* path = request.getRequestURI();
-    if (*path == '/')
+    if (path && *path == '/')
         path++;
 
+    // Fix for bug 574, secadv 20061002
+    // Unescape URI up to query string delimiter by looking for %XX escapes.
+    // Adapted from Apache's util.c, ap_unescape_url function.
+    string dup;
+    if (path) {
+        while (*path) {
+            if (*path == '?') {
+                dup += path;
+                break;
+            }
+            else if (*path != '%') {
+                dup += *path;
+            }
+            else {
+                ++path;
+                if (!isxdigit(*path) || !isxdigit(*(path+1)))
+                    throw ConfigurationException("Bad request URI, contained unsupported encoded characters.");
+                dup += _x2c(path);
+                ++path;
+            }
+            ++path;
+        }
+    }
+
     // Now we copy the path, chop the query string, and possibly lower case it.
-    string dup(path);
     string::size_type sep = dup.find('?');
     if (sep != string::npos)
         dup = dup.substr(0, sep);

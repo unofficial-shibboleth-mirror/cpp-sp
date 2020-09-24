@@ -147,40 +147,12 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
     return session;
 }
 
-static char _x2c(const char *what)
-{
-    register char digit;
-
-    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
-    digit *= 16;
-    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
-    return(digit);
-}
-
 void AbstractSPRequest::setRequestURI(const char* uri)
 {
-    // Fix for bug 574, secadv 20061002
-    // Unescape URI up to query string delimiter by looking for %XX escapes.
-    // Adapted from Apache's util.c, ap_unescape_url function.
-    if (uri) {
-        while (*uri) {
-            if (*uri == '?') {
-                m_uri += uri;
-                break;
-            }
-            else if (*uri != '%') {
-                m_uri += *uri;
-            }
-            else {
-                ++uri;
-                if (!isxdigit(*uri) || !isxdigit(*(uri+1)))
-                    throw ConfigurationException("Bad request, contained unsupported encoded characters.");
-                m_uri += _x2c(uri);
-                ++uri;
-            }
-            ++uri;
-        }
-    }
+    if (uri)
+        m_uri = uri;
+    else
+        m_uri.clear();
 }
 
 const char* AbstractSPRequest::getRequestURI() const
