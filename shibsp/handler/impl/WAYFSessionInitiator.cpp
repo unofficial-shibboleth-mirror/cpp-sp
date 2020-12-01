@@ -118,7 +118,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         recoverRelayState(request.getApplication(), request, request, target, false);
         request.getApplication().limitRedirect(request, target.c_str());
 
-        discoveryURL = getString("discoveryURL");
+        discoveryURL = getString("discoveryURL", request, HANDLER_PROPERTY_MAP);
     }
     else {
         // Check for a hardwired target value in the map or handler.
@@ -130,7 +130,11 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
 
         discoveryURL = request.getRequestSettings().first->getString("discoveryURL");
     }
-    
+
+    if (!discoveryURL.first)
+        discoveryURL.second = m_url;
+    m_log.debug("sending request to WAYF (%s)", discoveryURL.second);
+
     if (!ACS) {
         // Try fixed index property.
         pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
@@ -146,10 +150,6 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
         if (!ACS)
             throw ConfigurationException("Unable to locate a SAML 1.x ACS endpoint to use for response.");
     }
-
-    if (!discoveryURL.first)
-        discoveryURL.second = m_url;
-    m_log.debug("sending request to WAYF (%s)", discoveryURL.second);
 
     // Since we're not passing by index, we need to fully compute the return URL.
     // Compute the ACS URL. We add the ACS location to the base handlerURL.

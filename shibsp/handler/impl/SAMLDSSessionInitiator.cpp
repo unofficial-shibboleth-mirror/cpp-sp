@@ -182,7 +182,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         pair<bool,bool> passopt = getBool("isPassive", request);
         isPassive = passopt.first && passopt.second;
 
-        discoveryURL = getString("discoveryURL");
+        discoveryURL = getString("discoveryURL", request, HANDLER_PROPERTY_MAP);
     }
     else {
         // Check for a hardwired target value in the map or handler.
