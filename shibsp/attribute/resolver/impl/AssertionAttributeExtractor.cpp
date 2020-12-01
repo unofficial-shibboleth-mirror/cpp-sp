@@ -79,6 +79,8 @@ namespace shibsp {
             m_authnDecl,
             m_authnInstant,
             m_issuer,
+            m_issuerFormat,
+            m_notBefore,
             m_notOnOrAfter,
             m_sessionIndex,
             m_sessionNotOnOrAfter,
@@ -96,6 +98,7 @@ namespace shibsp {
         return new AssertionExtractor(e);
     }
 
+    static const XMLCh IssuerFormat[] = UNICODE_LITERAL_12(I,s,s,u,e,r,F,o,r,m,a,t);
 };
 
 AssertionExtractor::AssertionExtractor(const DOMElement* e)
@@ -104,6 +107,8 @@ AssertionExtractor::AssertionExtractor(const DOMElement* e)
         m_authnDecl(XMLHelper::getAttrString(e, nullptr, AuthnContextDeclRef::LOCAL_NAME)),
         m_authnInstant(XMLHelper::getAttrString(e, nullptr, AuthnStatement::AUTHNINSTANT_ATTRIB_NAME)),
         m_issuer(XMLHelper::getAttrString(e, nullptr, Issuer::LOCAL_NAME)),
+        m_issuerFormat(XMLHelper::getAttrString(e, nullptr, IssuerFormat)),
+        m_notBefore(XMLHelper::getAttrString(e, nullptr, saml2::Conditions::NOTBEFORE_ATTRIB_NAME)),
         m_notOnOrAfter(XMLHelper::getAttrString(e, nullptr, saml2::Conditions::NOTONORAFTER_ATTRIB_NAME)),
         m_sessionIndex(XMLHelper::getAttrString(e, nullptr, AuthnStatement::SESSIONINDEX_ATTRIB_NAME)),
         m_sessionNotOnOrAfter(XMLHelper::getAttrString(e, nullptr, AuthnStatement::SESSIONNOTONORAFTER_ATTRIB_NAME)),
@@ -134,11 +139,11 @@ void AssertionExtractor::extractAttributes(
 
     const saml2::Assertion* saml2assertion = dynamic_cast<const saml2::Assertion*>(&xmlObject);
     if (saml2assertion) {
-        // Issuer
-        if (!m_issuer.empty()) {
-            const Issuer* i = saml2assertion->getIssuer();
-            if (i && (!i->getFormat() || !*(i->getFormat()) || XMLString::equals(i->getFormat(), NameIDType::ENTITY))) {
-                auto_ptr_char temp(i->getName());
+
+        if (saml2assertion->getIssuer()) {
+            // Issuer
+            if (!m_issuer.empty()) {
+                auto_ptr_char temp(saml2assertion->getIssuer()->getName());
                 if (temp.get() && *temp.get()) {
                     auto_ptr<SimpleAttribute> issuer(new SimpleAttribute(vector<string>(1, m_issuer)));
                     issuer->getValues().push_back(temp.get());
@@ -146,16 +151,38 @@ void AssertionExtractor::extractAttributes(
                     issuer.release();
                 }
             }
+
+            // Format
+            if (!m_issuerFormat.empty()) {
+                auto_ptr_char temp(saml2assertion->getIssuer()->getFormat());
+                if (temp.get()) {
+                    auto_ptr<SimpleAttribute> format(new SimpleAttribute(vector<string>(1, m_issuerFormat)));
+                    format->getValues().push_back(temp.get());
+                    attributes.push_back(format.get());
+                    format.release();
+                }
+            }
         }
 
-        // NotOnOrAfter
-        if (!m_notOnOrAfter.empty() && saml2assertion->getConditions() && saml2assertion->getConditions()->getNotOnOrAfter()) {
-            auto_ptr_char temp(saml2assertion->getConditions()->getNotOnOrAfter()->getRawData());
-            if (temp.get()) {
-                auto_ptr<SimpleAttribute> notonorafter(new SimpleAttribute(vector<string>(1, m_notOnOrAfter)));
-                notonorafter->getValues().push_back(temp.get());
-                attributes.push_back(notonorafter.get());
-                notonorafter.release();
+        // NotBefore / NotOnOrAfter
+        if (saml2assertion->getConditions()) {
+            if (!m_notBefore.empty() && saml2assertion->getConditions()->getNotBefore()) {
+                auto_ptr_char temp(saml2assertion->getConditions()->getNotBefore()->getRawData());
+                if (temp.get()) {
+                    auto_ptr<SimpleAttribute> notbefore(new SimpleAttribute(vector<string>(1, m_notBefore)));
+                    notbefore->getValues().push_back(temp.get());
+                    attributes.push_back(notbefore.get());
+                    notbefore.release();
+                }
+            }
+            if (!m_notOnOrAfter.empty() && saml2assertion->getConditions()->getNotOnOrAfter()) {
+                auto_ptr_char temp(saml2assertion->getConditions()->getNotOnOrAfter()->getRawData());
+                if (temp.get()) {
+                    auto_ptr<SimpleAttribute> notonorafter(new SimpleAttribute(vector<string>(1, m_notOnOrAfter)));
+                    notonorafter->getValues().push_back(temp.get());
+                    attributes.push_back(notonorafter.get());
+                    notonorafter.release();
+                }
             }
         }
 
