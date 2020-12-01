@@ -161,7 +161,7 @@ namespace shibsp {
             xmltooling::logging::Category& log,
             const char* dummyType = nullptr
         );
-        void doAttributeInfo();
+        void doAttributeInfo(xmltooling::logging::Category&);
         void doHandlers(const ProtocolProvider*, const xercesc::DOMElement*, xmltooling::logging::Category&);
         void doSSO(const ProtocolProvider&, std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
         void doLogout(const ProtocolProvider&, std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);

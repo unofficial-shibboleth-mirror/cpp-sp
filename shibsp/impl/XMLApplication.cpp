@@ -207,7 +207,7 @@ XMLApplication::XMLApplication(
         m_hash += (DIGITS[0x0F & *ch]);
     }
 
-    doAttributeInfo();
+    doAttributeInfo(log);
 
     if (conf.isEnabled(SPConfig::Handlers))
         doHandlers(pp, e, log);
@@ -398,12 +398,20 @@ template <class T> T* XMLApplication::doChainedPlugins(
     return nullptr;
 }
 
-void XMLApplication::doAttributeInfo()
+void XMLApplication::doAttributeInfo(Category& log)
 {
     // Populate prefix pair.
     m_attributePrefix.second = "HTTP_";
     pair<bool,const char*> prefix = getString("attributePrefix");
     if (prefix.first) {
+#ifdef HAVE_STRCASECMP
+        if (!strcasecmp(prefix.second, "HTTP_")) {
+#else
+        if (!stricmp(prefix.second, "HTTP_")) {
+#endif
+            log.warn("an attributePrefix of HTTP_ allows header smuggling and is unsafe; this will stop working in a future version");
+        }
+
         m_attributePrefix.first = prefix.second;
         const char* pch = prefix.second;
         while (*pch) {
