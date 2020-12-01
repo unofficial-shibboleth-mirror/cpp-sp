@@ -17,6 +17,7 @@
 </shibmlpif>
 <h3>We're sorry, but you cannot access this service at this time.</h3>
 
+<shibmlpif entityID>
 <p>This service requires information about you that your identity provider
 <shibmlpif Meta-displayName>(<shibmlp Meta-displayName />)</shibmlpif>
 did not release. To gain access to this service, your identity provider
@@ -34,6 +35,12 @@ for further instructions.
 </div>
 </p>
 </shibmlpif>
+</shibmlpif>
+
+<shibmlpifnot entityID>
+<p>Your session was already invalidated before your information could
+ be examined for completeness.</p>
+</shibmlpifnot>
 
 <p>
 You were trying to access the following URL:
