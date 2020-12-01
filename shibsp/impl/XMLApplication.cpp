@@ -552,8 +552,8 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
             boost::shared_ptr<Handler> handler;
             if (XMLString::equals(child->getLocalName(), _AssertionConsumerService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                if (bindprop.empty()) {
-                    log.error("AssertionConsumerService element has no Binding attribute, skipping it...");
+                if (bindprop.empty() || !*child->getAttributeNS(nullptr, Location)) {
+                    log.error("AssertionConsumerService element has empty Binding or Location attribute, skipping it...");
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
@@ -618,8 +618,8 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
             }
             else if (XMLString::equals(child->getLocalName(), _ArtifactResolutionService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                if (bindprop.empty()) {
-                    log.error("ArtifactResolutionService element has no Binding attribute, skipping it...");
+                if (bindprop.empty() || !*child->getAttributeNS(nullptr, Location)) {
+                    log.error("ArtifactResolutionService element has empty Binding or Location attribute, skipping it...");
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
@@ -641,8 +641,8 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
             }
             else if (XMLString::equals(child->getLocalName(), _SingleLogoutService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                if (bindprop.empty()) {
-                    log.error("SingleLogoutService element has no Binding attribute, skipping it...");
+                if (bindprop.empty() || !*child->getAttributeNS(nullptr, Location)) {
+                    log.error("SingleLogoutService element has empty Binding or Location attribute, skipping it...");
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
@@ -652,8 +652,8 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
             }
             else if (XMLString::equals(child->getLocalName(), _ManageNameIDService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                if (bindprop.empty()) {
-                    log.error("ManageNameIDService element has no Binding attribute, skipping it...");
+                if (bindprop.empty() || !*child->getAttributeNS(nullptr, Location)) {
+                    log.error("ManageNameIDService element has empty Binding or Location attribute, skipping it...");
                     child = XMLHelper::getNextSiblingElement(child);
                     continue;
                 }
