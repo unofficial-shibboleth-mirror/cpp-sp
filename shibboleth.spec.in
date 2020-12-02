@@ -479,6 +479,9 @@ exit 0
 %doc %{pkgdocdir}/api
 
 %changelog
+* Tue Dec 1 2020 Scott Cantor <cantor.2@osu.edu> - 3.2.0-1
+- Version and lib bump
+
 * Mon Feb 3 2020 Scott Cantor <cantor.2@osu.edu> - 3.1.0-1
 - Version and lib bump
 - Add hostname dependency for keygen script
