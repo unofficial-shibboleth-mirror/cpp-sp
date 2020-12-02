@@ -32,6 +32,7 @@
 #include "util/SPConstants.h"
 
 #include <fstream>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 #include <xmltooling/XMLToolingConfig.h>

@@ -32,6 +32,7 @@
 #include "attribute/Attribute.h"
 
 #include <algorithm>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>

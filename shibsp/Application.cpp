@@ -32,6 +32,7 @@
 #include "remoting/ListenerService.h"
 
 #include <algorithm>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
 #include <xmltooling/util/Threads.h>
 

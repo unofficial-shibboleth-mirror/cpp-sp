@@ -46,6 +46,7 @@
 #include "util/SPConstants.h"
 
 #include <algorithm>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
 #include <xmltooling/io/HTTPRequest.h>
 #include <xmltooling/io/HTTPResponse.h>

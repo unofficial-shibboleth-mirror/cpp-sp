@@ -31,6 +31,7 @@
 #include "attribute/AttributeDecoder.h"
 #include "attribute/resolver/AttributeExtractor.h"
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/iterator/indirect_iterator.hpp>

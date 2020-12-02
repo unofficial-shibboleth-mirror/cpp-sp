@@ -30,6 +30,7 @@
 #include "attribute/filtering/MatchFunctor.h"
 #include "util/SPConstants.h"
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/util/XMLHelper.h>

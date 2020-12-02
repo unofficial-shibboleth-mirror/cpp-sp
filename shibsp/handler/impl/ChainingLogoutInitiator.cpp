@@ -30,6 +30,7 @@
 #include "handler/LogoutInitiator.h"
 #include "util/SPConstants.h"
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
