@@ -125,7 +125,8 @@ XMLApplication::XMLApplication(
     map<string,string> remapperMap;
     remapperMap[shibspconstants::ASCII_SHIB2SPCONFIG_NS] = shibspconstants::ASCII_SHIB3SPCONFIG_NS;
     remapperMap["relayStateLimit"] = "redirectLimit";
-    remapperMap["relayStateWhitelist"] = "redirectWhitelist";
+    remapperMap["relayStateWhitelist"] = "redirectAllow";
+    remapperMap["redirectWhitelist"] = "redirectAllow";
     DOMPropertySet::STLRemapper remapper(remapperMap);
     load(e, nullptr, this, &remapper);
 
@@ -142,19 +143,35 @@ XMLApplication::XMLApplication(
             else if (!strcmp(prop.second, "host"))
                 m_redirectLimit = REDIRECT_LIMIT_HOST;
             else {
-                if (!strcmp(prop.second, "exact+whitelist"))
-                    m_redirectLimit = REDIRECT_LIMIT_EXACT_WHITELIST;
-                else if (!strcmp(prop.second, "host+whitelist"))
-                    m_redirectLimit = REDIRECT_LIMIT_HOST_WHITELIST;
-                else if (!strcmp(prop.second, "whitelist"))
-                    m_redirectLimit = REDIRECT_LIMIT_WHITELIST;
-                else
+                if (!strcmp(prop.second, "exact+allow")) {
+                    m_redirectLimit = REDIRECT_LIMIT_EXACT_ALLOW;
+                }
+                else if (!strcmp(prop.second, "host+allow")) {
+                    m_redirectLimit = REDIRECT_LIMIT_HOST_ALLOW;
+                }
+                else if (!strcmp(prop.second, "allow")) {
+                    m_redirectLimit = REDIRECT_LIMIT_ALLOW;
+                }
+                else if (!strcmp(prop.second, "exact+whitelist")) {
+                    log.warn("DEPRECATED: redirectLimit of \"exact+whitelist\" replaced by \"exact+allow\"");
+                    m_redirectLimit = REDIRECT_LIMIT_EXACT_ALLOW;
+                }
+                else if (!strcmp(prop.second, "host+whitelist")) {
+                    log.warn("DEPRECATED: redirectLimit of \"host+whitelist\" replaced by \"host+allow\"");
+                    m_redirectLimit = REDIRECT_LIMIT_HOST_ALLOW;
+                }
+                else if (!strcmp(prop.second, "whitelist")) {
+                    log.warn("DEPRECATED: redirectLimit of \"whitelist\" replaced by \"allow\"");
+                    m_redirectLimit = REDIRECT_LIMIT_ALLOW;
+                }
+                else {
                     throw ConfigurationException("Unrecognized redirectLimit setting ($1)", params(1, prop.second));
-                prop = sessionProps->getString("redirectWhitelist");
+                }
+                prop = sessionProps->getString("redirectAllow");
                 if (prop.first) {
                     string dup(prop.second);
                     trim(dup);
-                    split(m_redirectWhitelist, dup, is_space(), algorithm::token_compress_on);
+                    split(m_redirectAllow, dup, is_space(), algorithm::token_compress_on);
                 }
             }
         }
@@ -1549,32 +1566,32 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
             urlcopy += '/';
         }
 
-        vector<string> whitelist;
-        if (m_redirectLimit == REDIRECT_LIMIT_EXACT || m_redirectLimit == REDIRECT_LIMIT_EXACT_WHITELIST) {
+        vector<string> allowlist;
+        if (m_redirectLimit == REDIRECT_LIMIT_EXACT || m_redirectLimit == REDIRECT_LIMIT_EXACT_ALLOW) {
             // Scheme and hostname have to match.
             if (request.isDefaultPort()) {
-                whitelist.push_back(string(request.getScheme()) + "://" + request.getHostname() + '/');
+                allowlist.push_back(string(request.getScheme()) + "://" + request.getHostname() + '/');
             }
-            whitelist.push_back(string(request.getScheme()) + "://" + request.getHostname() + ':' + lexical_cast<string>(request.getPort()) + '/');
+            allowlist.push_back(string(request.getScheme()) + "://" + request.getHostname() + ':' + lexical_cast<string>(request.getPort()) + '/');
         }
-        else if (m_redirectLimit == REDIRECT_LIMIT_HOST || m_redirectLimit == REDIRECT_LIMIT_HOST_WHITELIST) {
+        else if (m_redirectLimit == REDIRECT_LIMIT_HOST || m_redirectLimit == REDIRECT_LIMIT_HOST_ALLOW) {
             // Allow any scheme or port.
-            whitelist.push_back(string("https://") + request.getHostname() + '/');
-            whitelist.push_back(string("http://") + request.getHostname() + '/');
-            whitelist.push_back(string("https://") + request.getHostname() + ':');
-            whitelist.push_back(string("http://") + request.getHostname() + ':');
+            allowlist.push_back(string("https://") + request.getHostname() + '/');
+            allowlist.push_back(string("http://") + request.getHostname() + '/');
+            allowlist.push_back(string("https://") + request.getHostname() + ':');
+            allowlist.push_back(string("http://") + request.getHostname() + ':');
         }
 
-        if (!whitelist.empty()) {
-            for (vector<string>::const_iterator i = whitelist.begin(); i != whitelist.end(); ++i) {
+        if (!allowlist.empty()) {
+            for (vector<string>::const_iterator i = allowlist.begin(); i != allowlist.end(); ++i) {
                 if (istarts_with(urlcopy, *i)) {
                     return;
                 }
             }
         }
 
-        if (!m_redirectWhitelist.empty()) {
-            for (vector<string>::const_iterator i = m_redirectWhitelist.begin(); i != m_redirectWhitelist.end(); ++i) {
+        if (!m_redirectAllow.empty()) {
+            for (vector<string>::const_iterator i = m_redirectAllow.begin(); i != m_redirectAllow.end(); ++i) {
                 if (istarts_with(urlcopy, *i)) {
                     return;
                 }

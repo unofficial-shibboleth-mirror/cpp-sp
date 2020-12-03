@@ -221,12 +221,12 @@ namespace shibsp {
             REDIRECT_LIMIT_NONE,
             REDIRECT_LIMIT_EXACT,
             REDIRECT_LIMIT_HOST,
-            REDIRECT_LIMIT_WHITELIST,
-            REDIRECT_LIMIT_EXACT_WHITELIST,
-            REDIRECT_LIMIT_HOST_WHITELIST
+            REDIRECT_LIMIT_ALLOW,
+            REDIRECT_LIMIT_EXACT_ALLOW,
+            REDIRECT_LIMIT_HOST_ALLOW
         } m_redirectLimit;
 
-        std::vector<std::string> m_redirectWhitelist;
+        std::vector<std::string> m_redirectAllow;
         bool m_deprecationSupport;
         xercesc::DOMDocument* m_doc;
     };

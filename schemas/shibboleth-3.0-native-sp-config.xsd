@@ -61,6 +61,9 @@
       <enumeration value="whitelist"/>
       <enumeration value="exact+whitelist"/>
       <enumeration value="host+whitelist"/>
+      <enumeration value="allow"
+      <enumeration value="exact+allow"/>
+      <enumeration value="host+allow"/>
     </restriction>
   </simpleType>
 
@@ -611,6 +614,7 @@
     <attribute name="relayStateWhitelist" type="conf:listOfURIs"/>
     <attribute name="redirectLimit" type="conf:redirectLimitType"/>
     <attribute name="redirectWhitelist" type="conf:listOfURIs"/>
+    <attribute name="redirectAllow" type="conf:listOfURIs"/>
     <anyAttribute namespace="##other" processContents="lax"/>
   </complexType>
 
@@ -811,6 +815,16 @@
               <simpleContent>
                 <extension base="conf:listOfURIs">
                   <attribute name="includeDefaultBlacklist" type="boolean"/>
+                </extension>
+              </simpleContent>
+            </complexType>
+          </element>
+          <element name="IncludedAlgorithms" type="conf:listOfURIs"/>
+          <element name="ExcludedAlgorithms">
+            <complexType>
+              <simpleContent>
+                <extension base="conf:listOfURIs">
+                  <attribute name="excludeDefaults" type="boolean"/>
                 </extension>
               </simpleContent>
             </complexType>

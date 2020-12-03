@@ -58,7 +58,11 @@ namespace shibsp {
     protected:
         SecurityPolicyProvider();
 
-        /** Default algorithms to block in the current release. */
+        /**
+         * @Deprecated
+         *
+         * Default algorithms to block in the current release.
+         */
         std::vector<xmltooling::xstring> m_defaultBlacklist;
 
     public:
@@ -80,26 +84,53 @@ namespace shibsp {
 		 */
         virtual const std::vector<const opensaml::SecurityPolicyRule*>& getPolicyRules(const char* id=nullptr) const=0;
 
-        /**
-         * Returns a default/implicit set of XML Signature/Encryption algorithm identifiers to block.
-         *
-         * @return  an array of algorithm URIs to block
-         */
+       /**
+        * Returns a default/implicit set of XML Signature/Encryption algorithm identifiers to block.
+        *
+        * @return  an array of algorithm URIs to block
+        */
+        virtual const std::vector<xmltooling::xstring>& getDefaultExcludedAlgorithms() const;
+
+       /**
+        * Returns a set of XML Signature/Encryption algorithm identifiers to block.
+        *
+        * @return  an array of algorithm URIs to block
+        */
+        virtual const std::vector<xmltooling::xstring>& getExcludedAlgorithms() const;
+
+       /**
+        * Returns a set of XML Signature/Encryption algorithm identifiers to permit.
+        *
+        * @return  an array of algorithm URIs to permit
+        */
+        virtual const std::vector<xmltooling::xstring>& getIncludedAlgorithms() const;
+
+       /**
+        * @Deprecated
+        *
+        * Returns a default/implicit set of XML Signature/Encryption algorithm identifiers to block.
+        *
+        * @return  an array of algorithm URIs to block
+        */
         virtual const std::vector<xmltooling::xstring>& getDefaultAlgorithmBlacklist() const;
 
-        /**
-         * Returns a set of XML Signature/Encryption algorithm identifiers to block.
-         *
-         * @return  an array of algorithm URIs to block
-         */
-        virtual const std::vector<xmltooling::xstring>& getAlgorithmBlacklist() const=0;
+       /**
+        * @Deprecated
+        *
+        * Returns a set of XML Signature/Encryption algorithm identifiers to block.
+        *
+        * @return  an array of algorithm URIs to block
+        */
+        virtual const std::vector<xmltooling::xstring>& getAlgorithmBlacklist() const;
 
         /**
+         * @Deprecated
+         *
          * Returns a set of XML Signature/Encryption algorithm identifiers to permit.
          *
          * @return  an array of algorithm URIs to permit
          */
-        virtual const std::vector<xmltooling::xstring>& getAlgorithmWhitelist() const=0;
+        virtual const std::vector<xmltooling::xstring>& getAlgorithmWhitelist() const;
 
         /**
          * @Deprecated

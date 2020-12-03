@@ -59,6 +59,21 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
+    static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
+    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
+    static const XMLCh excludeDefaults[] =      UNICODE_LITERAL_15(e,x,c,l,u,d,e,D,e,f,a,u,l,t,s);
+    static const XMLCh includeDefaultBlacklist[] = UNICODE_LITERAL_23(i,n,c,l,u,d,e,D,e,f,a,u,l,t,B,l,a,c,k,l,i,s,t);
+    static const XMLCh AlgorithmBlacklist[] =   UNICODE_LITERAL_18(A,l,g,o,r,i,t,h,m,B,l,a,c,k,l,i,s,t);
+    static const XMLCh AlgorithmWhitelist[] =   UNICODE_LITERAL_18(A,l,g,o,r,i,t,h,m,W,h,i,t,e,l,i,s,t);
+    static const XMLCh ExcludedAlgorithms[] =   UNICODE_LITERAL_18(E,x,c,l,u,d,e,d,A,l,g,o,r,i,t,h,m,s);
+    static const XMLCh IncludedAlgorithms[] =   UNICODE_LITERAL_18(I,n,c,l,u,d,e,d,A,l,g,o,r,i,t,h,m,s);
+    static const XMLCh Policy[] =               UNICODE_LITERAL_6(P,o,l,i,c,y);
+    static const XMLCh PolicyRule[] =           UNICODE_LITERAL_10(P,o,l,i,c,y,R,u,l,e);
+    static const XMLCh Rule[] =                 UNICODE_LITERAL_4(R,u,l,e);
+    static const XMLCh SecurityPolicies[] =     UNICODE_LITERAL_16(S,e,c,u,r,i,t,y,P,o,l,i,c,i,e,s);
+
+    static vector<xstring> EMPTY_VECTOR;
+
     class SHIBSP_DLLLOCAL XMLSecurityPolicyProviderImpl
     {
     public:
@@ -74,8 +89,8 @@ namespace shibsp {
 
     private:
         DOMDocument* m_document;
-        bool m_includeDefaultBlacklist;
-        vector<xstring> m_whitelist,m_blacklist;
+        bool m_excludeDefaults;
+        vector<xstring> m_includes,m_excludes;
         vector< boost::shared_ptr<SecurityPolicyRule> > m_ruleJanitor;   // need this to maintain vector type in API
         typedef map< string,pair< boost::shared_ptr<PropertySet>,vector<const SecurityPolicyRule*> > > policymap_t;
         policymap_t m_policyMap;
@@ -113,22 +128,30 @@ namespace shibsp {
                 return i->second.second;
             throw ConfigurationException("Security Policy ($1) not found, check <SecurityPolicies> element.", params(1,id));
         }
+        const vector<xstring>& getDefaultExcludedAlgorithms() const {
+            return m_impl->m_excludeDefaults ? m_defaultBlacklist : EMPTY_VECTOR;
+        }
+        const vector<xstring>& getExcludedAlgorithms() const {
+            return m_impl->m_excludes;
+        }
+        const vector<xstring>& getIncludedAlgorithms() const {
+            return m_impl->m_includes;
+        }
         const vector<xstring>& getDefaultAlgorithmBlacklist() const {
-            return m_impl->m_includeDefaultBlacklist ? m_defaultBlacklist : m_empty;
+            return getDefaultExcludedAlgorithms();
         }
         const vector<xstring>& getAlgorithmBlacklist() const {
-            return m_impl->m_blacklist;
+            return getExcludedAlgorithms();
         }
         const vector<xstring>& getAlgorithmWhitelist() const {
-            return m_impl->m_whitelist;
+            return getIncludedAlgorithms();
         }
-        
+
     protected:
         pair<bool,DOMElement*> background_load();
 
     private:
         scoped_ptr<XMLSecurityPolicyProviderImpl> m_impl;
-        static vector<xstring> m_empty;
     };
 
 #if defined (_MSC_VER)
@@ -147,16 +170,6 @@ namespace shibsp {
             return FILTER_REJECT;
         }
     };
-
-    static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
-    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
-    static const XMLCh includeDefaultBlacklist[] = UNICODE_LITERAL_23(i,n,c,l,u,d,e,D,e,f,a,u,l,t,B,l,a,c,k,l,i,s,t);
-    static const XMLCh AlgorithmBlacklist[] =   UNICODE_LITERAL_18(A,l,g,o,r,i,t,h,m,B,l,a,c,k,l,i,s,t);
-    static const XMLCh AlgorithmWhitelist[] =   UNICODE_LITERAL_18(A,l,g,o,r,i,t,h,m,W,h,i,t,e,l,i,s,t);
-    static const XMLCh Policy[] =               UNICODE_LITERAL_6(P,o,l,i,c,y);
-    static const XMLCh PolicyRule[] =           UNICODE_LITERAL_10(P,o,l,i,c,y,R,u,l,e);
-    static const XMLCh Rule[] =                 UNICODE_LITERAL_4(R,u,l,e);
-    static const XMLCh SecurityPolicies[] =     UNICODE_LITERAL_16(S,e,c,u,r,i,t,y,P,o,l,i,c,i,e,s);
 }
 
 void SHIBSP_API shibsp::registerSecurityPolicyProviders()
@@ -175,9 +188,30 @@ SecurityPolicyProvider::~SecurityPolicyProvider()
 {
 }
 
-const vector<xstring>& SecurityPolicyProvider::getDefaultAlgorithmBlacklist() const
+const vector<xstring>& SecurityPolicyProvider::getDefaultExcludedAlgorithms() const
 {
     return m_defaultBlacklist;
+}
+
+const vector<xstring>& SecurityPolicyProvider::getExcludedAlgorithms() const {
+    return getAlgorithmBlacklist();
+}
+
+const vector<xstring>& SecurityPolicyProvider::getIncludedAlgorithms() const {
+    return getAlgorithmWhitelist();
+}
+
+const vector<xstring>& SecurityPolicyProvider::getDefaultAlgorithmBlacklist() const
+{
+    return getDefaultExcludedAlgorithms();
+}
+
+const vector<xstring>& SecurityPolicyProvider::getAlgorithmBlacklist() const {
+    return EMPTY_VECTOR;
+}
+
+const vector<xstring>& SecurityPolicyProvider::getAlgorithmWhitelist() const {
+    return EMPTY_VECTOR;
 }
 
 SecurityPolicy* SecurityPolicyProvider::createSecurityPolicy(
@@ -198,7 +232,7 @@ SecurityPolicy* SecurityPolicyProvider::createSecurityPolicy(
 }
 
 XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e, Category& log)
-    : m_document(nullptr), m_includeDefaultBlacklist(true), m_defaultPolicy(m_policyMap.end())
+    : m_document(nullptr), m_excludeDefaults(true), m_defaultPolicy(m_policyMap.end())
 {
 #ifdef _DEBUG
     xmltooling::NDC ndc("XMLSecurityPolicyProviderImpl");
@@ -218,25 +252,52 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
     const XMLCh* algs = nullptr;
     const DOMElement* alglist = XMLHelper::getLastChildElement(e, AlgorithmBlacklist);
     if (alglist) {
-        m_includeDefaultBlacklist = XMLHelper::getAttrBool(alglist, true, includeDefaultBlacklist);
+        log.warn("DEPRECATED: <AlgorithmBlacklist> and includeDefaultBlacklist replaced by <ExcludedAlgorithms> and excludeDefaults");
+        m_excludeDefaults = XMLHelper::getAttrBool(alglist, true, includeDefaultBlacklist);
         if (alglist->hasChildNodes()) {
             algs = alglist->getFirstChild()->getNodeValue();
         }
     }
-    else if ((alglist = XMLHelper::getLastChildElement(e, AlgorithmWhitelist)) && alglist->hasChildNodes()) {
-        algs = alglist->getFirstChild()->getNodeValue();
-        m_includeDefaultBlacklist = false;
+    else {
+        alglist = XMLHelper::getLastChildElement(e, AlgorithmWhitelist);
+        if (alglist) {
+            log.warn("DEPRECATED: <AlgorithmWhitelist> replaced by <IncludedAlgorithms>");
+            if (alglist->hasChildNodes()) {
+                algs = alglist->getFirstChild()->getNodeValue();
+            }
+            m_excludeDefaults = false;
+        }
+        else {
+            const DOMElement* alglist = XMLHelper::getLastChildElement(e, ExcludedAlgorithms);
+            if (alglist) {
+                m_excludeDefaults = XMLHelper::getAttrBool(alglist, true, excludeDefaults);
+                if (alglist->hasChildNodes()) {
+                    algs = alglist->getFirstChild()->getNodeValue();
+                }
+            }
+            else {
+                alglist = XMLHelper::getLastChildElement(e, IncludedAlgorithms);
+                if (alglist && alglist->hasChildNodes()) {
+                    algs = alglist->getFirstChild()->getNodeValue();
+                }
+                m_excludeDefaults = false;
+            }
+        }
     }
+
     if (algs) {
         const XMLCh* token;
         XMLStringTokenizer tokenizer(algs);
         while (tokenizer.hasMoreTokens()) {
             token = tokenizer.nextToken();
             if (token) {
-                if (XMLString::equals(alglist->getLocalName(), AlgorithmBlacklist))
-                    m_blacklist.push_back(token);
-                else
-                    m_whitelist.push_back(token);
+                if (XMLString::equals(alglist->getLocalName(), AlgorithmBlacklist) ||
+                    XMLString::equals(alglist->getLocalName(), ExcludedAlgorithms)) {
+                    m_excludes.push_back(token);
+                }
+                else {
+                    m_includes.push_back(token);
+                }
             }
         }
     }
@@ -304,8 +365,6 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
     if (m_defaultPolicy == m_policyMap.end())
         throw ConfigurationException("XML SecurityPolicyProvider requires at least one Policy.");
 }
-
-vector<xstring> XMLSecurityPolicyProvider::m_empty;
 
 pair<bool,DOMElement*> XMLSecurityPolicyProvider::background_load()
 {

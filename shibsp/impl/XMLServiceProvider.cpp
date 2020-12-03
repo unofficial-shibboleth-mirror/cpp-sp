@@ -503,26 +503,26 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
     }
 
     if (first) {
-        if (!m_policy->getAlgorithmWhitelist().empty()) {
-            for (vector<xstring>::const_iterator white = m_policy->getAlgorithmWhitelist().begin();
-                    white != m_policy->getAlgorithmWhitelist().end(); ++white) {
-                XSECPlatformUtils::whitelistAlgorithm(white->c_str());
-                auto_ptr_char whitelog(white->c_str());
-                log.info("explicitly whitelisting security algorithm (%s)", whitelog.get());
+        if (!m_policy->getIncludedAlgorithms().empty()) {
+            for (vector<xstring>::const_iterator alg = m_policy->getIncludedAlgorithms().begin();
+                    alg != m_policy->getIncludedAlgorithms().end(); ++alg) {
+                XSECPlatformUtils::whitelistAlgorithm(alg->c_str());
+                auto_ptr_char includelog(alg->c_str());
+                log.info("explicitly including security algorithm (%s)", includelog.get());
             }
         }
-        else if (!m_policy->getDefaultAlgorithmBlacklist().empty() || !m_policy->getAlgorithmBlacklist().empty()) {
-            for (vector<xstring>::const_iterator black = m_policy->getDefaultAlgorithmBlacklist().begin();
-                    black != m_policy->getDefaultAlgorithmBlacklist().end(); ++black) {
-                XSECPlatformUtils::blacklistAlgorithm(black->c_str());
-                auto_ptr_char blacklog(black->c_str());
-                log.info("automatically blacklisting security algorithm (%s)", blacklog.get());
+        else if (!m_policy->getDefaultExcludedAlgorithms().empty() || !m_policy->getExcludedAlgorithms().empty()) {
+            for (vector<xstring>::const_iterator alg = m_policy->getDefaultExcludedAlgorithms().begin();
+                    alg != m_policy->getDefaultExcludedAlgorithms().end(); ++alg) {
+                XSECPlatformUtils::blacklistAlgorithm(alg->c_str());
+                auto_ptr_char excludelog(alg->c_str());
+                log.info("automatically excluding security algorithm (%s)", excludelog.get());
             }
-            for (vector<xstring>::const_iterator black = m_policy->getAlgorithmBlacklist().begin();
-                    black != m_policy->getAlgorithmBlacklist().end(); ++black) {
-                XSECPlatformUtils::blacklistAlgorithm(black->c_str());
-                auto_ptr_char blacklog(black->c_str());
-                log.info("explicitly blacklisting security algorithm (%s)", blacklog.get());
+            for (vector<xstring>::const_iterator alg = m_policy->getExcludedAlgorithms().begin();
+                    alg != m_policy->getExcludedAlgorithms().end(); ++alg) {
+                XSECPlatformUtils::blacklistAlgorithm(alg->c_str());
+                auto_ptr_char excludelog(alg->c_str());
+                log.info("explicitly excluding security algorithm (%s)", excludelog.get());
             }
         }
     }

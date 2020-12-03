@@ -327,7 +327,7 @@ namespace shibsp {
 
         /**
          * Checks a proposed redirect URL against application-specific settings for legal redirects,
-         * such as same-host restrictions or whitelisted domains, and raises a SecurityPolicyException
+         * such as same-host restrictions or allowed domains, and raises a SecurityPolicyException
          * in the event of a violation.
          *
          * @param request   the request leading to the redirect

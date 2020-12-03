@@ -1,13 +1,8 @@
-Shibboleth Native SP Release Notes
+Shibboleth SP Release Notes
 
-Fix/Enhancement Lists:
-https://wiki.shibboleth.net/confluence/display/DEV/SPRoadmap
+Release Notes:
+https://wiki.shibboleth.net/confluence/display/SP3/ReleaseNotes
 
-Important Changes:
-https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPConfigurationChanges
-
-Feature Highlights:
-https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPInterestingFeatures
 
 NOTE: The shibboleth2.xml configuration format in this release
 is fully compatible with the 2.x releases, but there are significant
@@ -44,7 +39,7 @@ Fully Supported
 - Metadata Providers
 	- Bulk resolution via local file, or URL with local file backup
 	- Dynamic resolution and caching based on entityID or MDX 
-	- Filtering based on whitelist, blacklist, or signature verification
+	- Filtering and signature verification
 	- Support for enhanced PKI processing in transport and signature verification
 
 - Metadata Generation Handler
@@ -78,7 +73,7 @@ Fully Supported
 	- Optional outgoing encryption of NameID in requests and responses
 
 - General Security
-    - Black/whitelisting of XML security algorithms (with xml-security 1.6+)
+    - Limiting XML security algorithms (with xml-security 1.6+)
     - RSA and ECDSA signatures (EC requires xml-security 1.6+ and support from openssl)
     - AES-GCM encryption (requires xml-security 1.7+ and support from openssl)
     - Metadata-based algorithm selection 

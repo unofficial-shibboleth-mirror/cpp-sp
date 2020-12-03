@@ -39,6 +39,6 @@
     </Policy>
     
     <!-- Disables known weak algorithms. -->
-    <AlgorithmBlacklist includeDefaultBlacklist="true"/>
+    <ExcludedAlgorithms excludeDefaults="true"/>
 
 </SecurityPolicies>
