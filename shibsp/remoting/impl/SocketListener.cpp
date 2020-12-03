@@ -65,7 +65,7 @@ namespace shibsp {
         SocketPool(Category& log, const SocketListener* listener)
             : m_log(log), m_listener(listener), m_lock(Mutex::create()) {}
         ~SocketPool();
-        SocketListener::ShibSocket get();
+        SocketListener::ShibSocket get(bool newSocket=false);
         void put(SocketListener::ShibSocket s);
 
     private:
@@ -150,8 +150,11 @@ SocketPool::~SocketPool()
     }
 }
 
-SocketListener::ShibSocket SocketPool::get()
+SocketListener::ShibSocket SocketPool::get(bool newSocket)
 {
+    if (newSocket)
+        return connect();
+
     m_lock->lock();
     if (m_pool.empty()) {
         m_lock->unlock();
@@ -314,7 +317,8 @@ DDF SocketListener::send(const DDF& in)
     int retry = 1;
     SocketListener::ShibSocket sock;
     while (retry >= 0) {
-        sock = m_socketpool->get();
+        // On second time in, just get a new socket.
+        sock = m_socketpool->get(retry == 0);
 
         int outlen = ostr.length();
         len = htonl(outlen);
