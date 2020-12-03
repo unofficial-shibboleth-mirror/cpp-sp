@@ -61,7 +61,7 @@
       <enumeration value="whitelist"/>
       <enumeration value="exact+whitelist"/>
       <enumeration value="host+whitelist"/>
-      <enumeration value="allow"
+      <enumeration value="allow"/>
       <enumeration value="exact+allow"/>
       <enumeration value="host+allow"/>
     </restriction>
