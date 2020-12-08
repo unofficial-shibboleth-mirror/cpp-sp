@@ -403,7 +403,7 @@ if test "$WANT_APACHE_13" = "yes" ; then
         [
         AC_PATH_PROG(APXS, apxs, no)
         if test "$APXS" = "no" ; then
-          for i in /usr/sbin /usr/local/apache/bin ; do
+          for i in /usr/sbin /usr/local/apache/bin /opt/local/bin ; do
             if test "$APXS" = "no" && test -f "$i/apxs"; then
               APXS="$i/apxs"
             fi
@@ -422,12 +422,13 @@ if test "$WANT_APACHE_13" = "yes" ; then
     # extract settings we need from APXS -q
     APXS_CC="`$APXS -q CC`"
     APXS_CFLAGS="`$APXS -q CFLAGS` `$APXS -q CFLAGS_SHLIB`"
-    APXS_INCLUDE="`$APXS -q INCLUDEDIR`"
+    APXS_INCLUDE="-I`$APXS -q INCLUDEDIR`"
+    APXS_LDFLAGS="`$APXS -q LDFLAGS`"
 fi
 
 AC_SUBST(APXS_CFLAGS)
 AC_SUBST(APXS_INCLUDE)
-
+AC_SUBST(APXS_LDFLAGS)
 
 # Apache 2.0 (mod_shib_20)
 #   --enable-apache-20
@@ -467,13 +468,13 @@ if test "$WANT_APACHE_20" = "yes" ; then
             AC_PATH_PROG(APXS2, apxs, no)
         fi
         if test "$APXS2" = "no" ; then
-          for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+          for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin /opt/local/bin ; do
             if test "$APXS2" = "no" && test -f "$i/apxs2" ; then
               APXS2="$i/apxs2"
             fi
           done
           if test "$APXS2" = "no" ; then
-            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin /opt/local/bin ; do
               if test "$APXS2" = "no" && test -f "$i/apxs" ; then
                 APXS2="$i/apxs"
               fi
@@ -505,8 +506,11 @@ if test "$WANT_APACHE_20" = "yes" ; then
         [
         AC_PATH_PROG(APR_CONFIG, apr-config,,[`$APXS2 -q SBINDIR`]:[$PATH])
         ])
-	if test -f "${APR_CONFIG}"; then
-        APR_CFLAGS="`${APR_CONFIG} --cflags` `${APR_CONFIG} --cppflags` `${APR_CONFIG} --includes`"
+    if test -f "${APR_CONFIG}"; then
+        APR_INCLUDE="`${APR_CONFIG} --includes`"
+        APR_CFLAGS="`${APR_CONFIG} --cflags` `${APR_CONFIG} --cppflags`"
+        APR_LDFLAGS="`${APR_CONFIG} --ldflags`"
+        APR_LIBS="`${APR_CONFIG} --link-libtool --libs`"
     else
         AC_MSG_ERROR([Unable to locate apr-config, may need --with-apr option.])
     fi
@@ -527,19 +531,25 @@ if test "$WANT_APACHE_20" = "yes" ; then
         AC_PATH_PROG(APU_CONFIG, apu-config,,[`$APXS2 -q SBINDIR`]:[$PATH])
         ])
     if test -f "${APU_CONFIG}"; then
-        APU_CFLAGS="`${APU_CONFIG} --includes`"
+        APU_INCLUDE="`${APU_CONFIG} --includes`"
+        APU_LDFLAGS="`${APU_CONFIG} --ldflags`"
+        APU_LIBS="`${APU_CONFIG} --link-libtool --libs`"
     else
         AC_MSG_ERROR([Unable to locate apu-config, may need --with-apu option.])
     fi
 
     # extract settings we need from APXS2 -q
     APXS2_CC="`$APXS2 -q CC`"
-    APXS2_CFLAGS="`$APXS2 -q CPPFLAGS` `$APXS2 -q CFLAGS` $APR_CFLAGS $APU_CFLAGS"
-    APXS2_INCLUDE="`$APXS2 -q INCLUDEDIR`"
+    APXS2_CFLAGS="`$APXS2 -q CPPFLAGS` `$APXS2 -q CFLAGS` $APR_CFLAGS"
+    APXS2_INCLUDE="-I`$APXS2 -q INCLUDEDIR` $APR_INCLUDE $APU_INCLUDE"
+    APXS2_LDFLAGS="`$APXS2 -q LDFLAGS` $APR_LDFLAGS $APU_LDFLAGS"
+    APXS2_LIBS="`$APXS2 -q LIBS` $APR_LIBS $APU_LIBS"
 fi
 
 AC_SUBST(APXS2_CFLAGS)
 AC_SUBST(APXS2_INCLUDE)
+AC_SUBST(APXS2_LDFLAGS)
+AC_SUBST(APXS2_LIBS)
 
 
 # Apache 2.2 (mod_shib_22)
@@ -580,13 +590,13 @@ if test "$WANT_APACHE_22" = "yes" ; then
             AC_PATH_PROG(APXS22, apxs, no)
         fi
         if test "$APXS22" = "no" ; then
-          for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+          for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin /opt/local/bin ; do
             if test "$APXS22" = "no" && test -f "$i/apxs2" ; then
               APXS22="$i/apxs2"
             fi
           done
           if test "$APXS22" = "no" ; then
-            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin /opt/local/bin ; do
               if test "$APXS22" = "no" && test -f "$i/apxs" ; then
                 APXS22="$i/apxs"
               fi
@@ -618,8 +628,11 @@ if test "$WANT_APACHE_22" = "yes" ; then
         [
         AC_PATH_PROG(APR1_CONFIG, apr-1-config,,[`$APXS22 -q SBINDIR`]:[$PATH])
         ])
-	if test -f "${APR1_CONFIG}"; then
-        APR1_CFLAGS="`${APR1_CONFIG} --cflags` `${APR1_CONFIG} --cppflags` `${APR1_CONFIG} --includes`"
+    if test -f "${APR1_CONFIG}"; then
+        APR1_INCLUDE="`${APR1_CONFIG} --includes`"
+        APR1_CFLAGS="`${APR1_CONFIG} --cflags` `${APR1_CONFIG} --cppflags`"
+        APR1_LDFLAGS="`${APR1_CONFIG} --ldflags`"
+        APR1_LIBS="`${APR1_CONFIG} --link-libtool --libs`"
     else
         AC_MSG_ERROR([Unable to locate apr-1-config, may need --with-apr1 option.])
     fi
@@ -640,19 +653,25 @@ if test "$WANT_APACHE_22" = "yes" ; then
         AC_PATH_PROG(APU1_CONFIG, apu-1-config,,[`$APXS22 -q SBINDIR`]:[$PATH])
         ])
     if test -f "${APU1_CONFIG}"; then
-        APU1_CFLAGS="`${APU1_CONFIG} --includes`"
+        APU1_INCLUDE="`${APU1_CONFIG} --includes`"
+        APU1_LDFLAGS="`${APU1_CONFIG} --ldflags`"
+        APU1_LIBS="`${APU1_CONFIG} --link-libtool --libs`"
     else
         AC_MSG_ERROR([Unable to locate apu-1-config, may need --with-apu1 option.])
     fi
 
     # extract settings we need from APXS22 -q
     APXS22_CC="`$APXS22 -q CC`"
-    APXS22_CFLAGS="`$APXS22 -q CPPFLAGS` `$APXS22 -q CFLAGS` $APR1_CFLAGS $APU1_CFLAGS"
-    APXS22_INCLUDE="`$APXS22 -q INCLUDEDIR`"
+    APXS22_CFLAGS="`$APXS22 -q CPPFLAGS` `$APXS22 -q CFLAGS` $APR1_CFLAGS"
+    APXS22_INCLUDE="-I`$APXS22 -q INCLUDEDIR` $APR1_INCLUDE $APU1_INCLUDE"
+    APXS22_LDFLAGS="`$APXS22 -q LDFLAGS` $APR1_LDFLAGS $APU1_LDFLAGS"
+    APXS22_LIBS="`$APXS22 -q LIBS` $APR1_LIBS $APU1_LIBS"
 fi
 
 AC_SUBST(APXS22_CFLAGS)
 AC_SUBST(APXS22_INCLUDE)
+AC_SUBST(APXS22_LDFLAGS)
+AC_SUBST(APXS22_LIBS)
 
 # Apache 2.4 (mod_shib_24)
 #   --enable-apache-24
@@ -692,13 +711,13 @@ if test "$WANT_APACHE_24" = "yes" ; then
             AC_PATH_PROG(APXS24, apxs, no)
         fi
         if test "$APXS24" = "no" ; then
-          for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+          for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin /opt/local/bin ; do
             if test "$APXS24" = "no" && test -f "$i/apxs2" ; then
               APXS24="$i/apxs2"
             fi
           done
           if test "$APXS24" = "no" ; then
-            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin ; do
+            for i in /usr/sbin /usr/local/apache2/bin /usr/local/apache/bin /opt/local/bin ; do
               if test "$APXS24" = "no" && test -f "$i/apxs" ; then
                 APXS24="$i/apxs"
               fi
@@ -733,7 +752,10 @@ if test "$WANT_APACHE_24" = "yes" ; then
             AC_PATH_PROG(APR1_CONFIG, apr-1-config,,[`$APXS24 -q SBINDIR`]:[$PATH])
             ])
         if test -f "${APR1_CONFIG}"; then
-            APR1_CFLAGS="`${APR1_CONFIG} --cflags` `${APR1_CONFIG} --cppflags` `${APR1_CONFIG} --includes`"
+            APR1_INCLUDE="`${APR1_CONFIG} --includes`"
+            APR1_CFLAGS="`${APR1_CONFIG} --cflags` `${APR1_CONFIG} --cppflags`"
+            APR1_LDFLAGS="`${APR1_CONFIG} --ldflags`"
+            APR1_LIBS="`${APR1_CONFIG} --link-libtool --libs`"
         else
             AC_MSG_ERROR([Unable to locate apr-1-config, may need --with-apr1 option.])
         fi
@@ -754,7 +776,9 @@ if test "$WANT_APACHE_24" = "yes" ; then
             AC_PATH_PROG(APU1_CONFIG, apu-1-config,,[`$APXS24 -q SBINDIR`]:[$PATH])
             ])
         if test -f "${APU1_CONFIG}"; then
-            APU1_CFLAGS="`${APU1_CONFIG} --includes`"
+            APU1_INCLUDE="`${APU1_CONFIG} --includes`"
+            APU1_LDFLAGS="`${APU1_CONFIG} --ldflags`"
+            APU1_LIBS="`${APU1_CONFIG} --link-libtool --libs`"
         else
             AC_MSG_ERROR([Unable to locate apu-1-config, may need --with-apu1 option.])
         fi
@@ -762,12 +786,16 @@ if test "$WANT_APACHE_24" = "yes" ; then
     
     # extract settings we need from APXS24 -q
     APXS24_CC="`$APXS24 -q CC`"
-    APXS24_CFLAGS="`$APXS24 -q CPPFLAGS` `$APXS24 -q CFLAGS` $APR1_CFLAGS $APU1_CFLAGS"
-    APXS24_INCLUDE="`$APXS24 -q INCLUDEDIR`"
+    APXS24_CFLAGS="`$APXS24 -q CPPFLAGS` `$APXS24 -q CFLAGS` $APR1_CFLAGS"
+    APXS24_INCLUDE="-I`$APXS24 -q INCLUDEDIR` $APR1_INCLUDE $APU1_INCLUDE"
+    APXS24_LDFLAGS="`$APXS24 -q LDFLAGS` $APR1_LDFLAGS $APU1_LDFLAGS"
+    APXS24_LIBS="`$APXS24 -q LIBS` $APR1_LIBS $APU1_LIBS"
 fi
 
 AC_SUBST(APXS24_CFLAGS)
 AC_SUBST(APXS24_INCLUDE)
+AC_SUBST(APXS24_LDFLAGS)
+AC_SUBST(APXS24_LIBS)
 
 # always output the Makefile, even if you don't use it
 AC_CONFIG_FILES([apache/Makefile])

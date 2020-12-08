@@ -24,12 +24,16 @@ plugins_la_CXXFLAGS = \
 	$(AM_CXXFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
+	$(log4cpp_CFLAGS) \
+	$(log4shib_CFLAGS) \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
 plugins_la_LIBADD = \
 	$(top_builddir)/shibsp/libshibsp.la \
 	$(PTHREAD_LIBS) \
+	$(log4cpp_LIBS) \
+	$(log4shib_LIBS) \
 	$(opensaml_LIBS) \
 	$(xerces_LIBS) \
 	$(xmltooling_LIBS)
@@ -43,6 +47,8 @@ endif
 plugins_lite_la_LIBADD = \
 	$(top_builddir)/shibsp/libshibsp-lite.la \
 	$(PTHREAD_LIBS) \
+	$(log4cpp_LIBS) \
+	$(log4shib_LIBS) \
 	$(xerces_LIBS) \
 	$(xmltooling_lite_LIBS)
 
@@ -52,6 +58,8 @@ plugins_lite_la_CXXFLAGS = -DSHIBSP_LITE \
 	$(AM_CXXFLAGS) \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
+	$(log4cpp_CFLAGS) \
+	$(log4shib_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_lite_CFLAGS)
 

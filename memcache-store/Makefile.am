@@ -9,12 +9,16 @@ memcache_store_la_CXXFLAGS = \
 	$(MEMCACHED_INCLUDE) \
 	$(BOOST_CPPFLAGS) \
 	$(PTHREAD_CFLAGS) \
+	$(log4cpp_CFLAGS) \
+	$(log4shib_CFLAGS) \
 	$(opensaml_CFLAGS) \
 	$(xerces_CFLAGS) \
 	$(xmltooling_CFLAGS)
 memcache_store_la_LIBADD = \
 	$(MEMCACHED_LIBS) \
 	$(PTHREAD_LIBS) \
+	$(log4cpp_LIBS) \
+	$(log4shib_LIBS) \
 	$(opensaml_LIBS) \
 	$(xerces_LIBS) \
 	$(xmltooling_LIBS)
