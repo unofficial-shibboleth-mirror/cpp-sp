@@ -205,7 +205,7 @@ void DynamicMetadataProvider::init()
     if (!CreateDirectoryA(m_cacheDir.c_str(), NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
         m_log.warn("could not create cache directory %s (%ld)", m_cacheDir.c_str(), GetLastError());
 #else
-    if (mkdir(m_cacheDir.c_str(), S_IRWXU))
+    if (mkdir(m_cacheDir.c_str(), S_IRWXU) && errno != EEXIST)
         m_log.warn("could not create cache directory %s (%d)", m_cacheDir.c_str(), errno);
 #endif
     if (m_backgroundInit) {
