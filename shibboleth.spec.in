@@ -29,8 +29,8 @@ BuildRequires:  gdb
 %endif
 BuildRequires:  libxerces-c-devel >= 3.2
 BuildRequires:	libxml-security-c-devel >= 2.0.0
-BuildRequires:	libxmltooling-devel >= 3.1.0
-BuildRequires:	libsaml-devel >= 3.1.0
+BuildRequires:	libxmltooling-devel >= 3.2.0
+BuildRequires:	libsaml-devel >= 3.2.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 2}
 %if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} >= 1
