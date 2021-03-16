@@ -9,7 +9,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="3.1">
+	version="3.2">
 
   <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
   <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
@@ -754,6 +754,7 @@
     <attribute name="localLogout" type="conf:anyURI"/>
     <attribute name="globalLogout" type="conf:anyURI"/>
     <attribute name="partialLogout" type="conf:anyURI"/>
+    <attribute name="externalParameters" type="boolean" />
     <anyAttribute namespace="##any" processContents="lax"/>
   </complexType>
 

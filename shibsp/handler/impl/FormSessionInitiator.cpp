@@ -123,8 +123,18 @@ pair<bool,long> FormSessionInitiator::run(SPRequest& request, string& entityID, 
     ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
     if (!infile)
         throw ConfigurationException("Unable to access HTML template ($1).", params(1, m_template));
+
+    const PropertySet* props = app.getPropertySet("Errors");
+
     TemplateParameters tp;
-    tp.m_request = &request;
+
+    // If the externalParameters option isn't set, don't populate the request field.
+    pair<bool,bool> externalParameters =
+            props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
+    if (externalParameters.first && externalParameters.second) {
+        tp.m_request = &request;
+    }
+
     tp.setPropertySet(app.getPropertySet("Errors"));
     tp.m_map["action"] = returnURL;
     if (!target.empty())

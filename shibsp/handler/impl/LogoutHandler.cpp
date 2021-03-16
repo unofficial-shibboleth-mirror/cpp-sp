@@ -63,6 +63,7 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
 {
     string tname = string(type) + "Logout";
     const PropertySet* props = application.getPropertySet("Errors");
+
     pair<bool,const char*> prop = props ? props->getString(tname.c_str()) : pair<bool,const char*>(false,nullptr);
     if (!prop.first) {
         tname += ".html";
@@ -76,7 +77,14 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
     if (!infile)
         throw ConfigurationException("Unable to access $1 HTML template.", params(1,prop.second));
     TemplateParameters tp;
-    tp.m_request = &request;
+
+    // If the externalParameters option isn't set, don't populate the request field.
+    pair<bool,bool> externalParameters =
+            props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
+    if (externalParameters.first && externalParameters.second) {
+        tp.m_request = &request;
+    }
+
     tp.setPropertySet(props);
     tp.m_map["logoutStatus"] = "Logout completed successfully.";  // Backward compatibility.
     stringstream str;

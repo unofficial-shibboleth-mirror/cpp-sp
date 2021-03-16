@@ -71,9 +71,16 @@ namespace shibsp {
         if (!app)
             app = request.getServiceProvider().getApplication(nullptr);
 
-        const PropertySet* props=app->getPropertySet("Errors");
+        const PropertySet* props = app->getPropertySet("Errors");
 
-        // First look for settings in the request map of the form pageError.
+        // If the externalParameters option isn't set, clear out the request field.
+        pair<bool,bool> externalParameters =
+                props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
+        if (!externalParameters.first || !externalParameters.second) {
+            tp.m_request = nullptr;
+        }
+
+        // Now look for settings in the request map of the form pageError.
         try {
             RequestMapper::Settings settings = request.getRequestSettings();
             if (mderror)

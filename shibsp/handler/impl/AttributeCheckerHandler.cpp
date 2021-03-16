@@ -188,8 +188,16 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
 
     ifstream infile(m_template.c_str());
     if (infile) {
-        TemplateParameters tp(nullptr, request.getApplication().getPropertySet("Errors"), session);
-        tp.m_request = &request;
+        const PropertySet* props = request.getApplication().getPropertySet("Errors");
+        TemplateParameters tp(nullptr, props, session);
+
+        // If the externalParameters option isn't set, don't populate the request field.
+        pair<bool,bool> externalParameters =
+                props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
+        if (externalParameters.first && externalParameters.second) {
+            tp.m_request = &request;
+        }
+
         stringstream str;
         XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
         if (m_flushSession && session) {
