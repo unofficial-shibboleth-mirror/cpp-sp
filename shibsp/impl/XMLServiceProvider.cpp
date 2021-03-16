@@ -887,7 +887,15 @@ Remoted* XMLConfig::lookupListener(const char* address) const
     if (colons) {
         string appId(address, colons - address);
         locker.release()->unlock();   // free up the listener map
-        getApplication(appId.c_str());
+        if (!getApplication(appId.c_str())) {
+            // Try a second search breaking on slash instead.
+            // This accommodates overrides with their own handlers.
+            const char* slash = strstr(address, "/");
+            if (slash) {
+                appId = string(address, slash - address);
+                getApplication(appId.c_str());
+            }
+        }
         SharedLock sublocker(m_listenerLock, true); // relock and check again
         i = m_listenerMap.find(address);
         if (i != m_listenerMap.end())
