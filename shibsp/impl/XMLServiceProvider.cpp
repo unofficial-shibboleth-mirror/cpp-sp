@@ -883,23 +883,31 @@ Remoted* XMLConfig::lookupListener(const char* address) const
     if (i != m_listenerMap.end())
         return i->second.first ? i->second.first : i->second.second;
 
+    locker.release()->unlock();   // free up the listener map
+
+    // Start iterating at slash boundaries.
+    const char* slash = strstr(address, "/");
+    while (slash) {
+        string appId(address, slash - address);
+        if (getApplication(appId.c_str())) {
+            SharedLock sublocker(m_listenerLock, true); // relock and check again
+            i = m_listenerMap.find(address);
+            if (i != m_listenerMap.end())
+                return i->second.first ? i->second.first : i->second.second;
+        }
+        slash = strstr(slash + 1, "/");
+    }
+
+    // Try a search based on the colons, which handles no embedded slashes in the address.
     const char* colons = strstr(address, "::");
     if (colons) {
         string appId(address, colons - address);
-        locker.release()->unlock();   // free up the listener map
-        if (!getApplication(appId.c_str())) {
-            // Try a second search breaking on slash instead.
-            // This accommodates overrides with their own handlers.
-            const char* slash = strstr(address, "/");
-            if (slash) {
-                appId = string(address, slash - address);
-                getApplication(appId.c_str());
-            }
+        if (getApplication(appId.c_str())) {
+            SharedLock sublocker(m_listenerLock, true); // relock and check again
+            i = m_listenerMap.find(address);
+            if (i != m_listenerMap.end())
+                return i->second.first ? i->second.first : i->second.second;
         }
-        SharedLock sublocker(m_listenerLock, true); // relock and check again
-        i = m_listenerMap.find(address);
-        if (i != m_listenerMap.end())
-            return i->second.first ? i->second.first : i->second.second;
     }
     return nullptr;
 }
