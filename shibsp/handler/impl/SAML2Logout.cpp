@@ -646,8 +646,8 @@ pair<bool,long> SAML2Logout::sendResponse(
             }
         }
         if (!ep || !encoder) {
-            auto_ptr_char id(dynamic_cast<EntityDescriptor*>(role->getParent())->getEntityID());
-            m_log.error("unable to locate compatible SLO service for provider (%s)", id.get());
+            auto_ptr_char id(role ? dynamic_cast<EntityDescriptor*>(role->getParent())->getEntityID() : nullptr);
+            m_log.error("unable to locate compatible SLO service for provider (%s)", id.get() ? id.get() : "unknown");
             MetadataException ex("Unable to locate endpoint at IdP ($entityID) to send LogoutResponse.");
             annotateException(&ex, role);   // throws it
         }
@@ -667,7 +667,8 @@ pair<bool,long> SAML2Logout::sendResponse(
     }
     Issuer* issuer = IssuerBuilder::buildIssuer();
     logout->setIssuer(issuer);
-    issuer->setName(application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role->getParent()))->getXMLString("entityID").second);
+    issuer->setName(application.getRelyingParty(role ? dynamic_cast<EntityDescriptor*>(role->getParent()) :
+            nullptr)->getXMLString("entityID").second);
     fillStatus(*logout, code, subcode, msg);
     XMLCh* msgid = SAMLConfig::getConfig().generateIdentifier();
     logout->setID(msgid);
@@ -675,7 +676,7 @@ pair<bool,long> SAML2Logout::sendResponse(
     logout->setIssueInstant(time(nullptr));
 
     if (logoutEvent) {
-        logoutEvent->m_peer = dynamic_cast<EntityDescriptor*>(role->getParent());
+        logoutEvent->m_peer = role ? dynamic_cast<EntityDescriptor*>(role->getParent()) : nullptr;
         logoutEvent->m_saml2Response = logout.get();
         application.getServiceProvider().getTransactionLog()->write(*logoutEvent);
     }

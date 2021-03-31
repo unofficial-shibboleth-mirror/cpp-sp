@@ -286,7 +286,8 @@ pair<bool,long> SAML2NameIDMgmt::doRequest(const Application& application, HTTPR
                 );
         }
 
-        EntityDescriptor* entity = policy->getIssuerMetadata() ? dynamic_cast<EntityDescriptor*>(policy->getIssuerMetadata()->getParent()) : nullptr;
+        EntityDescriptor* entity = policy->getIssuerMetadata() ?
+                dynamic_cast<EntityDescriptor*>(policy->getIssuerMetadata()->getParent()) : nullptr;
 
         scoped_ptr<XMLObject> decryptedID;
         NameID* nameid = mgmtRequest->getNameID();
@@ -485,8 +486,8 @@ pair<bool,long> SAML2NameIDMgmt::sendResponse(
             }
         }
         if (!ep || !encoder) {
-            auto_ptr_char id(dynamic_cast<EntityDescriptor*>(role->getParent())->getEntityID());
-            m_log.error("unable to locate compatible NIM service for provider (%s)", id.get());
+            auto_ptr_char id(role ? dynamic_cast<EntityDescriptor*>(role->getParent())->getEntityID() : nullptr);
+            m_log.error("unable to locate compatible NIM service for provider (%s)", id.get() ? id.get() : "unknown");
             MetadataException ex("Unable to locate endpoint at IdP ($entityID) to send ManageNameIDResponse.");
             annotateException(&ex, role);   // throws it
         }
@@ -506,7 +507,8 @@ pair<bool,long> SAML2NameIDMgmt::sendResponse(
     }
     Issuer* issuer = IssuerBuilder::buildIssuer();
     nim->setIssuer(issuer);
-    issuer->setName(application.getRelyingParty(dynamic_cast<EntityDescriptor*>(role->getParent()))->getXMLString("entityID").second);
+    issuer->setName(application.getRelyingParty(role ? dynamic_cast<EntityDescriptor*>(role->getParent()) :
+            nullptr)->getXMLString("entityID").second);
     fillStatus(*nim, code, subcode, msg);
 
     auto_ptr_char dest(nim->getDestination());
