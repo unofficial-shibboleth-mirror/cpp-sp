@@ -1148,6 +1148,12 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
     else {
         // We're out of process, so we can recover the session.
 #ifndef SHIBSP_LITE
+        const DataSealer* sealer = XMLToolingConfig::getConfig().getDataSealer();
+        if (!sealer) {
+            m_log.warn("can't attempt recovery of session (%s), no DataSealer configured", key);
+            return false;
+        }
+
         m_log.debug("checking for revocation of session (%s)", key);
         try {
             if (m_storage_lite->readString("Revoked", key) > 0) {
@@ -1174,7 +1180,7 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
         try {
             dup = strdup(data);
             XMLToolingConfig::getConfig().getURLEncoder()->decode(dup);
-            unwrapped = XMLToolingConfig::getConfig().getDataSealer()->unwrap(dup);
+            unwrapped = sealer->unwrap(dup);
             free(dup);
 
             stringstream str(unwrapped);
