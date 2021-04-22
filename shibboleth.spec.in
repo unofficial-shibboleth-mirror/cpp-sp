@@ -93,8 +93,8 @@ Requires:	%{name} = %{version}-%{release}
 Obsoletes:	shibboleth-sp-devel = 2.5.0
 Requires:	libxerces-c-devel >= 3.2
 Requires: 	libxml-security-c-devel >= 2.0.0
-Requires: 	libxmltooling-devel >= 3.1.0
-Requires: 	libsaml-devel >= 3.1.0
+Requires: 	libxmltooling-devel >= 3.2.0
+Requires: 	libsaml-devel >= 3.2.0
 %{?_with_log4cpp:Requires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:Requires: liblog4shib-devel >= 2}
 
@@ -481,6 +481,9 @@ exit 0
 %doc %{pkgdocdir}/api
 
 %changelog
+* Thu Apr 22 2021 Scott Cantor <cantor.2@osu.edu> - 3.2.2-1
+- Fix devel dependency versions
+
 * Tue Dec 1 2020 Scott Cantor <cantor.2@osu.edu> - 3.2.0-1
 - Version and lib bump
 
