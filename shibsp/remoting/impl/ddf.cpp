@@ -89,13 +89,14 @@ struct shibsp::ddf_body_t {
     ddf_body_t* prev;               // previous node, if any
 
     enum {
-	    DDF_EMPTY,
-	    DDF_STRING,
-	    DDF_INT,
+        DDF_EMPTY,
+        DDF_STRING,
+        DDF_INT,
         DDF_FLOAT,
-	    DDF_STRUCT,
+        DDF_STRUCT,
         DDF_LIST,
-	    DDF_POINTER
+        DDF_POINTER,
+        DDF_STRING_UNSAFE
     } type;                         // data type of node
 
     union {
@@ -104,10 +105,10 @@ struct shibsp::ddf_body_t {
         double floating;
         void* pointer;
         struct {
-	        ddf_body_t* first;
-	        ddf_body_t* last;
-	        ddf_body_t* current;
-	        unsigned long count;
+            ddf_body_t* first;
+            ddf_body_t* last;
+            ddf_body_t* current;
+            unsigned long count;
         } children;
     } value;                        // value of node
 };
@@ -124,11 +125,11 @@ DDF::DDF(const char* n)
     name(n);
 }
 
-DDF::DDF(const char* n, const char* val, bool)
+DDF::DDF(const char* n, const char* val, bool safe)
 {
     m_handle=new(nothrow) ddf_body_t;
     name(n);
-    string(const_cast<char*>(val), true);
+    string(const_cast<char*>(val), true, safe);
 }
 
 DDF::DDF(const char* n, long val)
@@ -169,7 +170,8 @@ DDF DDF::copy() const
         case ddf_body_t::DDF_EMPTY:
             return DDF(m_handle->name);
         case ddf_body_t::DDF_STRING:
-            return DDF(m_handle->name,m_handle->value.string,(m_handle->type==ddf_body_t::DDF_STRING));
+        case ddf_body_t::DDF_STRING_UNSAFE:
+            return DDF(m_handle->name,m_handle->value.string,(m_handle->type==ddf_body_t::DDF_STRING));            return DDF(m_handle->name,m_handle->value.string,(m_handle->type==ddf_body_t::DDF_STRING));
         case ddf_body_t::DDF_INT:
             return DDF(m_handle->name,m_handle->value.integer);
         case ddf_body_t::DDF_FLOAT:
@@ -238,7 +240,7 @@ bool DDF::isempty() const
 
 bool DDF::isstring() const
 {
-    return m_handle ? (m_handle->type==ddf_body_t::DDF_STRING) : false;
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_STRING || m_handle->type==ddf_body_t::DDF_STRING_UNSAFE) : false;
 }
 
 bool DDF::isint() const
@@ -280,6 +282,7 @@ long DDF::integer() const
             case ddf_body_t::DDF_FLOAT:
                 return static_cast<long>(m_handle->value.floating);
             case ddf_body_t::DDF_STRING:
+            case ddf_body_t::DDF_STRING_UNSAFE:
                 return m_handle->value.string ? atol(m_handle->value.string) : 0;
             case ddf_body_t::DDF_STRUCT:
             case ddf_body_t::DDF_LIST:
@@ -300,6 +303,7 @@ double DDF::floating() const
             case ddf_body_t::DDF_FLOAT:
                 return m_handle->value.floating;
             case ddf_body_t::DDF_STRING:
+            case ddf_body_t::DDF_STRING_UNSAFE:
                 return m_handle->value.string ? atof(m_handle->value.string) : 0;
             case ddf_body_t::DDF_STRUCT:
             case ddf_body_t::DDF_LIST:
@@ -334,6 +338,7 @@ DDF& DDF::empty()
     if (m_handle) {
         switch (m_handle->type) {
             case ddf_body_t::DDF_STRING:
+            case ddf_body_t::DDF_STRING_UNSAFE:
                 if (m_handle->value.string)
                     free(m_handle->value.string);
                 break;
@@ -357,13 +362,13 @@ DDF& DDF::empty()
     return *this;
 }
 
-DDF& DDF::string(char* val, bool copyit, bool)
+DDF& DDF::string(char* val, bool copyit, bool safe)
 {
     if (empty().m_handle) {
         m_handle->value.string = copyit ? ddf_strdup(val) : val;
         if (!m_handle->value.string && val && *val)
             return destroy();
-        m_handle->type=ddf_body_t::DDF_STRING;
+        m_handle->type=(safe ? ddf_body_t::DDF_STRING : ddf_body_t::DDF_STRING_UNSAFE);
     }
     return *this;
 }
@@ -711,6 +716,7 @@ void DDF::dump(FILE* f, int indent) const
                 break;
 
             case ddf_body_t::DDF_STRING:
+            case ddf_body_t::DDF_STRING_UNSAFE:
                 if (m_handle->name)
                     fprintf(f,"char* %s = ",m_handle->name);
                 else
@@ -800,7 +806,10 @@ void DDF::dump(FILE* f, int indent) const
 /*
     Serialization is now reliant on a line-centric, type-prefixed format.
 
-    <URL-encoded name>|space <typenum> <type-specific>
+    <URL-encoded name>|<space>|<typenum>|<space>|<type-specific>
+    <space> := 0x20
+    <typenum> := 0|1|2|3|4|5|7
+
     DDF_EMPTY:
     DDF_POINTER:
         0
@@ -814,6 +823,12 @@ void DDF::dump(FILE* f, int indent) const
         4 32-bit count of children
     DDF_LIST:
         5 32-bit count of children
+    DDF_STRING_UNSAFE:
+        7 URL-encoded string
+
+    Pointers are collapsed into empty, so the type value of 6 is unused.
+    The distinction of unsafe strings allows for proper deserialization
+    in languages that need to handle non-UTF8 strings differently.
 */
 
 static inline char hexchar(unsigned short s)
