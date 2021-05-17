@@ -879,7 +879,8 @@ void serialize(ddf_body_t* p, ostream& os)
                 break;
 
             case ddf_body_t::DDF_STRING:
-                os << ddf_body_t::DDF_STRING;
+            case ddf_body_t::DDF_STRING_UNSAFE:
+                os << p->type;
                 if (p->value.string) {
                     os << ' ';
                     encode(os, p->value.string);
@@ -971,11 +972,17 @@ DDF deserialize(istream& is)
             return obj;
 
         case ddf_body_t::DDF_STRING:
+        case ddf_body_t::DDF_STRING_UNSAFE:
             {
                 string valstr;
                 source >> valstr;
                 if (!source || valstr.empty()) {
-                    obj.string(valstr.c_str());
+                    if (type == ddf_body_t::DDF_STRING) {
+                        obj.string(valstr.c_str());
+                    }
+                    else {
+                        obj.unsafe_string(valstr.c_str());
+                    }
                     return obj;
                 }
                 char* dup = strdup(valstr.c_str());
@@ -994,7 +1001,7 @@ DDF deserialize(istream& is)
                 dup[x] = '\0';
 
                 // Store without extra copy.
-                obj.string(dup, false);
+                obj.string(dup, false, type == ddf_body_t::DDF_STRING);
             }
             break;
 
