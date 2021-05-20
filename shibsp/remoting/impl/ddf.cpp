@@ -955,7 +955,27 @@ DDF deserialize(istream& is)
 
     DDF obj(nullptr);
     if (name != ".") {
-        obj.name(name.c_str());
+        if (name.find('%') != string::npos) {
+            char* dup = strdup(name.c_str());
+            if (!dup) {
+                return obj;
+            }
+            // Walk the string and decode any %XX sequences.
+            register int x,y;
+            for(x=0,y=0; dup[y]; ++x,++y) {
+                if((dup[x] = dup[y]) == '%' && isxdigit(dup[y+1]) && isxdigit(dup[y+2])) {
+                    dup[x] = x2c(&dup[y+1]);
+                    y+=2;
+                }
+            }
+            dup[x] = '\0';
+
+            obj.name(dup);
+            free(dup);
+        }
+        else {
+            obj.name(name.c_str());
+        }
     }
 
     // Type is next and should match enums.
@@ -990,7 +1010,7 @@ DDF deserialize(istream& is)
                     return obj;
                 }
 
-                // Walk the string and decode any %XX sequences and plus to space.
+                // Walk the string and decode any %XX sequences.
                 register int x,y;
                 for(x=0,y=0; dup[y]; ++x,++y) {
                     if((dup[x] = dup[y]) == '%' && isxdigit(dup[y+1]) && isxdigit(dup[y+2])) {
