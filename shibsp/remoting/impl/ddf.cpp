@@ -839,12 +839,10 @@ static inline char hexchar(unsigned short s)
 ostream& encode(ostream& os, const char* s)
 {
     for (; *s; s++) {
-        if (*s <= 0x20 || *s >= 0x7F) {
+        if (*s < 0x30 || *s > 0x7A) {
             os << '%';
             os << hexchar((unsigned char)*s >> 4);
             os << hexchar((unsigned char)*s & 0x0F);
-        } else if (*s == '%') {
-            os << "%25";
         }
         else {
             os << *s;
