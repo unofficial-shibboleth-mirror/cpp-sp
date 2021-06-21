@@ -268,6 +268,15 @@ string IIS7Request::getRemoteAddr() const
 
 string IIS7Request::getSecureHeader(const char* name) const
 {
+    if (m_useVariables) {
+        PCSTR p;
+        DWORD len;
+        HRESULT hr = m_ctx->GetServerVariable(name, &p, &len);
+        if (SUCCEEDED(hr)) {
+            return (nullptr == p) ? "" : p;
+        }
+        return "";
+    }
     PCSTR p = m_request->GetHeader(g_bSafeHeaderNames ? makeSafeHeader(name).c_str() : name);
     return (nullptr == p) ? "" : p;
 }
