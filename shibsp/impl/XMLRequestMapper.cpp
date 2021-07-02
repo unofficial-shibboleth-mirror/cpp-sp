@@ -419,6 +419,9 @@ const Override* Override::locate(const HTTPRequest& request) const
     // Default is for the current object to provide settings.
     const Override* o = this;
 
+    // Reset the path pointer to the beginning of the decoded copy.
+    path = dup.c_str();
+
     // Tokenize the path by segment and try and map each segment.
     tokenizer< char_separator<char> > tokens(dup, char_separator<char>("/"));
     for (tokenizer< char_separator<char> >::iterator token = tokens.begin(); token != tokens.end(); ++token) {
