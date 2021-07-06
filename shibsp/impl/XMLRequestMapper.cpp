@@ -410,10 +410,8 @@ const Override* Override::locate(const HTTPRequest& request) const
 
     // Now we copy the path, chop the query string, and possibly lower case it.
     string::size_type sep = dup.find('?');
-    if (sep != string::npos)
+    if (sep != string::npos) {
         dup = dup.substr(0, sep);
-    if (!m_unicodeAware) {
-        to_lower(dup);
     }
 
     // Default is for the current object to provide settings.
@@ -425,7 +423,13 @@ const Override* Override::locate(const HTTPRequest& request) const
     // Tokenize the path by segment and try and map each segment.
     tokenizer< char_separator<char> > tokens(dup, char_separator<char>("/"));
     for (tokenizer< char_separator<char> >::iterator token = tokens.begin(); token != tokens.end(); ++token) {
-        map< string,boost::shared_ptr<Override> >::const_iterator i = o->m_map.find(*token);
+
+        string tokendup(*token);
+        if (!m_unicodeAware) {
+            to_lower(tokendup);
+        }
+
+        map< string,boost::shared_ptr<Override> >::const_iterator i = o->m_map.find(tokendup);
         if (i == o->m_map.end())
             break;  // Once there's no match, we've consumed as much of the path as possible here.
         // We found a match, so reset the settings pointer.
@@ -433,21 +437,16 @@ const Override* Override::locate(const HTTPRequest& request) const
 
         // We descended a step down the path, so we need to advance the original
         // parameter for the regex step later.
-        path += token->length();
+        path += tokendup.length();
         if (*path == '/')
             path++;
     }
 
     // If there's anything left, we try for a regex match on the rest of the path minus the query string.
     if (*path) {
-        string path2(path);
-        sep = path2.find('?');
-        if (sep != string::npos)
-            path2 = path2.substr(0, sep);
-
         for (vector< pair< boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > >::const_iterator re = o->m_regexps.begin(); re != o->m_regexps.end(); ++re) {
             try {
-                if (re->first->matches(path2.c_str())) {
+                if (re->first->matches(path)) {
                     o = re->second.get();
                     break;
                 }
