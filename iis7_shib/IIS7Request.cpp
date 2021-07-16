@@ -428,6 +428,8 @@ void IIS7Request::setResponseHeader(const char* name, const char* value, bool re
 long IIS7Request::sendRedirect(const char* url)
 {
     HTTPResponse::sendRedirect(url);
+    setResponseHeader("Expires", "Wed, 01 Jan 1997 12:00:00 GMT", true);
+    setResponseHeader("Cache-Control", "private,no-store,no-cache,max-age=0", true);
     HRESULT hr = m_response->Redirect(url);
     if (FAILED(hr)) {
         logFatal("Redirect", hr);
