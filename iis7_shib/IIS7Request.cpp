@@ -269,11 +269,12 @@ string IIS7Request::getRemoteAddr() const
 string IIS7Request::getSecureHeader(const char* name) const
 {
     if (m_useVariables) {
-        PCSTR p;
+        PCWSTR p;
         DWORD len;
         HRESULT hr = m_ctx->GetServerVariable(name, &p, &len);
-        if (SUCCEEDED(hr)) {
-            return (nullptr == p) ? "" : p;
+        if (SUCCEEDED(hr) && p) {
+            std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+            return converter.to_bytes(p);
         }
         return "";
     }
