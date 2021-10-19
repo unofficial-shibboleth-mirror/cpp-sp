@@ -68,20 +68,20 @@ BEGIN
             VALUE "LegalTrademarks", "\0"
 #ifdef SHIBSP_LITE
 #ifdef _DEBUG
-            VALUE "OriginalFilename", "shibsp-lite3_2D.dll\0"
+            VALUE "OriginalFilename", "shibsp-lite3_3D.dll\0"
 #else
-            VALUE "OriginalFilename", "shibsp-lite3_2.dll\0"
+            VALUE "OriginalFilename", "shibsp-lite3_3.dll\0"
 #endif
 #else
 #ifdef _DEBUG
-            VALUE "OriginalFilename", "shibsp3_2D.dll\0"
+            VALUE "OriginalFilename", "shibsp3_3D.dll\0"
 #else
-            VALUE "OriginalFilename", "shibsp3_2.dll\0"
+            VALUE "OriginalFilename", "shibsp3_3.dll\0"
 #endif
 #endif
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 3.2.3\0"
-            VALUE "ProductVersion", "3, 2, 3, 0\0"
+            VALUE "ProductName", "Shibboleth 3.3.0\0"
+            VALUE "ProductVersion", "3, 3, 0, 0\0"
             VALUE "SpecialBuild", "\0"
         END
     END
