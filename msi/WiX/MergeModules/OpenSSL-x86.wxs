@@ -71,7 +71,8 @@
             </Directory><!-- lib -->
             <Directory Id="doc" Name="doc">
               <Component Id="OPENSSL.LICENSE" Guid="{CEC1CC66-6D48-475A-8C99-B687B0B901AA}">
-                <File KeyPath="yes" Name="OPENSSL.LICENSE" Source="$(var.BuildDirectory)\$(var.openssl)\LICENSE" />
+                <!-- NOTE the name change for OpenSSL 3.0.0 -->
+                <File KeyPath="yes" Name="OPENSSL.LICENSE" Source="$(var.BuildDirectory)\$(var.openssl)\LICENSE.txt" />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->
