@@ -122,7 +122,7 @@ SSCache::SSCache(const DOMElement* e, bool deprecationSupport)
     static const XMLCh _unreliableNetworks[] =  UNICODE_LITERAL_18(u,n,r,e,l,i,a,b,l,e,N,e,t,w,o,r,k,s);
 
     if (e && e->hasAttributeNS(nullptr, cacheTimeout)) {
-        m_log.warn("DEPRECATED: cacheTimeout property is replaced by cacheAllowance (see documentation)");
+        SPConfig::getConfig().deprecation().warn("cacheTimeout property replaced by cacheAllowance (see documentation)");
         m_cacheTimeout = XMLHelper::getAttrInt(e, 0, cacheTimeout);
     }
     m_cacheAllowance = XMLHelper::getAttrInt(e, 0, cacheAllowance);

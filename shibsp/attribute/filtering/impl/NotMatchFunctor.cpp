@@ -84,8 +84,7 @@ NotMatchFunctor::NotMatchFunctor(const pair<const FilterPolicyContext*,const DOM
 
         if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2ATTRIBUTEFILTER_MF_BASIC_NS)) {
             auto_ptr_char ns(e->getNamespaceURI());
-            Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.NOT").warn(
-                "Legacy filter namespace '%s' is DEPRECATED and will be removed from a future version.", ns.get());
+            SPConfig::getConfig().deprecation().warn("legacy Attribute Filter namespace '%s'", ns.get());
         }
 
         if (XMLString::equals(e->getLocalName(), Rule)) {
@@ -119,8 +118,7 @@ MatchFunctor* NotMatchFunctor::buildFunctor(const DOMElement* e, const FilterPol
         XMLString::equals(type->getNamespaceURI(), shibspconstants::SHIB2ATTRIBUTEFILTER_MF_SAML_NS)) {
 
         auto_ptr_char ns(type->getNamespaceURI());
-        Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter.NOT").warn(
-            "Legacy filter namespace '%s' is DEPRECATED and will be removed from a future version.", ns.get());
+        SPConfig::getConfig().deprecation().warn("legacy Attribute Filter namespace '%s'", ns.get());
     }
 
     auto_ptr<MatchFunctor> func(SPConfig::getConfig().MatchFunctorManager.newPlugin(*type, make_pair(functorMap,e), deprecationSupport));

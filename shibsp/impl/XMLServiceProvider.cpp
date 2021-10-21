@@ -382,7 +382,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 #endif
 
     if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
-        log.warn("DEPRECATED: legacy 2.0 configuration, support will be removed from a future version of the software");
+        SPConfig::getConfig().deprecation().warn("legacy V2 configuration");
         m_deprecationSupport = true;
     }
 
@@ -494,7 +494,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         // For backward compatibility, wrap in a plugin element.
         DOMElement* polwrapper = e->getOwnerDocument()->createElementNS(nullptr, _SecurityPolicyProvider);
         polwrapper->appendChild(child);
-        log.warn("DEPRECATED: inline SecurityPolicy configuration, externalize via <SecurityPolicyProvider>");
+        SPConfig::getConfig().deprecation().warn("inline SecurityPolicy configuration, externalize via <SecurityPolicyProvider>");
         m_policy.reset(conf.SecurityPolicyProviderManager.newPlugin(XML_SECURITYPOLICY_PROVIDER, polwrapper, m_deprecationSupport));
     }
     else {

@@ -251,7 +251,7 @@ MatchFunctor* XMLFilterImpl::buildFunctor(
             XMLString::equals(type->getNamespaceURI(), shibspconstants::SHIB2ATTRIBUTEFILTER_MF_SAML_NS)) {
 
             auto_ptr_char ns(type->getNamespaceURI());
-            m_log.warn("Legacy filter namespace '%s' is DEPRECATED and will be removed from a future version.", ns.get());
+            SPConfig::getConfig().deprecation().warn("legacy Attribute Filter namespace '%s'", ns.get());
         }
 
         try {

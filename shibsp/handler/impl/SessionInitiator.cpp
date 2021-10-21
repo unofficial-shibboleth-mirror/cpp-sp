@@ -74,7 +74,7 @@ SessionInitiator::~SessionInitiator()
 const char* SessionInitiator::remap(const char* src, Category& log) const
 {
     if (XMLString::equals(src, "defaultACSIndex")) {
-        log.warn("DEPRECATED configuration - remapping property/set (%s) to (%s)", src, "acsIndex");
+        SPConfig::getConfig().deprecation().warn("old setting - remapping property (defaultACSIndex) to (acsIndex)");
         return "acsIndex";
     }
     else {

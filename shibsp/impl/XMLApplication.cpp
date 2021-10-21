@@ -153,15 +153,15 @@ XMLApplication::XMLApplication(
                     m_redirectLimit = REDIRECT_LIMIT_ALLOW;
                 }
                 else if (!strcmp(prop.second, "exact+whitelist")) {
-                    log.warn("DEPRECATED: redirectLimit of \"exact+whitelist\" replaced by \"exact+allow\"");
+                    SPConfig::getConfig().deprecation().warn("redirectLimit of \"exact+whitelist\" replaced by \"exact+allow\"");
                     m_redirectLimit = REDIRECT_LIMIT_EXACT_ALLOW;
                 }
                 else if (!strcmp(prop.second, "host+whitelist")) {
-                    log.warn("DEPRECATED: redirectLimit of \"host+whitelist\" replaced by \"host+allow\"");
+                    SPConfig::getConfig().deprecation().warn("redirectLimit of \"host+whitelist\" replaced by \"host+allow\"");
                     m_redirectLimit = REDIRECT_LIMIT_HOST_ALLOW;
                 }
                 else if (!strcmp(prop.second, "whitelist")) {
-                    log.warn("DEPRECATED: redirectLimit of \"whitelist\" replaced by \"allow\"");
+                    SPConfig::getConfig().deprecation().warn("redirectLimit of \"whitelist\" replaced by \"allow\"");
                     m_redirectLimit = REDIRECT_LIMIT_ALLOW;
                 }
                 else {
@@ -248,7 +248,7 @@ XMLApplication::XMLApplication(
 #ifndef SHIBSP_LITE
     nlist = e->getElementsByTagNameNS(samlconstants::SAML20_NS, Audience::LOCAL_NAME);
     if (nlist && nlist->getLength()) {
-        log.warn("DEPRECATED: use of <saml:Audience> elements outside of a Security Policy Rule");
+        SPConfig::getConfig().deprecation().warn("use of <saml:Audience> elements outside of a Security Policy Rule");
         for (XMLSize_t i = 0; i < nlist->getLength(); ++i)
             if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
                 m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());

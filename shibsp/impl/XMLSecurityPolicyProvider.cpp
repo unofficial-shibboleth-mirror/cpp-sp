@@ -245,14 +245,14 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
 
     bool deprecationSupport = false;
     if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
-        log.warn("DEPRECATED: legacy 2.0 configuration, support will be removed from a future version of the software");
+        SPConfig::getConfig().deprecation().warn("legacy V2 configuration");
         deprecationSupport = true;
     }
 
     const XMLCh* algs = nullptr;
     const DOMElement* alglist = XMLHelper::getLastChildElement(e, AlgorithmBlacklist);
     if (alglist) {
-        log.warn("DEPRECATED: <AlgorithmBlacklist> and includeDefaultBlacklist replaced by <ExcludedAlgorithms> and excludeDefaults");
+        SPConfig::getConfig().deprecation().warn("<AlgorithmBlacklist> and includeDefaultBlacklist replaced by <ExcludedAlgorithms> and excludeDefaults");
         m_excludeDefaults = XMLHelper::getAttrBool(alglist, true, includeDefaultBlacklist);
         if (alglist->hasChildNodes()) {
             algs = alglist->getFirstChild()->getNodeValue();
@@ -261,7 +261,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
     else {
         alglist = XMLHelper::getLastChildElement(e, AlgorithmWhitelist);
         if (alglist) {
-            log.warn("DEPRECATED: <AlgorithmWhitelist> replaced by <IncludedAlgorithms>");
+            SPConfig::getConfig().deprecation().warn("<AlgorithmWhitelist> replaced by <IncludedAlgorithms>");
             if (alglist->hasChildNodes()) {
                 algs = alglist->getFirstChild()->getNodeValue();
             }
@@ -335,7 +335,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
 
         if (rules.second.size() == 0) {
             // Process Rule elements.
-            log.warn("DEPRECATED: Rule elements detected, convert to PolicyRule syntax");
+            SPConfig::getConfig().deprecation().warn("Rule elements detected, convert to PolicyRule syntax");
             rule = XMLHelper::getFirstChildElement(e, Rule);
             while (rule) {
                 string t(XMLHelper::getAttrString(rule, nullptr, _type));
