@@ -34,6 +34,8 @@
 # include <shibsp/TransactionLog.h>
 # include <saml/binding/MessageDecoder.h>
 # include <saml/binding/MessageEncoder.h>
+#else
+# include <xmltooling/logging.h>
 #endif
 #include <xmltooling/PluginManager.h>
 #include <xmltooling/QName.h>
@@ -316,6 +318,11 @@ namespace shibsp {
         */
         static bool shouldSignOrEncrypt(const char* setting, const char* endpoint, bool isUserAgentPresent);
 #endif
+
+        /**
+         * Helper for deprecation warnings about an at-risk feature or setting.
+         */
+        xmltooling::logging::Category& deprecation() const;
 
     protected:
         /** Global ServiceProvider instance. */

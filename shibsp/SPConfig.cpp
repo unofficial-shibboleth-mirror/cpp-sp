@@ -549,3 +549,8 @@ bool SPConfig::shouldSignOrEncrypt(const char* setting, const char* endpoint, bo
     return false;
 }
 #endif
+
+Category& SPConfig::deprecation() const
+{
+    return Category::getInstance(SHIBSP_LOGCAT".DEPRECATION");
+}
