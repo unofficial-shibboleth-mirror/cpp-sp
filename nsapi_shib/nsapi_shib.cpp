@@ -144,6 +144,7 @@ extern "C" NSAPI_PUBLIC int nsapi_shib_init(pblock* pb, ::Session* sn, Request* 
     const char* prefix=pblock_findval("shib-prefix",pb);
 
     g_Config=&SPConfig::getConfig();
+    g_Config->deprecation().warn("NSAPI filter");
     g_Config->setFeatures(
         SPConfig::Listener |
         SPConfig::Caching |

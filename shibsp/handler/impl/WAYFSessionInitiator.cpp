@@ -104,6 +104,7 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     if (isHandler) {
         prop.second = request.getParameter("acsIndex");
         if (prop.second && *prop.second) {
+            SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
             ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
             if (!ACS)
                 request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
@@ -138,8 +139,10 @@ pair<bool,long> WAYFSessionInitiator::run(SPRequest& request, string& entityID, 
     if (!ACS) {
         // Try fixed index property.
         pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
-        if (index.first)
+        if (index.first) {
+            SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
             ACS = app.getAssertionConsumerServiceByIndex(index.second);
+        }
     }
 
     // If we picked by index, validate the ACS for use with this protocol.

@@ -363,6 +363,7 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
     if (isHandler) {
         prop.second = request.getParameter("acsIndex");
         if (prop.second && *prop.second) {
+            SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
             ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
             if (!ACS)
                 request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
@@ -398,8 +399,10 @@ pair<bool,long> ADFSSessionInitiator::run(SPRequest& request, string& entityID, 
 
     if (!ACS) {
         pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
-        if (index.first)
+        if (index.first) {
+            SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
             ACS = app.getAssertionConsumerServiceByIndex(index.second);
+        }
     }
 
     // Validate the ACS for use with this protocol.

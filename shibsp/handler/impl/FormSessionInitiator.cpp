@@ -55,6 +55,8 @@ namespace shibsp {
             : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.Form")), m_template(getString("template").second) {
             if (!m_template)
                 throw ConfigurationException("Form SessionInitiator requires a template property.");
+
+            SPConfig::getConfig().deprecation().warn(FORM_SESSION_INITIATOR" SessionInitiator is slated for removal");
         }
         virtual ~FormSessionInitiator() {}
         

@@ -114,6 +114,7 @@ namespace shibsp {
                 }
             }
 #endif
+            SPConfig::getConfig().deprecation().warn(TRANSFORM_SESSION_INITIATOR" SessionInitiator is slated for removal");
         }
 
         virtual ~TransformSessionInitiator() {}

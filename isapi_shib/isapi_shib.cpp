@@ -159,6 +159,7 @@ extern "C" BOOL WINAPI GetFilterVersion(PHTTP_FILTER_VERSION pVer)
     }
 
     g_Config = &SPConfig::getConfig();
+    g_Config->deprecation().warn("ISAPI extension is replaced by IIS 7+ module");
     g_Config->setFeatures(
         SPConfig::Listener |
         SPConfig::Caching |

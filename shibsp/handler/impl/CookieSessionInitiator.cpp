@@ -58,6 +58,8 @@ namespace shibsp {
             : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.Cookie")),
               m_followMultiple(getBool("followMultiple").second) {
             m_supportedOptions.insert("isPassive");
+
+            SPConfig::getConfig().deprecation().warn(COOKIE_SESSION_INITIATOR" SessionInitiator is slated for removal");
         }
         virtual ~CookieSessionInitiator() {}
         
