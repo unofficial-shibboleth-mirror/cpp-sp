@@ -44,7 +44,9 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL Base64AttributeDecoder : virtual public AttributeDecoder
     {
     public:
-        Base64AttributeDecoder(const DOMElement* e) : AttributeDecoder(e) {}
+        Base64AttributeDecoder(const DOMElement* e) : AttributeDecoder(e) {
+            SPConfig::getConfig().deprecation().warn("Base64AttributeDecoder");
+        }
         ~Base64AttributeDecoder() {}
 
         shibsp::Attribute* decode(

@@ -129,6 +129,8 @@ namespace {
     public:
         ADFSSessionInitiator(const DOMElement* e, const char* appId)
             : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.ADFS"), nullptr, this), m_appId(appId), m_binding(WSFED_NS) {
+            SPConfig::getConfig().deprecation().warn("ADFS SessionInitiator");
+
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -184,7 +186,9 @@ namespace {
     public:
         ADFSConsumer(const DOMElement* e, const char* appId, bool deprecationSupport)
             : shibsp::AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".SSO.ADFS"), nullptr, nullptr, deprecationSupport),
-                m_protocol(WSFED_NS) {}
+                m_protocol(WSFED_NS) {
+            SPConfig::getConfig().deprecation().warn("ADFS AssertionConsumerService");
+        }
         virtual ~ADFSConsumer() {}
 
 #ifndef SHIBSP_LITE
@@ -218,6 +222,9 @@ namespace {
     public:
         ADFSLogoutInitiator(const DOMElement* e, const char* appId)
                 : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.ADFS")), m_appId(appId), m_binding(WSFED_NS) {
+
+            SPConfig::getConfig().deprecation().warn("ADFS LogoutInitiator");
+
             // If Location isn't set, defer address registration until the setParent call.
             pair<bool,const char*> loc = getString("Location");
             if (loc.first) {
@@ -258,6 +265,9 @@ namespace {
     public:
         ADFSLogout(const DOMElement* e, const char* appId, bool deprecationSupport)
                 : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Logout.ADFS")), m_login(e, appId, deprecationSupport) {
+
+            SPConfig::getConfig().deprecation().warn("ADFS Logout handler");
+
             m_initiator = false;
 #ifndef SHIBSP_LITE
             m_preserve.push_back("wreply");

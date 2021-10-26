@@ -191,6 +191,8 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
         ,m_http(0), m_https(0), m_encryptionBuilder(nullptr), m_digestBuilder(nullptr)
 #endif
 {
+    SPConfig::getConfig().deprecation().warn(METADATA_GENERATOR_HANDLER" handler");
+
     string address(appId);
     address += getString("Location").second;
     setAddress(address.c_str());

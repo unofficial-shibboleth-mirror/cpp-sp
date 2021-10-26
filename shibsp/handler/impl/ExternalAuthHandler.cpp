@@ -165,6 +165,8 @@ namespace {
 ExternalAuth::ExternalAuth(const DOMElement* e, const char* appId)
     : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.ExternalAuth"), "acl", "127.0.0.1 ::1")
 {
+    SPConfig::getConfig().deprecation().warn(EXTERNAL_AUTH_HANDLER" handler");
+
     pair<bool,const char*> prop = getString("Location");
     if (!prop.first)
         throw ConfigurationException("ExternalAuth handler requires Location property.");

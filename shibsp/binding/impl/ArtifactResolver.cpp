@@ -193,6 +193,7 @@ ArtifactResponse* ArtifactResolver::resolve(
                 // The local filesystem is presumed to be "secure" so that unsigned, unencrypted responses are acceptable.
                 // The binding here is not SOAP, but rather REST-like, with the base location used to construct a filename
                 // containing the artifact message handle.
+                SPConfig::getConfig().deprecation().warn("Local artifact resolution");
                 foundEndpoint = true;
                 auto_ptr_char temp((*ep)->getLocation());
                 if (temp.get()) {

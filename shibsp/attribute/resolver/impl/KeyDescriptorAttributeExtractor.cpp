@@ -104,6 +104,7 @@ namespace shibsp {
 
 KeyDescriptorExtractor::KeyDescriptorExtractor(const DOMElement* e) : m_hashAlg(XMLHelper::getAttrString(e, "SHA1", hashAlg))
 {
+    SPConfig::getConfig().deprecation().warn(KEYDESCRIPTOR_ATTRIBUTE_EXTRACTOR" AttributeExtractor");
     if (e) {
         string a(XMLHelper::getAttrString(e, nullptr, hashId));
         if (!a.empty())

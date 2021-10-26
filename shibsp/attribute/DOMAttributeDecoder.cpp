@@ -70,6 +70,8 @@ DOMAttributeDecoder::DOMAttributeDecoder(const DOMElement* e)
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".AttributeDecoder.DOM");
 
+    SPConfig::getConfig().deprecation().warn("DOMAttributeDecoder");
+
     e = XMLHelper::getFirstChildElement(e, Mapping);
     while (e) {
         if (e->hasAttributeNS(nullptr, _from) && e->hasAttributeNS(nullptr, _to)) {

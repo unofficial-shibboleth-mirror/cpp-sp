@@ -108,6 +108,15 @@ AttributeDecoder::AttributeDecoder(const DOMElement *e)
         m_langAware(XMLHelper::getAttrBool(e, false, langAware)),
         m_hashAlg(XMLHelper::getAttrString(e, nullptr, hashAlg))
 {
+    if (m_internal) {
+        SPConfig::getConfig().deprecation().warn("<AttributeDecoder> internal option");
+    }
+    if (m_langAware) {
+        SPConfig::getConfig().deprecation().warn("<AttributeDecoder> langAware option");
+    }
+    if (!m_hashAlg.empty()) {
+        SPConfig::getConfig().deprecation().warn("<AttributeDecoder> hashAlg option");
+    }
 }
 
 AttributeDecoder::~AttributeDecoder()

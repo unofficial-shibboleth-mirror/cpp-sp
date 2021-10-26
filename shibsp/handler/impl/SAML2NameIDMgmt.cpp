@@ -143,6 +143,7 @@ namespace shibsp {
 SAML2NameIDMgmt::SAML2NameIDMgmt(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".NameIDMgmt.SAML2"))
 {
+    SPConfig::getConfig().deprecation().warn("SAML 2.0 NameID Management support");
 #ifndef SHIBSP_LITE
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         SAMLConfig& conf = SAMLConfig::getConfig();

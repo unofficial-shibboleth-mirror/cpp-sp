@@ -41,7 +41,9 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL XMLAttributeDecoder : virtual public AttributeDecoder
     {
     public:
-        XMLAttributeDecoder(const DOMElement* e) : AttributeDecoder(e) {}
+        XMLAttributeDecoder(const DOMElement* e) : AttributeDecoder(e) {
+            SPConfig::getConfig().deprecation().warn("XMLAttributeDecoder");
+        }
         ~XMLAttributeDecoder() {}
 
         Attribute* decode(

@@ -89,6 +89,9 @@ KeyInfoAttributeDecoder::KeyInfoAttributeDecoder(const DOMElement* e, bool depre
     : AttributeDecoder(e),
         m_hash(XMLHelper::getAttrBool(e, false, _hash)),
         m_keyInfoHashAlg(XMLHelper::getAttrString(e, "SHA1", keyInfoHashAlg)) {
+
+    SPConfig::getConfig().deprecation().warn("KeyInfoAttributeDecoder");
+
     e = XMLHelper::getFirstChildElement(e, _KeyInfoResolver);
     if (e) {
         string t(XMLHelper::getAttrString(e, nullptr, _type));

@@ -182,6 +182,8 @@ vector<Assertion*> DummyContext::m_tokens;
 AttributeResolverHandler::AttributeResolverHandler(const DOMElement* e, const char* appId)
         : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT".AttributeResolverHandler"), "acl", "127.0.0.1 ::1")
 {
+    SPConfig::getConfig().deprecation().warn("AttributeResolver Handler");
+
     pair<bool,const char*> prop = getString("Location");
     if (!prop.first)
         throw ConfigurationException("AttributeQuery handler requires Location property.");
