@@ -102,6 +102,7 @@ namespace shibsp {
             HTTPResponse& httpResponse,
             const char* entityID,
             const XMLCh* acsIndex,
+            const char* attributeIndex,
             bool artifactInbound,
             const char* acsLocation,
             const XMLCh* acsBinding,
@@ -258,7 +259,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     string target;
     pair<bool,const char*> prop;
     const Handler* ACS = nullptr;
-    pair<bool,const char*> acClass, acComp, nidFormat, spQual;
+    pair<bool,const char*> acClass, acComp, nidFormat, spQual, attributeIndex;
     const char* requestTemplate = nullptr;
     const char* outgoingBinding = nullptr;
     bool isPassive=false,forceAuthn=false;
@@ -307,6 +308,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         }
 
         // Populate via parameter, map, or property.
+        attributeIndex = getString("attributeIndex", request, settingMask);
         acClass = getString("authnContextClassRef", request, settingMask);
         acComp = getString("authnContextComparison", request, settingMask);
         nidFormat = getString("NameIDFormat", request, settingMask);
@@ -329,6 +331,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         }
 
         // Populate via map or property.
+        attributeIndex = getString("attributeIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
         acClass = getString("authnContextClassRef", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
         acComp = getString("authnContextComparison", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
         nidFormat = getString("NameIDFormat", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
@@ -398,6 +401,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             return doRequest(
                 app, &request, request, entityID.c_str(),
                 ix.second,
+                attributeIndex.first ? attributeIndex.second : nullptr,
                 XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT),
                 nullptr, nullptr,
                 isPassive, forceAuthn,
@@ -429,6 +433,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         return doRequest(
             app, &request, request, entityID.c_str(),
             nullptr,
+            attributeIndex.first ? attributeIndex.second : nullptr,
             XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT),
             ACSloc.c_str(), ACS->getXMLString("Binding").second,
             isPassive, forceAuthn,
@@ -452,6 +457,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("isPassive").integer(1);
     else if (forceAuthn)
         in.addmember("forceAuthn").integer(1);
+    if (attributeIndex.first)
+        in.addmember("attributeIndex").string(attributeIndex.second);
     if (acClass.first)
         in.addmember("authnContextClassRef").string(acClass.second);
     if (acComp.first)
@@ -547,6 +554,7 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
     doRequest(
         *app, nullptr, *http, in["entity_id"].string(),
         index.get(),
+        in["attributeIndex"].string(),
         (in["artifact"].integer() != 0),
         in["acsLocation"].string(), bind.get(),
         in["isPassive"].integer() == 1,
@@ -571,6 +579,7 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
     HTTPResponse& httpResponse,
     const char* entityID,
     const XMLCh* acsIndex,
+    const char* attributeIndex,
     bool artifactInbound,
     const char* acsLocation,
     const XMLCh* acsBinding,
@@ -728,6 +737,17 @@ pair<bool,long> SAML2SessionInitiator::doRequest(
         pair<bool,const XMLCh*> rpQual = relyingParty->getXMLString("SPNameQualifier");
         if (rpQual.first)
             req->getNameIDPolicy()->setSPNameQualifier(rpQual.second);
+    }
+
+    // AttributeConsumingService may be specified, or inferred from RelyingParty.
+    if (attributeIndex && *attributeIndex) {
+        auto_ptr_XMLCh wideacs(attributeIndex);
+        req->setAttributeConsumingServiceIndex(wideacs.get());
+    }
+    else {
+        pair<bool,const XMLCh*> attrIndex = relyingParty->getXMLString("attributeIndex");
+        if (attrIndex.first)
+            req->setAttributeConsumingServiceIndex(attrIndex.second);
     }
 
     // If no specified AC class, infer from RelyingParty.

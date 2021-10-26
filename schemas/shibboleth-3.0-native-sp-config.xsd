@@ -310,6 +310,7 @@
     <attribute name="sslError" type="conf:anyURI"/>
     <attribute name="target" type="conf:anyURI"/>
     <attribute name="acsIndex" type="unsignedShort"/>
+    <attribute name="attributeIndex" type="conf:string"/>
     <attribute name="REMOTE_ADDR" type="conf:string"/>
     <attribute name="encoding" type="conf:string"/>
     <attribute name="attributeValueDelimiter" type="conf:string"/>
@@ -529,6 +530,7 @@
     <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
     <attribute name="NameIDFormat" type="conf:anyURI"/>
     <attribute name="SPNameQualifier" type="conf:string"/>
+    <attribute name="attributeIndex" type="conf:string"/>
     <attribute name="requestDelegation" type="boolean"/>
   </attributeGroup>
     
@@ -661,6 +663,7 @@
     <attribute name="authnContextComparison" type="samlp:AuthnContextComparisonType"/>
     <attribute name="NameIDFormat" type="conf:anyURI"/>
     <attribute name="SPNameQualifier" type="conf:string"/>
+    <attribute name="attributeIndex" type="conf:string"/>
     <attribute name="requestDelegation" type="boolean"/>
     <attribute name="target" type="conf:anyURI"/>
     <attribute name="discoveryPolicy" type="conf:string"/>
