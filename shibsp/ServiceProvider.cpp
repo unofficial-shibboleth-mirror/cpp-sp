@@ -415,6 +415,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
             // No session, but we require one. Initiate a new session using the indicated method.
             const SessionInitiator* initiator=nullptr;
             if (requireSessionWith.first) {
+                SPConfig::getConfig().deprecation().warn("requireSessionWith");
                 initiator=app->getSessionInitiatorById(requireSessionWith.second);
                 if (!initiator) {
                     throw ConfigurationException(
