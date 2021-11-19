@@ -1,7 +1,7 @@
 
             VALUE "Comments", "\0"
             VALUE "CompanyName", "Shibboleth Consortium\0"
-            VALUE "FileVersion", "3,3,3,0\0"
+            VALUE "FileVersion", "3,3,0,0\0"
             VALUE "LegalCopyright", "Copyright 2021 Various\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "PrivateBuild", "\0"
