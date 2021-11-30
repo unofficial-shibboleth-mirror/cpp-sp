@@ -1983,10 +1983,10 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     // Initialize runtime components.
 
     ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, SH_AP_R(s), "child_init: mod_shib initializing in pid (%d)", (int)getpid());
-    ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, SH_AP_R(s), "DEPRECATED: Apache 1.3 module, please upgrade to Apache 2.4+");
 
     // 2.x versions have already initialized the libraries.
 #ifdef SHIB_APACHE_13
+    ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, SH_AP_R(s), "DEPRECATED: Apache 1.3 module, please upgrade to Apache 2.4+");
     if (g_Config) {
         ap_log_error(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, SH_AP_R(s), "child_init: mod_shib already initialized, exiting");
         exit(1);
