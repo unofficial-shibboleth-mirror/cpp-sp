@@ -50,6 +50,7 @@ namespace shibsp {
         DDF(const char* n);
         DDF(const char* n, const char* val, bool safe=true);
         DDF(const char* n, long val);
+        DDF(const char* n, long long val);
         DDF(const char* n, double val);
         DDF(const char* n, void* val);
     
@@ -64,6 +65,7 @@ namespace shibsp {
         bool isempty() const;
         bool isstring() const;
         bool isint() const;
+        bool islong() const;
         bool isfloat() const;
         bool isstruct() const;
         bool islist() const;
@@ -72,6 +74,7 @@ namespace shibsp {
         // type conversion and value extraction
         const char* string() const;     // legal for str
         long        integer() const;    // legal for all types
+        long long   longinteger() const;    // legal for all types
         double      floating() const;   // legal for float
         void*       pointer() const;    // legal for pointer
     
@@ -88,6 +91,8 @@ namespace shibsp {
         DDF& string(double val);
         DDF& integer(long val);
         DDF& integer(const char* val);
+        DDF& longinteger(long long val);
+        DDF& longinteger(const char* val);
         DDF& floating(double val);
         DDF& floating(const char* val);
         DDF& structure();

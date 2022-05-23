@@ -96,12 +96,14 @@ struct shibsp::ddf_body_t {
         DDF_STRUCT,
         DDF_LIST,
         DDF_POINTER,
-        DDF_STRING_UNSAFE
+        DDF_STRING_UNSAFE,
+        DDF_LONG
     } type;                         // data type of node
 
     union {
         char* string;
         long integer;
+        long long longinteger;
         double floating;
         void* pointer;
         struct {
@@ -139,6 +141,13 @@ DDF::DDF(const char* n, long val)
     integer(val);
 }
 
+DDF::DDF(const char* n, long long val)
+{
+    m_handle=new(nothrow) ddf_body_t;
+    name(n);
+    longinteger(val);
+}
+
 DDF::DDF(const char* n, double val)
 {
     m_handle=new(nothrow) ddf_body_t;
@@ -174,6 +183,8 @@ DDF DDF::copy() const
             return DDF(m_handle->name,m_handle->value.string,(m_handle->type==ddf_body_t::DDF_STRING));            return DDF(m_handle->name,m_handle->value.string,(m_handle->type==ddf_body_t::DDF_STRING));
         case ddf_body_t::DDF_INT:
             return DDF(m_handle->name,m_handle->value.integer);
+        case ddf_body_t::DDF_LONG:
+            return DDF(m_handle->name,m_handle->value.longinteger);
         case ddf_body_t::DDF_FLOAT:
             return DDF(m_handle->name,m_handle->value.floating);
         case ddf_body_t::DDF_POINTER:
@@ -248,6 +259,11 @@ bool DDF::isint() const
     return m_handle ? (m_handle->type==ddf_body_t::DDF_INT) : false;
 }
 
+bool DDF::islong() const
+{
+    return m_handle ? (m_handle->type==ddf_body_t::DDF_LONG) : false;
+}
+
 bool DDF::isfloat() const
 {
     return m_handle ? (m_handle->type==ddf_body_t::DDF_FLOAT) : false;
@@ -279,11 +295,36 @@ long DDF::integer() const
         switch(m_handle->type) {
             case ddf_body_t::DDF_INT:
                 return m_handle->value.integer;
+            case ddf_body_t::DDF_LONG:
+                return m_handle->value.longinteger;
             case ddf_body_t::DDF_FLOAT:
                 return static_cast<long>(m_handle->value.floating);
             case ddf_body_t::DDF_STRING:
             case ddf_body_t::DDF_STRING_UNSAFE:
                 return m_handle->value.string ? atol(m_handle->value.string) : 0;
+            case ddf_body_t::DDF_STRUCT:
+            case ddf_body_t::DDF_LIST:
+                return m_handle->value.children.count;
+            default:
+                break;
+        }
+    }
+    return 0;
+}
+
+long long DDF::longinteger() const
+{
+    if (m_handle) {
+        switch(m_handle->type) {
+            case ddf_body_t::DDF_INT:
+                return m_handle->value.integer;
+            case ddf_body_t::DDF_LONG:
+                return m_handle->value.longinteger;
+            case ddf_body_t::DDF_FLOAT:
+                return static_cast<long long>(m_handle->value.floating);
+            case ddf_body_t::DDF_STRING:
+            case ddf_body_t::DDF_STRING_UNSAFE:
+                return m_handle->value.string ? atoll(m_handle->value.string) : 0;
             case ddf_body_t::DDF_STRUCT:
             case ddf_body_t::DDF_LIST:
                 return m_handle->value.children.count;
@@ -300,6 +341,8 @@ double DDF::floating() const
         switch(m_handle->type) {
             case ddf_body_t::DDF_INT:
                 return m_handle->value.integer;
+            case ddf_body_t::DDF_LONG:
+                return m_handle->value.longinteger;
             case ddf_body_t::DDF_FLOAT:
                 return m_handle->value.floating;
             case ddf_body_t::DDF_STRING:
@@ -409,6 +452,24 @@ DDF& DDF::integer(const char* val)
     if (empty().m_handle) {
         m_handle->value.integer=(val ? atol(val) : 0);
         m_handle->type=ddf_body_t::DDF_INT;
+    }
+    return *this;
+}
+
+DDF& DDF::longinteger(long long val)
+{
+    if (empty().m_handle) {
+        m_handle->value.longinteger=val;
+        m_handle->type=ddf_body_t::DDF_LONG;
+    }
+    return *this;
+}
+
+DDF& DDF::longinteger(const char* val)
+{
+    if (empty().m_handle) {
+        m_handle->value.longinteger=(val ? atoll(val) : 0);
+        m_handle->type=ddf_body_t::DDF_LONG;
     }
     return *this;
 }
@@ -739,6 +800,14 @@ void DDF::dump(FILE* f, int indent) const
                 fprintf(f,"%ld",m_handle->value.integer);
                 break;
 
+            case ddf_body_t::DDF_LONG:
+                if (m_handle->name)
+                    fprintf(f,"long long %s = ",m_handle->name);
+                else
+                    fprintf(f,"long long = ");
+                fprintf(f,"%lld",m_handle->value.longinteger);
+                break;
+
             case ddf_body_t::DDF_FLOAT:
                 if (m_handle->name)
                     fprintf(f,"double %s = ",m_handle->name);
@@ -825,6 +894,8 @@ void DDF::dump(FILE* f, int indent) const
         5 32-bit count of children
     DDF_STRING_UNSAFE:
         7 URL-encoded string
+    DDF_LONG:
+        8 64-bit integer
 
     Pointers are collapsed into empty, so the type value of 6 is unused.
     The distinction of unsafe strings allows for proper deserialization
@@ -860,6 +931,15 @@ static bool is32bitSafe(long what)
     return (0 == upperOfuWhat);
 }
 
+static bool is64bitSafe(long long what)
+{
+    if (sizeof(what) <= 8) return true;
+    unsigned long long uWhat = (what < 0) ? -what : what;
+    unsigned long long upperOfuWhat = uWhat >> 63;
+
+    return (0 == upperOfuWhat);
+}
+
 void serialize(ddf_body_t* p, ostream& os)
 {
     if (p) {
@@ -890,6 +970,12 @@ void serialize(ddf_body_t* p, ostream& os)
                 if (!is32bitSafe(p->value.integer))
                     throw IOException("Integer Overflow");
                 os << ddf_body_t::DDF_INT << ' ' << p->value.integer << endl;
+                break;
+
+            case ddf_body_t::DDF_LONG:
+                if (!is64bitSafe(p->value.longinteger))
+                    throw IOException("Integer Overflow");
+                os << ddf_body_t::DDF_LONG << ' ' << p->value.longinteger << endl;
                 break;
 
             case ddf_body_t::DDF_FLOAT:
@@ -1031,6 +1117,17 @@ DDF deserialize(istream& is)
                     return obj;
                 }
                 obj.integer(value);
+            }
+            break;
+
+        case ddf_body_t::DDF_LONG:
+            {
+                long long value = 0;
+                source >> value;
+                if (!source) {
+                    return obj;
+                }
+                obj.longinteger(value);
             }
             break;
 
