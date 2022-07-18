@@ -339,16 +339,21 @@ DDF SocketListener::send(const DDF& in)
     log->debug("send completed, reading response message");
 
     // Read the message.
-    while (recv(sock,(char*)&len,sizeof(len)) != sizeof(len)) {
+    int size_read;
+    while ((size_read = recv(sock,(char*)&len,sizeof(len))) != sizeof(len)) {
     	if (errno == EINTR) continue;	// Apparently this happens when a signal interrupts the blocking call.
-        log->error("error reading size of output message");
+	if (size_read == -1) {
+	    log_error("reading size of output message");
+	}
+	else {
+	    log->error("error reading size of output message (%d != %d)", size_read, sizeof(len));
+	}
         this->close(sock);
         throw ListenerException("Failure receiving response to remoted message ($1).", params(1,in.name()));
     }
     len = ntohl(len);
 
     char buf[16384];
-    int size_read;
     stringstream is;
     while (len) {
     	size_read = recv(sock, buf, sizeof(buf));
@@ -362,7 +367,7 @@ DDF SocketListener::send(const DDF& in)
     }
 
     if (len) {
-        log->error("error reading output message from socket");
+        log_error("reading output message");
         this->close(sock);
         throw ListenerException("Failure receiving response to remoted message ($1).", params(1,in.name()));
     }
