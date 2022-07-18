@@ -64,7 +64,7 @@ BEGIN
             VALUE "InternalName", "shibsp3_3\0"
 #endif
 #endif
-            VALUE "LegalCopyright", "Copyright 2021 Various\0"
+            VALUE "LegalCopyright", "Copyright 2022 Various\0"
             VALUE "LegalTrademarks", "\0"
 #ifdef SHIBSP_LITE
 #ifdef _DEBUG
@@ -80,8 +80,8 @@ BEGIN
 #endif
 #endif
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 3.3.0\0"
-            VALUE "ProductVersion", "3, 3, 0, 0\0"
+            VALUE "ProductName", "Shibboleth 3.3.1\0"
+            VALUE "ProductVersion", "3, 3, 1, 0\0"
             VALUE "SpecialBuild", "\0"
         END
     END
