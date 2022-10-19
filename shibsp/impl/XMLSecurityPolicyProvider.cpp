@@ -268,7 +268,7 @@ XMLSecurityPolicyProviderImpl::XMLSecurityPolicyProviderImpl(const DOMElement* e
             m_excludeDefaults = false;
         }
         else {
-            const DOMElement* alglist = XMLHelper::getLastChildElement(e, ExcludedAlgorithms);
+            alglist = XMLHelper::getLastChildElement(e, ExcludedAlgorithms);
             if (alglist) {
                 m_excludeDefaults = XMLHelper::getAttrBool(alglist, true, excludeDefaults);
                 if (alglist->hasChildNodes()) {
