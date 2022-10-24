@@ -34,6 +34,9 @@
 #include <stack>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <xercesc/sax/SAXException.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/OutOfMemoryException.hpp>
@@ -223,6 +226,16 @@ bool SocketListener::init(bool force)
     return true;
 }
 
+void SocketListener::set_retry_errors(const string& retry_errors)
+{
+    const char* error_list = retry_errors.c_str();
+    std::vector<string> string_list;
+    boost::split(string_list, error_list, boost::is_any_of(", \t"), boost::token_compress_on);
+    for (vector<string>::const_iterator i = string_list.begin(); i != string_list.end(); ++i) {
+        m_retry_errors.push_back(atoi(i->c_str()));
+    }
+}
+
 bool SocketListener::run(bool* shutdown)
 {
 #ifdef _DEBUG
@@ -325,36 +338,68 @@ DDF SocketListener::send(const DDF& in)
         if (send(sock,(char*)&len,sizeof(len)) != sizeof(len) || send(sock,ostr.c_str(),outlen) != outlen) {
             log_error();
             this->close(sock);
-            if (retry)
+            if (retry) {
                 retry--;
+                log->debug("retrying failed send");
+            }
             else
                 throw ListenerException("Failure sending remoted message ($1).", params(1,in.name()));
         }
         else {
             // SUCCESS.
+            log->debug("send completed, reading response message");
+
+            // Read the message size.
+            int size_read;
+            bool retry_error = false;
+            while ((size_read = recv(sock,(char*)&len,sizeof(len))) != sizeof(len)) {
+                // Apparently this happens when a signal interrupts the blocking call.
+                if (errno == EINTR) continue;
+
+                int native_error;
+                if (size_read == -1) {
+                    log_error("reading size of output message", &native_error);
+                }
+                else {
+                    log->error("error reading size of output message (%d != %d)", size_read, sizeof(len));
+                    native_error = 0;
+                }
+                this->close(sock);
+
+                if (std::find(m_retry_errors.begin(), m_retry_errors.end(), native_error) != m_retry_errors.end()) {
+                    log->debug("recv error %d is retryable", native_error);
+                    if (retry) {
+                        retry_error = true;
+                        retry--;
+                        break;
+                    }
+                    else {
+                        log->debug("not retrying on second failure");
+                    }
+                }
+                else {
+                      log->debug("recv error %d is not retryable", native_error);
+                }
+
+                throw ListenerException("Failure receiving response to remoted message ($1).", params(1,in.name()));
+            }
+
+            // If recv had retryable error restart loop and try again
+            if (retry_error) {
+                log->debug("retrying");
+                retry_error = false;
+                continue;
+            }
+
+            len = ntohl(len);
             retry = -1;
         }
     }
 
-    log->debug("send completed, reading response message");
-
     // Read the message.
-    int size_read;
-    while ((size_read = recv(sock,(char*)&len,sizeof(len))) != sizeof(len)) {
-    	if (errno == EINTR) continue;	// Apparently this happens when a signal interrupts the blocking call.
-	if (size_read == -1) {
-	    log_error("reading size of output message");
-	}
-	else {
-	    log->error("error reading size of output message (%d != %d)", size_read, sizeof(len));
-	}
-        this->close(sock);
-        throw ListenerException("Failure receiving response to remoted message ($1).", params(1,in.name()));
-    }
-    len = ntohl(len);
-
     char buf[16384];
     stringstream is;
+    int size_read;
     while (len) {
     	size_read = recv(sock, buf, sizeof(buf));
     	if (size_read > 0) {
@@ -400,7 +445,7 @@ DDF SocketListener::send(const DDF& in)
     return out;
 }
 
-bool SocketListener::log_error(const char* fn) const
+bool SocketListener::log_error(const char* fn, int* native_error) const
 {
     if (!fn)
         fn = "unknown";
@@ -413,6 +458,8 @@ bool SocketListener::log_error(const char* fn) const
 #else
     int rc=errno;
 #endif
+    if (native_error != nullptr)
+        *native_error = rc;
     const char *msg;
 #ifdef HAVE_STRERROR_R
     char buf[256];

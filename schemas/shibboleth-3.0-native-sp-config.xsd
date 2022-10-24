@@ -9,7 +9,7 @@
 	elementFormDefault="qualified"
 	attributeFormDefault="unqualified"
 	blockDefault="substitution"
-	version="3.2">
+	version="3.4">
 
   <import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd" />
   <import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="saml-schema-assertion-2.0.xsd"/>
@@ -874,6 +874,7 @@
               <attribute name="clientPort" type="unsignedInt"/>
               <attribute name="acl" type="conf:listOfStrings"/>
               <attribute name="stackSize" type="unsignedInt"/>
+              <attribute name="retryErrors" type="conf:string"/>
             </complexType>
           </element>
           <element name="Listener" type="conf:PluggableType"/>
