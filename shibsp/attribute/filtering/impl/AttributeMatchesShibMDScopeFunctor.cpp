@@ -48,7 +48,9 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AbstractAttributeMatchesShibMDScopeFunctor : public MatchFunctor
     {
     public:
-        bool evaluatePolicyRequirement(const FilteringContext& filterContext) const {
+        AbstractAttributeMatchesShibMDScopeFunctor() : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeFilter")) {}
+
+        bool evaluatePolicyRequirement(const FilteringContext&) const {
             throw AttributeFilteringException("Metadata scope matching not usable as a PolicyRequirement.");
         }
 
@@ -58,8 +60,10 @@ namespace shibsp {
                 return false;
 
             const char* s = getStringToMatch(attribute, index);
-            if (!s || !*s)
+            if (!s || !*s) {
+                m_log.warn("attribute (%s) missing scope", attribute.getId());
                 return false;
+            }
             auto_arrayptr<XMLCh> widestr(fromUTF8(s));
 
             const Scope* rule;
@@ -85,6 +89,7 @@ namespace shibsp {
                 }
             }
 
+            m_log.warn("attribute (%s) invalid scope (%s)", attribute.getId(), s);
             return false;
         }
 
@@ -92,6 +97,8 @@ namespace shibsp {
         virtual const char* getStringToMatch(const Attribute& attribute, size_t index) const = 0;
 
     private:
+        Category& m_log;
+
         bool matches(const Scope& rule, auto_arrayptr<XMLCh>& scope) const {
             const XMLCh* val = rule.getValue();
             if (val && *val) {
@@ -129,12 +136,12 @@ namespace shibsp {
         }
     };
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeScopeMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>&, bool)
     {
         return new AttributeScopeMatchesShibMDScopeFunctor();
     }
 
-    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>& p, bool)
+    MatchFunctor* SHIBSP_DLLLOCAL AttributeValueMatchesShibMDScopeFactory(const pair<const FilterPolicyContext*,const DOMElement*>&, bool)
     {
         return new AttributeValueMatchesShibMDScopeFunctor();
     }
