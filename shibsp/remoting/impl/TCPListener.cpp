@@ -108,6 +108,7 @@ namespace shibsp {
     static const XMLCh acl[] = UNICODE_LITERAL_3(a,c,l);
     static const XMLCh clientAddress[] = UNICODE_LITERAL_13(c,l,i,e,n,t,A,d,d,r,e,s,s);
     static const XMLCh clientPort[] = UNICODE_LITERAL_10(c,l,i,e,n,t,P,o,r,t);
+    static const XMLCh retryErrors[] = UNICODE_LITERAL_11(r,e,t,r,y,E,r,r,o,r,s);
 };
 
 TCPListener::TCPListener(const DOMElement* e) : SocketListener(e), m_port(0)
@@ -116,6 +117,17 @@ TCPListener::TCPListener(const DOMElement* e) : SocketListener(e), m_port(0)
     if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
         m_address = XMLHelper::getAttrString(e, nullptr, clientAddress);
         m_port = XMLHelper::getAttrInt(e, 0, clientPort);
+        string retry_errors = XMLHelper::getAttrString(e, nullptr, retryErrors);
+        if (!retry_errors.empty()) {
+            if (retry_errors.find_first_not_of("0123456789, \t") == std::string::npos) {
+                log->info("retrying on error codes: %s", retry_errors.c_str());
+                set_retry_errors(retry_errors);
+            }
+            else {
+                log->error("invalid characters in retryErrors, skipping");
+            }
+
+        }
     }
 
     // Back-off to address setting, environment, or default.

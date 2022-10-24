@@ -79,13 +79,16 @@ namespace shibsp {
 
         bool m_catchAll;
     protected:
-        bool log_error(const char* fn=nullptr) const; // for OS-level errors
+        void set_retry_errors(const std::string& retry_errors);
+        bool log_error(const char* fn=nullptr, int* native_error=nullptr) const; // for OS-level errors
         xmltooling::logging::Category* log;
         /// @endcond
 
     private:
+
         boost::scoped_ptr<SocketPool> m_socketpool;
         bool* m_shutdown;
+        std::vector<int> m_retry_errors;
 
         // Manage child threads
         friend class ServerThread;
