@@ -10,7 +10,7 @@ Source:		%{name}-sp-%{version}.tar.bz2
 BuildRoot:	%{_tmppath}/%{name}-sp-%{version}-root
 Obsoletes:	shibboleth-sp = 2.5.0
 Requires:	openssl
-%if 0%{?rhel} >= 6 || 0%{?amzn} >= 1
+%if 0%{?rhel} >= 6 || 0%{?amzn} == 1 || 0%{?amzn} == 2
 PreReq:		xmltooling-schemas%{?_isa} >= 3.2.0, opensaml-schemas%{?_isa} >= 3.2.0
 %else
 PreReq:		xmltooling-schemas >= 3.2.0, opensaml-schemas >= 3.2.0
@@ -33,7 +33,7 @@ BuildRequires:	libxmltooling-devel >= 3.2.0
 BuildRequires:	libsaml-devel >= 3.2.0
 %{?_with_log4cpp:BuildRequires: liblog4cpp-devel >= 1.0}
 %{!?_with_log4cpp:BuildRequires: liblog4shib-devel >= 2}
-%if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} >= 1
+%if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} == 1 || 0%{?amzn} == 2
 Requires:	libcurl-openssl%{?_isa} >= 7.21.7
 BuildRequires:	chrpath
 %endif
@@ -50,7 +50,7 @@ BuildRequires:	libmemcached-devel
 %endif
 %{?_with_memcached:BuildRequires: libmemcached-devel}
 %if "%{_vendor}" == "redhat" || "%{_vendor}" == "amazon"
-%if 0%{?rhel} >= 6 || 0%{?amzn} >= 1
+%if 0%{?rhel} >= 6 || 0%{?amzn} == 1 || 0%{?amzn} == 2
 %{!?_without_builtinapache:BuildRequires: httpd-devel%{?_isa}}
 %else
 %{!?_without_builtinapache:BuildRequires: httpd-devel}
@@ -222,7 +222,7 @@ Before=httpd.service
 Type=notify
 NotifyAccess=main
 User=%{runuser}
-%if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} >= 1
+%if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} == 1 || 0%{?amzn} == 2
 Environment=LD_LIBRARY_PATH=/opt/shibboleth/%{_lib}
 %endif
 ExecStart=%{_sbindir}/shibd -f -F
@@ -251,7 +251,7 @@ SHIBD_USER=%{runuser}
 # Wait period (secs) for configuration (and metadata) to load
 SHIBD_WAIT=30
 EOF
-	%if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} >= 1
+	%if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} == 1 || 0%{?amzn} == 2
 		cat >> $SYSCONFIG_SHIBD <<EOF
 
 # Override OS-supplied libcurl
@@ -260,7 +260,7 @@ EOF
 	%endif
 fi
 
-%if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} >= 1
+%if 0%{?rhel} == 6 || 0%{?rhel} == 7 || 0%{?amzn} == 1 || 0%{?amzn} == 2
 	# Strip existing rpath to libcurl.
 	chrpath -d $RPM_BUILD_ROOT%{_sbindir}/shibd
 	chrpath -d $RPM_BUILD_ROOT%{_bindir}/mdquery
@@ -481,6 +481,9 @@ exit 0
 %doc %{pkgdocdir}/api
 
 %changelog
+* Wed Nov 2 2022 Scott Cantor <cantor.2@osu.edu> - 3.4.0-1
+- Version bump
+
 * Thu Apr 22 2021 Scott Cantor <cantor.2@osu.edu> - 3.2.2-1
 - Fix devel dependency versions
 
