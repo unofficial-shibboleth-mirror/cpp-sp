@@ -2,6 +2,7 @@
 <Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!-- ShibbolethSP-noarch -->
 
+  <ComponentRef Id="ProtectInstallDir"/>
   <ComponentRef Id="main.css" />
   <ComponentRef Id="CREDITS.txt" />
   <ComponentRef Id="LICENSE.txt" />

@@ -26,6 +26,12 @@
     <!-- Configuration, licenses and documentation -->
 
     <DirectoryRef Id="INSTALLDIR">
+      <Component Id="ProtectInstallDir" Guid="{9F695B93-0575-4D91-9E22-35A8D6966F1B}">
+        <CreateFolder>
+          <Permission  User="Administrators" GenericAll="yes" />
+          <Permission  User="SYSTEM" GenericAll="yes" />
+        </CreateFolder>
+      </Component>
       <Directory Id="doc" Name="doc">
         <Directory Id="doc_shibboleth" Name="shibboleth" FileSource="$(var.SPBuildDirectory)\cpp-sp\doc">
           <Component Id="main.css" Guid="{EA1366EE-0FD1-42E7-9F3F-C19E6C0D12D6}">
