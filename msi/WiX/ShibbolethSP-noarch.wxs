@@ -28,8 +28,10 @@
     <DirectoryRef Id="INSTALLDIR">
       <Component Id="ProtectInstallDir" Guid="{9F695B93-0575-4D91-9E22-35A8D6966F1B}">
         <CreateFolder>
-          <Permission  User="Administrators" GenericAll="yes" />
-          <Permission  User="SYSTEM" GenericAll="yes" />
+          <Permission User="Administrators" GenericAll="yes" />
+          <Permission User="SYSTEM" GenericAll="yes" />
+          <Permission User="USERS" ReadPermission="yes" GenericRead="yes" GenericExecute="yes" Read="yes" />
+          <Permission User="[WEBSERVER_USER]" ReadPermission="yes" GenericRead="yes" GenericExecute="yes" Read="yes" />
         </CreateFolder>
       </Component>
       <Directory Id="doc" Name="doc">
@@ -217,8 +219,6 @@
       <!-- Set name only on upgrade and after ServiceInstall -->
       <Custom Action="SetSetDisplayName" Before="CostInitialize">ALREADYINSTALLED</Custom>
       <Custom Action="SetDisplayName" After="InstallServices">ALREADYINSTALLED</Custom>
-
-      <!-- IIS handling is no longer architecture independent and happens in ShibbolethSP-main-x?? -->
 
       <!-- Duplicate actions from the UI case -->
       <Custom Action="InheritInstallDir" After="AppSearch">
