@@ -451,15 +451,21 @@ bool SocketListener::log_error(const char* fn, int* native_error) const
         fn = "unknown";
 #ifdef WIN32
     int rc=WSAGetLastError();
-    if (rc == WSAECONNRESET) {
-        log->debug("socket connection reset");
-        return false;
-    }
 #else
     int rc=errno;
 #endif
     if (native_error != nullptr)
         *native_error = rc;
+
+#ifdef WIN32
+    if (rc == WSAECONNRESET) {
+#else
+    if (rc == ECONNRESET) {
+#endif
+        log->debug("socket connection reset");
+        return false;
+    }
+
     const char *msg;
 #ifdef HAVE_STRERROR_R
     char buf[256];
