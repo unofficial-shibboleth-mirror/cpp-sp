@@ -175,8 +175,12 @@ XMLApplication::XMLApplication(
                 }
             }
         }
+        else if (base) {
+            m_redirectLimit = REDIRECT_LIMIT_INHERIT;
+        }
         else {
-            m_redirectLimit = base ? REDIRECT_LIMIT_INHERIT : REDIRECT_LIMIT_NONE;
+            m_redirectLimit = REDIRECT_LIMIT_NONE;
+            log.warn("redirectLimit not set, system will operate as an open redirector if not corrected");
         }
 
         // Audit some additional settings for logging purposes.
