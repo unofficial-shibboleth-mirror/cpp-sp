@@ -193,6 +193,10 @@ DynamicMetadataProvider::DynamicMetadataProvider(const DOMElement* e, bool depre
     if (!m_cacheDir.empty()) {
         XMLToolingConfig::getConfig().getPathResolver()->resolve(m_cacheDir, PathResolver::XMLTOOLING_CACHE_FILE);
         m_backgroundInit = XMLHelper::getAttrBool(e, true, backgroundInit);
+        if (m_backgroundInit && SPConfig::getConfig().isEnabled(SPConfig::RequestMapping)) {
+            m_backgroundInit = false;
+            m_log.info("disabling background initialization for configuration test");
+        }
     }
 }
 
