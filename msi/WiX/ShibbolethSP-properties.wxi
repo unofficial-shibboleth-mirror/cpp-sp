@@ -39,7 +39,7 @@
   <Property Id="WEBSERVER_USER" Value="USERS"  Secure="yes" />
 
   <!-- UPGRADINGPRODUCTCODE set in the uninstall if this is an upgrade uninstall -->
-  <!-- SSPCPP-568 We need a default for InstallDir
+  <!-- SSPCPP-568 We need a default for InstallDir -->
   <Property Id="INSTALLDIR" Value="C:\opt\shibboleth-sp\" />
   <!-- IISMAJORVERSION if IIS installed -->
   <PropertyRef Id="IISMAJORVERSION" />
