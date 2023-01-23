@@ -337,9 +337,8 @@ if test "$need_default" = "yes"; then
   Peek(with,apxs22,xs="$peekval")
   Peek(with,apxs24,xs="$peekval")
   if test "x$xs" = "x"; then
-     AC_PATH_PROGS(xs, apxs2 apxs,
-        AC_MSG_ERROR(No apxs, no Apache found. Try --with-apxs, --with-apxs2, etc.),
-        [/usr/local/apache2/bin:/usr/local/apache/bin:/usr/sbin:$PATH])
+    AC_PATH_PROGS([xs], [apxs2 apxs],, [/usr/local/apache2/bin:/usr/local/apache/bin:/usr/sbin:$PATH])
+    AS_IF([test "x$xs" = "x"], [AC_MSG_ERROR([No apxs, no Apache found. Try --with-apxs, --with-apxs2, etc.])])
   fi
   # ask the daemon for the version and set parameters
   AC_MSG_CHECKING(default apache version)
@@ -363,10 +362,10 @@ if test "$need_default" = "yes"; then
                [with_apxs24]=$xs
                AC_MSG_RESULT(2.4)
                ;;
-       *)      AC_MSG_ERROR(unusable Apache versions: $v. Try setting --with-apxs, --with=apxs2, etc.)
+       *)      AC_MSG_ERROR([unusable Apache versions: $v. Try setting --with-apxs, --with=apxs2, etc.])
      esac
   else 
-     AC_MSG_RESULT(cannot determine Apache version. Try setting --with-apxs, --with-apxs2, etc.)
+     AC_MSG_RESULT([cannot determine Apache version. Try setting --with-apxs, --with-apxs2, etc.])
   fi
 fi
 
