@@ -27,6 +27,7 @@
 
     <DirectoryRef Id="INSTALLDIR">
       <Component Id="ProtectInstallDir" Guid="{9F695B93-0575-4D91-9E22-35A8D6966F1B}">
+        <Condition>NOT WIX_UPGRADE_DETECTED</Condition>
         <CreateFolder>
           <Permission User="Administrators" GenericAll="yes" />
           <Permission User="SYSTEM" GenericAll="yes" />
