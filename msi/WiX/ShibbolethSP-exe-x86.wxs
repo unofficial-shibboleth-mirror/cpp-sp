@@ -21,28 +21,6 @@
   <Fragment>
     <!-- Configuration, licenses and documentation -->
     <DirectoryRef Id="INSTALLDIR">
-      <Directory Id="bin" Name="bin" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release">
-        <Component Id="resolvertest.exe" Guid="{D381B6FA-2971-457B-804E-F08DD517866F}">
-          <File KeyPath="yes" Checksum="yes" Name="resolvertest.exe" />
-          <File KeyPath="no"  Checksum="no"  Name="resolvertest.pdb" />
-        </Component>
-        <Component Id="mdquery.exe" Guid="{5F322597-3B26-48E5-95BA-CF991CF6D6DB}">
-          <File KeyPath="yes" Checksum="yes" Name="mdquery.exe" />
-          <File KeyPath="no"  Checksum="no"  Name="mdquery.pdb" />
-        </Component>
-        <?if $(var.BuildDebug) != "" ?>
-        <Directory Id="bin_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Debug">
-          <Component Id="resolvertest.exe_debug" Guid="{4FA03A33-961A-42E5-8D7A-5F2E207757DD}">
-            <File KeyPath="yes" Checksum="yes" Id="resolvertest.exe_debug" Name="resolvertest.exe" />
-            <File KeyPath="no"  Checksum="no"  Id="resolvertest.pdb_debug" Name="resolvertest.pdb" />
-          </Component>
-          <Component Id="mdquery.exe_debug" Guid="{C7A4A6A5-3DAF-4254-9C29-1511AB3ABC62}">
-            <File KeyPath="yes" Checksum="yes" Id="mdquery.exe_debug" Name="mdquery.exe" />
-            <File KeyPath="no"  Checksum="no"  Id="mdquery.pdb_debug" Name="mdquery.pdb" />
-          </Component>
-        </Directory><!-- bin_debug -->
-        <?endif ?>
-      </Directory><!-- bin -->
       <Directory Id="lib" Name="lib">
         <Directory Id="lib_shibboleth" Name="shibboleth" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release">
           <Component Id="adfs.so" Guid="{9C92C803-E905-4B43-8723-05678DC73B88}">
@@ -155,18 +133,6 @@
           <?endif ?>
         </Directory><!-- lib_shibboleth -->
       </Directory><!-- lib -->
-      <!-- the service bin -->
-      <Directory Id="sbin" Name="sbin" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release">
-        <!-- Service bin is installed in main-x86 (with service) and main-64 (without) -->
-        <?if $(var.BuildDebug) != "" ?>
-        <Directory Id="sbin_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Debug">
-          <Component Id="shibd.exe_debug" Guid="{91E9DF13-0940-43E7-9A2F-9571F6FC3DF2}">
-            <File KeyPath="yes" Checksum="yes" Id="shibd.exe_debug" Name="shibd.exe" />
-            <File KeyPath="no"  Checksum="no"  Id="shibd.pdb_debug" Name="shibd.pdb" />
-          </Component>
-        </Directory><!-- sbin_debug -->
-        <?endif ?>
-      </Directory><!-- sbin -->
     </DirectoryRef><!-- INSTALLDIR -->
   </Fragment>
 </Wix>

@@ -183,11 +183,6 @@
 
       <?include ShibbolethSP-defs-x86.wxi ?>
 
-      <Component Id="shibd.exe" Guid="{2476BB80-9384-4026-86F5-E1569A685187}" Directory="sbin">
-        <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe" />
-        <File KeyPath="no"  Checksum="no"  Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.pdb" />
-      </Component>
-
       <Component Id="shibd64.exe" Guid="{707B57A2-CCA0-48A6-9F66-275EB04474AA}" Win64="yes" Directory="sbin64">
         <File KeyPath="yes" Checksum="yes" Id="shibd64.exe" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\shibd.exe" />
         <File KeyPath="no"  Checksum="no"  Id="shibd64.pdb" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\x64\Release\shibd.pdb" />

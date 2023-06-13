@@ -48,17 +48,5 @@
       <RegistrySearch Id="OldServiceInstalled" Root="HKLM" Key="SYSTEM\CurrentControlSet\services\shibd_Default" Name="ImagePath" Type="raw" />
     </Property>
 
-    <DirectoryRef Id="bin">
-      <!-- Save the Captured parameters into the registry -->
-      <Component Id="TargetDir" Guid="{F02FB6E5-1146-4EC5-9D59-07BA6732C4DD}">
-        <RegistryValue Id="TargetDir" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="InstallDir" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
-      </Component>
-
-      <!-- pretty icon for the "install programs" page -->
-      <Component Id="shib.ico" Guid="{FA0F86A1-0731-4D66-8216-BC74D231B598}">
-        <File KeyPath="yes" Source="$(var.SPBuildDirectory)\cpp-sp\msi\shib.ico" />
-        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[ProductCode]" Name="DisplayIcon" Value="[#shib.ico],0" Type="string" />
-      </Component>
-    </DirectoryRef>
   </Fragment>
 </Wix>

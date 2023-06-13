@@ -23,7 +23,7 @@ CppMmDir=C:\Program Files (x86)\Common Files\Merge Modules
 
 all: all32 all64
 
-all32: shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win32.msi
+all32:
 
 all64: shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win64.msi
 
@@ -42,10 +42,6 @@ rebuild64: clean64 all64
 #
 # MSI
 #
-shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win32.msi: ShibbolethSP-main-x86.wixobj Shibboleth.wixlib
-	light -sw1055 -sice:ICE82 -o shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win32.msi ShibbolethSP-main-x86.wixobj Shibboleth.wixlib -ext WixUtilExtension.dll -ext WixUIExtension  -ext WixIISExtension
-	del shibboleth-sp-$(ShibbolethVersion)-win64.msi
-
 shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win64.msi: ShibbolethSP-main-x64.wixobj ShibbolethSP-exe-x64.wixobj ShibbolethSP-registry-x64.wixobj  Shibboleth.wixlib
 	light -sw1055 -sice:ICE82 -o shibboleth-sp-$(ShibbolethVersion).$(ShibbolethPatchVersion)-win64.msi ShibbolethSP-main-x64.wixobj ShibbolethSP-exe-x64.wixobj ShibbolethSP-registry-x64.wixobj  Shibboleth.wixlib -ext WixUtilExtension.dll -ext WixUIExtension -ext WixIISExtension
 
@@ -94,6 +90,3 @@ ShibbolethSP-main-x64.wixobj: ShibbolethSP-main-x64.wxs ShibbolethSP-properties.
 	wixcop -indent:2 ShibbolethSP-main-x64.wxs
 	candle -dSPBuildDirectory=$(SolutionDir).. -dShibbolethVersion=$(ShibbolethVersion) -dShibbolethPatchVersion=$(ShibbolethPatchVersion) -dShibbolethId64=$(ShibbolethId64) -dShibbolethUpgradeCode=$(ShibbolethUpgradeCode) -dMsVCVersion=$(MsVCVersion) ShibbolethSP-main-x64.wxs -dFCGI="$(FCGI64)" -dNSApi="$(NSAPI_DLLS)" -dCppMmDir="$(CppMmDir)" -dCppVCVersion=$(CppVCVersion) -dBuildDebug=$(DebugInstaller)
 
-ShibbolethSP-main-x86.wixobj: ShibbolethSP-main-x86.wxs ShibbolethSP-properties.wxi ShibbolethSP-defs-x86.wxi MergeModules\Curl-x86.msm $(FCGI86) MergeModules\Log4Shib-x86.msm MergeModules\OpenSAML-x86.msm MergeModules\OpenSAML-schemas.msm MergeModules\OpenSSL-x86.msm MergeModules\Shibboleth-x86.msm MergeModules\Shibboleth-schemas.msm MergeModules\Xerces-x86.msm MergeModules\XmlSec-x86.msm MergeModules\Zlib-x86.msm
-	wixcop -indent:2 ShibbolethSP-main-x86.wxs
-	candle -dSPBuildDirectory=$(SolutionDir).. -dShibbolethVersion=$(ShibbolethVersion) -dShibbolethPatchVersion=$(ShibbolethPatchVersion) -dShibbolethId32=$(ShibbolethId32) -dShibbolethUpgradeCode=$(ShibbolethUpgradeCode) -dMsVCVersion=$(MsVCVersion) ShibbolethSP-main-x86.wxs  -dFCGI="$(FCGI64)" -dNSApi="$(NSAPI_DLLS)"  -dCppMmDir="$(CppMmDir)" -dCppVCVersion=$(CppVCVersion) -dBuildDebug=$(DebugInstaller)
