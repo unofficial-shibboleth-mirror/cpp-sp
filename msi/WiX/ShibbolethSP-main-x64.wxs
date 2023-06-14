@@ -46,19 +46,15 @@
       </Directory>
 
       <Directory Id="ProgramFilesFolder" Name="PFiles">
-        <!-- 32 bit merge modules -notionally go to "Program Files (x86)" -->
-        <Merge Id="CurlMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Curl-x86.msm" DiskId="1" />
         <?if $(var.FCGI) != "" ?>
         <Merge Id="FastCGIMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\FastCGI-x86.msm" DiskId="1" />
         <?endif ?>
         <Merge Id="Log4ShibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Log4Shib-x86.msm" DiskId="1" />
         <Merge Id="OpenSAMLMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-x86.msm" DiskId="1" />
         <Merge Id="OpenSAMLMergeModule_schemas" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-schemas.msm" DiskId="1" />
-        <Merge Id="OpenSSLMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSSL-x86.msm" DiskId="1" />
         <Merge Id="ShibbolethMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-x86.msm" DiskId="1" />
         <Merge Id="ShibbolethMergeModule_schemas" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-schemas.msm" DiskId="1" />
         <Merge Id="XercesMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm" DiskId="1" />
-        <Merge Id="XmlSecMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm" DiskId="1" />
         <Merge Id="ZlibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm" DiskId="1" />
         <?if $(var.BuildDebug) != "" ?>
         <Merge Id="Microsoft_DebugCRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x86.msm" DiskId="1" />
@@ -95,18 +91,15 @@
     </Directory><!--TARGETDIR-->
 
     <Feature Id="Shibboleth" Title="Shibboleth" Level="1" Display="hidden" ConfigurableDirectory="INSTALLDIR">
-      <MergeRef Id="CurlMergeModule_x86" />
       <?if $(var.FCGI) != "" ?>
       <MergeRef Id="FastCGIMergeModule_x86" />
       <?endif ?>
       <MergeRef Id="Log4ShibMergeModule_x86" />
       <MergeRef Id="OpenSAMLMergeModule_x86" />
       <MergeRef Id="OpenSAMLMergeModule_schemas" />
-      <MergeRef Id="OpenSSLMergeModule_x86" />
       <MergeRef Id="ShibbolethMergeModule_x86" />
       <MergeRef Id="ShibbolethMergeModule_schemas" />
       <MergeRef Id="XercesMergeModule_x86" />
-      <MergeRef Id="XmlSecMergeModule_x86" />
       <MergeRef Id="ZlibMergeModule_x86" />
 
       <?if $(var.BuildDebug) != "" ?>
