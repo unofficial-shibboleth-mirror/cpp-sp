@@ -1,8 +1,8 @@
 all: all32 all64
 
-all32: Curl-x86.msm Log4shib-x86.msm OpenSAML-x86.msm OpenSAML-schemas.msm\
-	OpenSSL-x86.msm Shibboleth-x86.msm Shibboleth-schemas.msm Xerces-x86.msm\
-	XmlSec-x86.msm Zlib-x86.msm
+all32: Log4shib-x86.msm OpenSAML-x86.msm OpenSAML-schemas.msm\
+	Shibboleth-x86.msm Shibboleth-schemas.msm Xerces-x86.msm\
+	Zlib-x86.msm
 
 all64: Curl-x64.msm Log4shib-x64.msm OpenSAML-x64.msm OpenSAML-schemas.msm\
 	OpenSSL-x64.msm Shibboleth-x64.msm Shibboleth-schemas.msm Xerces-x64.msm\
@@ -32,17 +32,6 @@ Curl-x64.wixobj: Curl-x64.wxs
 	candle Curl-x64.wxs -dBuildDirectory=$(BuildSP) -dCurlVersion=$(CurlVersion)\
 			 -dShibbolethMsVersion=$(MsVCVersion) -dCurlFileVersion=$(CurlFileVersion)\
              -dLibCurlGuid64=$(LibCurlGuid64) -dLibCurlGuid64d=$(LibCurlGuid64d)\
-             -dBuildDebug=$(DebugInstaller)
-
-Curl-x86.msm: Curl-x86.wixobj
-	light Curl-x86.wixobj
-	del ..\*32*.msi
-
-Curl-x86.wixobj: Curl-x86.wxs
-	wixcop -indent:2 Curl-x86.wxs
-	candle Curl-x86.wxs -dBuildDirectory=$(BuildSP) -dCurlVersion=$(CurlVersion)\
-			-dShibbolethMsVersion=$(MsVCVersion) -dCurlFileVersion=$(CurlFileVersion)\
-             -dLibCurlGuid32=$(LibCurlGuid32) -dLibCurlGuid32d=$(LibCurlGuid32d)\
              -dBuildDebug=$(DebugInstaller)
 
 #
@@ -138,20 +127,9 @@ OpenSAML-schemas.wixobj: OpenSAML-schemas.wxs
 #
 # OpenSSL
 #
-OpenSSL-x86.msm: OpenSSL-x86.wixobj
-	light OpenSSL-x86.wixobj
-	del ..\*32*.msi
-
 OpenSSL-x64.msm: OpenSSL-x64.wixobj
 	light OpenSSL-x64.wixobj
 	del ..\*64*.msi
-
-OpenSSL-x86.wixobj: OpenSSL-x86.wxs
-	wixcop -indent:2 OpenSSL-x86.wxs
-	candle OpenSSL-x86.wxs -dBuildDirectory=$(BuildSP) -dOpenSSLVersion=$(OpenSSLVersion) \
-                           -dOpenSSLFileVersion=$(OpenSSLFileVersion) -dLibEay32Component=$(LibEay32Component) -dSSlEay32Component=$(SSlEay32Component)\
-                           -dLibEay32Componentd=$(LibEay32Componentd) -dSSlEay32Componentd=$(SSlEay32Componentd) -dopenssl=$(openssl)\
-                           -dBuildDebug=$(DebugInstaller)
 
 OpenSSL-x64.wixobj: OpenSSL-x64.wxs
 	wixcop -indent:2 OpenSSL-x64.wxs
@@ -239,25 +217,9 @@ Xerces-x64.wixobj: Xerces-x64.wxs $(XercesDll64) Xerces-x86.wxs
 #
 # XmlSec
 #
-XmlSec-x86.msm: XmlSec-x86.wixobj
-	light XmlSec-x86.wixobj
-	del ..\*32*.msi
-
 XmlSec-x64.msm: XmlSec-x64.wixobj
 	light XmlSec-x64.wixobj
 	del ..\*64*.msi
-
-XmlSec-x86.wixobj: XmlSec-x86.wxs "$(BuildSP)\$(xmlsec)\Build\Win32\$(MsVCVersion)\Release Minimal\xsec_$(XmlSecFileVersion).dll"\
-                                  "$(BuildSP)\$(xmlsec)\Build\Win32\$(MsVCVersion)\Release Minimal\c14n.exe"\
-                                  "$(BuildSP)\$(xmlsec)\Build\Win32\$(MsVCVersion)\Release Minimal\checksig.exe"\
-                                  "$(BuildSP)\$(xmlsec)\Build\Win32\$(MsVCVersion)\Release Minimal\cipher.exe"\
-                                  "$(BuildSP)\$(xmlsec)\Build\Win32\$(MsVCVersion)\Release Minimal\siginf.exe"\
-                                  "$(BuildSP)\$(xmlsec)\Build\Win32\$(MsVCVersion)\Release Minimal\templatesign.exe"\
-                                  "$(BuildSP)\$(xmlsec)\Build\Win32\$(MsVCVersion)\Release Minimal\txfmout.exe"
-	wixcop -indent:2 XmlSec-x86.wxs
-	candle XmlSec-x86.wxs -dBuildDirectory=$(BuildSP) -dXmlSecVersion=$(XmlSecVersion) -dxmlsec=$(xmlsec) -dXmlSecFileVersion=$(XmlSecFileVersion)\
-                          -dXmlSec32Component=$(XmlSec32Component) -dXmlSec32Componentd=$(XmlSec32Componentd) -dShibbolethMsVersion=$(MsVCVersion)\
-                          -dBuildDebug=$(DebugInstaller)
 
 XmlSec-x64.wixobj: XmlSec-x64.wxs "$(BuildSP)\$(xmlsec)\Build\x64\$(MsVCVersion)\Release Minimal\xsec_$(XmlSecFileVersion).dll"\
                                   "$(BuildSP)\$(xmlsec)\Build\x64\$(MsVCVersion)\Release Minimal\c14n.exe"\

@@ -24,20 +24,12 @@
         <Directory Id="shibboleth" Name="Shibboleth">
           <Directory Id="shibboleth_sp" Name="SP">
             <Directory Id="lib" Name="lib" FileSource="$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\Release">
-              <Component Id="shibsp.dll" Guid="$(var.ShibDll32Component)">
-                <File KeyPath="yes" Checksum="yes" Name="shibsp$(var.ShibbolethDllFileVersion).dll" />
-                <File KeyPath="no"  Checksum="no"  Name="shibsp$(var.ShibbolethDllFileVersion).pdb" />
-              </Component>
               <Component Id="shibsp_lite.dll" Guid="$(var.ShibDllLite32Component)">
                 <File KeyPath="yes" Checksum="yes" Name="shibsp-lite$(var.ShibbolethDllFileVersion).dll" />
                 <File KeyPath="no"  Checksum="no"  Name="shibsp-lite$(var.ShibbolethDllFileVersion).pdb" />
               </Component>
               <?if $(var.BuildDebug) != "" ?>
               <Directory Id="lib_debug" Name="debug" FileSource="$(var.SPBuildDirectory)\Build\$(var.ShibbolethMsVersion)\Debug">
-                <Component Id="shibspD.dll" Guid="$(var.ShibDll32Componentd)">
-                  <File KeyPath="yes" Checksum="yes" Name="shibsp$(var.ShibbolethDllFileVersion)D.dll" />
-                  <File KeyPath="no"  Checksum="no"  Name="shibsp$(var.ShibbolethDllFileVersion)D.pdb" />
-                </Component>
                 <Component Id="shibsp_liteD.dll" Guid="$(var.ShibDllLite32Componentd)">
                   <File KeyPath="yes" Checksum="yes" Name="shibsp-lite$(var.ShibbolethDllFileVersion)D.dll" />
                   <File KeyPath="no"  Checksum="no"  Name="shibsp-lite$(var.ShibbolethDllFileVersion)D.pdb" />
