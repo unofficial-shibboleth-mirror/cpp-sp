@@ -36,7 +36,8 @@
   <Property Id="ALWAYS_START_SERVICE" Value="TRUE" Secure="yes" />
 
   <!-- Identity to give Read access to -->
-  <Property Id="WEBSERVER_USER" Value="USERS"  Secure="yes" />
+  <PropertyRef Id="WIX_ACCOUNT_USERS" />
+  <Property Id="WEBSERVER_USER" Value="[WIX_ACCOUNT_USERS]"  Secure="yes" />
 
   <!-- UPGRADINGPRODUCTCODE set in the uninstall if this is an upgrade uninstall -->
   <!-- SSPCPP-568 We need a default for InstallDir -->

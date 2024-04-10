@@ -22,6 +22,11 @@
     architecture insenstive stuff since some GUIDS may have moved
   -->
   <Fragment>
+    <!-- SPCPP-985 -->
+    <PropertyRef Id="WIX_ACCOUNT_ADMINISTRATORS" />
+    <PropertyRef Id="WIX_ACCOUNT_LOCALSYSTEM" />
+    <PropertyRef Id="WIX_ACCOUNT_USERS" />
+
     <!-- Files First -->
     <!-- Configuration, licenses and documentation -->
 
@@ -29,9 +34,9 @@
       <Component Id="ProtectInstallDir" Guid="{9F695B93-0575-4D91-9E22-35A8D6966F1B}">
         <Condition>NOT WIX_UPGRADE_DETECTED</Condition>
         <CreateFolder>
-          <Permission User="Administrators" GenericAll="yes" />
-          <Permission User="SYSTEM" GenericAll="yes" />
-          <Permission User="USERS" ReadPermission="yes" GenericRead="yes" GenericExecute="yes" Read="yes" />
+          <Permission User="[WIX_ACCOUNT_ADMINISTRATORS]" GenericAll="yes" />
+          <Permission User="[WIX_ACCOUNT_LOCALSYSTEM]" GenericAll="yes" />
+          <Permission User="[WIX_ACCOUNT_USERS]" ReadPermission="yes" GenericRead="yes" GenericExecute="yes" Read="yes" />
           <Permission User="[WEBSERVER_USER]" ReadPermission="yes" GenericRead="yes" GenericExecute="yes" Read="yes" />
         </CreateFolder>
       </Component>
@@ -188,6 +193,8 @@
     <CustomAction Id="KeyGenEncrypt" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" />
     <CustomAction Id="SetKeyGenEncrypt" Property="KeyGenEncrypt" Value="&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot; -n sp-encrypt [KEYGEN_EXTRA]" />
 
+    <CustomAction Id="QuerySids" BinaryKey="QueryWindowsWellKnownSIDs" Execute="deferred" Impersonate="no" />
+
     <CustomAction Id="SetSetDisplayName" Property="SetDisplayName" Value="&quot;[WindowsFolder]\System32\sc&quot; config shibd_default DisplayName= &quot;Shibboleth Daemon (Default)&quot;"  />
 
     <!-- Inherit the installation dir if one was set -->
@@ -208,6 +215,7 @@
 
     <InstallExecuteSequence>
       <Custom Action="SetEditConfigFiles" Before="CostInitialize">NOT Installed</Custom>
+      <Custom Action="QuerySids" Before="InstallFiles"/>
       <Custom Action="EditConfigFiles" After="InstallFiles">NOT Installed</Custom>
 
       <Custom Action="SetKeyGenSigning" Before="CostInitialize">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
