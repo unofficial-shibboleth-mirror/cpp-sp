@@ -193,13 +193,16 @@
     <CustomAction Id="KeyGenEncrypt" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" />
     <CustomAction Id="SetKeyGenEncrypt" Property="KeyGenEncrypt" Value="&quot;[INSTALLDIR]etc\shibboleth\keygen.bat&quot; -n sp-encrypt [KEYGEN_EXTRA]" />
 
-    <CustomAction Id="QuerySids" BinaryKey="QueryWindowsWellKnownSIDs" Execute="deferred" Impersonate="no" />
-
     <CustomAction Id="SetSetDisplayName" Property="SetDisplayName" Value="&quot;[WindowsFolder]\System32\sc&quot; config shibd_default DisplayName= &quot;Shibboleth Daemon (Default)&quot;"  />
 
     <!-- Inherit the installation dir if one was set -->
     <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
     <CustomAction Id="InheritInstallDir64" Property="INSTALLDIR" Value="[OLD_INSTALLDIR64]" />
+
+    <!-- Identity to give Read access to -->
+    <Property Id="WEBSERVER_USER"/>
+
+    <CustomAction Id="DefaultWebServerUser" Property="WEBSERVER_USER" Value="[WIX_ACCOUNT_USERS]" />
 
     <InstallUISequence>
       <!-- All we need to sequence here is setting up inherited INSTALLDIR -->
@@ -215,7 +218,6 @@
 
     <InstallExecuteSequence>
       <Custom Action="SetEditConfigFiles" Before="CostInitialize">NOT Installed</Custom>
-      <Custom Action="QuerySids" Before="InstallFiles"/>
       <Custom Action="EditConfigFiles" After="InstallFiles">NOT Installed</Custom>
 
       <Custom Action="SetKeyGenSigning" Before="CostInitialize">(NOT Installed) AND (NOT ALREADYINSTALLED)</Custom>
@@ -242,6 +244,9 @@
       <InstallServices>(NOT Installed) AND (NOT ALREADYINSTALLED)</InstallServices>
       <StartServices>(NOT Installed) AND (ALWAYS_START_SERVICE = "TRUE")</StartServices>
       <DeleteServices>(REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)</DeleteServices>
+
+      <!-- Setup the WEBUSER -->
+      <Custom Action="DefaultWebServerUser" After="InstallInitialize">WEBSERVER_USER = ""</Custom>
 
     </InstallExecuteSequence>
   </Fragment>
