@@ -266,6 +266,7 @@ pair<bool,long> AttributeResolverHandler::processMessage(
     pair<bool,const char*> param_qual = getString("nameQualifier", httpRequest, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
     pair<bool,const char*> param_spqual = getString("spNameQualifier", httpRequest, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
     pair<bool,const char*> param_nameid = getString("nameId", httpRequest, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
+    pair<bool,const char*> param_omit = getString("omitQualifiers", httpRequest, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
     pair<bool,const char*> param_encoding = getString("encoding", httpRequest, HANDLER_PROPERTY_REQUEST|HANDLER_PROPERTY_FIXED);
 
     if (!param_nameid.first) {
@@ -312,13 +313,17 @@ pair<bool,long> AttributeResolverHandler::processMessage(
         scoped_ptr<saml2::NameID> v2name(saml2::NameIDBuilder::buildNameID());
         v2name->setName(nameID.get());
         v2name->setFormat(format.get());
-        v2name->setNameQualifier(nameQualifier.get());
-        v2name->setSPNameQualifier(spNameQualifier.get());
+        if (!param_omit.first || !param_omit.second) {
+            v2name->setNameQualifier(nameQualifier.get());
+            v2name->setSPNameQualifier(spNameQualifier.get());
+        }
         if (!XMLString::equals(protocol.get(), samlconstants::SAML20P_NS)) {
             v1name.reset(saml1::NameIdentifierBuilder::buildNameIdentifier());
             v1name->setName(nameID.get());
             v1name->setFormat(format.get());
-            v1name->setNameQualifier(nameQualifier.get());
+            if (!param_omit.first || !param_omit.second) {
+                v1name->setNameQualifier(nameQualifier.get());
+            }
         }
 
         scoped_ptr<ResolutionContext> ctx(resolveAttributes(application, httpRequest, site.second, protocol.get(), v1name.get(), v2name.get()));
