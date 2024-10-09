@@ -18,7 +18,7 @@
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Module Id="XmlSecMergeModule_x86" Language="1033" Version="$(var.XmlSecVersion)">
-    <Package Id="{D1678DAE-81D9-4756-ABE6-7D1218F0D350}" Description="Merge Module for Santuario (x86)" Comments="This module is built by the Shibboleth Consortium. Includes Several executable utilities." Manufacturer="Shibboleth Consortium" InstallerVersion="400" Platform="x86" />
+    <Package Id="{D1678DAE-81D9-4756-ABE6-7D1218F0D350}" Description="Merge Module for XmlSec (x86)" Comments="This module is built by the Shibboleth Consortium. Includes Several executable utilities." Manufacturer="Shibboleth Consortium" InstallerVersion="400" Platform="x86" />
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder" Name="ProgramFiles">
         <Directory Id="shibboleth" Name="Shibboleth">
@@ -86,8 +86,8 @@
               <?endif ?>
             </Directory><!-- lib -->
             <Directory Id="doc" Name="doc">
-              <Component Id="SANTUARIO.LICENSE" Guid="{FF81AD29-36DF-42BD-AFC9-211F083D9872}">
-                <File KeyPath="yes" Name="SANTUARIO.LICENSE" Source="$(var.BuildDirectory)\$(var.xmlsec)\LICENSE.txt" />
+              <Component Id="XMLSEC.LICENSE" Guid="{FF81AD29-36DF-42BD-AFC9-211F083D9872}">
+                <File KeyPath="yes" Name="XMLSEC.LICENSE" Source="$(var.BuildDirectory)\$(var.xmlsec)\LICENSE.txt" />
               </Component>
             </Directory><!-- doc -->
           </Directory><!-- shibboleth_sp -->
