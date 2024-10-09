@@ -23,7 +23,7 @@
       <Directory Id="ProgramFilesFolder" Name="ProgramFiles">
         <Directory Id="shibboleth" Name="Shibboleth">
           <Directory Id="shibboleth_SP" Name="SP">
-            <Directory Id="lib" Name="lib" FileSource="$(var.BuildDirectory)\$(var.xmlsec)\Build\Win32\$(var.ShibbolethMsVersion)\Release Minimal">
+            <Directory Id="lib" Name="lib" FileSource="$(var.BuildDirectory)\$(var.xmlsec)\Build\Win32\$(var.ShibbolethMsVersion)\Release">
               <Component Id="xsec.dll" Guid="$(var.XmlSec32Component)">
                 <File KeyPath="yes" Checksum="yes" Name="xsec_$(var.XmlSecFileVersion).dll" />
                 <File KeyPath="no"  Checksum="no"  Name="xsec_lib.pdb" />
@@ -53,7 +53,7 @@
                 <File KeyPath="no"  Checksum="no"  Name="txfmout.pdb" />
               </Component>
               <?if $(var.BuildDebug) != "" ?>
-              <Directory Id="lib_debug" Name="debug" FileSource="$(var.BuildDirectory)\$(var.xmlsec)\Build\Win32\$(var.ShibbolethMsVersion)\Debug Minimal">
+              <Directory Id="lib_debug" Name="debug" FileSource="$(var.BuildDirectory)\$(var.xmlsec)\Build\Win32\$(var.ShibbolethMsVersion)\Debug">
                 <Component Id="xsecD.dll" Guid="$(var.XmlSec32Componentd)">
                   <File KeyPath="yes" Checksum="yes" Name="xsec_$(var.XmlSecFileVersion)D.dll" />
                   <File KeyPath="no"  Checksum="no"  Id="xsec_$(var.XmlSecFileVersion)D.pdb" Name="xsec_lib.pdb" />
