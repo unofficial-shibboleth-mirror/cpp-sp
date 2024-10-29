@@ -128,9 +128,9 @@ AX_PKG_CHECK_MODULES([opensaml],,[opensaml >= 3.1],,,
 PKG_CHECK_VAR([OPENSAMLXMLDIR],[opensaml],[pkgxmldir])
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc schemas configs shibsp util"
+WANT_SUBDIRS="doc schemas configs shibsp"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
-	configs/Makefile shibsp/Makefile util/Makefile])
+	configs/Makefile shibsp/Makefile])
 
 ## systemd
 dnl Systemd will be disabled by default and requires you to run configure with

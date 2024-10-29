@@ -10,7 +10,6 @@ DIST_SUBDIRS = \
 	schemas \
 	configs \
 	shibsp \
-	util \
 	apache \
 	fastcgi \
 	unittests
