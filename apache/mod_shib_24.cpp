@@ -39,7 +39,6 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/AccessControl.h>
-#include <shibsp/GSSRequest.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/ServiceProvider.h>

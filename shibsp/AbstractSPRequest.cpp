@@ -28,7 +28,6 @@
 #include "exceptions.h"
 #include "AbstractSPRequest.h"
 #include "Application.h"
-#include "GSSRequest.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "util/CGIParser.h"
@@ -48,20 +47,6 @@ SPRequest::~SPRequest()
 {
 }
 
-#ifdef SHIBSP_HAVE_GSSAPI
-GSSRequest::GSSRequest()
-{
-}
-
-GSSRequest::~GSSRequest()
-{
-}
-
-gss_name_t GSSRequest::getGSSName() const
-{
-    return GSS_C_NO_NAME;
-}
-#endif
 
 AbstractSPRequest::AbstractSPRequest(const char* category)
     : m_sp(SPConfig::getConfig().getServiceProvider()),

@@ -34,7 +34,6 @@ libshibspinclude_HEADERS = \
 	Application.h \
 	base.h \
 	exceptions.h \
-	GSSRequest.h \
 	RequestMapper.h \
 	ServiceProvider.h \
 	SessionCache.h \
