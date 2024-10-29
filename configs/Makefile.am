@@ -9,7 +9,6 @@ pkgcachedir = $(localstatedir)/cache/@PACKAGE_NAME@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgsysconf_DATA = \
 	apache24.config \
-	keygen.sh \
 	seckeygen.sh
 
 # The config files are installed "special".  Unlike the entries in
@@ -84,24 +83,14 @@ install-data-local:	all-data-local
 	done
 
 install-data-hook:
-	chmod +x $(DESTDIR)$(pkgsysconfdir)/keygen.sh
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/seckeygen.sh
-	if test -z "$(NOKEYGEN)"; then \
-		if test ! -f $(DESTDIR)$(pkgsysconfdir)/sp-key.pem; then \
-			cd $(DESTDIR)$(pkgsysconfdir); \
-			/bin/sh ./keygen.sh -b -n sp-signing ; \
-			/bin/sh ./keygen.sh -b -n sp-encrypt ; \
-		fi; \
-	fi
 
 CLEANFILES = \
 	apache24.config
 
 EXTRA_DIST = \
 	apache24.config.in \
-	keygen.bat \
 	seckeygen.bat \
-	keygen.sh \
 	seckeygen.sh \
 	win-shibboleth2.xml \
 	win-native.logger \
