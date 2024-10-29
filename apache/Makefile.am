@@ -24,4 +24,4 @@ mod_shib_24_la_LIBADD = \
   $(xmltooling_lite_LIBS)
 endif
 
-EXTRA_DIST = mod_shib.cpp mod_shib_24.cpp resource.h mod_shib_24.rc
+EXTRA_DIST = mod_shib_24.cpp resource.h mod_shib_24.rc

@@ -8,15 +8,6 @@ pkgrundir = $(localstatedir)/run/@PACKAGE_NAME@
 pkgcachedir = $(localstatedir)/cache/@PACKAGE_NAME@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgsysconf_DATA = \
-	shibd-systemd \
-	shibd-redhat \
-	shibd-amazon \
-	shibd-suse \
-	shibd-debian \
-	shibd-osx.plist \
-	apache.config \
-	apache2.config \
-	apache22.config \
 	apache24.config \
 	keygen.sh \
 	metagen.sh \
@@ -27,8 +18,7 @@ pkgsysconf_DATA = \
 # installed as "foo" if "foo" does not already exist.  In other words,
 # the config files will not overwrite existing versions.
 BUILTCONFIGFILES = \
-	native.logger \
-	shibd.logger
+	native.logger
 
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
@@ -70,37 +60,7 @@ do-build-file:
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
 
-apache.config: ${srcdir}/apache.config.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-apache2.config: ${srcdir}/apache2.config.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-apache22.config: ${srcdir}/apache22.config.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
 apache24.config: ${srcdir}/apache24.config.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-shibd-systemd: ${srcdir}/shibd-systemd.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-shibd-redhat: ${srcdir}/shibd-redhat.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-shibd-amazon: ${srcdir}/shibd-amazon.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-shibd-suse: ${srcdir}/shibd-suse.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-shibd-debian: ${srcdir}/shibd-debian.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-shibd-osx.plist: ${srcdir}/shibd-osx.plist.in Makefile ${top_builddir}/config.status
-	$(MAKE) do-build-file FILE=$@
-
-shibd.logger: ${srcdir}/shibd.logger.in Makefile ${top_builddir}/config.status
 	$(MAKE) do-build-file FILE=$@
 
 all-data-local: $(BUILTCONFIGFILES)
@@ -137,30 +97,10 @@ install-data-hook:
 	fi
 
 CLEANFILES = \
-	apache.config \
-	apache2.config \
-	apache22.config \
-	apache24.config \
-	shibd-systemd \
-	shibd-redhat \
-	shibd-amazon \
-	shibd-suse \
-	shibd-debian \
-	shibd-osx.plist \
-	shibd.logger
+	apache24.config
 
 EXTRA_DIST = \
-	shibd.logger.in \
-	apache.config.in \
-	apache2.config.in \
-	apache22.config.in \
 	apache24.config.in \
-	shibd-systemd.in \
-	shibd-redhat.in \
-	shibd-amazon.in \
-	shibd-suse.in \
-	shibd-debian.in \
-	shibd-osx.plist.in \
 	keygen.bat \
 	seckeygen.bat \
 	keygen.sh \

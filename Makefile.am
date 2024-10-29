@@ -19,7 +19,6 @@ pkgconfig_DATA = shibsp.pc shibsp-lite.pc
 EXTRA_DIST = $(DX_CONFIG) \
 	iis7_shib \
 	Projects \
-	pkgconfig-workarounds \
 	config_win32.h \
 	$(GENFILES) \
 	$(GENFILES:%=%.in)
