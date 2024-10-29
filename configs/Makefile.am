@@ -10,7 +10,6 @@ pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgsysconf_DATA = \
 	apache24.config \
 	keygen.sh \
-	metagen.sh \
 	seckeygen.sh
 
 # The config files are installed "special".  Unlike the entries in
@@ -87,7 +86,6 @@ install-data-local:	all-data-local
 install-data-hook:
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/keygen.sh
 	chmod +x $(DESTDIR)$(pkgsysconfdir)/seckeygen.sh
-	chmod +x $(DESTDIR)$(pkgsysconfdir)/metagen.sh
 	if test -z "$(NOKEYGEN)"; then \
 		if test ! -f $(DESTDIR)$(pkgsysconfdir)/sp-key.pem; then \
 			cd $(DESTDIR)$(pkgsysconfdir); \
@@ -104,7 +102,6 @@ EXTRA_DIST = \
 	keygen.bat \
 	seckeygen.bat \
 	keygen.sh \
-	metagen.sh \
 	seckeygen.sh \
 	win-shibboleth2.xml \
 	win-native.logger \
