@@ -1,23 +1,10 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth],[3.5.0],[https://shibboleth.atlassian.net/jira],[shibboleth-sp])
+AC_INIT([shibboleth],[4.0.0],[https://shibboleth.atlassian.net/jira],[shibboleth-sp])
 AC_CONFIG_SRCDIR(shibsp)
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_MACRO_DIR(m4)
 AM_INIT_AUTOMAKE
 PKG_INSTALLDIR
-
-# Docygen features
-DX_HTML_FEATURE(ON)
-DX_DOT_FEATURE(ON)
-DX_CHM_FEATURE(OFF)
-DX_CHI_FEATURE(OFF)
-DX_MAN_FEATURE(OFF)
-DX_RTF_FEATURE(OFF)
-DX_XML_FEATURE(OFF)
-DX_PDF_FEATURE(OFF)
-DX_PS_FEATURE(OFF)
-DX_INIT_DOXYGEN(shibboleth, doxygen.cfg, doc/api)
-DX_INCLUDE=
 
 AC_ARG_ENABLE(debug,
     AS_HELP_STRING([--enable-debug],[Produce debug variant (Default = no)]),
@@ -29,15 +16,11 @@ if test "$enable_debug" = "yes" ; then
 fi
 
 AC_CONFIG_HEADERS([config.h shibsp/config_pub.h])
-AC_CONFIG_FILES([shibsp.pc shibsp-lite.pc shibboleth.spec])
+AC_CONFIG_FILES([shibsp.pc shibsp-lite.pc])
 
 AC_PROG_CC([gcc gcc3 cc])
 AC_PROG_CXX([g++ g++3 c++ CC])
-
-if test "$GCC" = "yes" ; then
-    AM_CFLAGS="$AM_CFLAGS -Wall -W"
-    AM_CXXFLAGS="$AM_CXXFLAGS -Wall -W"
-fi
+AX_CXX_COMPILE_STDCXX([11])
 
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_CXXFLAGS])
@@ -145,26 +128,9 @@ AX_PKG_CHECK_MODULES([opensaml],,[opensaml >= 3.1],,,
 PKG_CHECK_VAR([OPENSAMLXMLDIR],[opensaml],[pkgxmldir])
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc schemas configs shibsp plugins shibd util"
+WANT_SUBDIRS="doc schemas configs shibsp util"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
-	configs/Makefile shibsp/Makefile plugins/Makefile \
-	shibd/Makefile util/Makefile selinux/Makefile])
-
-## ADFS?
-AC_CONFIG_FILES([adfs/Makefile])
-AC_ARG_ENABLE([adfs],
-    AS_HELP_STRING([--disable-adfs],[do not build the ADFS module]),
-    [adfs_enabled=$enableval], [adfs_enabled=yes])
-if test "x$adfs_enabled" = "x" ; then
-    adfs_enabled=yes
-fi
-AC_MSG_CHECKING(whether to build the ADFS module)
-if test "$adfs_enabled" = "no" ; then
-    AC_MSG_RESULT(no)
-else
-    AC_MSG_RESULT(yes)
-    WANT_SUBDIRS="$WANT_SUBDIRS adfs"
-fi
+	configs/Makefile shibsp/Makefile util/Makefile])
 
 ## systemd
 dnl Systemd will be disabled by default and requires you to run configure with
@@ -176,50 +142,6 @@ AC_ARG_ENABLE(systemd,
 	 # because in systemd 209 the libraries were merged into a single libsystemd.
 	 # sd_notify() is always present, no need to check for it:
          AC_DEFINE([HAVE_SD_NOTIFY],[1],[Define to 1 if you have the sd_notify function.])])])
-
-#
-# Build NSAPI module?
-#
-AC_MSG_CHECKING(for NSAPI module option)
-AC_ARG_WITH(nsapi,
-    AS_HELP_STRING([--with-nsapi=DIR],[Build NSAPI module for Netscape/iPlanet/SunONE]),
-    [WANT_NSAPI=$withval],[WANT_NSAPI=no])
-AC_MSG_RESULT($WANT_NSAPI)
-
-if test "$WANT_NSAPI" != "no"; then
-  if test ! -d $WANT_NSAPI/bin ; then
-    AC_MSG_ERROR([Please specify the path to the root of your Netscape/iPlanet/SunONE server using --with-nsapi=DIR])
-  fi
-  AC_MSG_CHECKING(for NSAPI include files)
-  if test -d $WANT_NSAPI/include ; then
-    NSAPI_INCLUDE=$WANT_NSAPI/include
-    AC_MSG_RESULT(Netscape-Enterprise 3.x style)
-    AC_CHECK_HEADERS([$NSAPI_INCLUDE/nsapi.h],,,[#define XP_UNIX])
-    NSAPI_INCLUDE="$NSAPI_INC_DIR -I$NSAPI_INCLUDE"
-  fi
-  if test -d $WANT_NSAPI/plugins/include ; then
-    test -n "$NSAPI_INCLUDE" && NSAPI_INC_DIR="-I$NSAPI_INCLUDE"
-    NSAPI_INCLUDE="$WANT_NSAPI/plugins/include"
-    AC_MSG_RESULT(iPlanet 4.x / SunONE 6.x style)
-    AC_CHECK_HEADERS([$NSAPI_INCLUDE/nsapi.h],,,[#define XP_UNIX])
-    NSAPI_INCLUDE="$NSAPI_INC_DIR -I$NSAPI_INCLUDE"
-  fi
-  if test "$NSAPI_INCLUDE" = ""; then
-    AC_MSG_ERROR([Please check you have nsapi.h in either $WANT_NSAPI/include or $WANT_NSAPI/plugins/include])
-  fi
-fi
-
-AC_SUBST(NSAPI_INCLUDE)
-
-# always output the Makefile, even if you don't use it
-AC_CONFIG_FILES([nsapi_shib/Makefile])
-AM_CONDITIONAL(BUILD_NSAPI,test ! "$WANT_NSAPI" = "no")
-
-# add the NSAPI module to the list of wanted subdirs..
-if test ! "$WANT_NSAPI" = "no" ; then
-    WANT_SUBDIRS="$WANT_SUBDIRS nsapi_shib"
-fi
-
 
 #
 # Build FastCGI support?
@@ -260,51 +182,6 @@ AM_CONDITIONAL(BUILD_FASTCGI,test ! "$WANT_FASTCGI" = "no")
 
 if test ! "$WANT_FASTCGI" = "no" ; then
     WANT_SUBDIRS="$WANT_SUBDIRS fastcgi"
-fi
-
-#
-# Build Memcached support?
-#
-AC_MSG_CHECKING(for Memcached support)
-AC_ARG_WITH(memcached,
-    AS_HELP_STRING([--with-memcached=DIR],[Build Memcached support]),
-    [WANT_MEMCACHED=$withval],[WANT_MEMCACHED=no])
-AC_MSG_RESULT($WANT_MEMCACHED)
-
-if test "$WANT_MEMCACHED" != "no"; then
-
-    if test "$WANT_MEMCACHED" != "yes"; then
-        if test x_$WANT_MEMCACHED != x_/usr; then
-            MEMCACHED_INCLUDE="-I$WANT_MEMCACHED/include"
-            MEMCACHED_LDFLAGS="-L$WANT_MEMCACHED/lib"
-        fi
-    fi
-
-    # save and append master flags
-    save_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$MEMCACHED_INCLUDE $CPPFLAGS"    
-
-    AC_CHECK_HEADER([libmemcached/memcached.h],,
-        AC_MSG_ERROR([unable to find Memcached header files]))
-    AC_CHECK_DECL([memcached_last_error_message],
-        [AC_DEFINE([HAVE_MEMCACHED_LAST_ERROR_MESSAGE],[1],[Define to 1 if libmemcached supports error handling function.])],,
-        [#include <libmemcached/memcached.h>])
-    MEMCACHED_LIBS="-lmemcached"
-
-    # restore standard flags
-    CPPFLAGS="$save_CPPFLAGS"
-fi
-
-AC_SUBST(MEMCACHED_INCLUDE)
-AC_SUBST(MEMCACHED_LDFLAGS)
-AC_SUBST(MEMCACHED_LIBS)
-
-# always output the Makefile, even if you don't use it
-AC_CONFIG_FILES([memcache-store/Makefile])
-AM_CONDITIONAL(BUILD_MEMCACHED,test ! "$WANT_MEMCACHED" = "no")
-
-if test ! "$WANT_MEMCACHED" = "no" ; then
-    WANT_SUBDIRS="$WANT_SUBDIRS memcache-store"
 fi
 
 
@@ -808,101 +685,6 @@ if test "$WANT_APACHE_13" = "yes" || test "$WANT_APACHE_20" = "yes" || test "$WA
     WANT_SUBDIRS="$WANT_SUBDIRS apache"
 fi
 
-
-#
-# Implement the checks of the ODBC Storage Service
-#
-# 1) Assume the user wants ODBC; if it's not found then just continue without
-# 2) If the user specifically requested odbc, look for it and ERROR if not found
-# 3) If the user specifically requested no odbc, don't build it.
-#
-
-AC_CONFIG_FILES([odbc-store/Makefile])
-
-# determine whether we should enable the odbc ccache
-AC_ARG_ENABLE([odbc],
-	AS_HELP_STRING([--disable-odbc],[disable the ODBC Storage Service]),
-	[odbc_enabled=$enableval], [odbc_enabled=default])
-if test "x$odbc_enabled" = "x" ; then
-    odbc_enabled=yes
-fi
-
-# Are we trying to build ODBC?
-AC_MSG_CHECKING(whether to build the ODBC storage service)
-if test "$odbc_enabled" = "yes" ; then
-    build_odbc=yes
-    AC_MSG_RESULT(yes)
-elif test "$odbc_enabled" = "default" ; then
-    build_odbc=yes
-    AC_MSG_RESULT([yes, if it can be found])
-else
-    build_odbc=no
-    AC_MSG_RESULT(no)
-fi
-
-# If we're trying to build ODBC, try to find the odbc_config program.
-if test "$build_odbc" = "yes" ; then
-    odbc_dir=""
-    AC_ARG_WITH(odbc,
-	   AS_HELP_STRING([--with-odbc=PATH],[directory where odbc is installed]),
-	    [if test "$with_odbc" = no ; then
-            AC_MSG_ERROR([Try running --disable-odbc instead.])
-         elif test "$with_odbc" != yes ; then
-            odbc_dir="$with_odbc/bin"
-            if test "$with_odbc" != /usr ; then
-                ODBC_CFLAGS="-I$with_odbc/include"
-                ODBC_LIBS="-L$with_odbc/lib"
-            fi
-         fi])
-
-   AC_PATH_PROG(ODBC_CONFIG, odbc_config, no, $odbc_dir $PATH )
-   if test "$ODBC_CONFIG" = no ; then
-      AC_MSG_WARN([Cannot find odbc_config, will try to guess settings.])
-      ODBC_LIBS="$ODBC_LIBS -lodbc"
-   else
-      ODBC_CFLAGS=`$ODBC_CONFIG --cflags`
-      ODBC_LIBS=`$ODBC_CONFIG --libs`
-   fi
-
-   save_CPPFLAGS="$CPPFLAGS"
-   CPPFLAGS="$CPPFLAGS $ODBC_CFLAGS"
-
-   AC_CHECK_HEADER([sql.h], [have_sql_h=yes], [have_sql_h=no])
-   if test "$have_sql_h" = no -a "$odbc_enabled" = "yes" ; then
-     AC_MSG_ERROR(unable to find ODBC header files)
-   fi
-
-   if test "$have_sql_h" = yes ; then
-      save_LIBS="$LIBS"
-      LIBS="$LIBS $ODBC_LIBS"
-      AC_MSG_CHECKING(if we can link againt ODBC)
-      AC_LINK_IFELSE(
-        [AC_LANG_PROGRAM([[#include <sql.h>
- #include <sqlext.h>
- #include <stdio.h>]],
-            [[SQLSetEnvAttr(SQL_NULL_HANDLE, SQL_ATTR_CONNECTION_POOLING, (void*)SQL_CP_ONE_PER_HENV, 0)]])],
-        [have_odbc_libs=yes],[have_odbc_libs=no])
-      LIBS="$save_LIBS"
-      if test "$have_odbc_libs" = no ; then
-         if test "$odbc_enabled" = "yes" ; then
-            AC_MSG_ERROR([unable to link with ODBC Library])
-         else
-            AC_MSG_RESULT([no, skipping ODBC])
-         fi
-      fi
-   fi
-
-   CPPFLAGS="$save_CPPFLAGS"
-fi
-
-# if have_odbc_libs=yes then go ahead with building ODBC
-if test "$have_odbc_libs" = yes ; then
-   # this AC_MSG_RESULT is from above!
-   AC_MSG_RESULT(yes)
-   WANT_SUBDIRS="$WANT_SUBDIRS odbc-store"
-   AC_SUBST(ODBC_CFLAGS)
-   AC_SUBST(ODBC_LIBS)
-fi
 
 AC_ARG_WITH([gssapi],
   [AS_HELP_STRING([--with-gssapi],[include GSSAPI support])],,[with_gssapi=check])
