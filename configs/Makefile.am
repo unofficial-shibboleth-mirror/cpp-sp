@@ -26,14 +26,12 @@ CONFIGFILES = \
 	attribute-policy.xml \
 	protocols.xml \
 	security-policy.xml \
-	example-metadata.xml \
 	example-shibboleth2.xml \
 	console.logger \
 	native.logger \
 	attrChecker.html \
 	sessionError.html \
 	metadataError.html \
-	bindingTemplate.html \
 	discoveryTemplate.html \
 	postTemplate.html \
 	localLogout.html \
