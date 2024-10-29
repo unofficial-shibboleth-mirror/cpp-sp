@@ -92,7 +92,6 @@ reminclude_HEADERS = \
 	remoting/ListenerService.h
 	
 secinclude_HEADERS = \
-	security/PKIXTrustEngine.h \
 	security/SecurityPolicy.h \
 	security/SecurityPolicyProvider.h
 
@@ -238,7 +237,6 @@ libshibsp_la_SOURCES = \
 	metadata/MetadataExtImpl.cpp \
 	metadata/MetadataExtSchemaValidators.cpp \
 	metadata/MetadataProviderCriteria.cpp \
-	security/PKIXTrustEngine.cpp \
 	security/SecurityPolicy.cpp
 
 # this is different from the project version

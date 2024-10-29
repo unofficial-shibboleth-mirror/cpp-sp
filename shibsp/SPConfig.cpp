@@ -59,7 +59,6 @@
 # include "attribute/resolver/AttributeResolver.h"
 # include "binding/ArtifactResolver.h"
 # include "metadata/MetadataExt.h"
-# include "security/PKIXTrustEngine.h"
 # include "security/SecurityPolicyProvider.h"
 # include <saml/version.h>
 # include <saml/SAMLConfig.h>
@@ -289,8 +288,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 #ifndef SHIBSP_LITE
     if (isEnabled(Metadata))
         registerMetadataExtClasses();
-    if (isEnabled(Trust))
-        registerPKIXTrustEngine();
 #endif
 
     registerAttributeFactories();

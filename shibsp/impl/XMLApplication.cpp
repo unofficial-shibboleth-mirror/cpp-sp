@@ -46,7 +46,6 @@
 # include "attribute/filtering/AttributeFilter.h"
 # include "attribute/resolver/AttributeExtractor.h"
 # include "attribute/resolver/AttributeResolver.h"
-# include "security/PKIXTrustEngine.h"
 # include <saml/exceptions.h>
 # include <saml/SAMLConfig.h>
 # include <saml/binding/SAMLArtifact.h>
@@ -278,22 +277,8 @@ XMLApplication::XMLApplication(
     if (conf.isEnabled(SPConfig::Trust)) {
         m_trust.reset(doChainedPlugins(xmlConf.TrustEngineManager, "TrustEngine", CHAINING_TRUSTENGINE, _TrustEngine, e, log));
         if (!m_trust && !m_base) {
-            if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
-                log.info(
-                    "no TrustEngine specified or installed in legacy config, using default chain {%s, %s}",
-                    EXPLICIT_KEY_TRUSTENGINE, SHIBBOLETH_PKIX_TRUSTENGINE
-                    );
-                m_trust.reset(xmlConf.TrustEngineManager.newPlugin(CHAINING_TRUSTENGINE, nullptr, m_deprecationSupport));
-                ChainingTrustEngine* trustchain = dynamic_cast<ChainingTrustEngine*>(m_trust.get());
-                if (trustchain) {
-                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr, m_deprecationSupport));
-                    trustchain->addTrustEngine(xmlConf.TrustEngineManager.newPlugin(SHIBBOLETH_PKIX_TRUSTENGINE, nullptr, m_deprecationSupport));
-                }
-            }
-            else {
-                log.info("no TrustEngine specified or installed, using default of %s", EXPLICIT_KEY_TRUSTENGINE);
-                m_trust.reset(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr, m_deprecationSupport));
-            }
+            log.info("no TrustEngine specified or installed, using default of %s", EXPLICIT_KEY_TRUSTENGINE);
+            m_trust.reset(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr, m_deprecationSupport));
         }
     }
 
