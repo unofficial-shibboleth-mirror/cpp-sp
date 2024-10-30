@@ -6,10 +6,6 @@ libshibspincludedir = $(includedir)/shibsp
 
 attrincludedir = $(includedir)/shibsp/attribute
 
-attrresincludedir = $(includedir)/shibsp/attribute/resolver
-
-attrfiltincludedir = $(includedir)/shibsp/attribute/filtering
-
 bindincludedir = $(includedir)/shibsp/binding
 
 handincludedir = $(includedir)/shibsp/handler
@@ -50,11 +46,6 @@ attrinclude_HEADERS = \
 	attribute/ScopedAttribute.h \
 	attribute/SimpleAttribute.h \
 	attribute/XMLAttribute.h
-
-attrresinclude_HEADERS = \
-	attribute/resolver/AttributeExtractor.h \
-	attribute/resolver/AttributeResolver.h \
-	attribute/resolver/ResolutionContext.h
 
 bindinclude_HEADERS = \
 	binding/ArtifactResolver.h \
