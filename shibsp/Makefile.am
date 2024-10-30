@@ -39,7 +39,6 @@ libshibspinclude_HEADERS = \
 
 attrinclude_HEADERS = \
 	attribute/Attribute.h \
-	attribute/AttributeDecoder.h \
 	attribute/BinaryAttribute.h \
 	attribute/ExtensibleAttribute.h \
 	attribute/NameIDAttribute.h \
