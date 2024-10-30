@@ -47,9 +47,7 @@ attrinclude_HEADERS = \
 	attribute/XMLAttribute.h
 
 bindinclude_HEADERS = \
-	binding/ArtifactResolver.h \
-	binding/ProtocolProvider.h \
-	binding/SOAPClient.h
+	binding/ProtocolProvider.h
 
 handinclude_HEADERS = \
 	handler/AbstractHandler.h \
