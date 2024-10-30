@@ -17,7 +17,7 @@ mod_shib_24_la_CXXFLAGS = \
   $(xmltooling_lite_CFLAGS)
 mod_shib_24_la_LIBADD = \
   $(APXS24_LIBS) \
-  $(top_builddir)/shibsp/libshibsp-lite.la \
+  $(top_builddir)/shibsp/libshibsp.la \
   $(PTHREAD_LIBS) \
   $(gss_LIBS) $(gnu_gss_LIBS) \
   $(xerces_LIBS) \

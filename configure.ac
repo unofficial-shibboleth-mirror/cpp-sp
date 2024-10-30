@@ -16,7 +16,7 @@ if test "$enable_debug" = "yes" ; then
 fi
 
 AC_CONFIG_HEADERS([config.h shibsp/config_pub.h])
-AC_CONFIG_FILES([shibsp.pc shibsp-lite.pc])
+AC_CONFIG_FILES([shibsp.pc])
 
 AC_PROG_CC([gcc gcc3 cc])
 AC_PROG_CXX([g++ g++3 c++ CC])
@@ -111,9 +111,6 @@ AX_PKG_CHECK_MODULES([log4shib],,[log4shib],
 AX_PKG_CHECK_MODULES([xerces],,[xerces-c >= 3.2],,,
     [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 
-AX_PKG_CHECK_MODULES([xmlsec],,[xml-security-c >= 2],,,
-    [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
-
 AX_PKG_CHECK_MODULES([xmltooling],,[xmltooling >= 3.1],,,
     [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
 PKG_CHECK_VAR([xmltooling_includedir],[xmltooling],[includedir])
@@ -122,10 +119,6 @@ DX_INCLUDE="$DX_INCLUDE $xmltooling_includedir"
 
 AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite >= 3.1],,,
     [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
-
-AX_PKG_CHECK_MODULES([opensaml],,[opensaml >= 3.1],,,
-    [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
-PKG_CHECK_VAR([OPENSAMLXMLDIR],[opensaml],[pkgxmldir])
 
 # output the underlying makefiles
 WANT_SUBDIRS="doc schemas configs shibsp"

@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
 
-lib_LTLIBRARIES = libshibsp.la libshibsp-lite.la
+lib_LTLIBRARIES = libshibsp.la
 
 libshibspincludedir = $(includedir)/shibsp
 
@@ -111,7 +111,7 @@ noinst_HEADERS = \
 	impl/XMLServiceProvider.h \
 	remoting/impl/SocketListener.h
 
-common_sources = \
+libshibsp_la_SOURCES = \
 	AbstractSPRequest.cpp \
 	Application.cpp \
 	ServiceProvider.cpp \
@@ -163,6 +163,8 @@ common_sources = \
 	impl/XMLApplication.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \
+	lite/CommonDomainCookie.cpp \
+	lite/SAMLConstants.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/ListenerService.cpp \
 	remoting/impl/SocketListener.cpp \
@@ -174,94 +176,11 @@ common_sources = \
 	util/SPConstants.cpp \
 	util/TemplateParameters.cpp
 
-libshibsp_lite_la_SOURCES = \
-	${common_sources} \
-	lite/CommonDomainCookie.cpp \
-	lite/SAMLConstants.cpp
-
-libshibsp_la_SOURCES = \
-	${common_sources} \
-	attribute/Base64AttributeDecoder.cpp \
-	attribute/DOMAttributeDecoder.cpp \
-	attribute/KeyInfoAttributeDecoder.cpp \
-	attribute/NameIDAttributeDecoder.cpp \
-	attribute/NameIDFromScopedAttributeDecoder.cpp \
-	attribute/ScopedAttributeDecoder.cpp \
-	attribute/StringAttributeDecoder.cpp \
-	attribute/XMLAttributeDecoder.cpp \
-	attribute/filtering/impl/AttributeFilter.cpp \
-	attribute/filtering/impl/ChainingAttributeFilter.cpp \
-	attribute/filtering/impl/DummyAttributeFilter.cpp \
-	attribute/filtering/impl/XMLAttributeFilter.cpp \
-	attribute/filtering/impl/BasicFilteringContext.cpp \
-	attribute/filtering/impl/MatchFunctor.cpp \
-	attribute/filtering/impl/AndMatchFunctor.cpp \
-	attribute/filtering/impl/AnyMatchFunctor.cpp \
-	attribute/filtering/impl/NotMatchFunctor.cpp \
-	attribute/filtering/impl/OrMatchFunctor.cpp \
-	attribute/filtering/impl/AttributeIssuerStringFunctor.cpp \
-	attribute/filtering/impl/AttributeRequesterStringFunctor.cpp \
-	attribute/filtering/impl/AttributeScopeStringFunctor.cpp \
-	attribute/filtering/impl/AttributeValueStringFunctor.cpp \
-	attribute/filtering/impl/AuthenticationMethodStringFunctor.cpp \
-	attribute/filtering/impl/AttributeIssuerRegexFunctor.cpp \
-	attribute/filtering/impl/AttributeRequesterRegexFunctor.cpp \
-	attribute/filtering/impl/AttributeScopeRegexFunctor.cpp \
-	attribute/filtering/impl/AttributeValueRegexFunctor.cpp \
-	attribute/filtering/impl/AuthenticationMethodRegexFunctor.cpp \
-	attribute/filtering/impl/NameIDFormatFunctor.cpp \
-	attribute/filtering/impl/NameIDQualifierStringFunctor.cpp \
-	attribute/filtering/impl/NumberOfAttributeValuesFunctor.cpp \
-	attribute/filtering/impl/AttributeIssuerInEntityGroupFunctor.cpp \
-	attribute/filtering/impl/AttributeRequesterInEntityGroupFunctor.cpp \
-	attribute/filtering/impl/AttributeIssuerEntityAttributeFunctor.cpp \
-	attribute/filtering/impl/AttributeRequesterEntityAttributeFunctor.cpp \
-	attribute/filtering/impl/AttributeIssuerEntityMatcherFunctor.cpp \
-	attribute/filtering/impl/AttributeRequesterEntityMatcherFunctor.cpp \
-	attribute/filtering/impl/AttributeMatchesShibMDScopeFunctor.cpp \
-	attribute/filtering/impl/RegistrationAuthorityFunctor.cpp \
-	attribute/resolver/impl/ChainingAttributeResolver.cpp \
-	attribute/resolver/impl/QueryAttributeResolver.cpp \
-	attribute/resolver/impl/SimpleAggregationAttributeResolver.cpp \
-	attribute/resolver/impl/AssertionAttributeExtractor.cpp \
-	attribute/resolver/impl/ChainingAttributeExtractor.cpp \
-	attribute/resolver/impl/DelegationAttributeExtractor.cpp \
-	attribute/resolver/impl/KeyDescriptorAttributeExtractor.cpp \
-	attribute/resolver/impl/MetadataAttributeExtractor.cpp \
-	attribute/resolver/impl/XMLAttributeExtractor.cpp \
-	binding/impl/ArtifactResolver.cpp \
-	binding/impl/SOAPClient.cpp \
-	impl/TransactionLog.cpp \
-	impl/XMLSecurityPolicyProvider.cpp \
-	metadata/DynamicMetadataProvider.cpp \
-	metadata/MetadataExtImpl.cpp \
-	metadata/MetadataExtSchemaValidators.cpp \
-	metadata/MetadataProviderCriteria.cpp \
-	security/SecurityPolicy.cpp
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshibsp_la_LDFLAGS = -version-info 12:0:0
-libshibsp_la_CXXFLAGS = \
-    $(AM_CXXFLAGS) \
-    $(BOOST_CPPFLAGS) \
-    $(PTHREAD_CFLAGS) \
-    $(gss_CFLAGS) $(gnu_gss_CFLAGS) \
-    $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
-    $(opensaml_CFLAGS) \
-    $(xerces_CFLAGS) \
-    $(xmlsec_CFLAGS) \
-    $(xmltooling_CFLAGS)
-libshibsp_la_LIBADD = \
-    $(PTHREAD_LIBS) \
-    $(gss_LIBS) $(gnu_gss_LIBS) \
-    $(log4shib_LIBS) $(log4cpp_LIBS) \
-    $(opensaml_LIBS) \
-    $(xerces_LIBS) \
-    $(xmlsec_LIBS) \
-    $(xmltooling_LIBS)
-libshibsp_lite_la_LDFLAGS = -version-info 12:0:0
-libshibsp_lite_la_CXXFLAGS = -DSHIBSP_LITE \
+libshibsp_la_LDFLAGS = -version-info 13:0:0
+libshibsp_la_CXXFLAGS = -DSHIBSP_LITE \
     $(AM_CXXFLAGS) \
     $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
@@ -269,7 +188,7 @@ libshibsp_lite_la_CXXFLAGS = -DSHIBSP_LITE \
     $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
     $(xerces_CFLAGS) \
     $(xmltooling_lite_CFLAGS)
-libshibsp_lite_la_LIBADD = \
+libshibsp_la_LIBADD = \
     $(PTHREAD_LIBS) \
     $(gss_LIBS) $(gnu_gss_LIBS) \
     $(log4shib_LIBS) $(log4cpp_LIBS) \
