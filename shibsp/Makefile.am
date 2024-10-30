@@ -14,8 +14,6 @@ liteincludedir = $(includedir)/shibsp/lite
 
 remincludedir = $(includedir)/shibsp/remoting
 
-secincludedir = $(includedir)/shibsp/security
-
 utilincludedir = $(includedir)/shibsp/util
 
 nodist_libshibspinclude_HEADERS = \
@@ -65,10 +63,6 @@ reminclude_HEADERS = \
 	remoting/ddf.h \
 	remoting/ListenerService.h
 	
-secinclude_HEADERS = \
-	security/SecurityPolicy.h \
-	security/SecurityPolicyProvider.h
-
 utilinclude_HEADERS = \
 	util/CGIParser.h \
 	util/DOMPropertySet.h \
