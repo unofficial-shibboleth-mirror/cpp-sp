@@ -30,13 +30,7 @@
 #include <shibsp/base.h>
 
 #include <string>
-#ifndef SHIBSP_LITE
-# include <shibsp/TransactionLog.h>
-# include <saml/binding/MessageDecoder.h>
-# include <saml/binding/MessageEncoder.h>
-#else
-# include <xmltooling/logging.h>
-#endif
+#include <xmltooling/logging.h>
 #include <xmltooling/PluginManager.h>
 #include <xmltooling/QName.h>
 #include <xercesc/dom/DOM.hpp>

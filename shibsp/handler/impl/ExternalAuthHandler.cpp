@@ -37,7 +37,6 @@
 
 #ifndef SHIBSP_LITE
 # include "SessionCache.h"
-# include "TransactionLog.h"
 # include "attribute/SimpleAttribute.h"
 # include "attribute/filtering/AttributeFilter.h"
 # include "attribute/filtering/BasicFilteringContext.h"

@@ -30,7 +30,6 @@
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
-#include "TransactionLog.h"
 #include "handler/LogoutHandler.h"
 #include "util/TemplateParameters.h"
 
@@ -51,10 +50,6 @@ LogoutHandler::LogoutHandler() : m_initiator(true)
 
 LogoutHandler::~LogoutHandler()
 {
-}
-
-const char* LogoutHandler::getEventType() const {
-    return LOGOUT_EVENT;
 }
 
 pair<bool,long> LogoutHandler::sendLogoutPage(

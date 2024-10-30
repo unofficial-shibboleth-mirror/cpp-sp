@@ -27,7 +27,6 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "SPRequest.h"
-#include "TransactionLog.h"
 #include "handler/SessionInitiator.h"
 
 using namespace shibsp;
@@ -80,10 +79,6 @@ const char* SessionInitiator::remap(const char* src, Category& log) const
     else {
         return src;
     }
-}
-
-const char* SessionInitiator::getEventType() const {
-    return LOGIN_EVENT;
 }
 
 #ifndef SHIBSP_LITE

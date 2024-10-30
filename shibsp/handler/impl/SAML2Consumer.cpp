@@ -31,7 +31,6 @@
 # include "Application.h"
 # include "ServiceProvider.h"
 # include "SessionCache.h"
-# include "TransactionLog.h"
 # include "attribute/resolver/ResolutionContext.h"
 # include <boost/iterator/indirect_iterator.hpp>
 # include <saml/exceptions.h>

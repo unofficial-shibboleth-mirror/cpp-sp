@@ -37,7 +37,6 @@
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
-#include "TransactionLog.h"
 #include "attribute/Attribute.h"
 #include "handler/RemotedHandler.h"
 #include "impl/StoredSession.h"

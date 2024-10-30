@@ -29,7 +29,6 @@
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
-#include "TransactionLog.h"
 #include "handler/AssertionConsumerService.h"
 #include "util/CGIParser.h"
 #include "util/SPConstants.h"
@@ -335,11 +334,6 @@ void AssertionConsumerService::checkAddress(const Application& application, cons
                 );
         }
     }
-}
-
-const char* AssertionConsumerService::getEventType() const
-{
-    return LOGIN_EVENT;
 }
 
 #ifndef SHIBSP_LITE

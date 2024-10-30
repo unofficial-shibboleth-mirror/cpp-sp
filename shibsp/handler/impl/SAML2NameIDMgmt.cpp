@@ -29,7 +29,6 @@
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
-#include "TransactionLog.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
 #include "util/SPConstants.h"
@@ -100,10 +99,6 @@ namespace shibsp {
 #endif
         const XMLCh* getProtocolFamily() const {
             return samlconstants::SAML20P_NS;
-        }
-
-        const char* getEventType() const {
-            return NAMEIDMGMT_EVENT;
         }
 
     private:
