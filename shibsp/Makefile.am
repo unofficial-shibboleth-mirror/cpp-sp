@@ -12,8 +12,6 @@ handincludedir = $(includedir)/shibsp/handler
 
 liteincludedir = $(includedir)/shibsp/lite
 
-mdincludedir = $(includedir)/shibsp/metadata
-
 remincludedir = $(includedir)/shibsp/remoting
 
 secincludedir = $(includedir)/shibsp/security
@@ -62,10 +60,6 @@ handinclude_HEADERS = \
 liteinclude_HEADERS = \
 	lite/CommonDomainCookie.h \
 	lite/SAMLConstants.h
-
-mdinclude_HEADERS = \
-	metadata/MetadataExt.h \
-	metadata/MetadataProviderCriteria.h
 
 reminclude_HEADERS = \
 	remoting/ddf.h \
