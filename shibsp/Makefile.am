@@ -51,13 +51,6 @@ attrinclude_HEADERS = \
 	attribute/SimpleAttribute.h \
 	attribute/XMLAttribute.h
 
-attrfiltinclude_HEADERS = \
-	attribute/filtering/AttributeFilter.h \
-	attribute/filtering/BasicFilteringContext.h \
-	attribute/filtering/FilteringContext.h \
-	attribute/filtering/FilterPolicyContext.h \
-	attribute/filtering/MatchFunctor.h
-
 attrresinclude_HEADERS = \
 	attribute/resolver/AttributeExtractor.h \
 	attribute/resolver/AttributeResolver.h \
