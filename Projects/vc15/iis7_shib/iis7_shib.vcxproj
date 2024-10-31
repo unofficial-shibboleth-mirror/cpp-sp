@@ -214,7 +214,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Projects\VC15\shibsp\shibsp-lite.vcxproj">
+    <ProjectReference Include="..\..\..\Projects\VC15\shibsp\shibsp.vcxproj">
       <Project>{81f0f7a6-dc36-46ef-957f-f9e81d4403f7}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
