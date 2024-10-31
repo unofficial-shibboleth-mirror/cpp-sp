@@ -197,20 +197,10 @@ namespace shibsp {
             const std::vector<const opensaml::Assertion*>* tokens=nullptr
             ) const;
 
-        /**
-         * Creates a new LoginEvent for the event log.
-         *
-         * @param application   the Application associated with the event
-         * @param request       the HTTP client request associated with the event
-         * @return  a fresh LoginEvent, prepopulated by the input parameters, or nullptr if an error occurs
-         */
-        virtual LoginEvent* newLoginEvent(const Application& application, const xmltooling::HTTPRequest& request) const;
-
     public:
         const char* getType() const;
         const XMLCh* getProtocolFamily() const;
 #endif
-        const char* getEventType() const;
     private:
         std::pair<bool,long> processMessage(
             const Application& application, const xmltooling::HTTPRequest& httpRequest, xmltooling::HTTPResponse& httpResponse
@@ -228,9 +218,6 @@ namespace shibsp {
             const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse& response, const char* entityID
             ) const;
                 
-#ifndef SHIBSP_LITE
-        boost::scoped_ptr<opensaml::MessageDecoder> m_decoder;
-#endif
     };
 
 #if defined (_MSC_VER)

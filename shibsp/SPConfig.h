@@ -50,16 +50,6 @@ namespace shibsp {
     class SHIBSP_API SessionCache;
     class SHIBSP_API SessionInitiator;
 
-#ifndef SHIBSP_LITE
-    class SHIBSP_API AttributeDecoder;
-    class SHIBSP_API AttributeExtractor;
-    class SHIBSP_API AttributeFilter;
-    class SHIBSP_API AttributeResolver;
-    class SHIBSP_API FilterPolicyContext;
-    class SHIBSP_API MatchFunctor;
-    class SHIBSP_API SecurityPolicyProvider;
-#endif
-
 #if defined (_MSC_VER)
     #pragma warning( push )
     #pragma warning( disable : 4250 4251 )
@@ -89,12 +79,6 @@ namespace shibsp {
         enum components_t {
             Listener = 1,
             Caching = 2,
-#ifndef SHIBSP_LITE
-            Metadata = 4,
-            Trust = 8,
-            Credentials = 16,
-            AttributeResolution = 32,
-#endif
             RequestMapping = 64,
             OutOfProcess = 128,
             InProcess = 256,
@@ -171,25 +155,6 @@ namespace shibsp {
          */
         virtual bool instantiate(const char* config=nullptr, bool rethrow=false);
 
-#ifndef SHIBSP_LITE
-        /**
-         * Sets the global ArtifactResolver instance.
-         *
-         * <p>This method must be externally synchronized with any code that uses the object.
-         * Any previously set object is destroyed.
-         *
-         * @param artifactResolver   new ArtifactResolver instance to store
-         */
-        void setArtifactResolver(opensaml::MessageDecoder::ArtifactResolver* artifactResolver);
-
-        /**
-         * Returns the global ArtifactResolver instance.
-         *
-         * @return  global ArtifactResolver or nullptr
-         */
-        const opensaml::MessageDecoder::ArtifactResolver* getArtifactResolver() const;
-#endif
-
         /**
           * Separator for serialized values of multi-valued attributes.
           *
@@ -203,43 +168,6 @@ namespace shibsp {
          * Manages factories for AccessControl plugins.
          */
         xmltooling::PluginManager<AccessControl,std::string,const xercesc::DOMElement*> AccessControlManager;
-
-#ifndef SHIBSP_LITE
-        /**
-         * Manages factories for AttributeDecoder plugins.
-         */
-        xmltooling::PluginManager<AttributeDecoder,xmltooling::QName,const xercesc::DOMElement*> AttributeDecoderManager;
-
-        /**
-         * Manages factories for AttributeExtractor plugins.
-         */
-        xmltooling::PluginManager<AttributeExtractor,std::string,const xercesc::DOMElement*> AttributeExtractorManager;
-
-        /**
-         * Manages factories for AttributeFilter plugins.
-         */
-        xmltooling::PluginManager<AttributeFilter,std::string,const xercesc::DOMElement*> AttributeFilterManager;
-
-        /**
-         * Manages factories for AttributeResolver plugins.
-         */
-        xmltooling::PluginManager<AttributeResolver,std::string,const xercesc::DOMElement*> AttributeResolverManager;
-
-        /**
-         * Manages factories for Event plugins.
-         */
-        xmltooling::PluginManager<TransactionLog::Event,std::string,void*> EventManager;
-
-        /**
-         * Manages factories for MatchFunctor plugins.
-         */
-        xmltooling::PluginManager< MatchFunctor,xmltooling::QName,std::pair<const FilterPolicyContext*,const xercesc::DOMElement*> > MatchFunctorManager;
-
-        /**
-         * Manages factories for SecurityPolicyProvider plugins.
-         */
-        xmltooling::PluginManager<SecurityPolicyProvider,std::string,const xercesc::DOMElement*> SecurityPolicyProviderManager;
-#endif
 
         /**
          * Manages factories for Handler plugins that implement ArtifactResolutionService functionality.
@@ -301,18 +229,6 @@ namespace shibsp {
          */
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > SingleLogoutServiceManager;
 
-#ifndef SHIBSP_LITE
-        /**
-        * Determine whether messages should be digitally signed or encrypted based on the setting and endpoint.
-        *
-        * @param setting the applicable "signing" or "encryption" property in effect
-        * @param isUserAgentPresent true iff the user agent is mediating the exchange
-        * @param URL of endpoint to receive message
-        * @return whether requests should be digitally signed or encrypted
-        */
-        static bool shouldSignOrEncrypt(const char* setting, const char* endpoint, bool isUserAgentPresent);
-#endif
-
         /**
          * Helper for deprecation warnings about an at-risk feature or setting.
          */
@@ -321,11 +237,6 @@ namespace shibsp {
     protected:
         /** Global ServiceProvider instance. */
         ServiceProvider* m_serviceProvider;
-
-#ifndef SHIBSP_LITE
-        /** Global ArtifactResolver instance. */
-        opensaml::MessageDecoder::ArtifactResolver* m_artifactResolver;
-#endif
 
     private:
         unsigned long m_features;

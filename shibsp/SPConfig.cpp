@@ -120,11 +120,7 @@ SPConfig& SPConfig::getConfig()
     return g_config;
 }
 
-SPConfig::SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(nullptr),
-#ifndef SHIBSP_LITE
-    m_artifactResolver(nullptr),
-#endif
-    m_features(0), m_configDoc(nullptr)
+SPConfig::SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(nullptr), m_features(0), m_configDoc(nullptr)
 {
 }
 
@@ -156,19 +152,6 @@ void SPConfig::setServiceProvider(ServiceProvider* serviceProvider)
     delete m_serviceProvider;
     m_serviceProvider = serviceProvider;
 }
-
-#ifndef SHIBSP_LITE
-void SPConfig::setArtifactResolver(MessageDecoder::ArtifactResolver* artifactResolver)
-{
-    delete m_artifactResolver;
-    m_artifactResolver = artifactResolver;
-}
-
-const MessageDecoder::ArtifactResolver* SPConfig::getArtifactResolver() const
-{
-    return m_artifactResolver;
-}
-#endif
 
 bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 {
@@ -203,35 +186,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
     log.debug("%s library initialization started", PACKAGE_STRING);
 
-#ifndef SHIBSP_LITE
-    XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION +
-        " OpenSAML/" + gOpenSAMLDotVersionStr +
-        " XMLTooling/" + gXMLToolingDotVersionStr +
-        " XML-Security-C/" + XSEC_FULLVERSIONDOT +
-        " Xerces-C/" + XERCES_FULLVERSIONDOT +
-#if defined(LOG4SHIB_VERSION)
-        " log4shib/" + LOG4SHIB_VERSION;
-#elif defined(LOG4CPP_VERSION)
-        " log4cpp/" + LOG4CPP_VERSION;
-#endif
-    if (!SAMLConfig::getConfig().init()) {
-        log.fatal("failed to initialize OpenSAML library");
-        return false;
-    }
-#else
-    XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION +
-        " XMLTooling/" + gXMLToolingDotVersionStr +
-        " Xerces-C/" + XERCES_FULLVERSIONDOT +
-#if defined(LOG4SHIB_VERSION)
-        " log4shib/" + LOG4SHIB_VERSION;
-#elif defined(LOG4CPP_VERSION)
-        " log4cpp/" + LOG4CPP_VERSION;
-#endif
-    if (!XMLToolingConfig::getConfig().init()) {
-        log.fatal("failed to initialize XMLTooling library");
-        return false;
-    }
-#endif
+    XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
 
     PathResolver* pr = XMLToolingConfig::getConfig().getPathResolver();
     pr->setDefaultPackageName(PACKAGE_NAME);
@@ -285,11 +240,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(MetadataException,opensaml::saml2md);
 #endif
 
-#ifndef SHIBSP_LITE
-    if (isEnabled(Metadata))
-        registerMetadataExtClasses();
-#endif
-
     registerAttributeFactories();
 
     if (isEnabled(Handlers)) {
@@ -300,20 +250,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     }
 
     registerServiceProviders();
-
-#ifndef SHIBSP_LITE
-    if (isEnabled(AttributeResolution)) {
-        registerAttributeExtractors();
-        registerAttributeDecoders();
-        registerAttributeResolvers();
-        registerAttributeFilters();
-        registerMatchFunctors();
-    }
-    if (isEnabled(Logging)) {
-        registerEvents();
-    }
-    registerSecurityPolicyProviders();
-#endif
 
     if (isEnabled(Listener))
         registerListenerServices();
@@ -326,10 +262,8 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     if (isEnabled(Caching))
         registerSessionCaches();
 
-#ifndef SHIBSP_LITE
-    if (isEnabled(OutOfProcess))
-        m_artifactResolver = new ArtifactResolver();
-#endif
+    // Yes, this isn't insecure, will review where we do any random generation
+    // after full code cleanup is done.
     srand(static_cast<unsigned int>(std::time(nullptr)));
 
     log.info("%s library initialization complete", PACKAGE_STRING);
@@ -345,9 +279,6 @@ void SPConfig::term()
     if (m_configDoc)
         m_configDoc->release();
     m_configDoc = nullptr;
-#ifndef SHIBSP_LITE
-    setArtifactResolver(nullptr);
-#endif
 
     if (isEnabled(Handlers)) {
         ArtifactResolutionServiceManager.deregisterFactories();
@@ -363,20 +294,6 @@ void SPConfig::term()
     ServiceProviderManager.deregisterFactories();
     Attribute::deregisterFactories();
 
-#ifndef SHIBSP_LITE
-    SecurityPolicyProviderManager.deregisterFactories();
-    if (isEnabled(Logging)) {
-        EventManager.deregisterFactories();
-    }
-    if (isEnabled(AttributeResolution)) {
-        MatchFunctorManager.deregisterFactories();
-        AttributeFilterManager.deregisterFactories();
-        AttributeDecoderManager.deregisterFactories();
-        AttributeExtractorManager.deregisterFactories();
-        AttributeResolverManager.deregisterFactories();
-    }
-#endif
-
     if (isEnabled(Listener))
         ListenerServiceManager.deregisterFactories();
 
@@ -388,20 +305,11 @@ void SPConfig::term()
     if (isEnabled(Caching))
         SessionCacheManager.deregisterFactories();
 
-#ifndef SHIBSP_LITE
-    SAMLConfig::getConfig().term();
-#else
-    XMLToolingConfig::getConfig().term();
-#endif
     log.info("%s library shutdown complete", PACKAGE_STRING);
 }
 
 bool SPConfig::instantiate(const char* config, bool rethrow)
 {
-#ifdef _DEBUG
-    NDC ndc("instantiate");
-#endif
-
     if (!config)
         config = getenv("SHIBSP_CONFIG");
     if (!config) {
@@ -458,10 +366,6 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
 
 bool SPInternalConfig::init(const char* catalog_path, const char* inst_prefix)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("init");
-#endif
-
     Lock initLock(m_lock);
 
     if (m_initCount == INT_MAX) {
@@ -484,10 +388,6 @@ bool SPInternalConfig::init(const char* catalog_path, const char* inst_prefix)
 
 void SPInternalConfig::term()
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("term");
-#endif
-    
     Lock initLock(m_lock);
     if (m_initCount == 0) {
         Category::getInstance(SHIBSP_LOGCAT ".Config").crit("term without corresponding init");
@@ -499,53 +399,6 @@ void SPInternalConfig::term()
 
     SPConfig::term();
 }
-
-#ifndef SHIBSP_LITE
-bool SPConfig::shouldSignOrEncrypt(const char* setting, const char* endpoint, bool isUserAgentPresent)
-{
-    if (setting && (!strcmp(setting, "true") || !strcmp(setting, isUserAgentPresent ? "front" : "back"))) {
-        return true;
-    }
-    else if (!setting || !strcmp(setting, "conditional")) {
-        if (isUserAgentPresent || !endpoint) {
-            return true;
-        }
-
-        // Conditional on the back channel means to sign if TLS isn't used or if on port 443.
-        // This compensates for the fact that using the default TLS port likely implies no use
-        // of client TLS by the server, allowing us to migrate off of the back channel with no
-        // configuration changes.
-#ifdef HAVE_STRCASECMP
-        if (strncasecmp(endpoint, "http://", 7) == 0) {
-#else
-        if (strnicmp(endpoint, "http://", 7) == 0) {
-#endif
-            return true;
-        }
-#ifdef HAVE_STRCASECMP
-        else if (strncasecmp(endpoint, "https://", 8) == 0) {
-#else
-        else if (strnicmp(endpoint, "https://", 8) == 0) {
-#endif
-            const char* colon = strchr(endpoint + 8, ':');
-            if (colon) {
-#ifdef HAVE_STRCASECMP
-                if (strncasecmp(colon, ":443/", 5) == 0) {
-#else
-                if (strnicmp(colon, ":443/", 5) == 0) {
-#endif
-                    return true;
-                }
-            }
-            else {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-#endif
 
 Category& SPConfig::deprecation() const
 {

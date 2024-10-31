@@ -31,10 +31,6 @@
 
 namespace shibsp {
 
-#ifndef SHIBSP_LITE
-    class SHIBSP_API LogoutEvent;
-#endif
-
 #if defined (_MSC_VER)
     #pragma warning( push )
     #pragma warning( disable : 4251 )
@@ -74,8 +70,6 @@ namespace shibsp {
          * @param out   stream to write outgoing DDF message to
          */
         void receive(DDF& in, std::ostream& out);
-
-        const char* getEventType() const;
 
     protected:
         LogoutHandler();
@@ -129,22 +123,6 @@ namespace shibsp {
             xmltooling::HTTPResponse& response,
             const char* type
             ) const;
-
-#ifndef SHIBSP_LITE
-        /**
-         * Creates a new LogoutEvent for the event log.
-         *
-         * @param application   the Application associated with the event
-         * @param request       the HTTP client request associated with the event, or nullptr
-         * @param session       the user session associated with the event, or nullptr
-         * @return  a fresh LogoutEvent, prepopulated by the input parameters, or nullptr if an error occurs
-         */
-        virtual LogoutEvent* newLogoutEvent(
-            const Application& application,
-            const xmltooling::HTTPRequest* request=nullptr,
-            const Session* session=nullptr
-            ) const;
-#endif
     };
 
 #if defined (_MSC_VER)
