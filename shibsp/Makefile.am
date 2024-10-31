@@ -36,11 +36,8 @@ libshibspinclude_HEADERS = \
 attrinclude_HEADERS = \
 	attribute/Attribute.h \
 	attribute/BinaryAttribute.h \
-	attribute/ExtensibleAttribute.h \
-	attribute/NameIDAttribute.h \
 	attribute/ScopedAttribute.h \
-	attribute/SimpleAttribute.h \
-	attribute/XMLAttribute.h
+	attribute/SimpleAttribute.h
 
 bindinclude_HEADERS = \
 	binding/ProtocolProvider.h
@@ -87,11 +84,8 @@ libshibsp_la_SOURCES = \
 	version.cpp \
 	attribute/Attribute.cpp \
 	attribute/BinaryAttribute.cpp \
-	attribute/ExtensibleAttribute.cpp \
-	attribute/NameIDAttribute.cpp \
 	attribute/SimpleAttribute.cpp \
 	attribute/ScopedAttribute.cpp \
-	attribute/XMLAttribute.cpp \
 	binding/impl/XMLProtocolProvider.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AdminLogoutInitiator.cpp \

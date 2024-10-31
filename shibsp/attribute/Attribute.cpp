@@ -45,130 +45,8 @@ using namespace std;
 namespace shibsp {
     SHIBSP_DLLLOCAL Attribute* SimpleAttributeFactory(DDF& in);
     SHIBSP_DLLLOCAL Attribute* ScopedAttributeFactory(DDF& in);
-    SHIBSP_DLLLOCAL Attribute* NameIDAttributeFactory(DDF& in);
-    SHIBSP_DLLLOCAL Attribute* ExtensibleAttributeFactory(DDF& in);
-    SHIBSP_DLLLOCAL Attribute* XMLAttributeFactory(DDF& in);
     SHIBSP_DLLLOCAL Attribute* BinaryAttributeFactory(DDF& in);
-
-#ifndef SHIBSP_LITE
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory StringAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory ScopedAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory NameIDAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory NameIDFromScopedAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory KeyInfoAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory DOMAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory XMLAttributeDecoderFactory;
-    SHIBSP_DLLLOCAL PluginManager<AttributeDecoder,xmltooling::QName,const DOMElement*>::Factory Base64AttributeDecoderFactory;
-
-    static const XMLCh _StringAttributeDecoder[] = UNICODE_LITERAL_22(S,t,r,i,n,g,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
-    static const XMLCh _ScopedAttributeDecoder[] = UNICODE_LITERAL_22(S,c,o,p,e,d,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
-    static const XMLCh _NameIDAttributeDecoder[] = UNICODE_LITERAL_22(N,a,m,e,I,D,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
-    static const XMLCh _NameIDFromScopedAttributeDecoder[] = UNICODE_LITERAL_32(N,a,m,e,I,D,F,r,o,m,S,c,o,p,e,d,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
-    static const XMLCh _KeyInfoAttributeDecoder[] =UNICODE_LITERAL_23(K,e,y,I,n,f,o,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
-    static const XMLCh _DOMAttributeDecoder[] =    UNICODE_LITERAL_19(D,O,M,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
-    static const XMLCh _XMLAttributeDecoder[] =    UNICODE_LITERAL_19(X,M,L,A,t,t,r,i,b,u,t,e,D,e,c,o,d,e,r);
-    static const XMLCh _Base64AttributeDecoder[] = {
-        chLatin_B, chLatin_a, chLatin_s, chLatin_e, chDigit_6, chDigit_4,
-        chLatin_A, chLatin_t, chLatin_t, chLatin_r, chLatin_i, chLatin_b, chLatin_u, chLatin_t, chLatin_e,
-        chLatin_D, chLatin_e, chLatin_c, chLatin_o, chLatin_d, chLatin_e, chLatin_r, chNull
-    };
-
-    static const XMLCh hashAlg[] =          UNICODE_LITERAL_7(h,a,s,h,A,l,g);
-    static const XMLCh internal[] =         UNICODE_LITERAL_8(i,n,t,e,r,n,a,l);
-    static const XMLCh langAware[] =        UNICODE_LITERAL_9(l,a,n,g,A,w,a,r,e);
-#endif
 };
-
-#ifndef SHIBSP_LITE
-xmltooling::QName shibsp::StringAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _StringAttributeDecoder);
-xmltooling::QName shibsp::ScopedAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _ScopedAttributeDecoder);
-xmltooling::QName shibsp::NameIDAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _NameIDAttributeDecoder);
-xmltooling::QName shibsp::NameIDFromScopedAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _NameIDFromScopedAttributeDecoder);
-xmltooling::QName shibsp::KeyInfoAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _KeyInfoAttributeDecoder);
-xmltooling::QName shibsp::DOMAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _DOMAttributeDecoder);
-xmltooling::QName shibsp::XMLAttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _XMLAttributeDecoder);
-xmltooling::QName shibsp::Base64AttributeDecoderType(shibspconstants::SHIB2ATTRIBUTEMAP_NS, _Base64AttributeDecoder);
-
-void shibsp::registerAttributeDecoders()
-{
-    SPConfig& conf = SPConfig::getConfig();
-    conf.AttributeDecoderManager.registerFactory(StringAttributeDecoderType, StringAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(ScopedAttributeDecoderType, ScopedAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(NameIDAttributeDecoderType, NameIDAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(NameIDFromScopedAttributeDecoderType, NameIDFromScopedAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(KeyInfoAttributeDecoderType, KeyInfoAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(DOMAttributeDecoderType, DOMAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(XMLAttributeDecoderType, XMLAttributeDecoderFactory);
-    conf.AttributeDecoderManager.registerFactory(Base64AttributeDecoderType, Base64AttributeDecoderFactory);
-}
-
-AttributeDecoder::AttributeDecoder(const DOMElement *e)
-    : m_caseSensitive(XMLHelper::getCaseSensitive(e, true)),
-        m_internal(XMLHelper::getAttrBool(e, false, internal)),
-        m_langAware(XMLHelper::getAttrBool(e, false, langAware)),
-        m_hashAlg(XMLHelper::getAttrString(e, nullptr, hashAlg))
-{
-    if (m_internal) {
-        SPConfig::getConfig().deprecation().warn("<AttributeDecoder> internal option");
-    }
-    if (m_langAware) {
-        SPConfig::getConfig().deprecation().warn("<AttributeDecoder> langAware option");
-    }
-    if (!m_hashAlg.empty()) {
-        SPConfig::getConfig().deprecation().warn("<AttributeDecoder> hashAlg option");
-    }
-}
-
-AttributeDecoder::~AttributeDecoder()
-{
-}
-
-Attribute* AttributeDecoder::_decode(Attribute* attr) const
-{
-    if (attr) {
-        attr->setCaseSensitive(m_caseSensitive);
-        attr->setInternal(m_internal);
-
-        if (!m_hashAlg.empty()) {
-            // We turn the values into strings using the supplied hash algorithm and return a SimpleAttribute instead.
-            auto_ptr<SimpleAttribute> simple(new SimpleAttribute(attr->getAliases()));
-            simple->setCaseSensitive(false);
-            simple->setInternal(m_internal);
-            vector<string>& newdest = simple->getValues();
-            const vector<string>& serialized = attr->getSerializedValues();
-            for (vector<string>::const_iterator ser = serialized.begin(); ser != serialized.end(); ++ser) {
-                newdest.push_back(SecurityHelper::doHash(m_hashAlg.c_str(), ser->data(), ser->length()));
-                if (newdest.back().empty())
-                    newdest.pop_back();
-            }
-            delete attr;
-            return newdest.empty() ? nullptr : simple.release();
-        }
-
-    }
-    return attr;
-}
-
-pair<vector<XMLObject*>::const_iterator,vector<XMLObject*>::const_iterator> AttributeDecoder::valueRange(
-    const GenericRequest* request, const vector<XMLObject*>& objects
-    ) const
-{
-    if (!m_langAware || !request || objects.empty()) {
-        return make_pair(objects.begin(), objects.end());
-    }
-    else if (request && request->startLangMatching()) {
-        do {
-            for (vector<XMLObject*>::const_iterator i = objects.begin(); i != objects.end(); ++i) {
-                if (request->matchLang((*i)->getLang())) {
-                    return make_pair(i, i + 1);
-                }
-            }
-        } while (request->continueLangMatching());
-    }
-
-    return make_pair(objects.begin(), objects.begin() + 1);
-}
-#endif
 
 void shibsp::registerAttributeFactories()
 {
@@ -176,9 +54,6 @@ void shibsp::registerAttributeFactories()
     Attribute::registerFactory("Simple", SimpleAttributeFactory);
     Attribute::registerFactory("Binary", BinaryAttributeFactory);
     Attribute::registerFactory("Scoped", ScopedAttributeFactory);
-    Attribute::registerFactory("NameID", NameIDAttributeFactory);
-    Attribute::registerFactory("Extensible", ExtensibleAttributeFactory);
-    Attribute::registerFactory("XML", XMLAttributeFactory);
 }
 
 map<string,Attribute::AttributeFactory*> Attribute::m_factoryMap;
