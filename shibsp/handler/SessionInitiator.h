@@ -118,7 +118,6 @@ namespace shibsp {
          */
         void doGenerateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
 #endif
-        const char* getEventType() const;
     };
     
     /** Registers SessionInitiator implementations. */
