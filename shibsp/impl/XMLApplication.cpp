@@ -456,12 +456,6 @@ void XMLApplication::doHandlers(const DOMElement* e, Category& log)
             else
                 log.error("no ProtocolProvider, Logout auto-configure unsupported");
         }
-        else if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), NameIDMgmt)) {
-            if (false)
-                doNameIDMgmt(protocols, child, log);
-            else
-                log.error("no ProtocolProvider, NameIDMgmt auto-configure unsupported");
-        }
         else {
             break;  // drop into next while loop
         }
@@ -595,17 +589,6 @@ void XMLApplication::doHandlers(const DOMElement* e, Category& log)
                     conf.SingleLogoutServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
                     );
             }
-            else if (XMLString::equals(child->getLocalName(), _ManageNameIDService)) {
-                string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                if (bindprop.empty() || !*child->getAttributeNS(nullptr, Location)) {
-                    log.error("ManageNameIDService element has empty Binding or Location attribute, skipping it...");
-                    child = XMLHelper::getNextSiblingElement(child);
-                    continue;
-                }
-                handler.reset(
-                    conf.ManageNameIDServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
-                    );
-            }
             else {
                 string t(XMLHelper::getAttrString(child, nullptr, _type));
                 if (t.empty()) {
@@ -638,10 +621,6 @@ void XMLApplication::doSSO(set<string>& protocols, DOMElement* e, Category& log)
 }
 
 void XMLApplication::doLogout(set<string>& protocols, DOMElement* e, Category& log)
-{
-}
-
-void XMLApplication::doNameIDMgmt(set<string>& protocols, DOMElement* e, Category& log)
 {
 }
 
