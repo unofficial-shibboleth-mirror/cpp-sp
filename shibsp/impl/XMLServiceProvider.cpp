@@ -30,7 +30,6 @@
 #include "SessionCache.h"
 #include "SPConfig.h"
 #include "SPRequest.h"
-#include "binding/ProtocolProvider.h"
 #include "impl/XMLApplication.h"
 #include "impl/XMLServiceProvider.h"
 
@@ -53,25 +52,7 @@
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
 
-#ifndef SHIBSP_LITE
-# include "security/SecurityPolicyProvider.h"
-# include <saml/exceptions.h>
-# include <saml/version.h>
-# include <saml/SAMLConfig.h>
-# include <saml/binding/ArtifactMap.h>
-# include <saml/binding/SAMLArtifact.h>
-# include <xmltooling/security/DataSealer.h>
-# include <xmltooling/security/SecurityHelper.h>
-# include <xmltooling/util/ReplayCache.h>
-# include <xmltooling/util/StorageService.h>
-# include <xsec/utils/XSECPlatformUtils.hpp>
-using namespace opensaml::saml2;
-using namespace opensaml::saml2p;
-using namespace opensaml::saml2md;
-using namespace opensaml;
-#else
-# include "lite/SAMLConstants.h"
-#endif
+#include "lite/SAMLConstants.h"
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -212,92 +193,8 @@ void XMLConfigImpl::doListener(const DOMElement* e, XMLConfig* conf, Category& l
 void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& log)
 {
     const SPConfig& spConf = SPConfig::getConfig();
-#ifndef SHIBSP_LITE
-    SAMLConfig& samlConf = SAMLConfig::getConfig();
-#endif
 
-    DOMElement* child;
-#ifndef SHIBSP_LITE
-    if (spConf.isEnabled(SPConfig::OutOfProcess)) {
-        XMLToolingConfig& xmlConf = XMLToolingConfig::getConfig();
-        // First build any StorageServices.
-        child = XMLHelper::getFirstChildElement(e, _StorageService);
-        while (child) {
-            string id(XMLHelper::getAttrString(child, nullptr, _id));
-            string t(XMLHelper::getAttrString(child, nullptr, _type));
-            if (!t.empty()) {
-                try {
-                    log.info("building StorageService (%s) of type %s...", id.c_str(), t.c_str());
-                    conf->m_storage[id] =
-                        boost::shared_ptr<StorageService>(xmlConf.StorageServiceManager.newPlugin(t.c_str(), child, m_deprecationSupport));
-                }
-                catch (const std::exception& ex) {
-                    log.crit("failed to instantiate StorageService (%s): %s", id.c_str(), ex.what());
-                }
-            }
-            child = XMLHelper::getNextSiblingElement(child, _StorageService);
-        }
-
-        if (conf->m_storage.empty()) {
-            log.info("no StorageService plugin(s) installed, using (mem) in-memory instance");
-            conf->m_storage["mem"] = boost::shared_ptr<StorageService>(
-                xmlConf.StorageServiceManager.newPlugin(MEMORY_STORAGE_SERVICE, nullptr, m_deprecationSupport)
-                );
-        }
-
-        // Replay cache.
-        StorageService* replaySS = nullptr;
-        child = XMLHelper::getFirstChildElement(e, _ReplayCache);
-        if (child) {
-            string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
-            if (!ssid.empty()) {
-                if (conf->m_storage.count(ssid)) {
-                    log.info("building ReplayCache on top of StorageService (%s)...", ssid.c_str());
-                    replaySS = conf->m_storage[ssid].get();
-                }
-                else {
-                    log.error("unable to locate StorageService (%s), using arbitrary instance for ReplayCache", ssid.c_str());
-                    replaySS = conf->m_storage.begin()->second.get();
-                }
-            }
-            else {
-                log.info("no StorageService specified for ReplayCache, using arbitrary instance");
-                replaySS = conf->m_storage.begin()->second.get();
-            }
-        }
-        else {
-            log.info("no ReplayCache specified, using arbitrary StorageService instance");
-            replaySS = conf->m_storage.begin()->second.get();
-        }
-        xmlConf.setReplayCache(new ReplayCache(replaySS));
-
-        // ArtifactMap
-        child = XMLHelper::getFirstChildElement(e, _ArtifactMap);
-        if (child) {
-            string ssid(XMLHelper::getAttrString(child, nullptr, _StorageService));
-            if (!ssid.empty()) {
-                if (conf->m_storage.count(ssid)) {
-                    log.info("building ArtifactMap on top of StorageService (%s)...", ssid.c_str());
-                    samlConf.setArtifactMap(new ArtifactMap(child, conf->m_storage[ssid].get()));
-                }
-                else {
-                    log.error("unable to locate StorageService (%s), using in-memory ArtifactMap", ssid.c_str());
-                    samlConf.setArtifactMap(new ArtifactMap(child));
-                }
-            }
-            else {
-                log.info("no StorageService specified, using in-memory ArtifactMap");
-                samlConf.setArtifactMap(new ArtifactMap(child));
-            }
-        }
-        else {
-            log.info("no ArtifactMap specified, building in-memory ArtifactMap...");
-            samlConf.setArtifactMap(new ArtifactMap(child));
-        }
-    }   // end of out of process caching components
-#endif
-
-    child = XMLHelper::getFirstChildElement(e, _SessionCache);
+    DOMElement* child = XMLHelper::getFirstChildElement(e, _SessionCache);
     if (child) {
         string t(XMLHelper::getAttrString(child, nullptr, _type));
         if (!t.empty()) {
@@ -342,32 +239,10 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
             if (!XMLToolingConfig::getConfig().log_config(logconf.c_str()))
                 log.crit("failed to load new logging configuration from (%s)", logconf.c_str());
         }
-
-#ifndef SHIBSP_LITE
-        outer->m_tranLog.reset(
-            new TransactionLog(
-                XMLHelper::getAttrString(SHAR, nullptr, tranLogFormat).c_str(),
-                XMLHelper::getAttrString(SHAR, nullptr, tranLogFiller).c_str()
-                )
-            );
-#endif
     }
 
     // Re-log library versions now that logging is set up.
     log.info("Shibboleth SP Version %s", PACKAGE_VERSION);
-#ifndef SHIBSP_LITE
-    log.info(
-        "Library versions: %s %s, Xerces-C %s, XML-Security-C %s, XMLTooling-C %s, OpenSAML-C %s, Shibboleth %s",
-# if defined(LOG4SHIB_VERSION)
-    "log4shib", LOG4SHIB_VERSION,
-# elif defined(LOG4CPP_VERSION)
-    "log4cpp", LOG4CPP_VERSION,
-# else
-    "", "",
-# endif
-        XERCES_FULLVERSIONDOT, XSEC_FULLVERSIONDOT, gXMLToolingDotVersionStr, gOpenSAMLDotVersionStr, gShibSPDotVersionStr
-        );
-#else
     log.info(
         "Library versions: %s %s, Xerces-C %s, XMLTooling-C %s, Shibboleth %s",
 # if defined(LOG4SHIB_VERSION)
@@ -379,7 +254,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 # endif
         XERCES_FULLVERSIONDOT, gXMLToolingDotVersionStr, gShibSPDotVersionStr
         );
-#endif
 
     if (XMLString::equals(e->getNamespaceURI(), shibspconstants::SHIB2SPCONFIG_NS)) {
         SPConfig::getConfig().deprecation().warn("legacy V2 configuration");
@@ -415,12 +289,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         pair<bool,const XMLCh*> langPriority = getXMLString("langPriority");
         GenericRequest::setLangDefaults(!langFromClient.first || langFromClient.second, langPriority.second);
 
-#ifndef SHIBSP_LITE
-        langPriority = getXMLString("contactPriority");
-        if (langPriority.first)
-            SAMLConfig::getConfig().setContactPriority(langPriority.second);
-#endif
-
         // Extensions
         doExtensions(e, "global", log);
         if (conf.isEnabled(SPConfig::OutOfProcess))
@@ -433,28 +301,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         if (conf.isEnabled(SPConfig::Listener))
             doListener(e, outer, log);
 
-#ifndef SHIBSP_LITE
-        if (outer->m_listener && conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess)) {
-            outer->m_listener->regListener("set::RelayState", outer);
-            outer->m_listener->regListener("get::RelayState", outer);
-            outer->m_listener->regListener("set::PostData", outer);
-            outer->m_listener->regListener("get::PostData", outer);
-        }
-
-        if (child = XMLHelper::getFirstChildElement(e, _DataSealer)) {
-            string t(XMLHelper::getAttrString(child, nullptr, _type));
-            if (!t.empty()) {
-                log.info("building DataSealer of type %s...", t.c_str());
-                auto_ptr<DataSealerKeyStrategy> strategy(
-                    XMLToolingConfig::getConfig().DataSealerKeyStrategyManager.newPlugin(t, child, m_deprecationSupport)
-                    );
-                auto_ptr<DataSealer> sealer(new DataSealer(strategy.get()));
-                strategy.release();
-                XMLToolingConfig::getConfig().setDataSealer(sealer.get());
-                sealer.release();
-            }
-        }
-#endif
         if (conf.isEnabled(SPConfig::Caching))
             doCaching(e, outer, log);
     } // end of first-time-only stuff
@@ -478,95 +324,20 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
         }
     }
 
-#ifndef SHIBSP_LITE
-    // Load security policies.
-    if (child = XMLHelper::getLastChildElement(e, _SecurityPolicyProvider)) {
-        string t(XMLHelper::getAttrString(child, nullptr, _type));
-        if (!t.empty()) {
-            log.info("building SecurityPolicyProvider of type %s...", t.c_str());
-            m_policy.reset(conf.SecurityPolicyProviderManager.newPlugin(t.c_str(), child, m_deprecationSupport));
-        }
-        else {
-            throw ConfigurationException("can't build SecurityPolicyProvider, no type specified");
-        }
-    }
-    else if (child = XMLHelper::getLastChildElement(e, SecurityPolicies)) {
-        // For backward compatibility, wrap in a plugin element.
-        DOMElement* polwrapper = e->getOwnerDocument()->createElementNS(nullptr, _SecurityPolicyProvider);
-        polwrapper->appendChild(child);
-        SPConfig::getConfig().deprecation().warn("inline SecurityPolicy configuration, externalize via <SecurityPolicyProvider>");
-        m_policy.reset(conf.SecurityPolicyProviderManager.newPlugin(XML_SECURITYPOLICY_PROVIDER, polwrapper, m_deprecationSupport));
-    }
-    else {
-        log.fatal("can't build SecurityPolicyProvider, missing conf:SecurityPolicyProvider element?");
-        throw ConfigurationException("Can't build SecurityPolicyProvider, missing conf:SecurityPolicyProvider element?");
-    }
-
-    if (first) {
-        if (!m_policy->getIncludedAlgorithms().empty()) {
-            for (vector<xstring>::const_iterator alg = m_policy->getIncludedAlgorithms().begin();
-                    alg != m_policy->getIncludedAlgorithms().end(); ++alg) {
-                XSECPlatformUtils::whitelistAlgorithm(alg->c_str());
-                auto_ptr_char includelog(alg->c_str());
-                log.info("explicitly including security algorithm (%s)", includelog.get());
-            }
-        }
-        else if (!m_policy->getDefaultExcludedAlgorithms().empty() || !m_policy->getExcludedAlgorithms().empty()) {
-            for (vector<xstring>::const_iterator alg = m_policy->getDefaultExcludedAlgorithms().begin();
-                    alg != m_policy->getDefaultExcludedAlgorithms().end(); ++alg) {
-                XSECPlatformUtils::blacklistAlgorithm(alg->c_str());
-                auto_ptr_char excludelog(alg->c_str());
-                log.info("automatically excluding security algorithm (%s)", excludelog.get());
-            }
-            for (vector<xstring>::const_iterator alg = m_policy->getExcludedAlgorithms().begin();
-                    alg != m_policy->getExcludedAlgorithms().end(); ++alg) {
-                XSECPlatformUtils::blacklistAlgorithm(alg->c_str());
-                auto_ptr_char excludelog(alg->c_str());
-                log.info("explicitly excluding security algorithm (%s)", excludelog.get());
-            }
-        }
-    }
-
-    // Process TransportOption elements.
-    child = XMLHelper::getLastChildElement(e, TransportOption);
-    while (child) {
-        if (child->hasChildNodes()) {
-            string provider(XMLHelper::getAttrString(child, nullptr, _provider));
-            string option(XMLHelper::getAttrString(child, nullptr, _option));
-            auto_ptr_char value(child->getFirstChild()->getNodeValue());
-            if (!provider.empty() && !option.empty() && value.get() && *value.get()) {
-                m_transportOptions.push_back(boost::make_tuple(provider, option, string(value.get())));
-            }
-        }
-        child = XMLHelper::getPreviousSiblingElement(child, TransportOption);
-    }
-#endif
-
-    if (conf.isEnabled(SPConfig::Handlers)) {
-        if (child = XMLHelper::getLastChildElement(e, _ProtocolProvider)) {
-            string t(XMLHelper::getAttrString(child, nullptr, _type));
-            if (!t.empty()) {
-                log.info("building ProtocolProvider of type %s...", t.c_str());
-                m_protocolProvider.reset(conf.ProtocolProviderManager.newPlugin(t.c_str(), child, m_deprecationSupport));
-            }
-        }
-    }
-    Locker pplocker(m_protocolProvider.get());
-
     // Load the default application.
     child = XMLHelper::getLastChildElement(e, ApplicationDefaults);
     if (!child) {
         log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");
         throw ConfigurationException("can't build default Application object, missing conf:ApplicationDefaults element?");
     }
-    boost::shared_ptr<XMLApplication> defapp(new XMLApplication(outer, m_protocolProvider.get(), child, m_deprecationSupport));
+    boost::shared_ptr<XMLApplication> defapp(new XMLApplication(outer, child, m_deprecationSupport));
     m_appmap[defapp->getId()] = defapp;
     m_defaultApplication = defapp.get();
 
     // Load any overrides.
     DOMElement* override = XMLHelper::getFirstChildElement(child, ApplicationOverride);
     while (override) {
-        boost::shared_ptr<XMLApplication> iapp(new XMLApplication(outer, m_protocolProvider.get(), override, m_deprecationSupport, m_defaultApplication));
+        boost::shared_ptr<XMLApplication> iapp(new XMLApplication(outer, override, m_deprecationSupport, m_defaultApplication));
         if (m_appmap.count(iapp->getId()))
             log.crit("found conf:ApplicationOverride element with duplicate id attribute (%s), skipping it", iapp->getId());
         else
@@ -608,8 +379,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 
 boost::shared_ptr<Application> XMLConfigImpl::findExternalOverride(const char* id, const XMLConfig* config)
 {
-    Locker pplocker(m_protocolProvider.get());
-
     for (vector<string>::const_iterator i = m_externalAppPaths.begin(); i != m_externalAppPaths.end(); ++i) {
         string path(*i);
         if (!ends_with(path, "/"))
@@ -628,7 +397,7 @@ boost::shared_ptr<Application> XMLConfigImpl::findExternalOverride(const char* i
                     throw ConfigurationException("External override's id ($1) did not match the expected value", params(1, id2.c_str()));
 
                 boost::shared_ptr<XMLApplication> iapp(
-                    new XMLApplication(config, m_protocolProvider.get(), doc->getDocumentElement(), m_deprecationSupport, m_defaultApplication, doc)
+                    new XMLApplication(config, doc->getDocumentElement(), m_deprecationSupport, m_defaultApplication, doc)
                     );
                 return iapp;
             }
@@ -665,30 +434,6 @@ const Application* XMLConfig::getApplication(const char* applicationId) const
 }
 
 #ifndef SHIBSP_LITE
-
-StorageService* XMLConfig::getStorageService(const char* id) const
-{
-    if (id) {
-        map< string, boost::shared_ptr<StorageService> >::const_iterator i = m_storage.find(id);
-        if (i != m_storage.end())
-            return i->second.get();
-    }
-    else if (!m_storage.empty())
-        return m_storage.begin()->second.get();
-    return nullptr;
-}
-
-bool XMLConfig::setTransportOptions(SOAPTransport& transport) const {
-    bool ret = true;
-    for (vector< boost::tuple<string, string, string> >::const_iterator opt = m_impl->m_transportOptions.begin();
-        opt != m_impl->m_transportOptions.end(); ++opt) {
-        if (!transport.setProviderOption(opt->get<0>().c_str(), opt->get<1>().c_str(), opt->get<2>().c_str())) {
-            m_log.error("failed to set SOAPTransport option (%s)", opt->get<1>().c_str());
-            ret = false;
-        }
-    }
-    return ret;
-}
 
 void XMLConfig::receive(DDF& in, ostream& out)
 {
@@ -921,10 +666,6 @@ XMLConfig::XMLConfig(const DOMElement* e, bool deprecationSupport)
 XMLConfig::~XMLConfig()
 {
     shutdown();
-#ifndef SHIBSP_LITE
-    SAMLConfig::getConfig().setArtifactMap(nullptr);
-    XMLToolingConfig::getConfig().setReplayCache(nullptr);
-#endif
 }
 
 pair<bool,DOMElement*> XMLConfig::background_load()
@@ -948,22 +689,3 @@ pair<bool,DOMElement*> XMLConfig::background_load()
 
     return make_pair(false,(DOMElement*)nullptr);
 }
-
-#ifndef SHIBSP_LITE
-
-Lockable* XMLConfig::lock()
-{
-    ReloadableXMLFile::lock();
-    if (m_impl->m_policy)
-        m_impl->m_policy->lock();
-    return this;
-}
-
-void XMLConfig::unlock()
-{
-    if (m_impl->m_policy)
-        m_impl->m_policy->unlock();
-    ReloadableXMLFile::unlock();
-}
-
-#endif

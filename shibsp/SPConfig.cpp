@@ -46,23 +46,9 @@
 #include "SessionCache.h"
 #include "SPConfig.h"
 #include "attribute/Attribute.h"
-#include "binding/ProtocolProvider.h"
 #include "handler/LogoutInitiator.h"
 #include "handler/SessionInitiator.h"
 #include "remoting/ListenerService.h"
-
-#ifndef SHIBSP_LITE
-# include "attribute/AttributeDecoder.h"
-# include "attribute/filtering/AttributeFilter.h"
-# include "attribute/filtering/MatchFunctor.h"
-# include "attribute/resolver/AttributeExtractor.h"
-# include "attribute/resolver/AttributeResolver.h"
-# include "binding/ArtifactResolver.h"
-# include "metadata/MetadataExt.h"
-# include "security/SecurityPolicyProvider.h"
-# include <saml/version.h>
-# include <saml/SAMLConfig.h>
-#endif
 
 #include <ctime>
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -246,7 +232,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         registerHandlers();
         registerLogoutInitiators();
         registerSessionInitiators();
-        registerProtocolProviders();
     }
 
     registerServiceProviders();
@@ -288,7 +273,6 @@ void SPConfig::term()
         SessionInitiatorManager.deregisterFactories();
         SingleLogoutServiceManager.deregisterFactories();
         HandlerManager.deregisterFactories();
-        ProtocolProviderManager.deregisterFactories();
     }
 
     ServiceProviderManager.deregisterFactories();

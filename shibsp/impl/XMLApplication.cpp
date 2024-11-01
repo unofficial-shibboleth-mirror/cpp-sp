@@ -27,7 +27,6 @@
 #include "internal.h"
 #include "ServiceProvider.h"
 #include "SPConfig.h"
-#include "binding/ProtocolProvider.h"
 #include "handler/LogoutInitiator.h"
 #include "handler/SessionInitiator.h"
 #include "impl/XMLApplication.h"
@@ -42,30 +41,11 @@
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 
-#ifndef SHIBSP_LITE
-# include "attribute/filtering/AttributeFilter.h"
-# include "attribute/resolver/AttributeExtractor.h"
-# include "attribute/resolver/AttributeResolver.h"
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/binding/SAMLArtifact.h>
-# include <saml/saml2/binding/SAML2ArtifactType0004.h>
-# include <saml/saml2/metadata/EntityMatcher.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataProvider.h>
-# include <xmltooling/security/ChainingTrustEngine.h>
-# include <xmltooling/security/CredentialResolver.h>
-# include <xmltooling/security/SecurityHelper.h>
-using namespace opensaml::saml2;
-using namespace opensaml::saml2p;
-using namespace opensaml::saml2md;
-using namespace opensaml;
-#else
-# include "lite/SAMLConstants.h"
-#endif
+#include "lite/SAMLConstants.h"
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost::algorithm;
 using namespace boost;
 using namespace std;
 
@@ -107,7 +87,6 @@ namespace {
 
 XMLApplication::XMLApplication(
     const ServiceProvider* sp,
-    const ProtocolProvider* pp,
     DOMElement* e,
     bool deprecationSupport,
     const XMLApplication* base,
@@ -115,9 +94,6 @@ XMLApplication::XMLApplication(
     ) : Application(sp), m_base(base), m_acsDefault(nullptr), m_sessionInitDefault(nullptr), m_artifactResolutionDefault(nullptr),
         m_deprecationSupport(deprecationSupport), m_doc(doc)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("XMLApplication");
-#endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".Application");
 
     // First load any property sets.
@@ -215,9 +191,6 @@ XMLApplication::XMLApplication(
         setParent(base);
 
     SPConfig& conf=SPConfig::getConfig();
-#ifndef SHIBSP_LITE
-    XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
-#endif
 
     // This used to be an actual hash, but now it's just a hex-encode to avoid xmlsec dependency.
     static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -231,7 +204,7 @@ XMLApplication::XMLApplication(
     doAttributeInfo(log);
 
     if (conf.isEnabled(SPConfig::Handlers))
-        doHandlers(pp, e, log);
+        doHandlers(e, log);
 
     // Notification.
     const DOMNodeList* nlist = e->getElementsByTagNameNS(e->getNamespaceURI(), Notify);
@@ -249,49 +222,6 @@ XMLApplication::XMLApplication(
     }
 
 #ifndef SHIBSP_LITE
-    nlist = e->getElementsByTagNameNS(samlconstants::SAML20_NS, Audience::LOCAL_NAME);
-    if (nlist && nlist->getLength()) {
-        SPConfig::getConfig().deprecation().warn("use of <saml:Audience> elements outside of a Security Policy Rule");
-        for (XMLSize_t i = 0; i < nlist->getLength(); ++i)
-            if (nlist->item(i)->getParentNode()->isSameNode(e) && nlist->item(i)->hasChildNodes())
-                m_audiences.push_back(nlist->item(i)->getFirstChild()->getNodeValue());
-    }
-
-    if (conf.isEnabled(SPConfig::Metadata)) {
-        m_metadata.reset(
-            doChainedPlugins(
-                SAMLConfig::getConfig().MetadataProviderManager, "MetadataProvider", CHAINING_METADATA_PROVIDER, _MetadataProvider, e, log
-                )
-            );
-        try {
-            if (m_metadata)
-                m_metadata->init();
-            else if (!m_base)
-                log.warn("no MetadataProvider available, configure at least one for standard SSO usage");
-        }
-        catch (const std::exception& ex) {
-            log.crit("error initializing MetadataProvider: %s", ex.what());
-        }
-    }
-
-    if (conf.isEnabled(SPConfig::Trust)) {
-        m_trust.reset(doChainedPlugins(xmlConf.TrustEngineManager, "TrustEngine", CHAINING_TRUSTENGINE, _TrustEngine, e, log));
-        if (!m_trust && !m_base) {
-            log.info("no TrustEngine specified or installed, using default of %s", EXPLICIT_KEY_TRUSTENGINE);
-            m_trust.reset(xmlConf.TrustEngineManager.newPlugin(EXPLICIT_KEY_TRUSTENGINE, nullptr, m_deprecationSupport));
-        }
-    }
-
-    if (conf.isEnabled(SPConfig::AttributeResolution)) {
-        doAttributePlugins(e, log);
-    }
-
-    if (conf.isEnabled(SPConfig::Credentials)) {
-        m_credResolver.reset(
-            doChainedPlugins(xmlConf.CredentialResolverManager, "CredentialResolver", CHAINING_CREDENTIAL_RESOLVER, _CredentialResolver, e, log)
-            );
-    }
-
     // Finally, load relying parties.
     const DOMElement* child = XMLHelper::getFirstChildElement(e, RelyingParty);
     while (child) {
@@ -469,7 +399,7 @@ void XMLApplication::doAttributeInfo(Category& log)
     }
 }
 
-void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e, Category& log)
+void XMLApplication::doHandlers(const DOMElement* e, Category& log)
 {
     SPConfig& conf = SPConfig::getConfig();
 
@@ -515,20 +445,20 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
     DOMElement* child = sessions ? XMLHelper::getFirstChildElement(sessions->getElement()) : nullptr;
     while (child) {
         if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), SSO)) {
-            if (pp)
-                doSSO(*pp, protocols, child, log);
+            if (false)
+                doSSO(protocols, child, log);
             else
                 log.error("no ProtocolProvider, SSO auto-configure unsupported");
         }
         else if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), Logout)) {
-            if (pp)
-                doLogout(*pp, protocols, child, log);
+            if (false)
+                doLogout(protocols, child, log);
             else
                 log.error("no ProtocolProvider, Logout auto-configure unsupported");
         }
         else if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), NameIDMgmt)) {
-            if (pp)
-                doNameIDMgmt(*pp, protocols, child, log);
+            if (false)
+                doNameIDMgmt(protocols, child, log);
             else
                 log.error("no ProtocolProvider, NameIDMgmt auto-configure unsupported");
         }
@@ -703,518 +633,22 @@ void XMLApplication::doHandlers(const ProtocolProvider* pp, const DOMElement* e,
     }
 }
 
-void XMLApplication::doSSO(const ProtocolProvider& pp, set<string>& protocols, DOMElement* e, Category& log)
+void XMLApplication::doSSO(set<string>& protocols, DOMElement* e, Category& log)
 {
-    if (!e->hasChildNodes())
-        return;
-
-    // This denotes whether the SSO element has been processed before or is specific to an override.
-    bool hasChildElements = e->getFirstElementChild() != nullptr;
-
-    const DOMNamedNodeMap* ssoprops = e->getAttributes();
-    XMLSize_t ssopropslen = ssoprops ? ssoprops->getLength() : 0;
-
-    const SPConfig& conf = SPConfig::getConfig();
-
-    int index = 0; // track ACS indexes globally across all protocols
-
-    // Tokenize the protocol list inside the element.
-    XMLStringTokenizer prottokens(XMLHelper::getTextContent(e));
-    while (prottokens.hasMoreTokens()) {
-        auto_ptr_char prot(prottokens.nextToken());
-
-        // Look for initiator.
-        const PropertySet* initiator = pp.getInitiator(prot.get(), "SSO");
-        if (initiator) {
-            log.info("auto-configuring SSO initiation for protocol (%s)", prot.get());
-            pair<bool,const XMLCh*> inittype = initiator->getXMLString("id");
-            if (inittype.first) {
-                if (!hasChildElements) {
-                    // Append a session initiator element of the designated type to the root element.
-                    DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
-
-                    // Copy in any attributes from the <SSO> element so they can be accessed as properties in the SI handler
-                    // but more importantly the MessageEncoders, which are DOM-aware only, not SP property-aware.
-                    // The property-based lookups will walk up the DOM tree but the DOM-only code won't.
-                    for (XMLSize_t p = 0; p < ssopropslen; ++p) {
-                        DOMNode* ssoprop = ssoprops->item(p);
-                        if (ssoprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
-                            sidom->setAttributeNS(
-                                ((DOMAttr*)ssoprop)->getNamespaceURI(),
-                                ((DOMAttr*)ssoprop)->getLocalName(),
-                                ((DOMAttr*)ssoprop)->getValue()
-                            );
-                        }
-                    }
-
-                    sidom->setAttributeNS(nullptr, _type, inittype.second);
-                    e->appendChild(sidom);
-                    log.info("adding SessionInitiator of type (%s) to chain (/Login)", initiator->getString("id").second);
-                }
-
-                doArtifactResolution(pp, prot.get(), e, log);
-                protocols.insert(prot.get());
-            }
-            else {
-                log.error("missing id property on Initiator element, check config for protocol (%s)", prot.get());
-            }
-        }
-
-        // Look for incoming bindings.
-        const vector<const PropertySet*>& bindings = pp.getBindings(prot.get(), "SSO");
-        if (!bindings.empty()) {
-            log.info("auto-configuring SSO endpoints for protocol (%s)", prot.get());
-            pair<bool,const XMLCh*> idprop,pathprop;
-            for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b, ++index) {
-                idprop = (*b)->getXMLString("id");
-                pathprop = (*b)->getXMLString("path");
-                if (idprop.first && pathprop.first) {
-                    DOMElement* acsdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _AssertionConsumerService);
-
-                    // Copy in any attributes from the <SSO> element so they can be accessed as properties in the ACS handler,
-                    // since the handlers aren't attached to the SSO element.
-                    for (XMLSize_t p = 0; p < ssopropslen; ++p) {
-                        DOMNode* ssoprop = ssoprops->item(p);
-                        if (ssoprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
-                            acsdom->setAttributeNS(
-                                ((DOMAttr*)ssoprop)->getNamespaceURI(),
-                                ((DOMAttr*)ssoprop)->getLocalName(),
-                                ((DOMAttr*)ssoprop)->getValue()
-                                );
-                        }
-                    }
-
-                    // Set necessary properties based on context.
-                    acsdom->setAttributeNS(nullptr, Binding, idprop.second);
-                    acsdom->setAttributeNS(nullptr, Location, pathprop.second);
-                    xstring indexbuf(1, chDigit_1 + (index % 10));
-                    if (index / 10)
-                        indexbuf = (XMLCh)(chDigit_1 + (index / 10)) + indexbuf;
-                    acsdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
-
-                    log.info("adding AssertionConsumerService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
-                    boost::shared_ptr<Handler> handler(
-                        conf.AssertionConsumerServiceManager.newPlugin(
-                            (*b)->getString("id").second, pair<const DOMElement*,const char*>(acsdom, getId()), m_deprecationSupport
-                            )
-                        );
-                    m_handlers.push_back(handler);
-
-                    // Setup maps and defaults.
-                    const XMLCh* protfamily = handler->getProtocolFamily();
-                    if (protfamily)
-                        m_acsProtocolMap[protfamily].push_back(handler.get());
-                    m_acsIndexMap[handler->getUnsignedInt("index").second] = handler.get();
-                    if (!m_acsDefault)
-                        m_acsDefault = handler.get();
-
-                    // Insert into location map.
-                    pair<bool,const char*> location = handler->getString("Location");
-                    if (location.first && *location.second == '/')
-                        m_handlerMap[location.second] = handler.get();
-                    else if (location.first)
-                        m_handlerMap[string("/") + location.second] = handler.get();
-                }
-                else {
-                    log.error("missing id or path property on Binding element, check config for protocol (%s)", prot.get());
-                }
-            }
-        }
-
-        if (!initiator && bindings.empty()) {
-            log.error("no SSO Initiator or Binding config for protocol (%s)", prot.get());
-        }
-    }
-
-    // Handle discovery.
-    static const XMLCh discoveryProtocol[] = UNICODE_LITERAL_17(d,i,s,c,o,v,e,r,y,P,r,o,t,o,c,o,l);
-    static const XMLCh discoveryURL[] = UNICODE_LITERAL_12(d,i,s,c,o,v,e,r,y,U,R,L);
-    static const XMLCh _URL[] = UNICODE_LITERAL_3(U,R,L);
-
-    if (!hasChildElements) {
-        const XMLCh* discop = e->getAttributeNS(nullptr, discoveryProtocol);
-        if (discop && *discop) {
-            const XMLCh* discou = e->getAttributeNS(nullptr, discoveryURL);
-            if (discou && *discou) {
-                // Append a session initiator element of the designated type to the root element.
-                DOMElement* sidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _SessionInitiator);
-
-                // Copy in any attributes from the <SSO> element so they can be accessed as properties in the SI handler
-                // but more importantly the MessageEncoders, which are DOM-aware only, not SP property-aware.
-                // The property-based lookups will walk up the DOM tree but the DOM-only code won't.
-                for (XMLSize_t p = 0; p < ssopropslen; ++p) {
-                    DOMNode* ssoprop = ssoprops->item(p);
-                    if (ssoprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
-                        sidom->setAttributeNS(
-                            ((DOMAttr*)ssoprop)->getNamespaceURI(),
-                            ((DOMAttr*)ssoprop)->getLocalName(),
-                            ((DOMAttr*)ssoprop)->getValue()
-                        );
-                    }
-                }
-
-                sidom->setAttributeNS(nullptr, _type, discop);
-                sidom->setAttributeNS(nullptr, _URL, discou);
-                e->appendChild(sidom);
-                if (log.isInfoEnabled()) {
-                    auto_ptr_char dp(discop);
-                    log.info("adding SessionInitiator of type (%s) to chain (/Login)", dp.get());
-                }
-            }
-            else {
-                log.error("SSO discoveryProtocol specified without discoveryURL");
-            }
-        }
-    }
-
-    if (!hasChildElements) {
-        // Attach default Location to SSO element.
-        static const XMLCh _loc[] = { chForwardSlash, chLatin_L, chLatin_o, chLatin_g, chLatin_i, chLatin_n, chNull };
-        e->setAttributeNS(nullptr, Location, _loc);
-    }
-
-    // Instantiate Chaining initiator around the SSO element.
-    boost::shared_ptr<SessionInitiator> chain(
-        conf.SessionInitiatorManager.newPlugin(CHAINING_SESSION_INITIATOR, pair<const DOMElement*,const char*>(e, getId()), m_deprecationSupport)
-        );
-    m_handlers.push_back(chain);
-    m_sessionInitDefault = chain.get();
-    m_sessionInitMap["Login"] = chain.get();
-    m_handlerMap["/Login"] = chain.get();
 }
 
-void XMLApplication::doLogout(const ProtocolProvider& pp, set<string>& protocols, DOMElement* e, Category& log)
+void XMLApplication::doLogout(set<string>& protocols, DOMElement* e, Category& log)
 {
-    if (!e->hasChildNodes())
-        return;
-
-    // This denotes whether the Logout element has been processed before or is specific to an override.
-    bool hasChildElements = e->getFirstElementChild() != nullptr;
-
-    const DOMNamedNodeMap* sloprops = e->getAttributes();
-    XMLSize_t slopropslen = sloprops ? sloprops->getLength() : 0;
-
-    const SPConfig& conf = SPConfig::getConfig();
-
-    // Tokenize the protocol list inside the element.
-    XMLStringTokenizer prottokens(XMLHelper::getTextContent(e));
-    while (prottokens.hasMoreTokens()) {
-        auto_ptr_char prot(prottokens.nextToken());
-
-        // Look for initiator.
-        const PropertySet* initiator = pp.getInitiator(prot.get(), "Logout");
-        if (initiator) {
-            log.info("auto-configuring Logout initiation for protocol (%s)", prot.get());
-            pair<bool,const XMLCh*> inittype = initiator->getXMLString("id");
-            if (inittype.first) {
-                if (!hasChildElements) {
-                    // Append a logout initiator element of the designated type to the root element.
-                    DOMElement* lidom = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _LogoutInitiator);
-
-                    // Copy in any attributes from the <Logout> element so they can be accessed as properties in the LI handler
-                    // but more importantly the MessageEncoders, which are DOM-aware only, not SP property-aware.
-                    // The property-based lookups will walk up the DOM tree but the DOM-only code won't.
-                    for (XMLSize_t p = 0; p < slopropslen; ++p) {
-                        DOMNode* sloprop = sloprops->item(p);
-                        if (sloprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
-                            lidom->setAttributeNS(
-                                ((DOMAttr*)sloprop)->getNamespaceURI(),
-                                ((DOMAttr*)sloprop)->getLocalName(),
-                                ((DOMAttr*)sloprop)->getValue()
-                            );
-                        }
-                    }
-
-                    lidom->setAttributeNS(nullptr, _type, inittype.second);
-                    e->appendChild(lidom);
-                    log.info("adding LogoutInitiator of type (%s) to chain (/Logout)", initiator->getString("id").second);
-                }
-
-                if (protocols.count(prot.get()) == 0) {
-                    doArtifactResolution(pp, prot.get(), e, log);
-                    protocols.insert(prot.get());
-                }
-            }
-            else {
-                log.error("missing id property on Initiator element, check config for protocol (%s)", prot.get());
-            }
-        }
-
-        // Look for incoming bindings.
-        const vector<const PropertySet*>& bindings = pp.getBindings(prot.get(), "Logout");
-        if (!bindings.empty()) {
-            log.info("auto-configuring Logout endpoints for protocol (%s)", prot.get());
-            pair<bool,const XMLCh*> idprop,pathprop;
-            for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b) {
-                idprop = (*b)->getXMLString("id");
-                pathprop = (*b)->getXMLString("path");
-                if (idprop.first && pathprop.first) {
-                    DOMElement* slodom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _SingleLogoutService);
-
-                    // Copy in any attributes from the <Logout> element so they can be accessed as properties in the SLO handler.
-                    for (XMLSize_t p = 0; p < slopropslen; ++p) {
-                        DOMNode* sloprop = sloprops->item(p);
-                        if (sloprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
-                            slodom->setAttributeNS(
-                                ((DOMAttr*)sloprop)->getNamespaceURI(),
-                                ((DOMAttr*)sloprop)->getLocalName(),
-                                ((DOMAttr*)sloprop)->getValue()
-                                );
-                        }
-                    }
-
-                    // Set necessary properties based on context.
-                    slodom->setAttributeNS(nullptr, Binding, idprop.second);
-                    slodom->setAttributeNS(nullptr, Location, pathprop.second);
-                    if (e->hasAttributeNS(nullptr, _policyId))
-                        slodom->setAttributeNS(e->getNamespaceURI(), _policyId, e->getAttributeNS(nullptr, _policyId));
-
-                    log.info("adding SingleLogoutService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
-                    boost::shared_ptr<Handler> handler(
-                        conf.SingleLogoutServiceManager.newPlugin((*b)->getString("id").second, pair<const DOMElement*,const char*>(slodom, getId()), m_deprecationSupport)
-                        );
-                    m_handlers.push_back(handler);
-
-                    // Insert into location map.
-                    pair<bool,const char*> location = handler->getString("Location");
-                    if (location.first && *location.second == '/')
-                        m_handlerMap[location.second] = handler.get();
-                    else if (location.first)
-                        m_handlerMap[string("/") + location.second] = handler.get();
-                }
-                else {
-                    log.error("missing id or path property on Binding element, check config for protocol (%s)", prot.get());
-                }
-            }
-
-            if (protocols.count(prot.get()) == 0) {
-                doArtifactResolution(pp, prot.get(), e, log);
-                protocols.insert(prot.get());
-            }
-        }
-
-        if (!initiator && bindings.empty()) {
-            log.error("no Logout Initiator or Binding config for protocol (%s)", prot.get());
-        }
-    }
-
-    // Attach default Location to Logout element.
-    static const XMLCh _loc[] = { chForwardSlash, chLatin_L, chLatin_o, chLatin_g, chLatin_o, chLatin_u, chLatin_t, chNull };
-    e->setAttributeNS(nullptr, Location, _loc);
-
-    // Instantiate Chaining initiator around the SSO element.
-    boost::shared_ptr<Handler> chain(
-        conf.LogoutInitiatorManager.newPlugin(CHAINING_LOGOUT_INITIATOR, pair<const DOMElement*,const char*>(e, getId()), m_deprecationSupport)
-        );
-    m_handlers.push_back(chain);
-    m_handlerMap["/Logout"] = chain.get();
 }
 
-void XMLApplication::doNameIDMgmt(const ProtocolProvider& pp, set<string>& protocols, DOMElement* e, Category& log)
+void XMLApplication::doNameIDMgmt(set<string>& protocols, DOMElement* e, Category& log)
 {
-    if (!e->hasChildNodes())
-        return;
-    const DOMNamedNodeMap* nimprops = e->getAttributes();
-    XMLSize_t nimpropslen = nimprops ? nimprops->getLength() : 0;
-
-    const SPConfig& conf = SPConfig::getConfig();
-
-    // Tokenize the protocol list inside the element.
-    XMLStringTokenizer prottokens(XMLHelper::getTextContent(e));
-    while (prottokens.hasMoreTokens()) {
-        auto_ptr_char prot(prottokens.nextToken());
-
-        // Look for incoming bindings.
-        const vector<const PropertySet*>& bindings = pp.getBindings(prot.get(), "NameIDMgmt");
-        if (!bindings.empty()) {
-            log.info("auto-configuring NameIDMgmt endpoints for protocol (%s)", prot.get());
-            pair<bool,const XMLCh*> idprop,pathprop;
-            for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b) {
-                idprop = (*b)->getXMLString("id");
-                pathprop = (*b)->getXMLString("path");
-                if (idprop.first && pathprop.first) {
-                    DOMElement* nimdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _ManageNameIDService);
-
-                    // Copy in any attributes from the <NameIDMgmt> element so they can be accessed as properties in the NIM handler.
-                    for (XMLSize_t p = 0; p < nimpropslen; ++p) {
-                        DOMNode* nimprop = nimprops->item(p);
-                        if (nimprop->getNodeType() == DOMNode::ATTRIBUTE_NODE) {
-                            nimdom->setAttributeNS(
-                                ((DOMAttr*)nimprop)->getNamespaceURI(),
-                                ((DOMAttr*)nimprop)->getLocalName(),
-                                ((DOMAttr*)nimprop)->getValue()
-                                );
-                        }
-                    }
-
-                    // Set necessary properties based on context.
-                    nimdom->setAttributeNS(nullptr, Binding, idprop.second);
-                    nimdom->setAttributeNS(nullptr, Location, pathprop.second);
-                    if (e->hasAttributeNS(nullptr, _policyId))
-                        nimdom->setAttributeNS(e->getNamespaceURI(), _policyId, e->getAttributeNS(nullptr, _policyId));
-
-                    log.info("adding ManageNameIDService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
-                    boost::shared_ptr<Handler> handler(
-                        conf.ManageNameIDServiceManager.newPlugin(
-                            (*b)->getString("id").second, pair<const DOMElement*,const char*>(nimdom, getId()), m_deprecationSupport
-                            )
-                        );
-                    m_handlers.push_back(handler);
-
-                    // Insert into location map.
-                    pair<bool,const char*> location = handler->getString("Location");
-                    if (location.first && *location.second == '/')
-                        m_handlerMap[location.second] = handler.get();
-                    else if (location.first)
-                        m_handlerMap[string("/") + location.second] = handler.get();
-                }
-                else {
-                    log.error("missing id or path property on Binding element, check config for protocol (%s)", prot.get());
-                }
-            }
-
-            if (protocols.count(prot.get()) == 0) {
-                doArtifactResolution(pp, prot.get(), e, log);
-                protocols.insert(prot.get());
-            }
-        }
-        else {
-            log.error("no NameIDMgmt Binding config for protocol (%s)", prot.get());
-        }
-    }
 }
 
-void XMLApplication::doArtifactResolution(const ProtocolProvider& pp, const char* protocol, DOMElement* e, Category& log)
+void XMLApplication::doArtifactResolution(const char* protocol, DOMElement* e, Category& log)
 {
-    const SPConfig& conf = SPConfig::getConfig();
-
-    int index = 0; // track indexes globally across all protocols
-
-    // Look for incoming bindings.
-    const vector<const PropertySet*>& bindings = pp.getBindings(protocol, "ArtifactResolution");
-    if (!bindings.empty()) {
-        log.info("auto-configuring ArtifactResolution endpoints for protocol (%s)", protocol);
-        pair<bool,const XMLCh*> idprop,pathprop;
-        for (vector<const PropertySet*>::const_iterator b = bindings.begin(); b != bindings.end(); ++b, ++index) {
-            idprop = (*b)->getXMLString("id");
-            pathprop = (*b)->getXMLString("path");
-            if (idprop.first && pathprop.first) {
-                DOMElement* artdom = e->getOwnerDocument()->createElementNS(samlconstants::SAML20MD_NS, _ArtifactResolutionService);
-                artdom->setAttributeNS(nullptr, Binding, idprop.second);
-                artdom->setAttributeNS(nullptr, Location, pathprop.second);
-                xstring indexbuf(1, chDigit_1 + (index % 10));
-                if (index / 10)
-                    indexbuf = (XMLCh)(chDigit_1 + (index / 10)) + indexbuf;
-                artdom->setAttributeNS(nullptr, _index, indexbuf.c_str());
-
-                log.info("adding ArtifactResolutionService for Binding (%s) at (%s)", (*b)->getString("id").second, (*b)->getString("path").second);
-                boost::shared_ptr<Handler> handler(
-                    conf.ArtifactResolutionServiceManager.newPlugin(
-                        (*b)->getString("id").second, pair<const DOMElement*,const char*>(artdom, getId()), m_deprecationSupport
-                        )
-                    );
-                m_handlers.push_back(handler);
-
-                if (!m_artifactResolutionDefault)
-                    m_artifactResolutionDefault = handler.get();
-
-                // Insert into location map.
-                pair<bool,const char*> location = handler->getString("Location");
-                if (location.first && *location.second == '/')
-                    m_handlerMap[location.second] = handler.get();
-                else if (location.first)
-                    m_handlerMap[string("/") + location.second] = handler.get();
-            }
-            else {
-                log.error("missing id or path property on Binding element, check config for protocol (%s)", protocol);
-            }
-        }
-    }
+ 
 }
-
-#ifndef SHIBSP_LITE
-
-void XMLApplication::doAttributePlugins(DOMElement* e, Category& log)
-{
-    const SPConfig& conf = SPConfig::getConfig();
-
-    m_attrExtractor.reset(
-        doChainedPlugins(conf.AttributeExtractorManager, "AttributeExtractor", CHAINING_ATTRIBUTE_EXTRACTOR, _AttributeExtractor, e, log)
-        );
-
-    m_attrFilter.reset(
-        doChainedPlugins(conf.AttributeFilterManager, "AttributeFilter", CHAINING_ATTRIBUTE_FILTER, _AttributeFilter, e, log, DUMMY_ATTRIBUTE_FILTER)
-        );
-
-    m_attrResolver.reset(
-        doChainedPlugins(conf.AttributeResolverManager, "AttributeResolver", CHAINING_ATTRIBUTE_RESOLVER, _AttributeResolver, e, log)
-        );
-
-    if (m_unsetHeaders.empty()) {
-        vector<string> unsetHeaders;
-        if (m_attrExtractor) {
-            Locker extlock(m_attrExtractor.get());
-            m_attrExtractor->getAttributeIds(unsetHeaders);
-        }
-        else if (m_base && m_base->m_attrExtractor) {
-            Locker extlock(m_base->m_attrExtractor.get());
-            m_base->m_attrExtractor->getAttributeIds(unsetHeaders);
-        }
-        if (m_attrResolver) {
-            Locker reslock(m_attrResolver.get());
-            m_attrResolver->getAttributeIds(unsetHeaders);
-        }
-        else if (m_base && m_base->m_attrResolver) {
-            Locker extlock(m_base->m_attrResolver.get());
-            m_base->m_attrResolver->getAttributeIds(unsetHeaders);
-        }
-        if (!unsetHeaders.empty()) {
-            string transformedprefix(m_attributePrefix.second);
-            const char* pch;
-            pair<bool,const char*> prefix = getString("metadataAttributePrefix");
-            if (prefix.first) {
-                pch = prefix.second;
-                while (*pch) {
-                    transformedprefix += (isalnum(*pch) ? toupper(*pch) : '_');
-                    pch++;
-                }
-            }
-            for (vector<string>::const_iterator hdr = unsetHeaders.begin(); hdr!=unsetHeaders.end(); ++hdr) {
-                string transformed;
-                pch = hdr->c_str();
-                while (*pch) {
-                    transformed += (isalnum(*pch) ? toupper(*pch) : '_');
-                    pch++;
-                }
-                m_unsetHeaders.push_back(make_pair(m_attributePrefix.first + *hdr, m_attributePrefix.second + transformed));
-                if (prefix.first)
-                    m_unsetHeaders.push_back(make_pair(m_attributePrefix.first + prefix.second + *hdr, transformedprefix + transformed));
-            }
-        }
-        m_unsetHeaders.push_back(make_pair(m_attributePrefix.first + "Shib-Application-ID", m_attributePrefix.second + "SHIB_APPLICATION_ID"));
-    }
-}
-
-SAMLArtifact* XMLApplication::generateSAML1Artifact(const opensaml::saml2md::EntityDescriptor* relyingParty) const
-{
-    throw ConfigurationException("No support for SAML 1.x artifact generation.");
-}
-
-SAML2Artifact* XMLApplication::generateSAML2Artifact(const opensaml::saml2md::EntityDescriptor* relyingParty) const
-{
-    pair<bool, int> index = make_pair(false, 0);
-    const PropertySet* props = getRelyingParty(relyingParty);
-    index = props->getInt("artifactEndpointIndex");
-    if (!index.first)
-        index = getArtifactEndpointIndex();
-    pair<bool, const char*> entityID = props->getString("entityID");
-    return new SAML2ArtifactType0004(
-        SecurityHelper::doHash("SHA1", entityID.second, strlen(entityID.second), false),
-        index.first ? index.second : 1
-    );
-}
-
-#endif
 
 void XMLApplication::receive(DDF& in, ostream& out)
 {

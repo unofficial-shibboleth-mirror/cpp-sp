@@ -45,26 +45,9 @@ namespace xmltooling {
     class TrustEngine;
 };
 
-#ifndef SHIBSP_LITE
-namespace opensaml {
-    class SAMLArtifact;
-
-    namespace saml2p {
-        class SAML2Artifact;
-    };
-
-    namespace saml2md {
-        class EntityDescriptor;
-        class EntityMatcher;
-        class MetadataProvider;
-    };
-};
-#endif
-
 namespace shibsp {
 
     class LogoutInitiator;
-    class ProtocolProvider;
     class ServiceProvider;
     class SessionInitiator;
 
@@ -79,7 +62,6 @@ namespace shibsp {
     public:
         XMLApplication(
             const ServiceProvider*,
-            const ProtocolProvider*,
             xercesc::DOMElement*,
             bool deprecationSupport,
             const XMLApplication* base=nullptr,
@@ -91,37 +73,8 @@ namespace shibsp {
         }
 
 #ifndef SHIBSP_LITE
-        opensaml::SAMLArtifact* generateSAML1Artifact(const opensaml::saml2md::EntityDescriptor* relyingParty) const;
-        opensaml::saml2p::SAML2Artifact* generateSAML2Artifact(const opensaml::saml2md::EntityDescriptor* relyingParty) const;
-
-        opensaml::saml2md::MetadataProvider* getMetadataProvider(bool required=true) const {
-            if (required && !m_base && !m_metadata)
-                throw ConfigurationException("No MetadataProvider available.");
-            return (!m_metadata && m_base) ? m_base->getMetadataProvider(required) : m_metadata.get();
-        }
-        xmltooling::TrustEngine* getTrustEngine(bool required = true) const {
-            if (required && !m_base && !m_trust)
-                throw ConfigurationException("No TrustEngine available.");
-            return (!m_trust && m_base) ? m_base->getTrustEngine(required) : m_trust.get();
-        }
-        AttributeExtractor* getAttributeExtractor() const {
-            return (!m_attrExtractor && m_base) ? m_base->getAttributeExtractor() : m_attrExtractor.get();
-        }
-        AttributeFilter* getAttributeFilter() const {
-            return (!m_attrFilter && m_base) ? m_base->getAttributeFilter() : m_attrFilter.get();
-        }
-        AttributeResolver* getAttributeResolver() const {
-            return (!m_attrResolver && m_base) ? m_base->getAttributeResolver() : m_attrResolver.get();
-        }
-        xmltooling::CredentialResolver* getCredentialResolver() const {
-            return (!m_credResolver && m_base) ? m_base->getCredentialResolver() : m_credResolver.get();
-        }
         const PropertySet* getRelyingParty(const opensaml::saml2md::EntityDescriptor* provider) const;
         const PropertySet* getRelyingParty(const XMLCh* entityID) const;
-
-        const std::vector<const XMLCh*>* getAudiences() const {
-            return (m_audiences.empty() && m_base) ? m_base->getAudiences() : &m_audiences;
-        }
 
         // PropertySet overrides.
         std::pair<bool, const char*> getString(const char* name, const char* ns = nullptr) const;
@@ -162,24 +115,15 @@ namespace shibsp {
             const char* dummyType = nullptr
         );
         void doAttributeInfo(xmltooling::logging::Category&);
-        void doHandlers(const ProtocolProvider*, const xercesc::DOMElement*, xmltooling::logging::Category&);
-        void doSSO(const ProtocolProvider&, std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
-        void doLogout(const ProtocolProvider&, std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
-        void doNameIDMgmt(const ProtocolProvider&, std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
-        void doArtifactResolution(const ProtocolProvider&, const char*, xercesc::DOMElement*, xmltooling::logging::Category&);
+        void doHandlers(const xercesc::DOMElement*, xmltooling::logging::Category&);
+        void doSSO(std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
+        void doLogout(std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
+        void doNameIDMgmt(std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
+        void doArtifactResolution(const char*, xercesc::DOMElement*, xmltooling::logging::Category&);
         const XMLApplication* m_base;
         std::string m_hash;
         std::pair<std::string, std::string> m_attributePrefix;
 #ifndef SHIBSP_LITE
-        void doAttributePlugins(xercesc::DOMElement*, xmltooling::logging::Category&);
-        boost::scoped_ptr<opensaml::saml2md::MetadataProvider> m_metadata;
-        boost::scoped_ptr<xmltooling::TrustEngine> m_trust;
-        boost::scoped_ptr<AttributeExtractor> m_attrExtractor;
-        boost::scoped_ptr<AttributeFilter> m_attrFilter;
-        boost::scoped_ptr<AttributeResolver> m_attrResolver;
-        boost::scoped_ptr<xmltooling::CredentialResolver> m_credResolver;
-        std::vector<const XMLCh*> m_audiences;
-
         // RelyingParty properties
         std::map< xmltooling::xstring, boost::shared_ptr<PropertySet> > m_partyMap;   // name-based matching
         std::vector< std::pair< boost::shared_ptr<opensaml::saml2md::EntityMatcher>, boost::shared_ptr<PropertySet> > > m_partyVec;  // plugin-based matching

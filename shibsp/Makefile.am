@@ -6,8 +6,6 @@ libshibspincludedir = $(includedir)/shibsp
 
 attrincludedir = $(includedir)/shibsp/attribute
 
-bindincludedir = $(includedir)/shibsp/binding
-
 handincludedir = $(includedir)/shibsp/handler
 
 liteincludedir = $(includedir)/shibsp/lite
@@ -38,9 +36,6 @@ attrinclude_HEADERS = \
 	attribute/BinaryAttribute.h \
 	attribute/ScopedAttribute.h \
 	attribute/SimpleAttribute.h
-
-bindinclude_HEADERS = \
-	binding/ProtocolProvider.h
 
 handinclude_HEADERS = \
 	handler/AbstractHandler.h \
@@ -86,7 +81,6 @@ libshibsp_la_SOURCES = \
 	attribute/BinaryAttribute.cpp \
 	attribute/SimpleAttribute.cpp \
 	attribute/ScopedAttribute.cpp \
-	binding/impl/XMLProtocolProvider.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AdminLogoutInitiator.cpp \
 	handler/impl/AssertionConsumerService.cpp \

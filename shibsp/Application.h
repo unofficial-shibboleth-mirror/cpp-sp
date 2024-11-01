@@ -31,9 +31,6 @@
 
 #include <string>
 #include <vector>
-#ifndef SHIBSP_LITE
-# include <saml/binding/MessageEncoder.h>
-#endif
 
 namespace xmltooling {
     class XMLTOOL_API CredentialResolver;
@@ -43,23 +40,8 @@ namespace xmltooling {
     class XMLTOOL_API StorageService;
     class XMLTOOL_API TrustEngine;
 };
-
-#ifndef SHIBSP_LITE
-namespace opensaml {
-    class SAML_API SecurityPolicyRule;
-    namespace saml2md {
-        class SAML_API MetadataProvider;
-    };
-};
-#endif
-
 namespace shibsp {
 
-#ifndef SHIBSP_LITE
-    class SHIBSP_API AttributeExtractor;
-    class SHIBSP_API AttributeFilter;
-    class SHIBSP_API AttributeResolver;
-#endif
     class SHIBSP_API Attribute;
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
@@ -78,9 +60,6 @@ namespace shibsp {
      * of session management and policy.
      */
     class SHIBSP_API Application : public virtual PropertySet
-#ifndef SHIBSP_LITE
-        ,public virtual opensaml::MessageEncoder::ArtifactGenerator
-#endif
     {
         MAKE_NONCOPYABLE(Application);
     protected:
@@ -148,50 +127,6 @@ namespace shibsp {
 
 #ifndef SHIBSP_LITE
         /**
-         * Returns a MetadataProvider for use with this Application.
-         *
-         * @param required  true iff an exception should be thrown if no MetadataProvider is available
-         * @return  a MetadataProvider instance, or nullptr
-         */
-        virtual opensaml::saml2md::MetadataProvider* getMetadataProvider(bool required=true) const=0;
-
-        /**
-         * Returns a TrustEngine for use with this Application.
-         *
-         * @param required  true iff an exception should be thrown if no TrustEngine is available
-         * @return  a TrustEngine instance, or nullptr
-         */
-        virtual xmltooling::TrustEngine* getTrustEngine(bool required=true) const=0;
-
-        /**
-         * Returns an AttributeExtractor for use with this Application.
-         *
-         * @return  an AttributeExtractor, or nullptr
-         */
-        virtual AttributeExtractor* getAttributeExtractor() const=0;
-
-        /**
-         * Returns an AttributeFilter for use with this Application.
-         *
-         * @return  an AttributeFilter, or nullptr
-         */
-        virtual AttributeFilter* getAttributeFilter() const=0;
-
-        /**
-         * Returns an AttributeResolver for use with this Application.
-         *
-         * @return  an AttributeResolver, or nullptr
-         */
-        virtual AttributeResolver* getAttributeResolver() const=0;
-
-        /**
-         * Returns the CredentialResolver instance associated with this Application.
-         *
-         * @return  a CredentialResolver, or nullptr
-         */
-        virtual xmltooling::CredentialResolver* getCredentialResolver() const=0;
-
-        /**
          * Returns configuration properties governing security interactions with a peer.
          *
          * @param provider  a peer entity's metadata
@@ -206,14 +141,6 @@ namespace shibsp {
          * @return  the applicable PropertySet
          */
         virtual const PropertySet* getRelyingParty(const XMLCh* entityID) const=0;
-
-        /**
-         * @deprecated
-         * Returns any additional audience values associated with this Application.
-         *
-         * @return additional audience values associated with the Application, or nullptr
-         */
-        virtual const std::vector<const XMLCh*>* getAudiences() const=0;
 #endif
 
         /**

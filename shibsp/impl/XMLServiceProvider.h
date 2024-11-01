@@ -40,10 +40,6 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#ifndef SHIBSP_LITE
-# include <boost/tuple/tuple.hpp>
-#endif
-
 namespace xmltooling {
     class Mutex;
     class RWLock;
@@ -67,13 +63,8 @@ namespace shibsp {
                 m_document->release();
         }
 
-#ifndef SHIBSP_LITE
-        boost::scoped_ptr<SecurityPolicyProvider> m_policy;
-        std::vector< boost::tuple<std::string, std::string, std::string> > m_transportOptions;
-#endif
         std::map<std::string,Remoted*> m_listenerMap;
         boost::scoped_ptr<RequestMapper> m_requestMapper;
-        boost::scoped_ptr<ProtocolProvider> m_protocolProvider;
         boost::scoped_ptr<xmltooling::Mutex> m_appMapLock;
         std::map< std::string, boost::shared_ptr<Application> > m_appmap;
         std::vector<std::string> m_externalAppPaths;
@@ -98,9 +89,6 @@ namespace shibsp {
     };
 
     class SHIBSP_DLLLOCAL XMLConfig : public ServiceProvider, public xmltooling::ReloadableXMLFile
-#ifndef SHIBSP_LITE
-        , public Remoted
-#endif
     {
     public:
         XMLConfig(const xercesc::DOMElement* e, bool deprecationSupport=true);
@@ -114,12 +102,6 @@ namespace shibsp {
             return m_impl ? m_impl->getElement()->getNamespaceURI() : nullptr;
         }
 
-#ifndef SHIBSP_LITE
-        // Lockable
-        xmltooling::Lockable* lock();
-        void unlock();
-#endif
-
         // PropertySet
         const PropertySet* getParent() const { return m_impl->getParent(); }
         void setParent(const PropertySet* parent) { return m_impl->setParent(parent); }
@@ -132,19 +114,6 @@ namespace shibsp {
         const xercesc::DOMElement* getElement() const { return m_impl->getElement(); }
 
         // ServiceProvider
-#ifndef SHIBSP_LITE
-        // Remoted
-        void receive(DDF& in, std::ostream& out);
-
-        TransactionLog* getTransactionLog() const {
-            if (m_tranLog)
-                return m_tranLog.get();
-            throw ConfigurationException("No TransactionLog available.");
-        }
-
-        xmltooling::StorageService* getStorageService(const char* id) const;
-#endif
-
         ListenerService* getListenerService(bool required = true) const {
             if (required && !m_listener)
                 throw ConfigurationException("No ListenerService available.");
@@ -165,16 +134,6 @@ namespace shibsp {
 
         const Application* getApplication(const char* applicationId) const;
 
-#ifndef SHIBSP_LITE
-        SecurityPolicyProvider* getSecurityPolicyProvider(bool required=true) const {
-            if (required && !m_impl->m_policy)
-                throw ConfigurationException("No SecurityPolicyProvider available.");
-            return m_impl->m_policy.get();
-        }
-
-        bool setTransportOptions(xmltooling::SOAPTransport& transport) const;
-#endif
-
         void regListener(const char* address, Remoted* svc);
         bool unregListener(const char* address, Remoted* current);
         Remoted* lookupListener(const char* address) const;
@@ -190,11 +149,7 @@ namespace shibsp {
 
         // The order of these members actually matters. If we want to rely on auto-destruction, then
         // anything dependent on anything else has to come later in the object so it will pop first.
-        // Storage is the lowest, then remoting, then the cache, and finally the rest.
-#ifndef SHIBSP_LITE
-        std::map< std::string, boost::shared_ptr<xmltooling::StorageService> > m_storage;
-        boost::scoped_ptr<TransactionLog> m_tranLog;
-#endif
+        // Remoring is the lowest, then the cache, and finally the rest.
         boost::scoped_ptr<ListenerService> m_listener;
         boost::scoped_ptr<SessionCache> m_sessionCache;
         boost::scoped_ptr<XMLConfigImpl> m_impl;
