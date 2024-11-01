@@ -14,7 +14,7 @@ DIST_SUBDIRS = \
 	fastcgi \
 	unittests
 
-pkgconfig_DATA = shibsp.pc shibsp-lite.pc
+pkgconfig_DATA = shibsp.pc
 
 EXTRA_DIST = $(DX_CONFIG) \
 	iis7_shib \
