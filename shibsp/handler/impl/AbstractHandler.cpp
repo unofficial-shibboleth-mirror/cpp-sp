@@ -47,23 +47,7 @@
 #include <xmltooling/util/URLEncoder.h>
 
 
-#ifndef SHIBSP_LITE
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/binding/SAMLArtifact.h>
-# include <saml/saml1/core/Protocols.h>
-# include <saml/saml2/core/Protocols.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
-# include <saml/util/SAMLConstants.h>
-# include <xmltooling/security/Credential.h>
-# include <xmltooling/security/CredentialResolver.h>
-# include <xmltooling/util/StorageService.h>
-using namespace opensaml::saml2md;
-using namespace opensaml;
-#else
-# include "lite/SAMLConstants.h"
-#endif
+#include "lite/SAMLConstants.h"
 
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
@@ -76,9 +60,7 @@ using namespace boost;
 using namespace std;
 
 namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML1ConsumerFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2ConsumerFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2ArtifactResolutionFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2LogoutFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AssertionLookupFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AttributeCheckerFactory;
@@ -110,17 +92,11 @@ void SHIBSP_API shibsp::registerHandlers()
 {
     SPConfig& conf=SPConfig::getConfig();
 
-    conf.AssertionConsumerServiceManager.registerFactory(SAML1_ASSERTION_CONSUMER_SERVICE, SAML1ConsumerFactory);
-    conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_ARTIFACT, SAML1ConsumerFactory);
-    conf.AssertionConsumerServiceManager.registerFactory(SAML1_PROFILE_BROWSER_POST, SAML1ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_PAOS, SAML2ConsumerFactory);
-
-    conf.ArtifactResolutionServiceManager.registerFactory(SAML20_ARTIFACT_RESOLUTION_SERVICE, SAML2ArtifactResolutionFactory);
-    conf.ArtifactResolutionServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2ArtifactResolutionFactory);
 
     conf.HandlerManager.registerFactory(SAML20_BINDING_URI, AssertionLookupFactory);
     conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
@@ -145,14 +121,6 @@ Handler::Handler()
 Handler::~Handler()
 {
 }
-
-#ifndef SHIBSP_LITE
-
-void Handler::generateMetadata(SPSSODescriptor&, const char*) const
-{
-}
-
-#endif
 
 const XMLCh* Handler::getProtocolFamily() const
 {

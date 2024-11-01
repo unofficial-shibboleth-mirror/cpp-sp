@@ -97,9 +97,7 @@ libshibsp_la_SOURCES = \
 	handler/impl/LogoutInitiator.cpp \
 	handler/impl/MetadataGenerator.cpp \
 	handler/impl/RemotedHandler.cpp \
-	handler/impl/SAML1Consumer.cpp \
 	handler/impl/SAML2Consumer.cpp \
-	handler/impl/SAML2ArtifactResolution.cpp \
 	handler/impl/SAML2Logout.cpp \
 	handler/impl/SAML2LogoutInitiator.cpp \
 	handler/impl/SAML2SessionInitiator.cpp \
@@ -107,10 +105,8 @@ libshibsp_la_SOURCES = \
 	handler/impl/SecuredHandler.cpp \
 	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \
-	handler/impl/Shib1SessionInitiator.cpp \
 	handler/impl/StatusHandler.cpp \
 	handler/impl/TransformSessionInitiator.cpp \
-	handler/impl/WAYFSessionInitiator.cpp \
 	impl/ChainingAccessControl.cpp \
 	impl/StoredSession.cpp \
 	impl/StorageServiceSessionCache.cpp \
