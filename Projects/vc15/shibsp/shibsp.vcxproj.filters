@@ -84,16 +84,7 @@
     <ClCompile Include="..\..\..\shibsp\attribute\BinaryAttribute.cpp">
       <Filter>Source Files\attribute</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\shibsp\attribute\ExtensibleAttribute.cpp">
-      <Filter>Source Files\attribute</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\shibsp\attribute\NameIDAttribute.cpp">
-      <Filter>Source Files\attribute</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\shibsp\attribute\ScopedAttribute.cpp">
-      <Filter>Source Files\attribute</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\shibsp\attribute\XMLAttribute.cpp">
       <Filter>Source Files\attribute</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\shibsp\binding\impl\XMLProtocolProvider.cpp">
@@ -308,16 +299,7 @@
     <ClInclude Include="..\..\..\shibsp\attribute\BinaryAttribute.h">
       <Filter>Header Files\attribute</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\attribute\ExtensibleAttribute.h">
-      <Filter>Header Files\attribute</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\attribute\NameIDAttribute.h">
-      <Filter>Header Files\attribute</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\shibsp\attribute\ScopedAttribute.h">
-      <Filter>Header Files\attribute</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\shibsp\attribute\XMLAttribute.h">
       <Filter>Header Files\attribute</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\shibsp\attribute\SimpleAttribute.h">

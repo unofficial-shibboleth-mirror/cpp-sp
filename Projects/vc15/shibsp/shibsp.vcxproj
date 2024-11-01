@@ -226,11 +226,8 @@
     <ClCompile Include="..\..\..\shibsp\impl\XMLServiceProvider.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\Attribute.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\BinaryAttribute.cpp" />
-    <ClCompile Include="..\..\..\shibsp\attribute\ExtensibleAttribute.cpp" />
-    <ClCompile Include="..\..\..\shibsp\attribute\NameIDAttribute.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\ScopedAttribute.cpp" />
     <ClCompile Include="..\..\..\shibsp\attribute\SimpleAttribute.cpp" />
-    <ClCompile Include="..\..\..\shibsp\attribute\XMLAttribute.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\AbstractHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\AssertionConsumerService.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\AssertionLookup.cpp" />
@@ -295,11 +292,8 @@
     <ClInclude Include="..\..\..\shibsp\remoting\ListenerService.h" />
     <ClInclude Include="..\..\..\shibsp\attribute\Attribute.h" />
     <ClInclude Include="..\..\..\shibsp\attribute\BinaryAttribute.h" />
-    <ClInclude Include="..\..\..\shibsp\attribute\ExtensibleAttribute.h" />
-    <ClInclude Include="..\..\..\shibsp\attribute\NameIDAttribute.h" />
     <ClInclude Include="..\..\..\shibsp\attribute\ScopedAttribute.h" />
     <ClInclude Include="..\..\..\shibsp\attribute\SimpleAttribute.h" />
-    <ClInclude Include="..\..\..\shibsp\attribute\XMLAttribute.h" />
     <ClInclude Include="..\..\..\shibsp\handler\AbstractHandler.h" />
     <ClInclude Include="..\..\..\shibsp\handler\AssertionConsumerService.h" />
     <ClInclude Include="..\..\..\shibsp\handler\Handler.h" />
