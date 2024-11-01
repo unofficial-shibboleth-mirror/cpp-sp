@@ -23,9 +23,6 @@ BUILTCONFIGFILES = \
 CONFIGFILES = \
 	shibboleth2.xml \
 	attribute-map.xml \
-	attribute-policy.xml \
-	protocols.xml \
-	security-policy.xml \
 	example-shibboleth2.xml \
 	console.logger \
 	native.logger \

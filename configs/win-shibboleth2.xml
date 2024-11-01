@@ -144,9 +144,6 @@
       <!-- Map to extract attributes from SAML assertions. -->
         <AttributeExtractor type="XML" validate="true" reloadChanges="false" path="attribute-map.xml"/>
         
-        <!-- Default filtering policy for recognized attributes, lets other data pass. -->
-        <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
-
         <!-- Simple file-based resolvers for separate signing/encryption keys. -->
         <CredentialResolver type="File" use="signing"
             key="sp-signing-key.pem" certificate="sp-signing-cert.pem"/>
@@ -154,11 +151,5 @@
             key="sp-encrypt-key.pem" certificate="sp-encrypt-cert.pem"/>
         
     </ApplicationDefaults>
-    
-    <!-- Policies that determine how to process and authenticate runtime messages. -->
-    <SecurityPolicyProvider type="XML" validate="true" path="security-policy.xml"/>
-
-    <!-- Low-level configuration about protocols and bindings available for use. -->
-    <ProtocolProvider type="XML" validate="true" reloadChanges="false" path="protocols.xml"/>
 
 </SPConfig>
