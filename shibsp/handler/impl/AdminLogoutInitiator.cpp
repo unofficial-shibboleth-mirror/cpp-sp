@@ -216,9 +216,6 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
     time_t revocationExp = session->getExpiration();
 
     Locker sessionLocker(session, false);
-#ifndef SHIBSP_LITE
-    scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
-#endif
 
     bool doSAML = false;
 
@@ -239,12 +236,6 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, true)) {
-#ifndef SHIBSP_LITE
-        if (logout_event) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
-        }
-#endif
         sessionLocker.assign();
         session = nullptr;
         application.getServiceProvider().getSessionCache()->remove(application, sessionId, revocationExp);
@@ -254,12 +245,6 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
     }
 
     if (!doSAML) {
-#ifndef SHIBSP_LITE
-        if (logout_event) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_LOCAL;
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
-        }
-#endif
         sessionLocker.assign();
         session = nullptr;
         application.getServiceProvider().getSessionCache()->remove(application, sessionId, revocationExp);
@@ -312,14 +297,6 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
                 requestSent = true;
                 auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, epit->getLocation()));
 
-                // Log the request.
-                if (logout_event) {
-                    logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_UNKNOWN;
-                    logout_event->m_saml2Request = msg.get();
-                    application.getServiceProvider().getTransactionLog()->write(*logout_event);
-                    logout_event->m_saml2Request = nullptr;
-                }
-
                 SAML2SOAPClient client(soaper, false);
                 auto_ptr_char dest(epit->getLocation());
                 client.sendSAML(msg.release(), application.getId(), mcc, dest.get());
@@ -338,12 +315,6 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
         if (!logoutResponse) {
             if (!requestSent)
                 m_log.info("IdP (%s) doesn't support SOAP-based single logout protocol", session->getEntityID());
-
-            // Log the end result.
-            if (logout_event) {
-                logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
-                application.getServiceProvider().getTransactionLog()->write(*logout_event);
-            }
         }
         else {
             // Check the status, looking for non-success or a partial logout code.
@@ -352,13 +323,6 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
             if (!partial && sc->getStatusCode()) {
                 // Success, but still need to check for partial.
                 partial = XMLString::equals(sc->getStatusCode()->getValue(), StatusCode::PARTIAL_LOGOUT);
-            }
-
-            // Log the end result.
-            if (logout_event) {
-                logout_event->m_logoutType = partial ? LogoutEvent::LOGOUT_EVENT_PARTIAL : LogoutEvent::LOGOUT_EVENT_GLOBAL;
-                logout_event->m_saml2Response = logoutResponse;
-                application.getServiceProvider().getTransactionLog()->write(*logout_event);
             }
 
             if (!partial) {
@@ -373,17 +337,9 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
     catch (const MetadataException& mex) {
         // Less noise for IdPs that don't support logout (i.e. most)
         m_log.info("unable to attempt SAML 2.0 logout: %s", mex.what());
-        if (logout_event) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
-        }
     }
     catch (const std::exception& ex) {
         m_log.error("error issuing SAML 2.0 logout request: %s", ex.what());
-        if (logout_event) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
-        }
     }
 
     if (session) {

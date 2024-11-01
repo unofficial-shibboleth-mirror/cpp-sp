@@ -98,15 +98,6 @@ namespace shibsp {
             const MessageEncoder* encoder=nullptr
             ) const;
 
-        LogoutEvent* newLogoutEvent(
-            const Application& application, const HTTPRequest* request=nullptr, const Session* session=nullptr
-            ) const {
-            LogoutEvent* e = LogoutHandler::newLogoutEvent(application, request, session);
-            if (e)
-                e->m_protocol = m_protocol.get();
-            return e;
-        }
-
         bool m_async;
         vector<string> m_bindings;
         map< string,boost::shared_ptr<MessageEncoder> > m_encoders;
@@ -291,19 +282,10 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     ) const
 {
     Locker sessionLocker(session, false);
-#ifndef SHIBSP_LITE
-    scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
-#endif
 
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
-#ifndef SHIBSP_LITE
-        if (logout_event) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
-        }
-#endif
         time_t revocationExp = session->getExpiration();
         sessionLocker.assign();
         session = nullptr;
@@ -366,14 +348,6 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                         continue;
                     auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, epit->getLocation()));
 
-                    // Log the request.
-                    if (logout_event) {
-                        logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_UNKNOWN;
-                        logout_event->m_saml2Request = msg.get();
-                        application.getServiceProvider().getTransactionLog()->write(*logout_event);
-                        logout_event->m_saml2Request = nullptr;
-                    }
-
                     SAML2SOAPClient client(soaper, false);
                     auto_ptr_char dest(epit->getLocation());
                     client.sendSAML(msg.release(), application.getId(), mcc, dest.get());
@@ -395,12 +369,6 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                 else
                     m_log.warn("IdP didn't respond to logout request");
 
-                // Log the end result.
-                if (logout_event) {
-                    logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
-                    application.getServiceProvider().getTransactionLog()->write(*logout_event);
-                }
-
                 ret = sendLogoutPage(application, httpRequest, httpResponse, "partial");
             }
             else {
@@ -410,13 +378,6 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
                 if (!partial && sc->getStatusCode()) {
                     // Success, but still need to check for partial.
                     partial = XMLString::equals(sc->getStatusCode()->getValue(), StatusCode::PARTIAL_LOGOUT);
-                }
-
-                // Log the end result.
-                if (logout_event) {
-                    logout_event->m_logoutType = partial ? LogoutEvent::LOGOUT_EVENT_PARTIAL : LogoutEvent::LOGOUT_EVENT_GLOBAL;
-                    logout_event->m_saml2Response = logoutResponse;
-                    application.getServiceProvider().getTransactionLog()->write(*logout_event);
                 }
 
                 if (partial)
@@ -465,13 +426,6 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
 
         auto_ptr<LogoutRequest> msg(buildRequest(application, *session, *role, ep->getLocation(), encoder));
         msg->setDestination(ep->getLocation());
-
-        // Log the request.
-        if (logout_event) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_UNKNOWN;
-            logout_event->m_saml2Request = msg.get();
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
-        }
 
         auto_ptr_char dest(ep->getLocation());
         ret.second = sendMessage(*encoder, msg.get(), relayState.c_str(), dest.get(), role, application, httpResponse, "true");

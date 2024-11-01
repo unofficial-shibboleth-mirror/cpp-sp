@@ -40,12 +40,6 @@ using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
-#ifndef SHIBSP_LITE
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataProvider.h>
-using namespace opensaml::saml2md;
-#endif
-
 namespace shibsp {
 
 #if defined (_MSC_VER)

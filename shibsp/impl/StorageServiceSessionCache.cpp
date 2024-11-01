@@ -57,18 +57,7 @@
 #include <xercesc/util/XMLStringTokenizer.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 
-#ifndef SHIBSP_LITE
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/saml2/core/Assertions.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <xmltooling/XMLToolingConfig.h>
-# include <xmltooling/util/ParserPool.h>
-# include <xmltooling/util/StorageService.h>
-using namespace opensaml::saml2md;
-#else
-# include <xercesc/util/XMLDateTime.hpp>
-#endif
+#include <xercesc/util/XMLDateTime.hpp>
 
 using namespace shibsp;
 using namespace opensaml;
@@ -304,15 +293,6 @@ bool SSCache::compareAddresses(const char* client_addr, const char* session_addr
 }
 
 #ifndef SHIBSP_LITE
-
-void SSCache::test()
-{
-    XMLCh* wide = SAMLConfig::getConfig().generateIdentifier();
-    auto_ptr_char temp(wide);
-    XMLString::release(&wide);
-    m_storage->createString("SessionCacheTest", temp.get(), "Test", time(nullptr) + 60);
-    m_storage->deleteString("SessionCacheTest", temp.get());
-}
 
 void SSCache::insert(const char* key, time_t expires, const char* name, const char* index, short attempts)
 {
@@ -851,28 +831,6 @@ bool SSCache::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::Na
     return true;
 }
 
-LogoutEvent* SSCache::newLogoutEvent(const Application& app) const
-{
-    if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
-        return nullptr;
-    try {
-        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGOUT_EVENT, nullptr, false));
-        LogoutEvent* logout_event = dynamic_cast<LogoutEvent*>(event.get());
-        if (logout_event) {
-            logout_event->m_app = &app;
-            event.release();
-            return logout_event;
-        }
-        else {
-            m_log.warn("unable to audit event, log event object was of an incorrect type");
-        }
-    }
-    catch (const std::exception& ex) {
-        m_log.warn("exception auditing event: %s", ex.what());
-    }
-    return nullptr;
-}
-
 #endif
 
 HTTPResponse::samesite_t SSCache::getSameSitePolicy(const Application& app) const
@@ -998,12 +956,6 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
 
             if (timeout && *timeout > 0 && now - lastAccess >= *timeout) {
                 m_log.info("session timed out (ID: %s)", key);
-                scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(app));
-                if (logout_event.get()) {
-                    logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_INVALID;
-                    logout_event->m_sessions.push_back(key);
-                    app.getServiceProvider().getTransactionLog()->write(*logout_event);
-                }
                 remove(app, key);
                 const char* eid = obj["entity_id"].string();
                 if (!eid) {
@@ -1063,15 +1015,6 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
         session->validate(app, client_addr, timeout);
     }
     catch (...) {
-#ifndef SHIBSP_LITE
-        scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(app));
-        if (logout_event.get()) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_INVALID;
-            logout_event->m_session = session;
-            logout_event->m_sessions.push_back(session->getID());
-            app.getServiceProvider().getTransactionLog()->write(*logout_event);
-        }
-#endif
         session->unlock();
         remove(app, key);
         throw;
@@ -1493,12 +1436,6 @@ void SSCache::receive(DDF& in, ostream& out)
 
             if (timeout > 0 && now - lastAccess >= timeout) {
                 m_log.info("session timed out (ID: %s)", key);
-                scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(*app));
-                if (logout_event.get()) {
-                    logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_INVALID;
-                    logout_event->m_sessions.push_back(key);
-                    app->getServiceProvider().getTransactionLog()->write(*logout_event);
-                }
                 remove(*app, key);
                 throw RetryableProfileException("Your session has timed out due to inactivity, and you must re-authenticate.");
             }

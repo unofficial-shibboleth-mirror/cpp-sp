@@ -95,23 +95,6 @@ namespace shibsp {
          */
         virtual const XMLCh* getConfigurationNamespace() const=0;
 
-#ifndef SHIBSP_LITE
-        /**
-         * Returns a TransactionLog instance.
-         * 
-         * @return  a TransactionLog instance
-         */
-        virtual TransactionLog* getTransactionLog() const=0;
-
-        /**
-         * Returns a StorageService instance based on an ID.
-         * 
-         * @param id    a nullptr-terminated key identifying the StorageService to the configuration 
-         * @return  a StorageService if available, or nullptr
-         */
-        virtual xmltooling::StorageService* getStorageService(const char* id) const=0;
-#endif
-
         /**
          * Returns a SessionCache instance.
          * 
@@ -128,24 +111,6 @@ namespace shibsp {
          */
         virtual ListenerService* getListenerService(bool required=true) const=0;
         
-#ifndef SHIBSP_LITE
-        /**
-         * Returns a SecurityPolicyProvider instance.
-         *
-         * @param required true iff an exception should be thrown if no SecurityPolicyProvider is available
-         * @return  a SecurityPolicyProvider
-         */
-        virtual SecurityPolicyProvider* getSecurityPolicyProvider(bool required=true) const=0;
-
-        /**
-         * Sets implementation-specific transport options.
-         *
-         * @param transport a SOAPTransport object
-         * @return  true iff all options were successfully set
-         */
-        virtual bool setTransportOptions(xmltooling::SOAPTransport& transport) const=0;
-#endif
-
         /**
          * Returns a RequestMapper instance.
          * 

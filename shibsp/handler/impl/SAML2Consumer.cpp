@@ -473,29 +473,6 @@ void SAML2Consumer::implementProtocol(
         &tokens,
         ctx ? &ctx->getResolvedAttributes() : nullptr
         );
-
-    try {
-        scoped_ptr<TransactionLog::Event> event(newLoginEvent(application, httpRequest));
-        LoginEvent* login_event = dynamic_cast<LoginEvent*>(event.get());
-        if (login_event) {
-            login_event->m_sessionID = session_id.c_str();
-            login_event->m_peer = entity;
-            auto_ptr_char prot(getProtocolFamily());
-            login_event->m_protocol = prot.get();
-            login_event->m_nameID = ssoName;
-            login_event->m_saml2AuthnStatement = ssoStatement;
-            login_event->m_saml2Response = response;
-            if (ctx)
-                login_event->m_attributes = &ctx->getResolvedAttributes();
-            application.getServiceProvider().getTransactionLog()->write(*login_event);
-        }
-        else {
-            m_log.warn("unable to audit event, log event object was of an incorrect type");
-        }
-    }
-    catch (std::exception& ex) {
-        m_log.warn("exception auditing event: %s", ex.what());
-    }
 }
 
 #endif

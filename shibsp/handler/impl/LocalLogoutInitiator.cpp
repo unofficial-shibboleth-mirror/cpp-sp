@@ -181,13 +181,6 @@ pair<bool,long> LocalLogoutInitiator::doRequest(
         bool result;
         vector<string> sessions(1, session->getID());
         result = notifyBackChannel(application, httpRequest.getRequestURL(), sessions, true);
-#ifndef SHIBSP_LITE
-        scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &httpRequest, session));
-        if (logout_event) {
-            logout_event->m_logoutType = result ? LogoutEvent::LOGOUT_EVENT_LOCAL : LogoutEvent::LOGOUT_EVENT_PARTIAL;
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
-        }
-#endif
         time_t revocationExp = session->getExpiration();
         locker.assign();    // unlock the session
         application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);

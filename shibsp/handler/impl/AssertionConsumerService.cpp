@@ -254,32 +254,6 @@ pair<bool,long> AssertionConsumerService::processMessage(
             ex.addProperty("RelayState", relayState.c_str());
         }
 
-        // Log the error.
-        try {
-            scoped_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr, false));
-            LoginEvent* error_event = dynamic_cast<LoginEvent*>(event.get());
-            if (error_event) {
-                error_event->m_exception = &ex;
-                error_event->m_request = &httpRequest;
-                error_event->m_app = &application;
-                if (policy->getIssuerMetadata())
-                    error_event->m_peer = dynamic_cast<const EntityDescriptor*>(policy->getIssuerMetadata()->getParent());
-                auto_ptr_char prot(getProtocolFamily());
-                error_event->m_protocol = prot.get();
-                error_event->m_binding = getString("Binding").second;
-                error_event->m_saml2Response = dynamic_cast<const saml2p::StatusResponseType*>(msg.get());
-                if (!error_event->m_saml2Response)
-                    error_event->m_saml1Response = dynamic_cast<const saml1p::Response*>(msg.get());
-                application.getServiceProvider().getTransactionLog()->write(*error_event);
-            }
-            else {
-                m_log.warn("unable to audit event, log event object was of an incorrect type");
-            }
-        }
-        catch (const std::exception& ex2) {
-            m_log.warn("exception auditing event: %s", ex2.what());
-        }
-
         // If no sign of annotation, try to annotate it now.
         if (!ex.getProperty("statusCode")) {
             annotateException(&ex, policy->getIssuerMetadata(), nullptr, false);    // wait to throw it

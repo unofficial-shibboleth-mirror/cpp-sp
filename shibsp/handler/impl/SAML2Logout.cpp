@@ -243,10 +243,6 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
     SessionCache* cache = application.getServiceProvider().getSessionCache();
     string session_id = cache->active(application, request);
 
-    scoped_ptr<LogoutEvent> logout_event(newLogoutEvent(application, &request));
-    if (logout_event.get() && !session_id.empty())
-        logout_event->m_sessions.push_back(session_id);
-
     if (!strcmp(request.getMethod(),"GET") && request.getParameter("notifying")) {
         // This is returning from a front-channel notification, so we have to do the back-channel and then
         // respond. To do that, we need state from the original request.
@@ -295,10 +291,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
         auto_ptr_XMLCh reqid(request.getParameter("ID"));
         if (worked1 && worked2) {
             // Successful LogoutResponse. Has to be front-channel or we couldn't be here.
-            if (logout_event.get())
-                logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_GLOBAL;
             return sendResponse(
-                logout_event.get(),
                 reqid.get(),
                 StatusCode::SUCCESS, nullptr, nullptr,
                 request.getParameter("RelayState"),
@@ -310,7 +303,6 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
         }
 
         return sendResponse(
-            logout_event.get(),
             reqid.get(),
             StatusCode::RESPONDER, nullptr, "Unable to fully destroy principal's session.",
             request.getParameter("RelayState"),
@@ -347,14 +339,6 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
     if (logoutRequest) {
         if (!policy->isAuthenticated())
             throw SecurityPolicyException("Security of LogoutRequest not established.");
-
-        if (logout_event) {
-            logout_event->m_saml2Request = logoutRequest;
-            if (policy->getIssuerMetadata())
-                logout_event->m_peer = dynamic_cast<const EntityDescriptor*>(policy->getIssuerMetadata()->getParent());
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
-            logout_event->m_saml2Request = nullptr;
-        }
 
         // Message from IdP to logout one or more sessions.
         // Extract the NameID from the request, decrypting it if needed.
@@ -396,7 +380,6 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
             // No NameID, so must respond with an error.
             m_log.error("NameID not found in request");
             return sendResponse(
-                logout_event.get(),
                 logoutRequest->getID(),
                 StatusCode::REQUESTER, StatusCode::UNKNOWN_PRINCIPAL, "NameID not found in request.",
                 relayState.c_str(),
@@ -424,7 +407,6 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
             if (!XMLString::equals(logoutRequest->getReason(),LogoutRequest::REASON_ADMIN)
                     && !cache->matches(application, request, entity, *nameid, &indexes)) {
                 return sendResponse(
-                    logout_event.get(),
                     logoutRequest->getID(),
                     StatusCode::REQUESTER, StatusCode::REQUEST_DENIED, "Active session did not match logout request.",
                     relayState.c_str(),
@@ -454,13 +436,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
         }
         catch (const std::exception& ex) {
             m_log.error("error while logging out matching sessions: %s", ex.what());
-            if (logout_event) {
-                logout_event->m_nameID = nameid;
-                logout_event->m_sessions = sessions;
-                logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
-            }
             return sendResponse(
-                logout_event.get(),
                 logoutRequest->getID(),
                 StatusCode::RESPONDER, nullptr, ex.what(),
                 relayState.c_str(),
@@ -506,13 +482,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
             }
         }
 
-        if (logout_event) {
-            logout_event->m_nameID = nameid;
-            logout_event->m_sessions = sessions;
-            logout_event->m_logoutType = (worked1 && worked2) ? LogoutEvent::LOGOUT_EVENT_PARTIAL : LogoutEvent::LOGOUT_EVENT_GLOBAL;
-        }
         return sendResponse(
-            logout_event.get(),
             logoutRequest->getID(),
             (worked1 && worked2) ? StatusCode::SUCCESS : StatusCode::RESPONDER,
             (worked1 && worked2) ? nullptr : StatusCode::PARTIAL_LOGOUT,
@@ -533,23 +503,7 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
             annotateException(&ex, policy->getIssuerMetadata()); // throws it
         }
  
-        if (logout_event) {
-            logout_event->m_logoutType = LogoutEvent::LOGOUT_EVENT_PARTIAL;
-            logout_event->m_saml2Response = logoutResponse;
-            if (policy->getIssuerMetadata())
-                logout_event->m_peer = dynamic_cast<const EntityDescriptor*>(policy->getIssuerMetadata()->getParent());
-        }
-
-        try {
-            checkError(logoutResponse, policy->getIssuerMetadata()); // throws if Status doesn't look good...
-        }
-        catch (const std::exception& ex) {
-            if (logout_event) {
-                logout_event->m_exception = &ex;
-                application.getServiceProvider().getTransactionLog()->write(*logout_event);
-            }
-            throw;
-        }
+        checkError(logoutResponse, policy->getIssuerMetadata()); // throws if Status doesn't look good...
 
         // If relay state is set, recover the original return URL.
         if (!relayState.empty()) {
@@ -562,11 +516,6 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
         sc = sc ? sc->getStatusCode() : nullptr;
         if (sc && XMLString::equals(sc->getValue(), StatusCode::PARTIAL_LOGOUT)) {
             wasPartial = true;
-        }
-
-        if (logout_event) {
-            logout_event->m_logoutType = wasPartial ? LogoutEvent::LOGOUT_EVENT_PARTIAL : LogoutEvent::LOGOUT_EVENT_GLOBAL;
-            application.getServiceProvider().getTransactionLog()->write(*logout_event);
         }
 
         if (!relayState.empty()) {
@@ -591,7 +540,6 @@ pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPReque
 #ifndef SHIBSP_LITE
 
 pair<bool,long> SAML2Logout::sendResponse(
-    LogoutEvent* logoutEvent,
     const XMLCh* requestID,
     const XMLCh* code,
     const XMLCh* subcode,
@@ -646,12 +594,6 @@ pair<bool,long> SAML2Logout::sendResponse(
     logout->setID(msgid);
     XMLString::release(&msgid);
     logout->setIssueInstant(time(nullptr));
-
-    if (logoutEvent) {
-        logoutEvent->m_peer = role ? dynamic_cast<EntityDescriptor*>(role->getParent()) : nullptr;
-        logoutEvent->m_saml2Response = logout.get();
-        application.getServiceProvider().getTransactionLog()->write(*logoutEvent);
-    }
 
     auto_ptr_char dest(logout->getDestination());
     long ret = sendMessage(*encoder, logout.get(), relayState, dest.get(), role, application, httpResponse, "conditional");
