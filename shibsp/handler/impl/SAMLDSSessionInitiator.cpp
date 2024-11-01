@@ -61,49 +61,6 @@ namespace shibsp {
 
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
-#ifndef SHIBSP_LITE
-        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
-            // Initial guess at index to use.
-            pair<bool,unsigned int> ix = getUnsignedInt("index");
-            if (!ix.first)
-                ix.second = 1;
-
-            // Find maximum index in use and go one higher.
-            if (role.getExtensions()) {
-                const vector<XMLObject*>& exts = const_cast<const Extensions*>(role.getExtensions())->getUnknownXMLObjects();
-                for (vector<XMLObject*>::const_reverse_iterator i = exts.rbegin(); i != exts.rend(); ++i) {
-                    const DiscoveryResponse* sub = dynamic_cast<DiscoveryResponse*>(*i);
-                    if (sub) {
-                        pair<bool,int> val = sub->getIndex();
-                        if (val.first) {
-                            if (ix.second <= val.second)
-                                ix.second = val.second + 1;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            const char* loc = getString("Location").second;
-            string hurl(handlerURL);
-            if (*loc != '/')
-                hurl += '/';
-            hurl += loc;
-            auto_ptr_XMLCh widen(hurl.c_str());
-
-            DiscoveryResponse* ep = DiscoveryResponseBuilder::buildDiscoveryResponse();
-            ep->setLocation(widen.get());
-            ep->setBinding(samlconstants::IDP_DISCOVERY_PROTOCOL_NS);
-            ep->setIndex(ix.second);
-            Extensions* ext = role.getExtensions();
-            if (!ext) {
-                ext = ExtensionsBuilder::buildExtensions();
-                role.setExtensions(ext);
-            }
-            ext->getUnknownXMLObjects().push_back(ep);
-        }
-#endif
-
     private:
         const char* m_url;
         const char* m_returnParam;

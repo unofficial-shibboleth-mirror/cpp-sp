@@ -440,7 +440,7 @@ pair<bool,long> StatusHandler::processMessage(
         application.getHandlers(handlers);
         for (indirect_iterator<vector<const Handler*>::const_iterator> h = make_indirect_iterator(handlers.begin());
                 h != make_indirect_iterator(handlers.end()); ++h) {
-            s << "<Handler type='" << h->getType() << "' Location='" << h->getString("Location").second << "'";
+            s << "<Handler Location='" << h->getString("Location").second << "'";
             if (h->getString("Binding").first)
                 s << " Binding='" << h->getString("Binding").second << "'";
             s << "/>";

@@ -40,10 +40,6 @@ namespace shibsp {
         LogoutInitiator();
     public:
         virtual ~LogoutInitiator();
-
-#ifndef SHIBSP_LITE
-        const char* getType() const;
-#endif
     };
     
     /** Registers LogoutInitiator implementations. */

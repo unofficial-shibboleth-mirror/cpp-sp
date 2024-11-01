@@ -54,10 +54,3 @@ LogoutInitiator::LogoutInitiator()
 LogoutInitiator::~LogoutInitiator()
 {
 }
-
-#ifndef SHIBSP_LITE
-const char* LogoutInitiator::getType() const
-{
-    return "LogoutInitiator";
-}
-#endif

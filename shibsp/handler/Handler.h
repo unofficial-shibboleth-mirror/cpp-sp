@@ -30,14 +30,6 @@
 #include <shibsp/SPRequest.h>
 #include <shibsp/util/PropertySet.h>
 
-#ifndef SHIBSP_LITE
-namespace opensaml {
-    namespace saml2md {
-        class SAML_API SPSSODescriptor;
-    };
-};
-#endif
-
 namespace xmltooling {
     class XMLTOOL_API HTTPRequest;
     class XMLTOOL_API HTTPResponse;
@@ -134,25 +126,6 @@ namespace shibsp {
          */
         virtual std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const=0;
 
-#ifndef SHIBSP_LITE
-        /**
-         * Generates and/or modifies metadata reflecting the Handler.
-         *
-         * <p>The default implementation does nothing.
-         *
-         * @param role          metadata role to decorate
-         * @param handlerURL    base location of handler's endpoint
-         */
-        virtual void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
-
-        /**
-         * Returns the "type" of the Handler plugin.
-         *
-         * @return  a Handler type
-         */
-        virtual const char* getType() const;
-#endif
-
         /**
          * Get the type of event, as input to error handling in response to errors raised by this handler.
          *
@@ -163,9 +136,6 @@ namespace shibsp {
     
     /** Registers Handler implementations. */
     void SHIBSP_API registerHandlers();
-
-    /** Handler for SAML 1.x SSO. */
-    #define SAML1_ASSERTION_CONSUMER_SERVICE "SAML1"
 
     /** Handler for SAML 2.0 SSO. */
     #define SAML20_ASSERTION_CONSUMER_SERVICE "SAML2"

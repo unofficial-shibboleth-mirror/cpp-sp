@@ -86,10 +86,6 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
         void receive(DDF& in, ostream& out);
 
-        const char* getType() const {
-            return "ExternalAuth";
-        }
-
     private:
         pair<bool,long> processMessage(
             const Application& application,
@@ -99,7 +95,6 @@ namespace shibsp {
             const DDF* respDDF=nullptr
             ) const;
 #ifndef SHIBSP_LITE
-        LoginEvent* newLoginEvent(const Application& application, const HTTPRequest& request) const;
         ResolutionContext* resolveAttributes(
             const Application& application,
             const GenericRequest* request,

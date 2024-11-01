@@ -80,11 +80,6 @@ namespace shibsp {
         virtual ~SAML2Consumer() {}
 
 #ifndef SHIBSP_LITE
-        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
-            AssertionConsumerService::generateMetadata(role, handlerURL);
-            role.addSupport(samlconstants::SAML20P_NS);
-        }
-
     private:
         const char* getProfile() const {
             return m_paos ? samlconstants::SAML20_PROFILE_SSO_ECP : samlconstants::SAML20_PROFILE_SSO_BROWSER;

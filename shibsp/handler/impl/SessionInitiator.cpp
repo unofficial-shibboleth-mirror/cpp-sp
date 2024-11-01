@@ -77,40 +77,6 @@ const char* SessionInitiator::remap(const char* src, Category& log) const
     }
 }
 
-#ifndef SHIBSP_LITE
-const char* SessionInitiator::getType() const
-{
-    return "SessionInitiator";
-}
-
-void SessionInitiator::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const
-{
-    // In case any plugins were directly calling this before, we stub it out.
-}
-
-void SessionInitiator::doGenerateMetadata(SPSSODescriptor& role, const char* handlerURL) const
-{
-    if (getParent())
-        return;
-    const char* loc = getString("Location").second;
-    string hurl(handlerURL);
-    if (*loc != '/')
-        hurl += '/';
-    hurl += loc;
-    auto_ptr_XMLCh widen(hurl.c_str());
-
-    RequestInitiator* ep = RequestInitiatorBuilder::buildRequestInitiator();
-    ep->setLocation(widen.get());
-    ep->setBinding(samlconstants::SP_REQUEST_INIT_NS);
-    Extensions* ext = role.getExtensions();
-    if (!ext) {
-        ext = ExtensionsBuilder::buildExtensions();
-        role.setExtensions(ext);
-    }
-    ext->getUnknownXMLObjects().push_back(ep);
-}
-#endif
-
 const set<string>& SessionInitiator::getSupportedOptions() const
 {
     return m_supportedOptions;
@@ -212,30 +178,3 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         throw;
     }
 }
-
-#ifndef SHIBSP_LITE
-
-AuthnRequestEvent* SessionInitiator::newAuthnRequestEvent(const Application& application, const xmltooling::HTTPRequest* request) const
-{
-    if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
-        return nullptr;
-    try {
-        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(AUTHNREQUEST_EVENT, nullptr, false));
-        AuthnRequestEvent* ar_event = dynamic_cast<AuthnRequestEvent*>(event.get());
-        if (ar_event) {
-            ar_event->m_request = request;
-            ar_event->m_app = &application;
-            event.release();
-            return ar_event;
-        }
-        else {
-            Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator").warn("unable to audit event, log event object was of an incorrect type");
-        }
-    }
-    catch (exception& ex) {
-        Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator").warn("exception auditing event: %s", ex.what());
-    }
-    return nullptr;
-}
-
-#endif

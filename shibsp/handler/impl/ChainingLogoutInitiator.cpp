@@ -56,12 +56,6 @@ namespace shibsp {
         
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
-#ifndef SHIBSP_LITE
-        void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const {
-            for_each(m_handlers.begin(), m_handlers.end(), boost::bind(&Handler::generateMetadata, _1, boost::ref(role), handlerURL));
-        }
-#endif
-
     private:
         ptr_vector<Handler> m_handlers;
     };

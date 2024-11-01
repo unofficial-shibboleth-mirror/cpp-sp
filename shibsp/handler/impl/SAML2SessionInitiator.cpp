@@ -89,12 +89,6 @@ namespace shibsp {
             return samlconstants::SAML20P_NS;
         }
 
-#ifndef SHIBSP_LITE
-        void generateMetadata(saml2md::SPSSODescriptor& role, const char* handlerURL) const {
-            doGenerateMetadata(role, handlerURL);
-        }
-#endif
-
     private:
         pair<bool,long> doRequest(
             const Application& application,

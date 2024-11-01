@@ -35,8 +35,6 @@
 
 namespace shibsp {
 
-    class SHIBSP_API AuthnRequestEvent;
-
     /**
      * Pluggable runtime functionality that handles initiating sessions.
      *
@@ -65,19 +63,6 @@ namespace shibsp {
          */
         bool checkCompatibility(SPRequest& request, bool isHandler) const;
 
-#ifndef SHIBSP_LITE
-        /**
-         * Creates a new AuthnRequestEvent for the event log.
-         *
-         * @param application   the Application associated with the event
-         * @param request       the HTTP client request associated with the event, or nullptr
-         * @return  a fresh AuthnRequestEvent, prepopulated by the input parameters, or nullptr if an error occurs
-         */
-        virtual AuthnRequestEvent* newAuthnRequestEvent(
-            const Application& application, const xmltooling::HTTPRequest* request=nullptr
-            ) const;
-#endif
-
     public:
         virtual ~SessionInitiator();
 
@@ -104,20 +89,6 @@ namespace shibsp {
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
         const char* remap(const char* src, xmltooling::logging::Category& log) const;
-
-#ifndef SHIBSP_LITE
-        const char* getType() const;
-        void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
-
-        /**
-         * Generates RequestInitiator metadata when instructed. Allows subclasses to decide whether it's
-         * appropriate to do so instead of requiring them to override the method to stop it.
-         *
-         * @param role          role object to inject metadata into
-         * @param handlerURL    base of endpoint to generate metadata with
-         */
-        void doGenerateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
-#endif
     };
     
     /** Registers SessionInitiator implementations. */
@@ -131,12 +102,6 @@ namespace shibsp {
 
     /** SessionInitiator that supports SAML Discovery Service protocol. */
     #define SAMLDS_SESSION_INITIATOR "SAMLDS"
-
-    /** SessionInitiator that supports Shibboleth V1 AuthnRequest redirects. */
-    #define SHIB1_SESSION_INITIATOR "Shib1"
-
-    /** SessionInitiator that supports Shibboleth V1 WAYF redirects when no IdP is supplied. */
-    #define WAYF_SESSION_INITIATOR "WAYF"
     
     /** SessionInitiator that attempts a sequence of transforms of an input until an entityID is found. */
     #define TRANSFORM_SESSION_INITIATOR "Transform"

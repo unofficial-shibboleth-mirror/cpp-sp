@@ -348,41 +348,6 @@ const XMLCh* AssertionConsumerService::getProtocolFamily() const
     return m_decoder ? m_decoder->getProtocolFamily() : nullptr;
 }
 
-const char* AssertionConsumerService::getType() const
-{
-    return "AssertionConsumerService";
-}
-
-void AssertionConsumerService::generateMetadata(SPSSODescriptor& role, const char* handlerURL) const
-{
-    // Initial guess at index to use.
-    pair<bool,unsigned int> ix = pair<bool,unsigned int>(false,0);
-    if (!strncmp(handlerURL, "https", 5))
-        ix = getUnsignedInt("sslIndex", shibspconstants::ASCII_SHIBSPCONFIG_NS);
-    if (!ix.first)
-        ix = getUnsignedInt("index");
-    if (!ix.first)
-        ix.second = 1;
-
-    // Find maximum index in use and go one higher.
-    const vector<saml2md::AssertionConsumerService*>& services = const_cast<const SPSSODescriptor&>(role).getAssertionConsumerServices();
-    if (!services.empty() && ix.second <= services.back()->getIndex().second)
-        ix.second = services.back()->getIndex().second + 1;
-
-    const char* loc = getString("Location").second;
-    string hurl(handlerURL);
-    if (*loc != '/')
-        hurl += '/';
-    hurl += loc;
-    auto_ptr_XMLCh widen(hurl.c_str());
-
-    saml2md::AssertionConsumerService* ep = saml2md::AssertionConsumerServiceBuilder::buildAssertionConsumerService();
-    ep->setLocation(widen.get());
-    ep->setBinding(getXMLString("Binding").second);
-    ep->setIndex(ix.second);
-    role.getAssertionConsumerServices().push_back(ep);
-}
-
 namespace {
     class SHIBSP_DLLLOCAL DummyContext : public ResolutionContext
     {
@@ -602,30 +567,6 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
             policy.setIssuerMetadata(entity.second);
         }
     }
-}
-
-LoginEvent* AssertionConsumerService::newLoginEvent(const Application& application, const HTTPRequest& request) const
-{
-    if (!SPConfig::getConfig().isEnabled(SPConfig::Logging))
-        return nullptr;
-    try {
-        auto_ptr<TransactionLog::Event> event(SPConfig::getConfig().EventManager.newPlugin(LOGIN_EVENT, nullptr, false));
-        LoginEvent* login_event = dynamic_cast<LoginEvent*>(event.get());
-        if (login_event) {
-            login_event->m_request = &request;
-            login_event->m_app = &application;
-            login_event->m_binding = getString("Binding").second;
-            event.release();
-            return login_event;
-        }
-        else {
-            m_log.warn("unable to audit event, log event object was of an incorrect type");
-        }
-    }
-    catch (const std::exception& ex) {
-        m_log.warn("exception auditing event: %s", ex.what());
-    }
-    return nullptr;
 }
 
 #endif

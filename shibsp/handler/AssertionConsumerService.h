@@ -118,8 +118,6 @@ namespace shibsp {
             ) const;
 
 #ifndef SHIBSP_LITE
-        void generateMetadata(opensaml::saml2md::SPSSODescriptor& role, const char* handlerURL) const;
-        
         /**
          * Returns a profile identifier to inject into the SecurityPolicy created
          * by the base class.
@@ -198,7 +196,6 @@ namespace shibsp {
             ) const;
 
     public:
-        const char* getType() const;
         const XMLCh* getProtocolFamily() const;
 #endif
     private:

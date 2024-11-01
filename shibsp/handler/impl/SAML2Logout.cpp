@@ -79,25 +79,6 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
-#ifndef SHIBSP_LITE
-        void generateMetadata(SPSSODescriptor& role, const char* handlerURL) const {
-            const char* loc = getString("Location").second;
-            string hurl(handlerURL);
-            if (*loc != '/')
-                hurl += '/';
-            hurl += loc;
-            auto_ptr_XMLCh widen(hurl.c_str());
-            SingleLogoutService* ep = SingleLogoutServiceBuilder::buildSingleLogoutService();
-            ep->setLocation(widen.get());
-            ep->setBinding(getXMLString("Binding").second);
-            role.getSingleLogoutServices().push_back(ep);
-            role.addSupport(samlconstants::SAML20P_NS);
-        }
-
-        const char* getType() const {
-            return "SingleLogoutService";
-        }
-#endif
         const XMLCh* getProtocolFamily() const {
             return samlconstants::SAML20P_NS;
         }
@@ -118,15 +99,6 @@ namespace shibsp {
             HTTPResponse& httpResponse,
             bool front
             ) const;
-
-        LogoutEvent* newLogoutEvent(
-            const Application& application, const HTTPRequest* request=nullptr, const Session* session=nullptr
-            ) const {
-            LogoutEvent* e = LogoutHandler::newLogoutEvent(application, request, session);
-            if (e)
-                e->m_protocol = m_protocol.get();
-            return e;
-        }
 
         scoped_ptr<MessageDecoder> m_decoder;
         vector<string> m_bindings;
