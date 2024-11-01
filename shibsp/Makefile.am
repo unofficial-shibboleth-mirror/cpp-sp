@@ -90,7 +90,6 @@ libshibsp_la_SOURCES = \
 	handler/impl/ChainingSessionInitiator.cpp \
 	handler/impl/CookieSessionInitiator.cpp \
 	handler/impl/DiscoveryFeed.cpp \
-	handler/impl/ExternalAuthHandler.cpp \
 	handler/impl/FormSessionInitiator.cpp \
 	handler/impl/LocalLogoutInitiator.cpp \
 	handler/impl/LogoutHandler.cpp \

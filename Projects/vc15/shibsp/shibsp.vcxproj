@@ -202,7 +202,6 @@
     <ClCompile Include="..\..\..\shibsp\handler\impl\AdminLogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\DiscoveryFeed.cpp" />
-    <ClCompile Include="..\..\..\shibsp\handler\impl\ExternalAuthHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\LogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\SecuredHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\impl\StoredSession.cpp" />
