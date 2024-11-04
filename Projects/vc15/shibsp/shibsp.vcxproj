@@ -231,7 +231,6 @@
     <ClCompile Include="..\..\..\shibsp\handler\impl\AssertionLookup.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\ChainingLogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\ChainingSessionInitiator.cpp" />
-    <ClCompile Include="..\..\..\shibsp\handler\impl\FormSessionInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\LocalLogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\LogoutHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\MetadataGenerator.cpp" />

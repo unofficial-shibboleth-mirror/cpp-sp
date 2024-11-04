@@ -103,8 +103,6 @@ namespace shibsp {
     /** SessionInitiator that supports SAML Discovery Service protocol. */
     #define SAMLDS_SESSION_INITIATOR "SAMLDS"
     
-    /** SessionInitiator that uses HTML form submission from the user. */
-    #define FORM_SESSION_INITIATOR "Form"
 };
 
 #endif /* __shibsp_sesinitiator_h__ */
