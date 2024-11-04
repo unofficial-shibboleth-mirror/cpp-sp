@@ -41,18 +41,6 @@ namespace samlconstants {
     /**  Liberty PAOS QName prefix ("paos") */
     extern SHIBSP_API const XMLCh PAOS_PREFIX[];
 
-    /**  SAML 1.X Assertion XML namespace ("urn:oasis:names:tc:SAML:1.0:assertion") */
-    extern SHIBSP_API const XMLCh SAML1_NS[];
-
-    /**  SAML 1.X Protocol XML namespace ("urn:oasis:names:tc:SAML:1.0:protocol") */
-    extern SHIBSP_API const XMLCh SAML1P_NS[];
-
-    /** SAML 1.X Assertion QName prefix ("saml") */
-    extern SHIBSP_API const XMLCh SAML1_PREFIX[];
-
-    /** SAML 1.X Protocol QName prefix ("samlp") */
-    extern SHIBSP_API const XMLCh SAML1P_PREFIX[];
-
     /**  SAML 2.0 Version ("2.0") */
     extern SHIBSP_API const XMLCh SAML20_VERSION[];
 
@@ -157,15 +145,6 @@ namespace samlconstants {
 
     /** SAML Condition for Delegation Restriction QName prefix ("del") */
     extern SHIBSP_API const XMLCh SAML20_DELEGATION_CONDITION_PREFIX[];
-
-    /** SAML 1.x SOAP binding ("urn:oasis:names:tc:SAML:1.0:bindings:SOAP-binding") */
-    extern SHIBSP_API const char SAML1_BINDING_SOAP[];
-
-    /** SAML 1.x Browser Artifact profile ("urn:oasis:names:tc:SAML:1.0:profiles:artifact-01") */
-    extern SHIBSP_API const char SAML1_PROFILE_BROWSER_ARTIFACT[];
-
-    /** SAML 1.x Browser POST profile ("urn:oasis:names:tc:SAML:1.0:profiles:browser-post") */
-    extern SHIBSP_API const char SAML1_PROFILE_BROWSER_POST[];
 
     /** SAML 2.0 SOAP binding ("urn:oasis:names:tc:SAML:2.0:bindings:SOAP") */
     extern SHIBSP_API const char SAML20_BINDING_SOAP[];
