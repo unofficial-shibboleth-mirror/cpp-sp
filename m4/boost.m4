@@ -884,6 +884,12 @@ BOOST_DEFUN([Optional],
 BOOST_DEFUN([Preprocessor],
 [BOOST_FIND_HEADER([boost/preprocessor/repeat.hpp])])
 
+# BOOST_PROPERTY_TREE()
+# --------------------
+# Look for Boost.PropertyTree
+BOOST_DEFUN([PropertyTree],
+[BOOST_FIND_HEADER([boost/property_tree/xml_parser.hpp])])
+
 
 # BOOST_RANGE()
 # --------------------
