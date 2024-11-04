@@ -231,7 +231,6 @@
     <ClCompile Include="..\..\..\shibsp\handler\impl\AssertionLookup.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\ChainingLogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\ChainingSessionInitiator.cpp" />
-    <ClCompile Include="..\..\..\shibsp\handler\impl\CookieSessionInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\FormSessionInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\LocalLogoutInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\LogoutHandler.cpp" />
@@ -245,7 +244,6 @@
     <ClCompile Include="..\..\..\shibsp\handler\impl\SessionHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\SessionInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\StatusHandler.cpp" />
-    <ClCompile Include="..\..\..\shibsp\lite\CommonDomainCookie.cpp" />
     <ClCompile Include="..\..\..\shibsp\lite\SAMLConstants.cpp" />
     <ClCompile Include="..\..\..\shibsp\version.cpp" />
   </ItemGroup>
@@ -290,7 +288,6 @@
     <ClInclude Include="..\..\..\shibsp\handler\LogoutHandler.h" />
     <ClInclude Include="..\..\..\shibsp\handler\RemotedHandler.h" />
     <ClInclude Include="..\..\..\shibsp\handler\SessionInitiator.h" />
-    <ClInclude Include="..\..\..\shibsp\lite\CommonDomainCookie.h" />
     <ClInclude Include="..\..\..\shibsp\lite\SAMLConstants.h" />
   </ItemGroup>
   <ItemGroup>

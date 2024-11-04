@@ -105,9 +105,6 @@ namespace shibsp {
     
     /** SessionInitiator that uses HTML form submission from the user. */
     #define FORM_SESSION_INITIATOR "Form"
-
-    /** SessionInitiator that reads the CDC. */
-    #define COOKIE_SESSION_INITIATOR "Cookie"
 };
 
 #endif /* __shibsp_sesinitiator_h__ */

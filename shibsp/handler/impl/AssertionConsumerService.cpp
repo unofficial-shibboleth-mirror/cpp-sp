@@ -34,33 +34,6 @@
 #include "util/SPConstants.h"
 
 # include <ctime>
-#ifndef SHIBSP_LITE
-# include "attribute/Attribute.h"
-# include "attribute/filtering/AttributeFilter.h"
-# include "attribute/filtering/BasicFilteringContext.h"
-# include "attribute/resolver/AttributeExtractor.h"
-# include "attribute/resolver/AttributeResolver.h"
-# include "attribute/resolver/ResolutionContext.h"
-# include "metadata/MetadataProviderCriteria.h"
-# include "security/SecurityPolicy.h"
-# include "security/SecurityPolicyProvider.h"
-# include <boost/iterator/indirect_iterator.hpp>
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/saml1/core/Assertions.h>
-# include <saml/saml1/core/Protocols.h>
-# include <saml/saml2/core/Protocols.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/util/CommonDomainCookie.h>
-using namespace samlconstants;
-using opensaml::saml2md::MetadataProvider;
-using opensaml::saml2md::RoleDescriptor;
-using opensaml::saml2md::EntityDescriptor;
-using opensaml::saml2md::IDPSSODescriptor;
-using opensaml::saml2md::SPSSODescriptor;
-#else
-# include "lite/CommonDomainCookie.h"
-#endif
 
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
@@ -544,47 +517,3 @@ void AssertionConsumerService::extractMessageDetails(const Assertion& assertion,
 }
 
 #endif
-
-void AssertionConsumerService::maintainHistory(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* entityID
-    ) const
-{
-    static const char* defProps="; path=/";
-    static const char* sslProps="; path=/; secure";
-
-    const PropertySet* sessionProps = application.getPropertySet("Sessions");
-    pair<bool,bool> idpHistory = sessionProps->getBool("idpHistory");
-
-    if (idpHistory.first && idpHistory.second) {
-        pair<bool,const char*> cookieProps = sessionProps->getString("idpHistoryProps");
-        if (!cookieProps.first)
-            cookieProps = sessionProps->getString("cookieProps");
-        if (!cookieProps.first || !strcmp(cookieProps.second, "http"))
-            cookieProps.second = defProps;
-        else if (!strcmp(cookieProps.second, "https"))
-            cookieProps.second = sslProps;
-
-        // Set an IdP history cookie locally (essentially just a CDC).
-        CommonDomainCookie cdc(request.getCookie(CommonDomainCookie::CDCName));
-
-        // Either leave in memory or set an expiration.
-        pair<bool,unsigned int> days = sessionProps->getUnsignedInt("idpHistoryDays");
-        if (!days.first || days.second == 0) {
-            string c = string(cdc.set(entityID)) + cookieProps.second;
-            response.setCookie(CommonDomainCookie::CDCName, c.c_str());
-        }
-        else {
-            time_t now = time(nullptr) + (days.second * 24 * 60 * 60);
-#ifdef HAVE_GMTIME_R
-            struct tm res;
-            struct tm* ptime = gmtime_r(&now,&res);
-#else
-            struct tm* ptime = gmtime(&now);
-#endif
-            char timebuf[64];
-            strftime(timebuf,64,"%a, %d %b %Y %H:%M:%S GMT", ptime);
-            string c = string(cdc.set(entityID)) + cookieProps.second + "; expires=" + timebuf;
-            response.setCookie(CommonDomainCookie::CDCName, c.c_str());
-        }
-    }
-}

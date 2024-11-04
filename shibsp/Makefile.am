@@ -48,7 +48,6 @@ handinclude_HEADERS = \
 	handler/SessionInitiator.h
 
 liteinclude_HEADERS = \
-	lite/CommonDomainCookie.h \
 	lite/SAMLConstants.h
 
 reminclude_HEADERS = \
@@ -88,7 +87,6 @@ libshibsp_la_SOURCES = \
 	handler/impl/AttributeCheckerHandler.cpp \
 	handler/impl/ChainingLogoutInitiator.cpp \
 	handler/impl/ChainingSessionInitiator.cpp \
-	handler/impl/CookieSessionInitiator.cpp \
 	handler/impl/DiscoveryFeed.cpp \
 	handler/impl/FormSessionInitiator.cpp \
 	handler/impl/LocalLogoutInitiator.cpp \
@@ -112,7 +110,6 @@ libshibsp_la_SOURCES = \
 	impl/XMLApplication.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \
-	lite/CommonDomainCookie.cpp \
 	lite/SAMLConstants.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/ListenerService.cpp \

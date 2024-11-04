@@ -209,12 +209,7 @@ namespace shibsp {
             xmltooling::HTTPResponse& response,
             const char* entityID,
             const char* relayState
-            ) const;
-
-        void maintainHistory(
-            const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse& response, const char* entityID
-            ) const;
-                
+            ) const;                
     };
 
 #if defined (_MSC_VER)
