@@ -37,12 +37,6 @@ namespace xmltooling {
     class XMLTOOL_API StorageService;
 };
 
-#ifndef SHIBSP_LITE
-namespace opensaml {
-    class SAML_API SecurityPolicyRule;
-};
-#endif
-
 namespace shibsp {
 
     class SHIBSP_API Application;
@@ -53,10 +47,6 @@ namespace shibsp {
     class SHIBSP_API SessionCache;
     class SHIBSP_API SPRequest;
     class SHIBSP_API TemplateParameters;
-#ifndef SHIBSP_LITE
-    class SHIBSP_API SecurityPolicyProvider;
-    class SHIBSP_API TransactionLog;
-#endif
 
 #if defined (_MSC_VER)
     #pragma warning( push )
