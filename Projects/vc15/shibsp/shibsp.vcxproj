@@ -243,7 +243,6 @@
     <ClCompile Include="..\..\..\shibsp\handler\impl\SessionHandler.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\SessionInitiator.cpp" />
     <ClCompile Include="..\..\..\shibsp\handler\impl\StatusHandler.cpp" />
-    <ClCompile Include="..\..\..\shibsp\lite\SAMLConstants.cpp" />
     <ClCompile Include="..\..\..\shibsp\version.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -287,7 +286,6 @@
     <ClInclude Include="..\..\..\shibsp\handler\LogoutHandler.h" />
     <ClInclude Include="..\..\..\shibsp\handler\RemotedHandler.h" />
     <ClInclude Include="..\..\..\shibsp\handler\SessionInitiator.h" />
-    <ClInclude Include="..\..\..\shibsp\lite\SAMLConstants.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\shibsp\shibsp.rc">

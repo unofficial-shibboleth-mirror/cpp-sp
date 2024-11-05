@@ -27,34 +27,6 @@
 #include "internal.h"
 #include "handler/AssertionConsumerService.h"
 
-#ifndef SHIBSP_LITE
-# include "Application.h"
-# include "ServiceProvider.h"
-# include "SessionCache.h"
-# include "attribute/resolver/ResolutionContext.h"
-# include <boost/iterator/indirect_iterator.hpp>
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/binding/SecurityPolicyRule.h>
-# include <saml/saml2/core/Protocols.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
-# include <saml/saml2/profile/SAML2AssertionPolicy.h>
-# include <xmltooling/XMLToolingConfig.h>
-# include <xmltooling/io/HTTPRequest.h>
-# include <xmltooling/validation/ValidatorSuite.h>
-using namespace opensaml::saml2;
-using namespace opensaml::saml2p;
-using namespace opensaml::saml2md;
-using namespace opensaml;
-using namespace boost;
-# ifndef min
-#  define min(a,b)            (((a) < (b)) ? (a) : (b))
-# endif
-#else
-# include "lite/SAMLConstants.h"
-#endif
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
@@ -71,36 +43,8 @@ namespace shibsp {
     public:
         SAML2Consumer(const DOMElement* e, const char* appId, bool deprecationSupport=true)
             : AssertionConsumerService(e, appId, Category::getInstance(SHIBSP_LOGCAT ".SSO.SAML2"), nullptr, nullptr, deprecationSupport) {
-#ifndef SHIBSP_LITE
-            m_paos = XMLString::equals(getString("Binding").second, samlconstants::SAML20_BINDING_PAOS);
-            if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess))
-                m_ssoRule.reset(SAMLConfig::getConfig().SecurityPolicyRuleManager.newPlugin(BEARER_POLICY_RULE, e, deprecationSupport));
-#endif
         }
         virtual ~SAML2Consumer() {}
-
-#ifndef SHIBSP_LITE
-    private:
-        const char* getProfile() const {
-            return m_paos ? samlconstants::SAML20_PROFILE_SSO_ECP : samlconstants::SAML20_PROFILE_SSO_BROWSER;
-        }
-
-        void implementProtocol(
-            const Application& application,
-            const HTTPRequest& httpRequest,
-            HTTPResponse& httpResponse,
-            SecurityPolicy& policy,
-            const PropertySet*,
-            const XMLObject& xmlObject
-            ) const;
-
-        bool m_paos;
-        scoped_ptr<SecurityPolicyRule> m_ssoRule;
-#else
-        const XMLCh* getProtocolFamily() const {
-            return samlconstants::SAML20P_NS;
-        }
-#endif
     };
 
 #if defined (_MSC_VER)
@@ -111,19 +55,6 @@ namespace shibsp {
     {
         return new SAML2Consumer(p.first, p.second, deprecationSupport);
     }
-
-#ifndef SHIBSP_LITE
-    class SHIBSP_DLLLOCAL _rulenamed : std::unary_function<const SecurityPolicyRule*,bool>
-    {
-    public:
-        _rulenamed(const char* name) : m_name(name) {}
-        bool operator()(const SecurityPolicyRule* rule) const {
-            return rule ? !strcmp(m_name, rule->getType()) : false;
-        }
-    private:
-        const char* m_name;
-    };
-#endif
 };
 
 #ifndef SHIBSP_LITE

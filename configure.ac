@@ -343,12 +343,8 @@ if test "$WANT_APACHE_24" = "yes" ; then
 fi
 
 # Check for unit test support
-AC_CONFIG_FILES([unittests/Makefile])
-AC_ARG_VAR([CXXTEST], [override the cxxtestgen executable and options])
-AC_CHECK_PROGS([CXXTEST], [cxxtestgen cxxtestgen.pl], [false])
-AC_ARG_VAR([CXXTESTFLAGS], [override the cxxtest compiler flags needed to build tests])
-AM_CONDITIONAL([BUILD_UNITTEST], [test "x${CXXTEST}" != xfalse])
-WANT_SUBDIRS="$WANT_SUBDIRS unittests"
+AC_CONFIG_FILES([tests/Makefile])
+WANT_SUBDIRS="$WANT_SUBDIRS tests"
 
 AC_SUBST(WANT_SUBDIRS)
 

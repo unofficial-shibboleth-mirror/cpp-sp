@@ -33,29 +33,6 @@
 #include "handler/LogoutHandler.h"
 #include "util/SPConstants.h"
 
-#ifndef SHIBSP_LITE
-# include "SessionCache.h"
-# include "security/SecurityPolicy.h"
-# include "security/SecurityPolicyProvider.h"
-# include "metadata/MetadataProviderCriteria.h"
-# include <fstream>
-# include <boost/algorithm/string.hpp>
-# include <boost/iterator/indirect_iterator.hpp>
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/saml2/core/Protocols.h>
-# include <saml/saml2/metadata/EndpointManager.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
-# include <xmltooling/util/URLEncoder.h>
-using namespace opensaml::saml2;
-using namespace opensaml::saml2p;
-using namespace opensaml::saml2md;
-using namespace opensaml;
-#else
-# include "lite/SAMLConstants.h"
-#endif
-
 #include <boost/scoped_ptr.hpp>
 
 using namespace shibsp;
@@ -79,33 +56,8 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
-        const XMLCh* getProtocolFamily() const {
-            return samlconstants::SAML20P_NS;
-        }
-
     private:
         pair<bool,long> doRequest(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
-
-#ifndef SHIBSP_LITE
-        pair<bool,long> sendResponse(
-            LogoutEvent* logoutEvent,
-            const XMLCh* requestID,
-            const XMLCh* code,
-            const XMLCh* subcode,
-            const char* msg,
-            const char* relayState,
-            const RoleDescriptor* role,
-            const Application& application,
-            HTTPResponse& httpResponse,
-            bool front
-            ) const;
-
-        scoped_ptr<MessageDecoder> m_decoder;
-        vector<string> m_bindings;
-        map< string,boost::shared_ptr<MessageEncoder> > m_encoders;
-        auto_ptr_char m_protocol;
-        bool m_notifyWithoutSession;
-#endif
     };
 
 #if defined (_MSC_VER)
@@ -120,9 +72,6 @@ namespace shibsp {
 
 SAML2Logout::SAML2Logout(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Logout.SAML2"))
-#ifndef SHIBSP_LITE
-        ,m_protocol(samlconstants::SAML20P_NS)
-#endif
 {
     m_initiator = false;
 #ifndef SHIBSP_LITE

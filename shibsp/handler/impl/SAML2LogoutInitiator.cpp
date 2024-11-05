@@ -32,27 +32,6 @@
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutInitiator.h"
 
-#ifndef SHIBSP_LITE
-# include "binding/SOAPClient.h"
-# include "metadata/MetadataProviderCriteria.h"
-# include "security/SecurityPolicy.h"
-# include <boost/algorithm/string.hpp>
-# include <boost/iterator/indirect_iterator.hpp>
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/saml2/core/Protocols.h>
-# include <saml/saml2/binding/SAML2SOAPClient.h>
-# include <saml/saml2/metadata/EndpointManager.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
-using namespace opensaml::saml2;
-using namespace opensaml::saml2p;
-using namespace opensaml::saml2md;
-using namespace opensaml;
-#else
-# include "lite/SAMLConstants.h"
-#endif
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;
@@ -77,10 +56,6 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
-        const XMLCh* getProtocolFamily() const {
-            return samlconstants::SAML20P_NS;
-        }
-
     private:
         pair<bool,long> doRequest(
             const Application& application, const HTTPRequest& request, HTTPResponse& httpResponse, Session* session
@@ -88,20 +63,6 @@ namespace shibsp {
 
         string m_appId;
         bool m_deprecationSupport;
-        auto_ptr_char m_protocol;
-#ifndef SHIBSP_LITE
-        auto_ptr<LogoutRequest> buildRequest(
-            const Application& application,
-            const Session& session,
-            const RoleDescriptor& role,
-            const XMLCh* endpoint,
-            const MessageEncoder* encoder=nullptr
-            ) const;
-
-        bool m_async;
-        vector<string> m_bindings;
-        map< string,boost::shared_ptr<MessageEncoder> > m_encoders;
-#endif
     };
 
 #if defined (_MSC_VER)
@@ -116,10 +77,7 @@ namespace shibsp {
 
 SAML2LogoutInitiator::SAML2LogoutInitiator(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.SAML2")),
-        m_appId(appId), m_deprecationSupport(deprecationSupport), m_protocol(samlconstants::SAML20P_NS)
-#ifndef SHIBSP_LITE
-        ,m_async(true)
-#endif
+        m_appId(appId), m_deprecationSupport(deprecationSupport)
 {
     // If Location isn't set, defer initialization until the setParent call.
     pair<bool,const char*> loc = getString("Location");
@@ -199,10 +157,10 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
             return make_pair(false, 0L);
 
         // We only handle SAML 2.0 sessions.
-        if (!XMLString::equals(session->getProtocol(), m_protocol.get())) {
-            session->unlock();
-            return make_pair(false, 0L);
-        }
+        //if (!XMLString::equals(session->getProtocol(), m_protocol.get())) {
+        //    session->unlock();
+        //    return make_pair(false, 0L);
+        //}
     }
     catch (const std::exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());

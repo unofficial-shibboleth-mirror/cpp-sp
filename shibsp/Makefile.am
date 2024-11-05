@@ -8,8 +8,6 @@ attrincludedir = $(includedir)/shibsp/attribute
 
 handincludedir = $(includedir)/shibsp/handler
 
-liteincludedir = $(includedir)/shibsp/lite
-
 remincludedir = $(includedir)/shibsp/remoting
 
 utilincludedir = $(includedir)/shibsp/util
@@ -46,9 +44,6 @@ handinclude_HEADERS = \
 	handler/RemotedHandler.h \
 	handler/SecuredHandler.h \
 	handler/SessionInitiator.h
-
-liteinclude_HEADERS = \
-	lite/SAMLConstants.h
 
 reminclude_HEADERS = \
 	remoting/ddf.h \
@@ -109,7 +104,6 @@ libshibsp_la_SOURCES = \
 	impl/XMLApplication.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \
-	lite/SAMLConstants.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/ListenerService.cpp \
 	remoting/impl/SocketListener.cpp \

@@ -35,17 +35,6 @@
 #include <string>
 #include <xmltooling/logging.h>
 
-#ifndef SHIBSP_LITE
-namespace opensaml {
-    class SAML_API MessageEncoder;
-    namespace saml2md {
-        class SAML_API RoleDescriptor;
-    };
-    namespace saml2p {
-        class SAML_API StatusResponseType;
-    };
-};
-#endif
 
 namespace xmltooling {
     class XMLTOOL_API XMLObject;

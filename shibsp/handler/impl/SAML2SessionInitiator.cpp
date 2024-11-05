@@ -33,29 +33,7 @@
 #include "handler/SessionInitiator.h"
 #include "util/SPConstants.h"
 
-#ifndef SHIBSP_LITE
-# include "metadata/MetadataProviderCriteria.h"
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-# include <boost/bind.hpp>
-# include <boost/algorithm/string.hpp>
-# include <boost/iterator/indirect_iterator.hpp>
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/saml2/core/Protocols.h>
-# include <saml/saml2/metadata/EndpointManager.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
-# include <saml/util/SAMLConstants.h>
-# include <xmltooling/XMLToolingConfig.h>
-# include <xmltooling/util/ParserPool.h>
-# include <xercesc/util/Base64.hpp>
-using namespace opensaml::saml2;
-using namespace opensaml::saml2p;
-using namespace opensaml::saml2md;
-#else
-# include "lite/SAMLConstants.h"
-# include <xercesc/util/XMLUniDefs.hpp>
-#endif
+#include <xercesc/util/XMLUniDefs.hpp>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -85,9 +63,6 @@ namespace shibsp {
         pair<bool,long> unwrap(SPRequest& request, DDF& out) const;
         pair<bool,long> run(SPRequest& request, string& entityID, bool isHandler=true) const;
 
-        const XMLCh* getProtocolFamily() const {
-            return samlconstants::SAML20P_NS;
-        }
 
     private:
         pair<bool,long> doRequest(
@@ -115,14 +90,7 @@ namespace shibsp {
         bool m_deprecationSupport;
         auto_ptr_char m_paosNS,m_ecpNS;
         auto_ptr_XMLCh m_paosBinding;
-#ifndef SHIBSP_LITE
-        vector<string> m_bindings;
-        map< string,boost::shared_ptr<MessageEncoder> > m_encoders;
-        scoped_ptr<MessageEncoder> m_ecp;
-        scoped_ptr<AuthnRequest> m_requestTemplate;
-#else
         bool m_ecp;
-#endif
     };
 
 #if defined (_MSC_VER)
@@ -148,21 +116,11 @@ namespace shibsp {
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAML2"), &g_SINFilter, this),
-        m_appId(appId), m_deprecationSupport(deprecationSupport),
-        m_paosNS(samlconstants::PAOS_NS), m_ecpNS(samlconstants::SAML20ECP_NS), m_paosBinding(samlconstants::SAML20_BINDING_PAOS)
+        m_appId(appId), m_deprecationSupport(deprecationSupport)
 #ifdef SHIBSP_LITE
         ,m_ecp(false)
 #endif
 {
-#ifndef SHIBSP_LITE
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        // Check for a template AuthnRequest to build from.
-        DOMElement* child = XMLHelper::getFirstChildElement(e, samlconstants::SAML20P_NS, AuthnRequest::LOCAL_NAME);
-        if (child)
-            m_requestTemplate.reset(dynamic_cast<AuthnRequest*>(AuthnRequestBuilder::buildOneFromElement(child)));
-    }
-#endif
-
     // If Location isn't set, defer initialization until the setParent call.
     pair<bool,const char*> loc = getString("Location");
     if (loc.first) {
@@ -269,7 +227,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
             if (!ACS)
                 request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
-            else if (ECP && !XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_PAOS)) {
+            else if (ECP && !XMLString::equals(ACS->getString("Binding").second, nullptr)) {
                 request.log(SPRequest::SPWarn, "acsIndex in request referenced a non-PAOS ACS, using default ACS location");
                 ACS = nullptr;
             }
@@ -339,7 +297,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
     if (!ACS) {
         if (ECP) {
-            ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily(), samlconstants::SAML20_BINDING_PAOS);
+            ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily(), nullptr);
             if (!ACS)
                 throw ConfigurationException("Unable to locate PAOS response endpoint.");
         }
@@ -396,7 +354,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 app, &request, request, entityID.c_str(),
                 ix.second,
                 attributeIndex.first ? attributeIndex.second : nullptr,
-                XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT),
+                false,
                 nullptr, nullptr,
                 isPassive, forceAuthn,
                 acClass.first ? acClass.second : nullptr,
@@ -428,7 +386,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             app, &request, request, entityID.c_str(),
             nullptr,
             attributeIndex.first ? attributeIndex.second : nullptr,
-            XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT),
+            false,
             ACSloc.c_str(), ACS->getXMLString("Binding").second,
             isPassive, forceAuthn,
             acClass.first ? acClass.second : nullptr,
@@ -477,7 +435,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         	ix = ACS->getString("index");
         }
         in.addmember("acsIndex").string(ix.second);
-        if (XMLString::equals(ACS->getString("Binding").second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT))
+        if (false)
             in.addmember("artifact").integer(1);
     }
     else {
@@ -489,7 +447,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         in.addmember("acsLocation").string(ACSloc.c_str());
         prop = ACS->getString("Binding");
         in.addmember("acsBinding").string(prop.second);
-        if (XMLString::equals(prop.second, samlconstants::SAML20_BINDING_HTTP_ARTIFACT))
+        if (false)
             in.addmember("artifact").integer(1);
     }
 

@@ -1,4 +1,0 @@
-<MetadataProvider type="MDQ" ignoreTransport="true"  cacheDirectory="dynamic/BadSig" backgroundInitialize="true" baseUrl="http://mdq-beta.incommon.org/global/">
-    <MetadataFilter type="Signature" certificate="cert.pem"/>
-</MetadataProvider>
-    

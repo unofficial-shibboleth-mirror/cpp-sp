@@ -46,14 +46,10 @@
 #include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
 
-
-#include "lite/SAMLConstants.h"
-
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
-using namespace samlconstants;
 using namespace xmltooling;
 using namespace xercesc;
 using namespace boost;
@@ -92,12 +88,7 @@ void SHIBSP_API shibsp::registerHandlers()
     SPConfig& conf=SPConfig::getConfig();
 
     conf.AssertionConsumerServiceManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
-    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2ConsumerFactory);
-    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2ConsumerFactory);
-    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2ConsumerFactory);
-    conf.AssertionConsumerServiceManager.registerFactory(SAML20_BINDING_PAOS, SAML2ConsumerFactory);
-
-    conf.HandlerManager.registerFactory(SAML20_BINDING_URI, AssertionLookupFactory);
+ 
     conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
     conf.HandlerManager.registerFactory(DISCOVERY_FEED_HANDLER, DiscoveryFeedFactory);
     conf.HandlerManager.registerFactory(METADATA_GENERATOR_HANDLER, MetadataGeneratorFactory);
@@ -105,12 +96,7 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
 
     conf.SingleLogoutServiceManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
-    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_SOAP, SAML2LogoutFactory);
-    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_REDIRECT, SAML2LogoutFactory);
-    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_POST, SAML2LogoutFactory);
-    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_POST_SIMPLESIGN, SAML2LogoutFactory);
-    conf.SingleLogoutServiceManager.registerFactory(SAML20_BINDING_HTTP_ARTIFACT, SAML2LogoutFactory);
-}
+} 
 
 Handler::Handler()
 {

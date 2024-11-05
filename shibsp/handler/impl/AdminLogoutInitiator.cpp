@@ -32,27 +32,6 @@
 #include "handler/SecuredHandler.h"
 #include "handler/LogoutInitiator.h"
 
-#ifndef SHIBSP_LITE
-# include "binding/SOAPClient.h"
-# include "metadata/MetadataProviderCriteria.h"
-# include "security/SecurityPolicy.h"
-# include <boost/algorithm/string.hpp>
-# include <boost/iterator/indirect_iterator.hpp>
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/saml2/core/Protocols.h>
-# include <saml/saml2/binding/SAML2SOAPClient.h>
-# include <saml/saml2/metadata/EndpointManager.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataCredentialCriteria.h>
-using namespace opensaml::saml2;
-using namespace opensaml::saml2p;
-using namespace opensaml::saml2md;
-using namespace opensaml;
-#else
-# include "lite/SAMLConstants.h"
-#endif
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;

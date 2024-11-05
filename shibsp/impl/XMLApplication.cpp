@@ -41,8 +41,6 @@
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 
-#include "lite/SAMLConstants.h"
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost::algorithm;
@@ -418,7 +416,7 @@ void XMLApplication::doHandlers(const DOMElement* e, Category& log)
             }
             boost::shared_ptr<Handler> exportHandler(
                 conf.HandlerManager.newPlugin(
-                    samlconstants::SAML20_BINDING_URI, pair<const DOMElement*,const char*>(exportElement, getId()), m_deprecationSupport
+                    nullptr, pair<const DOMElement*,const char*>(exportElement, getId()), m_deprecationSupport
                     )
                 );
             m_handlers.push_back(exportHandler);

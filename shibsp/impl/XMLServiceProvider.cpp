@@ -52,8 +52,6 @@
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
 
-#include "lite/SAMLConstants.h"
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;

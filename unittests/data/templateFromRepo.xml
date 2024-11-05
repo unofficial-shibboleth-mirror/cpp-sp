@@ -1,3 +1,0 @@
-<MetadataProvider type="Dynamic" ignoreTransport="true" backgroundInitialize="false" cacheDirectory="dynamic">
-<Subst hashed="SHA1">http://git.shibboleth.net/view/?p=cpp-sp.git&amp;a=blob_plain&amp;f=unittests/data/$entityID.xml&amp;hb=master</Subst>
-</MetadataProvider>

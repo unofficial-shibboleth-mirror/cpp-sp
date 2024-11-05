@@ -12,7 +12,7 @@ DIST_SUBDIRS = \
 	shibsp \
 	apache \
 	fastcgi \
-	unittests
+	tests
 
 pkgconfig_DATA = shibsp.pc
 
