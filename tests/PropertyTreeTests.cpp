@@ -18,11 +18,50 @@
  * Unit tests for property tree usage.
  */
 
+#include <iostream>
 #include <boost/test/unit_test.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
-BOOST_AUTO_TEST_CASE(test1)
+using namespace std;
+namespace pt = boost::property_tree;
+
+#define DATA_PATH "data/propertytree/"
+
+struct PT_Fixture {
+    PT_Fixture() : data_path(DATA_PATH) {}
+    string data_path;
+};
+
+BOOST_FIXTURE_TEST_CASE(PropertyTree_RequestMap_simple, PT_Fixture)
 {
-    int i = 2;
-    BOOST_CHECK( i*i == 1 );
-}
+    pt::ptree tree;
+    pt::read_xml(data_path + "requestmap1.xml", tree);
 
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    const pt::ptree& requestMap = tree.get_child("RequestMap");
+    BOOST_CHECK(requestMap.size() == 2);
+
+    for (const pair<string,pt::ptree>& child : requestMap) {
+        BOOST_CHECK_EQUAL(child.first, "Host");
+
+        BOOST_CHECK_GE(child.second.size(), 1);
+        const pt::ptree& attrs = child.second.get_child("<xmlattr>");
+        string name = attrs.get<string>("name");
+        if (name == "sp.example.org") {
+            BOOST_CHECK_EQUAL(child.second.size(), 2);
+            BOOST_CHECK_EQUAL(attrs.size(), 1);
+            BOOST_CHECK_EQUAL(child.second.get<string>("Path.<xmlattr>.name"), "secure");
+            BOOST_CHECK_EQUAL(child.second.get<string>("Path.<xmlattr>.requireSession"), "true");
+        } else if (name == "admin.example.org") {
+            // Nothing in Host element except the <xmlattr> tree.
+            BOOST_CHECK_EQUAL(child.second.size(), 1);
+            // Three XML attributes, including name.
+            BOOST_CHECK_EQUAL(attrs.size(), 3);
+            BOOST_CHECK_EQUAL(attrs.get<string>("applicationId"), "admin");
+            BOOST_CHECK_EQUAL(attrs.get<string>("requireSession"), "true");
+        } else {
+            BOOST_ERROR("Unexpected Host name: " << name);
+        }
+    }
+}
