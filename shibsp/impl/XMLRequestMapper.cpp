@@ -279,7 +279,8 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
         try {
             boost::shared_ptr<Override> o(new Override(m_unicodeAware, path, log, this));
             if (m_unicodeAware) {
-                dup = toUTF8(o->getXMLString("name").second, true /* use malloc */);
+                //dup = toUTF8(o->getXMLString("name").second, true /* use malloc */);
+                dup = strdup(o->getString("name").second);
             }
             else {
                 dup = strdup(o->getString("name").second);

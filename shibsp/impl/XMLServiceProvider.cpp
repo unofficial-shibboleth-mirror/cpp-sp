@@ -284,8 +284,8 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 
         // Default language handling.
         pair<bool,bool> langFromClient = getBool("langFromClient");
-        pair<bool,const XMLCh*> langPriority = getXMLString("langPriority");
-        GenericRequest::setLangDefaults(!langFromClient.first || langFromClient.second, langPriority.second);
+        pair<bool,const char*> langPriority = getString("langPriority");
+        GenericRequest::setLangDefaults(!langFromClient.first || langFromClient.second, nullptr);
 
         // Extensions
         doExtensions(e, "global", log);

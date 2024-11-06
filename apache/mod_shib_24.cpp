@@ -1061,13 +1061,11 @@ public:
 
     const PropertySet* getParent() const { return nullptr; }
     void setParent(const PropertySet*) {}
-    pair<bool,bool> getBool(const char* name, const char* ns=nullptr) const;
-    pair<bool,const char*> getString(const char* name, const char* ns=nullptr) const;
-    pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=nullptr) const;
-    pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
-    pair<bool,int> getInt(const char* name, const char* ns=nullptr) const;
-    const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const;
-    const xercesc::DOMElement* getElement() const;
+    pair<bool,bool> getBool(const char* name) const;
+    pair<bool,const char*> getString(const char* name) const;
+    pair<bool,unsigned int> getUnsignedInt(const char* name) const;
+    pair<bool,int> getInt(const char* name) const;
+    const PropertySet* getPropertySet(const char* name) const;
 
     const htAccessControl& getHTAccessControl() const { return m_htaccess; }
 
@@ -1097,11 +1095,11 @@ RequestMapper::Settings ApacheRequestMapper::getSettings(const HTTPRequest& requ
     return pair<const PropertySet*,AccessControl*>(this, s.second);
 }
 
-pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) const
+pair<bool,bool> ApacheRequestMapper::getBool(const char* name) const
 {
     const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (sta && !ns) {
+    if (sta) {
         // Override Apache-settable boolean properties.
         if (name && !strcmp(name,"requireSession") && sta->m_dc->bRequireSession != -1)
             return make_pair(true, sta->m_dc->bRequireSession==1);
@@ -1113,14 +1111,14 @@ pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) c
                 return make_pair(true, !strcmp(prop, "true") || !strcmp(prop, "1") || !strcmp(prop, "On"));
         }
     }
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getBool(name,ns) : make_pair(false,false);
+    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getBool(name) : make_pair(false,false);
 }
 
-pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const char* ns) const
+pair<bool,const char*> ApacheRequestMapper::getString(const char* name) const
 {
     const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (sta && !ns) {
+    if (sta) {
         // Override Apache-settable string properties.
         if (name && !strcmp(name,"authType")) {
             const char* auth_type = ap_auth_type(sta->m_req);
@@ -1143,21 +1141,14 @@ pair<bool,const char*> ApacheRequestMapper::getString(const char* name, const ch
                 return make_pair(true, prop);
         }
     }
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getString(name,ns) : pair<bool,const char*>(false,nullptr);
+    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getString(name) : pair<bool,const char*>(false,nullptr);
 }
 
-pair<bool,const XMLCh*> ApacheRequestMapper::getXMLString(const char* name, const char* ns) const
-{
-    const ShibTargetApache* sta = reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getXMLString(name,ns) : pair<bool,const XMLCh*>(false,nullptr);
-}
-
-pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, const char* ns) const
+pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name) const
 {
     const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (sta && !ns) {
+    if (sta) {
         // Override Apache-settable int properties.
         if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
             return pair<bool,unsigned int>(true, strtol(sta->m_dc->szRedirectToSSL, nullptr, 10));
@@ -1167,14 +1158,14 @@ pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name, co
                 return pair<bool,unsigned int>(true, atoi(prop));
         }
     }
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getUnsignedInt(name,ns) : pair<bool,unsigned int>(false,0);
+    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getUnsignedInt(name) : pair<bool,unsigned int>(false,0);
 }
 
-pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) const
+pair<bool,int> ApacheRequestMapper::getInt(const char* name) const
 {
     const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (sta && !ns) {
+    if (sta) {
         // Override Apache-settable int properties.
         if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
             return pair<bool,int>(true,atoi(sta->m_dc->szRedirectToSSL));
@@ -1184,19 +1175,13 @@ pair<bool,int> ApacheRequestMapper::getInt(const char* name, const char* ns) con
                 return make_pair(true, atoi(prop));
         }
     }
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getInt(name,ns) : pair<bool,int>(false,0);
+    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getInt(name) : pair<bool,int>(false,0);
 }
 
-const PropertySet* ApacheRequestMapper::getPropertySet(const char* name, const char* ns) const
+const PropertySet* ApacheRequestMapper::getPropertySet(const char* name) const
 {
     const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getPropertySet(name,ns) : nullptr;
-}
-
-const xercesc::DOMElement* ApacheRequestMapper::getElement() const
-{
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getElement() : nullptr;
+    return s ? s->getPropertySet(name) : nullptr;
 }
 
 // Authz callbacks for Apache 2.4

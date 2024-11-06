@@ -403,52 +403,17 @@ void XMLApplication::doHandlers(const DOMElement* e, Category& log)
 
     const PropertySet* sessions = getPropertySet("Sessions");
 
-    // Process assertion export handler.
-    pair<bool,const char*> location = sessions ? sessions->getString("exportLocation") : pair<bool,const char*>(false,nullptr);
-    if (location.first) {
-        try {
-            DOMElement* exportElement = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), _Handler);
-            exportElement->setAttributeNS(nullptr,Location,sessions->getXMLString("exportLocation").second);
-            pair<bool,const XMLCh*> exportACL = sessions->getXMLString("exportACL");
-            if (exportACL.first) {
-                static const XMLCh _acl[] = UNICODE_LITERAL_9(e,x,p,o,r,t,A,C,L);
-                exportElement->setAttributeNS(nullptr,_acl,exportACL.second);
-            }
-            boost::shared_ptr<Handler> exportHandler(
-                conf.HandlerManager.newPlugin(
-                    nullptr, pair<const DOMElement*,const char*>(exportElement, getId()), m_deprecationSupport
-                    )
-                );
-            m_handlers.push_back(exportHandler);
-
-            // Insert into location map. If it contains the handlerURL, we skip past that part.
-            const char* hurl = sessions->getString("handlerURL").second;
-            if (!hurl)
-                hurl = "/Shibboleth.sso";
-            const char* pch = strstr(location.second, hurl);
-            if (pch)
-                location.second = pch + strlen(hurl);
-            if (*location.second == '/')
-                m_handlerMap[location.second] = exportHandler.get();
-            else
-                m_handlerMap[string("/") + location.second] = exportHandler.get();
-        }
-        catch (const std::exception& ex) {
-            log.error("caught exception installing assertion lookup handler: %s", ex.what());
-        }
-    }
-
     // Look for "shorthand" elements first.
     set<string> protocols;
-    DOMElement* child = sessions ? XMLHelper::getFirstChildElement(sessions->getElement()) : nullptr;
+    DOMElement* child = nullptr;
     while (child) {
-        if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), SSO)) {
+        if (XMLHelper::isNodeNamed(child, nullptr, SSO)) {
             if (false)
                 doSSO(protocols, child, log);
             else
                 log.error("no ProtocolProvider, SSO auto-configure unsupported");
         }
-        else if (XMLHelper::isNodeNamed(child, sessions->getElement()->getNamespaceURI(), Logout)) {
+        else if (XMLHelper::isNodeNamed(child, nullptr, Logout)) {
             if (false)
                 doLogout(protocols, child, log);
             else
@@ -600,7 +565,7 @@ void XMLApplication::doHandlers(const DOMElement* e, Category& log)
             m_handlers.push_back(handler);
 
             // Insert into location map.
-            location = handler->getString("Location");
+            pair<bool,const char*> location = handler->getString("Location");
             if (location.first && *location.second == '/')
                 m_handlerMap[location.second] = handler.get();
             else if (location.first)

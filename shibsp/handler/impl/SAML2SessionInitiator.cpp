@@ -97,16 +97,6 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    class SHIBSP_DLLLOCAL SessionInitiatorNodeFilter : public DOMNodeFilter
-    {
-    public:
-        FilterAction acceptNode(const DOMNode* node) const {
-            return FILTER_REJECT;
-        }
-    };
-
-    static SHIBSP_DLLLOCAL SessionInitiatorNodeFilter g_SINFilter;
-
     SessionInitiator* SHIBSP_DLLLOCAL SAML2SessionInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
     {
         return new SAML2SessionInitiator(p.first, p.second, deprecationSupport);
@@ -115,11 +105,8 @@ namespace shibsp {
 };
 
 SAML2SessionInitiator::SAML2SessionInitiator(const DOMElement* e, const char* appId, bool deprecationSupport)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAML2"), &g_SINFilter, this),
-        m_appId(appId), m_deprecationSupport(deprecationSupport)
-#ifdef SHIBSP_LITE
-        ,m_ecp(false)
-#endif
+    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".SessionInitiator.SAML2"), nullptr, this),
+        m_appId(appId), m_deprecationSupport(deprecationSupport), m_ecp(false)
 {
     // If Location isn't set, defer initialization until the setParent call.
     pair<bool,const char*> loc = getString("Location");
@@ -339,20 +326,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                     target = prop.second;
             }
 
-            // Determine index to use.
-            pair<bool,const XMLCh*> ix = pair<bool,const XMLCh*>(false,nullptr);
-            if (!strncmp(ACSloc.c_str(), "https://", 8)) {
-            	ix = ACS->getXMLString("sslIndex", shibspconstants::ASCII_SHIBSPCONFIG_NS);
-            	if (!ix.first)
-            		ix = ACS->getXMLString("index");
-            }
-            else {
-            	ix = ACS->getXMLString("index");
-            }
-
             return doRequest(
                 app, &request, request, entityID.c_str(),
-                ix.second,
+                nullptr,
                 attributeIndex.first ? attributeIndex.second : nullptr,
                 false,
                 nullptr, nullptr,
@@ -387,7 +363,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             nullptr,
             attributeIndex.first ? attributeIndex.second : nullptr,
             false,
-            ACSloc.c_str(), ACS->getXMLString("Binding").second,
+            ACSloc.c_str(), nullptr,
             isPassive, forceAuthn,
             acClass.first ? acClass.second : nullptr,
             acComp.first ? acComp.second : nullptr,
@@ -427,7 +403,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         // Determine index to use.
         pair<bool,const char*> ix = pair<bool,const char*>(false,nullptr);
         if (!strncmp(ACSloc.c_str(), "https://", 8)) {
-        	ix = ACS->getString("sslIndex", shibspconstants::ASCII_SHIBSPCONFIG_NS);
+        	ix = ACS->getString("sslIndex");
         	if (!ix.first)
         		ix = ACS->getString("index");
         }

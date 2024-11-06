@@ -96,11 +96,6 @@ void DOMPropertySet::setParent(const PropertySet* parent)
     m_parent = parent;
 }
 
-const DOMElement* DOMPropertySet::getElement() const
-{
-    return m_root;
-}
-
 void DOMPropertySet::load(
     const DOMElement* e,
     Category* log,
@@ -198,65 +193,30 @@ void DOMPropertySet::load(
     walker->release();
 }
 
-pair<bool,bool> DOMPropertySet::getBool(const char* name, const char* ns) const
+pair<bool,bool> DOMPropertySet::getBool(const char* name) const
 {
-    map< string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
-
+    const auto i = m_map.find(name);
     if (i!=m_map.end())
         return make_pair(true,(!strcmp(i->second.first,"true") || !strcmp(i->second.first,"1")));
-    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end()) {
-        return m_parent->getBool(name, ns);
+    else if (m_parent && m_unset.find(name) == m_unset.end()) {
+        return m_parent->getBool(name);
     }
     return make_pair(false,false);
 }
 
-pair<bool,const char*> DOMPropertySet::getString(const char* name, const char* ns) const
+pair<bool,const char*> DOMPropertySet::getString(const char* name) const
 {
-    map< string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
+    const auto i = m_map.find(name);
     if (i!=m_map.end())
         return pair<bool,const char*>(true,i->second.first);
-    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end())
-        return m_parent->getString(name,ns);
+    else if (m_parent && m_unset.find(name) == m_unset.end())
+        return m_parent->getString(name);
     return pair<bool,const char*>(false,nullptr);
 }
 
-pair<bool,const XMLCh*> DOMPropertySet::getXMLString(const char* name, const char* ns) const
+pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name) const
 {
-    map< string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
-    if (i!=m_map.end())
-        return make_pair(true,i->second.second);
-    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end())
-        return m_parent->getXMLString(name,ns);
-    return pair<bool,const XMLCh*>(false,nullptr);
-}
-
-pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const char* ns) const
-{
-    map< string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
+    const auto i = m_map.find(name);
     if (i!=m_map.end()) {
         try {
             return pair<bool,unsigned int>(true,lexical_cast<unsigned int>(i->second.first));
@@ -265,53 +225,40 @@ pair<bool,unsigned int> DOMPropertySet::getUnsignedInt(const char* name, const c
             return pair<bool,unsigned int>(false,0);
         }
     }
-    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end())
-        return m_parent->getUnsignedInt(name,ns);
+    else if (m_parent && m_unset.find(name) == m_unset.end())
+        return m_parent->getUnsignedInt(name);
     return pair<bool,unsigned int>(false,0);
 }
 
-pair<bool,int> DOMPropertySet::getInt(const char* name, const char* ns) const
+pair<bool,int> DOMPropertySet::getInt(const char* name) const
 {
-    map< string,pair<char*,const XMLCh*> >::const_iterator i;
-
-    if (ns)
-        i=m_map.find(string("{") + ns + '}' + name);
-    else
-        i=m_map.find(name);
-
+    const auto i = m_map.find(name);
     if (i!=m_map.end())
         return pair<bool,int>(true,atoi(i->second.first));
-    else if (m_parent && m_unset.find(ns ? (string("{") + ns + '}' + name) : name) == m_unset.end())
-        return m_parent->getInt(name,ns);
+    else if (m_parent && m_unset.find(name) == m_unset.end())
+        return m_parent->getInt(name);
     return pair<bool,int>(false,0);
 }
 
-const PropertySet* DOMPropertySet::getPropertySet(const char* name, const char* ns) const
+const PropertySet* DOMPropertySet::getPropertySet(const char* name) const
 {
-    map< string,boost::shared_ptr<DOMPropertySet> >::const_iterator i;
+    const auto i = m_nested.find(name);
 
-    if (ns)
-        i = m_nested.find(string("{") + ns + '}' + name);
-    else
-        i = m_nested.find(name);
-
-    return (i != m_nested.end()) ? i->second.get() : (m_parent ? m_parent->getPropertySet(name,ns) : nullptr);
+    return (i != m_nested.end()) ? i->second.get() : (m_parent ? m_parent->getPropertySet(name) : nullptr);
 }
 
-bool DOMPropertySet::setProperty(const char* name, const char* val, const char* ns)
+bool DOMPropertySet::setProperty(const char* name, const char* val)
 {
-    string propname = ns ? (string("{") + ns + "}" + name) : name;
-
     // Erase existing property.
-    if (m_map.count(propname) > 0) {
-        XMLString::release(&m_map[propname].first);
-        m_map.erase(propname);
+    if (m_map.count(name) > 0) {
+        XMLString::release(&m_map[name].first);
+        m_map.erase(name);
     }
 
     char* dup = XMLString::replicate(val);
     auto_ptr_XMLCh widedup(val);
     m_injected.push_back(widedup.get());
-    m_map[propname] = make_pair(dup, m_injected.back().c_str());
+    m_map[name] = make_pair(dup, m_injected.back().c_str());
 
     return true;
 }

@@ -50,13 +50,11 @@ namespace shibsp {
 
         const PropertySet* getParent() const;
         void setParent(const PropertySet* parent);
-        std::pair<bool,bool> getBool(const char* name, const char* ns=nullptr) const;
-        std::pair<bool,const char*> getString(const char* name, const char* ns=nullptr) const;
-        std::pair<bool,const XMLCh*> getXMLString(const char* name, const char* ns=nullptr) const;
-        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const char* ns=nullptr) const;
-        std::pair<bool,int> getInt(const char* name, const char* ns=nullptr) const;
-        const PropertySet* getPropertySet(const char* name, const char* ns=shibspconstants::ASCII_SHIBSPCONFIG_NS) const;
-        const xercesc::DOMElement* getElement() const;
+        std::pair<bool,bool> getBool(const char* name) const;
+        std::pair<bool,const char*> getString(const char* name) const;
+        std::pair<bool,unsigned int> getUnsignedInt(const char* name) const;
+        std::pair<bool,int> getInt(const char* name) const;
+        const PropertySet* getPropertySet(const char* name) const;
 
         /**
          * Interface that remaps property names for legacy support.
@@ -127,7 +125,7 @@ namespace shibsp {
          * @param ns    property namespace
          * @return  true iff the property was successfully set
          */
-        bool setProperty(const char* name, const char* val, const char* ns=nullptr);
+        bool setProperty(const char* name, const char* val);
 
     private:
         const PropertySet* m_parent;

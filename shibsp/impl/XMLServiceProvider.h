@@ -98,20 +98,14 @@ namespace shibsp {
             background_load();
         }
 
-        const XMLCh* getConfigurationNamespace() const {
-            return m_impl ? m_impl->getElement()->getNamespaceURI() : nullptr;
-        }
-
         // PropertySet
         const PropertySet* getParent() const { return m_impl->getParent(); }
         void setParent(const PropertySet* parent) { return m_impl->setParent(parent); }
-        std::pair<bool, bool> getBool(const char* name, const char* ns = nullptr) const { return m_impl->getBool(name, ns); }
-        std::pair<bool, const char*> getString(const char* name, const char* ns = nullptr) const { return m_impl->getString(name, ns); }
-        std::pair<bool, const XMLCh*> getXMLString(const char* name, const char* ns = nullptr) const { return m_impl->getXMLString(name, ns); }
-        std::pair<bool, unsigned int> getUnsignedInt(const char* name, const char* ns = nullptr) const { return m_impl->getUnsignedInt(name, ns); }
-        std::pair<bool, int> getInt(const char* name, const char* ns = nullptr) const { return m_impl->getInt(name, ns); }
-        const PropertySet* getPropertySet(const char* name, const char* ns = shibspconstants::ASCII_SHIBSPCONFIG_NS) const { return m_impl->getPropertySet(name, ns); }
-        const xercesc::DOMElement* getElement() const { return m_impl->getElement(); }
+        std::pair<bool, bool> getBool(const char* name) const { return m_impl->getBool(name); }
+        std::pair<bool, const char*> getString(const char* name) const { return m_impl->getString(name); }
+        std::pair<bool, unsigned int> getUnsignedInt(const char* name) const { return m_impl->getUnsignedInt(name); }
+        std::pair<bool, int> getInt(const char* name) const { return m_impl->getInt(name); }
+        const PropertySet* getPropertySet(const char* name) const { return m_impl->getPropertySet(name); }
 
         // ServiceProvider
         ListenerService* getListenerService(bool required = true) const {

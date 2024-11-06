@@ -77,15 +77,6 @@ namespace shibsp {
         virtual void init()=0;
 
         /**
-         * Get the "active" XML namespace of the underlying configuration.
-         *
-         * <p>This accomodates multiple supported configuration schemas at runtime
-         * by allowing components to tailor their behavior to the specific format in
-         * use.</p>
-         */
-        virtual const XMLCh* getConfigurationNamespace() const=0;
-
-        /**
          * Returns a SessionCache instance.
          * 
          * @param required  true iff an exception should be thrown if no SessionCache is available
