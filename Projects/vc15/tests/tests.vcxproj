@@ -90,13 +90,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(solutionDir)\..\..\..\;$(solutionDir)\..\..\;$(solutionDir)\..\..\..\cpp-opensaml;$(solutionDir)\..\..\..\cpp-xmltooling;$(OutDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(solutionDir)\..\..\..\;$(solutionDir)\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>shibsp3D.lib;log4shib2D.lib;xmltooling3D.lib;saml3D.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shibsp3D.lib;log4shib2D.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\Build\VC15\$(Platform)\$(Configuration);..\..\..\..\cpp-xmltooling\Build\VC15\$(Platform)\$(Configuration);..\..\..\..\cpp-opensaml\Build\VC15\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -105,14 +105,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(solutionDir)\..\..\..\;$(solutionDir)\..\..\;$(solutionDir)\..\..\..\cpp-opensaml;$(solutionDir)\..\..\..\cpp-xmltooling;$(OutDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(solutionDir)\..\..\..\;$(solutionDir)\..\..\;$(OutDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>shibsp3D.lib;log4shib2D.lib;xmltooling3D.lib;saml3D.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\\Build\VC15\$(Configuration);..\..\..\..\cpp-xmltooling\Build\VC15\$(Configuration);..\..\..\..\cpp-opensaml\Build\VC15\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>shibsp3D.lib;log4shib2D.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\\Build\VC15\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -122,15 +122,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(solutionDir)\..\..\..\;$(solutionDir)\..\..\;$(solutionDir)\..\..\..\cpp-opensaml;$(solutionDir)\..\..\..\cpp-xmltooling;$(OutDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(solutionDir)\..\..\..\;$(solutionDir)\..\..\;$(OutDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>shibsp3.lib;log4shib2.lib;xmltooling3.lib;saml3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\\Build\VC15\$(Configuration);..\..\..\..\cpp-xmltooling\Build\VC15\$(Configuration);..\..\..\..\cpp-opensaml\Build\VC15\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>shibsp3.lib;log4shib2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\\Build\VC15\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -140,58 +140,20 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(solutionDir)\..\..\..\;$(solutionDir)\..\..\;$(solutionDir)\..\..\..\cpp-opensaml;$(solutionDir)\..\..\..\cpp-xmltooling;$(OutDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(solutionDir)\..\..\..\;$(solutionDir)\..\..\;$(OutDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>shibsp3.lib;log4shib2.lib;xmltooling3.lib;saml3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\..\..\\Build\VC15\$(Platform)\$(Configuration);..\..\..\..\cpp-xmltooling\Build\VC15\$(Platform)\$(Configuration);..\..\..\..\cpp-opensaml\Build\VC15\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>shibsp3.lib;log4shib2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\..\\Build\VC15\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\unittests\BaseTestCase.h" />
-    <ClInclude Include="..\..\..\unittests\TestApplication.h" />
-    <CustomBuild Include="..\..\..\unittests\SPTest.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --error-printer --have-eh --have-std --abort-on-fail -o %(RootDir)%(Directory)%(Filename).cpp  "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --error-printer --have-eh --have-std --abort-on-fail -o %(RootDir)%(Directory)%(Filename).cpp  "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --error-printer --have-eh --have-std --abort-on-fail -o %(RootDir)%(Directory)%(Filename).cpp  "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --error-printer --have-eh --have-std --abort-on-fail -o %(RootDir)%(Directory)%(Filename).cpp  "%(FullPath)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)%(Filename).cpp;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)%(Filename).cpp;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)%(Filename).cpp;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)%(Filename).cpp;%(Outputs)</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="..\..\..\unittests\DynamicMetadataProviderTest.h">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --part --have-eh --have-std --abort-on-fail -o %(RootDir)%(Directory)%(Filename).cpp "%(FullPath)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)%(Filename).cpp;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --part --have-eh --have-std --abort-on-fail -o %(RootDir)%(Directory)%(Filename).cpp "%(FullPath)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)%(Filename).cpp;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --part --have-eh --have-std --abort-on-fail -o %(RootDir)%(Directory)%(Filename).cpp "%(FullPath)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)%(Filename).cpp;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">perl.exe -w $(CxxTestRoot)\cxxtestgen.pl --part --have-eh --have-std --abort-on-fail -o %(RootDir)%(Directory)%(Filename).cpp "%(FullPath)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)%(Filename).cpp;%(Outputs)</Outputs>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\unittests\DynamicMetadataProviderTest.cpp" />
-    <ClCompile Include="..\..\..\unittests\SPTest.cpp" />
-    <ClCompile Include="..\..\..\unittests\TestApplication.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="..\..\..\unittests\data\badSigMDQ.xml" />
-    <Xml Include="..\..\..\unittests\data\chainedFromURL.xml">
-      <SubType>Designer</SubType>
-    </Xml>
-    <Xml Include="..\..\..\unittests\data\df5a20c921bc30c1b76c5a6cec08d074e280de8b.xml" />
-    <Xml Include="..\..\..\unittests\data\fromMDQ.xml" />
-    <Xml Include="..\..\..\unittests\data\idp.shibboleth.net.xml" />
-    <Xml Include="..\..\..\unittests\data\localDynamic.xml">
-      <SubType>Designer</SubType>
-    </Xml>
-    <Xml Include="..\..\..\unittests\data\templateFromRepo.xml" />
+    <ClCompile Include="..\..\..\tests\AgentTestSuite.cpp" />
+    <ClCompile Include="..\..\..\tests\PropertyTreeTests.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
