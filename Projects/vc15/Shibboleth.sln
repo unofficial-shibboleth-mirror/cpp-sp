@@ -101,8 +101,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Installer", "Wix\Installer.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "iis7_shib", "iis7_shib\iis7_shib.vcxproj", "{CEE84E04-6A19-4F93-8FE5-98F9D22526DD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTests", "UnitTests\UnitTests.vcxproj", "{9212963D-AB04-4CA1-A856-735993246076}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -151,14 +149,6 @@ Global
 		{CEE84E04-6A19-4F93-8FE5-98F9D22526DD}.Release|Win32.Build.0 = Release|Win32
 		{CEE84E04-6A19-4F93-8FE5-98F9D22526DD}.Release|x64.ActiveCfg = Release|x64
 		{CEE84E04-6A19-4F93-8FE5-98F9D22526DD}.Release|x64.Build.0 = Release|x64
-		{9212963D-AB04-4CA1-A856-735993246076}.Debug|Win32.ActiveCfg = Debug|Win32
-		{9212963D-AB04-4CA1-A856-735993246076}.Debug|Win32.Build.0 = Debug|Win32
-		{9212963D-AB04-4CA1-A856-735993246076}.Debug|x64.ActiveCfg = Debug|x64
-		{9212963D-AB04-4CA1-A856-735993246076}.Debug|x64.Build.0 = Debug|x64
-		{9212963D-AB04-4CA1-A856-735993246076}.Release|Win32.ActiveCfg = Release|Win32
-		{9212963D-AB04-4CA1-A856-735993246076}.Release|Win32.Build.0 = Release|Win32
-		{9212963D-AB04-4CA1-A856-735993246076}.Release|x64.ActiveCfg = Release|x64
-		{9212963D-AB04-4CA1-A856-735993246076}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
