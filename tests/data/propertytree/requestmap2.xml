@@ -1,0 +1,5 @@
+<RequestMap>
+    <Host name="sp.example.org">
+        <Path name="secure/☯️" requireSession="true" />
+    </Host>
+</RequestMap>
