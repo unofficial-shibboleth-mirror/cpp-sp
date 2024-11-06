@@ -176,11 +176,11 @@ RegisterModule(
             else
             	g_bSafeHeaderNames = flag.first && flag.second;
 
-            const string prefix(XMLHelper::getAttrString(props->getElement(), "/Shibboleth.sso", handlerPrefix));
+            const string prefix(XMLHelper::getAttrString(nullptr, "/Shibboleth.sso", handlerPrefix));
             std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
             g_handlerPrefix = converter.from_bytes(prefix);
 
-            const DOMElement* site = XMLHelper::getFirstChildElement(props->getElement(), Site);
+            const DOMElement* site = XMLHelper::getFirstChildElement(nullptr, Site);
             while (site) {
                 string id(XMLHelper::getAttrString(site, "", id));
                 if (!id.empty())
