@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "util/DOMPropertySet.h"
+#include "util/SPConstants.h"
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>

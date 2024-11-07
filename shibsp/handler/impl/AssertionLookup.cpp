@@ -32,6 +32,7 @@
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
+#include "util/SPConstants.h"
 
 #include <boost/scoped_ptr.hpp>
 

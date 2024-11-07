@@ -32,6 +32,7 @@
 #include "SPRequest.h"
 #include "impl/XMLApplication.h"
 #include "impl/XMLServiceProvider.h"
+#include "util/SPConstants.h"
 
 #if defined(XMLTOOLING_LOG4SHIB)
 # include <log4shib/PropertyConfigurator.hh>

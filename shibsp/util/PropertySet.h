@@ -21,10 +21,7 @@
 #ifndef __shibsp_propset_h__
 #define __shibsp_propset_h__
 
-#include <shibsp/util/SPConstants.h>
-
-#include <map>
-#include <string>
+#include <utility>
 
 namespace shibsp {
 

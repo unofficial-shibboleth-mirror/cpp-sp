@@ -30,6 +30,7 @@
 #include "handler/LogoutInitiator.h"
 #include "handler/SessionInitiator.h"
 #include "impl/XMLApplication.h"
+#include "util/SPConstants.h"
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
