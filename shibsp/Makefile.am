@@ -50,6 +50,7 @@ reminclude_HEADERS = \
 	remoting/ListenerService.h
 	
 utilinclude_HEADERS = \
+	util/BoostPropertySet.h \
 	util/CGIParser.h \
 	util/DOMPropertySet.h \
 	util/IPRange.h \
@@ -109,6 +110,7 @@ libshibsp_la_SOURCES = \
 	remoting/impl/SocketListener.cpp \
 	remoting/impl/TCPListener.cpp \
 	remoting/impl/UnixListener.cpp \
+	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
 	util/DOMPropertySet.cpp \
 	util/IPRange.cpp \

@@ -41,14 +41,6 @@ using namespace xercesc;
 using namespace boost;
 using namespace std;
 
-PropertySet::PropertySet()
-{
-}
-
-PropertySet::~PropertySet()
-{
-}
-
 DOMPropertySet::Remapper::Remapper()
 {
 }
