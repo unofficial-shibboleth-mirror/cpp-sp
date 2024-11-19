@@ -24,7 +24,7 @@
 using namespace std;
 namespace pt = boost::property_tree;
 
-#define DATA_PATH "data/propertytree/"
+#define DATA_PATH "data/util/propertytree/"
 
 struct PT_Fixture {
     PT_Fixture() : data_path(DATA_PATH) {}
@@ -41,7 +41,7 @@ BOOST_FIXTURE_TEST_CASE(PropertyTree_RequestMap_simple, PT_Fixture)
     const pt::ptree& requestMap = tree.get_child("RequestMap");
     BOOST_CHECK_EQUAL(requestMap.size(), 2);
 
-    for (const pair<string,pt::ptree>& child : requestMap) {
+    for (const pair<const string,pt::ptree>& child : requestMap) {
         BOOST_CHECK_EQUAL(child.first, "Host");
 
         BOOST_CHECK_GE(child.second.size(), 1);

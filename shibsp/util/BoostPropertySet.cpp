@@ -15,7 +15,7 @@
 /**
  * BoostPropertySet.cpp
  * 
- * DOM-based property set implementation.
+ * Boost propertytree-based property set implementation.
  */
 
 #include "internal.h"
@@ -45,7 +45,7 @@ PropertySet2::~PropertySet2()
 {
 }
 
-BoostPropertySet::BoostPropertySet() : m_parent(nullptr)
+BoostPropertySet::BoostPropertySet() : m_parent(nullptr), m_pt(nullptr)
 {
 }
 

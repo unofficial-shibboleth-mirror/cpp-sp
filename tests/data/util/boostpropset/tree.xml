@@ -1,0 +1,6 @@
+<root foo="bar">
+    <one foo="baz" />
+    <one unset="foo">
+        <two />
+    </one>
+</root>

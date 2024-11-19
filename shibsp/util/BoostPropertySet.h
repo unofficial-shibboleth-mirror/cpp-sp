@@ -13,9 +13,9 @@
  */
 
 /**
- * @file shibsp/util/DOMPropertySet.h
+ * @file shibsp/util/BoostPropertySet.h
  * 
- * DOM-based property set implementation.
+ * Boost propertytree-based property set implementation.
  */
 
 #ifndef __shibsp_boostpropset_h__
@@ -30,18 +30,22 @@ namespace shibsp {
 
     /**
      * Boost property tree-based property set implementation.
+     * 
+     * <p>This implementation is generally suitable only for trees created
+     * by hand or that are parsed via one of the non-XML parsing methods.</p>
+     * 
+     * <p>The XML-based representation uses special "reserved" property node
+     * names for attributes and element content and can therefore not be used
+     * directly as a means of exposing the properties via this interface.</p>
      */
     class SHIBSP_API BoostPropertySet : public virtual PropertySet2
     {
     public:
         BoostPropertySet();
-        
         virtual ~BoostPropertySet();
 
-        const PropertySet2* getParent() const;
-        void setParent(const PropertySet2* parent);
         bool getBool(const char* name, bool defaultValue) const;
-        const char* getString(const char* name, const char* defaultValue) const;
+        const char* getString(const char* name, const char* defaultValue=nullptr) const;
         unsigned int getUnsignedInt(const char* name, unsigned int defaultValue) const;
         int getInt(const char* name, int defaultValue) const;
 
@@ -53,7 +57,17 @@ namespace shibsp {
          */
         void load(const boost::property_tree::ptree& pt, const char* unsetter=nullptr);
 
+    protected:
+        /**
+         * Installs a parent PropertySet to allow an inheritance relationship to a different instance.
+         * 
+         * @param parent the parent PropertySet to install
+         */
+        void setParent(const PropertySet2* parent);
+
     private:
+        const PropertySet2* getParent() const;
+
         const PropertySet2* m_parent;
         const boost::property_tree::ptree* m_pt;
 		std::set<std::string> m_unset;

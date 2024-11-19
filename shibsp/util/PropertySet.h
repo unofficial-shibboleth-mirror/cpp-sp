@@ -15,7 +15,7 @@
 /**
  * @file shibsp/util/PropertySet.h
  * 
- * Interface to a generic set of typed properties or a DOM container of additional data.
+ * Interface to a generic set of typed properties.
  */
 
 #ifndef __shibsp_propset_h__
@@ -101,6 +101,10 @@ namespace shibsp {
     /**
      * Interface to a generic set of typed properties.
      * 
+     * <p>This new variant will be based on supporting a dotted path syntax to access
+     * "nested" sets of named properties, which used to be navigated explicitly with
+     * a hierarchy of child objects. That is now only one-way, down the tree.</p>
+     * 
      * TODO: This will replace the original interface and be renamed back to PropertySet
      * once code migration is completed.
      */
@@ -111,20 +115,6 @@ namespace shibsp {
         PropertySet2();
     public:
         virtual ~PropertySet2();
-
-        /**
-         * Returns parent of this PropertySet, if any.
-         *
-         * @return the parent object, or nullptr
-         */
-        virtual const PropertySet2* getParent() const=0;
-
-        /**
-         * Establishes a "parent" PropertySet to supply inherited settings.
-         *
-         * @param parent    the parent PropertySet to use
-         */
-        virtual void setParent(const PropertySet2* parent)=0;
 
         /**
          * Returns a boolean-valued property.
