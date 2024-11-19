@@ -37,6 +37,14 @@ PropertySet::~PropertySet()
 {
 }
 
+PropertySet2::PropertySet2()
+{
+}
+
+PropertySet2::~PropertySet2()
+{
+}
+
 BoostPropertySet::BoostPropertySet() : m_parent(nullptr)
 {
 }

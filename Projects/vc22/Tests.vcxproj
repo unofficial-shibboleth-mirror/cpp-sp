@@ -28,7 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp" />
-    <ClCompile Include="..\..\tests\PropertyTreeTests.cpp" />
+    <ClCompile Include="..\..\tests\util\PropertyTreeTests.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
