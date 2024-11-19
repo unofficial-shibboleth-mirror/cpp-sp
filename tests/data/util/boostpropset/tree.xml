@@ -1,6 +1,8 @@
-<root foo="bar">
-    <one foo="baz" />
-    <one unset="foo">
+<root foo="bar" zork="frobnitz">
+    <one foo="baz">
         <two />
+    </one>
+    <one unset="foo zork">
+        <two zork="zorkmid"/>
     </one>
 </root>

@@ -112,19 +112,28 @@ BOOST_FIXTURE_TEST_CASE(BoostPropertySet_tree, BPS_Fixture)
     }
 
     BOOST_CHECK_EQUAL(ones.size(), 2);
-    BOOST_CHECK_EQUAL(twos.size(), 1);
+    BOOST_CHECK_EQUAL(twos.size(), 2);
     BOOST_CHECK_EQUAL(rootset.getString("foo"), "bar");
+    BOOST_CHECK_EQUAL(rootset.getString("zork"), "frobnitz");
     BOOST_CHECK_EQUAL(rootset.getString("<xmlattr>"), nullptr);
     BOOST_CHECK_EQUAL(rootset.getString("one"), nullptr);
 
     BOOST_CHECK_EQUAL(ones[0]->getString("foo"), "baz");
+    BOOST_CHECK_EQUAL(ones[0]->getString("zork"), "frobnitz");
     BOOST_CHECK_EQUAL(ones[0]->getString("<xmlattr>"), nullptr);
+    BOOST_CHECK_EQUAL(ones[0]->getString("two"), nullptr);
 
     BOOST_CHECK_EQUAL(ones[1]->getString("foo", "zork"), "zork");
+    BOOST_CHECK_EQUAL(ones[1]->getString("zork"), nullptr);
     BOOST_CHECK_EQUAL(ones[1]->getString("<xmlattr>"), nullptr);
     BOOST_CHECK_EQUAL(ones[1]->getString("two"), nullptr);
 
-    BOOST_CHECK_EQUAL(twos[0]->getString("unset"), "foo");
-    BOOST_CHECK_EQUAL(twos[0]->getString("foo"), nullptr);
+    BOOST_CHECK_EQUAL(twos[0]->getString("foo"), "baz");
+    BOOST_CHECK_EQUAL(twos[0]->getString("zork"), "frobnitz");
     BOOST_CHECK_EQUAL(twos[0]->getString("<xmlattr>"), nullptr);
+
+    BOOST_CHECK_EQUAL(twos[1]->getString("unset"), "foo zork");
+    BOOST_CHECK_EQUAL(twos[1]->getString("foo"), nullptr);
+    BOOST_CHECK_EQUAL(twos[1]->getString("zork"), "zorkmid");
+    BOOST_CHECK_EQUAL(twos[1]->getString("<xmlattr>"), nullptr);
 }
