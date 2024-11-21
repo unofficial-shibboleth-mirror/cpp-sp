@@ -8,6 +8,8 @@ attrincludedir = $(includedir)/shibsp/attribute
 
 handincludedir = $(includedir)/shibsp/handler
 
+logincludedir = $(includedir)/shibsp/logging
+
 remincludedir = $(includedir)/shibsp/remoting
 
 utilincludedir = $(includedir)/shibsp/util
@@ -45,6 +47,10 @@ handinclude_HEADERS = \
 	handler/SecuredHandler.h \
 	handler/SessionInitiator.h
 
+loginclude_HEADERS = \
+	logging/Category.h \
+	logging/Priority.h
+
 reminclude_HEADERS = \
 	remoting/ddf.h \
 	remoting/ListenerService.h
@@ -64,6 +70,7 @@ noinst_HEADERS = \
 	impl/StorageServiceSessionCache.h \
 	impl/XMLApplication.h \
 	impl/XMLServiceProvider.h \
+	logging/impl/StringUtil.h \
 	remoting/impl/SocketListener.h
 
 libshibsp_la_SOURCES = \
@@ -105,6 +112,9 @@ libshibsp_la_SOURCES = \
 	impl/XMLApplication.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \
+	logging/impl/Category.cpp \
+	logging/impl/Priority.cpp \
+	logging/impl/StringUtil.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/ListenerService.cpp \
 	remoting/impl/SocketListener.cpp \
