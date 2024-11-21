@@ -50,7 +50,6 @@
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
-using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace std;
 
@@ -62,7 +61,7 @@ namespace shibsp {
         )
     {
         // The properties we need can be set in the RequestMap, or the Errors element.
-        bool mderror = dynamic_cast<const opensaml::saml2md::MetadataException*>(tp.getRichException())!=nullptr;
+        bool mderror = false;
         bool accesserror = (strcmp(page, "access")==0);
         pair<bool,const char*> redirectErrors = pair<bool,const char*>(false,nullptr);
         pair<bool,const char*> pathname = pair<bool,const char*>(false,nullptr);
@@ -375,8 +374,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         catch (const exception& e) {
             log.warn("error during session lookup: %s", e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
-            if (dynamic_cast<const opensaml::RetryableProfileException*>(&e) == nullptr)
-                throw;
+            throw;
         }
 
         Locker slocker(session, false); // pop existing lock on exit
@@ -566,7 +564,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 		// Still no data?
         if (!session) {
         	if (requireSession)
-                throw opensaml::RetryableProfileException("Unable to obtain session to export to request.");
+                throw XMLToolingException("Unable to obtain session to export to request.");
         	else
         		return make_pair(false, 0L);	// just bail silently
         }
@@ -712,7 +710,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 
         // Make sure this is SSL, if it should be
         if ((!handlerSSL.first || handlerSSL.second) && !request.isSecure())
-            throw opensaml::FatalProfileException("Blocked non-SSL access to Shibboleth handler.");
+            throw xmltooling::XMLToolingException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).

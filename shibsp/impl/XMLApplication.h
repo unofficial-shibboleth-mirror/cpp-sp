@@ -33,9 +33,7 @@
 #include "handler/Handler.h"
 #include "remoting/ListenerService.h"
 #include "util/DOMPropertySet.h"
-
-#include <xmltooling/logging.h>
-#include <xmltooling/PluginManager.h>
+#include "util/PluginManager.h"
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -106,20 +104,20 @@ namespace shibsp {
 
     private:
         template <class T> T* doChainedPlugins(
-            const xmltooling::PluginManager<T, std::string, const xercesc::DOMElement*>& pluginMgr,
+            const PluginManager<T, std::string, const xercesc::DOMElement*>& pluginMgr,
             const char* pluginType,
             const char* chainingType,
             const XMLCh* localName,
             xercesc::DOMElement* e,
-            xmltooling::logging::Category& log,
+            Category& log,
             const char* dummyType = nullptr
         );
-        void doAttributeInfo(xmltooling::logging::Category&);
-        void doHandlers(const xercesc::DOMElement*, xmltooling::logging::Category&);
-        void doSSO(std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
-        void doLogout(std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
-        void doNameIDMgmt(std::set<std::string>&, xercesc::DOMElement*, xmltooling::logging::Category&);
-        void doArtifactResolution(const char*, xercesc::DOMElement*, xmltooling::logging::Category&);
+        void doAttributeInfo(Category&);
+        void doHandlers(const xercesc::DOMElement*, Category&);
+        void doSSO(std::set<std::string>&, xercesc::DOMElement*, Category&);
+        void doLogout(std::set<std::string>&, xercesc::DOMElement*, Category&);
+        void doNameIDMgmt(std::set<std::string>&, xercesc::DOMElement*, Category&);
+        void doArtifactResolution(const char*, xercesc::DOMElement*, Category&);
         const XMLApplication* m_base;
         std::string m_hash;
         std::pair<std::string, std::string> m_attributePrefix;

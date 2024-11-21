@@ -57,7 +57,7 @@ DOMPropertySet::STLRemapper::~STLRemapper()
 {
 }
 
-const char* DOMPropertySet::STLRemapper::remap(const char* src, xmltooling::logging::Category& log) const
+const char* DOMPropertySet::STLRemapper::remap(const char* src, Category& log) const
 {
     map<string,string>::const_iterator i = src ? m_rules.find(src) : m_rules.end();
     if (i != m_rules.end()) {

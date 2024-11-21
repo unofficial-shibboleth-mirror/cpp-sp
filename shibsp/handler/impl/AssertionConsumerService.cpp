@@ -40,7 +40,6 @@
 
 using namespace shibspconstants;
 using namespace shibsp;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace boost;
 using namespace std;
@@ -273,7 +272,7 @@ void AssertionConsumerService::checkAddress(const Application& application, cons
     if (checkAddress.second) {
         m_log.debug("checking client address");
         if (httpRequest.getRemoteAddr() != issuedTo) {
-            throw FatalProfileException(
+            throw XMLToolingException(
                "Your client's current address ($client_addr) differs from the one used when you authenticated "
                 "to your identity provider. To correct this problem, you may need to bypass a proxy server. "
                 "Please contact your local support staff or help desk for assistance.",

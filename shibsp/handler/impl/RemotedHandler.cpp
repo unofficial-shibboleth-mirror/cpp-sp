@@ -32,20 +32,12 @@
 #include "handler/RemotedHandler.h"
 
 #include <algorithm>
+#include <sstream>
 #include <boost/scoped_ptr.hpp>
 #include <xmltooling/unicode.h>
 #include <xercesc/util/Base64.hpp>
 
-#ifndef SHIBSP_LITE
-# include "util/CGIParser.h"
-# include <xsec/enc/OpenSSL/OpenSSLCryptoX509.hpp>
-# include <xsec/enc/XSECCryptoException.hpp>
-# include <xsec/framework/XSECException.hpp>
-# include <xsec/framework/XSECProvider.hpp>
-#endif
-
 using namespace shibsp;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace xercesc;
 using namespace boost;

@@ -29,8 +29,8 @@
 
 #include <shibsp/util/PropertySet.h>
 
+#include <set>
 #include <boost/shared_ptr.hpp>
-#include <xmltooling/logging.h>
 
 namespace xmltooling {
 	class QName;
@@ -77,7 +77,7 @@ namespace shibsp {
              *
              * @return the name to use
              */
-            virtual const char* remap(const char* src, xmltooling::logging::Category& log) const=0;
+            virtual const char* remap(const char* src, Category& log) const=0;
         };
 
         /**
@@ -93,7 +93,7 @@ namespace shibsp {
             STLRemapper(const std::map<std::string,std::string>& rules);
             virtual ~STLRemapper();
 
-            const char* remap(const char* src, xmltooling::logging::Category& log) const;
+            const char* remap(const char* src, Category& log) const;
 
         private:
             const std::map<std::string, std::string>& m_rules;
@@ -110,7 +110,7 @@ namespace shibsp {
          */
         void load(
             const xercesc::DOMElement* e,
-            xmltooling::logging::Category* log=nullptr,
+            Category* log=nullptr,
             xercesc::DOMNodeFilter* filter=nullptr,
             const Remapper* remapper=nullptr,
 			const xmltooling::QName* unsetter=nullptr

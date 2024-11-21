@@ -32,39 +32,11 @@
 #include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
 
+#include <sstream>
 #include <boost/scoped_ptr.hpp>
 #include <boost/iterator/indirect_iterator.hpp>
 
-#ifndef SHIBSP_LITE
-# include "attribute/resolver/AttributeExtractor.h"
-# include "metadata/MetadataProviderCriteria.h"
-# include <boost/ptr_container/ptr_vector.hpp>
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/signature/ContentReference.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <saml/saml2/metadata/MetadataProvider.h>
-# include <xmltooling/XMLToolingConfig.h>
-# include <xmltooling/encryption/Encryption.h>
-# include <xmltooling/security/Credential.h>
-# include <xmltooling/security/CredentialCriteria.h>
-# include <xmltooling/security/SecurityHelper.h>
-# include <xmltooling/signature/Signature.h>
-# include <xmltooling/util/ParserPool.h>
-# include <xmltooling/util/PathResolver.h>
-# include <xsec/dsig/DSIGConstants.hpp>
-# include <xercesc/framework/LocalFileInputSource.hpp>
-# include <xercesc/framework/Wrapper4InputSource.hpp>
-#endif
-
-
 using namespace shibsp;
-#ifndef SHIBSP_LITE
-using namespace opensaml::saml2md;
-using namespace opensaml;
-using namespace xmlsignature;
-using namespace xmlencryption;
-#endif
 using namespace xmltooling;
 using namespace boost;
 using namespace std;

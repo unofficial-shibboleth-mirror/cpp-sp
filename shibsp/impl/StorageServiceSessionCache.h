@@ -183,7 +183,7 @@ namespace shibsp {
 #endif
         bool recover(const Application& app, const char* key, const char* data);
 
-        xmltooling::logging::Category& m_log;
+        Category& m_log;
         bool inproc;
         bool shutdown;
         boost::scoped_ptr<xmltooling::CondWait> shutdown_wait;

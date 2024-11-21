@@ -35,7 +35,6 @@
 
 #include <boost/scoped_ptr.hpp>
 #include <xercesc/dom/DOM.hpp>
-#include <xmltooling/logging.h>
 #include <xmltooling/util/Threads.h>
 
 #ifdef WIN32
@@ -81,7 +80,7 @@ namespace shibsp {
     protected:
         void set_retry_errors(const std::string& retry_errors);
         bool log_error(const char* fn=nullptr, int* native_error=nullptr) const; // for OS-level errors
-        xmltooling::logging::Category* log;
+        Category* log;
         /// @endcond
 
     private:

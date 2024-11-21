@@ -33,10 +33,6 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
-#ifndef SHIBSP_LITE
-# include <saml/saml2/metadata/Metadata.h>
-using namespace opensaml::saml2md;
-#endif
 
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory ChainingSessionInitiatorFactory;

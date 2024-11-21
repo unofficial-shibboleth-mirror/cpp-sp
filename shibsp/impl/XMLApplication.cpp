@@ -937,6 +937,6 @@ void XMLApplication::limitRedirect(const GenericRequest& request, const char* ur
         }
 
         Category::getInstance(SHIBSP_LOGCAT ".Application").warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
-        throw opensaml::SecurityPolicyException("Blocked unacceptable redirect location.");
+        throw XMLToolingException("Blocked unacceptable redirect location.");
     }
 }

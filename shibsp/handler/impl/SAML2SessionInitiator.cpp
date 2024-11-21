@@ -38,7 +38,6 @@
 #include <boost/scoped_ptr.hpp>
 
 using namespace shibsp;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace boost;
 using namespace std;

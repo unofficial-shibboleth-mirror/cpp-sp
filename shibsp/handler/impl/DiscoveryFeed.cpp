@@ -34,23 +34,12 @@
 
 #include <ctime>
 #include <fstream>
+#include <sstream>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/PathResolver.h>
 
-#ifndef SHIBSP_LITE
-# include <queue>
-# include <saml/exceptions.h>
-# include <saml/SAMLConfig.h>
-# include <saml/saml2/metadata/DiscoverableMetadataProvider.h>
-#endif
-
 using namespace shibsp;
-#ifndef SHIBSP_LITE
-using namespace opensaml::saml2md;
-using namespace opensaml;
-using namespace boost;
-#endif
 using namespace xmltooling;
 using namespace std;
 

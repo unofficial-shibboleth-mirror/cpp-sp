@@ -28,12 +28,12 @@
 #define __shibsp_abshandler_h__
 
 #include <shibsp/handler/Handler.h>
+#include <shibsp/logging/Category.h>
 #include <shibsp/remoting/ddf.h>
 #include <shibsp/util/DOMPropertySet.h>
 
 #include <map>
 #include <string>
-#include <xmltooling/logging.h>
 
 
 namespace xmltooling {
@@ -65,7 +65,7 @@ namespace shibsp {
          */
         AbstractHandler(
             const xercesc::DOMElement* e,
-            xmltooling::logging::Category& log,
+            Category& log,
             xercesc::DOMNodeFilter* filter=nullptr,
             const Remapper* remapper=nullptr
             );
@@ -231,7 +231,7 @@ namespace shibsp {
         std::pair<bool,int> getInt(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /** Logging object. */
-        xmltooling::logging::Category& m_log;
+        Category& m_log;
 
     public:
         virtual ~AbstractHandler();

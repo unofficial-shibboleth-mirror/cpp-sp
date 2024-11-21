@@ -479,7 +479,7 @@ public:
             }
 
             if (m_allhttp.count(cginame) > 0)
-                throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, rawname));
+                throw XMLToolingException("Attempt to spoof header ($1) was detected.", params(1, rawname));
         }
         apr_table_unset(m_req->headers_in, rawname);
         apr_table_set(m_req->headers_in, rawname, g_unsetHeaderValue.c_str());

@@ -21,6 +21,7 @@ nodist_libshibspinclude_HEADERS = \
 libshibspinclude_HEADERS = \
 	AbstractSPRequest.h \
 	AccessControl.h \
+	AgentConfig.h \
 	Application.h \
 	base.h \
 	exceptions.h \
@@ -105,10 +106,10 @@ libshibsp_la_SOURCES = \
 	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/StatusHandler.cpp \
+	impl/XMLAccessControl.cpp \
 	impl/ChainingAccessControl.cpp \
 	impl/StoredSession.cpp \
 	impl/StorageServiceSessionCache.cpp \
-	impl/XMLAccessControl.cpp \
 	impl/XMLApplication.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \

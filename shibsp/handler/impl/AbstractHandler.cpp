@@ -119,10 +119,10 @@ const char* Handler::getEventType() const
 void Handler::log(SPRequest::SPLogLevel level, const string& msg) const
 {
     Category::getInstance(SHIBSP_LOGCAT ".Handler").log(
-        (level == SPRequest::SPDebug ? Priority::DEBUG :
-        (level == SPRequest::SPInfo ? Priority::INFO :
-        (level == SPRequest::SPWarn ? Priority::WARN :
-        (level == SPRequest::SPError ? Priority::ERROR : Priority::CRIT)))),
+        (level == SPRequest::SPDebug ? Priority::SHIB_DEBUG :
+        (level == SPRequest::SPInfo ? Priority::SHIB_INFO :
+        (level == SPRequest::SPWarn ? Priority::SHIB_WARN :
+        (level == SPRequest::SPError ? Priority::SHIB_ERROR : Priority::SHIB_CRIT)))),
         msg
         );
 }
@@ -392,10 +392,10 @@ AbstractHandler::~AbstractHandler()
 void AbstractHandler::log(SPRequest::SPLogLevel level, const string& msg) const
 {
     m_log.log(
-        (level == SPRequest::SPDebug ? Priority::DEBUG :
-        (level == SPRequest::SPInfo ? Priority::INFO :
-        (level == SPRequest::SPWarn ? Priority::WARN :
-        (level == SPRequest::SPError ? Priority::ERROR : Priority::CRIT)))),
+        (level == SPRequest::SPDebug ? Priority::SHIB_DEBUG :
+        (level == SPRequest::SPInfo ? Priority::SHIB_INFO :
+        (level == SPRequest::SPWarn ? Priority::SHIB_WARN :
+        (level == SPRequest::SPError ? Priority::SHIB_ERROR : Priority::SHIB_CRIT)))),
         msg
         );
 }

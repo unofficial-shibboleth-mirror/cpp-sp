@@ -88,7 +88,7 @@ namespace shibsp {
 
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
-        const char* remap(const char* src, xmltooling::logging::Category& log) const;
+        const char* remap(const char* src, Category& log) const;
     };
     
     /** Registers SessionInitiator implementations. */

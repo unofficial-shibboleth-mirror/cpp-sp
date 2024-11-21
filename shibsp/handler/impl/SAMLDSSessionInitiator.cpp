@@ -35,7 +35,6 @@
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace boost;
 using namespace std;
@@ -118,7 +117,7 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
     if (isHandler) {
         prop.second = request.getParameter("SAMLDS");
         if (prop.second && !strcmp(prop.second,"1")) {
-            saml2md::MetadataException ex("No identity provider was selected by user.");
+            XMLToolingException ex("No identity provider was selected by user.");
             ex.addProperty("statusCode", "urn:oasis:names:tc:SAML:2.0:status:Requester");
             ex.addProperty("statusCode2", "urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP");
             ex.raise();

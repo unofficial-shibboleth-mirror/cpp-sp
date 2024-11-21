@@ -111,10 +111,12 @@ namespace shibsp {
     class XMLAccessControl : public AccessControl, public ReloadableXMLFile
     {
     public:
+        XMLAccessControl(const DOMElement* e, bool deprecationSupport=true);
+        /*
         XMLAccessControl(const DOMElement* e, bool deprecationSupport=true)
                 : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML"), true, deprecationSupport) {
             background_load(); // guarantees an exception or the policy is loaded
-        }
+        }*/
 
         ~XMLAccessControl() {
             shutdown();

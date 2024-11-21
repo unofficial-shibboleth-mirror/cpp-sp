@@ -34,14 +34,8 @@
 #include "handler/SecuredHandler.h"
 #include "util/SPConstants.h"
 
+#include <sstream>
 #include <boost/scoped_ptr.hpp>
-
-#ifndef SHIBSP_LITE
-# include <saml/exceptions.h>
-# include <saml/Assertion.h>
-# include <xmltooling/util/XMLHelper.h>
-using namespace opensaml;
-#endif
 
 using namespace shibspconstants;
 using namespace shibsp;

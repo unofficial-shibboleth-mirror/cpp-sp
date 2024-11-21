@@ -47,7 +47,6 @@ using namespace opensaml::saml2md;
 #endif
 
 using namespace shibsp;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace boost;
 using namespace std;
@@ -178,7 +177,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
     if (m_expires > 0) {
         if (now > m_expires) {
             m_cache->m_log.info("session expired (ID: %s)", getID());
-            throw RetryableProfileException("Your session has expired, and you must re-authenticate.");
+            throw XMLToolingException("Your session has expired, and you must re-authenticate.");
         }
     }
 
@@ -188,7 +187,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         if (saddr && *saddr) {
             if (!m_cache->compareAddresses(client_addr, saddr)) {
                 m_cache->m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, saddr);
-                throw RetryableProfileException(
+                throw XMLToolingException(
                     "Your IP address ($1) does not match the address recorded at the time the session was established.",
                     params(1, client_addr)
                     );

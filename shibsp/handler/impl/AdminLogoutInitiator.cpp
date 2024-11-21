@@ -32,6 +32,8 @@
 #include "handler/SecuredHandler.h"
 #include "handler/LogoutInitiator.h"
 
+#include <sstream>
+
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;

@@ -32,24 +32,6 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#ifndef SHIBSP_LITE
-namespace opensaml {
-    class SAML_API Assertion;
-    class SAML_API MessageDecoder;
-    namespace saml1 {
-        class SAML_API AuthenticationStatement;
-        class SAML_API NameIdentifier;
-    };
-    namespace saml2 {
-        class SAML_API AuthnStatement;
-        class SAML_API NameID;
-    };
-    namespace saml2md {
-        class SAML_API SPSSODescriptor;
-    };
-};
-#endif
-
 namespace shibsp {
 
     class SHIBSP_API Attribute;
@@ -86,7 +68,7 @@ namespace shibsp {
         AssertionConsumerService(
             const xercesc::DOMElement* e,
             const char* appId,
-            xmltooling::logging::Category& log,
+            Category& log,
             xercesc::DOMNodeFilter* filter=nullptr,
             const Remapper* remapper=nullptr,
             bool deprecationSupport=true

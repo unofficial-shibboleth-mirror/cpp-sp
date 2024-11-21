@@ -34,19 +34,11 @@
 #include "impl/XMLServiceProvider.h"
 #include "util/SPConstants.h"
 
-#if defined(XMLTOOLING_LOG4SHIB)
-# include <log4shib/PropertyConfigurator.hh>
-#elif defined(XMLTOOLING_LOG4CPP)
-# include <log4cpp/PropertyConfigurator.hh>
-#else
-# error "Supported logging library not available."
-#endif
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/version.h>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/TemplateEngine.h>
@@ -149,7 +141,7 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
             }
             catch (const std::exception& e) {
                 if (XMLHelper::getAttrBool(exts, false, _fatal)) {
-                    log.fatal("unable to load mandatory %s extension library %s: %s", label, path.c_str(), e.what());
+                    log.crit("unable to load mandatory %s extension library %s: %s", label, path.c_str(), e.what());
                     throw;
                 }
                 else {
@@ -326,7 +318,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
     // Load the default application.
     child = XMLHelper::getLastChildElement(e, ApplicationDefaults);
     if (!child) {
-        log.fatal("can't build default Application object, missing conf:ApplicationDefaults element?");
+        log.crit("can't build default Application object, missing conf:ApplicationDefaults element?");
         throw ConfigurationException("can't build default Application object, missing conf:ApplicationDefaults element?");
     }
     boost::shared_ptr<XMLApplication> defapp(new XMLApplication(outer, child, m_deprecationSupport));
@@ -675,7 +667,8 @@ pair<bool,DOMElement*> XMLConfig::background_load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    scoped_ptr<XMLConfigImpl> impl(new XMLConfigImpl(raw.second, (m_impl==nullptr), this, m_log));
+    //scoped_ptr<XMLConfigImpl> impl(new XMLConfigImpl(raw.second, (m_impl==nullptr), this, m_log));
+    scoped_ptr<XMLConfigImpl> impl(nullptr);
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());

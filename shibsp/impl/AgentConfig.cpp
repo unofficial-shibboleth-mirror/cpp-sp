@@ -1,133 +1,83 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * SPConfig.cpp
+ * AgentConfig.cpp
  *
- * Library configuration.
+ * Library/agent configuration.
  */
 
 #include "internal.h"
 
-#if defined(XMLTOOLING_LOG4SHIB)
-# ifndef SHIBSP_LOG4SHIB
-#  error "Logging library mismatch (XMLTooling is using log4shib)."
-# endif
-#elif defined(XMLTOOLING_LOG4CPP)
-# ifndef SHIBSP_LOG4CPP
-#  error "Logging library mismatch (XMLTooling is using log4cpp)."
-# endif
-#else
-# error "No supported logging library."
-#endif
-
 #include "exceptions.h"
 #include "version.h"
-#include "AccessControl.h"
-#include "RequestMapper.h"
-#include "ServiceProvider.h"
-#include "SessionCache.h"
-#include "SPConfig.h"
-#include "attribute/Attribute.h"
-#include "handler/LogoutInitiator.h"
-#include "handler/SessionInitiator.h"
-#include "remoting/ListenerService.h"
+#include "AgentConfig.h"
+#include "logging/Category.h"
 
 #include <ctime>
-#include <sstream>
-#include <xercesc/util/XMLUniDefs.hpp>
-#include <xmltooling/version.h>
-#include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
-#include <xmltooling/util/ParserPool.h>
-#include <xmltooling/util/PathResolver.h>
-#include <xmltooling/util/TemplateEngine.h>
-#include <xmltooling/util/Threads.h>
-#include <xmltooling/util/XMLHelper.h>
+#include <thread>
+#include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost::property_tree;
 using namespace boost;
 using namespace std;
 
-DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
-DECL_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
-DECL_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
-
 namespace shibsp {
-    class SHIBSP_DLLLOCAL SPInternalConfig : public SPConfig
+    class SHIBSP_DLLLOCAL AgentInternalConfig : public AgentConfig
     {
     public:
-        SPInternalConfig() : m_initCount(0), m_lock(Mutex::create()) {}
-        ~SPInternalConfig() {}
+        AgentInternalConfig() : m_initCount(0) {}
+        ~AgentInternalConfig() {}
 
-        bool init(const char* catalog_path=nullptr, const char* inst_prefix=nullptr);
+        bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
         void term();
 
+        Agent& getAgent() const;
+        LoggingService& getLoggingService() const;
+
     private:
-        int m_initCount;
-        scoped_ptr<Mutex> m_lock;
+        unsigned int m_initCount;
+        mutex m_lock;
+        unique_ptr<Agent> m_agent;
+        unique_ptr<ptree> m_config;
     };
     
-    SPInternalConfig g_config;
+    AgentInternalConfig g_config;
 }
 
-SPConfig& SPConfig::getConfig()
+AgentConfig& AgentConfig::getConfig()
 {
     return g_config;
 }
 
-SPConfig::SPConfig() : attribute_value_delimeter(';'), m_serviceProvider(nullptr), m_features(0), m_configDoc(nullptr)
+AgentConfig::AgentConfig()
 {
 }
 
-SPConfig::~SPConfig()
+AgentConfig::~AgentConfig()
 {
 }
 
-void SPConfig::setFeatures(unsigned long enabled)
+Agent& AgentInternalConfig::getAgent() const
 {
-    m_features = enabled;
+    return *m_agent;
 }
 
-unsigned long SPConfig::getFeatures() const {
-    return m_features;
-}
-
-bool SPConfig::isEnabled(components_t feature) const
-{
-    return (m_features & feature)>0;
-}
-
-ServiceProvider* SPConfig::getServiceProvider() const
-{
-    return m_serviceProvider;
-}
-
-void SPConfig::setServiceProvider(ServiceProvider* serviceProvider)
-{
-    delete m_serviceProvider;
-    m_serviceProvider = serviceProvider;
-}
-
-bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
+/*
+bool AgentConfig::init(const char* inst_prefix, const char* config_file, bool rethrow)
 {
     if (!inst_prefix)
         inst_prefix = getenv("SHIBSP_PREFIX");
@@ -231,7 +181,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     return true;
 }
 
-void SPConfig::term()
+void AgentConfig::term()
 {
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
     log.info("%s library shutting down", PACKAGE_STRING);
@@ -316,27 +266,30 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
             throw;
         }
         else {
-            Category::getInstance(SHIBSP_LOGCAT ".Config").crit("caught exception while loading configuration: %s", ex.what());
+            Category::getInstance(SHIBSP_LOGCAT ".Config").fatal("caught exception while loading configuration: %s", ex.what());
         }
     }
     return false;
 }
+*/
 
-bool SPInternalConfig::init(const char* catalog_path, const char* inst_prefix)
+bool AgentInternalConfig::init(const char* inst_prefix, const char* config_file, bool rethrow)
 {
-    Lock initLock(m_lock);
+    lock_guard<mutex> locker(m_lock);
 
     if (m_initCount == INT_MAX) {
-        Category::getInstance(SHIBSP_LOGCAT ".Config").crit("library initialized too many times");
+        if (rethrow) {
+            throw runtime_error("Library initialized too many times.");
+        }
         return false;
     }
 
-    if (m_initCount >= 1) {
+    if (m_initCount > 0) {
         ++m_initCount;
         return true;
     }
 
-    if (!SPConfig::init(catalog_path, inst_prefix)) {
+    if (!AgentConfig::init(inst_prefix, config_file, rethrow)) {
         return false;
     }
 
@@ -344,21 +297,22 @@ bool SPInternalConfig::init(const char* catalog_path, const char* inst_prefix)
     return true;
 }
 
-void SPInternalConfig::term()
+void AgentInternalConfig::term()
 {
-    Lock initLock(m_lock);
+    lock_guard<mutex> locker(m_lock);
+
     if (m_initCount == 0) {
-        Category::getInstance(SHIBSP_LOGCAT ".Config").crit("term without corresponding init");
+        throw runtime_error("Library terminated without initialization.");
         return;
     }
     else if (--m_initCount > 0) {
         return;
     }
 
-    SPConfig::term();
+    AgentConfig::term();
 }
 
-Category& SPConfig::deprecation() const
+shibsp::Category& AgentConfig::deprecation() const
 {
     return Category::getInstance(SHIBSP_LOGCAT".DEPRECATION");
 }

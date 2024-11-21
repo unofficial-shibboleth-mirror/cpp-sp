@@ -57,7 +57,7 @@ namespace shibsp {
          */
         SecuredHandler(
             const xercesc::DOMElement* e,
-            xmltooling::logging::Category& log,
+            Category& log,
             const char* aclProperty="acl",
             const char* defaultACL=nullptr,
             xercesc::DOMNodeFilter* filter=nullptr,

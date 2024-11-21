@@ -122,10 +122,11 @@ namespace shibsp {
     class XMLRequestMapper : public RequestMapper, public ReloadableXMLFile
     {
     public:
-        XMLRequestMapper(const DOMElement* e, bool deprecationSupport=true)
+        XMLRequestMapper(const DOMElement* e, bool deprecationSupport=true);
+/*        XMLRequestMapper(const DOMElement* e, bool deprecationSupport=true)
             : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".RequestMapper"), true, deprecationSupport) {
             background_load();
-        }
+        }*/
 
         ~XMLRequestMapper() {
             shutdown();
@@ -691,7 +692,8 @@ pair<bool,DOMElement*> XMLRequestMapper::background_load()
     // If we own it, wrap it.
     XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
 
-    scoped_ptr<XMLRequestMapperImpl> impl(new XMLRequestMapperImpl(raw.second, m_log));
+    //scoped_ptr<XMLRequestMapperImpl> impl(new XMLRequestMapperImpl(raw.second, m_log));
+    scoped_ptr<XMLRequestMapperImpl> impl(nullptr);
 
     // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
     impl->setDocument(docjanitor.release());

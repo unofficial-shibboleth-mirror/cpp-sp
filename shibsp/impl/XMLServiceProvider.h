@@ -32,9 +32,8 @@
 #include "ServiceProvider.h"
 #include "remoting/ListenerService.h"
 #include "util/DOMPropertySet.h"
+#include "util/PluginManager.h"
 
-#include <xmltooling/logging.h>
-#include <xmltooling/PluginManager.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 
 #include <boost/scoped_ptr.hpp>
@@ -57,7 +56,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL XMLConfigImpl : public DOMPropertySet, public xercesc::DOMNodeFilter
     {
     public:
-        XMLConfigImpl(const xercesc::DOMElement* e, bool first, XMLConfig* outer, xmltooling::logging::Category& log);
+        XMLConfigImpl(const xercesc::DOMElement* e, bool first, XMLConfig* outer, Category& log);
         ~XMLConfigImpl() {
             if (m_document)
                 m_document->release();
@@ -79,9 +78,9 @@ namespace shibsp {
         }
 
     private:
-        void doExtensions(const xercesc::DOMElement*, const char*, xmltooling::logging::Category&);
-        void doListener(const xercesc::DOMElement*, XMLConfig*, xmltooling::logging::Category&);
-        void doCaching(const xercesc::DOMElement*, XMLConfig*, xmltooling::logging::Category&);
+        void doExtensions(const xercesc::DOMElement*, const char*, Category&);
+        void doListener(const xercesc::DOMElement*, XMLConfig*, Category&);
+        void doCaching(const xercesc::DOMElement*, XMLConfig*, Category&);
 
         xercesc::DOMDocument* m_document;
         const XMLApplication* m_defaultApplication;

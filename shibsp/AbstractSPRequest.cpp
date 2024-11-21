@@ -35,7 +35,6 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace shibsp;
-using namespace opensaml;
 using namespace xmltooling;
 using namespace std;
 
@@ -51,7 +50,7 @@ SPRequest::~SPRequest()
 AbstractSPRequest::AbstractSPRequest(const char* category)
     : m_sp(SPConfig::getConfig().getServiceProvider()),
         m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr),
-        m_log(&Category::getInstance(category))
+        m_log(nullptr)
 {
     m_sp->lock();
 }
@@ -79,11 +78,13 @@ RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
         m_mapper->lock();
         m_settings = m_mapper->getSettings(*this);
 
+/*
         if (reinterpret_cast<Category*>(m_log)->isDebugEnabled()) {
             reinterpret_cast<Category*>(m_log)->debug(
                 "mapped %s to %s", getRequestURL(), m_settings.first->getString("applicationId").second
                 );
         }
+    */
     }
     return m_settings;
 }
@@ -350,6 +351,7 @@ void AbstractSPRequest::setCookie(const char* name, const char* value, time_t ex
 
 void AbstractSPRequest::log(SPLogLevel level, const std::string& msg) const
 {
+    /*
     reinterpret_cast<Category*>(m_log)->log(
         (level == SPDebug ? Priority::DEBUG :
         (level == SPInfo ? Priority::INFO :
@@ -357,14 +359,17 @@ void AbstractSPRequest::log(SPLogLevel level, const std::string& msg) const
         (level == SPError ? Priority::ERROR : Priority::CRIT)))),
         msg
         );
+        */
 }
 
 bool AbstractSPRequest::isPriorityEnabled(SPLogLevel level) const
 {
+    /*
     return reinterpret_cast<Category*>(m_log)->isPriorityEnabled(
         (level == SPDebug ? Priority::DEBUG :
         (level == SPInfo ? Priority::INFO :
         (level == SPWarn ? Priority::WARN :
         (level == SPError ? Priority::ERROR : Priority::CRIT))))
         );
+        */
 }

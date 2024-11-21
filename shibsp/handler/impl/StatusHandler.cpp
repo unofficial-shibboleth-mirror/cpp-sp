@@ -33,6 +33,8 @@
 #include "handler/SecuredHandler.h"
 #include "util/CGIParser.h"
 
+#include <sstream>
+
 #include <boost/iterator/indirect_iterator.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <xmltooling/version.h>
@@ -43,17 +45,6 @@
 #endif
 
 using namespace shibsp;
-#ifndef SHIBSP_LITE
-# include "SessionCache.h"
-# include "metadata/MetadataProviderCriteria.h"
-# include <saml/version.h>
-# include <saml/saml2/metadata/Metadata.h>
-# include <xmltooling/security/Credential.h>
-# include <xmltooling/security/CredentialCriteria.h>
-using namespace opensaml::saml2md;
-using namespace opensaml;
-using namespace xmlsignature;
-#endif
 using namespace xmltooling;
 using namespace boost;
 using namespace std;

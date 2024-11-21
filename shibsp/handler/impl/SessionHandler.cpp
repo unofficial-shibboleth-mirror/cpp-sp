@@ -34,6 +34,7 @@
 #include "handler/SecuredHandler.h"
 
 #include <ctime>
+#include <sstream>
 
 using namespace shibsp;
 using namespace xmltooling;
