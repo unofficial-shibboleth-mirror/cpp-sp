@@ -169,11 +169,6 @@ namespace shibsp {
         xmltooling::PluginManager<AccessControl,std::string,const xercesc::DOMElement*> AccessControlManager;
 
         /**
-         * Manages factories for Handler plugins that implement ArtifactResolutionService functionality.
-         */
-        xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > ArtifactResolutionServiceManager;
-
-        /**
          * Manages factories for Handler plugins that implement AssertionConsumerService functionality.
          */
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > AssertionConsumerServiceManager;
@@ -192,11 +187,6 @@ namespace shibsp {
          * Manages factories for Handler plugins that implement LogoutInitiator functionality.
          */
         xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > LogoutInitiatorManager;
-
-        /**
-         * Manages factories for Handler plugins that implement ManageNameIDService functionality.
-         */
-        xmltooling::PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > ManageNameIDServiceManager;
 
         /**
          * Manages factories for RequestMapper plugins.

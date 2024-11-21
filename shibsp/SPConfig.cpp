@@ -266,10 +266,8 @@ void SPConfig::term()
     m_configDoc = nullptr;
 
     if (isEnabled(Handlers)) {
-        ArtifactResolutionServiceManager.deregisterFactories();
         AssertionConsumerServiceManager.deregisterFactories();
         LogoutInitiatorManager.deregisterFactories();
-        ManageNameIDServiceManager.deregisterFactories();
         SessionInitiatorManager.deregisterFactories();
         SingleLogoutServiceManager.deregisterFactories();
         HandlerManager.deregisterFactories();

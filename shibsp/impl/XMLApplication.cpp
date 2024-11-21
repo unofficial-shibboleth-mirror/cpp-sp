@@ -58,7 +58,6 @@ namespace {
     static const XMLCh _AttributeFilter[] =     UNICODE_LITERAL_15(A,t,t,r,i,b,u,t,e,F,i,l,t,e,r);
     static const XMLCh _AttributeResolver[] =   UNICODE_LITERAL_17(A,t,t,r,i,b,u,t,e,R,e,s,o,l,v,e,r);
     static const XMLCh _AssertionConsumerService[] = UNICODE_LITERAL_24(A,s,s,e,r,t,i,o,n,C,o,n,s,u,m,e,r,S,e,r,v,i,c,e);
-    static const XMLCh _ArtifactResolutionService[] =UNICODE_LITERAL_25(A,r,t,i,f,a,c,t,R,e,s,o,l,u,t,i,o,n,S,e,r,v,i,c,e);
     static const XMLCh _Audience[] =            UNICODE_LITERAL_8(A,u,d,i,e,n,c,e);
     static const XMLCh Binding[] =              UNICODE_LITERAL_7(B,i,n,d,i,n,g);
     static const XMLCh Channel[]=               UNICODE_LITERAL_7(C,h,a,n,n,e,l);
@@ -71,7 +70,6 @@ namespace {
     static const XMLCh Location[] =             UNICODE_LITERAL_8(L,o,c,a,t,i,o,n);
     static const XMLCh Logout[] =               UNICODE_LITERAL_6(L,o,g,o,u,t);
     static const XMLCh _LogoutInitiator[] =     UNICODE_LITERAL_15(L,o,g,o,u,t,I,n,i,t,i,a,t,o,r);
-    static const XMLCh _ManageNameIDService[] = UNICODE_LITERAL_19(M,a,n,a,g,e,N,a,m,e,I,D,S,e,r,v,i,c,e);
     static const XMLCh _MetadataProvider[] =    UNICODE_LITERAL_16(M,e,t,a,d,a,t,a,P,r,o,v,i,d,e,r);
     static const XMLCh NameIDMgmt[] =           UNICODE_LITERAL_10(N,a,m,e,I,D,M,g,m,t);
     static const XMLCh Notify[] =               UNICODE_LITERAL_6(N,o,t,i,f,y);
@@ -519,29 +517,6 @@ void XMLApplication::doHandlers(const DOMElement* e, Category& log)
                     conf.LogoutInitiatorManager.newPlugin(t.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
                     );
             }
-            else if (XMLString::equals(child->getLocalName(), _ArtifactResolutionService)) {
-                string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
-                if (bindprop.empty() || !*child->getAttributeNS(nullptr, Location)) {
-                    log.error("ArtifactResolutionService element has empty Binding or Location attribute, skipping it...");
-                    child = XMLHelper::getNextSiblingElement(child);
-                    continue;
-                }
-                handler.reset(
-                    conf.ArtifactResolutionServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
-                    );
-
-                if (!hardArt) {
-                    pair<bool,bool> defprop = handler->getBool("isDefault");
-                    if (defprop.first) {
-                        if (defprop.second) {
-                            hardArt = true;
-                            m_artifactResolutionDefault = handler.get();
-                        }
-                    }
-                    else if (!m_artifactResolutionDefault)
-                        m_artifactResolutionDefault = handler.get();
-                }
-            }
             else if (XMLString::equals(child->getLocalName(), _SingleLogoutService)) {
                 string bindprop(XMLHelper::getAttrString(child, nullptr, Binding));
                 if (bindprop.empty() || !*child->getAttributeNS(nullptr, Location)) {
@@ -614,11 +589,8 @@ DOMNodeFilter::FilterAction XMLApplication::acceptNode(const DOMNode* node) cons
         XMLString::equals(name, Notify) ||
         XMLString::equals(name, _Handler) ||
         XMLString::equals(name, _AssertionConsumerService) ||
-        XMLString::equals(name, _ArtifactResolutionService) ||
         XMLString::equals(name, Logout) ||
         XMLString::equals(name, _LogoutInitiator) ||
-        XMLString::equals(name, _ManageNameIDService) ||
-        XMLString::equals(name, NameIDMgmt) ||
         XMLString::equals(name, _SessionInitiator) ||
         XMLString::equals(name, _SingleLogoutService) ||
         XMLString::equals(name, SSO) ||
