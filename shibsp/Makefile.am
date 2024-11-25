@@ -50,6 +50,7 @@ handinclude_HEADERS = \
 
 loginclude_HEADERS = \
 	logging/Category.h \
+	logging/LoggingService.h \
 	logging/Priority.h
 
 reminclude_HEADERS = \
@@ -71,6 +72,8 @@ noinst_HEADERS = \
 	impl/StorageServiceSessionCache.h \
 	impl/XMLApplication.h \
 	impl/XMLServiceProvider.h \
+	logging/impl/AbstractLoggingService.h \
+	logging/impl/LoggingServiceSPI.h \
 	logging/impl/StringUtil.h \
 	remoting/impl/SocketListener.h
 
@@ -114,6 +117,7 @@ libshibsp_la_SOURCES = \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \
 	logging/impl/Category.cpp \
+	logging/impl/AbstractLoggingService.cpp \
 	logging/impl/Priority.cpp \
 	logging/impl/StringUtil.cpp \
 	remoting/impl/ddf.cpp \

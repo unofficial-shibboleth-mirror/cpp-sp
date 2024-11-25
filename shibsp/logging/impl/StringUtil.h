@@ -15,7 +15,7 @@
 #ifndef __shibsp_logging_stringutil_h__
 #define __shibsp_logging_stringutil_h__
 
-#include <shibsp/base.h>
+#include "internal.h"
 
 #include <string>
 #include <vector>

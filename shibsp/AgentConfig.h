@@ -21,28 +21,16 @@
 #ifndef __shibsp_agentconfig_h__
 #define __shibsp_agentconfig_h__
 
-#include <shibsp/base.h>
+#include <shibsp/util/PluginManager.h>
 
-#include <memory>
 #include <string>
-#include <xmltooling/PluginManager.h>
-
-/**
- * @namespace shibsp
- * Shibboleth Service Provider Library
- */
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
 
-    class SHIBSP_API AccessControl;
     class SHIBSP_API Agent;
     class SHIBSP_API Category;
-    class SHIBSP_API Handler;
-    class SHIBSP_API ListenerService;
     class SHIBSP_API LoggingService;
-    class SHIBSP_API RequestMapper;
-    class SHIBSP_API SessionCache;
-    class SHIBSP_API SessionInitiator;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -85,6 +73,11 @@ namespace shibsp {
          * before terminating itself.
          */
         virtual void term();
+
+        /**
+         * Manages factories for LoggingService plugins.
+         */
+        PluginManager<LoggingService,std::string,const boost::property_tree::ptree&> LoggingServiceManager;
 
         /**
          * Returns the global Agent instance.

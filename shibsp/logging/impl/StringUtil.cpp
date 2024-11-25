@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-#include "StringUtil.h"
+#include "logging/impl/StringUtil.h"
 
 #include <cstdio>
 

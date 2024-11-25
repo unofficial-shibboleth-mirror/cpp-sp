@@ -12,38 +12,42 @@
  * limitations under the License.
  */
 
+/**
+ * @file shibsp/logging/Category.h
+ *
+ * Logging facade used to send messages to LoggingService.
+ */
+
 #ifndef __shibsp_logging_category_h__
 #define __shibsp_logging_category_h__
 
 #include <shibsp/logging/Priority.h>
 
-#include <map>
-#include <vector>
 #include <cstdarg>
-#include <stdexcept>
 
 namespace shibsp {
 
+    class SHIBSP_API LoggingServiceSPI;
+
     /**
-     * This is the central class in the logging API, but is not a fully caoable
-     * port of a hierarchical logging system that allows differentiation of logging
-     * levels by category. This is merely a porting convenience and to potentially
-     * allow for that in the future.
+     * This is the central class in the logging API, and provides a convenience method
+     * to obtain instances of the class via an installed LoggingService.
      */   
     class SHIBSP_API Category {
         MAKE_NONCOPYABLE(Category);
     public:
         /**
-         * Instantiate a Category with name <code>name</code>. This
-         * method does not set priority of the category which is by
-         * default <code>Priority::NOTSET</code>.
+         * Instantiate a Category with the designated name.
          * 
-         * @param name The name of the category to retrieve.
+         * This is a convenience method to match the original logging API used
+         * across the code base.
+         * 
+         * @param name name of the category to retrieve.
          */
         static Category& getInstance(const std::string& name);
             
         /**
-         * Destructor for Category.
+         * Destructor.
          */
         virtual ~Category();
         
@@ -53,17 +57,6 @@ namespace shibsp {
          * @returns The category name.
          */       
         virtual const std::string& getName() const;
-        
-        /**
-         * Set the priority of this Category.
-         * 
-         * @param priority The priority to set. Use Priority::NOTSET to let 
-         * the category use its parents priority as effective priority.
-         * 
-         * @exception std::invalid_argument if the caller tries to set
-         * Priority::NOTSET on the Root Category.
-         */
-        virtual void setPriority(Priority::Value priority);
 
         /**
          * Returns the assigned Priority, if any, for this Category.
@@ -235,13 +228,12 @@ namespace shibsp {
         /**
          * Constructor.
          * 
+         * @param spi implementation interface for logging service to handle output
          * @param name the fully qualified name of this Category
-         * @param parent the parent of this parent, or NULL for the root 
-         * Category
          * @param priority the priority for this Category. Defaults to
          * Priority::SHIB_NOTSET
          */
-        Category(const std::string& name, Priority::Value priority = Priority::SHIB_NOTSET);
+        Category(LoggingServiceSPI& spi, const std::string& name, Priority::Value priority = Priority::SHIB_NOTSET);
         
         /** 
          * Unconditionally log a message with the specified priority.
@@ -261,6 +253,7 @@ namespace shibsp {
         virtual void _logUnconditionally2(Priority::Value priority, const std::string& message) throw();
 
     private:
+        LoggingServiceSPI& m_spi;
         const std::string m_name;
         Priority::Value m_priority;
     };

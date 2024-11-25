@@ -29,6 +29,7 @@
 
 #include <shibsp/base.h>
 
+#include <xmltooling/exceptions.h>
 #include <xmltooling/util/TemplateEngine.h>
 
 namespace shibsp {

@@ -12,13 +12,19 @@
  * limitations under the License.
  */
 
+/**
+ * @file shibsp/logging/Priority.h
+ *
+ * Constrained set of logging levels.
+ */
+
+
 #ifndef __shibsp_logging_priority_h__
 #define __shibsp_logging_priority_h__
 
 #include <shibsp/base.h>
 
 #include <string>
-#include <stdexcept>
 
 namespace shibsp {
 
@@ -31,14 +37,14 @@ namespace shibsp {
         /**
          * Predefined Levels of Priorities.
          */
-        enum {
+        enum PriorityLevel {
             SHIB_CRIT   = 0,
             SHIB_ERROR  = 100,
             SHIB_WARN   = 200,
             SHIB_INFO   = 300,
             SHIB_DEBUG  = 400,
             SHIB_NOTSET = 500
-        } PriorityLevel;
+        };
 
         /**
          * The type of Priority Values.

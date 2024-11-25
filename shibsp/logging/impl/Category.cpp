@@ -13,7 +13,8 @@
  */
 
 #include "logging/Category.h"
-#include "StringUtil.h"
+#include "logging/impl/LoggingServiceSPI.h"
+#include "logging/impl/StringUtil.h"
 
 using namespace shibsp;
 
@@ -21,7 +22,8 @@ Category& Category::getInstance(const std::string& name) {
     //return HierarchyMaintainer::getDefaultMaintainer().getInstance(name);
 }
 
-Category::Category(const std::string& name, Priority::Value priority) : m_name(name), m_priority(priority) {
+Category::Category(LoggingServiceSPI& spi, const std::string& name, Priority::Value priority)
+    : m_spi(spi), m_name(name), m_priority(priority) {
 }
 
 Category::~Category() {
@@ -35,23 +37,12 @@ Priority::Value Category::getPriority() const {
     return m_priority; 
 }
 
-void Category::setPriority(Priority::Value priority) {
-    if ((priority < Priority::SHIB_NOTSET)) {
-        m_priority = priority;
-    } else {
-        /* caller tried to set NOTSET priority to root Category. 
-            Bad caller!
-        */
-        throw std::invalid_argument("cannot set priority SHIB_NOTSET on Root Category");
-    }
-}
-
 void Category::_logUnconditionally(Priority::Value priority, const char* format, va_list arguments) throw() {
     _logUnconditionally2(priority, StringUtil::vform(format, arguments));
 }
 
 void Category::_logUnconditionally2(Priority::Value priority, const std::string& message) throw() {
-    // TODO: do the actual logging
+    m_spi.outputMessage(*this, message);
 }
 
 bool Category::isPriorityEnabled(Priority::Value priority) const {
