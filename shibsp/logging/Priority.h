@@ -52,7 +52,7 @@ namespace shibsp {
         typedef int Value;
 
         /**
-         * Returns the name of the given priority value.
+         * Returns the name of the given priority value (minus the SHIB_ prefix).
          * 
          * Currently, if the value is not one of the PriorityLevel values,
          * the method returns the name of the largest priority smaller 

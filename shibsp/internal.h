@@ -41,7 +41,6 @@
 #endif
 
 #include "base.h"
-#include "AgentConfig.h"
 #include "SPConfig.h"
 #include "logging/Category.h"
 

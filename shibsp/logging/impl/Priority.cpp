@@ -20,7 +20,7 @@ using namespace shibsp;
 
 namespace {
 	const std::string names[7] = {
-		"SHIB_CRIT", "SHIB_ERROR", "SHIB_WARN", "SHIB_INFO", "SHIB_DEBUG", "SHIB_NOTSET", "UNKNOWN"
+		"CRIT", "ERROR", "WARN", "INFO", "DEBUG", "NOTSET", "UNKNOWN"
 	};
 }
 

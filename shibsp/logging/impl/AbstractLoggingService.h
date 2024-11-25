@@ -37,6 +37,18 @@ namespace shibsp {
 
      /**
      * Base class for logging services that handles category management.
+     * 
+     * The root property tree passed to the constructor must contain subkeys named "logging" and
+     * "logging-levels" to configure both the default and per-category logging levels:
+     * 
+     * [logging]
+     * default-level = INFO
+     * 
+     * [logging-categories]
+     * categoryname = WARN
+     * categoryname.subcategoryname = DEBUG
+     * 
+     * Inheritance of logging levels is not an implementation requirement at this time.
      */
     class SHIBSP_API AbstractLoggingService : public virtual LoggingService, public virtual LoggingServiceSPI
     {
@@ -48,12 +60,16 @@ namespace shibsp {
 
         Category& getCategory(const std::string& name);
 
+        static const char LOGGING_SECTION_NAME[];
+        static const char CATEGORIES_SECTION_NAME[];
+        static const char DEFAULT_LEVEL_PROP_PATH[];
+
     private:
         // Default logging level.
-        Priority::PriorityLevel m_defaultPriority;
+        Priority::Value m_defaultPriority;
 
         // Result of parsing configuration.
-        std::map<std::string,Priority::PriorityLevel> m_priorityMap;
+        std::map<std::string,Priority::Value> m_priorityMap;
 
         // Manages shared Category objects.
         std::map<std::string,std::unique_ptr<Category>> m_categoryMap;

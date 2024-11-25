@@ -31,6 +31,7 @@ namespace shibsp {
     class SHIBSP_API Agent;
     class SHIBSP_API Category;
     class SHIBSP_API LoggingService;
+    class SHIBSP_API PathResolver;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -64,7 +65,7 @@ namespace shibsp {
          * @param inst_prefix   installation prefix for software
          * @return true iff initialization was successful
          */
-        virtual bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
+        virtual bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false)=0;
 
         /**
          * Shuts down agent/library
@@ -72,12 +73,19 @@ namespace shibsp {
          * Each process using the library SHOULD call this function exactly once
          * before terminating itself.
          */
-        virtual void term();
+        virtual void term()=0;
 
         /**
          * Manages factories for LoggingService plugins.
          */
         PluginManager<LoggingService,std::string,const boost::property_tree::ptree&> LoggingServiceManager;
+
+        /**
+         * Returns a PathResolver instance.
+         * 
+         * @return path resolver
+         */
+        virtual const PathResolver& getPathResolver() const=0;
 
         /**
          * Returns the global Agent instance.
@@ -93,7 +101,7 @@ namespace shibsp {
          * 
          * <p>This method will throw in the event the library is not yet initialized.</p>
          * 
-         * @return 
+         * @return logging service
          */
         virtual LoggingService& getLoggingService() const=0;
 

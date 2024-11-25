@@ -23,7 +23,8 @@
 #include "exceptions.h"
 #include "version.h"
 #include "AgentConfig.h"
-#include "logging/Category.h"
+#include "logging/LoggingService.h"
+#include "util/PathResolver.h"
 
 #include <ctime>
 #include <thread>
@@ -45,13 +46,21 @@ namespace shibsp {
         bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
         void term();
 
+        const PathResolver& getPathResolver() const {
+            return m_pathResolver;
+        }
         Agent& getAgent() const;
         LoggingService& getLoggingService() const;
 
     private:
+        bool _init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
+        void _term();
+
         unsigned int m_initCount;
         mutex m_lock;
+        PathResolver m_pathResolver;
         unique_ptr<Agent> m_agent;
+        unique_ptr<LoggingService> m_logging;
         unique_ptr<ptree> m_config;
     };
     
@@ -71,14 +80,54 @@ AgentConfig::~AgentConfig()
 {
 }
 
-Agent& AgentInternalConfig::getAgent() const
+shibsp::Category& AgentConfig::deprecation() const
 {
-    return *m_agent;
+    return Category::getInstance(SHIBSP_LOGCAT".DEPRECATION");
 }
 
-/*
-bool AgentConfig::init(const char* inst_prefix, const char* config_file, bool rethrow)
+LoggingService& AgentInternalConfig::getLoggingService() const
 {
+    if (m_logging) {
+        return *m_logging;
+    }
+    throw logic_error("LoggingService not initialized.");
+}
+
+Agent& AgentInternalConfig::getAgent() const
+{
+    if (m_agent) {
+        return *m_agent;
+    }
+    throw logic_error("Agent not initialized.");
+}
+
+bool AgentInternalConfig::init(const char* inst_prefix, const char* config_file, bool rethrow)
+{
+    lock_guard<mutex> locker(m_lock);
+
+    if (m_initCount == INT_MAX) {
+        if (rethrow) {
+            throw runtime_error("Library initialized too many times.");
+        }
+        return false;
+    }
+
+    if (m_initCount > 0) {
+        ++m_initCount;
+        return true;
+    }
+
+    if (!_init(inst_prefix, config_file, rethrow)) {
+        return false;
+    }
+
+    ++m_initCount;
+    return true;
+}
+
+bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file, bool rethrow)
+{
+    // Establish prefix and replace backward slashes in path.
     if (!inst_prefix)
         inst_prefix = getenv("SHIBSP_PREFIX");
     if (!inst_prefix)
@@ -89,68 +138,34 @@ bool AgentConfig::init(const char* inst_prefix, const char* config_file, bool re
         ++inst_prefix;
     }
 
-    const char* logconf = getenv("SHIBSP_LOGGING");
-    if (!logconf || !*logconf) {
-        if (isEnabled(SPConfig::Logging) && isEnabled(SPConfig::OutOfProcess) && !isEnabled(SPConfig::InProcess))
-            logconf = SHIBSP_OUTOFPROC_LOGGING;
-        else if (isEnabled(SPConfig::Logging) && isEnabled(SPConfig::InProcess) && !isEnabled(SPConfig::OutOfProcess))
-            logconf = SHIBSP_INPROC_LOGGING;
-        else
-            logconf = SHIBSP_LOGGING;
-    }
-    PathResolver localpr;
-    localpr.setDefaultPrefix(inst_prefix2.c_str());
-    inst_prefix = getenv("SHIBSP_CFGDIR");
+    m_pathResolver.setDefaultPackageName(PACKAGE_NAME);
+    m_pathResolver.setDefaultPrefix(inst_prefix2.c_str());
+    m_pathResolver.setCfgDir(inst_prefix);
+    inst_prefix = getenv("SHIBSP_LIBDIR");
     if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_CFGDIR;
-    localpr.setCfgDir(inst_prefix);
-    std::string lc(logconf);
-    XMLToolingConfig::getConfig().log_config(localpr.resolve(lc, PathResolver::XMLTOOLING_CFG_FILE, PACKAGE_NAME).c_str());
+        inst_prefix = SHIBSP_LIBDIR;
+    m_pathResolver.setLibDir(inst_prefix);
+    inst_prefix = getenv("SHIBSP_LOGDIR");
+    if (!inst_prefix || !*inst_prefix)
+        inst_prefix = SHIBSP_LOGDIR;
+    m_pathResolver.setLogDir(inst_prefix);
+    inst_prefix = getenv("SHIBSP_RUNDIR");
+    if (!inst_prefix || !*inst_prefix)
+        inst_prefix = SHIBSP_RUNDIR;
+    m_pathResolver.setRunDir(inst_prefix);
+    inst_prefix = getenv("SHIBSP_CACHEDIR");
+    if (!inst_prefix || !*inst_prefix)
+        inst_prefix = SHIBSP_CACHEDIR;
+    m_pathResolver.setCacheDir(inst_prefix);
+
+    registerLoggingServices();
+
+/*
 
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
     log.debug("%s library initialization started", PACKAGE_STRING);
 
     XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
-
-    PathResolver* pr = XMLToolingConfig::getConfig().getPathResolver();
-    pr->setDefaultPackageName(PACKAGE_NAME);
-    pr->setDefaultPrefix(inst_prefix2.c_str());
-    pr->setCfgDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_LIBDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_LIBDIR;
-    pr->setLibDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_LOGDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_LOGDIR;
-    pr->setLogDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_RUNDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_RUNDIR;
-    pr->setRunDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_CACHEDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_CACHEDIR;
-    pr->setCacheDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_XMLDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_XMLDIR;
-    pr->setXMLDir(inst_prefix);
-
-    if (!catalog_path)
-        catalog_path = getenv("SHIBSP_SCHEMAS");
-    if (!catalog_path || !*catalog_path)
-        catalog_path = SHIBSP_SCHEMAS;
-    if (!XMLToolingConfig::getConfig().getValidatingParser().loadCatalogs(catalog_path)) {
-        log.warn("failed to load schema catalogs into validating parser");
-    }
-
-    XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
-    XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
-
-    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
-    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
-    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
 
     registerAttributeFactories();
 
@@ -173,49 +188,16 @@ bool AgentConfig::init(const char* inst_prefix, const char* config_file, bool re
     if (isEnabled(Caching))
         registerSessionCaches();
 
-    // Yes, this isn't insecure, will review where we do any random generation
+    // Yes, this isn't secure, will review where we do any random generation
     // after full code cleanup is done.
     srand(static_cast<unsigned int>(std::time(nullptr)));
 
     log.info("%s library initialization complete", PACKAGE_STRING);
+    */
     return true;
 }
 
-void AgentConfig::term()
-{
-    Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
-    log.info("%s library shutting down", PACKAGE_STRING);
-
-    setServiceProvider(nullptr);
-    if (m_configDoc)
-        m_configDoc->release();
-    m_configDoc = nullptr;
-
-    if (isEnabled(Handlers)) {
-        AssertionConsumerServiceManager.deregisterFactories();
-        LogoutInitiatorManager.deregisterFactories();
-        SessionInitiatorManager.deregisterFactories();
-        SingleLogoutServiceManager.deregisterFactories();
-        HandlerManager.deregisterFactories();
-    }
-
-    ServiceProviderManager.deregisterFactories();
-    Attribute::deregisterFactories();
-
-    if (isEnabled(Listener))
-        ListenerServiceManager.deregisterFactories();
-
-    if (isEnabled(RequestMapping)) {
-        AccessControlManager.deregisterFactories();
-        RequestMapperManager.deregisterFactories();
-    }
-
-    if (isEnabled(Caching))
-        SessionCacheManager.deregisterFactories();
-
-    log.info("%s library shutdown complete", PACKAGE_STRING);
-}
-
+    /*
 bool SPConfig::instantiate(const char* config, bool rethrow)
 {
     if (!config)
@@ -273,30 +255,6 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
 }
 */
 
-bool AgentInternalConfig::init(const char* inst_prefix, const char* config_file, bool rethrow)
-{
-    lock_guard<mutex> locker(m_lock);
-
-    if (m_initCount == INT_MAX) {
-        if (rethrow) {
-            throw runtime_error("Library initialized too many times.");
-        }
-        return false;
-    }
-
-    if (m_initCount > 0) {
-        ++m_initCount;
-        return true;
-    }
-
-    if (!AgentConfig::init(inst_prefix, config_file, rethrow)) {
-        return false;
-    }
-
-    ++m_initCount;
-    return true;
-}
-
 void AgentInternalConfig::term()
 {
     lock_guard<mutex> locker(m_lock);
@@ -309,10 +267,42 @@ void AgentInternalConfig::term()
         return;
     }
 
-    AgentConfig::term();
+    _term();
 }
 
-shibsp::Category& AgentConfig::deprecation() const
+void AgentInternalConfig::_term()
 {
-    return Category::getInstance(SHIBSP_LOGCAT".DEPRECATION");
+    /*
+    Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
+    log.info("%s library shutting down", PACKAGE_STRING);
+
+    setServiceProvider(nullptr);
+    if (m_configDoc)
+        m_configDoc->release();
+    m_configDoc = nullptr;
+
+    if (isEnabled(Handlers)) {
+        AssertionConsumerServiceManager.deregisterFactories();
+        LogoutInitiatorManager.deregisterFactories();
+        SessionInitiatorManager.deregisterFactories();
+        SingleLogoutServiceManager.deregisterFactories();
+        HandlerManager.deregisterFactories();
+    }
+
+    ServiceProviderManager.deregisterFactories();
+    Attribute::deregisterFactories();
+
+    if (isEnabled(Listener))
+        ListenerServiceManager.deregisterFactories();
+
+    if (isEnabled(RequestMapping)) {
+        AccessControlManager.deregisterFactories();
+        RequestMapperManager.deregisterFactories();
+    }
+
+    if (isEnabled(Caching))
+        SessionCacheManager.deregisterFactories();
+
+    log.info("%s library shutdown complete", PACKAGE_STRING);
+    */
 }

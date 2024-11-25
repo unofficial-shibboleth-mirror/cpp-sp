@@ -89,7 +89,7 @@ BOOST_FIXTURE_TEST_CASE(BoostPropertySet_tree, BPS_Fixture)
 
     for (const pair<const string,pt::ptree>& child : root) {
         if (child.first == "one") {
-            ones.push_back(make_unique<TestBoostPropertySet>());
+            ones.push_back(unique_ptr<TestBoostPropertySet>(new TestBoostPropertySet()));
             const auto& one = ones.back();
             const boost::optional<const pt::ptree&> xmlattr = child.second.get_child_optional("<xmlattr>");
             if (xmlattr) {
@@ -99,7 +99,7 @@ BOOST_FIXTURE_TEST_CASE(BoostPropertySet_tree, BPS_Fixture)
 
             for (const pair<const string,pt::ptree>& child2 : child.second) {
                 if (child2.first == "two") {
-                    twos.push_back(make_unique<TestBoostPropertySet>());
+                    twos.push_back(unique_ptr<TestBoostPropertySet>(new TestBoostPropertySet()));
                     const auto& two = twos.back();
                     const boost::optional<const pt::ptree&> xmlattr = child2.second.get_child_optional("<xmlattr>");
                     if (xmlattr) {

@@ -60,8 +60,10 @@ reminclude_HEADERS = \
 utilinclude_HEADERS = \
 	util/BoostPropertySet.h \
 	util/CGIParser.h \
+	util/Date.h \
 	util/DOMPropertySet.h \
 	util/IPRange.h \
+	util/PathResolver.h \
 	util/PropertySet.h \
 	util/SPConstants.h \
 	util/TemplateParameters.h
@@ -116,8 +118,9 @@ libshibsp_la_SOURCES = \
 	impl/XMLApplication.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \
-	logging/impl/Category.cpp \
 	logging/impl/AbstractLoggingService.cpp \
+	logging/impl/Category.cpp \
+	logging/impl/ConsoleLoggingService.cpp \
 	logging/impl/Priority.cpp \
 	logging/impl/StringUtil.cpp \
 	remoting/impl/ddf.cpp \
@@ -129,6 +132,7 @@ libshibsp_la_SOURCES = \
 	util/CGIParser.cpp \
 	util/DOMPropertySet.cpp \
 	util/IPRange.cpp \
+	util/PathResolver.cpp \
 	util/SPConstants.cpp \
 	util/TemplateParameters.cpp
 

@@ -25,6 +25,7 @@
  */
 
 #include "internal.h"
+#include "AgentConfig.h"
 #include "exceptions.h"
 #include "AccessControl.h"
 #include "Application.h"
@@ -33,19 +34,15 @@
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/SessionInitiator.h"
+#include "util/PathResolver.h"
 #include "util/TemplateParameters.h"
 
 #include <fstream>
 #include <sstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#ifndef SHIBSP_LITE
-# include <saml/exceptions.h>
-# include <saml/saml2/metadata/MetadataProvider.h>
-#endif
+
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
-#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -134,7 +131,7 @@ namespace shibsp {
 
         // If we have a template to use, use it.
         if (!fname.empty()) {
-            ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
+            ifstream infile(AgentConfig::getConfig().getPathResolver().resolve(fname, PathResolver::SHIBSP_CFG_FILE).c_str());
             if (infile) {
                 tp.setPropertySet(props);
                 stringstream str;
@@ -298,9 +295,6 @@ ServiceProvider::~ServiceProvider()
 
 pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handler) const
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("doAuthentication");
-#endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
@@ -309,9 +303,6 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
-
-        string appid(string("[") + app->getId() + "]");
-        xmltooling::NDC ndc(appid.c_str());
 
         // If not SSL, check to see if we should block or redirect it.
         if (!request.isSecure()) {
@@ -459,9 +450,6 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 
 pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("doAuthorization");
-#endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
@@ -472,9 +460,6 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
-
-        string appid(string("[") + app->getId() + "]");
-        xmltooling::NDC ndc(appid.c_str());
 
         // Three settings dictate how to proceed.
         pair<bool,const char*> authType = settings.first->getString("authType");
@@ -532,9 +517,6 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 
 pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSession) const
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("doExport");
-#endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
@@ -545,9 +527,6 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
-
-        string appid(string("[") + app->getId() + "]");
-        xmltooling::NDC ndc(appid.c_str());
 
         try {
             session = request.getSession(false, false, false);  // ignore timeout and do not cache
@@ -653,9 +632,6 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
 pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("doHandler");
-#endif
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
@@ -664,9 +640,6 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
         app = &(request.getApplication());
-
-        string appid(string("[") + app->getId() + "]");
-        xmltooling::NDC ndc(appid.c_str());
 
         // If not SSL, check to see if we should block or redirect it.
         if (!request.isSecure()) {

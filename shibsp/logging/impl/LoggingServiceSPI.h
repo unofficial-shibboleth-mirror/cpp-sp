@@ -55,7 +55,7 @@ namespace shibsp {
          * @param category logging category
          * @param message logging message
          */
-        virtual void outputMessage(Category& category, const std::string& message)=0;
+        virtual void outputMessage(const Category& category, const std::string& message)=0;
 
         /**
          * Outputs a logging message in whatever manner is defined by the underlying implementation.
@@ -63,7 +63,7 @@ namespace shibsp {
          * @param category logging category
          * @param message logging message
          */
-        virtual void outputMessage(Category& category, const char* message)=0;
+        virtual void outputMessage(const Category& category, const char* message)=0;
     };
 
 };
