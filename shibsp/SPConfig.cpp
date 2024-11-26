@@ -139,24 +139,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
         ++inst_prefix;
     }
 
-    const char* logconf = getenv("SHIBSP_LOGGING");
-    if (!logconf || !*logconf) {
-        if (isEnabled(SPConfig::Logging) && isEnabled(SPConfig::OutOfProcess) && !isEnabled(SPConfig::InProcess))
-            logconf = SHIBSP_OUTOFPROC_LOGGING;
-        else if (isEnabled(SPConfig::Logging) && isEnabled(SPConfig::InProcess) && !isEnabled(SPConfig::OutOfProcess))
-            logconf = SHIBSP_INPROC_LOGGING;
-        else
-            logconf = SHIBSP_LOGGING;
-    }
-    PathResolver localpr;
-    localpr.setDefaultPrefix(inst_prefix2.c_str());
-    inst_prefix = getenv("SHIBSP_CFGDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_CFGDIR;
-    localpr.setCfgDir(inst_prefix);
-    std::string lc(logconf);
-    XMLToolingConfig::getConfig().log_config(localpr.resolve(lc, PathResolver::XMLTOOLING_CFG_FILE, PACKAGE_NAME).c_str());
-
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
     log.debug("%s library initialization started", PACKAGE_STRING);
 

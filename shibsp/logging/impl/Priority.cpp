@@ -15,23 +15,25 @@
 #include <shibsp/logging/Priority.h>
 
 #include <cstdlib>
+#include <stdexcept>
 
 using namespace shibsp;
+using namespace std;
 
 namespace {
-	const std::string names[7] = {
+	const string names[7] = {
 		"CRIT", "ERROR", "WARN", "INFO", "DEBUG", "NOTSET", "UNKNOWN"
 	};
 }
 
-const std::string& Priority::getPriorityName(int priority) throw() {
+const string& Priority::getPriorityName(int priority) throw() {
 		
 	priority++;
 	priority /= 100;
 	return names[((priority < 0) || (priority > 5)) ? 5 : priority];
 }
 
-Priority::Value Priority::getPriorityValue(const std::string& priorityName) {
+Priority::Value Priority::getPriorityValue(const string& priorityName) {
 	Priority::Value value = -1;
 
 	for (unsigned int i = 0; i < 7; i++) {
@@ -43,9 +45,9 @@ Priority::Value Priority::getPriorityValue(const std::string& priorityName) {
 
 	if (value == -1) {
 		char* endPointer;
-		value = std::strtoul(priorityName.c_str(), &endPointer, 10);
+		value = strtoul(priorityName.c_str(), &endPointer, 10);
 		if (*endPointer != 0) {
-			throw std::invalid_argument(std::string("unknown priority name: '") + priorityName + "'");
+			throw invalid_argument(string("unknown priority name: '") + priorityName + "'");
 		}
 	}
 

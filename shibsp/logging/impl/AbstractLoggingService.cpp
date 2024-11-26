@@ -23,6 +23,8 @@
 #include "AgentConfig.h"
 #include "logging/impl/AbstractLoggingService.h"
 
+#include <stdexcept>
+
 #include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
@@ -56,7 +58,7 @@ void SHIBSP_API shibsp::registerLoggingServices()
 #endif
 }
 
-const char AbstractLoggingService::LOGGING_SECTION_NAME[] = "logging";
+const char LoggingService::LOGGING_TYPE_PROP_PATH[] = "logging.type";
 const char AbstractLoggingService::CATEGORIES_SECTION_NAME[] = "logging-categories";
 const char AbstractLoggingService::DEFAULT_LEVEL_PROP_PATH[] = "logging.default-level";
 
@@ -70,18 +72,22 @@ LoggingServiceSPI::~LoggingServiceSPI() {}
 
 AbstractLoggingService::~AbstractLoggingService() {}
 
-AbstractLoggingService::AbstractLoggingService(const ptree& pt)
+AbstractLoggingService::AbstractLoggingService(const ptree& pt) : m_config(pt)
+{
+}
+
+bool AbstractLoggingService::init()
 {
     // Processes property tree to create mappings from category name to logging level.
     // If an invalid property token is seen, the default level is INFO.
 
     try {
-        m_defaultPriority = Priority::getPriorityValue(pt.get(DEFAULT_LEVEL_PROP_PATH, "INFO"));
+        m_defaultPriority = Priority::getPriorityValue(m_config.get(DEFAULT_LEVEL_PROP_PATH, "INFO"));
     } catch (const invalid_argument& e) {
         m_defaultPriority = Priority::PriorityLevel::SHIB_INFO;
     }
 
-    const boost::optional<const ptree&> categories = pt.get_child_optional(CATEGORIES_SECTION_NAME);
+    const boost::optional<const ptree&> categories = m_config.get_child_optional(CATEGORIES_SECTION_NAME);
     if (categories) {
         for (const auto& mapping : categories.get()) {
             try {
@@ -91,7 +97,11 @@ AbstractLoggingService::AbstractLoggingService(const ptree& pt)
             }
         }
     }
+
+    return true;
 }
+
+void AbstractLoggingService::term() {}
 
 Category& AbstractLoggingService::getCategory(const std::string& name)
 {

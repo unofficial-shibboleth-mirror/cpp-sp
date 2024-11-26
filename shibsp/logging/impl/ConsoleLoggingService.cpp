@@ -35,12 +35,10 @@ namespace shibsp {
     public:
         ConsoleLoggingService(const ptree& pt);
 
-        bool init() {}
-        bool term() {}
-        void outputMessage(const Category& category, const string& message) {
-            outputMessage(category, message.c_str());
+        void outputMessage(const Category& category, Priority::Value prio, const string& message) {
+            outputMessage(category, prio, message.c_str());
         }
-        void outputMessage(const Category& category, const char* message);
+        void outputMessage(const Category& category, Priority::Value prio, const char* message);
 
     };
 
@@ -56,13 +54,13 @@ ConsoleLoggingService::ConsoleLoggingService(const ptree& pt) : AbstractLoggingS
     // message formatting.
 }
 
-void ConsoleLoggingService::outputMessage(const Category& category, const char* message)
+void ConsoleLoggingService::outputMessage(const Category& category, Priority::Value prio, const char* message)
 {
     auto now = chrono::system_clock::now();
 
-    cerr << date::format("%FT%TZ", date::floor<chrono::milliseconds>(now)) << " - "
-        << Priority::getPriorityName(category.getPriority())
-        << ' [' << category.getName() << "] - "
+    cout << date::format("%FT%TZ", date::floor<chrono::milliseconds>(now)) << " - "
+        << Priority::getPriorityName(prio)
+        << " [" << category.getName() << "] - "
         << message
         << endl;
 }

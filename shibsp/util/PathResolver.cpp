@@ -27,7 +27,7 @@
 #include "internal.h"
 #include "util/PathResolver.h"
 
-#include <exception>
+#include <stdexcept>
 
 #ifdef WIN32
 # include <Shlobj.h>

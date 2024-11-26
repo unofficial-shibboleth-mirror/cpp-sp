@@ -76,18 +76,6 @@
   #define SHIBSP_EXCEPTIONAPI(api)
 #endif
 
-/**
- * Controls default logging level of console tools and other situations
- * where fully-configured logging isn't used.
- */
-#define SHIBSP_LOGGING  "console.logger"
-
-/** Default name of SP in-process logging config file. */
-#define SHIBSP_INPROC_LOGGING "native.logger"
-
-/** Default name of SP out-of-process logging config file. */
-#define SHIBSP_OUTOFPROC_LOGGING "shibd.logger"
-
 /** Logging category for Service Provider functions. */
 #define SHIBSP_LOGCAT "Shibboleth"
 
@@ -95,7 +83,7 @@
 #define SHIBSP_TX_LOGCAT "Shibboleth-TRANSACTION"
 
 /** Default name of configuration file. */
-# define SHIBSP_CONFIG  "shibboleth2.xml"
+# define SHIBSP_CONFIG  "shibboleth.ini"
 
 #ifdef WIN32
 

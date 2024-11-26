@@ -27,8 +27,10 @@
 #include "util/PathResolver.h"
 
 #include <ctime>
+#include <stdexcept>
 #include <thread>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -56,20 +58,22 @@ namespace shibsp {
         bool _init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
         void _term();
 
+        bool initLogging();
+
         unsigned int m_initCount;
         mutex m_lock;
+        ptree m_config;
         PathResolver m_pathResolver;
-        unique_ptr<Agent> m_agent;
         unique_ptr<LoggingService> m_logging;
-        unique_ptr<ptree> m_config;
+        //unique_ptr<Agent> m_agent;
     };
     
-    AgentInternalConfig g_config;
+    static AgentInternalConfig g_agentConfig;
 }
 
 AgentConfig& AgentConfig::getConfig()
 {
-    return g_config;
+    return g_agentConfig;
 }
 
 AgentConfig::AgentConfig()
@@ -95,9 +99,9 @@ LoggingService& AgentInternalConfig::getLoggingService() const
 
 Agent& AgentInternalConfig::getAgent() const
 {
-    if (m_agent) {
-        return *m_agent;
-    }
+//    if (m_agent) {
+//        return *m_agent;
+//    }
     throw logic_error("Agent not initialized.");
 }
 
@@ -132,12 +136,13 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
         inst_prefix = getenv("SHIBSP_PREFIX");
     if (!inst_prefix)
         inst_prefix = SHIBSP_PREFIX;
-    std::string inst_prefix2;
+    string inst_prefix2;
     while (*inst_prefix) {
         inst_prefix2.push_back((*inst_prefix=='\\') ? ('/') : (*inst_prefix));
         ++inst_prefix;
     }
 
+    // Set up PathResolver component.
     m_pathResolver.setDefaultPackageName(PACKAGE_NAME);
     m_pathResolver.setDefaultPrefix(inst_prefix2.c_str());
     m_pathResolver.setCfgDir(inst_prefix);
@@ -158,13 +163,43 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
         inst_prefix = SHIBSP_CACHEDIR;
     m_pathResolver.setCacheDir(inst_prefix);
 
+    // Resolve primary config path and parse as INI file.
+    if (!config_file)
+        config_file = getenv("SHIBSP_CONFIG");
+    if (!config_file) {
+        config_file = SHIBSP_CONFIG;
+    }
+    string config_file_resolved(config_file);
+    m_pathResolver.resolve(config_file_resolved, PathResolver::SHIBSP_CFG_FILE);
+
+    try {
+        ini_parser::read_ini(config_file_resolved, m_config);
+    } catch (const ini_parser_error& e) {
+        if (rethrow) {
+            throw;
+        }
+        return false;
+    }
+
     registerLoggingServices();
 
-/*
+    try {
+        if (!initLogging()) {
+            return false;
+        }
+    } catch (const std::exception& e) {
+        if (rethrow) {
+            throw;
+        }
+        return false;
+    }
 
-    Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
-    log.debug("%s library initialization started", PACKAGE_STRING);
+    // At this point, logging is active/usable.
 
+    Category& log=Category::getInstance(SHIBSP_LOGCAT ".AgentConfig");
+    log.info("%s agent initialization underway", PACKAGE_STRING);
+
+    /*
     XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
 
     registerAttributeFactories();
@@ -197,63 +232,22 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
     return true;
 }
 
-    /*
-bool SPConfig::instantiate(const char* config, bool rethrow)
+bool AgentInternalConfig::initLogging()
 {
-    if (!config)
-        config = getenv("SHIBSP_CONFIG");
-    if (!config) {
-        config = SHIBSP_CONFIG;
+    // Config is loaded, look for logging section and type to instantiate.
+    string type = m_config.get(LoggingService::LOGGING_TYPE_PROP_PATH,
+#ifdef WIN32
+        WINDOWS_LOGGING_SERVICE
+#else
+        SYSLOG_LOGGING_SERVICE
+#endif
+        );
+    m_logging = unique_ptr<LoggingService>(LoggingServiceManager.newPlugin(type, m_config, false));
+    if (!m_logging->init()) {
+        return false;
     }
-    try {
-        xercesc::DOMDocument* dummydoc;
-        if (*config == '"' || *config == '\'') {
-            throw ConfigurationException("The value of SHIBSP_CONFIG started with a quote.");
-        }
-        else if (*config != '<') {
-            // Mock up some XML.
-            string resolved(config);
-            stringstream snippet;
-            snippet
-                << "<Dummy path='"
-                << XMLToolingConfig::getConfig().getPathResolver()->resolve(resolved, PathResolver::XMLTOOLING_CFG_FILE)
-                << "' validate='1'/>";
-            dummydoc = XMLToolingConfig::getConfig().getParser().parse(snippet);
-            XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
-            setServiceProvider(ServiceProviderManager.newPlugin(XML_SERVICE_PROVIDER, dummydoc->getDocumentElement(), true));
-            if (m_configDoc)
-                m_configDoc->release();
-            m_configDoc = docjanitor.release();
-        }
-        else {
-            stringstream snippet(config);
-            dummydoc = XMLToolingConfig::getConfig().getParser().parse(snippet);
-            XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);
-            static const XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
-            auto_ptr_char type(dummydoc->getDocumentElement()->getAttributeNS(nullptr,_type));
-            if (type.get() && *type.get())
-                setServiceProvider(ServiceProviderManager.newPlugin(type.get(), dummydoc->getDocumentElement(), true));
-            else
-                throw ConfigurationException("The supplied XML bootstrapping configuration did not include a type attribute.");
-            if (m_configDoc)
-                m_configDoc->release();
-            m_configDoc = docjanitor.release();
-        }
-
-        getServiceProvider()->init();
-        return true;
-    }
-    catch (const std::exception& ex) {
-        if (rethrow) {
-            throw;
-        }
-        else {
-            Category::getInstance(SHIBSP_LOGCAT ".Config").fatal("caught exception while loading configuration: %s", ex.what());
-        }
-    }
-    return false;
+    return true;
 }
-*/
 
 void AgentInternalConfig::term()
 {
@@ -272,10 +266,16 @@ void AgentInternalConfig::term()
 
 void AgentInternalConfig::_term()
 {
-    /*
-    Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
-    log.info("%s library shutting down", PACKAGE_STRING);
+    Category& log=Category::getInstance(SHIBSP_LOGCAT ".AgentConfig");
+    log.info("%s agent shutting down", PACKAGE_STRING);
 
+    LoggingServiceManager.deregisterFactories();
+
+    log.info("%s agent shutdown complete", PACKAGE_STRING);
+
+    m_logging->term();
+
+    /*
     setServiceProvider(nullptr);
     if (m_configDoc)
         m_configDoc->release();
@@ -302,7 +302,5 @@ void AgentInternalConfig::_term()
 
     if (isEnabled(Caching))
         SessionCacheManager.deregisterFactories();
-
-    log.info("%s library shutdown complete", PACKAGE_STRING);
     */
 }

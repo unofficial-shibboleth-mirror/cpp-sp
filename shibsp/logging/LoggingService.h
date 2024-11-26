@@ -40,6 +40,8 @@ namespace shibsp {
     public:
         virtual ~LoggingService();
 
+        static const char LOGGING_TYPE_PROP_PATH[];
+
         /**
          * Initializes the designated logging service.
          */
@@ -48,7 +50,7 @@ namespace shibsp {
         /**
          * Terminates the designated logging service.
          */
-        virtual bool term()=0;
+        virtual void term()=0;
 
         /**
          * Retrieves an instance of a logging Category of the specified name (empty is permitted).

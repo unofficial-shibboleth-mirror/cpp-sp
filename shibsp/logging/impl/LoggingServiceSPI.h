@@ -40,30 +40,22 @@ namespace shibsp {
         virtual ~LoggingServiceSPI();
 
         /**
-         * Initializes the designated logging service.
+         * Outputs a logging message in whatever manner is defined by the underlying implementation.
+         * 
+         * @param category logging category
+         * @param prio logging priority
+         * @param message logging message
          */
-        virtual bool init()=0;
-
-        /**
-         * Terminates the designated logging service.
-         */
-        virtual bool term()=0;
+        virtual void outputMessage(const Category& category, Priority::Value prio, const std::string& message)=0;
 
         /**
          * Outputs a logging message in whatever manner is defined by the underlying implementation.
          * 
          * @param category logging category
+         * @param prio logging priority
          * @param message logging message
          */
-        virtual void outputMessage(const Category& category, const std::string& message)=0;
-
-        /**
-         * Outputs a logging message in whatever manner is defined by the underlying implementation.
-         * 
-         * @param category logging category
-         * @param message logging message
-         */
-        virtual void outputMessage(const Category& category, const char* message)=0;
+        virtual void outputMessage(const Category& category, Priority::Value prio, const char* message)=0;
     };
 
 };

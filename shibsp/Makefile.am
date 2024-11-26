@@ -111,6 +111,7 @@ libshibsp_la_SOURCES = \
 	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/StatusHandler.cpp \
+	impl/AgentConfig.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/ChainingAccessControl.cpp \
 	impl/StoredSession.cpp \

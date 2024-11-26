@@ -58,13 +58,17 @@ namespace shibsp {
     public:
         virtual ~AbstractLoggingService();
 
+        bool init();
+        void term();
+
         Category& getCategory(const std::string& name);
 
-        static const char LOGGING_SECTION_NAME[];
         static const char CATEGORIES_SECTION_NAME[];
         static const char DEFAULT_LEVEL_PROP_PATH[];
 
     private:
+        const boost::property_tree::ptree& m_config;
+
         // Default logging level.
         Priority::Value m_defaultPriority;
 

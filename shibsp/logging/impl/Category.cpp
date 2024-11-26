@@ -12,14 +12,16 @@
  * limitations under the License.
  */
 
+#include "AgentConfig.h"
 #include "logging/Category.h"
+#include "logging/LoggingService.h"
 #include "logging/impl/LoggingServiceSPI.h"
 #include "logging/impl/StringUtil.h"
 
 using namespace shibsp;
 
 Category& Category::getInstance(const std::string& name) {
-    //return HierarchyMaintainer::getDefaultMaintainer().getInstance(name);
+    return AgentConfig::getConfig().getLoggingService().getCategory(name);
 }
 
 Category::Category(LoggingServiceSPI& spi, const std::string& name, Priority::Value priority)
@@ -42,7 +44,7 @@ void Category::_logUnconditionally(Priority::Value priority, const char* format,
 }
 
 void Category::_logUnconditionally2(Priority::Value priority, const std::string& message) throw() {
-    m_spi.outputMessage(*this, message);
+    m_spi.outputMessage(*this, priority, message);
 }
 
 bool Category::isPriorityEnabled(Priority::Value priority) const {

@@ -11,6 +11,7 @@ shibsptest_CXXFLAGS = \
 
 shibsptest_SOURCES = \
 	AgentTestSuite.cpp \
+	AgentConfigTests.cpp \
 	util/PropertyTreeTests.cpp \
 	util/BoostPropertySetTests.cpp
 
