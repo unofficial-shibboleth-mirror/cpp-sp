@@ -124,6 +124,7 @@ libshibsp_la_SOURCES = \
 	logging/impl/ConsoleLoggingService.cpp \
 	logging/impl/Priority.cpp \
 	logging/impl/StringUtil.cpp \
+	logging/impl/SyslogLoggingService.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/ListenerService.cpp \
 	remoting/impl/SocketListener.cpp \

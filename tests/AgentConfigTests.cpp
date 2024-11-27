@@ -87,8 +87,14 @@ BOOST_AUTO_TEST_CASE(AgentConfig_term_without_init)
         runtime_error, checker_term.check_message);
 }
 
-BOOST_FIXTURE_TEST_CASE(AgentConfig_init_success, AC_Fixture)
+BOOST_FIXTURE_TEST_CASE(AgentConfig_init_console, AC_Fixture)
 {
-    BOOST_CHECK(AgentConfig::getConfig().init(nullptr, (data_path + "shibboleth.ini").c_str(), true));
+    BOOST_CHECK(AgentConfig::getConfig().init(nullptr, (data_path + "console-shibboleth.ini").c_str(), true));
+    AgentConfig::getConfig().term();
+}
+
+BOOST_FIXTURE_TEST_CASE(AgentConfig_init_syslog, AC_Fixture)
+{
+    BOOST_CHECK(AgentConfig::getConfig().init(nullptr, (data_path + "syslog-shibboleth.ini").c_str(), true));
     AgentConfig::getConfig().term();
 }
