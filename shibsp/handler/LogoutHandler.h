@@ -91,8 +91,8 @@ namespace shibsp {
          */
         std::pair<bool,long> notifyFrontChannel(
             const Application& application,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse& response,
+            const HTTPRequest& request,
+            HTTPResponse& response,
             const std::map<std::string,std::string>* params=nullptr
             ) const;
 
@@ -119,8 +119,8 @@ namespace shibsp {
          */
         std::pair<bool,long> sendLogoutPage(
             const Application& application,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse& response,
+            const HTTPRequest& request,
+            HTTPResponse& response,
             const char* type
             ) const;
     };

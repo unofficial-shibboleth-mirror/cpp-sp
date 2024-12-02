@@ -37,28 +37,12 @@
 #include <xercesc/util/XercesDefs.hpp>
 #include <xmltooling/Lockable.h>
 
-namespace xmltooling {
-    class XMLTOOL_API HTTPRequest;
-    class XMLTOOL_API HTTPResponse;
-};
-
-#ifndef SHIBSP_LITE
-# include <set>
-namespace opensaml {
-    class SAML_API Assertion;
-    namespace saml2 {
-        class SAML_API NameID;
-    };
-    namespace saml2md {
-        class SAML_API EntityDescriptor;
-    };
-};
-#endif
-
 namespace shibsp {
 
     class SHIBSP_API Application;
     class SHIBSP_API Attribute;
+    class SHIBSP_API HTTPRequest;
+    class SHIBSP_API HTTPResponse;
 
     /**
      * Encapsulates access to a user's security session.
@@ -130,17 +114,6 @@ namespace shibsp {
          * @return  the UTC authentication timestamp
          */
         virtual const char* getAuthnInstant() const=0;
-
-#ifndef SHIBSP_LITE
-        /**
-         * Returns the NameID associated with a session.
-         *
-         * <p>SAML 1.x identifiers will be promoted to the 2.0 type.</p>
-         *
-         * @return a SAML 2.0 NameID associated with the session, if any
-         */
-        virtual const opensaml::saml2::NameID* getNameID() const=0;
-#endif
 
         /**
          * Returns the SessionIndex provided with the session.
@@ -328,7 +301,7 @@ namespace shibsp {
          * @param request       request from client containing session, or a reference to it
          * @return  ID of session, if any known, or an empty string
          */
-        virtual std::string active(const Application& application, const xmltooling::HTTPRequest& request)=0;
+        virtual std::string active(const Application& application, const HTTPRequest& request)=0;
 
         /**
          * Locates an existing session bound to a request.
@@ -347,7 +320,7 @@ namespace shibsp {
          */
         virtual Session* find(
             const Application& application,
-            xmltooling::HTTPRequest& request,
+            HTTPRequest& request,
             const char* client_addr=nullptr,
             time_t* timeout=nullptr
             )=0;
@@ -364,8 +337,8 @@ namespace shibsp {
          */
         virtual void remove(
             const Application& application,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse* response=nullptr,
+            const HTTPRequest& request,
+            HTTPResponse* response=nullptr,
             time_t revocationExp=0
         )=0;
 

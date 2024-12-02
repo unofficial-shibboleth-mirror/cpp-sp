@@ -81,7 +81,7 @@ namespace shibsp {
          * @param httpRequest   client request that initiated session
          * @param issuedTo      address for which security assertion was issued
          */
-        void checkAddress(const Application& application, const xmltooling::HTTPRequest& httpRequest, const char* issuedTo) const;
+        void checkAddress(const Application& application, const HTTPRequest& httpRequest, const char* issuedTo) const;
 
 
         /**
@@ -94,8 +94,8 @@ namespace shibsp {
          */
         virtual std::pair<bool,long> finalizeResponse(
             const Application& application,
-            const xmltooling::HTTPRequest& httpRequest,
-            xmltooling::HTTPResponse& httpResponse,
+            const HTTPRequest& httpRequest,
+            HTTPResponse& httpResponse,
             std::string& relayState
             ) const;
 
@@ -182,13 +182,13 @@ namespace shibsp {
 #endif
     private:
         std::pair<bool,long> processMessage(
-            const Application& application, const xmltooling::HTTPRequest& httpRequest, xmltooling::HTTPResponse& httpResponse
+            const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse
             ) const;
         
         std::pair<bool,long> sendRedirect(
             const Application& application,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse& response,
+            const HTTPRequest& request,
+            HTTPResponse& response,
             const char* entityID,
             const char* relayState
             ) const;                

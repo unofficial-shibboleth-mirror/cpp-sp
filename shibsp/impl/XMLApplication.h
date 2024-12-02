@@ -95,7 +95,7 @@ namespace shibsp {
         const Handler* getAssertionConsumerServiceByProtocol(const XMLCh* protocol, const char* binding=nullptr) const;
         const Handler* getHandler(const char* path) const;
         void getHandlers(std::vector<const Handler*>& handlers) const;
-        void limitRedirect(const xmltooling::GenericRequest& request, const char* url) const;
+        void limitRedirect(const GenericRequest& request, const char* url) const;
 
         void receive(DDF& in, std::ostream& out);
 

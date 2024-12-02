@@ -41,16 +41,15 @@
 #include "handler/RemotedHandler.h"
 #include "impl/StoredSession.h"
 #include "impl/StorageServiceSessionCache.h"
+#include "io/HTTPRequest.h"
+#include "io/HTTPResponse.h"
 #include "util/IPRange.h"
 #include "util/SPConstants.h"
 
 #include <algorithm>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
-#include <xmltooling/io/HTTPRequest.h>
-#include <xmltooling/io/HTTPResponse.h>
 #include <xmltooling/security/DataSealer.h>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>

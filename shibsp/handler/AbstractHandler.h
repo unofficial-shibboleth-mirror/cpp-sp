@@ -135,8 +135,8 @@ namespace shibsp {
          */
         virtual void preservePostData(
             const Application& application,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse& response,
+            const HTTPRequest& request,
+            HTTPResponse& response,
             const char* relayState
             ) const;
 
@@ -154,8 +154,8 @@ namespace shibsp {
          */
         virtual DDF recoverPostData(
             const Application& application,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse& response,
+            const HTTPRequest& request,
+            HTTPResponse& response,
             const char* relayState
             ) const;
 
@@ -169,7 +169,7 @@ namespace shibsp {
          */
         virtual long sendPostResponse(
             const Application& application,
-            xmltooling::HTTPResponse& response,
+            HTTPResponse& response,
             const char* url,
             DDF& postData
             ) const;
@@ -198,7 +198,7 @@ namespace shibsp {
          * @param type      bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,bool> getBool(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,bool> getBool(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /**
          * Returns a string-valued property.
@@ -208,7 +208,7 @@ namespace shibsp {
          * @param type      bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,const char*> getString(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,const char*> getString(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /**
          * Returns an unsigned integer-valued property.
@@ -218,7 +218,7 @@ namespace shibsp {
          * @param type      bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /**
          * Returns an integer-valued property.
@@ -228,7 +228,7 @@ namespace shibsp {
          * @param type      bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,int> getInt(const char* name, const xmltooling::HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,int> getInt(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
 
         /** Logging object. */
         Category& m_log;
@@ -238,7 +238,7 @@ namespace shibsp {
 
     private:
         std::string getPostCookieName(const Application& app, const char* relayState) const;
-        DDF getPostData(const Application& application, const xmltooling::HTTPRequest& request) const;
+        DDF getPostData(const Application& application, const HTTPRequest& request) const;
     };
 
 #if defined (_MSC_VER)

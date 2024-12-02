@@ -45,8 +45,8 @@
 #include "logging/Category.h"
 
 #include <memory>
-#include <xmltooling/io/HTTPRequest.h>
 #include <shibsp/Application.h>
+#include <shibsp/io/HTTPRequest.h>
 
 using namespace xercesc;
 

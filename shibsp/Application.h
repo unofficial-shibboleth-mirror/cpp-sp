@@ -34,7 +34,6 @@
 
 namespace xmltooling {
     class XMLTOOL_API CredentialResolver;
-    class XMLTOOL_API GenericRequest;
     class XMLTOOL_API RWLock;
     class XMLTOOL_API SOAPTransport;
     class XMLTOOL_API StorageService;
@@ -43,6 +42,7 @@ namespace xmltooling {
 namespace shibsp {
 
     class SHIBSP_API Attribute;
+    class SHIBSP_API GenericRequest;
     class SHIBSP_API Handler;
     class SHIBSP_API ServiceProvider;
     class SHIBSP_API SessionInitiator;
@@ -260,7 +260,7 @@ namespace shibsp {
          * @param request   the request leading to the redirect
          * @param url       an absolute URL to validate
          */
-        virtual void limitRedirect(const xmltooling::GenericRequest& request, const char* url) const;
+        virtual void limitRedirect(const GenericRequest& request, const char* url) const;
     };
 
 #if defined (_MSC_VER)

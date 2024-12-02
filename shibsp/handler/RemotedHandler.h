@@ -32,12 +32,10 @@
 
 #include <set>
 
-namespace xmltooling {
-    class XMLTOOL_API HTTPRequest;
-    class XMLTOOL_API HTTPResponse;
-};
-
 namespace shibsp {
+
+    class SHIBSP_API HTTPRequest;
+    class SHIBSP_API HTTPResponse;
 
     /**
      * Base class for handlers that need HTTP request/response layer to be remoted.
@@ -102,7 +100,7 @@ namespace shibsp {
          * @param in    the dataflow object containing the remoted request
          * @return  a call-specific request object based on the input, to be freed by the caller 
          */
-        xmltooling::HTTPRequest* getRequest(const Application& app, DDF& in) const;
+        HTTPRequest* getRequest(const Application& app, DDF& in) const;
         
         /**
          * Builds a new response instance around an outgoing data object.
@@ -111,7 +109,7 @@ namespace shibsp {
          * @param out   the dataflow object to be returned by the caller
          * @return  a call-specific response object, to be freed by the caller 
          */
-        xmltooling::HTTPResponse* getResponse(const Application& app, DDF& out) const;
+        HTTPResponse* getResponse(const Application& app, DDF& out) const;
 
         /**
         * @Deprecated
@@ -122,7 +120,7 @@ namespace shibsp {
         * @param in    the dataflow object containing the remoted request
         * @return  a call-specific request object based on the input, to be freed by the caller 
         */
-        xmltooling::HTTPRequest* getRequest(DDF& in) const;
+        HTTPRequest* getRequest(DDF& in) const;
 
         /**
         * @Deprecated
@@ -133,7 +131,7 @@ namespace shibsp {
         * @param out   the dataflow object to be returned by the caller
         * @return  a call-specific response object, to be freed by the caller 
         */
-        xmltooling::HTTPResponse* getResponse(DDF& out) const;
+        HTTPResponse* getResponse(DDF& out) const;
 
         /** Message address for remote half. */
         std::string m_address;

@@ -28,11 +28,11 @@
 #define __shibsp_sscache_h__
 
 #include "SessionCache.h"
+#include "io/HTTPResponse.h"
 #include "remoting/ListenerService.h"
 
 #include <ctime>
 #include <boost/shared_ptr.hpp>
-#include <xmltooling/io/HTTPResponse.h>
 
 namespace xmltooling {
     class CondWait;
@@ -40,28 +40,11 @@ namespace xmltooling {
     class Thread;
 }
 
-#ifndef SHIBSP_LITE
-namespace opensaml {
-    class Assertion;
-
-    namespace saml2 {
-        class NameID;
-    };
-
-    namespace saml2md {
-        class EntityDescriptor;
-    };
-};
-#endif
-
 namespace shibsp {
 
     class IPRange;
     class StoredSession;
     class SHIBSP_DLLLOCAL SSCache : public SessionCache
-#ifndef SHIBSP_LITE
-        ,public virtual Remoted
-#endif
     {
     public:
         SSCache(const xercesc::DOMElement* e, bool deprecationSupport);
@@ -104,13 +87,13 @@ namespace shibsp {
             const std::set<std::string>* indexes
             );
 #endif
-        std::string active(const Application& app, const xmltooling::HTTPRequest& request);
-        Session* find(const Application& app, xmltooling::HTTPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr);
+        std::string active(const Application& app, const HTTPRequest& request);
+        Session* find(const Application& app, HTTPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr);
 
         void remove(
             const Application& app,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse* response=nullptr,
+            const HTTPRequest& request,
+            HTTPResponse* response=nullptr,
             time_t revocationExp=0
             );
 
@@ -165,7 +148,7 @@ namespace shibsp {
         // handle potentially inexact address comparisons
         bool compareAddresses(const char* client_addr, const char* session_addr) const;
 
-        xmltooling::HTTPResponse::samesite_t getSameSitePolicy(const Application& app) const;
+        HTTPResponse::samesite_t getSameSitePolicy(const Application& app) const;
 
         // management of buffered sessions
         void dormant(const char* key);

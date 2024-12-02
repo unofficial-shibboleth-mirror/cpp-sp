@@ -128,7 +128,7 @@ void Handler::log(SPRequest::SPLogLevel level, const string& msg) const
 }
 
 void Handler::cleanRelayState(
-    const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse& response
+    const Application& application, const HTTPRequest& request, HTTPResponse& response
     ) const
 {
     pair<bool,const char*> mech = getString("relayState");

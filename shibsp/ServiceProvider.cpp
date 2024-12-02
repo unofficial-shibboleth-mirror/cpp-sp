@@ -715,7 +715,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         Locker slocker(session, false); // pop existing lock on exit
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0, targetURL.find('?'));
-        tp.m_request = &request;
+        //stp.m_request = &request;
         return make_pair(true, sendError(log, request, app, "session", tp));
     }
 }

@@ -195,7 +195,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         pair<bool,bool> externalParameters =
                 props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
         if (externalParameters.first && externalParameters.second) {
-            tp.m_request = &request;
+            //tp.m_request = &request;
         }
 
         stringstream str;

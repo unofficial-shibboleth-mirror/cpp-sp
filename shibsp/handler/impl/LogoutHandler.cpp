@@ -77,7 +77,7 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
     pair<bool,bool> externalParameters =
             props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
     if (externalParameters.first && externalParameters.second) {
-        tp.m_request = &request;
+        //tp.m_request = &request;
     }
 
     tp.setPropertySet(props);

@@ -34,17 +34,7 @@
 #include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 
-#ifndef SHIBSP_LITE
-# include <saml/exceptions.h>
-# include <saml/saml2/core/Assertions.h>
-# include <xmltooling/XMLToolingConfig.h>
-# include <xmltooling/util/ParserPool.h>
-# include <xmltooling/util/StorageService.h>
-# include <xercesc/util/XMLStringTokenizer.hpp>
-using namespace opensaml::saml2md;
-#else
-# include <xercesc/util/XMLDateTime.hpp>
-#endif
+#include <xercesc/util/XMLDateTime.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;

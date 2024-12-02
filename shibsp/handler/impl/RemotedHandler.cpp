@@ -357,28 +357,6 @@ DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers
         }
     }
 
-    if (certs) {
-#ifndef SHIBSP_LITE
-        const vector<XSECCryptoX509*>& xvec = request.getClientCertificates();
-        if (!xvec.empty()) {
-            DDF clist = in.addmember("certificates").list();
-            for (vector<XSECCryptoX509*>::const_iterator x = xvec.begin(); x!=xvec.end(); ++x) {
-                DDF x509 = DDF(nullptr).string((*x)->getDEREncodingSB().rawCharBuffer());
-                clist.add(x509);
-            }
-        }
-#else
-        const vector<string>& xvec = request.getClientCertificates();
-        if (!xvec.empty()) {
-            DDF clist = in.addmember("certificates").list();
-            for (vector<string>::const_iterator x = xvec.begin(); x!=xvec.end(); ++x) {
-                DDF x509 = DDF(nullptr).string(x->c_str());
-                clist.add(x509);
-            }
-        }
-#endif
-    }
-
     return in;
 }
 

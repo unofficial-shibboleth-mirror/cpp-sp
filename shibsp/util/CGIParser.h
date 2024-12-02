@@ -32,11 +32,9 @@
 #include <map>
 #include <string>
 
-namespace xmltooling {
-    class XMLTOOL_API HTTPRequest;
-};
-
 namespace shibsp {
+
+    class SHIBSP_API HTTPRequest;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -56,7 +54,7 @@ namespace shibsp {
          * @param request   HTTP request interface
          * @param queryOnly true iff the POST body should be ignored
          */
-        CGIParser(const xmltooling::HTTPRequest& request, bool queryOnly=false);
+        CGIParser(const HTTPRequest& request, bool queryOnly=false);
 
         ~CGIParser();
 

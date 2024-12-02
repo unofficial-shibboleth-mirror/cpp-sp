@@ -30,13 +30,10 @@
 #include <shibsp/base.h>
 #include <xmltooling/Lockable.h>
 
-namespace xmltooling {
-    class XMLTOOL_API HTTPRequest;
-};
-
 namespace shibsp {
 
     class SHIBSP_API AccessControl;
+    class SHIBSP_API HTTPRequest;
     class SHIBSP_API PropertySet;
 
     /**
@@ -62,7 +59,7 @@ namespace shibsp {
          * @param request   SP request
          * @return configuration settings and effective AccessControl plugin, if any
          */        
-        virtual Settings getSettings(const xmltooling::HTTPRequest& request) const=0;
+        virtual Settings getSettings(const HTTPRequest& request) const=0;
     };
 
     /**

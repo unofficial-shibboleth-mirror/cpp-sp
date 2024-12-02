@@ -30,12 +30,10 @@
 #include <shibsp/SPRequest.h>
 #include <shibsp/util/PropertySet.h>
 
-namespace xmltooling {
-    class XMLTOOL_API HTTPRequest;
-    class XMLTOOL_API HTTPResponse;
-};
-
 namespace shibsp {
+
+    class SHIBSP_API HTTPRequest;
+    class SHIBSP_API HTTPResponse;
 
     /**
      * Pluggable runtime functionality that implement protocols and services
@@ -65,7 +63,7 @@ namespace shibsp {
          * @param response      outgoing HTTP response
          */
         virtual void cleanRelayState(
-            const Application& application, const xmltooling::HTTPRequest& request, xmltooling::HTTPResponse& response
+            const Application& application, const HTTPRequest& request, HTTPResponse& response
             ) const;
 
         /**
@@ -80,7 +78,7 @@ namespace shibsp {
          * @param relayState    RelayState token to supply with message
          */
         virtual void preserveRelayState(
-            const Application& application, xmltooling::HTTPResponse& response, std::string& relayState
+            const Application& application, HTTPResponse& response, std::string& relayState
             ) const;
 
         /**
@@ -98,8 +96,8 @@ namespace shibsp {
          */
         virtual void recoverRelayState(
             const Application& application,
-            const xmltooling::HTTPRequest& request,
-            xmltooling::HTTPResponse& response,
+            const HTTPRequest& request,
+            HTTPResponse& response,
             std::string& relayState,
             bool clear=true
             ) const;
