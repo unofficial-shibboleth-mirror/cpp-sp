@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "AccessControl.h"
+#include "AgentConfig.h"
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
@@ -33,6 +34,7 @@
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/AbstractHandler.h"
+#include "util/PathResolver.h"
 #include "util/TemplateParameters.h"
 
 #include <fstream>
@@ -43,7 +45,6 @@
 #include <boost/algorithm/string.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
@@ -113,7 +114,7 @@ AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char
     m_template = XMLHelper::getAttrString(e, nullptr, _template);
     if (m_template.empty())
         throw ConfigurationException("AttributeChecker missing required template setting.");
-    XMLToolingConfig::getConfig().getPathResolver()->resolve(m_template, PathResolver::XMLTOOLING_CFG_FILE);
+    AgentConfig::getConfig().getPathResolver().resolve(m_template, PathResolver::SHIBSP_CFG_FILE);
 
     m_flushSession = XMLHelper::getAttrBool(e, false, _flushSession);
 

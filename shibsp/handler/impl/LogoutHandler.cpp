@@ -26,17 +26,18 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "AgentConfig.h"
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/LogoutHandler.h"
 #include "util/TemplateParameters.h"
+#include "util/PathResolver.h"
 
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
@@ -68,7 +69,7 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
     response.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
     response.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
     string fname(prop.second);
-    ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
+    ifstream infile(AgentConfig::getConfig().getPathResolver().resolve(fname, PathResolver::SHIBSP_CFG_FILE).c_str());
     if (!infile)
         throw ConfigurationException("Unable to access $1 HTML template.", params(1,prop.second));
     TemplateParameters tp;

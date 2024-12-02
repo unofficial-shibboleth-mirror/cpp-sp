@@ -56,7 +56,6 @@
 #include <xmltooling/version.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/ParserPool.h>
-#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/TemplateEngine.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -142,31 +141,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     log.debug("%s library initialization started", PACKAGE_STRING);
 
     XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
-
-    PathResolver* pr = XMLToolingConfig::getConfig().getPathResolver();
-    pr->setDefaultPackageName(PACKAGE_NAME);
-    pr->setDefaultPrefix(inst_prefix2.c_str());
-    pr->setCfgDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_LIBDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_LIBDIR;
-    pr->setLibDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_LOGDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_LOGDIR;
-    pr->setLogDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_RUNDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_RUNDIR;
-    pr->setRunDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_CACHEDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_CACHEDIR;
-    pr->setCacheDir(inst_prefix);
-    inst_prefix = getenv("SHIBSP_XMLDIR");
-    if (!inst_prefix || !*inst_prefix)
-        inst_prefix = SHIBSP_XMLDIR;
-    pr->setXMLDir(inst_prefix);
 
     if (!catalog_path)
         catalog_path = getenv("SHIBSP_SCHEMAS");
@@ -265,7 +239,7 @@ bool SPConfig::instantiate(const char* config, bool rethrow)
             stringstream snippet;
             snippet
                 << "<Dummy path='"
-                << XMLToolingConfig::getConfig().getPathResolver()->resolve(resolved, PathResolver::XMLTOOLING_CFG_FILE)
+                << resolved
                 << "' validate='1'/>";
             dummydoc = XMLToolingConfig::getConfig().getParser().parse(snippet);
             XercesJanitor<xercesc::DOMDocument> docjanitor(dummydoc);

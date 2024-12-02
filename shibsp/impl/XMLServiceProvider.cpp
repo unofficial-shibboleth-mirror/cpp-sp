@@ -26,12 +26,14 @@
 
 #include "internal.h"
 #include "version.h"
+#include "AgentConfig.h"
 #include "RequestMapper.h"
 #include "SessionCache.h"
 #include "SPConfig.h"
 #include "SPRequest.h"
 #include "impl/XMLApplication.h"
 #include "impl/XMLServiceProvider.h"
+#include "util/PathResolver.h"
 #include "util/SPConstants.h"
 
 #include <fstream>
@@ -40,7 +42,6 @@
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/version.h>
 #include <xmltooling/util/ParserPool.h>
-#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/TemplateEngine.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -338,7 +339,7 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
     override = XMLHelper::getFirstChildElement(child, ExternalApplicationOverrides);
     while (override) {
         string extoverridepath(XMLHelper::getAttrString(override, nullptr, _path));
-        XMLToolingConfig::getConfig().getPathResolver()->resolve(extoverridepath, PathResolver::XMLTOOLING_CFG_FILE);
+        AgentConfig::getConfig().getPathResolver().resolve(extoverridepath, PathResolver::SHIBSP_CFG_FILE);
         if (!extoverridepath.empty()) {
             log.info("adding external ApplicationOverride search path: %s", extoverridepath.c_str());
             m_externalAppPaths.push_back(extoverridepath);

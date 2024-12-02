@@ -25,7 +25,9 @@
  */
 
 #include "internal.h"
+
 #include "exceptions.h"
+#include "AgentConfig.h"
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
@@ -34,6 +36,7 @@
 #include "remoting/ListenerService.h"
 #include "util/CGIParser.h"
 #include "util/SPConstants.h"
+#include "util/PathResolver.h"
 #include "util/TemplateParameters.h"
 
 #include <vector>
@@ -43,7 +46,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/URLEncoder.h>
 
 #include <xmltooling/XMLToolingConfig.h>
@@ -715,7 +717,7 @@ long AbstractHandler::sendPostResponse(
         postTemplate.second = "postTemplate.html";
 
     string fname(postTemplate.second);
-    ifstream infile(XMLToolingConfig::getConfig().getPathResolver()->resolve(fname, PathResolver::XMLTOOLING_CFG_FILE).c_str());
+    ifstream infile(AgentConfig::getConfig().getPathResolver().resolve(fname, PathResolver::SHIBSP_CFG_FILE).c_str());
     if (!infile)
         throw ConfigurationException("Unable to access HTML template ($1).", params(1, fname.c_str()));
     TemplateParameters respParam;
