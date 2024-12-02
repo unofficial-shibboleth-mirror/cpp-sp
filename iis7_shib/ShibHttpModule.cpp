@@ -20,8 +20,9 @@
 
 #include "IIS7_shib.hpp"
 
+#include "io/HTTPResponse.h"
+
 #include <xmltooling/util/NDC.h>
-#include <xmltooling/io/HTTPResponse.h>
 
 #include "ShibHttpModule.hpp"
 #include "IIS7Request.hpp"

@@ -32,12 +32,6 @@
 #include <boost/lexical_cast.hpp>
 #include <string>
 
-// Load Santurio with a bracketed warning off
-#pragma warning(push)
-#pragma warning(disable:4005)
-#include <xsec\framework\XSECDefs.hpp>
-#pragma warning(pop)
-
 // Shibboleth
 #define SHIBSP_LITE
 #include "config_win32.h"
