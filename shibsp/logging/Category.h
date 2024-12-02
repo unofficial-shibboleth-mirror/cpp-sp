@@ -29,6 +29,11 @@ namespace shibsp {
 
     class SHIBSP_API LoggingServiceSPI;
 
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
+
     /**
      * This is the central class in the logging API, and provides a convenience method
      * to obtain instances of the class via an installed LoggingService.
@@ -257,6 +262,10 @@ namespace shibsp {
         const std::string m_name;
         Priority::Value m_priority;
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
 
 }
 #endif // __shibsp_logging_category_h__
