@@ -55,7 +55,6 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/version.h>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/TemplateEngine.h>

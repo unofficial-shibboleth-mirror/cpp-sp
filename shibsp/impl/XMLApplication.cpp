@@ -38,7 +38,6 @@
 #include <boost/algorithm/string.hpp>
 #include <xercesc/util/XMLStringTokenizer.hpp>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 

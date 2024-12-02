@@ -38,7 +38,6 @@
 #include <boost/tokenizer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/algorithm/string.hpp>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ReloadableXMLFile.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
@@ -500,9 +499,6 @@ const Override* Override::locate(const HTTPRequest& request) const
 
 XMLRequestMapperImpl::XMLRequestMapperImpl(const DOMElement* e, Category& log) : m_document(nullptr)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("XMLRequestMapperImpl");
-#endif
     static const XMLCh _RequestMap[] =  UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
 
     if (e && !XMLHelper::isNodeNamed(e, shibspconstants::SHIB2SPCONFIG_NS, _RequestMap)

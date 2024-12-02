@@ -294,9 +294,6 @@ bool SSCache::compareAddresses(const char* client_addr, const char* session_addr
 
 void SSCache::insert(const char* key, time_t expires, const char* name, const char* index, short attempts)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("insert");
-#endif
     if (attempts > 10) {
         throw IOException("Exceeded retry limit.");
     }
@@ -374,9 +371,6 @@ void SSCache::insert(
     const vector<Attribute*>* attributes
     )
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("insert");
-#endif
     if (!m_storage)
         throw ConfigurationException("SessionCache insertion requires a StorageService.");
 
@@ -552,10 +546,6 @@ void SSCache::persist(
     HTTPResponse::samesite_t sameSitePolicy
     ) const
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("persist");
-#endif
-
     m_log.debug("checking if session (%s) should be persisted to cookie", session.name());
 
     // We don't save assertions...
@@ -632,10 +622,6 @@ vector<string>::size_type SSCache::_logout(
     short attempts
     )
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("logout");
-#endif
-
     if (!m_storage)
         throw ConfigurationException("SessionCache logout requires a StorageService.");
     else if (attempts > 10)
@@ -853,9 +839,6 @@ HTTPResponse::samesite_t SSCache::getSameSitePolicy(const Application& app) cons
 
 Session* SSCache::_find(const Application& app, const char* key, const char* recovery, const char* client_addr, time_t* timeout)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("find");
-#endif
     StoredSession* session=nullptr;
 
     if (inproc) {
@@ -1023,9 +1006,6 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
 
 Session* SSCache::find(const Application& app, HTTPRequest& request, const char* client_addr, time_t* timeout)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("find");
-#endif
     string id = active(app, request);
     if (id.empty())
         return nullptr;
@@ -1061,10 +1041,6 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
 
 bool SSCache::recover(const Application& app, const char* key, const char* data)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("recover");
-#endif
-
     if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         m_log.debug("remoting recovery of session from sealed cookie");
         // Remote the request.
@@ -1188,9 +1164,6 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
 
 void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPResponse* response, time_t revocationExp)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("remove");
-#endif
     string session_id;
     string shib_cookie = app.getCookieName("_shibsession_");
 
@@ -1216,9 +1189,6 @@ void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPRes
 
 void SSCache::remove(const Application& app, const char* key, time_t revocationExp)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("remove");
-#endif
     // Take care of local copy.
     if (inproc)
         dormant(key);
@@ -1265,10 +1235,6 @@ void SSCache::remove(const Application& app, const char* key, time_t revocationE
 
 void SSCache::dormant(const char* key)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("dormant");
-#endif
-
     m_log.debug("deleting local copy of session (%s)", key);
 
     // lock the cache for writing, which means we know nobody is sitting in find()
@@ -1297,10 +1263,6 @@ void SSCache::dormant(const char* key)
 
 void* SSCache::cleanup_fn(void* p)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("cleanup");
-#endif
-
     SSCache* pcache = reinterpret_cast<SSCache*>(p);
 
 #ifndef WIN32
@@ -1381,9 +1343,6 @@ void* SSCache::cleanup_fn(void* p)
 
 void SSCache::receive(DDF& in, ostream& out)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("receive");
-#endif
     const Application* app = SPConfig::getConfig().getServiceProvider()->getApplication(in["application_id"].string());
     if (!app)
         throw ListenerException("Application not found, check configuration?");

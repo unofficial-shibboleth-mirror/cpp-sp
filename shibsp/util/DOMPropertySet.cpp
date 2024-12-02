@@ -31,7 +31,6 @@
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -97,9 +96,6 @@ void DOMPropertySet::load(
     const xmltooling::QName* unsetter
     )
 {
-#ifdef _DEBUG
-    NDC ndc("load");
-#endif
     if (!e)
         return;
     m_root=e;

@@ -41,7 +41,6 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/OutOfMemoryException.hpp>
 
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLHelper.h>
 
 #ifndef WIN32
@@ -99,9 +98,6 @@ namespace shibsp {
 
 SocketListener::ShibSocket SocketPool::connect()
 {
-#ifdef _DEBUG
-    NDC ndc("connect");
-#endif
 
     m_log.debug("trying to connect to listener");
 
@@ -199,9 +195,6 @@ SocketListener::~SocketListener()
 
 bool SocketListener::init(bool force)
 {
-#ifdef _DEBUG
-    NDC ndc("init");
-#endif
     log->info("listener service starting");
 
     ServiceProvider* sp = SPConfig::getConfig().getServiceProvider();
@@ -238,9 +231,6 @@ void SocketListener::set_retry_errors(const string& retry_errors)
 
 bool SocketListener::run(bool* shutdown)
 {
-#ifdef _DEBUG
-    NDC ndc("run");
-#endif
     // Save flag to monitor for shutdown request.
     m_shutdown = shutdown;
     unsigned long count = 0;
@@ -310,10 +300,6 @@ void SocketListener::term()
 
 DDF SocketListener::send(const DDF& in)
 {
-#ifdef _DEBUG
-    NDC ndc("send");
-#endif
-
     log->debug("sending message (%s)", in.name() ? in.name() : "unnamed");
 
     // Serialize data for transmission.
@@ -523,8 +509,6 @@ ServerThread::~ServerThread()
 
 void ServerThread::run()
 {
-    NDC ndc(m_id);
-
     // Before starting up, make sure we fully "own" this socket.
     m_listener->m_child_lock->lock();
     while (m_listener->m_children.find(m_sock) != m_listener->m_children.end())
@@ -615,7 +599,6 @@ int ServerThread::job()
         const char* aid = in["application_id"].string();
         if (aid)
             appid = string("[") + aid + "]";
-        NDC ndc(appid);
 
         log.debug("dispatching message (%s)", in.name() ? in.name() : "unnamed");
 

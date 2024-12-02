@@ -31,7 +31,6 @@
 #include "impl/StoredSession.h"
 #include "impl/StorageServiceSessionCache.h"
 
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/Threads.h>
 
 #include <xercesc/util/XMLDateTime.hpp>
@@ -366,10 +365,6 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
 
 void StoredSession::addAttributes(const vector<Attribute*>& attributes)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("addAttributes");
-#endif
-
     if (!m_cache->m_storage)
         throw ConfigurationException("Session modification requires a StorageService.");
 
@@ -481,10 +476,6 @@ const Assertion* StoredSession::getAssertion(const char* id) const
 
 void StoredSession::addAssertion(Assertion* assertion)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("addAssertion");
-#endif
-
     if (!m_cache->m_storage)
         throw ConfigurationException("Session modification requires a StorageService.");
     else if (!assertion)

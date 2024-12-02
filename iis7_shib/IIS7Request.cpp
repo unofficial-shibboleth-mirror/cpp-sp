@@ -24,7 +24,6 @@
 #include <boost/tokenizer.hpp>
 
 #include <xercesc/util/Base64.hpp>
-#include <xmltooling/util/NDC.h>
 
 #include <shibsp/exceptions.h>
 
@@ -183,30 +182,6 @@ void IIS7Request::setRemoteUser(const char* user)
     else {
         log(SPError, "attempt to set REMOTE_USER in an inappropriate context");
     }
-}
-
-const vector<string>& IIS7Request::getClientCertificates() const
-// TODO test - all the calls are commented out.
-{
-    if (m_certs.empty()) {
-        HTTP_SSL_CLIENT_CERT_INFO *certInfo = NULL;
-        BOOL negotiated;
-        HRESULT hr = m_request->GetClientCertificate(&certInfo, &negotiated);
-        if (HRESULT_FROM_WIN32(ERROR_NOT_FOUND) == hr) {
-            return m_certs;
-        }
-        else if (FAILED(hr)) {
-            throwError("GetClientCertificate", hr);
-        }
-        if (nullptr == certInfo) {
-            return m_certs;
-        }
-        XMLSize_t outlen;
-        XMLByte* serialized = Base64::encode(reinterpret_cast<XMLByte*>(certInfo->pCertEncoded), certInfo->CertEncodedSize, &outlen);
-        m_certs.push_back(reinterpret_cast<char*>(serialized));
-        XMLString::release((char**)&serialized);
-    }
-    return m_certs;
 }
 
 const char* IIS7Request::getMethod() const

@@ -25,12 +25,14 @@
  */
 
 #include "internal.h"
+
+#include "AgentConfig.h"
 #include "remoting/impl/SocketListener.h"
+#include "util/PathResolver.h"
 
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/unicode.h>
-#include <xmltooling/util/PathResolver.h>
 #include <xmltooling/util/XMLHelper.h>
 
 #ifdef HAVE_UNISTD_H
@@ -105,7 +107,7 @@ UnixListener::UnixListener(const DOMElement* e) : SocketListener(e), m_bound(fal
 
     log->info("using socket address: %s", m_address.c_str());
 
-    XMLToolingConfig::getConfig().getPathResolver()->resolve(m_address, PathResolver::XMLTOOLING_RUN_FILE);
+    AgentConfig::getConfig().getPathResolver().resolve(m_address, PathResolver::SHIBSP_RUN_FILE);
 }
 
 #ifndef UNIX_PATH_MAX

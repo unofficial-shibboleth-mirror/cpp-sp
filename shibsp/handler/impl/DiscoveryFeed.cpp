@@ -25,19 +25,20 @@
  */
 
 #include "internal.h"
+#include "AgentConfig.h"
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
+#include "util/PathResolver.h"
 
 #include <ctime>
 #include <fstream>
 #include <sstream>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/Threads.h>
-#include <xmltooling/util/PathResolver.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -113,7 +114,7 @@ DiscoveryFeed::DiscoveryFeed(const DOMElement* e, const char* appId)
         prop = getString("dir");
         if (prop.first)
             m_dir = prop.second;
-        XMLToolingConfig::getConfig().getPathResolver()->resolve(m_dir, PathResolver::XMLTOOLING_CACHE_FILE);
+        AgentConfig::getConfig().getPathResolver().resolve(m_dir, PathResolver::SHIBSP_CACHE_FILE);
         m_log.info("feed files will be cached in %s", m_dir.c_str());
 #ifndef SHIBSP_LITE
         m_feedLock.reset(Mutex::create());

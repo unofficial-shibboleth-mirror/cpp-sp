@@ -48,7 +48,6 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xercesc/util/regx/RegularExpression.hpp>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/ParserPool.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLConstants.h>
@@ -647,10 +646,6 @@ extern "C" int shib_check_user(request_rec* r)
 
     ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_check_user entered in pid (%d)", (int)getpid());
 
-    string threadid("[");
-    threadid += lexical_cast<string>(getpid()) + "] shib_check_user";
-    xmltooling::NDC ndc(threadid.c_str());
-
     try {
         shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &shib_module);
         if (!rc || !rc->sta) {
@@ -714,10 +709,6 @@ extern "C" int shib_handler(request_rec* r)
     if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &shib_module))->bOff == 1)
         return DECLINED;
 
-    string threadid("[");
-    threadid += lexical_cast<string>(getpid()) + "] shib_handler";
-    xmltooling::NDC ndc(threadid.c_str());
-
     // With 2.x, this handler always runs, though last.
     // We check if shib_check_user ran, because it will detect a handler request
     // and dispatch it directly.
@@ -776,10 +767,6 @@ extern "C" int shib_auth_checker(request_rec* r)
     }
 
     ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_auth_checker entered in pid (%d)", (int)getpid());
-
-    string threadid("[");
-    threadid += lexical_cast<string>(getpid()) + "] shib_auth_checker";
-    xmltooling::NDC ndc(threadid.c_str());
 
     try {
         shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &shib_module);

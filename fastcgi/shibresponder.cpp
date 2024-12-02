@@ -35,7 +35,6 @@
 #include <shibsp/ServiceProvider.h>
 #include <xmltooling/unicode.h>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -211,11 +210,6 @@ public:
         return SHIB_RETURN_OK;
     }
 
-    const vector<string>& getClientCertificates() const {
-        static vector<string> g_NoCerts;
-        return g_NoCerts;
-    }
-
     // Not used in the extension.
 
     virtual void clearHeader(const char* rawname, const char* cginame) {
@@ -351,7 +345,6 @@ int main(void)
         auto_arrayptr<char> wrapper(content);
 
         try {
-            xmltooling::NDC ndc("FastCGI shibresponder");
             ShibTargetFCGI stf(&request, content, g_ServerScheme.c_str(), g_ServerName.c_str(), g_ServerPort);
 
             pair<bool,long> res = stf.getServiceProvider().doHandler(stf);

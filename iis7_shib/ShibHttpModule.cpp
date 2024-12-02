@@ -22,8 +22,6 @@
 
 #include "io/HTTPResponse.h"
 
-#include <xmltooling/util/NDC.h>
-
 #include "ShibHttpModule.hpp"
 #include "IIS7Request.hpp"
 #include "IIS7_shib.hpp"
@@ -54,10 +52,6 @@ ShibHttpModule::DoHandler(
     if (map_i == g_Sites.end())
         return RQ_NOTIFICATION_CONTINUE;
 
-    string threadid("[");
-    threadid += lexical_cast<string>(_getpid()) + "] iis_shib";
-    xmltooling::NDC ndc(threadid.c_str());
-
     IIS7Request handler(pHttpContext, pProvider, false, map_i->second);
 
     pair<bool, long> res = handler.getServiceProvider().doHandler(handler);
@@ -79,11 +73,6 @@ ShibHttpModule::DoFilter(
     map<string,site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()));
     if (map_i == g_Sites.end())
         return RQ_NOTIFICATION_CONTINUE;
-
-
-    string threadid("[");
-    threadid += lexical_cast<string>(_getpid()) + "] iis_shib";
-    xmltooling::NDC ndc(threadid.c_str());
 
     IIS7Request filter(pHttpContext, pProvider, true, map_i->second);
 

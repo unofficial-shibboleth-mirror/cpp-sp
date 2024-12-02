@@ -202,9 +202,6 @@ void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& lo
 XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, Category& log)
     : m_document(nullptr), m_defaultApplication(nullptr), m_deprecationSupport(false)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("XMLConfigImpl");
-#endif
     const SPConfig& conf=SPConfig::getConfig();
     XMLToolingConfig& xmlConf=XMLToolingConfig::getConfig();
     const DOMElement* SHAR=XMLHelper::getFirstChildElement(e, OutOfProcess);

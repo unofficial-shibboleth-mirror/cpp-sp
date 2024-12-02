@@ -35,7 +35,6 @@
 #include <shibsp/ServiceProvider.h>
 #include <xmltooling/unicode.h>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/NDC.h>
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -259,10 +258,6 @@ public:
         return SHIB_RETURN_OK;
     }
 
-    const vector<string>& getClientCertificates() const {
-        static vector<string> g_NoCerts;
-        return g_NoCerts;
-    }
 };
 
 static void print_ok(const map<string,string>& headers)
@@ -341,7 +336,6 @@ int main(void)
         cerr.rdbuf(&cerr_fcgi_streambuf);
 
         try {
-            xmltooling::NDC ndc("FastCGI shibauthorizer");
             ShibTargetFCGIAuth sta(&request, g_ServerScheme.c_str(), g_ServerName.c_str(), g_ServerPort);
 
             pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta);
