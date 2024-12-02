@@ -23,6 +23,8 @@
 
 #include <shibsp/io/GenericRequest.h>
 
+#include <map>
+
 namespace shibsp {
 
 #if defined (_MSC_VER)
@@ -47,7 +49,6 @@ namespace shibsp {
 
         bool isSecure() const;
         bool isDefaultPort() const;
-        std::string getLanguageRange() const;
           
         /**
          * Returns the HTTP method of the request (GET, POST, etc.)

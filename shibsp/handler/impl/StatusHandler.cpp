@@ -183,6 +183,9 @@ namespace shibsp {
         string getContentType() const {
             return "";
         }
+        string getAuthType() const {
+            return "";
+        }
         long getContentLength() const {
             return 0;
         }
@@ -220,15 +223,6 @@ namespace shibsp {
         }
         string getHeader(const char* name) const {
             return "";
-        }
-        virtual const
-#ifndef XMLTOOLING_NO_XMLSEC
-            std::vector<XSECCryptoX509*>&
-#else
-            std::vector<std::string>&
-#endif
-            getClientCertificates() const {
-                return g_NoCerts;
         }
 
     private:
