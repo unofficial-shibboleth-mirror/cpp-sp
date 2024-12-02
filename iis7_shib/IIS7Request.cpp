@@ -301,6 +301,17 @@ string IIS7Request::getRemoteUser() const
     return m_remoteUser;
 }
 
+string IIS7Request::getAuthType() const
+{
+    PCSTR type;
+    DWORD len;
+    HRESULT hr = m_ctx->GetServerVariable("AUTH_TYPE", &type, &len);
+    if (SUCCEEDED(hr)) {
+        return string(type);
+    }
+    return "";
+}
+
 const char* IIS7Request::getRequestBody() const
 {
     if (m_gotBody) {

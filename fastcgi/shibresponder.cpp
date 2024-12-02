@@ -122,6 +122,10 @@ public:
         const char* s = FCGX_GetParam("REMOTE_USER", m_req->envp);
         return s ? s : "";
     }
+    string getAuthType() const {
+        const char* s = FCGX_GetParam("AUTH_TYPE", m_req->envp);
+        return s ? s : "";
+    }
     string getRemoteAddr() const {
         string ret = AbstractSPRequest::getRemoteAddr();
         if (!ret.empty())
