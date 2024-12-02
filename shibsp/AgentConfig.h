@@ -32,6 +32,7 @@ namespace shibsp {
     class SHIBSP_API Category;
     class SHIBSP_API LoggingService;
     class SHIBSP_API PathResolver;
+    class SHIBSP_API URLEncoder;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -86,6 +87,13 @@ namespace shibsp {
          * @return path resolver
          */
         virtual const PathResolver& getPathResolver() const=0;
+
+        /**
+         * Returns a URLEncoder instance.
+         * 
+         * @return URL encoder
+         */
+        virtual const URLEncoder& getURLEncoder() const=0;
 
         /**
          * Returns the global Agent instance.

@@ -34,11 +34,11 @@
 #include "handler/LogoutHandler.h"
 #include "util/TemplateParameters.h"
 #include "util/PathResolver.h"
+#include "util/URLEncoder.h"
 
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -152,7 +152,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     if (loc.empty())
         return make_pair(false,0L);
 
-    const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
+    const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
 
     // Start with an "action" telling the application what this is about.
     loc = loc + (strchr(loc.c_str(),'?') ? '&' : '?') + "action=logout";
@@ -167,24 +167,24 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
 
     // Add return if set.
     if (param)
-        locstr = locstr + "&return=" + encoder->encode(param);
+        locstr = locstr + "&return=" + encoder.encode(param);
 
     // We preserve anything we're instructed to directly.
     if (params) {
         for (map<string,string>::const_iterator p = params->begin(); p!=params->end(); ++p)
-            locstr = locstr + '&' + p->first + '=' + encoder->encode(p->second.c_str());
+            locstr = locstr + '&' + p->first + '=' + encoder.encode(p->second.c_str());
     }
     else {
         for (vector<string>::const_iterator q = m_preserve.begin(); q!=m_preserve.end(); ++q) {
             param = request.getParameter(q->c_str());
             if (param)
-                locstr = locstr + '&' + *q + '=' + encoder->encode(param);
+                locstr = locstr + '&' + *q + '=' + encoder.encode(param);
         }
     }
 
     // Add the notifier's return parameter to the destination location and redirect.
     // This is NOT the same as the return parameter that might be embedded inside it ;-)
-    loc = loc + "&return=" + encoder->encode(locstr.c_str());
+    loc = loc + "&return=" + encoder.encode(locstr.c_str());
     return make_pair(true, response.sendRedirect(loc.c_str()));
 }
 

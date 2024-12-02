@@ -25,6 +25,7 @@
 #include "AgentConfig.h"
 #include "logging/LoggingService.h"
 #include "util/PathResolver.h"
+#include "util/URLEncoder.h"
 
 #include <ctime>
 #include <stdexcept>
@@ -51,6 +52,11 @@ namespace shibsp {
         const PathResolver& getPathResolver() const {
             return m_pathResolver;
         }
+
+        const URLEncoder& getURLEncoder() const {
+            return m_urlEncoder;
+        }
+
         Agent& getAgent() const;
         LoggingService& getLoggingService() const;
 
@@ -64,6 +70,7 @@ namespace shibsp {
         mutex m_lock;
         ptree m_config;
         PathResolver m_pathResolver;
+        URLEncoder m_urlEncoder;
         unique_ptr<LoggingService> m_logging;
         //unique_ptr<Agent> m_agent;
     };

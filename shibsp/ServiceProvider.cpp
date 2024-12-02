@@ -36,6 +36,7 @@
 #include "handler/SessionInitiator.h"
 #include "util/PathResolver.h"
 #include "util/TemplateParameters.h"
+#include "util/URLEncoder.h"
 
 #include <fstream>
 #include <sstream>
@@ -43,8 +44,6 @@
 #include <boost/lexical_cast.hpp>
 
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/URLEncoder.h>
-#include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -175,7 +174,7 @@ namespace shibsp {
         if (enc.first && strcmp(enc.second, "URL"))
             throw ConfigurationException("Unsupported value for 'encoding' content setting ($1).", params(1,enc.second));
 
-        const URLEncoder* encoder = XMLToolingConfig::getConfig().getURLEncoder();
+        const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
 
         // Default delimiter is semicolon but is now configurable.
         pair<bool,const char*> delim = settings.first->getString("attributeValueDelimiter");
@@ -199,7 +198,7 @@ namespace shibsp {
                         header += delim.second;
                     if (enc.first) {
                         // If URL-encoding, any semicolons will get escaped anyway.
-                        header += encoder->encode(v->c_str());
+                        header += encoder.encode(v->c_str());
                     }
                     else {
                         string::size_type pos = v->find(delim.second, string::size_type(0));
@@ -237,7 +236,7 @@ namespace shibsp {
                         header += delim.second;
                     if (enc.first) {
                         // If URL-encoding, any semicolons will get escaped anyway.
-                        header += encoder->encode(v->c_str());
+                        header += encoder.encode(v->c_str());
                     }
                     else {
                         string::size_type pos = v->find(delim.second, string::size_type(0));
@@ -268,7 +267,7 @@ namespace shibsp {
                 const vector<string>& vals = matches.first->second->getSerializedValues();
                 if (!vals.empty()) {
                     if (enc.first)
-                        request.setRemoteUser(encoder->encode(vals.front().c_str()).c_str());
+                        request.setRemoteUser(encoder.encode(vals.front().c_str()).c_str());
                     else
                         request.setRemoteUser(vals.front().c_str());
                     remoteUserSet = true;
@@ -388,7 +387,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                         loc += '&';
                     else
                         loc += '?';
-                    loc += "return=" + XMLToolingConfig::getConfig().getURLEncoder()->encode(selfurl.c_str());
+                    loc += "return=" + AgentConfig::getConfig().getURLEncoder().encode(selfurl.c_str());
                     return make_pair(true, request.sendRedirect(loc.c_str()));
                 }
             }
@@ -610,7 +609,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
                     count++;
                     *(exportName.rbegin()) = '0' + (count%10);
                     *(++exportName.rbegin()) = '0' + (count/10);
-                    string fullURL = baseURL + XMLToolingConfig::getConfig().getURLEncoder()->encode(*tokenids);
+                    string fullURL = baseURL + AgentConfig::getConfig().getURLEncoder().encode(*tokenids);
                     app->setHeader(request, exportName.c_str(), fullURL.c_str());
                 }
                 app->setHeader(request, "Shib-Assertion-Count", exportName.c_str() + 15);

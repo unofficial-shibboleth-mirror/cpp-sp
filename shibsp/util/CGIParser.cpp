@@ -25,17 +25,14 @@
  */
 
 #include "internal.h"
+
+#include "AgentConfig.h"
 #include "io/HTTPRequest.h"
 #include "util/CGIParser.h"
-
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-#include <boost/bind.hpp>
-#include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/URLEncoder.h>
+#include "util/URLEncoder.h"
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace boost;
 using namespace std;
 
 namespace {
@@ -110,19 +107,22 @@ CGIParser::CGIParser(const HTTPRequest& request, bool queryOnly)
 
 CGIParser::~CGIParser()
 {
-    static void (*fn)(void*) = &free;
-    for_each(kvp_map.begin(), kvp_map.end(), boost::bind(fn, boost::bind(&multimap<string,char*>::value_type::second, _1)));}
+    for (auto v : kvp_map) {
+        free(v.second);
+    }
+    kvp_map.clear();
+}
 
 void CGIParser::parse(const char* pch)
 {
     size_t cl = pch ? strlen(pch) : 0;
-    const URLEncoder* dec = XMLToolingConfig::getConfig().getURLEncoder();
+    const URLEncoder& dec = AgentConfig::getConfig().getURLEncoder();
     while (cl && pch) {
         char *name;
         char *value;
         value=fmakeword('&', &cl, &pch);
         plustospace(value);
-        dec->decode(value);
+        dec.decode(value);
         name=makeword(value, '=');
         kvp_map.insert(pair<const string,char*>(name, value));
         free(name);

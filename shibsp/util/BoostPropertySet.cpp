@@ -13,7 +13,7 @@
  */
 
 /**
- * BoostPropertySet.cpp
+ * util/BoostPropertySet.cpp
  * 
  * Boost propertytree-based property set implementation.
  */

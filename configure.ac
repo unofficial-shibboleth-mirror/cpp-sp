@@ -20,7 +20,6 @@ AC_CONFIG_FILES([shibsp.pc])
 
 AC_PROG_CC([gcc gcc3 cc])
 AC_PROG_CXX([g++ g++3 c++ CC])
-AX_CXX_COMPILE_STDCXX([14])
 
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_CXXFLAGS])
@@ -69,6 +68,10 @@ AC_FUNC_STRERROR_R
 # C++ requirements
 AC_CXX_NAMESPACES
 AC_CXX_REQUIRE_STL
+
+AX_CXX_COMPILE_STDCXX([14])
+# Once the code is sanitized, we could include some optional support.
+#AX_CXX_COMPILE_STDCXX([17],,[optional])
 
 # Boost
 BOOST_REQUIRE

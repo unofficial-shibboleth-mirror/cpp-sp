@@ -74,7 +74,8 @@ utilinclude_HEADERS = \
 	util/PathResolver.h \
 	util/PropertySet.h \
 	util/SPConstants.h \
-	util/TemplateParameters.h
+	util/TemplateParameters.h \
+	util/URLEncoder.h
 
 noinst_HEADERS = \
 	internal.h \
@@ -146,7 +147,8 @@ libshibsp_la_SOURCES = \
 	util/IPRange.cpp \
 	util/PathResolver.cpp \
 	util/SPConstants.cpp \
-	util/TemplateParameters.cpp
+	util/TemplateParameters.cpp \
+	util/URLEncoder.cpp
 
 
 # this is different from the project version
