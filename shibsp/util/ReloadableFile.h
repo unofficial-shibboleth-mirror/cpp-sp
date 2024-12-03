@@ -13,20 +13,19 @@
  */
 
 /**
- * @file shibsp/util/ReloadableXMLFile.h
+ * @file shibsp/util/ReloadableFile.h
  * 
- * Base class for reloadable file-based XML configuration.
+ * Base class for reloadable file-based configuration.
  */
 
-#ifndef __shibsp_reloadablexml_h__
-#define __shibsp_reloadablexml_h__
+#ifndef __shibsp_reloadablefile_h__
+#define __shibsp_reloadablefile_h__
 
 #include <shibsp/base.h>
 
 #include <ctime>
 #include <memory>
 #include <string>
-#include <boost/property_tree/ptree_fwd.hpp>
 
 #ifdef HAVE_CXX14
 #include <shared_mutex>
@@ -37,11 +36,11 @@ namespace shibsp {
     class SHIBSP_API Category;
 
     /**
-     * Base class for file-based XML configuration.
+     * Base class for file-based configuration, provides locking and reload semantics.
      */
-    class SHIBSP_API ReloadableXMLFile
+    class SHIBSP_API ReloadableFile
     {
-    MAKE_NONCOPYABLE(ReloadableXMLFile);
+    MAKE_NONCOPYABLE(ReloadableFile);
     protected:
         /**
          * Base class constructor.
@@ -51,35 +50,48 @@ namespace shibsp {
          * @param reloadChanges         whether to monitor for changes
          * @param deprecationSupport    true iff deprecated options and settings should be accepted
          */
-        ReloadableXMLFile(
+        ReloadableFile(
             const std::string& path,
             Category& log,
             bool reloadChanges=false,
             bool deprecationSupport=true
             );
     
-        virtual ~ReloadableXMLFile();
+        virtual ~ReloadableFile();
 
         /**
-         * Loads configuration material.
+         * Loads (or reloads) configuration material.
          * 
          * <p>This method is called to load configuration material
-         * initially and any time a change is detected. The base version
-         * performs basic parsing duties and returns the result.</p>
+         * initially and any time a change is detected.</p>
          *
          * <p>This method is not called with the object locked, so actual
          * modification of implementation state requires explicit locking within
-         * the method override.</p>
+         * the method override, and the method should return with the object
+         * unlocked.</p>
          * 
          * <p>This method should NOT throw exceptions.</p>
-         * 
-         * @return a possibly empty smart pointer holding the replacement tree
          */
-        virtual std::unique_ptr<boost::property_tree::ptree> load();
-        
-        /** The owned property tree. */
-        std::unique_ptr<boost::property_tree::ptree> m_tree;
+        virtual bool load()=0;
 
+        /**
+         * Gets the source path for the configuration.
+         * 
+         * @return source path
+         */
+        const std::string& getSource() const;
+
+        /**
+         * Gets the time of last modification of the source, or a zero fence value
+         * in the event of an error to prevent churn.
+         * 
+         * <p>This methid must be called with the object locked, shared or exclusive.</p>
+         * 
+         * @return modification time
+         */
+        const time_t getModificationTime() const;
+
+    private:
         /** Logging object. */
         Category& m_log;
 
@@ -109,4 +121,4 @@ namespace shibsp {
 
 };
 
-#endif /* __shibsp_reloadablexml_h__ */
+#endif /* __shibsp_reloadablefile_h__ */

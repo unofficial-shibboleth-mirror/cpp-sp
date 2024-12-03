@@ -19,9 +19,9 @@
  */
 
 /**
- * @file ReloadableXMLFile.cpp
+ * util/ReloadableFile.cpp
  *
- * Base class for file-based XML configuration.
+ * Base class for file-based configuration.
  */
 
 #include "internal.h"
@@ -29,21 +29,18 @@
 #include "AgentConfig.h"
 #include "logging/Category.h"
 #include "util/PathResolver.h"
-#include "util/ReloadableXMLFile.h"
+#include "util/ReloadableFile.h"
 
-#include <fstream>
+#include <limits>
 #include <sys/types.h>
 #include <sys/stat.h>
-
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 
 using namespace boost::property_tree;
 using namespace shibsp;
 using namespace std;
 
-ReloadableXMLFile::ReloadableXMLFile(const std::string& path, Category& log, bool reloadChanges, bool deprecationSupport)
-    : m_tree(nullptr), m_log(log), m_source(path), m_filestamp(0)
+ReloadableFile::ReloadableFile(const std::string& path, Category& log, bool reloadChanges, bool deprecationSupport)
+    : m_log(log), m_source(path), m_filestamp(0)
 #ifdef HAVE_CXX17
         , m_lock(nullptr)
 #elif HAVE_CXX14
@@ -62,14 +59,17 @@ ReloadableXMLFile::ReloadableXMLFile(const std::string& path, Category& log, boo
 #endif
     }
 
-    m_tree = load();
+    if (!load()) {
+        m_log.error("initial configuration was invalid");
+    }
 }
 
-ReloadableXMLFile::~ReloadableXMLFile()
+ReloadableFile::~ReloadableFile()
 {
 }
 
-unique_ptr<ptree> ReloadableXMLFile::load()
+/*
+unique_ptr<ptree> ReloadableFile::load()
 {
     try {
         unique_ptr<ptree> pt = unique_ptr<ptree>(new ptree());
@@ -83,27 +83,59 @@ unique_ptr<ptree> ReloadableXMLFile::load()
     return nullptr;
 }
 
-void ReloadableXMLFile::lock()
+        m_lock->lock();
+#ifdef WIN32
+        if (_stat(m_source.c_str(), &stat_buf) == 0) {
+#else
+        if (stat(m_source.c_str(), &stat_buf) == 0) {
+#endif
+            m_filestamp = stat_buf.st_mtime;
+        }
+
+*/
+
+const std::string& ReloadableFile::getSource() const
+{
+    return m_source;
+}
+
+const time_t ReloadableFile::getModificationTime() const
+{
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(m_source.c_str(), &stat_buf) != 0) {
+        return 0;
+    }
+#else
+    struct stat stat_buf;
+    if (stat(m_source.c_str(), &stat_buf) != 0) {
+        return 0;
+    }
+#endif
+    return stat_buf.st_mtime;
+}
+
+void ReloadableFile::lock()
 {
     if (m_lock) {
         m_lock->lock();
     }
 }
 
-bool ReloadableXMLFile::try_lock()
+bool ReloadableFile::try_lock()
 {
     if (m_lock) {
         return m_lock->try_lock();
     }
 }
 
-void ReloadableXMLFile::unlock()
+void ReloadableFile::unlock()
 {
     if (m_lock)
         m_lock->unlock();
 }
 
-void ReloadableXMLFile::lock_shared()
+void ReloadableFile::lock_shared()
 {
     if (!m_lock) {
         return;
@@ -128,30 +160,18 @@ void ReloadableXMLFile::lock_shared()
     }
 
     m_lock->unlock();
-    m_log.info("change detected...");
+    m_log.info("change detected, attempting reload...");
 
-    unique_ptr<ptree> newtree = load();
-
-    if (newtree) {
-        m_log.info("swapping in new configuration");
-        m_lock->lock();
-#ifdef WIN32
-        if (_stat(m_source.c_str(), &stat_buf) == 0) {
-#else
-        if (stat(m_source.c_str(), &stat_buf) == 0) {
-#endif
-            m_filestamp = stat_buf.st_mtime;
-        }
-        m_tree.swap(newtree);
-        m_lock->unlock();
-        m_lock->lock_shared();
+    if (load()) {
+        m_log.info("swapped in new configuration");
     } else {
-        m_log.info("new configuration was invalid, retaining original");
-        m_lock->lock_shared();
+        m_log.info("new configuration was invalid");
     }
+
+    m_lock->lock_shared();
 }
 
-bool ReloadableXMLFile::try_lock_shared()
+bool ReloadableFile::try_lock_shared()
 {
     if (m_lock)
         return m_lock->try_lock_shared();
@@ -159,7 +179,7 @@ bool ReloadableXMLFile::try_lock_shared()
         return true;
 }
 
-void ReloadableXMLFile::unlock_shared()
+void ReloadableFile::unlock_shared()
 {
     if (m_lock)
         m_lock->unlock_shared();

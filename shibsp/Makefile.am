@@ -73,7 +73,7 @@ utilinclude_HEADERS = \
 	util/IPRange.h \
 	util/PathResolver.h \
 	util/PropertySet.h \
-	util/ReloadableXMLFile.h \
+	util/ReloadableFile.h \
 	util/SPConstants.h \
 	util/TemplateParameters.h \
 	util/URLEncoder.h
@@ -145,7 +145,7 @@ libshibsp_la_SOURCES = \
 	util/DOMPropertySet.cpp \
 	util/IPRange.cpp \
 	util/PathResolver.cpp \
-	util/ReloadableXMLFile.cpp \
+	util/ReloadableFile.cpp \
 	util/SPConstants.cpp \
 	util/TemplateParameters.cpp \
 	util/URLEncoder.cpp
