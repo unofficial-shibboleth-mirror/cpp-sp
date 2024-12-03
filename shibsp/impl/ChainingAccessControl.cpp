@@ -31,14 +31,15 @@
 #include "SPRequest.h"
 
 #include <algorithm>
-#include <boost/ptr_container/ptr_vector.hpp>
+#include <memory>
+#include <vector>
+
 #include <xmltooling/unicode.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -51,18 +52,22 @@ namespace shibsp {
         ~ChainingAccessControl() {}
 
         Lockable* lock() {
-            for_each(m_ac.begin(), m_ac.end(), mem_fun_ref<Lockable*,Lockable>(&Lockable::lock));
+            for (auto& i : m_ac) {
+                i->lock();
+            }
             return this;
         }
         void unlock() {
-            for_each(m_ac.begin(), m_ac.end(), mem_fun_ref<void,Lockable>(&Lockable::unlock));
+            for (auto& i : m_ac) {
+                i->unlock();
+            }
         }
 
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
     private:
         enum operator_t { OP_AND, OP_OR } m_op;
-        ptr_vector<AccessControl> m_ac;
+        vector<unique_ptr<AccessControl>> m_ac;
     };
 
     AccessControl* SHIBSP_DLLLOCAL ChainingAccessControlFactory(const DOMElement* const & e, bool deprecationSupport)
@@ -84,7 +89,6 @@ void SHIBSP_API shibsp::registerAccessControls()
     SPConfig& conf=SPConfig::getConfig();
     conf.AccessControlManager.registerFactory(CHAINING_ACCESS_CONTROL, ChainingAccessControlFactory);
     conf.AccessControlManager.registerFactory(XML_ACCESS_CONTROL, XMLAccessControlFactory);
-    conf.AccessControlManager.registerFactory("edu.internet2.middleware.shibboleth.sp.provider.XMLAccessControl", XMLAccessControlFactory);
 }
 
 AccessControl::AccessControl()
@@ -108,9 +112,9 @@ ChainingAccessControl::ChainingAccessControl(const DOMElement* e, bool deprecati
         string t(XMLHelper::getAttrString(e, nullptr, _type));
         if (!t.empty()) {
             Category::getInstance(SHIBSP_LOGCAT ".AccessControl.Chaining").info("building AccessControl provider of type (%s)...", t.c_str());
-            auto_ptr<AccessControl> np(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e, deprecationSupport));
-            m_ac.push_back(np.get());
-            np.release();
+            m_ac.push_back(unique_ptr<AccessControl>(
+                SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), e, deprecationSupport)
+            ));
         }
         e = XMLHelper::getNextSiblingElement(e, _AccessControl);
     }
@@ -123,7 +127,7 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
     switch (m_op) {
         case OP_AND:
         {
-            for (ptr_vector<AccessControl>::const_iterator i = m_ac.begin(); i != m_ac.end(); ++i) {
+            for (const auto& i : m_ac) {
                 if (i->authorized(request, session) != shib_acl_true) {
                     request.log(SPRequest::SPDebug, "embedded AccessControl plugin unsuccessful, denying access");
                     return shib_acl_false;
@@ -134,7 +138,7 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
 
         case OP_OR:
         {
-            for (ptr_vector<AccessControl>::const_iterator i = m_ac.begin(); i != m_ac.end(); ++i) {
+            for (const auto& i : m_ac) {
                 if (i->authorized(request,session) == shib_acl_true)
                     return shib_acl_true;
             }

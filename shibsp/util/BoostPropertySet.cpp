@@ -69,7 +69,7 @@ void BoostPropertySet::load(const property_tree::ptree& pt, const char* unsetter
 
     // Check for unsetter, pull out and split.
     if (unsetter) {
-        const optional<string> val = pt.get_optional<string>(unsetter);
+        const boost::optional<string> val = pt.get_optional<string>(unsetter);
         if (val) {
             split(m_unset, val.get(), is_space(), algorithm::token_compress_on);
         }
@@ -80,7 +80,7 @@ bool BoostPropertySet::getBool(const char* name, bool defaultValue) const
 {
     if (m_pt) {
         // Check for a child node with the target name and return its value as a bool.
-        const optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
+        const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
         if (child) {
             const string& val = child->data();
             return val == "1" || val == "true";
@@ -100,7 +100,7 @@ const char* BoostPropertySet::getString(const char* name, const char* defaultVal
 {
     if (m_pt) {
         // Check for a child node with the target name and return its value as a C string.
-        const optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
+        const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
         if (child) {
             return child->data().c_str();
         }
@@ -119,7 +119,7 @@ unsigned int BoostPropertySet::getUnsignedInt(const char* name, unsigned int def
 {
     if (m_pt) {
         // Check for a child node with the target name and return its value as a C string.
-        const optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
+        const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
         if (child) {
             try {
                 return lexical_cast<unsigned int>(child->data());
@@ -142,7 +142,7 @@ int BoostPropertySet::getInt(const char* name, int defaultValue) const
 {
     if (m_pt) {
         // Check for a child node with the target name and return its value as a C string.
-        const optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
+        const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
         if (child) {
             try {
                 return lexical_cast<int>(child->data());

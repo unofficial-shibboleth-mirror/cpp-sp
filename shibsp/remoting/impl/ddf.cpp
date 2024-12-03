@@ -1012,7 +1012,7 @@ SHIBSP_API ostream& shibsp::operator<<(ostream& os, const DDF& obj)
 
 static char x2c(char *what)
 {
-    register char digit;
+    char digit;
 
     digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
     digit *= 16;
@@ -1045,7 +1045,7 @@ DDF deserialize(istream& is)
                 return obj;
             }
             // Walk the string and decode any %XX sequences.
-            register int x,y;
+            int x,y;
             for(x=0,y=0; dup[y]; ++x,++y) {
                 if((dup[x] = dup[y]) == '%' && isxdigit(dup[y+1]) && isxdigit(dup[y+2])) {
                     dup[x] = x2c(&dup[y+1]);
@@ -1095,7 +1095,7 @@ DDF deserialize(istream& is)
                 }
 
                 // Walk the string and decode any %XX sequences.
-                register int x,y;
+                int x,y;
                 for(x=0,y=0; dup[y]; ++x,++y) {
                     if((dup[x] = dup[y]) == '%' && isxdigit(dup[y+1]) && isxdigit(dup[y+2])) {
                         dup[x] = x2c(&dup[y+1]);

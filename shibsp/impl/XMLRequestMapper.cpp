@@ -367,7 +367,7 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
 
 static char _x2c(const char *what)
 {
-    register char digit;
+    char digit;
 
     digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
     digit *= 16;

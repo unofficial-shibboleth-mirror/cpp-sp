@@ -36,7 +36,6 @@ using namespace std;
 
 
 namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory ChainingSessionInitiatorFactory;
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory SAML2SessionInitiatorFactory;
     SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory SAMLDSSessionInitiatorFactory;
 };
@@ -44,7 +43,6 @@ namespace shibsp {
 void SHIBSP_API shibsp::registerSessionInitiators()
 {
     SPConfig& conf=SPConfig::getConfig();
-    conf.SessionInitiatorManager.registerFactory(CHAINING_SESSION_INITIATOR, ChainingSessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(SAML2_SESSION_INITIATOR, SAML2SessionInitiatorFactory);
     conf.SessionInitiatorManager.registerFactory(SAMLDS_SESSION_INITIATOR, SAMLDSSessionInitiatorFactory);
 }

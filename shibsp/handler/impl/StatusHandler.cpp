@@ -79,15 +79,9 @@ namespace shibsp {
         return new StatusHandler(p.first, p.second);
     }
 
-#ifndef XMLTOOLING_NO_XMLSEC
-    vector<XSECCryptoX509*> g_NoCerts;
-#else
-    vector<string> g_NoCerts;
-#endif
-
     static char _x2c(const char *what)
     {
-        register char digit;
+        char digit;
 
         digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
         digit *= 16;

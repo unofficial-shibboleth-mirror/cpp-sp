@@ -48,9 +48,6 @@ namespace shibsp {
     /** LogoutInitiator that supports administrative logout. */
     #define ADMIN_LOGOUT_INITIATOR "Admin"
 
-    /** LogoutInitiator that iterates through a set of protocol-specific versions. */
-    #define CHAINING_LOGOUT_INITIATOR "Chaining"
-
     /** LogoutInitiator that supports SAML 2.0 LogoutRequests. */
     #define SAML2_LOGOUT_INITIATOR "SAML2"
 

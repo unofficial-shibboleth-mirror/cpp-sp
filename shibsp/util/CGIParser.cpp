@@ -89,7 +89,7 @@ namespace {
 
     void plustospace(char *str)
     {
-        register int x;
+        int x;
 
         for(x=0;str[x];x++)
             if(str[x] == '+') str[x] = ' ';

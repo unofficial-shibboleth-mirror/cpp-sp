@@ -94,9 +94,6 @@ namespace shibsp {
     /** Registers SessionInitiator implementations. */
     void SHIBSP_API registerSessionInitiators();
 
-    /** SessionInitiator that iterates through a set of protocol-specific versions. */
-    #define CHAINING_SESSION_INITIATOR "Chaining"
-
     /** SessionInitiator that supports SAML 2.0 AuthnRequests. */
     #define SAML2_SESSION_INITIATOR "SAML2"
 

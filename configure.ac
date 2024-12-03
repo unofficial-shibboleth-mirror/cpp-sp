@@ -78,9 +78,9 @@ AC_FUNC_STRERROR_R
 AC_CXX_NAMESPACES
 AC_CXX_REQUIRE_STL
 
-AX_CXX_COMPILE_STDCXX([14])
-# Once the code is sanitized, we could include some optional support.
-#AX_CXX_COMPILE_STDCXX([17],,[optional])
+AX_CXX_COMPILE_STDCXX([11])
+AX_CXX_COMPILE_STDCXX([14],,[optional])
+AX_CXX_COMPILE_STDCXX([17],,[optional])
 
 # Boost
 BOOST_REQUIRE
