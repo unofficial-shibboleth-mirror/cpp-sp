@@ -30,8 +30,13 @@
 #include <ctime>
 #include <stdexcept>
 #include <thread>
+#include <vector>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+
+#ifdef HAVE_DLFCN_H
+# include <dlfcn.h>
+#endif
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -48,6 +53,7 @@ namespace shibsp {
 
         bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
         void term();
+        bool load_library(const char* path, void* context=nullptr);
 
         const PathResolver& getPathResolver() const {
             return m_pathResolver;
@@ -71,6 +77,7 @@ namespace shibsp {
         ptree m_config;
         PathResolver m_pathResolver;
         URLEncoder m_urlEncoder;
+        vector<void*> m_libhandles;
         unique_ptr<LoggingService> m_logging;
         //unique_ptr<Agent> m_agent;
     };
@@ -278,6 +285,23 @@ void AgentInternalConfig::_term()
 
     LoggingServiceManager.deregisterFactories();
 
+    for (vector<void*>::reverse_iterator i=m_libhandles.rbegin(); i!=m_libhandles.rend(); i++) {
+#if defined(WIN32)
+        FARPROC fn=GetProcAddress(static_cast<HMODULE>(*i),"xmltooling_extension_term");
+        if (fn)
+            fn();
+        FreeLibrary(static_cast<HMODULE>(*i));
+#elif defined(HAVE_DLFCN_H)
+        void (*fn)()=(void (*)())dlsym(*i,"shibsp_extension_term");
+        if (fn)
+            fn();
+        dlclose(*i);
+#else
+# error "Don't know about dynamic loading on this platform!"
+#endif
+    }
+    m_libhandles.clear();
+
     log.info("%s agent shutdown complete", PACKAGE_STRING);
 
     m_logging->term();
@@ -310,4 +334,72 @@ void AgentInternalConfig::_term()
     if (isEnabled(Caching))
         SessionCacheManager.deregisterFactories();
     */
+}
+
+bool AgentInternalConfig::load_library(const char* path, void* context)
+{
+#ifdef _DEBUG
+    xmltooling::NDC ndc("LoadLibrary");
+#endif
+    Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
+    log.info("loading extension: %s", path);
+
+    lock_guard<mutex> locker(m_lock);
+
+    string resolved(path);
+    m_pathResolver.resolve(resolved, PathResolver::SHIBSP_LIB_FILE);
+
+#if defined(WIN32)
+    HMODULE handle=nullptr;
+    for (string::iterator i = resolved.begin(); i != resolved.end(); ++i)
+        if (*i == '/')
+            *i = '\\';
+
+    UINT em=SetErrorMode(SEM_FAILCRITICALERRORS);
+    try {
+        handle=LoadLibraryEx(resolved.c_str(),nullptr,LOAD_WITH_ALTERED_SEARCH_PATH);
+        if (!handle)
+             handle=LoadLibraryEx(resolved.c_str(),nullptr,0);
+        if (!handle)
+            throw runtime_error(string("unable to load extension library: ") + resolved);
+        FARPROC fn=GetProcAddress(handle,"shibsp_extension_init");
+        if (!fn)
+            throw runtime_error(string("unable to locate shibsp_extension_init entry point: ") + resolved);
+        if (reinterpret_cast<int(*)(void*)>(fn)(context)!=0)
+            throw runtime_error(string("detected error in shibsp_extension_init: ") + resolved);
+        SetErrorMode(em);
+    }
+    catch(std::exception&) {
+        if (handle)
+            FreeLibrary(handle);
+        SetErrorMode(em);
+        throw;
+    }
+#elif defined(HAVE_DLFCN_H)
+    void* handle=dlopen(resolved.c_str(),RTLD_LAZY);
+    if (!handle)
+        throw runtime_error(string("unable to load extension library '") + resolved + "': " + dlerror());
+    int (*fn)(void*)=(int (*)(void*))(dlsym(handle,"shibsp_extension_init"));
+    if (!fn) {
+        dlclose(handle);
+        throw runtime_error(
+            string("unable to locate shibsp_extension_init entry point in '") + resolved + "': " +
+                (dlerror() ? dlerror() : "unknown error")
+            );
+    }
+    try {
+        if (fn(context)!=0)
+            throw runtime_error(string("detected error in shibsp_extension_init in ") + resolved);
+    }
+    catch(std::exception&) {
+        if (handle)
+            dlclose(handle);
+        throw;
+    }
+#else
+# error "Don't know about dynamic loading on this platform!"
+#endif
+    m_libhandles.push_back(handle);
+    log.info("loaded extension: %s", resolved.c_str());
+    return true;
 }

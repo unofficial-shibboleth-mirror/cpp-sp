@@ -7,7 +7,7 @@ Name: @PACKAGE_NAME@
 Description: Shibboleth Service Provider library
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lshibsp
-Libs.private: @PTHREAD_LIBS@
+Libs.private: @dlopen_LIBS @PTHREAD_LIBS@
 Cflags: -I${includedir} @BOOST_CPPFLAGS@ @PTHREAD_CFLAGS@
 Requires: @SHIBSP_REQUIRES@
 Requires.private: @SHIBSP_REQUIRES_PRIVATE@

@@ -41,6 +41,15 @@ AC_CHECK_HEADERS([sys/socket.h], [AC_DEFINE([SHIBSP_HAVE_SYS_SOCKET_H],[1],[Defi
 AC_CHECK_FUNCS([strchr strdup strstr timegm gmtime_r localtime_r strtok_r strcasecmp getpwnam getgrnam initgroups])
 AC_CHECK_TYPES([struct sockaddr_storage], [], [], [[#include <sys/socket.h>]])
 AC_CHECK_MEMBERS([struct sockaddr.sa_len], [], [], [[#include <sys/socket.h>]])
+AC_CHECK_HEADERS([dlfcn.h])
+
+# Check for dlopen.
+AX_SAVE_FLAGS
+LIBS=""
+AC_SEARCH_LIBS([dlopen],[dl],,[AC_MSG_ERROR([cannot find dlopen() function])])
+AC_SUBST([dlopen_LIBS],[$LIBS])
+AX_RESTORE_FLAGS
+
 
 AC_CACHE_CHECK([for SOCK_CLOEXEC support], [shib_cv_sock_cloexec],
 [AC_TRY_RUN([

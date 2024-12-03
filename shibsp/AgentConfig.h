@@ -77,6 +77,21 @@ namespace shibsp {
         virtual void term()=0;
 
         /**
+         * Loads a shared/dynamic library extension.
+         *
+         * <p>Extension libraries are managed using a pair of "C" linkage functions:<br>
+         *      extern "C" int shibsp_extension_init(void* context);<br>
+         *      extern "C" void shibsp_extension_term();
+         *
+         * <p>This method is internally synchronized.</p>
+         *
+         * @param path      pathname of shared library to load into process
+         * @param context   arbitrary data to pass to library initialization hook
+         * @return true iff library was loaded successfully
+         */
+        virtual bool load_library(const char* path, void* context=nullptr)=0;
+
+        /**
          * Manages factories for LoggingService plugins.
          */
         PluginManager<LoggingService,std::string,const boost::property_tree::ptree&> LoggingServiceManager;
