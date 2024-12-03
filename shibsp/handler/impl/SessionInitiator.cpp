@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "Application.h"
 #include "SPRequest.h"
 #include "handler/SessionInitiator.h"
 

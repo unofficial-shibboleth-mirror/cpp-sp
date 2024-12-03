@@ -27,6 +27,7 @@
 #ifndef __shibsp_storedsession_h__
 #define __shibsp_storedsession_h__
 
+#include "Application.h"
 #include "SessionCache.h"
 #include "remoting/ddf.h"
 
