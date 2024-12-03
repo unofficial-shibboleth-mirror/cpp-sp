@@ -79,6 +79,8 @@ namespace shibsp {
         /**
          * Returns the last successful load of this configuration resource.
          * 
+         * <p>This method must be called with the object locked, shared or exclusively.</p>
+         * 
          * @return last successful load time
          */
         time_t getLastModified() const;
@@ -89,17 +91,33 @@ namespace shibsp {
          * 
          * <p>This method must be called with the object locked, shared or exclusively.</p>
          * 
+         * <p>The method is virtual primarily to facilitate alternative control over reload
+         * events.</p>
+         * 
          * @return true iff the source has been modified
          */
-        bool isUpdated() const;
+        virtual bool isUpdated() const;
 
         /**
          * Updates the time of last modification of the source, assigning a future fence
          * value in the event of an error to discontinue checking.
          * 
          * <p>This method must be called with the object locked exclusively.</p>
+         * 
+         * <p>The method is virtual primarily to facilitate alternative control over reload
+         * events.</p>
          */
         void updateModificationTime();
+
+        /**
+         * Updates the time of last modification to an explicitly input time.
+         * 
+         * <p>This method must be called with the object locked exclusively.</p>
+         * 
+         * <p>The method is primarily to facilitate alternative control over reload
+         * events.</p>
+         */
+        void updateModificationTime(time_t t);
 
     private:
         /** Logging object. */

@@ -47,12 +47,20 @@ class DummyXMLFile : virtual public ReloadableFile
 public:
     DummyXMLFile(const string& source, bool reloadable)
         : ReloadableFile(source, Category::getInstance("DummyXMLFile"), reloadable),
-            m_log(Category::getInstance("DummyXMLFile")), m_tree(nullptr) {
+            m_log(Category::getInstance("DummyXMLFile")), m_tree(nullptr), m_forceReload(false) {
         if (!load()) {
             m_log.error("initial configuration was invalid");
         }
     }
     ~DummyXMLFile() {}
+
+    bool isUpdated() const {
+        return m_forceReload;
+    }
+
+    void forceReload() {
+        m_forceReload = true;
+    }
 
     time_t getLastModified() const {
         return ReloadableFile::getLastModified();
@@ -64,6 +72,7 @@ protected:
 private:
     Category& m_log;
     unique_ptr<ptree> m_tree;
+    bool m_forceReload;
 };
 
 bool DummyXMLFile::load()
@@ -75,7 +84,9 @@ bool DummyXMLFile::load()
         unique_ptr<ptree> newtree = unique_ptr<ptree>(new ptree());
         xml_parser::read_xml(getSource(), *newtree, xml_parser::no_comments|xml_parser::trim_whitespace);
         m_tree.swap(newtree);
-        return ReloadableFile::load();
+        m_forceReload = false;
+        updateModificationTime(time(nullptr));
+        return true;
     } catch (const bad_alloc& e) {
         m_log.crit("out of memory parsing XML configuration (%s)", getSource().c_str());
     } catch (const xml_parser_error& e) {
@@ -84,10 +95,38 @@ bool DummyXMLFile::load()
     return false;
 }
 
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_noreload, RF_Fixture)
+BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_no_reload, RF_Fixture)
 {
     DummyXMLFile dummy(data_path + "requestmap1.xml", false);
 
-    time_t ts = dummy.getLastModified();
-    BOOST_CHECK_GT(ts, 0);
+    dummy.lock_shared();
+    time_t ts1 = dummy.getLastModified();
+    BOOST_CHECK_GT(ts1, 0);
+    dummy.unlock();
+
+    dummy.forceReload();
+    sleep(2);
+
+    dummy.lock_shared();
+    time_t ts2 = dummy.getLastModified();
+    BOOST_CHECK_EQUAL(ts2, ts1);
+    dummy.unlock();
+}
+
+BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_no_load, RF_Fixture)
+{
+    DummyXMLFile dummy(data_path + "requestmap1.xml", true);
+
+    dummy.lock_shared();
+    time_t ts1 = dummy.getLastModified();
+    BOOST_CHECK_GT(ts1, 0);
+    dummy.unlock();
+
+    dummy.forceReload();
+    sleep(2);
+
+    dummy.lock_shared();
+    time_t ts2 = dummy.getLastModified();
+    BOOST_CHECK_GT(ts2, ts1);
+    dummy.unlock();
 }

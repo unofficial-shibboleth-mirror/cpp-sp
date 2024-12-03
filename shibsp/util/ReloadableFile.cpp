@@ -98,8 +98,13 @@ void ReloadableFile::updateModificationTime()
     struct stat stat_buf;
     if (stat(m_source.c_str(), &stat_buf) == 0) {
 #endif
-        m_filestamp = stat_buf.st_mtime;
+        updateModificationTime(stat_buf.st_mtime);
     }
+}
+
+void ReloadableFile::updateModificationTime(time_t t)
+{
+    m_filestamp = t;
 }
 
 bool ReloadableFile::load()
