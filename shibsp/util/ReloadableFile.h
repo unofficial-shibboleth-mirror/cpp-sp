@@ -28,7 +28,7 @@
 #include <string>
 
 #ifdef HAVE_CXX14
-#include <shared_mutex>
+# include <shared_mutex>
 #endif
 
 namespace shibsp {
@@ -48,14 +48,8 @@ namespace shibsp {
          * @param path                  path to file to use
          * @param log                   logging object to use
          * @param reloadChanges         whether to monitor for changes
-         * @param deprecationSupport    true iff deprecated options and settings should be accepted
          */
-        ReloadableFile(
-            const std::string& path,
-            Category& log,
-            bool reloadChanges=false,
-            bool deprecationSupport=true
-            );
+        ReloadableFile(const std::string& path, Category& log, bool reloadChanges=false);
     
         virtual ~ReloadableFile();
 
@@ -63,7 +57,8 @@ namespace shibsp {
          * Loads (or reloads) configuration material.
          * 
          * <p>This method is called to load configuration material
-         * initially and any time a change is detected.</p>
+         * initially and any time a change is detected. The base class version
+         * assumes success and calls the updateModificationTime method.</p>
          *
          * <p>This method is not called with the object locked, so actual
          * modification of implementation state requires explicit locking within
@@ -72,7 +67,7 @@ namespace shibsp {
          * 
          * <p>This method should NOT throw exceptions.</p>
          */
-        virtual bool load()=0;
+        virtual bool load();
 
         /**
          * Gets the source path for the configuration.
@@ -82,14 +77,29 @@ namespace shibsp {
         const std::string& getSource() const;
 
         /**
-         * Gets the time of last modification of the source, or a zero fence value
-         * in the event of an error to prevent churn.
+         * Returns the last successful load of this configuration resource.
          * 
-         * <p>This methid must be called with the object locked, shared or exclusive.</p>
-         * 
-         * @return modification time
+         * @return last successful load time
          */
-        const time_t getModificationTime() const;
+        time_t getLastModified() const;
+
+        /**
+         * Determines whether the source file has been modified since it was last
+         * loaded, or returns false in the event of an error accessing the file.
+         * 
+         * <p>This method must be called with the object locked, shared or exclusively.</p>
+         * 
+         * @return true iff the source has been modified
+         */
+        bool isUpdated() const;
+
+        /**
+         * Updates the time of last modification of the source, assigning a future fence
+         * value in the event of an error to discontinue checking.
+         * 
+         * <p>This method must be called with the object locked exclusively.</p>
+         */
+        void updateModificationTime();
 
     private:
         /** Logging object. */

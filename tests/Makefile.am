@@ -13,7 +13,8 @@ shibsptest_SOURCES = \
 	AgentTestSuite.cpp \
 	AgentConfigTests.cpp \
 	util/PropertyTreeTests.cpp \
-	util/BoostPropertySetTests.cpp
+	util/BoostPropertySetTests.cpp \
+	util/ReloadableFileTests.cpp
 
 shibsptest_LDADD = \
     $(top_builddir)/shibsp/libshibsp.la

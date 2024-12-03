@@ -31,7 +31,6 @@
 #include "util/PathResolver.h"
 #include "util/ReloadableFile.h"
 
-#include <limits>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -39,7 +38,7 @@ using namespace boost::property_tree;
 using namespace shibsp;
 using namespace std;
 
-ReloadableFile::ReloadableFile(const std::string& path, Category& log, bool reloadChanges, bool deprecationSupport)
+ReloadableFile::ReloadableFile(const std::string& path, Category& log, bool reloadChanges)
     : m_log(log), m_source(path), m_filestamp(0)
 #ifdef HAVE_CXX17
         , m_lock(nullptr)
@@ -58,61 +57,55 @@ ReloadableFile::ReloadableFile(const std::string& path, Category& log, bool relo
         m_lock.reset(new shared_timed_mutex());
 #endif
     }
-
-    if (!load()) {
-        m_log.error("initial configuration was invalid");
-    }
 }
 
 ReloadableFile::~ReloadableFile()
 {
 }
 
-/*
-unique_ptr<ptree> ReloadableFile::load()
-{
-    try {
-        unique_ptr<ptree> pt = unique_ptr<ptree>(new ptree());
-        xml_parser::read_xml(m_source, *pt, xml_parser::no_comments|xml_parser::trim_whitespace);
-        return pt;
-    } catch (const bad_alloc& e) {
-        m_log.crit("out of memory parsing XML configuration (%s)", m_source.c_str());
-    } catch (const xml_parser_error& e) {
-        m_log.error("failed to process XML configuration (%s): %s", m_source.c_str(), e.what());
-    }
-    return nullptr;
-}
-
-        m_lock->lock();
-#ifdef WIN32
-        if (_stat(m_source.c_str(), &stat_buf) == 0) {
-#else
-        if (stat(m_source.c_str(), &stat_buf) == 0) {
-#endif
-            m_filestamp = stat_buf.st_mtime;
-        }
-
-*/
-
 const std::string& ReloadableFile::getSource() const
 {
     return m_source;
 }
 
-const time_t ReloadableFile::getModificationTime() const
+time_t ReloadableFile::getLastModified() const
+{
+    return m_filestamp;
+}
+
+bool ReloadableFile::isUpdated() const
 {
 #ifdef WIN32
     struct _stat stat_buf;
     if (_stat(m_source.c_str(), &stat_buf) != 0) {
-        return 0;
+        return false;
     }
 #else
     struct stat stat_buf;
     if (stat(m_source.c_str(), &stat_buf) != 0) {
-        return 0;
+        return false;
     }
 #endif
-    return stat_buf.st_mtime;
+    return stat_buf.st_mtime > m_filestamp;
+}
+
+void ReloadableFile::updateModificationTime()
+{
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(m_source.c_str(), &stat_buf) == 0) {
+#else
+    struct stat stat_buf;
+    if (stat(m_source.c_str(), &stat_buf) == 0) {
+#endif
+        m_filestamp = stat_buf.st_mtime;
+    }
+}
+
+bool ReloadableFile::load()
+{
+    updateModificationTime();
+    return true;
 }
 
 void ReloadableFile::lock()
@@ -144,18 +137,7 @@ void ReloadableFile::lock_shared()
     m_lock->lock_shared();
 
     // Check if we need to refresh.
-#ifdef WIN32
-    struct _stat stat_buf;
-    if (_stat(m_source.c_str(), &stat_buf) != 0) {
-        return;
-    }
-#else
-    struct stat stat_buf;
-    if (stat(m_source.c_str(), &stat_buf) != 0) {
-        return;
-    }
-#endif
-    if (m_filestamp >= stat_buf.st_mtime) {
+    if (!isUpdated()) {
         return;
     }
 
