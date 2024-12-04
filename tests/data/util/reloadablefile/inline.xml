@@ -1,0 +1,8 @@
+<RequestMapper type="XML">
+    <RequestMap>
+        <Host name="sp.example.org">
+            <Path name="secure" requireSession="true" />
+        </Host>
+        <Host name="admin.example.org" applicationId="admin" requireSession="true" />
+    </RequestMap>
+</RequestMapper>

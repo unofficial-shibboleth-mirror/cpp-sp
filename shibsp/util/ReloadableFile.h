@@ -21,11 +21,13 @@
 #ifndef __shibsp_reloadablefile_h__
 #define __shibsp_reloadablefile_h__
 
-#include <shibsp/base.h>
+#include <shibsp/util/Lockable.h>
 
 #include <ctime>
 #include <memory>
 #include <string>
+
+#include <boost/property_tree/ptree_fwd.hpp>
 
 #ifdef HAVE_CXX14
 # include <shared_mutex>
@@ -37,19 +39,35 @@ namespace shibsp {
 
     /**
      * Base class for file-based configuration, provides locking and reload semantics.
+     * 
+     * <p>Also supports "inliine" configuration that short-circuits most of this logic
+     * allowing for unified handling of the two cases by implementing classes and the
+     * consumers of a configuration interface.</p>
      */
-    class SHIBSP_API ReloadableFile
+    class SHIBSP_API ReloadableFile : public virtual BasicLockable, public virtual SharedLockable
     {
-    MAKE_NONCOPYABLE(ReloadableFile);
+        MAKE_NONCOPYABLE(ReloadableFile);
+
+    public:
+        static const char PATH_PROP_NAME[];
+        static const char RELOAD_CHANGES_PROP_NAME[];
+
     protected:
         /**
          * Base class constructor.
          * 
-         * @param path                  path to file to use
+         * <p>The supported property keys for an "out of band" file-backed instance
+         * of whatever the underlying configuration is are "path" and "reloadChanges"
+         * (the latter a boolean flag)</p>
+         * 
+         * <p>In the absence of a "path" key, the configuration is assumed to be
+         * inline as the content of the supplied tree and the base class essentially
+         * performs no activity, stubs out locking, etc.</p>
+         * 
+         * @param pt                    root of property tree defining resource
          * @param log                   logging object to use
-         * @param reloadChanges         whether to monitor for changes
          */
-        ReloadableFile(const std::string& path, Category& log, bool reloadChanges=false);
+        ReloadableFile(const boost::property_tree::ptree& pt, Category& log);
     
         virtual ~ReloadableFile();
 
@@ -57,31 +75,27 @@ namespace shibsp {
          * Loads (or reloads) configuration material.
          * 
          * <p>This method is called to load configuration material
-         * initially and any time a change is detected. The base class version
-         * assumes success and calls the updateModificationTime method.</p>
+         * initially and any time a change is detected but is not called
+         * initially unless by a subclass.</p>
          *
          * <p>This method is not called with the object locked, so actual
-         * modification of implementation state requires explicit locking within
-         * the method override, and the method should return with the object
-         * unlocked.</p>
+         * modification of configuration state requires explicit locking
+         * within the method.</p>
          * 
          * <p>This method should NOT throw exceptions.</p>
-         */
-        virtual bool load();
-
-        /**
-         * Gets the source path for the configuration.
          * 
-         * @return source path
+         * @return a pair containing a pointer to the property tree loaded
+         *  and a flag indicating whether the subclass should retain ownership
+         *  of the tree and free it when done with it
          */
-        const std::string& getSource() const;
+        virtual std::pair<bool,boost::property_tree::ptree*> load();
 
         /**
-         * Returns the last successful load of this configuration resource.
+         * Gets the last time the configuration was updated.
          * 
          * <p>This method must be called with the object locked, shared or exclusively.</p>
          * 
-         * @return last successful load time
+         * @return the last configuration update
          */
         time_t getLastModified() const;
 
@@ -120,6 +134,9 @@ namespace shibsp {
         void updateModificationTime(time_t t);
 
     private:
+        /** Root of configuration or of the pointer to the configuration. */
+        const boost::property_tree::ptree& m_root;
+
         /** Logging object. */
         Category& m_log;
 
@@ -137,14 +154,14 @@ namespace shibsp {
 #endif
 
     public:
-        // SharedLockable
-        void lock_shared();
-        bool try_lock_shared();
-        void unlock_shared();
         // BasicLockable
         void lock();
         bool try_lock();
         void unlock();
+        // SharedLockable
+        void lock_shared();
+        bool try_lock_shared();
+        void unlock_shared();
     };
 
 };

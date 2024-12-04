@@ -71,6 +71,7 @@ utilinclude_HEADERS = \
 	util/Date.h \
 	util/DOMPropertySet.h \
 	util/IPRange.h \
+	util/Lockable.h \
 	util/PathResolver.h \
 	util/PropertySet.h \
 	util/ReloadableFile.h \

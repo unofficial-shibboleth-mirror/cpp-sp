@@ -33,39 +33,60 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <boost/property_tree/xml_parser.hpp>
 
 using namespace boost::property_tree;
 using namespace shibsp;
 using namespace std;
 
-ReloadableFile::ReloadableFile(const std::string& path, Category& log, bool reloadChanges)
-    : m_log(log), m_source(path), m_filestamp(0)
+namespace {
+    // More an experiment than anything but it does encapsulate the conversion.
+    struct string_to_bool_translator {
+        typedef std::string internal_type;
+        typedef bool external_type;
+
+        boost::optional<bool> get_value(const string &s) {
+            if (s == "true" || s == "1") {
+                return boost::make_optional(true);
+            } else if (s == "false" || s == "0") {
+                return boost::make_optional(false);
+            } else {
+                return boost::none;
+            }
+        }
+    };
+};
+
+const char ReloadableFile::PATH_PROP_NAME[] = "path";
+const char ReloadableFile::RELOAD_CHANGES_PROP_NAME[] = "reloadChanges";
+
+ReloadableFile::ReloadableFile(const ptree& pt, Category& log) : m_root(pt), m_log(log), m_filestamp(0)
 #ifdef HAVE_CXX17
         , m_lock(nullptr)
 #elif HAVE_CXX14
         , m_lock(nullptr)
 #endif
 {
-    AgentConfig::getConfig().getPathResolver().resolve(m_source, PathResolver::SHIBSP_CFG_FILE);
+    boost::optional<string> path = pt.get_optional<string>(PATH_PROP_NAME);
+    if (path) {
+        m_source = path.get();
+        AgentConfig::getConfig().getPathResolver().resolve(m_source, PathResolver::SHIBSP_CFG_FILE);
 
-    log.info("using path (%s), will %smonitor for changes", m_source.c_str(), reloadChanges ? "" : "not ");
-
-    if (reloadChanges) {
+        string_to_bool_translator tr;
+        bool reloadChanges = pt.get(RELOAD_CHANGES_PROP_NAME, false, tr);
+        log.info("using path (%s), will %smonitor for changes", m_source.c_str(), reloadChanges ? "" : "not ");
+        if (reloadChanges) {
 #ifdef HAVE_CXX17
-        m_lock.reset(new shared_mutex());
+            m_lock.reset(new shared_mutex());
 #elif HAVE_CXX14
-        m_lock.reset(new shared_timed_mutex());
+            m_lock.reset(new shared_timed_mutex());
 #endif
+        }
     }
 }
 
 ReloadableFile::~ReloadableFile()
 {
-}
-
-const std::string& ReloadableFile::getSource() const
-{
-    return m_source;
 }
 
 time_t ReloadableFile::getLastModified() const
@@ -75,6 +96,10 @@ time_t ReloadableFile::getLastModified() const
 
 bool ReloadableFile::isUpdated() const
 {
+    if (m_source.empty()) {
+        return false;
+    }
+
 #ifdef WIN32
     struct _stat stat_buf;
     if (_stat(m_source.c_str(), &stat_buf) != 0) {
@@ -107,10 +132,29 @@ void ReloadableFile::updateModificationTime(time_t t)
     m_filestamp = t;
 }
 
-bool ReloadableFile::load()
+pair<bool,ptree*> ReloadableFile::load()
 {
-    updateModificationTime();
-    return true;
+    if (m_source.empty()) {
+        m_log.debug("loading inline configuration...");
+        // Data comes from the tree we were handed.
+        // Because property trees work differently from an XML DOM,
+        // we return the actual root, and not the first child as before
+        // so the caller can interrogate the name of the child tree to
+        // ensure it's as expected.
+        // The const_cast is safe because the flag is false,
+        // preventing the caller from retaining ownership.
+        return make_pair(false, const_cast<ptree*>(&m_root));
+    }
+
+    try {
+        unique_ptr<ptree> newtree = unique_ptr<ptree>(new ptree());
+        xml_parser::read_xml(m_source, *newtree, xml_parser::no_comments|xml_parser::trim_whitespace);
+        return make_pair(true, newtree.release());
+    } catch (const bad_alloc& e) {
+        m_log.crit("out of memory parsing XML configuration (%s)", m_source.c_str());
+    } catch (const xml_parser_error& e) {
+        m_log.error("failed to process XML configuration (%s): %s", m_source.c_str(), e.what());
+    }
 }
 
 void ReloadableFile::lock()
@@ -149,10 +193,15 @@ void ReloadableFile::lock_shared()
     m_lock->unlock();
     m_log.info("change detected, attempting reload...");
 
-    if (load()) {
-        m_log.info("swapped in new configuration");
-    } else {
-        m_log.info("new configuration was invalid");
+    // TODO: maybe a second mutex could guard the reload operation so > 1 thread doesn't try it?
+
+    // The result is handled entirely by the subclass so is ignored here.
+    // The original root tree is purely a means of communicating the object
+    // from the c'tor over to the load method for the inline case, at first load.
+    try {
+        load();
+    } catch (...) {
+        // Shouldn't happen but ensures we generally will acquire the lock before returning.
     }
 
     m_lock->lock_shared();

@@ -31,26 +31,27 @@ using namespace std;
 
 #define DATA_PATH "./data/util/reloadablefile/"
 
-struct RF_Fixture {
-    RF_Fixture() : data_path(DATA_PATH) {
+struct Inline_Fixture {
+    Inline_Fixture() : data_path(DATA_PATH) {
         AgentConfig::getConfig().init(nullptr, (data_path + "console-shibboleth.ini").c_str(), true);
+        xml_parser::read_xml(data_path + "inline.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
     }
-    ~RF_Fixture() {
+    ~Inline_Fixture() {
         AgentConfig::getConfig().term();
     }
 
     string data_path;
+    ptree tree;
 };
 
 class DummyXMLFile : virtual public ReloadableFile
 {
 public:
-    DummyXMLFile(const string& source, bool reloadable)
-        : ReloadableFile(source, Category::getInstance("DummyXMLFile"), reloadable),
+    DummyXMLFile(const ptree& pt)
+        : ReloadableFile(pt, Category::getInstance("DummyXMLFile")),
             m_log(Category::getInstance("DummyXMLFile")), m_tree(nullptr), m_forceReload(false) {
-        if (!load()) {
-            m_log.error("initial configuration was invalid");
-        }
+
+        load();
     }
     ~DummyXMLFile() {}
 
@@ -67,7 +68,7 @@ public:
     }
 
 protected:
-    bool load();
+    pair<bool,ptree*> load();
 
 private:
     Category& m_log;
@@ -75,58 +76,48 @@ private:
     bool m_forceReload;
 };
 
-bool DummyXMLFile::load()
+pair<bool,ptree*> DummyXMLFile::load()
 {
+    pair<bool,ptree*> ret = ReloadableFile::load();
+    if (ret.second) {
+        if (ret.first) {
+            m_log.debug("external config is valid");
+        } else {
+            m_log.debug("inline config is valid");
+            return ret;
+        }
+    } else {
+        m_log.error("initial configuration was invalid");
+        return ret;
+    }
+
+    // Swap in external config and update timestamp.
+
 #ifdef HAVE_CXX14
     unique_lock<ReloadableFile> locker(*this);
 #endif
-    try {
-        unique_ptr<ptree> newtree = unique_ptr<ptree>(new ptree());
-        xml_parser::read_xml(getSource(), *newtree, xml_parser::no_comments|xml_parser::trim_whitespace);
-        m_tree.swap(newtree);
-        m_forceReload = false;
-        updateModificationTime(time(nullptr));
-        return true;
-    } catch (const bad_alloc& e) {
-        m_log.crit("out of memory parsing XML configuration (%s)", getSource().c_str());
-    } catch (const xml_parser_error& e) {
-        m_log.error("failed to process XML configuration (%s): %s", getSource().c_str(), e.what());
-    }
-    return false;
+    unique_ptr<ptree> newtree(ret.second);
+    m_tree.swap(newtree);
+    updateModificationTime(time(nullptr));
+
+    return ret;
 }
 
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_no_reload, RF_Fixture)
+BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_no_reload, Inline_Fixture)
 {
-    DummyXMLFile dummy(data_path + "requestmap1.xml", false);
+    DummyXMLFile dummy(tree);
 
     dummy.lock_shared();
     time_t ts1 = dummy.getLastModified();
-    BOOST_CHECK_GT(ts1, 0);
+    BOOST_CHECK_EQUAL(ts1, 0);
     dummy.unlock();
 
+    // No-op since there's no locking internally.
     dummy.forceReload();
     sleep(2);
 
     dummy.lock_shared();
     time_t ts2 = dummy.getLastModified();
-    BOOST_CHECK_EQUAL(ts2, ts1);
-    dummy.unlock();
-}
-
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_no_load, RF_Fixture)
-{
-    DummyXMLFile dummy(data_path + "requestmap1.xml", true);
-
-    dummy.lock_shared();
-    time_t ts1 = dummy.getLastModified();
-    BOOST_CHECK_GT(ts1, 0);
-    dummy.unlock();
-
-    dummy.forceReload();
-    sleep(2);
-
-    dummy.lock_shared();
-    time_t ts2 = dummy.getLastModified();
-    BOOST_CHECK_GT(ts2, ts1);
+    BOOST_CHECK_EQUAL(ts2, 0);
     dummy.unlock();
 }
