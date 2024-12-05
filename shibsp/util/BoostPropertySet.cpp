@@ -20,6 +20,7 @@
 
 #include "internal.h"
 #include "util/BoostPropertySet.h"
+#include "util/Misc.h"
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
@@ -82,8 +83,8 @@ bool BoostPropertySet::getBool(const char* name, bool defaultValue) const
         // Check for a child node with the target name and return its value as a bool.
         const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
         if (child) {
-            const string& val = child->data();
-            return val == "1" || val == "true";
+            static string_to_bool_translator tr;
+            return child.get().get_value(defaultValue, tr);
         }
     }
 

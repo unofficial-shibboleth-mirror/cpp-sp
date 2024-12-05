@@ -19,9 +19,13 @@
  */
 
 #include <shibsp/base.h>
+#include <boost/optional.hpp>
 
 namespace shibsp {
 
+    /**
+     * Internal utility used for decoding %XX escapes in various places.
+     */
     static char x2c(const char* what) {
         char digit;
 
@@ -30,5 +34,24 @@ namespace shibsp {
         digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
         return(digit);
     }
+
+    /**
+     * Used with the Boost property_tree package to perform string to boolean conversions
+     * in a consistent way.
+     */
+    struct string_to_bool_translator {
+        typedef std::string internal_type;
+        typedef bool external_type;
+
+        boost::optional<bool> get_value(const std::string &s) {
+            if (s == "true" || s == "1") {
+                return boost::make_optional(true);
+            } else if (s == "false" || s == "0") {
+                return boost::make_optional(false);
+            } else {
+                return boost::none;
+            }
+        }
+    };
 
 };

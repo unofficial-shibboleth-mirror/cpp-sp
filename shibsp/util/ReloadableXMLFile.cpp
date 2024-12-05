@@ -22,6 +22,7 @@
 
 #include "AgentConfig.h"
 #include "logging/Category.h"
+#include "util/Misc.h"
 #include "util/PathResolver.h"
 #include "util/ReloadableXMLFile.h"
 
@@ -32,24 +33,6 @@
 using namespace boost::property_tree;
 using namespace shibsp;
 using namespace std;
-
-namespace {
-    // More an experiment than anything but it does encapsulate the conversion...
-    struct string_to_bool_translator {
-        typedef std::string internal_type;
-        typedef bool external_type;
-
-        boost::optional<bool> get_value(const string &s) {
-            if (s == "true" || s == "1") {
-                return boost::make_optional(true);
-            } else if (s == "false" || s == "0") {
-                return boost::make_optional(false);
-            } else {
-                return boost::none;
-            }
-        }
-    };
-};
 
 const char ReloadableXMLFile::PATH_PROP_NAME[] = "<xmlattr>.path";
 const char ReloadableXMLFile::RELOAD_CHANGES_PROP_NAME[] = "<xmlattr>.reloadChanges";
