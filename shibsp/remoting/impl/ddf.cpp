@@ -26,6 +26,7 @@
 
 #include "internal.h"
 #include "remoting/ddf.h"
+#include "util/Misc.h"
 
 #include <stdexcept>
 #include <iomanip>
@@ -1008,16 +1009,6 @@ SHIBSP_API ostream& shibsp::operator<<(ostream& os, const DDF& obj)
     os.precision(15);
     serialize(obj.m_handle, os);
     return os;
-}
-
-static char x2c(char *what)
-{
-    char digit;
-
-    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
-    digit *= 16;
-    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
-    return(digit);
 }
 
 DDF deserialize(istream& is)    

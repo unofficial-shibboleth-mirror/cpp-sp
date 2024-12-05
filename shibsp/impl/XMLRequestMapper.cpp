@@ -30,6 +30,7 @@
 #include "SPRequest.h"
 #include "util/CGIParser.h"
 #include "util/DOMPropertySet.h"
+#include "util/Misc.h"
 #include "util/SPConstants.h"
 
 #include <algorithm>
@@ -365,16 +366,6 @@ Override::Override(bool unicodeAware, const DOMElement* e, Category& log, const 
     }
 }
 
-static char _x2c(const char *what)
-{
-    char digit;
-
-    digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
-    digit *= 16;
-    digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
-    return(digit);
-}
-
 const Override* Override::locate(const HTTPRequest& request) const
 {
     // This function is confusing because it's *not* recursive.
@@ -402,7 +393,7 @@ const Override* Override::locate(const HTTPRequest& request) const
                 ++path;
                 if (!isxdigit(*path) || !isxdigit(*(path+1)))
                     throw ConfigurationException("Bad request URI, contained unsupported encoded characters.");
-                dup += _x2c(path);
+                dup += x2c(path);
                 ++path;
             }
             ++path;

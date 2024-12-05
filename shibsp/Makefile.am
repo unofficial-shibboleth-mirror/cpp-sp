@@ -88,7 +88,8 @@ noinst_HEADERS = \
 	logging/impl/AbstractLoggingService.h \
 	logging/impl/LoggingServiceSPI.h \
 	logging/impl/StringUtil.h \
-	remoting/impl/SocketListener.h
+	remoting/impl/SocketListener.h \
+	util/Misc.h
 
 libshibsp_la_SOURCES = \
 	AbstractSPRequest.cpp \

@@ -32,6 +32,7 @@
 #include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
 #include "util/CGIParser.h"
+#include "util/Misc.h"
 
 #include <sstream>
 
@@ -77,16 +78,6 @@ namespace shibsp {
     Handler* SHIBSP_DLLLOCAL StatusHandlerFactory(const pair<const DOMElement*,const char*>& p, bool)
     {
         return new StatusHandler(p.first, p.second);
-    }
-
-    static char _x2c(const char *what)
-    {
-        char digit;
-
-        digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
-        digit *= 16;
-        digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
-        return(digit);
     }
 
     class DummyRequest : public HTTPRequest
@@ -147,7 +138,7 @@ namespace shibsp {
                     ++slash;
                     if (!isxdigit(*slash) || !isxdigit(*(slash+1)))
                         throw invalid_argument("Bad request, contained unsupported encoded characters.");
-                    m_uri += _x2c(slash);
+                    m_uri += x2c(slash);
                     ++slash;
                 }
                 ++slash;
