@@ -13,13 +13,13 @@
  */
 
 /**
- * @file shibsp/util/ReloadableFile.h
+ * @file shibsp/util/ReloadableXMLFile.h
  * 
- * Base class for reloadable file-based configuration.
+ * Base class for reloadable XML file-based configuration.
  */
 
-#ifndef __shibsp_reloadablefile_h__
-#define __shibsp_reloadablefile_h__
+#ifndef __shibsp_ReloadableXMLFile_h__
+#define __shibsp_ReloadableXMLFile_h__
 
 #include <shibsp/util/Lockable.h>
 
@@ -38,19 +38,28 @@ namespace shibsp {
     class SHIBSP_API Category;
 
     /**
-     * Base class for file-based configuration, provides locking and reload semantics.
+     * Base class for file-based XML configuration, provides locking and reload semantics.
      * 
      * <p>Also supports "inliine" configuration that short-circuits most of this logic
      * allowing for unified handling of the two cases by implementing classes and the
      * consumers of a configuration interface.</p>
      */
-    class SHIBSP_API ReloadableFile : public virtual BasicLockable, public virtual SharedLockable
+    class SHIBSP_API ReloadableXMLFile : public virtual BasicLockable, public virtual SharedLockable
     {
-        MAKE_NONCOPYABLE(ReloadableFile);
+        MAKE_NONCOPYABLE(ReloadableXMLFile);
 
     public:
         static const char PATH_PROP_NAME[];
         static const char RELOAD_CHANGES_PROP_NAME[];
+
+        // BasicLockable
+        void lock();
+        bool try_lock();
+        void unlock();
+        // SharedLockable
+        void lock_shared();
+        bool try_lock_shared();
+        void unlock_shared();
 
     protected:
         /**
@@ -64,12 +73,18 @@ namespace shibsp {
          * inline as the content of the supplied tree and the base class essentially
          * performs no activity, stubs out locking, etc.</p>
          * 
+         * <p>Note that the root element name specified applies to the content of the
+         * configuration itself and not the element that may be carrying the "path" key
+         * specifying an external file (i.e., in that case it's the external content whose
+         * root element would be expected to match).</p>
+         * 
          * @param pt                    root of property tree defining resource
+         * @param rootElementName       name of expexcted root element of XML configuration
          * @param log                   logging object to use
          */
-        ReloadableFile(const boost::property_tree::ptree& pt, Category& log);
+        ReloadableXMLFile(const std::string& rootElementName, const boost::property_tree::ptree& pt, Category& log);
     
-        virtual ~ReloadableFile();
+        virtual ~ReloadableXMLFile();
 
         /**
          * Loads (or reloads) configuration material.
@@ -78,17 +93,17 @@ namespace shibsp {
          * initially and any time a change is detected but is not called
          * initially unless by a subclass.</p>
          *
-         * <p>This method is not called with the object locked, so actual
-         * modification of configuration state requires explicit locking
-         * within the method.</p>
+         * <p>This method is not intended to throw.</p>
          * 
-         * <p>This method should NOT throw exceptions.</p>
+         * <p>This method is not called with the object locked, and it does
+         * not modify implementation state. Subclasses are expected to override
+         * this method to lock and modify state as required.</p>
          * 
-         * @return a pair containing a pointer to the property tree loaded
-         *  and a flag indicating whether the subclass should retain ownership
+         * @return a pair containing a (possibly null) pointer to the property tree
+         *  loaded and a flag indicating whether the subclass should retain ownership
          *  of the tree and free it when done with it
          */
-        virtual std::pair<bool,boost::property_tree::ptree*> load();
+        virtual std::pair<bool,boost::property_tree::ptree*> load() noexcept;
 
         /**
          * Gets the last time the configuration was updated.
@@ -143,6 +158,9 @@ namespace shibsp {
         /** Resource path. */
         std::string m_source;
 
+        /** Expected name of root element, i.e. subtree, after parsing. */
+        std::string m_rootElementName;
+
         /** Last modification of local resource. */
         time_t m_filestamp;
 
@@ -152,18 +170,8 @@ namespace shibsp {
 #elif HAVE_CXX14
         std::unique_ptr<std::shared_timed_mutex> m_lock;
 #endif
-
-    public:
-        // BasicLockable
-        void lock();
-        bool try_lock();
-        void unlock();
-        // SharedLockable
-        void lock_shared();
-        bool try_lock_shared();
-        void unlock_shared();
     };
 
 };
 
-#endif /* __shibsp_reloadablefile_h__ */
+#endif /* __shibsp_ReloadableXMLFile_h__ */

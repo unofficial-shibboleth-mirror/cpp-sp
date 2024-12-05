@@ -74,7 +74,7 @@ utilinclude_HEADERS = \
 	util/Lockable.h \
 	util/PathResolver.h \
 	util/PropertySet.h \
-	util/ReloadableFile.h \
+	util/ReloadableXMLFile.h \
 	util/SPConstants.h \
 	util/TemplateParameters.h \
 	util/URLEncoder.h
@@ -146,7 +146,7 @@ libshibsp_la_SOURCES = \
 	util/DOMPropertySet.cpp \
 	util/IPRange.cpp \
 	util/PathResolver.cpp \
-	util/ReloadableFile.cpp \
+	util/ReloadableXMLFile.cpp \
 	util/SPConstants.cpp \
 	util/TemplateParameters.cpp \
 	util/URLEncoder.cpp

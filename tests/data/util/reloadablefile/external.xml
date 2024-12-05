@@ -1,1 +1,1 @@
-<RequestMapper type="XML" path="./data/util/reloadablefile/external.xml" reloadChanges="true" />
+<RequestMapper type="XML" path="./data/util/reloadablefile/requestmap.xml" reloadChanges="true" />
