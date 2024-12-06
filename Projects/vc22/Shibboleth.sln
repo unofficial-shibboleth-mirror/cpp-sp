@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests.vcxproj", "{822C6B8E-EFFC-433A-BBFE-5AD7F76F71F9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibsp", "shibsp.vcxproj", "{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -27,6 +29,18 @@ Global
 		{822C6B8E-EFFC-433A-BBFE-5AD7F76F71F9}.Release|x64.Build.0 = Release|x64
 		{822C6B8E-EFFC-433A-BBFE-5AD7F76F71F9}.Release|x86.ActiveCfg = Release|Win32
 		{822C6B8E-EFFC-433A-BBFE-5AD7F76F71F9}.Release|x86.Build.0 = Release|Win32
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Debug|ARM64.Build.0 = Debug|ARM64
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Debug|x64.ActiveCfg = Debug|x64
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Debug|x64.Build.0 = Debug|x64
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Debug|x86.ActiveCfg = Debug|Win32
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Debug|x86.Build.0 = Debug|Win32
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Release|ARM64.ActiveCfg = Release|x64
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Release|ARM64.Build.0 = Release|x64
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Release|x64.ActiveCfg = Release|x64
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Release|x64.Build.0 = Release|x64
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Release|x86.ActiveCfg = Release|Win32
+		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
