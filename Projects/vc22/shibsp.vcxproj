@@ -165,36 +165,48 @@
     <IncludePath>..\..\;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\boost;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\cpp-xmltooling;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\src;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\Install64\VC15\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <IncludePath>..\..\shibsp;$(IncludePath)</IncludePath>
     <IncludePath>..\..\;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\boost;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\cpp-xmltooling;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\src;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\Install64\VC15\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>..\..\shibsp;$(IncludePath)</IncludePath>
     <IncludePath>..\..\;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\boost;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\cpp-xmltooling;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\src;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\Install64\VC15\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>..\..\shibsp;$(IncludePath)</IncludePath>
     <IncludePath>..\..\;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\boost;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\cpp-xmltooling;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\src;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\Install64\VC15\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>..\..\shibsp;$(IncludePath)</IncludePath>
     <IncludePath>..\..\;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\boost;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\cpp-xmltooling;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\src;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\Install64\VC15\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>..\..\shibsp;$(IncludePath)</IncludePath>
     <IncludePath>..\..\;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\boost;$(IncludePath)</IncludePath>
     <IncludePath>..\..\..\cpp-xmltooling;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\src;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\xerces\Install64\VC15\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
