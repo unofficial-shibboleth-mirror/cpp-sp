@@ -1,0 +1,372 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Attribute">
+      <UniqueIdentifier>{96991ecd-3f88-432e-afeb-760dfd3fd92f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Attribute">
+      <UniqueIdentifier>{8cd935fd-cae4-4088-bcfb-25e0bd589aec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Handler">
+      <UniqueIdentifier>{42833250-52f3-45b1-b7aa-7cc32ea30d4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\NoDist">
+      <UniqueIdentifier>{b3d43318-f819-43bf-b380-b8a36b0f6d70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\IO">
+      <UniqueIdentifier>{c5c31068-b2ef-4b77-9b1f-370e8d03f0cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Util">
+      <UniqueIdentifier>{8d9fad2c-f0d6-4d1f-8c15-c6e90876bab2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Impl">
+      <UniqueIdentifier>{4875c9ba-15b9-4e1a-8e67-f08719f30363}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Remoting">
+      <UniqueIdentifier>{7288c465-7aac-4161-997e-4e44a86f2a08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Logging">
+      <UniqueIdentifier>{7dd34652-2944-4cca-94a8-f9c7c0067aa0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Handler">
+      <UniqueIdentifier>{634b0e6d-5986-46ff-8b39-2b70fcb670a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Impl">
+      <UniqueIdentifier>{83ba465b-633a-46e8-866a-8047a18d000e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Logging">
+      <UniqueIdentifier>{558edf8c-63eb-43e7-87cc-1de5b942e61d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Remoting">
+      <UniqueIdentifier>{25621319-dd2c-4f5c-8642-8c240a76b752}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Util">
+      <UniqueIdentifier>{6f6dd369-446c-4dd7-8f25-83f246e3ae25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Io">
+      <UniqueIdentifier>{fdfa321c-c889-4337-9c4b-78d4dbfe61d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Platform">
+      <UniqueIdentifier>{b65b7bb1-473a-495a-b97d-37ccfb1dc77e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Platform\iis">
+      <UniqueIdentifier>{1ecb36ec-d2d3-4e5c-baeb-6249953b12f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Session">
+      <UniqueIdentifier>{853e31aa-ec1f-4fbc-9e1d-f76dbd4216ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Platform">
+      <UniqueIdentifier>{83399182-a571-4aec-a782-f66de5291f67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Platform\iis">
+      <UniqueIdentifier>{a1713638-2c58-4b3c-81d8-bb69f518b7b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Session">
+      <UniqueIdentifier>{71821f27-b715-41f4-8eeb-80cd0637db62}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\shibsp\attribute\Attribute.h">
+      <Filter>Header Files\Attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\attribute\ScopedAttribute.h">
+      <Filter>Header Files\Attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\attribute\SimpleAttribute.h">
+      <Filter>Header Files\Attribute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\config_pub_win32.h">
+      <Filter>Header Files\NoDist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\AbstractSPRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\AccessControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\AgentConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\exceptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\RequestMapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\SPRequest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\AbstractHandler.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\AssertionConsumerService.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\Handler.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\LogoutHandler.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\LogoutInitiator.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\RemotedHandler.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\SecuredHandler.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\SessionInitiator.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\io\GenericRequest.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\io\GenericResponse.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\io\HTTPRequest.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\io\HTTPResponse.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\BoostPropertySet.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\CGIParser.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\Date.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\IPRange.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\Lockable.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\PathResolver.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\PropertySet.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\ReloadableXMLFile.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\SPConstants.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\URLEncoder.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\internal.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\impl\StorageServiceSessionCache.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\impl\XMLApplication.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\impl\XMLServiceProvider.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\logging\impl\AbstractLoggingService.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\logging\impl\LoggingServiceSPI.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\logging\impl\StringUtil.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\remoting\ddf.h">
+      <Filter>Header Files\Remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\logging\Category.h">
+      <Filter>Header Files\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\logging\LoggingService.h">
+      <Filter>Header Files\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\logging\Priority.h">
+      <Filter>Header Files\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\Agent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\remoting\RemotingService.h">
+      <Filter>Header Files\Remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\PluginManager.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\Misc.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\config_win32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\platform\iis\ModuleConfig.h">
+      <Filter>Header Files\Platform\iis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\session\SessionCache.h">
+      <Filter>Header Files\Session</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\shibsp\attribute\Attribute.cpp">
+      <Filter>Source Files\Attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\attribute\ScopedAttribute.cpp">
+      <Filter>Source Files\Attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\attribute\SimpleAttribute.cpp">
+      <Filter>Source Files\Attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\AbstractHandler.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\AdminLogoutInitiator.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\AssertionConsumerService.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\LocalLogoutInitiator.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\LogoutHandler.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\LogoutInitiator.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\MetadataGenerator.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\RemotedHandler.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\SecuredHandler.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\SessionHandler.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\SessionInitiator.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\StatusHandler.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\impl\AgentConfig.cpp">
+      <Filter>Source Files\Impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\impl\ChainingAccessControl.cpp">
+      <Filter>Source Files\Impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\impl\XMLAccessControl.cpp">
+      <Filter>Source Files\Impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\impl\XMLRequestMapper.cpp">
+      <Filter>Source Files\Impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\logging\impl\AbstractLoggingService.cpp">
+      <Filter>Source Files\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\logging\impl\Category.cpp">
+      <Filter>Source Files\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\logging\impl\ConsoleLoggingService.cpp">
+      <Filter>Source Files\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\logging\impl\Priority.cpp">
+      <Filter>Source Files\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\logging\impl\StringUtil.cpp">
+      <Filter>Source Files\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\remoting\impl\ddf.cpp">
+      <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\BoostPropertySet.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\CGIParser.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\IPRange.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\PathResolver.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\ReloadableXMLFile.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\SPConstants.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\URLEncoder.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\io\impl\HTTPRequest.cpp">
+      <Filter>Source Files\Io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\io\impl\HTTPResponse.cpp">
+      <Filter>Source Files\Io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\AbstractSPRequest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\Agent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\impl\DefaultAgent.cpp">
+      <Filter>Source Files\Impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\remoting\impl\RemotingService.cpp">
+      <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\exceptions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\Misc.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\platform\iis\ModuleConfig.cpp">
+      <Filter>Source Files\Platform\iis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\session\impl\AbstractSessionCache.cpp">
+      <Filter>Source Files\Session</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
