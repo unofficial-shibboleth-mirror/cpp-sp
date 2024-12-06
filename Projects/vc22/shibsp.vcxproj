@@ -27,16 +27,67 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\shibsp\AbstractSPRequest.h" />
+    <ClInclude Include="..\..\shibsp\AccessControl.h" />
+    <ClInclude Include="..\..\shibsp\AgentConfig.h" />
+    <ClInclude Include="..\..\shibsp\Application.h" />
     <ClInclude Include="..\..\shibsp\attribute\Attribute.h" />
     <ClInclude Include="..\..\shibsp\attribute\BinaryAttribute.h" />
     <ClInclude Include="..\..\shibsp\attribute\ScopedAttribute.h" />
     <ClInclude Include="..\..\shibsp\attribute\SimpleAttribute.h" />
+    <ClInclude Include="..\..\shibsp\base.h" />
+    <ClInclude Include="..\..\shibsp\config_pub_win32.h" />
+    <ClInclude Include="..\..\shibsp\exceptions.h" />
+    <ClInclude Include="..\..\shibsp\handler\AbstractHandler.h" />
+    <ClInclude Include="..\..\shibsp\handler\AssertionConsumerService.h" />
+    <ClInclude Include="..\..\shibsp\handler\Handler.h" />
+    <ClInclude Include="..\..\shibsp\handler\LogoutHandler.h" />
+    <ClInclude Include="..\..\shibsp\handler\LogoutInitiator.h" />
+    <ClInclude Include="..\..\shibsp\handler\RemotedHandler.h" />
+    <ClInclude Include="..\..\shibsp\handler\SecuredHandler.h" />
+    <ClInclude Include="..\..\shibsp\handler\SessionInitiator.h" />
+    <ClInclude Include="..\..\shibsp\impl\StorageServiceSessionCache.h" />
+    <ClInclude Include="..\..\shibsp\impl\StoredSession.h" />
+    <ClInclude Include="..\..\shibsp\impl\XMLApplication.h" />
+    <ClInclude Include="..\..\shibsp\impl\XMLServiceProvider.h" />
+    <ClInclude Include="..\..\shibsp\internal.h" />
+    <ClInclude Include="..\..\shibsp\io\GenericRequest.h" />
+    <ClInclude Include="..\..\shibsp\io\GenericResponse.h" />
+    <ClInclude Include="..\..\shibsp\io\HTTPRequest.h" />
+    <ClInclude Include="..\..\shibsp\io\HTTPResponse.h" />
+    <ClInclude Include="..\..\shibsp\logging\Category.h" />
+    <ClInclude Include="..\..\shibsp\logging\impl\AbstractLoggingService.h" />
+    <ClInclude Include="..\..\shibsp\logging\impl\LoggingServiceSPI.h" />
+    <ClInclude Include="..\..\shibsp\logging\impl\StringUtil.h" />
+    <ClInclude Include="..\..\shibsp\logging\LoggingService.h" />
+    <ClInclude Include="..\..\shibsp\logging\Priority.h" />
+    <ClInclude Include="..\..\shibsp\remoting\ddf.h" />
+    <ClInclude Include="..\..\shibsp\remoting\impl\SocketListener.h" />
+    <ClInclude Include="..\..\shibsp\remoting\ListenerService.h" />
+    <ClInclude Include="..\..\shibsp\RequestMapper.h" />
+    <ClInclude Include="..\..\shibsp\SessionCache.h" />
+    <ClInclude Include="..\..\shibsp\SPConfig.h" />
+    <ClInclude Include="..\..\shibsp\SPRequest.h" />
+    <ClInclude Include="..\..\shibsp\util\BoostPropertySet.h" />
+    <ClInclude Include="..\..\shibsp\util\CGIParser.h" />
+    <ClInclude Include="..\..\shibsp\util\Date.h" />
+    <ClInclude Include="..\..\shibsp\util\DOMPropertySet.h" />
+    <ClInclude Include="..\..\shibsp\util\IPRange.h" />
+    <ClInclude Include="..\..\shibsp\util\Lockable.h" />
+    <ClInclude Include="..\..\shibsp\util\PathResolver.h" />
+    <ClInclude Include="..\..\shibsp\util\PropertySet.h" />
+    <ClInclude Include="..\..\shibsp\util\ReloadableXMLFile.h" />
+    <ClInclude Include="..\..\shibsp\util\SPConstants.h" />
+    <ClInclude Include="..\..\shibsp\util\TemplateParameters.h" />
+    <ClInclude Include="..\..\shibsp\util\URLEncoder.h" />
+    <ClInclude Include="..\..\shibsp\version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\shibsp\attribute\Attribute.cpp" />
     <ClCompile Include="..\..\shibsp\attribute\BinaryAttribute.cpp" />
     <ClCompile Include="..\..\shibsp\attribute\ScopedAttribute.cpp" />
     <ClCompile Include="..\..\shibsp\attribute\SimpleAttribute.cpp" />
+    <ClCompile Include="..\..\shibsp\ServiceProvider.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
