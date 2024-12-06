@@ -32,6 +32,11 @@
 #include <set>
 #include <boost/shared_ptr.hpp>
 
+#if defined (_MSC_VER)
+#    pragma warning( push )
+#    pragma warning( disable : 4251 )
+#endif
+
 namespace xmltooling {
 	class QName;
 }
@@ -137,5 +142,9 @@ namespace shibsp {
     };
 
 };
+
+#if defined (_MSC_VER)
+#   pragma warning( pop )
+#endif
 
 #endif /* __shibsp_dompropset_h__ */
