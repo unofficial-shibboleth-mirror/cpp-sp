@@ -31,7 +31,9 @@
 #endif
 
 // Export public APIs
+#ifndef SHIBSP_EXPORTS
 #define SHIBSP_EXPORTS
+#endif
 
 #ifndef MAKE_NONCOPYABLE
 #define MAKE_NONCOPYABLE(type) \
