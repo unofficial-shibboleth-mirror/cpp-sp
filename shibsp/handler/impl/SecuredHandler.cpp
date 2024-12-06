@@ -32,6 +32,8 @@
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <sstream>
+
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;
