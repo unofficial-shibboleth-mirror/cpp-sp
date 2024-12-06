@@ -74,6 +74,7 @@ utilinclude_HEADERS = \
 	util/IPRange.h \
 	util/Lockable.h \
 	util/PathResolver.h \
+	util/PluginManager.h \
 	util/PropertySet.h \
 	util/ReloadableXMLFile.h \
 	util/SPConstants.h \
