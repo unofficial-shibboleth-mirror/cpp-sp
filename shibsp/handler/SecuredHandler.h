@@ -36,7 +36,7 @@ namespace shibsp {
 
 #if defined (_MSC_VER)
     #pragma warning( push )
-    #pragma warning( disable : 4250 )
+    #pragma warning( disable : 4250 4251)
 #endif
 
     /**

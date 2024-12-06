@@ -32,6 +32,11 @@
 
 #include <set>
 
+#if defined (_MSC_VER)
+#pragma warning( push )
+#pragma warning( disable : 4251 )
+#endif
+
 namespace shibsp {
 
     class SHIBSP_API HTTPRequest;
@@ -137,5 +142,9 @@ namespace shibsp {
         std::string m_address;
     };
 };
+
+#if defined (_MSC_VER)
+#pragma warning( pop )
+#endif
 
 #endif /* __shibsp_remhandler_h__ */
