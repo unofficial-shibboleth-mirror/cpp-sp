@@ -23,6 +23,7 @@ nodist_libshibspinclude_HEADERS = \
 libshibspinclude_HEADERS = \
 	AbstractSPRequest.h \
 	AccessControl.h \
+	Agent.h \
 	AgentConfig.h \
 	Application.h \
 	base.h \

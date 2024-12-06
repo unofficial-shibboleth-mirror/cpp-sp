@@ -22,7 +22,10 @@
 
 #include "exceptions.h"
 #include "version.h"
+#include "AccessControl.h"
+#include "Agent.h"
 #include "AgentConfig.h"
+#include "RequestMapper.h"
 #include "logging/LoggingService.h"
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
@@ -79,7 +82,7 @@ namespace shibsp {
         URLEncoder m_urlEncoder;
         vector<void*> m_libhandles;
         unique_ptr<LoggingService> m_logging;
-        //unique_ptr<Agent> m_agent;
+        unique_ptr<Agent> m_agent;
     };
     
     static AgentInternalConfig g_agentConfig;
@@ -113,9 +116,9 @@ LoggingService& AgentInternalConfig::getLoggingService() const
 
 Agent& AgentInternalConfig::getAgent() const
 {
-//    if (m_agent) {
-//        return *m_agent;
-//    }
+    if (m_agent) {
+        return *m_agent;
+    }
     throw logic_error("Agent not initialized.");
 }
 
@@ -213,6 +216,9 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".AgentConfig");
     log.info("%s agent initialization underway", PACKAGE_STRING);
 
+    registerAccessControls();
+    registerRequestMappers();
+
     /*
     XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
 
@@ -228,11 +234,6 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
 
     if (isEnabled(Listener))
         registerListenerServices();
-
-    if (isEnabled(RequestMapping)) {
-        registerAccessControls();
-        registerRequestMappers();
-    }
 
     if (isEnabled(Caching))
         registerSessionCaches();
@@ -283,6 +284,8 @@ void AgentInternalConfig::_term()
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".AgentConfig");
     log.info("%s agent shutting down", PACKAGE_STRING);
 
+    AccessControlManager.deregisterFactories();
+    RequestMapperManager.deregisterFactories();
     LoggingServiceManager.deregisterFactories();
 
     for (vector<void*>::reverse_iterator i=m_libhandles.rbegin(); i!=m_libhandles.rend(); i++) {
@@ -325,11 +328,6 @@ void AgentInternalConfig::_term()
 
     if (isEnabled(Listener))
         ListenerServiceManager.deregisterFactories();
-
-    if (isEnabled(RequestMapping)) {
-        AccessControlManager.deregisterFactories();
-        RequestMapperManager.deregisterFactories();
-    }
 
     if (isEnabled(Caching))
         SessionCacheManager.deregisterFactories();

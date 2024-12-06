@@ -28,10 +28,12 @@
 
 namespace shibsp {
 
+    class SHIBSP_API AccessControl;
     class SHIBSP_API Agent;
     class SHIBSP_API Category;
     class SHIBSP_API LoggingService;
     class SHIBSP_API PathResolver;
+    class SHIBSP_API RequestMapper;
     class SHIBSP_API URLEncoder;
 
 #if defined (_MSC_VER)
@@ -92,9 +94,19 @@ namespace shibsp {
         virtual bool load_library(const char* path, void* context=nullptr)=0;
 
         /**
+         * Manages factories for AccessControl plugins.
+         */
+        PluginManager<AccessControl,std::string,const boost::property_tree::ptree&> AccessControlManager;
+
+        /**
          * Manages factories for LoggingService plugins.
          */
         PluginManager<LoggingService,std::string,const boost::property_tree::ptree&> LoggingServiceManager;
+
+        /**
+         * Manages factories for RequestMapper plugins.
+         */
+        PluginManager<RequestMapper,std::string,const boost::property_tree::ptree&> RequestMapperManager;
 
         /**
          * Returns a PathResolver instance.
