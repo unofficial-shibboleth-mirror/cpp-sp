@@ -26,6 +26,7 @@
 #include <exception>
 #include <map>
 #include <string>
+#include <stdexcept>
 
 #if defined (_MSC_VER)
     #pragma warning( push )
