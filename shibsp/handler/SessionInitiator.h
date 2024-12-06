@@ -33,6 +33,11 @@
 #include <set>
 #include <string>
 
+#if defined (_MSC_VER)
+#pragma warning( push )
+#pragma warning( disable : 4251 )
+#endif
+
 namespace shibsp {
 
     /**
@@ -101,5 +106,10 @@ namespace shibsp {
     #define SAMLDS_SESSION_INITIATOR "SAMLDS"
     
 };
+
+#if defined (_MSC_VER)
+#pragma warning( pop )
+#endif
+
 
 #endif /* __shibsp_sesinitiator_h__ */
