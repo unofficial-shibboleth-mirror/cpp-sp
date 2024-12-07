@@ -38,6 +38,10 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
+#ifdef WIN32
+#include <Windows.h>
+#endif
+
 #ifdef HAVE_DLFCN_H
 # include <dlfcn.h>
 #endif
@@ -356,9 +360,9 @@ bool AgentInternalConfig::load_library(const char* path, void* context)
 
     UINT em=SetErrorMode(SEM_FAILCRITICALERRORS);
     try {
-        handle=LoadLibraryEx(resolved.c_str(),nullptr,LOAD_WITH_ALTERED_SEARCH_PATH);
+        handle=LoadLibraryExA(resolved.c_str(),nullptr,LOAD_WITH_ALTERED_SEARCH_PATH);
         if (!handle)
-             handle=LoadLibraryEx(resolved.c_str(),nullptr,0);
+             handle=LoadLibraryExA(resolved.c_str(),nullptr,0);
         if (!handle)
             throw runtime_error(string("unable to load extension library: ") + resolved);
         FARPROC fn=GetProcAddress(handle,"shibsp_extension_init");
