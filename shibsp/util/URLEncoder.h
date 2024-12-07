@@ -30,7 +30,7 @@ namespace shibsp {
      * Since URL-encoding is not canonical, it's important that the same
      * encoder is used during some library operations and the calling code.
      */
-    class XMLTOOL_API URLEncoder {
+    class SHIBSP_API URLEncoder {
         MAKE_NONCOPYABLE(URLEncoder);
     public:
         URLEncoder();
