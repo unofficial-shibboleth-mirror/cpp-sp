@@ -12,10 +12,12 @@
  * limitations under the License.
  */
 
+#include <internal.h>
 #include <shibsp/logging/Priority.h>
 
 #include <cstdlib>
 #include <stdexcept>
+
 
 using namespace shibsp;
 using namespace std;
