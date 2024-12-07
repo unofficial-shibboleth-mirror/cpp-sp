@@ -26,6 +26,11 @@
 #include <set>
 #include <boost/property_tree/ptree.hpp>
 
+#if defined (_MSC_VER)
+#    pragma warning( push )
+#    pragma warning( disable : 4251 )
+#endif
+
 namespace shibsp {
 
     /**
@@ -72,6 +77,10 @@ namespace shibsp {
         const boost::property_tree::ptree* m_pt;
 		std::set<std::string> m_unset;
     };
+
+#if defined (_MSC_VER)
+#   pragma warning( pop )
+#endif
 
 };
 

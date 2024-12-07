@@ -34,6 +34,11 @@
 
 #include <boost/property_tree/ptree_fwd.hpp>
 
+#if defined (_MSC_VER)
+#    pragma warning( push )
+#    pragma warning( disable : 4251 )
+#endif
+
 namespace shibsp {
 
      /**
@@ -84,5 +89,11 @@ namespace shibsp {
     };
 
 };
+
+
+#if defined (_MSC_VER)
+#   pragma warning( pop )
+#endif
+
 
 #endif /* __shibsp_abstractlogging_h__ */
