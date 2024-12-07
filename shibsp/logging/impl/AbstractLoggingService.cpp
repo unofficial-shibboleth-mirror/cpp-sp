@@ -83,7 +83,7 @@ bool AbstractLoggingService::init()
 
     try {
         m_defaultPriority = Priority::getPriorityValue(m_config.get(DEFAULT_LEVEL_PROP_PATH, "INFO"));
-    } catch (const invalid_argument& e) {
+    } catch (const invalid_argument&) {
         m_defaultPriority = Priority::PriorityLevel::SHIB_INFO;
     }
 
@@ -93,7 +93,7 @@ bool AbstractLoggingService::init()
             try {
                 m_priorityMap.insert({mapping.first,
                     Priority::getPriorityValue(mapping.second.get_value("INFO"))});
-            } catch (const invalid_argument& e) {
+            } catch (const invalid_argument&) {
             }
         }
     }

@@ -141,7 +141,7 @@ pair<bool,ptree*> ReloadableXMLFile::load() noexcept
         }
 
         return make_pair(true, newtree.release());
-    } catch (const bad_alloc& e) {
+    } catch (const bad_alloc&) {
         m_log.crit("out of memory parsing XML configuration (%s)", m_source.c_str());
     } catch (const xml_parser_error& e) {
         m_log.error("failed to process XML configuration: %s", e.what());
