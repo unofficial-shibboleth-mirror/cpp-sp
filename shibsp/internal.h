@@ -23,7 +23,7 @@
 # define FD_SETSIZE 1024
 #endif
 
-#ifdef WIN32
+#if defined (_MSC_VER)
 # define _CRT_SECURE_NO_DEPRECATE 1
 # define _CRT_NONSTDC_NO_DEPRECATE 1
 # define _SCL_SECURE_NO_WARNINGS 1
