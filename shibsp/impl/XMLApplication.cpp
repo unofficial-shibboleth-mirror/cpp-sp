@@ -31,6 +31,7 @@
 #include "handler/SessionInitiator.h"
 #include "impl/XMLApplication.h"
 #include "util/SPConstants.h"
+#include "util/PluginManager.h"
 
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
@@ -280,7 +281,7 @@ XMLApplication::~XMLApplication()
 }
 
 template <class T> T* XMLApplication::doChainedPlugins(
-    const PluginManager<T,string,const DOMElement*>& pluginMgr,
+    const shibsp::PluginManager<T,string,const DOMElement*>& pluginMgr,
     const char* pluginType,
     const char* chainingType,
     const XMLCh* localName,
