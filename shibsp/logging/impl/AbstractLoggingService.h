@@ -28,6 +28,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <mutex>
 #include <shibsp/logging/LoggingService.h>
 #include <shibsp/logging/Priority.h>
 
