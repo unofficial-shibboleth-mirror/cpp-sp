@@ -26,93 +26,86 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AccessControl.h"
+#include "AgentConfig.h"
 #include "RequestMapper.h"
 #include "SPRequest.h"
+#include "io/HTTPRequest.h"
+#include "logging/Category.h"
 #include "util/CGIParser.h"
-#include "util/DOMPropertySet.h"
+#include "util/BoostPropertySet.h"
 #include "util/Misc.h"
+#include "util/ReloadableXMLFile.h"
 #include "util/SPConstants.h"
 
 #include <algorithm>
+#include <memory>
+#include <regex>
+#include <tuple>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/algorithm/string.hpp>
-#include <xmltooling/util/ReloadableXMLFile.h>
-#include <xmltooling/util/Threads.h>
-#include <xmltooling/util/XMLHelper.h>
-#include <xercesc/util/XMLUniDefs.hpp>
-#include <xercesc/util/regx/RegularExpression.hpp>
 
 using namespace shibsp;
-using namespace xmltooling;
-using namespace boost;
+using namespace boost::property_tree;
 using namespace std;
 
-namespace shibsp {
+namespace {
 
     // Blocks access when an ACL plugin fails to load.
-    class AccessControlDummy : public AccessControl
+    class AccessControlDummy : public AccessControl, public NoOpSharedLockable
     {
     public:
-        Lockable* lock() {
-            return this;
-        }
-
-        void unlock() {}
-
         aclresult_t authorized(const SPRequest& request, const Session* session) const {
             return shib_acl_false;
         }
     };
 
-    class Override : public DOMPropertySet, public DOMNodeFilter
+    class Override : public BoostPropertySet
     {
     public:
         Override(bool unicodeAware=false) : m_unicodeAware(unicodeAware) {}
-        Override(bool unicodeAware, const DOMElement* e, Category& log, const Override* base=nullptr);
+        Override(bool unicodeAware, const ptree& pt, Category& log, const Override* base=nullptr);
         ~Override() {}
 
-        // Provides filter to exclude special config elements.
-        FilterAction acceptNode(const DOMNode* node) const {
-            return FILTER_REJECT;
-        }
-
         const Override* locate(const HTTPRequest& request) const;
-        AccessControl* getAC() const { return (m_acl ? m_acl.get() : (getParent() ? dynamic_cast<const Override*>(getParent())->getAC() : nullptr)); }
+        AccessControl* getAC() const {
+            return (m_acl ? m_acl.get() : (getParent() ? dynamic_cast<const Override*>(getParent())->getAC() : nullptr));
+        }
 
     protected:
         void loadACL(const DOMElement* e, Category& log);
 
         bool m_unicodeAware;
-        map< string,boost::shared_ptr<Override> > m_map;
-        vector< pair< boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > > m_regexps;
-        vector< boost::tuple< string,boost::shared_ptr<RegularExpression>,boost::shared_ptr<Override> > > m_queries;
+        map< string,unique_ptr<Override> > m_map;
+        vector< pair< std::regex,unique_ptr<Override> > > m_regexps;
+        vector< tuple< string,std::regex,unique_ptr<Override> > > m_queries;
 
     private:
-        scoped_ptr<AccessControl> m_acl;
+        unique_ptr<AccessControl> m_acl;
     };
 
     class XMLRequestMapperImpl : public Override
     {
     public:
-        XMLRequestMapperImpl(const DOMElement* e, Category& log);
-
-        ~XMLRequestMapperImpl() {
-            if (m_document)
-                m_document->release();
-        }
-
-        void setDocument(DOMDocument* doc) {
-            m_document = doc;
-        }
+        XMLRequestMapperImpl(const ptree& pt, Category& log);
+        ~XMLRequestMapperImpl() {}
 
         const Override* findOverride(const char* vhost, const HTTPRequest& request) const;
-
-    private:
-        DOMDocument* m_document;
     };
+
+    static const char ACCESS_CONTROL_PROP_PATH[] = "AccessControl";
+    static const char AccessControlProvider[] = "AccessControlProvider";
+    static const char Host[] = "Host";
+    static const char HostRegex[] = "HostRegex";
+    static const char htaccess[] = "htaccess";
+    static const char Path[] = "Path";
+    static const char PathRegex[] = "PathRegex";
+    static const char Query[] = "Query";
+    static const char name[] = "name";
+    static const char regex[] = "regex";
+    static const char _type[] = "type";
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -122,52 +115,35 @@ namespace shibsp {
     class XMLRequestMapper : public RequestMapper, public ReloadableXMLFile
     {
     public:
-        XMLRequestMapper(const DOMElement* e, bool deprecationSupport=true);
-/*        XMLRequestMapper(const DOMElement* e, bool deprecationSupport=true)
-            : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".RequestMapper"), true, deprecationSupport) {
-            background_load();
-        }*/
-
-        ~XMLRequestMapper() {
-            shutdown();
+        XMLRequestMapper(const ptree& pt)
+            : ReloadableXMLFile(ACCESS_CONTROL_PROP_PATH, pt, Category::getInstance(SHIBSP_LOGCAT ".RequestMapper")) {
+            load(); // guarantees an exception or the map is loaded
         }
+
+        ~XMLRequestMapper() {}
 
         Settings getSettings(const HTTPRequest& request) const;
 
     protected:
-        pair<bool,DOMElement*> background_load();
+        pair<bool,ptree*> load() noexcept;
 
     private:
-        scoped_ptr<XMLRequestMapperImpl> m_impl;
+        unique_ptr<XMLRequestMapperImpl> m_impl;
     };
 
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
 
-    RequestMapper* SHIBSP_DLLLOCAL XMLRequestMapperFactory(const DOMElement* const & e, bool deprecationSupport)
+    RequestMapper* SHIBSP_DLLLOCAL XMLRequestMapperFactory(const ptree& pt, bool deprecationSupport)
     {
-        return new XMLRequestMapper(e, deprecationSupport);
+        return new XMLRequestMapper(pt);
     }
-
-    static const XMLCh _AccessControl[] =           UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
-    static const XMLCh AccessControlProvider[] =    UNICODE_LITERAL_21(A,c,c,e,s,s,C,o,n,t,r,o,l,P,r,o,v,i,d,e,r);
-    static const XMLCh caseInsensitiveOption[] =    UNICODE_LITERAL_1(i);
-    static const XMLCh Host[] =                     UNICODE_LITERAL_4(H,o,s,t);
-    static const XMLCh HostRegex[] =                UNICODE_LITERAL_9(H,o,s,t,R,e,g,e,x);
-    static const XMLCh htaccess[] =                 UNICODE_LITERAL_8(h,t,a,c,c,e,s,s);
-    static const XMLCh ignoreCase[] =               UNICODE_LITERAL_10(i,g,n,o,r,e,C,a,s,e);
-    static const XMLCh Path[] =                     UNICODE_LITERAL_4(P,a,t,h);
-    static const XMLCh PathRegex[] =                UNICODE_LITERAL_9(P,a,t,h,R,e,g,e,x);
-    static const XMLCh Query[] =                    UNICODE_LITERAL_5(Q,u,e,r,y);
-    static const XMLCh name[] =                     UNICODE_LITERAL_4(n,a,m,e);
-    static const XMLCh regex[] =                    UNICODE_LITERAL_5(r,e,g,e,x);
-    static const XMLCh _type[] =                    UNICODE_LITERAL_4(t,y,p,e);
 }
 
 void SHIBSP_API shibsp::registerRequestMappers()
 {
-    SPConfig& conf=SPConfig::getConfig();
+    AgentConfig& conf=AgentConfig::getConfig();
     conf.RequestMapperManager.registerFactory(XML_REQUEST_MAPPER, XMLRequestMapperFactory);
     conf.RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, XMLRequestMapperFactory);
 }

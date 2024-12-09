@@ -28,7 +28,7 @@
 #define __shibsp_reqmap_h__
 
 #include <shibsp/base.h>
-#include <xmltooling/Lockable.h>
+#include <shibsp/util/Lockable.h>
 
 namespace shibsp {
 
@@ -42,7 +42,7 @@ namespace shibsp {
      * Request mapping plugins return configuration settings that apply to resource requests.
      * They can be implemented through cross-platform or platform-specific mechanisms.
      */
-    class SHIBSP_API RequestMapper : public virtual xmltooling::Lockable
+    class SHIBSP_API RequestMapper : public virtual SharedLockable
     {
         MAKE_NONCOPYABLE(RequestMapper);
     protected:

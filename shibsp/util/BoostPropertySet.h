@@ -64,6 +64,13 @@ namespace shibsp {
 
     protected:
         /**
+         * Returns the parent PropertySet.
+         * 
+         * @return parent PropertySet
+         */
+        const PropertySet2* getParent() const;
+
+        /**
          * Installs a parent PropertySet to allow an inheritance relationship to a different instance.
          * 
          * @param parent the parent PropertySet to install
@@ -71,8 +78,6 @@ namespace shibsp {
         void setParent(const PropertySet2* parent);
 
     private:
-        const PropertySet2* getParent() const;
-
         const PropertySet2* m_parent;
         const boost::property_tree::ptree* m_pt;
 		std::set<std::string> m_unset;
