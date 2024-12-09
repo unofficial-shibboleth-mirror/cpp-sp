@@ -40,6 +40,9 @@
 
 #include <fstream>
 #include <sstream>
+#ifdef HAVE_CXX14
+# include <shared_mutex>
+#endif
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -483,7 +486,9 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
                 log.warn("unable to obtain session to pass to access control provider: %s", e.what());
             }
 
-            Locker acllock(settings.second);
+#ifdef HAVE_CXX14
+            shared_lock<AccessControl> acllock(*settings.second);
+#endif
             switch (settings.second->authorized(request, session)) {
                 case AccessControl::shib_acl_true:
                     log.debug("access control provider granted access");

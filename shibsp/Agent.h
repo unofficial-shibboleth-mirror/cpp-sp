@@ -46,7 +46,7 @@ namespace shibsp {
      * <p>A ServiceProvider exposes configuration and infrastructure services required
      * by the SP implementation, allowing a flexible configuration format.
      */
-	class SHIBSP_API Agent : public virtual SharedLockable, public virtual PropertySet
+	class SHIBSP_API Agent : public virtual SharedLockable, public virtual PropertySet2
     {
         MAKE_NONCOPYABLE(Agent);
     protected:

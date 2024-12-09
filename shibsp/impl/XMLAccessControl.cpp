@@ -26,42 +26,38 @@
 
 #include "internal.h"
 #include "exceptions.h"
+
 #include "AccessControl.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
+#include "util/Lockable.h"
+#include "util/Misc.h"
+#include "util/ReloadableXMLFile.h"
 
 #include <algorithm>
+#include <memory>
+#include <regex>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
-#include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <xmltooling/unicode.h>
-#include <xmltooling/util/ReloadableXMLFile.h>
-#include <xmltooling/util/Threads.h>
-#include <xmltooling/util/XMLHelper.h>
-#include <xercesc/util/XMLUniDefs.hpp>
-#include <xercesc/util/regx/RegularExpression.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #ifndef HAVE_STRCASECMP
 # define strcasecmp _stricmp
 #endif
 
 using namespace shibsp;
-using namespace xmltooling;
+using namespace boost::property_tree;
 using namespace boost;
 using namespace std;
 
-namespace shibsp {
+namespace {
 
-    class Rule : public AccessControl
+    class Rule : public AccessControl, public NoOpSharedLockable
     {
     public:
-        Rule(const DOMElement* e);
+        Rule(const ptree& pt);
         ~Rule() {}
-
-        Lockable* lock() {return this;}
-        void unlock() {}
 
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
@@ -70,38 +66,37 @@ namespace shibsp {
         set <string> m_vals;
     };
 
-    class RuleRegex : public AccessControl
+    class RuleRegex : public AccessControl, public NoOpSharedLockable
     {
     public:
-        RuleRegex(const DOMElement* e);
+        RuleRegex(const ptree& pt);
         ~RuleRegex() {}
-
-        Lockable* lock() {return this;}
-        void unlock() {}
 
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
     private:
         string m_alias;
-        auto_arrayptr<char> m_exp;
-        scoped_ptr<RegularExpression> m_re;
+        string m_exp;
+        regex m_re;
     };
 
-    class Operator : public AccessControl
+    class Operator : public AccessControl, public NoOpSharedLockable
     {
     public:
-        Operator(const DOMElement* e);
+        Operator(const string& name, const ptree& pt);
         ~Operator() {}
-
-        Lockable* lock() {return this;}
-        void unlock() {}
 
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
     private:
         enum operator_t { OP_NOT, OP_AND, OP_OR } m_op;
-        ptr_vector<AccessControl> m_operands;
+        vector<unique_ptr<AccessControl>> m_operands;
     };
+
+    static const char ACCESS_CONTROL_PROP_PATH[] = "AccessControl";
+    static const char REQUIRE_PROP_PATH[] = "<xmlattr>.require";
+    static const char RULE_PROP_PATH[] = "Rule";
+    static const char RULE_REGEX_PROP_PATH[] = "RuleRegex";
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -111,67 +106,56 @@ namespace shibsp {
     class XMLAccessControl : public AccessControl, public ReloadableXMLFile
     {
     public:
-        XMLAccessControl(const DOMElement* e, bool deprecationSupport=true);
-        /*
-        XMLAccessControl(const DOMElement* e, bool deprecationSupport=true)
-                : ReloadableXMLFile(e, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML"), true, deprecationSupport) {
-            background_load(); // guarantees an exception or the policy is loaded
-        }*/
-
-        ~XMLAccessControl() {
-            shutdown();
+        XMLAccessControl(const ptree& pt)
+            : ReloadableXMLFile(ACCESS_CONTROL_PROP_PATH, pt, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML")) {
+            load(); // guarantees an exception or the policy is loaded
         }
+
+        ~XMLAccessControl() {}
 
         aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
     protected:
-        pair<bool,DOMElement*> background_load();
+        pair<bool,ptree*> load() noexcept;
 
     private:
-        scoped_ptr<AccessControl> m_rootAuthz;
+        unique_ptr<AccessControl> processChild(const string& name, const ptree& pt);
+        unique_ptr<AccessControl> m_rootAuthz;
     };
 
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
-
-    AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const DOMElement* const & e, bool deprecationSupport)
-    {
-        return new XMLAccessControl(e, deprecationSupport);
-    }
-
-    static const XMLCh _AccessControl[] =        UNICODE_LITERAL_13(A,c,c,e,s,s,C,o,n,t,r,o,l);
-    static const XMLCh _Handler[] =              UNICODE_LITERAL_7(H,a,n,d,l,e,r);
-    static const XMLCh caseInsensitiveOption[] = UNICODE_LITERAL_1(i);
-    static const XMLCh _list[] =                 UNICODE_LITERAL_4(l,i,s,t);
-    static const XMLCh require[] =               UNICODE_LITERAL_7(r,e,q,u,i,r,e);
-    static const XMLCh NOT[] =                   UNICODE_LITERAL_3(N,O,T);
-    static const XMLCh AND[] =                   UNICODE_LITERAL_3(A,N,D);
-    static const XMLCh OR[] =                    UNICODE_LITERAL_2(O,R);
-    static const XMLCh _Rule[] =                 UNICODE_LITERAL_4(R,u,l,e);
-    static const XMLCh _RuleRegex[] =            UNICODE_LITERAL_9(R,u,l,e,R,e,g,e,x);
 }
 
-Rule::Rule(const DOMElement* e) : m_alias(XMLHelper::getAttrString(e, nullptr, require))
+namespace shibsp {
+    AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const ptree& pt, bool deprecationSupport)
+    {
+        return new XMLAccessControl(pt);
+    }
+};
+
+Rule::Rule(const ptree& pt) : m_alias(pt.get(REQUIRE_PROP_PATH, ""))
 {
-    if (m_alias.empty())
+    if (m_alias.empty()) {
         throw ConfigurationException("Access control rule missing require attribute");
-    if (!e->hasChildNodes())
+    }
+
+    string vals = pt.get_value("");
+    if (vals.empty()) {
         return; // empty rule
+    }
 
-    auto_arrayptr<char> vals(toUTF8(XMLHelper::getTextContent(e)));
-    if (!vals.get() || !*vals.get())
-        throw ConfigurationException("Unable to convert Rule content into UTF-8.");
-
-    bool listflag = XMLHelper::getAttrBool(e, true, _list);
+    static const char LIST_PROP_PATH[] = "list";
+    static string_to_bool_translator tr;
+    bool listflag = pt.get(LIST_PROP_PATH, true);
     if (!listflag) {
-        m_vals.insert(vals.get());
+        m_vals.insert(vals);
         return;
     }
 
-    string temp(vals.get());
-    trim(temp);
-    split(m_vals, temp, boost::is_space(), algorithm::token_compress_on);
+    trim(vals);
+    split(m_vals, vals, boost::is_space(), algorithm::token_compress_on);
     if (m_vals.empty())
         throw ConfigurationException("Rule did not contain any usable values.");
 }
@@ -248,26 +232,35 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     return shib_acl_false;
 }
 
-RuleRegex::RuleRegex(const DOMElement* e)
-    : m_alias(XMLHelper::getAttrString(e, nullptr, require)),
-        m_exp(toUTF8(e->hasChildNodes() ? e->getFirstChild()->getNodeValue() : nullptr))
+RuleRegex::RuleRegex(const ptree& pt)
+    : m_alias(pt.get(REQUIRE_PROP_PATH, "")), m_exp(pt.get_value(""))
 {
-    if (m_alias.empty() || !m_exp.get() || !*m_exp.get())
+    if (m_alias.empty() || m_exp.empty())
         throw ConfigurationException("Access control rule missing require attribute or element content.");
 
-    bool caseSensitive = XMLHelper::getCaseSensitive(e, true);
+    static const char CASE_SENSITIVE_PROP_PATH[] = "caseSensitive";
+    static string_to_bool_translator tr;
+    bool caseSensitive = pt.get(CASE_SENSITIVE_PROP_PATH, true);
     try {
-        m_re.reset(new RegularExpression(e->getFirstChild()->getNodeValue(), (caseSensitive ? &chNull: caseInsensitiveOption )));
+        // TODO: more flag options, particular for dialect.
+        regex::flag_type flags = regex_constants::optimize;
+        if (caseSensitive) {
+            flags |= regex_constants::icase;
+        }
+        m_re = regex(m_exp, flags);
     }
-    catch (XMLException& ex) {
-        auto_ptr_char tmp(ex.getMessage());
-        throw ConfigurationException("Caught exception while parsing RuleRegex regular expression: $1", params(1,tmp.get()));
+    catch (const regex_error& e) {
+        throw ConfigurationException("Caught exception while parsing RuleRegex regular expression.");
     }
 }
 
 AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const Session* session) const
 {
+    // TODO: Have to confirm we want regex_match here vs. regex_search.
+    // TODO: Have to consider match_flags as well, particularly against some open issues raised against the Xerces behavior.
+
     // Map alias in rule to the attribute.
+
     if (!session) {
         request.log(SPRequest::SPWarn, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
         return shib_acl_false;
@@ -281,87 +274,73 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
         return shib_acl_false;
     }
 
-    try {
-        if (m_alias == "user") {
-            if (m_re->matches(request.getRemoteUser().c_str())) {
-                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting REMOTE_USER (") + m_exp.get() + "), authz granted");
-                return shib_acl_true;
-            }
-            return shib_acl_false;
+    if (m_alias == "user") {
+        if (regex_match(request.getRemoteUser(), m_re)) {
+            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting REMOTE_USER (") + m_exp + "), authz granted");
+            return shib_acl_true;
         }
-        else if (m_alias == "authnContextClassRef") {
-            if (session->getAuthnContextClassRef() && m_re->matches(session->getAuthnContextClassRef())) {
-                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextClassRef (") + m_exp.get() + "), authz granted");
-                return shib_acl_true;
-            }
-            return shib_acl_false;
-        }
-        else if (m_alias == "authnContextDeclRef") {
-            if (session->getAuthnContextDeclRef() && m_re->matches(session->getAuthnContextDeclRef())) {
-                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextDeclRef (") + m_exp.get() + "), authz granted");
-                return shib_acl_true;
-            }
-            return shib_acl_false;
-        }
-
-        // Find the attribute(s) matching the require rule.
-        pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> attrs =
-            session->getIndexedAttributes().equal_range(m_alias);
-        if (attrs.first == attrs.second) {
-            request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
-            return shib_acl_false;
-        }
-
-        for (; attrs.first != attrs.second; ++attrs.first) {
-            // Now we have to intersect the attribute's values against the regular expression.
-            const vector<string>& vals = attrs.first->second->getSerializedValues();
-            for (vector<string>::const_iterator j = vals.begin(); j != vals.end(); ++j) {
-                if (m_re->matches(j->c_str())) {
-                    request.log(SPRequest::SPDebug, string("AccessControl plugin expecting (") + m_exp.get() + "), authz granted");
-                    return shib_acl_true;
-                }
-            }
-        }
+        return shib_acl_false;
     }
-    catch (XMLException& ex) {
-        auto_ptr_char tmp(ex.getMessage());
-        request.log(SPRequest::SPError, string("caught exception while parsing RuleRegex regular expression: ") + tmp.get());
+    else if (m_alias == "authnContextClassRef") {
+        if (session->getAuthnContextClassRef() && regex_match(session->getAuthnContextClassRef(), m_re)) {
+            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextClassRef (") + m_exp + "), authz granted");
+            return shib_acl_true;
+        }
+        return shib_acl_false;
+    }
+    else if (m_alias == "authnContextDeclRef") {
+        if (session->getAuthnContextDeclRef() && regex_match(session->getAuthnContextDeclRef(), m_re)) {
+            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextDeclRef (") + m_exp + "), authz granted");
+            return shib_acl_true;
+        }
+        return shib_acl_false;
+    }
+
+    // Find the attribute(s) matching the require rule.
+    auto attrs = session->getIndexedAttributes().equal_range(m_alias);
+    if (attrs.first == attrs.second) {
+        request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
+        return shib_acl_false;
+    }
+
+    for (; attrs.first != attrs.second; ++attrs.first) {
+        // Now we have to intersect the attribute's values against the regular expression.
+        for (const string& v : attrs.first->second->getSerializedValues()) {
+            if (regex_match(v, m_re)) {
+                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting (") + m_exp + "), authz granted");
+                return shib_acl_true;
+            }
+        }
     }
 
     return shib_acl_false;
 }
 
-Operator::Operator(const DOMElement* e)
+Operator::Operator(const string& name, const ptree& pt)
 {
-    if (XMLString::equals(e->getLocalName(),NOT))
+    if (name == "NOT")
         m_op=OP_NOT;
-    else if (XMLString::equals(e->getLocalName(),AND))
+    else if (name == "AND")
         m_op=OP_AND;
-    else if (XMLString::equals(e->getLocalName(),OR))
+    else if (name == "OR")
         m_op=OP_OR;
     else
-        throw ConfigurationException("Unrecognized operator in access control rule");
+        throw ConfigurationException("Unrecognized access control rule type");
 
-    e=XMLHelper::getFirstChildElement(e);
-    if (XMLString::equals(e->getLocalName(),_Rule))
-        m_operands.push_back(new Rule(e));
-    else if (XMLString::equals(e->getLocalName(),_RuleRegex))
-        m_operands.push_back(new RuleRegex(e));
-    else
-        m_operands.push_back(new Operator(e));
+    for (const auto& child : pt) {
+        if (child.first == RULE_PROP_PATH) {
+            m_operands.push_back(unique_ptr<AccessControl>(new Rule(child.second)));
+        }
+        else if (child.first == RULE_REGEX_PROP_PATH) {
+            m_operands.push_back(unique_ptr<AccessControl>(new RuleRegex(child.second)));
+        }
+        else {
+            m_operands.push_back(unique_ptr<AccessControl>(new Operator(child.first, child.second)));
+        }
+    }
 
-    if (m_op==OP_NOT)
-        return;
-
-    e=XMLHelper::getNextSiblingElement(e);
-    while (e) {
-        if (XMLString::equals(e->getLocalName(),_Rule))
-            m_operands.push_back(new Rule(e));
-        else if (XMLString::equals(e->getLocalName(),_RuleRegex))
-            m_operands.push_back(new RuleRegex(e));
-        else
-            m_operands.push_back(new Operator(e));
-        e=XMLHelper::getNextSiblingElement(e);
+    if (m_op == OP_NOT && m_operands.size() != 1) {
+        throw new ConfigurationException("NOT operator contained more than one child");
     }
 }
 
@@ -369,7 +348,7 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
 {
     switch (m_op) {
         case OP_NOT:
-            switch (m_operands.front().authorized(request,session)) {
+            switch (m_operands.front()->authorized(request,session)) {
                 case shib_acl_true:
                     return shib_acl_false;
                 case shib_acl_false:
@@ -381,68 +360,73 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
         case OP_AND:
         {
             // Look for a rule that returns non-true.
-            for (ptr_vector<AccessControl>::const_iterator i = m_operands.begin(); i != m_operands.end(); ++i) {
+            for (const auto& i : m_operands) {
                 if (i->authorized(request,session) != shib_acl_true)
                     return shib_acl_false;
             }
             return shib_acl_true;
-
-            ptr_vector<AccessControl>::const_iterator i = find_if(
-                m_operands.begin(), m_operands.end(),
-                boost::bind(&AccessControl::authorized, _1, boost::cref(request), session) != shib_acl_true
-                );
-            return (i != m_operands.end()) ? shib_acl_false : shib_acl_true;
         }
 
         case OP_OR:
         {
             // Look for a rule that returns true.
-            ptr_vector<AccessControl>::const_iterator i = find_if(
-                m_operands.begin(), m_operands.end(),
-                boost::bind(&AccessControl::authorized, _1, boost::cref(request), session) == shib_acl_true
-                );
-            return (i != m_operands.end()) ? shib_acl_true : shib_acl_false;
+            for (const auto& i : m_operands) {
+                if (i->authorized(request,session) != shib_acl_true)
+                    return shib_acl_false;
+            }
+            return shib_acl_false;
         }
     }
     request.log(SPRequest::SPWarn,"unknown operation in access control policy, denying access");
     return shib_acl_false;
 }
 
-pair<bool,DOMElement*> XMLAccessControl::background_load()
+unique_ptr<AccessControl> processChild(const string& name, const ptree& pt)
+{
+    if (name == RULE_PROP_PATH) {
+        return unique_ptr<AccessControl>(new Rule(pt));
+    }
+    else if (name == RULE_REGEX_PROP_PATH) {
+        return unique_ptr<AccessControl>(new RuleRegex(pt));
+    }
+    else if (name != "<xmlattr>") {
+        return unique_ptr<AccessControl>(new Operator(name, pt));
+    }
+
+}
+
+pair<bool,ptree*> XMLAccessControl::load() noexcept
 {
     // Load from source using base class.
-    pair<bool,DOMElement*> raw = ReloadableXMLFile::load();
-
-    // If we own it, wrap it.
-    XercesJanitor<DOMDocument> docjanitor(raw.first ? raw.second->getOwnerDocument() : nullptr);
-
-    // Check for AccessControl wrapper and drop a level.
-    if (XMLString::equals(raw.second->getLocalName(),_AccessControl)) {
-        raw.second = XMLHelper::getFirstChildElement(raw.second);
-        if (!raw.second)
-            throw ConfigurationException("No child element found in AccessControl parent element.");
-    }
-    else if (XMLString::equals(raw.second->getLocalName(),_Handler)) {
-        raw.second = XMLHelper::getFirstChildElement(raw.second);
-        if (!raw.second)
-            throw ConfigurationException("No child element found in Handler parent element.");
+    pair<bool,ptree*> raw = ReloadableXMLFile::load();
+    if (!raw.second) {
+        return raw;
     }
 
-    scoped_ptr<AccessControl> authz;
-    if (XMLString::equals(raw.second->getLocalName(),_Rule))
-        authz.reset(new Rule(raw.second));
-    else if (XMLString::equals(raw.second->getLocalName(),_RuleRegex))
-        authz.reset(new RuleRegex(raw.second));
-    else
-        authz.reset(new Operator(raw.second));
+    // If we own it, wrap it, but we don't retain use of it.
+    unique_ptr<ptree> treejanitor(raw.first ? raw.second : nullptr);
+
+    // This is tentative and almost certainly wrong due to the way the XML
+    // worked in the original config.
+
+    // In the inline case, there should be a child element named
+    // AccessControl so we need to step down one level.
+    unique_ptr<AccessControl> authz;
+    const auto& child = raw.second->front();
+    if (child.first == ACCESS_CONTROL_PROP_PATH) {
+        const auto& child2 = child.second.front();
+        authz = processChild(child2.first, child2.second);
+    } else {
+        authz = processChild(child.first, child.second);
+    }
 
     // Perform the swap inside a lock.
-    if (m_lock)
-        m_lock->wrlock();
-    SharedLock locker(m_lock, false);
+#ifdef HAVE_CXX14
+    unique_lock<ReloadableXMLFile> locker(*this);
+#endif
     m_rootAuthz.swap(authz);
 
-    return make_pair(false,(DOMElement*)nullptr);
+    return make_pair(false, nullptr);
 }
 
 AccessControl::aclresult_t XMLAccessControl::authorized(const SPRequest& request, const Session* session) const
