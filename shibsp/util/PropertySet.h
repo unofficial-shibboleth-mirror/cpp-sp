@@ -117,6 +117,14 @@ namespace shibsp {
         virtual ~PropertySet2();
 
         /**
+         * Gets whether a matching property exists.
+         * 
+         * @param name  property name
+         * @return true iff the named property exists
+         */
+        virtual bool hasProperty(const char* name) const=0;
+
+        /**
          * Returns a boolean-valued property.
          * 
          * @param name  property name

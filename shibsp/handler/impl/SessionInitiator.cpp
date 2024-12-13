@@ -86,7 +86,11 @@ bool SessionInitiator::checkCompatibility(SPRequest& request, bool isHandler) co
     }
     else {
         // It doesn't really make sense to use isPassive with automated sessions, but...
-        pair<bool,bool> flagprop = request.getRequestSettings().first->getBool("isPassive");
+        pair<bool,bool> flagprop;
+        if (request.getRequestSettings().first->hasProperty("isPassive")) {
+            flagprop.second = request.getRequestSettings().first->getBool("isPassive", false);
+            flagprop.first = true;
+        }
         if (!flagprop.first)
             flagprop = getBool("isPassive");
         isPassive = (flagprop.first && flagprop.second);
@@ -116,8 +120,8 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
             entityID=request.getParameter("providerId");
     }
     if (!entityID || !*entityID) {
-        param = request.getRequestSettings().first->getString("entityID");
-        if (param.first)
+        param.second = request.getRequestSettings().first->getString("entityID");
+        if (param.second)
             entityID = param.second;
     }
     if (!entityID || !*entityID)

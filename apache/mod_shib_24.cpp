@@ -39,17 +39,16 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/AccessControl.h>
+#include <shibsp/AgentConfig.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
 #include <shibsp/ServiceProvider.h>
 #include <shibsp/SessionCache.h>
 #include <shibsp/attribute/Attribute.h>
+#include <shibsp/util/Lockable.h>
 
 #include <xercesc/util/XMLUniDefs.hpp>
-#include <xercesc/util/regx/RegularExpression.hpp>
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/ParserPool.h>
-#include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -63,8 +62,13 @@
 #include <set>
 #include <memory>
 #include <fstream>
+#include <regex>
+#ifdef HAVE_CXX14
+# include <shared_mutex>
+#endif
 #include <stdexcept>
 #include <boost/lexical_cast.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 
 // Apache specific header files
 #include <httpd.h>
@@ -89,10 +93,9 @@
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace boost::property_tree;
 using namespace boost;
 using namespace std;
-using xercesc::RegularExpression;
-using xercesc::XMLException;
 
 extern "C" module AP_MODULE_DECLARE_DATA shib_module;
 static int* const aplog_module_index = &(shib_module.module_index);
@@ -825,13 +828,11 @@ extern "C" int shib_fixups(request_rec* r)
 // With 2.4+, we have to register individual methods to respond
 // to each require rule we want to handle, and have those call
 // into these methods directly.
-class htAccessControl : virtual public AccessControl
+class htAccessControl : virtual public AccessControl, public NoOpSharedLockable
 {
 public:
     htAccessControl() {}
     ~htAccessControl() {}
-    Lockable* lock() {return this;}
-    void unlock() {}
     aclresult_t authorized(const SPRequest& request, const Session* session) const;
 
     aclresult_t doAccessControl(const ShibTargetApache& sta, const Session* session, const char* plugin) const;
@@ -840,7 +841,7 @@ public:
     aclresult_t doShibAttr(const ShibTargetApache& sta, const Session* session, const char* rule, const char* params) const;
 
 private:
-    bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const;
+    bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, bool isRegex=false) const;
 };
 
 AccessControl* htAccessFactory(const xercesc::DOMElement* const &, bool)
@@ -852,21 +853,19 @@ AccessControl::aclresult_t htAccessControl::doAccessControl(const ShibTargetApac
 {
     aclresult_t result = shib_acl_false;
     try {
-        ifstream aclfile(plugin);
-        if (!aclfile)
-            throw ConfigurationException("Unable to open access control file ($1).", params(1, plugin));
-        xercesc::DOMDocument* acldoc = XMLToolingConfig::getConfig().getParser().parse(aclfile);
-        XercesJanitor<xercesc::DOMDocument> docjanitor(acldoc);
-        static XMLCh _type[] = UNICODE_LITERAL_4(t,y,p,e);
-        string t(XMLHelper::getAttrString(acldoc ? acldoc->getDocumentElement() : nullptr, nullptr, _type));
+        ptree pt;
+        xml_parser::read_xml(plugin, pt, xml_parser::no_comments|xml_parser::trim_whitespace);
+        string t = pt.get("<xmlattr>.type", "");
         if (t.empty())
             throw ConfigurationException("Missing type attribute in AccessControl plugin configuration.");
-        scoped_ptr<AccessControl> aclplugin(SPConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acldoc->getDocumentElement(), true));
-        Locker acllock(aclplugin.get());
+        unique_ptr<AccessControl> aclplugin(AgentConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), pt, true));
+#ifdef HAVE_CXX14
+        shared_lock<AccessControl> acllock(*aclplugin);
+#endif
         result = aclplugin->authorized(sta, session);
     }
-    catch (std::exception& ex) {
-        sta.log(SPRequest::SPError, ex.what());
+    catch (const xml_parser_error& e) {
+        sta.log(SPRequest::SPError, e.what());
     }
     return result;
 }
@@ -893,16 +892,13 @@ AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, 
         bool match = false;
         if (regexp) {
             try {
-                // To do regex matching, we have to convert from UTF-8.
-                auto_arrayptr<XMLCh> trans(fromUTF8(w));
-                RegularExpression re(trans.get());
-                auto_arrayptr<XMLCh> trans2(fromUTF8(sta.getRemoteUser().c_str()));
-                match = re.matches(trans2.get());
+                // TODO: support regex options?
+                regex re(w);
+                match = regex_match(sta.getRemoteUser(), re);
             }
-            catch (XMLException& ex) {
-                auto_ptr_char tmp(ex.getMessage());
+            catch (const regex_error& e) {
                 sta.log(SPRequest::SPError,
-                    string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+                    string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
             }
         }
         else if (sta.getRemoteUser() == w) {
@@ -942,13 +938,13 @@ AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApach
             bool match = false;
             if (regexp) {
                 try {
-                    RegularExpression re(w);
-                    match = re.matches(ref);
+                    // TODO: support regex options?
+                    regex re(w);
+                    match = regex_match(ref, re);
                 }
-                catch (XMLException& ex) {
-                    auto_ptr_char tmp(ex.getMessage());
+                catch (const regex_error& e) {
                     sta.log(SPRequest::SPError,
-                        string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
+                        string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
                 }
             }
             else if (!strcmp(w, ref)) {
@@ -970,17 +966,26 @@ AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApach
     return shib_acl_false;
 }
 
-bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, RegularExpression* re) const
+bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, bool isRegex) const
 {
     bool caseSensitive = attr->isCaseSensitive();
     const vector<string>& vals = attr->getSerializedValues();
     for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
-        if (re) {
-            auto_arrayptr<XMLCh> trans(fromUTF8(v->c_str()));
-            if (re->matches(trans.get())) {
-                if (request.isPriorityEnabled(SPRequest::SPDebug))
-                    request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": accepted");
-                return true;
+        if (isRegex) {
+            regex::flag_type flags = regex_constants::optimize;
+            if (!caseSensitive) {
+                flags |= regex_constants::icase;
+            }
+            try {
+                regex exp(toMatch, flags);
+                if (regex_match(*v, exp)) {
+                    if (request.isPriorityEnabled(SPRequest::SPDebug))
+                        request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": accepted");
+                    return true;
+                }
+            } catch (const regex_error& e) {
+                request.log(SPRequest::SPError,
+                    string("htaccess plugin caught exception while parsing regular expression (") + toMatch + "): " + e.what());
             }
         }
         else if ((caseSensitive && *v == toMatch) || (!caseSensitive && !strcasecmp(v->c_str(), toMatch))) {
@@ -995,7 +1000,9 @@ bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* 
     return false;
 }
 
-AccessControl::aclresult_t htAccessControl::doShibAttr(const ShibTargetApache& sta, const Session* session, const char* rule, const char* params) const
+AccessControl::aclresult_t htAccessControl::doShibAttr(
+    const ShibTargetApache& sta, const Session* session, const char* rule, const char* params
+    ) const
 {
     // Find the attribute(s) matching the require rule.
     pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs =
@@ -1009,23 +1016,11 @@ AccessControl::aclresult_t htAccessControl::doShibAttr(const ShibTargetApache& s
             continue;
         }
 
-        try {
-            scoped_ptr<RegularExpression> re;
-            if (regexp) {
-                auto_arrayptr<XMLCh> trans(fromUTF8(w));
-                re.reset(new xercesc::RegularExpression(trans.get()));
+        pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs2(attrs);
+        for (; attrs2.first != attrs2.second; ++attrs2.first) {
+            if (checkAttribute(sta, attrs2.first->second, w, regexp)) {
+                return shib_acl_true;
             }
-                    
-            pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs2(attrs);
-            for (; attrs2.first != attrs2.second; ++attrs2.first) {
-                if (checkAttribute(sta, attrs2.first->second, w, regexp ? re.get() : nullptr)) {
-                    return shib_acl_true;
-                }
-            }
-        }
-        catch (XMLException& ex) {
-            auto_ptr_char tmp(ex.getMessage());
-            sta.log(SPRequest::SPError, string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + tmp.get());
         }
     }
     return shib_acl_false;
@@ -1037,138 +1032,126 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
     throw ConfigurationException("Save my walrus!");
 }
 
-class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet
+class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet2
 {
 public:
-    ApacheRequestMapper(const xercesc::DOMElement* e, bool deprecationSupport=true);
+    ApacheRequestMapper(const ptree& pt, bool deprecationSupport=true);
     ~ApacheRequestMapper() {}
-    Lockable* lock() { return m_mapper->lock(); }
-    void unlock() { m_staKey->setData(nullptr); m_propsKey->setData(nullptr); m_mapper->unlock(); }
+    void lock_shared() { m_mapper->lock_shared(); }
+    bool try_lock_shared() { return m_mapper->try_lock_shared(); }
+    void unlock_shared() { m_sta = nullptr; m_props = nullptr; m_mapper->unlock_shared(); }
     Settings getSettings(const HTTPRequest& request) const;
 
-    const PropertySet* getParent() const { return nullptr; }
-    void setParent(const PropertySet*) {}
-    pair<bool,bool> getBool(const char* name) const;
-    pair<bool,const char*> getString(const char* name) const;
-    pair<bool,unsigned int> getUnsignedInt(const char* name) const;
-    pair<bool,int> getInt(const char* name) const;
-    const PropertySet* getPropertySet(const char* name) const;
+    bool hasProperty(const char* name) const;
+    bool getBool(const char* name, bool defaultValue) const;
+    const char* getString(const char* name, const char* defaultValue=nullptr) const;
+    unsigned int getUnsignedInt(const char* name, unsigned int defaultValue) const;
+    int getInt(const char* name, int defaultValue) const;
 
     const htAccessControl& getHTAccessControl() const { return m_htaccess; }
 
 private:
-    scoped_ptr<RequestMapper> m_mapper;
-    scoped_ptr<ThreadKey> m_staKey,m_propsKey;
+    unique_ptr<RequestMapper> m_mapper;
+    static thread_local const ShibTargetApache* m_sta;
+    static thread_local const PropertySet2* m_props;
     mutable htAccessControl m_htaccess;
 };
 
-RequestMapper* ApacheRequestMapFactory(const xercesc::DOMElement* const & e, bool deprecationSupport)
+RequestMapper* ApacheRequestMapFactory(const ptree& pt, bool deprecationSupport)
 {
-    return new ApacheRequestMapper(e, deprecationSupport);
+    return new ApacheRequestMapper(pt, deprecationSupport);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const xercesc::DOMElement* e, bool deprecationSupport)
-    : m_mapper(SPConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER,e, deprecationSupport)),
-        m_staKey(ThreadKey::create(nullptr)),
-        m_propsKey(ThreadKey::create(nullptr))
+ApacheRequestMapper::ApacheRequestMapper(const ptree& pt, bool deprecationSupport)
+    : m_mapper(AgentConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER, pt, deprecationSupport))
 {
 }
 
 RequestMapper::Settings ApacheRequestMapper::getSettings(const HTTPRequest& request) const
 {
     Settings s = m_mapper->getSettings(request);
-    m_staKey->setData((void*)dynamic_cast<const ShibTargetApache*>(&request));
-    m_propsKey->setData((void*)s.first);
-    return pair<const PropertySet*,AccessControl*>(this, s.second);
+    m_sta = dynamic_cast<const ShibTargetApache*>(&request);
+    m_props = s.first;
+    return make_pair(this, s.second);
 }
 
-pair<bool,bool> ApacheRequestMapper::getBool(const char* name) const
+bool ApacheRequestMapper::getBool(const char* name, bool defaultValue) const
 {
-    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (sta) {
+    if (m_sta) {
         // Override Apache-settable boolean properties.
-        if (name && !strcmp(name,"requireSession") && sta->m_dc->bRequireSession != -1)
-            return make_pair(true, sta->m_dc->bRequireSession==1);
-        else if (name && !strcmp(name,"exportAssertion") && sta->m_dc->bExportAssertion != -1)
-            return make_pair(true, sta->m_dc->bExportAssertion==1);
-        else if (sta->m_dc->tSettings) {
-            const char* prop = apr_table_get(sta->m_dc->tSettings, name);
+        if (name && !strcmp(name,"requireSession") && m_sta->m_dc->bRequireSession != -1)
+            return m_sta->m_dc->bRequireSession == 1;
+        else if (name && !strcmp(name,"exportAssertion") && m_sta->m_dc->bExportAssertion != -1)
+            return m_sta->m_dc->bExportAssertion == 1;
+        else if (m_sta->m_dc->tSettings) {
+            const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
             if (prop)
-                return make_pair(true, !strcmp(prop, "true") || !strcmp(prop, "1") || !strcmp(prop, "On"));
+                return !strcmp(prop, "true") || !strcmp(prop, "1") || !strcmp(prop, "On");
         }
     }
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getBool(name) : make_pair(false,false);
+    return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
+        ? m_props->getBool(name, defaultValue) : defaultValue;
 }
 
-pair<bool,const char*> ApacheRequestMapper::getString(const char* name) const
+const char* ApacheRequestMapper::getString(const char* name, const char* defaultValue) const
 {
-    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (sta) {
+    if (m_sta) {
         // Override Apache-settable string properties.
         if (name && !strcmp(name,"authType")) {
-            const char* auth_type = ap_auth_type(sta->m_req);
+            const char* auth_type = ap_auth_type(m_sta->m_req);
             if (auth_type) {
                 // Check for Basic Hijack
-                if (!strcasecmp(auth_type, "basic") && sta->m_dc->bBasicHijack == 1)
+                if (!strcasecmp(auth_type, "basic") && m_sta->m_dc->bBasicHijack == 1)
                     auth_type = "shibboleth";
-                return make_pair(true, auth_type);
+                return auth_type;
             }
         }
-        else if (name && !strcmp(name,"applicationId") && sta->m_dc->szApplicationId)
-            return pair<bool,const char*>(true,sta->m_dc->szApplicationId);
-        else if (name && !strcmp(name,"requireSessionWith") && sta->m_dc->szRequireWith)
-            return pair<bool,const char*>(true,sta->m_dc->szRequireWith);
-        else if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
-            return pair<bool,const char*>(true,sta->m_dc->szRedirectToSSL);
-        else if (sta->m_dc->tSettings) {
-            const char* prop = apr_table_get(sta->m_dc->tSettings, name);
+        else if (name && !strcmp(name,"applicationId") && m_sta->m_dc->szApplicationId)
+            return m_sta->m_dc->szApplicationId;
+        else if (name && !strcmp(name,"requireSessionWith") && m_sta->m_dc->szRequireWith)
+            return m_sta->m_dc->szRequireWith;
+        else if (name && !strcmp(name,"redirectToSSL") && m_sta->m_dc->szRedirectToSSL)
+            return m_sta->m_dc->szRedirectToSSL;
+        else if (m_sta->m_dc->tSettings) {
+            const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
             if (prop)
-                return make_pair(true, prop);
+                return prop;
         }
     }
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getString(name) : pair<bool,const char*>(false,nullptr);
+    return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
+        ? m_props->getString(name, defaultValue) : defaultValue;
 }
 
-pair<bool,unsigned int> ApacheRequestMapper::getUnsignedInt(const char* name) const
+unsigned int ApacheRequestMapper::getUnsignedInt(const char* name, unsigned int defaultValue) const
 {
-    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (sta) {
+    if (m_sta) {
         // Override Apache-settable int properties.
-        if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
-            return pair<bool,unsigned int>(true, strtol(sta->m_dc->szRedirectToSSL, nullptr, 10));
-        else if (sta->m_dc->tSettings) {
-            const char* prop = apr_table_get(sta->m_dc->tSettings, name);
+        if (name && !strcmp(name,"redirectToSSL") && m_sta->m_dc->szRedirectToSSL)
+            return atoi(m_sta->m_dc->szRedirectToSSL);
+        else if (m_sta->m_dc->tSettings) {
+            const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
             if (prop)
-                return pair<bool,unsigned int>(true, atoi(prop));
+                return atoi(prop);
         }
     }
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getUnsignedInt(name) : pair<bool,unsigned int>(false,0);
+    return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
+        ? m_props->getUnsignedInt(name, defaultValue) : defaultValue;
 }
 
-pair<bool,int> ApacheRequestMapper::getInt(const char* name) const
+int ApacheRequestMapper::getInt(const char* name, int defaultValue) const
 {
-    const ShibTargetApache* sta=reinterpret_cast<const ShibTargetApache*>(m_staKey->getData());
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    if (sta) {
+    if (m_sta) {
         // Override Apache-settable int properties.
-        if (name && !strcmp(name,"redirectToSSL") && sta->m_dc->szRedirectToSSL)
-            return pair<bool,int>(true,atoi(sta->m_dc->szRedirectToSSL));
-        else if (sta->m_dc->tSettings) {
-            const char* prop = apr_table_get(sta->m_dc->tSettings, name);
+        if (name && !strcmp(name,"redirectToSSL") && m_sta->m_dc->szRedirectToSSL)
+            return atoi(m_sta->m_dc->szRedirectToSSL);
+        else if (m_sta->m_dc->tSettings) {
+            const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
             if (prop)
-                return make_pair(true, atoi(prop));
+                return atoi(prop);
         }
     }
-    return s && (!sta->m_dc->tUnsettings || !apr_table_get(sta->m_dc->tUnsettings, name)) ? s->getInt(name) : pair<bool,int>(false,0);
-}
-
-const PropertySet* ApacheRequestMapper::getPropertySet(const char* name) const
-{
-    const PropertySet* s=reinterpret_cast<const PropertySet*>(m_propsKey->getData());
-    return s ? s->getPropertySet(name) : nullptr;
+    return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
+        ? m_props->getInt(name, defaultValue) : defaultValue;
 }
 
 // Authz callbacks for Apache 2.4
@@ -1478,7 +1461,7 @@ apr_status_t shib_post_config(apr_pool_t* p, apr_pool_t*, apr_pool_t*, server_re
         return !OK;
     }
 
-    g_Config->RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
+    AgentConfig::getConfig().RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
 
     // Set the cleanup handler, passing in the server_rec for logging.
     apr_pool_cleanup_register(p, s, &shib_exit, apr_pool_cleanup_null);

@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -193,19 +187,21 @@ namespace shibsp {
         /**
          * Returns a boolean-valued property.
          * 
-         * @param name      property name
-         * @param request   reference to incoming request
-         * @param type      bitmask of property sources to use
+         * @param name          property name
+         * @param request       reference to incoming request
+         * @param type          bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
-        std::pair<bool,bool> getBool(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        std::pair<bool,bool> getBool(
+            const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL
+            ) const;
 
         /**
          * Returns a string-valued property.
          * 
-         * @param name      property name
-         * @param request   reference to incoming request
-         * @param type      bitmask of property sources to use
+         * @param name          property name
+         * @param request       reference to incoming request
+         * @param type          bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
         std::pair<bool,const char*> getString(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
@@ -213,9 +209,9 @@ namespace shibsp {
         /**
          * Returns an unsigned integer-valued property.
          * 
-         * @param name      property name
-         * @param request   reference to incoming request
-         * @param type      bitmask of property sources to use
+         * @param name          property name
+         * @param request       reference to incoming request
+         * @param type          bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
         std::pair<bool,unsigned int> getUnsignedInt(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
@@ -223,9 +219,9 @@ namespace shibsp {
         /**
          * Returns an integer-valued property.
          * 
-         * @param name      property name
-         * @param request   reference to incoming request
-         * @param type      bitmask of property sources to use
+         * @param name          property name
+         * @param request       reference to incoming request
+         * @param type          bitmask of property sources to use
          * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
          */
         std::pair<bool,int> getInt(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;

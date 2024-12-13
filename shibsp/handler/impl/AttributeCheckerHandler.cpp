@@ -37,11 +37,11 @@
 #include "util/PathResolver.h"
 #include "util/TemplateParameters.h"
 
+#include <memory>
 #include <fstream>
 #include <sstream>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
-#include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/string.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
 #include <xmltooling/XMLToolingConfig.h>
@@ -89,7 +89,7 @@ namespace shibsp {
         string m_template;
         bool m_flushSession;
         vector<string> m_attributes;
-        scoped_ptr<AccessControl> m_acl;
+        unique_ptr<AccessControl> m_acl;
     };
 
 #if defined (_MSC_VER)

@@ -154,12 +154,12 @@ namespace shibsp {
          */
         void updateModificationTime(time_t t);
 
+        /** Logging object. */
+        Category& m_log;
+
     private:
         /** Root of configuration or of the pointer to the configuration. */
         const boost::property_tree::ptree& m_root;
-
-        /** Logging object. */
-        Category& m_log;
 
         /** Resource path. */
         std::string m_source;

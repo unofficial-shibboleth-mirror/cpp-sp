@@ -174,8 +174,8 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
         json_safe(s, session->getProtocol());
     }
 
-    pair<bool,bool> stdvars = request.getRequestSettings().first->getBool("exportStdVars");
-    if (!stdvars.first || stdvars.second) {
+    bool stdvars = request.getRequestSettings().first->getBool("exportStdVars", true);
+    if (stdvars) {
         if (session->getEntityID()) {
             s << ", \"identity_provider\": ";
             json_safe(s, session->getEntityID());
@@ -287,8 +287,8 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
     s << "<strong>Client Address:</strong> " << (session->getClientAddress() ? session->getClientAddress() : "(none)") << endl;
     s << "<strong>SSO Protocol:</strong> " << (session->getProtocol() ? session->getProtocol() : "(none)") << endl;
 
-    pair<bool,bool> stdvars = request.getRequestSettings().first->getBool("exportStdVars");
-    if (!stdvars.first || stdvars.second) {
+    bool stdvars = request.getRequestSettings().first->getBool("exportStdVars", true);
+    if (stdvars) {
         s << "<strong>Identity Provider:</strong> " << (session->getEntityID() ? session->getEntityID() : "(none)") << endl;
         s << "<strong>Authentication Time:</strong> " << (session->getAuthnInstant() ? session->getAuthnInstant() : "(none)") << endl;
         s << "<strong>Authentication Context Class:</strong> " << (session->getAuthnContextClassRef() ? session->getAuthnContextClassRef() : "(none)") << endl;
@@ -315,19 +315,17 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
 
         if (m_values) {
             // Default delimiter is semicolon but is now configurable.
-            pair<bool,const char*> delim = request.getRequestSettings().first->getString("attributeValueDelimiter");
-            if (!delim.first)
-                delim.second = ";";
-            size_t delim_len = strlen(delim.second);
+            const char* delim = request.getRequestSettings().first->getString("attributeValueDelimiter", ";");
+            size_t delim_len = strlen(delim);
 
             const vector<string>& vals = a->second->getSerializedValues();
             for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
                 if (v != vals.begin() || a->first == key)
-                    s << delim.second;
-                string::size_type pos = v->find(delim.second, string::size_type(0));
+                    s << delim;
+                string::size_type pos = v->find(delim, string::size_type(0));
                 if (pos != string::npos) {
                     string value(*v);
-                    for (; pos != string::npos; pos = value.find(delim.second, pos)) {
+                    for (; pos != string::npos; pos = value.find(delim, pos)) {
                         value.insert(pos, "\\");
                         pos += delim_len + 1;
                     }

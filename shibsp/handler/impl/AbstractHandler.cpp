@@ -1,25 +1,19 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * AbstractHandler.cpp
+ * handler/impl/AbstractHandler.cpp
  *
  * Base class for handlers based on a DOMPropertySet.
  */
@@ -38,6 +32,7 @@
 #include "util/SPConstants.h"
 #include "util/PathResolver.h"
 #include "util/TemplateParameters.h"
+#include "util/URLEncoder.h"
 
 #include <vector>
 #include <fstream>
@@ -49,7 +44,6 @@
 #include <xmltooling/util/URLEncoder.h>
 
 #include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -804,9 +798,10 @@ pair<bool,bool> AbstractHandler::getBool(const char* name, const HTTPRequest& re
     
     const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
     if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
-        pair<bool,bool> ret = sprequest->getRequestSettings().first->getBool(name);
-        if (ret.first)
-            return ret;
+        if (sprequest->getRequestSettings().first->hasProperty(name)) {
+            // The default won't matter since we've already verified the property "exists".
+            return make_pair(true, sprequest->getRequestSettings().first->getBool(name, false));
+        }
     }
 
     if (type & HANDLER_PROPERTY_FIXED) {
@@ -826,9 +821,9 @@ pair<bool,const char*> AbstractHandler::getString(const char* name, const HTTPRe
     
     const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
     if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
-        pair<bool,const char*> ret = sprequest->getRequestSettings().first->getString(name);
-        if (ret.first)
-            return ret;
+        const char* ret = sprequest->getRequestSettings().first->getString(name);
+        if (ret)
+            return make_pair(true, ret);
     }
 
     if (type & HANDLER_PROPERTY_FIXED) {
@@ -854,9 +849,10 @@ pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const 
     
     const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
     if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
-        pair<bool,unsigned int> ret = sprequest->getRequestSettings().first->getUnsignedInt(name);
-        if (ret.first)
-            return ret;
+        if (sprequest->getRequestSettings().first->hasProperty(name)) {
+            // The default won't matter since we've already verified the property "exists".
+            return make_pair(true, sprequest->getRequestSettings().first->getUnsignedInt(name, 0));
+        }
     }
 
     if (type & HANDLER_PROPERTY_FIXED) {
@@ -876,9 +872,10 @@ pair<bool,int> AbstractHandler::getInt(const char* name, const HTTPRequest& requ
     
     const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
     if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
-        pair<bool,int> ret = sprequest->getRequestSettings().first->getInt(name);
-        if (ret.first)
-            return ret;
+        if (sprequest->getRequestSettings().first->hasProperty(name)) {
+            // The default won't matter since we've already verified the property "exists".
+            return make_pair(true, sprequest->getRequestSettings().first->getInt(name, 0));
+        }
     }
 
     if (type & HANDLER_PROPERTY_FIXED) {

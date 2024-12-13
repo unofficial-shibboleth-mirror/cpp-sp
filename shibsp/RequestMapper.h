@@ -28,13 +28,13 @@
 #define __shibsp_reqmap_h__
 
 #include <shibsp/base.h>
-#include <xmltooling/Lockable.h>
+#include <shibsp/util/Lockable.h>
 
 namespace shibsp {
 
     class SHIBSP_API AccessControl;
     class SHIBSP_API HTTPRequest;
-    class SHIBSP_API PropertySet;
+    class SHIBSP_API PropertySet2;
 
     /**
      * Interface to a request mapping plugin
@@ -42,7 +42,7 @@ namespace shibsp {
      * Request mapping plugins return configuration settings that apply to resource requests.
      * They can be implemented through cross-platform or platform-specific mechanisms.
      */
-    class SHIBSP_API RequestMapper : public virtual xmltooling::Lockable
+    class SHIBSP_API RequestMapper : public virtual SharedLockable
     {
         MAKE_NONCOPYABLE(RequestMapper);
     protected:
@@ -51,7 +51,7 @@ namespace shibsp {
         virtual ~RequestMapper();
 
         /** Combination of configuration settings and effective access control. */
-        typedef std::pair<const PropertySet*,AccessControl*> Settings;
+        typedef std::pair<const PropertySet2*,AccessControl*> Settings;
 
         /**
          * Map request to settings.
