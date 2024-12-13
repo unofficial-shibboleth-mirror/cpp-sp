@@ -256,9 +256,9 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
             const char* setting = request.getParameter("setting");
                 systemInfo(msg) << "<RequestSettings";
                 if (setting) {
-                    pair<bool, const char*> prop = settings.first->getString(setting);
-                    if (prop.first)
-                        msg << ' ' << setting << "='" << prop.second << "'";
+                    const char* prop = settings.first->getString(setting);
+                    if (prop)
+                        msg << ' ' << setting << "='" << prop << "'";
                 }
                 msg << '>' << target << "</RequestSettings>";
             msg << "<Status><OK/></Status>";

@@ -77,6 +77,20 @@ void BoostPropertySet::load(const property_tree::ptree& pt, const char* unsetter
     }
 }
 
+bool BoostPropertySet::hasProperty(const char* name) const
+{
+    if (m_pt) {
+        bool ret = m_pt->get_child_optional(name).has_value();
+        if (ret) {
+            return ret;
+        }
+    }
+
+    if (m_parent && m_unset.find(name) == m_unset.end()) {
+        return m_parent->hasProperty(name);
+    }
+}
+
 bool BoostPropertySet::getBool(const char* name, bool defaultValue) const
 {
     if (m_pt) {

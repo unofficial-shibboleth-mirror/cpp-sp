@@ -34,7 +34,7 @@ namespace shibsp {
 
     class SHIBSP_API AccessControl;
     class SHIBSP_API HTTPRequest;
-    class SHIBSP_API PropertySet;
+    class SHIBSP_API PropertySet2;
 
     /**
      * Interface to a request mapping plugin
@@ -51,7 +51,7 @@ namespace shibsp {
         virtual ~RequestMapper();
 
         /** Combination of configuration settings and effective access control. */
-        typedef std::pair<const PropertySet*,AccessControl*> Settings;
+        typedef std::pair<const PropertySet2*,AccessControl*> Settings;
 
         /**
          * Map request to settings.

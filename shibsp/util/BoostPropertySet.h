@@ -49,6 +49,7 @@ namespace shibsp {
         BoostPropertySet();
         virtual ~BoostPropertySet();
 
+        bool hasProperty(const char* name) const;
         bool getBool(const char* name, bool defaultValue) const;
         const char* getString(const char* name, const char* defaultValue=nullptr) const;
         unsigned int getUnsignedInt(const char* name, unsigned int defaultValue) const;

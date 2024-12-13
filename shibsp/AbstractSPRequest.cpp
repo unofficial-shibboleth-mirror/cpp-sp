@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -35,7 +29,6 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace std;
 
 SPRequest::SPRequest()
@@ -60,7 +53,7 @@ AbstractSPRequest::~AbstractSPRequest()
     if (m_session)
         m_session->unlock();
     if (m_mapper)
-        m_mapper->unlock();
+        m_mapper->unlock_shared();
     if (m_sp)
         m_sp->unlock();
 }
@@ -75,7 +68,7 @@ RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
     if (!m_mapper) {
         // Map request to application and content settings.
         m_mapper = m_sp->getRequestMapper();
-        m_mapper->lock();
+        m_mapper->lock_shared();
         m_settings = m_mapper->getSettings(*this);
 
 /*
@@ -93,7 +86,7 @@ const Application& AbstractSPRequest::getApplication() const
 {
     if (!m_app) {
         // Now find the application from the URL settings
-        m_app = m_sp->getApplication(getRequestSettings().first->getString("applicationId").second);
+        m_app = m_sp->getApplication(getRequestSettings().first->getString("applicationId"));
         if (!m_app)
             throw ConfigurationException("Unable to map non-default applicationId to an ApplicationOverride, check configuration.");
     }
@@ -162,8 +155,8 @@ const char* AbstractSPRequest::getRequestURL() const
 
 string AbstractSPRequest::getRemoteAddr() const
 {
-    pair<bool,const char*> addr = getRequestSettings().first->getString("REMOTE_ADDR");
-    return addr.first ? getHeader(addr.second) : "";
+    const char* addr = getRequestSettings().first->getString("REMOTE_ADDR");
+    return addr ? getHeader(addr) : "";
 }
 
 const char* AbstractSPRequest::getParameter(const char* name) const
@@ -233,8 +226,7 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     }
     else if (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)) {
         throw ConfigurationException(
-            "Invalid handlerURL property ($1) in <Sessions> element for Application ($2)",
-            params(2, handler ? handler : "null", m_app->getId())
+            string("Invalid handlerURL property in <Sessions> element for Application ") + m_app->getId()
             );
     }
 
