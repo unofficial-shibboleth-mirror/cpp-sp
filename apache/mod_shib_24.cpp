@@ -47,11 +47,6 @@
 #include <shibsp/attribute/Attribute.h>
 #include <shibsp/util/Lockable.h>
 
-#include <xercesc/util/XMLUniDefs.hpp>
-#include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/XMLConstants.h>
-#include <xmltooling/util/XMLHelper.h>
-
 #ifdef WIN32
 # include <winsock2.h>
 # include <ws2tcpip.h>
@@ -1073,6 +1068,16 @@ RequestMapper::Settings ApacheRequestMapper::getSettings(const HTTPRequest& requ
     m_sta = dynamic_cast<const ShibTargetApache*>(&request);
     m_props = s.first;
     return make_pair(this, s.second);
+}
+
+bool ApacheRequestMapper::hasProperty(const char* name) const
+{
+    if (m_sta) {
+        // TODO, will need to enumerate all the built-in properties I imagine.
+    }
+
+    return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
+        ? m_props->hasProperty(name) : false;
 }
 
 bool ApacheRequestMapper::getBool(const char* name, bool defaultValue) const
