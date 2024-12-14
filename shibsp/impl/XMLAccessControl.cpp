@@ -243,7 +243,7 @@ RuleRegex::RuleRegex(const ptree& pt)
         }
         m_re = regex(m_exp, flags);
     }
-    catch (const regex_error& e) {
+    catch (const regex_error&) {
         throw ConfigurationException("Caught exception while parsing RuleRegex regular expression.");
     }
 }
