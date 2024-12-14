@@ -274,11 +274,6 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
 }
 
-#ifdef WIN32
-typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
-typedef BOOL (WINAPI *PGVEA)(LPOSVERSIONINFOA);
-#endif
-
 ostream& StatusHandler::systemInfo(ostream& os) const
 {
 #if defined(HAVE_SYS_UTSNAME_H)
@@ -298,11 +293,11 @@ ostream& StatusHandler::systemInfo(ostream& os) const
         os << "/>";
     }
 #elif defined(WIN32)
-    OSVERSIONINFOEX osvi;
-    memset(&osvi, 0, sizeof(OSVERSIONINFOEX));
+    OSVERSIONINFOEXA osvi;
+    memset(&osvi, 0, sizeof(OSVERSIONINFOEXA));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-    PGVEA pGVEA = (PGVEA)GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "GetVersionExA");
-    if(pGVEA && pGVEA((OSVERSIONINFO*)&osvi)) {
+
+    if(GetVersionExA((LPOSVERSIONINFOA)&osvi)) {
         os << "<Windows"
            << " version='" << osvi.dwMajorVersion << "." << osvi.dwMinorVersion << "'"
            << " build='" << osvi.dwBuildNumber << "'";
@@ -320,11 +315,7 @@ ostream& StatusHandler::systemInfo(ostream& os) const
 
         SYSTEM_INFO si;
         memset(&si, 0, sizeof(SYSTEM_INFO));
-        PGNSI pGNSI = (PGNSI)GetProcAddress(GetModuleHandle(TEXT("kernel32.dll")), "GetNativeSystemInfo");
-        if(pGNSI)
-            pGNSI(&si);
-        else
-            GetSystemInfo(&si);
+        GetNativeSystemInfo(&si);
         switch (si.dwProcessorType) {
             case PROCESSOR_ARCHITECTURE_INTEL:
                 os << " arch='i386'";
