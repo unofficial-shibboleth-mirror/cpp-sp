@@ -375,7 +375,7 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
     return shib_acl_false;
 }
 
-unique_ptr<AccessControl> processChild(const string& name, const ptree& pt)
+unique_ptr<AccessControl> XMLAccessControl::processChild(const string& name, const ptree& pt)
 {
     if (name == RULE_PROP_PATH) {
         return unique_ptr<AccessControl>(new Rule(pt));
@@ -386,7 +386,9 @@ unique_ptr<AccessControl> processChild(const string& name, const ptree& pt)
     else if (name != "<xmlattr>") {
         return unique_ptr<AccessControl>(new Operator(name, pt));
     }
-
+    else {
+        return nullptr;
+    }
 }
 
 pair<bool,ptree*> XMLAccessControl::load() noexcept
@@ -414,11 +416,13 @@ pair<bool,ptree*> XMLAccessControl::load() noexcept
         authz = processChild(child.first, child.second);
     }
 
+    if (authz) {
     // Perform the swap inside a lock.
 #ifdef HAVE_CXX14
-    unique_lock<ReloadableXMLFile> locker(*this);
+        unique_lock<ReloadableXMLFile> locker(*this);
 #endif
-    m_rootAuthz.swap(authz);
+        m_rootAuthz.swap(authz);
+    }
 
     return make_pair(false, nullptr);
 }
