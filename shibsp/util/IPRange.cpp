@@ -28,8 +28,6 @@
 #include "exceptions.h"
 #include "util/IPRange.h"
 
-#include <xmltooling/logging.h>
-
 #ifdef WIN32
 # include <winsock2.h>
 # include <ws2tcpip.h>
@@ -39,7 +37,6 @@
 #endif
 
 using namespace shibsp;
-using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace std;
 
