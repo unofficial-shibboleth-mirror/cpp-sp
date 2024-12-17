@@ -157,7 +157,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         request.log(SPRequest::SPWarn, string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
     }
 
-    Locker sessionLocker(session, false);
+    unique_lock<Session> sessionLocker(*session, adopt_lock);
 
     bool checked = false;
     if (session) {
@@ -203,7 +203,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
         if (m_flushSession && session) {
             time_t revocationExp = session->getExpiration();
-            sessionLocker.assign(); // unlock the session
+            sessionLocker.unlock(); // unlock the session
             flushSession(request, revocationExp);
         }
         return make_pair(true, request.sendError(str));
@@ -211,7 +211,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
 
     if (m_flushSession && session) {
         time_t revocationExp = session->getExpiration();
-        sessionLocker.assign(); // unlock the session
+        sessionLocker.unlock(); // unlock the session
         flushSession(request, revocationExp);
     }
     m_log.error("could not process error template (%s)", m_template.c_str());

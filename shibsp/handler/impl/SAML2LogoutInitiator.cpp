@@ -239,13 +239,13 @@ pair<bool,long> SAML2LogoutInitiator::doRequest(
     const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, Session* session
     ) const
 {
-    Locker sessionLocker(session, false);
+    unique_lock<Session> sessionLocker(*session, adopt_lock);
 
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
         time_t revocationExp = session->getExpiration();
-        sessionLocker.assign();
+        sessionLocker.unlock();
         session = nullptr;
         application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
         return sendLogoutPage(application, httpRequest, httpResponse, "partial");

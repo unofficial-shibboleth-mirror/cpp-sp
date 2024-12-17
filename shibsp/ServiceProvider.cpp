@@ -28,6 +28,7 @@
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/SessionInitiator.h"
+#include "util/Date.h"
 #include "util/PathResolver.h"
 #include "util/TemplateParameters.h"
 #include "util/URLEncoder.h"
@@ -362,7 +363,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
             throw;
         }
 
-        Locker slocker(session, false); // pop existing lock on exit
+        lock_guard<Session> slocker(*session, adopt_lock); // pop existing lock on exit
         if (session) {
             // Check for logout interception.
             if (requireLogoutWith) {
@@ -439,7 +440,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 
     const Application* app = nullptr;
     Session* session = nullptr;
-    Locker slocker;
+    unique_lock<Session> slocker;
     string targetURL = request.getRequestURL();
 
     try {
@@ -462,8 +463,10 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         if (settings.second) {
             try {
                 session = request.getSession(false, false, false);  // ignore timeout and do not cache
-                if (session)
-                    slocker.assign(session, false); // assign to lock popper
+                if (session) {
+                    unique_lock<Session> slocker2(*session, adopt_lock);
+                    slocker.swap(slocker2); // assign to lock popper
+                }
             }
             catch (const exception& e) {
                 log.warn("unable to obtain session to pass to access control provider: %s", e.what());
@@ -508,7 +511,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
     const Application* app = nullptr;
     Session* session = nullptr;
-    Locker slocker;
+    unique_lock<Session> slocker;
     string targetURL = request.getRequestURL();
 
     try {
@@ -517,8 +520,10 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
         try {
             session = request.getSession(false, false, false);  // ignore timeout and do not cache
-            if (session)
-                slocker.assign(session, false); // assign to lock popper
+            if (session) {
+                unique_lock<Session> slocker2(*session, adopt_lock);
+                slocker.swap(slocker2); // assign to lock popper
+            }
         }
         catch (const exception& e) {
             log.warn("unable to obtain session to export to request: %s", e.what());
@@ -548,20 +553,18 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
             const char* hval = session->getEntityID();
             if (hval)
                 app->setHeader(request, "Shib-Identity-Provider", hval);
-            hval = session->getAuthnInstant();
-            if (hval)
-                app->setHeader(request, "Shib-Authentication-Instant", hval);
+            time_t ts = session->getAuthnInstant();
+            if (ts > 0) {
+                // TODO: Need to see what the output format of this really is.
+                ostringstream os;
+                os << date::format("%FT%TZ", chrono::system_clock::from_time_t(ts));
+                app->setHeader(request, "Shib-Authentication-Instant", os.str().c_str());
+            }
             hval = session->getAuthnContextClassRef();
             if (hval) {
                 app->setHeader(request, "Shib-Authentication-Method", hval);
                 app->setHeader(request, "Shib-AuthnContext-Class", hval);
             }
-            hval = session->getAuthnContextDeclRef();
-            if (hval)
-                app->setHeader(request, "Shib-AuthnContext-Decl", hval);
-            hval = session->getSessionIndex();
-            if (hval)
-                app->setHeader(request, "Shib-Session-Index", hval);
 
             app->setHeader(request, "Shib-Session-Expires", boost::lexical_cast<string>(session->getExpiration()).c_str());
             pair<bool,unsigned int> timeout = sessionProps ? sessionProps->getUnsignedInt("timeout") : pair<bool,unsigned int>(false, 0);
@@ -575,35 +578,6 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         if (exportCookie) {
             pair<string,const char*> cookieprops = app->getCookieNameProps(nullptr);
             app->setHeader(request, "Shib-Cookie-Name", cookieprops.first.c_str());
-        }
-
-        // Maybe export the assertion keys.
-        bool exportAssertion = settings.first->getBool("exportAssertion", false);
-        if (exportAssertion) {
-            pair<bool,const char*> exportLocation = sessionProps ? sessionProps->getString("exportLocation") : make_pair(false,nullptr);
-            if (!exportLocation.first)
-                log.warn("can't export assertions without an exportLocation Sessions property");
-            else {
-                string exportName = "Shib-Assertion-00";
-                string baseURL;
-                if (!strncmp(exportLocation.second, "http", 4)) {
-                    baseURL = exportLocation.second;
-                }
-                else {
-                    baseURL = string(request.getHandlerURL(targetURL.c_str())) + exportLocation.second;
-                }
-                baseURL = baseURL + "?key=" + session->getID() + "&ID=";
-                const vector<const char*>& tokens = session->getAssertionIDs();
-                vector<const char*>::size_type count = 0;
-                for (vector<const char*>::const_iterator tokenids = tokens.begin(); tokenids!=tokens.end(); ++tokenids) {
-                    count++;
-                    *(exportName.rbegin()) = '0' + (count%10);
-                    *(++exportName.rbegin()) = '0' + (count/10);
-                    string fullURL = baseURL + AgentConfig::getConfig().getURLEncoder().encode(*tokenids);
-                    app->setHeader(request, exportName.c_str(), fullURL.c_str());
-                }
-                app->setHeader(request, "Shib-Assertion-Count", exportName.c_str() + 15);
-            }
         }
 
         // Export the attributes.
@@ -694,7 +668,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         }
         catch (const exception&) {
         }
-        Locker slocker(session, false); // pop existing lock on exit
+        lock_guard<Session> slocker(*session, adopt_lock); // pop existing lock on exit
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0, targetURL.find('?'));
         //stp.m_request = &request;

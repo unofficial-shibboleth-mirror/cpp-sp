@@ -33,10 +33,6 @@
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutInitiator.h"
 
-#ifndef SHIBSP_LITE
-using namespace boost;
-#endif
-
 using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
@@ -175,14 +171,14 @@ pair<bool,long> LocalLogoutInitiator::doRequest(
 {
     if (session) {
         // Guard the session in case of exception.
-        Locker locker(session, false);
+        unique_lock<Session> locker(*session, adopt_lock);
 
         // Do back channel notification.
         bool result;
         vector<string> sessions(1, session->getID());
         result = notifyBackChannel(application, httpRequest.getRequestURL(), sessions, true);
         time_t revocationExp = session->getExpiration();
-        locker.assign();    // unlock the session
+        locker.unlock();    // unlock the session
         application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
         if (!result)
             return sendLogoutPage(application, httpRequest, httpResponse, "partial");

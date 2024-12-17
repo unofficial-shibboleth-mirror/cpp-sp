@@ -1,21 +1,15 @@
-/**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -27,15 +21,13 @@
 #ifndef __shibsp_sessioncache_h__
 #define __shibsp_sessioncache_h__
 
-#include <shibsp/base.h>
+#include <shibsp/util/Lockable.h>
 
 #include <map>
-#include <set>
+#include <memory>
 #include <string>
 #include <vector>
 #include <ctime>
-#include <xercesc/util/XercesDefs.hpp>
-#include <xmltooling/Lockable.h>
 
 namespace shibsp {
 
@@ -52,7 +44,7 @@ namespace shibsp {
      * or at least controlled, and the caller must unlock a Session
      * to dispose of it.</p>
      */
-    class SHIBSP_API Session : public virtual xmltooling::Lockable
+    class SHIBSP_API Session : public virtual BasicLockable
     {
         MAKE_NONCOPYABLE(Session);
     protected:
@@ -60,7 +52,7 @@ namespace shibsp {
         virtual ~Session();
     public:
         /**
-         * Returns the session key.
+         * Returns the session ID.
          *
          * @return unique ID of session
          */
@@ -109,18 +101,11 @@ namespace shibsp {
         virtual const char* getProtocol() const=0;
 
         /**
-         * Returns the UTC timestamp on the authentication event at the IdP.
+         * Returns the timestamp of the authentication event at the IdP.
          *
-         * @return  the UTC authentication timestamp
+         * @return  the authentication timestamp
          */
-        virtual const char* getAuthnInstant() const=0;
-
-        /**
-         * Returns the SessionIndex provided with the session.
-         *
-         * @return the SessionIndex from the original SSO assertion, if any
-         */
-        virtual const char* getSessionIndex() const=0;
+        virtual time_t getAuthnInstant() const=0;
 
         /**
          * Returns a URI containing an AuthnContextClassRef provided with the session.
@@ -132,18 +117,11 @@ namespace shibsp {
         virtual const char* getAuthnContextClassRef() const=0;
 
         /**
-         * Returns a URI containing an AuthnContextDeclRef provided with the session.
-         *
-         * @return  a URI identifying the authentication context declaration
-         */
-        virtual const char* getAuthnContextDeclRef() const=0;
-
-        /**
          * Returns the resolved attributes associated with the session.
          *
          * @return an immutable array of attributes
          */
-        virtual const std::vector<Attribute*>& getAttributes() const=0;
+        virtual const std::vector<std::unique_ptr<Attribute>>& getAttributes() const=0;
 
         /**
          * Returns the resolved attributes associated with the session, indexed by ID.
@@ -151,39 +129,6 @@ namespace shibsp {
          * @return an immutable map of attributes keyed by attribute ID
          */
         virtual const std::multimap<std::string,const Attribute*>& getIndexedAttributes() const=0;
-
-        /**
-         * Returns the identifiers of the assertion(s) cached by the session.
-         *
-         * <p>The SSO assertion is guaranteed to be first in the set.</p>
-         *
-         * @return  an immutable array of AssertionID values
-         */
-        virtual const std::vector<const char*>& getAssertionIDs() const=0;
-
-#ifndef SHIBSP_LITE
-        /**
-         * Adds additional attributes to the session.
-         *
-         * @param attributes    reference to an array of Attributes to cache (will be freed by cache)
-         */
-        virtual void addAttributes(const std::vector<Attribute*>& attributes)=0;
-
-        /**
-         * Returns an assertion cached by the session.
-         *
-         * @param id    identifier of the assertion to retrieve
-         * @return pointer to assertion, or nullptr
-         */
-        virtual const opensaml::Assertion* getAssertion(const char* id) const=0;
-
-        /**
-         * Stores an assertion in the session.
-         *
-         * @param assertion pointer to an assertion to cache (will be freed by cache)
-         */
-        virtual void addAssertion(opensaml::Assertion* assertion)=0;
-#endif
     };
 
     /**

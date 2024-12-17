@@ -1195,7 +1195,7 @@ extern "C" authz_status shib_session_check_authz(request_rec* r, const char*, co
 
     try {
         Session* session = sta.first->getSession(false, true, false);
-        Locker slocker(session, false);
+        lock_guard<Session> slocker(*session, adopt_lock);
         if (session) {
             sta.first->log(SPRequest::SPDebug, "htaccess: accepting shib-session/valid-user based on active session");
             return AUTHZ_GRANTED;
@@ -1292,30 +1292,8 @@ extern "C" authz_status shib_acclass_check_authz(request_rec* r, const char* req
 
     try {
         Session* session = sta.first->getSession(false, true, false);
-        Locker slocker(session, false);
+        lock_guard<Session> slocker(*session, adopt_lock);
         if (session && hta.doAuthnContext(*sta.first, session->getAuthnContextClassRef(), require_line) == AccessControl::shib_acl_true)
-            return AUTHZ_GRANTED;
-        return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
-    }
-    catch (std::exception& e) {
-        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
-    }
-
-    return AUTHZ_GENERAL_ERROR;
-}
-
-extern "C" authz_status shib_acdecl_check_authz(request_rec* r, const char* require_line, const void*)
-{
-    pair<ShibTargetApache*,authz_status> sta = shib_base_check_authz(r);
-    if (!sta.first)
-        return sta.second;
-
-    const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
-
-    try {
-        Session* session = sta.first->getSession(false, true, false);
-        Locker slocker(session, false);
-        if (session && hta.doAuthnContext(*sta.first, session->getAuthnContextDeclRef(), require_line) == AccessControl::shib_acl_true)
             return AUTHZ_GRANTED;
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
@@ -1336,7 +1314,7 @@ extern "C" authz_status shib_attr_check_authz(request_rec* r, const char* requir
 
     try {
         Session* session = sta.first->getSession(false, true, false);
-        Locker slocker(session, false);
+        lock_guard<Session> slocker(*session, adopt_lock);
         if (session) {
             const char* rule = ap_getword_conf(r->pool, &require_line);
             if (rule && hta.doShibAttr(*sta.first, session, rule, require_line) == AccessControl::shib_acl_true)
@@ -1361,7 +1339,7 @@ extern "C" authz_status shib_plugin_check_authz(request_rec* r, const char* requ
 
     try {
         Session* session = sta.first->getSession(false, true, false);
-        Locker slocker(session, false);
+        lock_guard<Session> slocker(*session, adopt_lock);
         if (session) {
             const char* config = ap_getword_conf(r->pool, &require_line);
             if (config && hta.doAccessControl(*sta.first, session, config) == AccessControl::shib_acl_true)
@@ -1585,7 +1563,6 @@ extern "C" const authz_provider shib_authz_session_provider = { &shib_session_ch
 extern "C" const authz_provider shib_authz_user_provider = { &shib_user_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_ext_user_provider = { &shib_ext_user_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_acclass_provider = { &shib_acclass_check_authz, nullptr };
-extern "C" const authz_provider shib_authz_acdecl_provider = { &shib_acdecl_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_attr_provider = { &shib_attr_check_authz, nullptr };
 extern "C" const authz_provider shib_authz_plugin_provider = { &shib_plugin_check_authz, nullptr };
 
@@ -1618,7 +1595,6 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "user", AUTHZ_PROVIDER_VERSION, &shib_authz_user_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shib-user", AUTHZ_PROVIDER_VERSION, &shib_authz_ext_user_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "authnContextClassRef", AUTHZ_PROVIDER_VERSION, &shib_authz_acclass_provider, AP_AUTH_INTERNAL_PER_CONF);
-    ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "authnContextDeclRef", AUTHZ_PROVIDER_VERSION, &shib_authz_acdecl_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shib-attr", AUTHZ_PROVIDER_VERSION, &shib_authz_attr_provider, AP_AUTH_INTERNAL_PER_CONF);
     ap_register_auth_provider(p, AUTHZ_PROVIDER_GROUP, "shib-plugin", AUTHZ_PROVIDER_VERSION, &shib_authz_plugin_provider, AP_AUTH_INTERNAL_PER_CONF);
 }

@@ -31,12 +31,7 @@
 #include "impl/StoredSession.h"
 #include "impl/StorageServiceSessionCache.h"
 
-#include <xmltooling/util/Threads.h>
-
-#include <xercesc/util/XMLDateTime.hpp>
-
 using namespace shibsp;
-using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
@@ -66,48 +61,27 @@ StoredSession::StoredSession(SSCache* cache, DDF& obj)
             addrobj.addmember(getAddressFamily(saddr)).string(saddr);
         }
     }
-
-    auto_ptr_XMLCh exp(m_obj["expires"].string());
-    if (exp.get()) {
-        XMLDateTime iso(exp.get());
-        iso.parseDateTime();
-        m_expires = iso.getEpoch();
-    }
-
-#ifndef SHIBSP_LITE
-    const char* nameid = obj["nameid"].string();
-    if (nameid) {
-        // Parse and bind the document into an XMLObject.
-        istringstream instr(nameid);
-        DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr);
-        XercesJanitor<DOMDocument> janitor(doc);
-        m_nameid.reset(saml2::NameIDBuilder::buildNameID());
-        m_nameid->unmarshall(doc->getDocumentElement(), true);
-        janitor.release();
-    }
-#endif
-    if (cache->inproc)
-        m_lock.reset(Mutex::create());
+    m_expires = m_obj["expires"].longinteger();
 }
 
 StoredSession::~StoredSession()
 {
     m_obj.destroy();
-    for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
 }
 
-Lockable* StoredSession::lock()
+void StoredSession::lock()
 {
-    if (m_lock.get())
-        m_lock->lock();
-    return this;
+    m_lock.lock();
 }
+
+bool StoredSession::try_lock()
+{
+    return m_lock.try_lock();
+}
+
 void StoredSession::unlock()
 {
-    if (m_lock.get())
-        m_lock->unlock();
-    else
-        delete this;
+    m_lock.unlock();
 }
 
 const multimap<string, const Attribute*>& StoredSession::getIndexedAttributes() const
@@ -115,42 +89,28 @@ const multimap<string, const Attribute*>& StoredSession::getIndexedAttributes() 
     if (m_attributeIndex.empty()) {
         if (m_attributes.empty())
             unmarshallAttributes();
-        for (vector<Attribute*>::const_iterator a = m_attributes.begin(); a != m_attributes.end(); ++a) {
-            const vector<string>& aliases = (*a)->getAliases();
-            for (vector<string>::const_iterator alias = aliases.begin(); alias != aliases.end(); ++alias)
-                m_attributeIndex.insert(multimap<string, const Attribute*>::value_type(*alias, *a));
+        for (const unique_ptr<Attribute>& a : m_attributes) {
+            const vector<string>& aliases = a->getAliases();
+            for (const string& alias : a->getAliases()) {
+                m_attributeIndex.insert(multimap<string, const Attribute*>::value_type(alias, a.get()));
+            }
         }
     }
     return m_attributeIndex;
 }
 
-const vector<const char*>& StoredSession::getAssertionIDs() const
-{
-    if (m_ids.empty()) {
-        DDF ids = m_obj["assertions"];
-        DDF id = ids.first();
-        while (id.isstring()) {
-            m_ids.push_back(id.string());
-            id = ids.next();
-        }
-    }
-    return m_ids;
-}
-
 void StoredSession::unmarshallAttributes() const
 {
-    Attribute* attribute;
     DDF attrs = m_obj["attributes"];
     DDF attr = attrs.first();
     while (!attr.isnull()) {
         try {
-            attribute = Attribute::unmarshall(attr);
-            m_attributes.push_back(attribute);
+            m_attributes.push_back(unique_ptr<Attribute>(Attribute::unmarshall(attr)));
             if (m_cache->m_log.isDebugEnabled())
                 m_cache->m_log.debug("unmarshalled attribute (ID: %s) with %d value%s",
-                    attribute->getId(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
+                    m_attributes.back()->getId(), attr.first().integer(), attr.first().integer()!=1 ? "s" : "");
         }
-        catch (AttributeException& ex) {
+        catch (const AttributeException& ex) {
             const char* id = attr.first().name();
             m_cache->m_log.error("error unmarshalling attribute (ID: %s): %s", id ? id : "none", ex.what());
         }
@@ -166,7 +126,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
     if (m_expires > 0) {
         if (now > m_expires) {
             m_cache->m_log.info("session expired (ID: %s)", getID());
-            throw XMLToolingException("Your session has expired, and you must re-authenticate.");
+            throw SessionException("Your session has expired, and you must re-authenticate.");
         }
     }
 
@@ -176,9 +136,8 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         if (saddr && *saddr) {
             if (!m_cache->compareAddresses(client_addr, saddr)) {
                 m_cache->m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, saddr);
-                throw XMLToolingException(
-                    "Your IP address ($1) does not match the address recorded at the time the session was established.",
-                    params(1, client_addr)
+                throw SessionException(
+                    string("Your IP address (") + client_addr + ") does not match the address recorded at the time the session was established."
                     );
             }
             client_addr = nullptr;  // clear out parameter as signal that session need not be updated below
@@ -217,8 +176,6 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         if (out.isstruct()) {
             // We got an updated record back.
             m_cache->m_log.debug("session updated, reconstituting it");
-            m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
             m_attributes.clear();
             m_attributeIndex.clear();
             m_obj.destroy();

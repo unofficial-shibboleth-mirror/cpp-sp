@@ -32,6 +32,7 @@
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/SecuredHandler.h"
+#include "util/Date.h"
 
 #include <ctime>
 #include <sstream>
@@ -183,19 +184,17 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
 
         if (session->getAuthnInstant()) {
             s << ", \"authn_instant\": ";
-            json_safe(s, session->getAuthnInstant());
+            time_t ts = session->getAuthnInstant();
+            // TODO: Need to see what the output format of this really is.
+            ostringstream os;
+            os << date::format("%FT%TZ", chrono::system_clock::from_time_t(ts));
+            json_safe(s, os.str().c_str());
         }
 
         if (session->getAuthnContextClassRef()) {
             s << ", \"authncontext_class\": ";
             json_safe(s, session->getAuthnContextClassRef());
         }
-
-        if (session->getAuthnContextDeclRef()) {
-            s << ", \"authncontext_decl\": ";
-            json_safe(s, session->getAuthnContextDeclRef());
-        }
-
     }
 
     /*
@@ -290,9 +289,14 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
     bool stdvars = request.getRequestSettings().first->getBool("exportStdVars", true);
     if (stdvars) {
         s << "<strong>Identity Provider:</strong> " << (session->getEntityID() ? session->getEntityID() : "(none)") << endl;
-        s << "<strong>Authentication Time:</strong> " << (session->getAuthnInstant() ? session->getAuthnInstant() : "(none)") << endl;
+        time_t ts = session->getAuthnInstant();
+        if (ts > 0) {
+            // TODO: Need to see what the output format of this really is.
+            ostringstream os;
+            os << date::format("%FT%TZ", chrono::system_clock::from_time_t(ts));
+            s << "<strong>Authentication Time:</strong> " << os.str() << endl;
+        }
         s << "<strong>Authentication Context Class:</strong> " << (session->getAuthnContextClassRef() ? session->getAuthnContextClassRef() : "(none)") << endl;
-        s << "<strong>Authentication Context Decl:</strong> " << (session->getAuthnContextDeclRef() ? session->getAuthnContextDeclRef() : "(none)") << endl;
     }
 
     s << endl << "<u>Attributes</u>" << endl;

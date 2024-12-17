@@ -19,7 +19,7 @@
  */
 
 /**
- * StoredSession.h
+ * impl/StoredSession.h
  *
  * Internal declaration of Session subclass used by StorageService-backed SessionCache.
  */
@@ -31,23 +31,7 @@
 #include "SessionCache.h"
 #include "remoting/ddf.h"
 
-#include <ctime>
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-
-namespace xmltooling {
-    class Mutex;
-};
-
-#ifndef SHIBSP_LITE
-namespace opensaml {
-    class Assertion;
-
-    namespace saml2 {
-        class NameID;
-    };
-};
-#endif
+#include <mutex>
 
 namespace shibsp {
 
@@ -60,7 +44,8 @@ namespace shibsp {
 
         virtual ~StoredSession();
 
-        xmltooling::Lockable* lock();
+        void lock();
+        bool try_lock();
         void unlock();
 
         const char* getID() const {
@@ -91,39 +76,20 @@ namespace shibsp {
         const char* getProtocol() const {
             return m_obj["protocol"].string();
         }
-        const char* getAuthnInstant() const {
-            return m_obj["authn_instant"].string();
-        }
-#ifndef SHIBSP_LITE
-        const opensaml::saml2::NameID* getNameID() const {
-            return m_nameid.get();
-        }
-#endif
-        const char* getSessionIndex() const {
-            return m_obj["session_index"].string();
+        time_t getAuthnInstant() const {
+            return m_obj["authn_instant"].longinteger();
         }
         const char* getAuthnContextClassRef() const {
             return m_obj["authncontext_class"].string();
         }
-        const char* getAuthnContextDeclRef() const {
-            return m_obj["authncontext_decl"].string();
-        }
-        const std::vector<Attribute*>& getAttributes() const {
+        const std::vector<std::unique_ptr<Attribute>>& getAttributes() const {
             if (m_attributes.empty())
                 unmarshallAttributes();
             return m_attributes;
         }
         const std::multimap<std::string, const Attribute*>& getIndexedAttributes() const;
 
-        const std::vector<const char*>& getAssertionIDs() const;
-
         void validate(const Application& application, const char* client_addr, time_t* timeout);
-
-#ifndef SHIBSP_LITE
-        void addAttributes(const std::vector<Attribute*>& attributes);
-        const opensaml::Assertion* getAssertion(const char* id) const;
-        void addAssertion(opensaml::Assertion* assertion);
-#endif
 
         time_t getExpiration() const { return m_expires; }
         time_t getLastAccess() const { return m_lastAccess; }
@@ -136,17 +102,15 @@ namespace shibsp {
         void unmarshallAttributes() const;
 
         DDF m_obj;
-#ifndef SHIBSP_LITE
-        boost::scoped_ptr<opensaml::saml2::NameID> m_nameid;
-        mutable std::map< std::string,boost::shared_ptr<opensaml::Assertion> > m_tokens;
-#endif
-        mutable std::vector<Attribute*> m_attributes;
+        mutable std::vector<std::unique_ptr<Attribute>> m_attributes;
         mutable std::multimap<std::string,const Attribute*> m_attributeIndex;
-        mutable std::vector<const char*> m_ids;
 
         SSCache* m_cache;
         time_t m_expires,m_lastAccess;
-        boost::scoped_ptr<xmltooling::Mutex> m_lock;
+        // TODO: possibly convert to a shared lock where possible?
+        // I used exclusive because it avoided lock "upgrades"
+        // when mutating or deleting sessions.
+        std::mutex m_lock;
     };
 
 }

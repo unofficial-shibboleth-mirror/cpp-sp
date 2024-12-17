@@ -196,7 +196,7 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
 
     time_t revocationExp = session->getExpiration();
 
-    Locker sessionLocker(session, false);
+    unique_lock<Session> sessionLocker(*session, adopt_lock);
 
     bool doSAML = false;
 
@@ -217,7 +217,7 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
     if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, true)) {
-        sessionLocker.assign();
+        sessionLocker.unlock();
         session = nullptr;
         application.getServiceProvider().getSessionCache()->remove(application, sessionId, revocationExp);
         
@@ -226,7 +226,7 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
     }
 
     if (!doSAML) {
-        sessionLocker.assign();
+        sessionLocker.unlock();
         session = nullptr;
         application.getServiceProvider().getSessionCache()->remove(application, sessionId, revocationExp);
 

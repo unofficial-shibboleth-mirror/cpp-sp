@@ -187,14 +187,6 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
         }
         return shib_acl_false;
     }
-    else if (m_alias == "authnContextDeclRef") {
-        const char* ref = session->getAuthnContextDeclRef();
-        if (ref && m_vals.find(ref) != m_vals.end()) {
-            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextDeclRef (") + ref + "), authz granted");
-            return shib_acl_true;
-        }
-        return shib_acl_false;
-    }
 
     // Find the attribute(s) matching the require rule.
     pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> attrs =
@@ -278,13 +270,6 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
     else if (m_alias == "authnContextClassRef") {
         if (session->getAuthnContextClassRef() && regex_match(session->getAuthnContextClassRef(), m_re)) {
             request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextClassRef (") + m_exp + "), authz granted");
-            return shib_acl_true;
-        }
-        return shib_acl_false;
-    }
-    else if (m_alias == "authnContextDeclRef") {
-        if (session->getAuthnContextDeclRef() && regex_match(session->getAuthnContextDeclRef(), m_re)) {
-            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextDeclRef (") + m_exp + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
