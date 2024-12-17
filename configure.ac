@@ -115,13 +115,6 @@ else
     AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
 fi 
 
-AX_PKG_CHECK_MODULES([log4shib],,[log4shib],
-    [AC_DEFINE([SHIBSP_LOG4SHIB],[1],[Define to 1 if log4shib library is used.])],
-    [AX_PKG_CHECK_MODULES([log4cpp],,[log4cpp],
-        [AC_DEFINE([SHIBSP_LOG4CPP],[1],[Define to 1 if log4cpp library is used.])],,
-        [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])],,
-    [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
-
 AX_PKG_CHECK_MODULES([xerces],,[xerces-c >= 3.2],,,
     [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
 

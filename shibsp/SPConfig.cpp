@@ -26,18 +26,6 @@
 
 #include "internal.h"
 
-#if defined(XMLTOOLING_LOG4SHIB)
-# ifndef SHIBSP_LOG4SHIB
-#  error "Logging library mismatch (XMLTooling is using log4shib)."
-# endif
-#elif defined(XMLTOOLING_LOG4CPP)
-# ifndef SHIBSP_LOG4CPP
-#  error "Logging library mismatch (XMLTooling is using log4cpp)."
-# endif
-#else
-# error "No supported logging library."
-#endif
-
 #include "exceptions.h"
 #include "version.h"
 #include "AccessControl.h"
@@ -68,6 +56,7 @@ using namespace std;
 DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
 DECL_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
+DECL_XMLTOOLING_EXCEPTION_FACTORY(SessionException,shibsp);
 
 namespace shibsp {
     class SHIBSP_DLLLOCAL SPInternalConfig : public SPConfig
@@ -156,6 +145,7 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
     REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
+    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(SessionException,shibsp);
 
     registerAttributeFactories();
 
