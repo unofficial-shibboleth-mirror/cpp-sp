@@ -118,6 +118,8 @@ struct BaseFixture
 };
 
 /////////////
+// File pointing to external ACL file that's invalid XML.
+/////////////
 
 struct External_Invalid_Fixture : public BaseFixture
 {
@@ -135,18 +137,19 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_invalid, External_Invalid_Fixt
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     exceptionCheck checker("Initial AccessControl configuration was invalid.");
-    BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, tree.front().second, true),
-        ConfigurationException, checker.check_message);
+    BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true),
+            ConfigurationException, checker.check_message);
 }
 
 /////////////
-
-/*
+// Inline ACL content that has the wrong child element.
+/////////////
 
 struct Inline_Invalid_Fixture : public BaseFixture
 {
     Inline_Invalid_Fixture() {
-        xml_parser::read_xml(data_path + "inline-invalid.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
+        xml_parser::read_xml(data_path + "internal-acl-invalid.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
     }
     ~Inline_Invalid_Fixture() {
     }
@@ -154,15 +157,19 @@ struct Inline_Invalid_Fixture : public BaseFixture
     ptree tree;
 };
 
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_invalid, Inline_Invalid_Fixture)
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid, Inline_Invalid_Fixture)
 {
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
-    exceptionCheck checker("Invalid configuration.");
-    BOOST_CHECK_EXCEPTION(DummyXMLFile dummy(tree.front().second), domain_error, checker.check_message);
+    exceptionCheck checker("Initial AccessControl configuration was invalid.");
+    BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true),
+            ConfigurationException, checker.check_message);
 }
 
 /////////////
+
+/*
 
 struct Inline_Valid_Fixture : public BaseFixture
 {

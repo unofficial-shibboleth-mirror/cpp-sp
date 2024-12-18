@@ -110,7 +110,9 @@ namespace {
     public:
         XMLRequestMapper(const ptree& pt)
             : ReloadableXMLFile(REQUEST_MAP_PROP_PATH, pt, Category::getInstance(SHIBSP_LOGCAT ".RequestMapper")) {
-            load(); // guarantees an exception or the map is loaded
+            if (!load().second) {
+                throw ConfigurationException("Initial ReqyestMapper configuration was invalid.");
+            }
         }
 
         ~XMLRequestMapper() {}
@@ -661,7 +663,7 @@ pair<bool,ptree*> XMLRequestMapper::load() noexcept
         unique_lock<ReloadableXMLFile> locker(*this);
 #endif
         m_impl.swap(impl);
-        
+
         return make_pair(false, raw.second);
     }
     catch (exception& e) {

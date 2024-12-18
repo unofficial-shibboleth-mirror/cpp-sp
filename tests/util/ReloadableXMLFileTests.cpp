@@ -31,6 +31,8 @@ using namespace std;
 
 #define DATA_PATH "./data/util/reloadablefile/"
 
+namespace {
+
 class DummyXMLFile : virtual public ReloadableXMLFile
 {
 public:
@@ -223,3 +225,5 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_valid, External_Valid_Fixtur
     BOOST_CHECK_GT(ts2, ts1);
     dummy.unlock();
 }
+
+};

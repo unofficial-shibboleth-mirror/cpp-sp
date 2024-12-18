@@ -4,7 +4,7 @@ TESTS = shibsptest
 check_PROGRAMS = shibsptest
 
 shibsptest_CPPFLAGS = \
-	$(BOOST_CPPFLAGS)
+	$(BOOST_CPPFLAGS) -DSHIBSP_LITE
 
 shibsptest_CXXFLAGS = \
 	$(AM_CXXFLAGS)
@@ -12,6 +12,7 @@ shibsptest_CXXFLAGS = \
 shibsptest_SOURCES = \
 	AgentTestSuite.cpp \
 	AgentConfigTests.cpp \
+	impl/XMLAccessControlTests.cpp \
 	util/PropertyTreeTests.cpp \
 	util/BoostPropertySetTests.cpp \
 	util/ReloadableXMLFileTests.cpp

@@ -102,7 +102,9 @@ namespace {
     public:
         XMLAccessControl(const ptree& pt)
             : ReloadableXMLFile(ACCESS_CONTROL_PROP_PATH, pt, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML")) {
-            load(); // guarantees an exception or the policy is loaded
+            if (!load().second) {
+                throw ConfigurationException("Initial AccessControl configuration was invalid.");
+            }
         }
 
         ~XMLAccessControl() {}
