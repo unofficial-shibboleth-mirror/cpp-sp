@@ -299,14 +299,18 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
 
 Operator::Operator(const string& name, const ptree& pt)
 {
-    if (name == "NOT")
-        m_op=OP_NOT;
-    else if (name == "AND")
-        m_op=OP_AND;
-    else if (name == "OR")
-        m_op=OP_OR;
-    else
-        throw ConfigurationException("Unrecognized access control rule type");
+    if (name == "NOT") {
+        m_op = OP_NOT;
+    }
+    else if (name == "AND") {
+        m_op = OP_AND;
+    }
+    else if (name == "OR") {
+        m_op = OP_OR;
+    }
+    else {
+        throw ConfigurationException(string("Unrecognized access control operator: ") + name);
+    }
 
     for (const auto& child : pt) {
         if (child.first == RULE_PROP_PATH) {
@@ -315,7 +319,7 @@ Operator::Operator(const string& name, const ptree& pt)
         else if (child.first == RULE_REGEX_PROP_PATH) {
             m_operands.push_back(unique_ptr<AccessControl>(new RuleRegex(child.second)));
         }
-        else {
+        else if (child.first != "<xmlattr>") {
             m_operands.push_back(unique_ptr<AccessControl>(new Operator(child.first, child.second)));
         }
     }
@@ -370,11 +374,8 @@ unique_ptr<AccessControl> XMLAccessControl::processChild(const string& name, con
     else if (name == RULE_REGEX_PROP_PATH) {
         return unique_ptr<AccessControl>(new RuleRegex(pt));
     }
-    else if (name != "<xmlattr>") {
-        return unique_ptr<AccessControl>(new Operator(name, pt));
-    }
     else {
-        return nullptr;
+        return unique_ptr<AccessControl>(new Operator(name, pt));
     }
 }
 
@@ -386,29 +387,46 @@ pair<bool,ptree*> XMLAccessControl::load() noexcept
         return raw;
     }
 
-    // If we own it, wrap it, but we don't retain use of it.
-    unique_ptr<ptree> treejanitor(raw.first ? raw.second : nullptr);
+    try {
+        // If we own it, wrap it, but we don't retain use of it.
+        unique_ptr<ptree> treejanitor(raw.first ? raw.second : nullptr);
 
-    // This is tentative and almost certainly wrong due to the way the XML
-    // worked in the original config.
+        unique_ptr<AccessControl> authz;
 
-    // In the inline case, there should be a child element named
-    // AccessControl so we need to step down one level.
-    unique_ptr<AccessControl> authz;
-    const auto& child = raw.second->front();
-    if (child.first == ACCESS_CONTROL_PROP_PATH) {
-        const auto& child2 = child.second.front();
-        authz = processChild(child2.first, child2.second);
-    } else {
-        authz = processChild(child.first, child.second);
-    }
+        // We have to skip the <xmlattr> node if it appears.
+        // In the inline case, there should be a child element named
+        // AccessControl so we need to step down one level (and again
+        // skip the <xmlattr> node.
 
-    if (authz) {
-    // Perform the swap inside a lock.
+        for (const auto& child : *raw.second) {
+            if (child.first == "<xmlattr>") {
+                continue;
+            }
+            else if (child.first == ACCESS_CONTROL_PROP_PATH) {
+                for (const auto& child2 : child.second) {
+                    if (child2.first == "<xmlattr>") {
+                        continue;
+                    }
+                    else {
+                        authz = processChild(child2.first, child2.second);
+                    }
+                }
+            }
+            else {
+                authz = processChild(child.first, child.second);
+            }
+        }
+
+        if (authz) {
+        // Perform the swap inside a lock.
 #ifdef HAVE_CXX14
-        unique_lock<ReloadableXMLFile> locker(*this);
+            unique_lock<ReloadableXMLFile> locker(*this);
 #endif
-        m_rootAuthz.swap(authz);
+            m_rootAuthz.swap(authz);
+            return make_pair(false, raw.second);
+        }
+    } catch (const std::exception& e) {
+        m_log.error("exception processing XML configuration: %s", e.what());
     }
 
     return make_pair(false, nullptr);

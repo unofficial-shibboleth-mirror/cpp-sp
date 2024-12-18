@@ -98,7 +98,6 @@ class exceptionCheck {
 public:
     exceptionCheck(const string& msg) : m_msg(msg) {}
     bool check_message(const exception& e) {
-        cout << e.what() << endl;
         return m_msg.compare(e.what()) == 0;
     }
 private:
@@ -126,8 +125,6 @@ struct External_Invalid_Fixture : public BaseFixture
     External_Invalid_Fixture() {
         xml_parser::read_xml(data_path + "external-acl-badxml.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
     }
-    ~External_Invalid_Fixture() {
-    }
 
     ptree tree;
 };
@@ -151,8 +148,6 @@ struct Inline_Invalid_Fixture : public BaseFixture
     Inline_Invalid_Fixture() {
         xml_parser::read_xml(data_path + "internal-acl-invalid.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
     }
-    ~Inline_Invalid_Fixture() {
-    }
 
     ptree tree;
 };
@@ -168,9 +163,29 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid, Inline_Invalid_Fixture)
 }
 
 /////////////
+// Inline ACL content that has a bad internal element.
+/////////////
+
+struct Inline_InvalidInternal_Fixture : public BaseFixture
+{
+    Inline_InvalidInternal_Fixture() {
+        xml_parser::read_xml(data_path + "internal-acl-invalid2.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
+    }
+
+    ptree tree;
+};
+
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid_internal, Inline_InvalidInternal_Fixture)
+{
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    exceptionCheck checker("Initial AccessControl configuration was invalid.");
+    BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true),
+            ConfigurationException, checker.check_message);
+}
 
 /*
-
 struct Inline_Valid_Fixture : public BaseFixture
 {
     Inline_Valid_Fixture() {

@@ -103,7 +103,6 @@ class exceptionCheck {
 public:
     exceptionCheck(const string& msg) : m_msg(msg) {}
     bool check_message(const exception& e) {
-        cout << e.what() << endl;
         return m_msg.compare(e.what()) == 0;
     }
 private:

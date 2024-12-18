@@ -1,0 +1,8 @@
+<AccessControlProvider type="XML">
+	<AccessControl>
+		<AND>
+			<Rule require="affiliation">foo</Rule>
+			<Foo/>
+		</AND>
+	</AccessControl>
+</AccessControlProvider>
