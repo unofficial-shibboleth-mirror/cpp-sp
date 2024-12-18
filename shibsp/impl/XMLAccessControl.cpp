@@ -32,7 +32,6 @@
 #include <algorithm>
 #include <memory>
 #include <regex>
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -42,7 +41,6 @@
 
 using namespace shibsp;
 using namespace boost::property_tree;
-using namespace boost;
 using namespace std;
 
 namespace {
@@ -150,8 +148,8 @@ Rule::Rule(const ptree& pt) : m_alias(pt.get(REQUIRE_PROP_PATH, ""))
         return;
     }
 
-    trim(vals);
-    split(m_vals, vals, boost::is_space(), algorithm::token_compress_on);
+    boost::trim(vals);
+    split(m_vals, vals, boost::is_space(), boost::algorithm::token_compress_on);
     if (m_vals.empty())
         throw ConfigurationException("Rule did not contain any usable values.");
 }
@@ -417,16 +415,13 @@ pair<bool,ptree*> XMLAccessControl::load() noexcept
             }
         }
 
-        if (authz) {
         // Perform the swap inside a lock.
-#ifdef HAVE_CXX14
-            unique_lock<ReloadableXMLFile> locker(*this);
-#endif
-            m_rootAuthz.swap(authz);
-            return make_pair(false, raw.second);
-        }
-    } catch (const std::exception& e) {
-        m_log.error("exception processing XML configuration: %s", e.what());
+        unique_lock<ReloadableXMLFile> locker(*this);
+        m_rootAuthz.swap(authz);
+        return make_pair(false, raw.second);
+    }
+    catch (const exception& e) {
+        m_log.error("exception processing AccessControl configuration: %s", e.what());
     }
 
     return make_pair(false, nullptr);

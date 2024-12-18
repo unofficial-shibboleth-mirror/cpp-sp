@@ -653,23 +653,25 @@ pair<bool,ptree*> XMLRequestMapper::load() noexcept
         // If we own it, wrap it.
         unique_ptr<ptree> treejanitor(raw.first ? raw.second : nullptr);
 
-        unique_ptr<XMLRequestMapperImpl> impl(new XMLRequestMapperImpl(*raw.second, m_log));
+        // We need to navigate down to the properly named child that should have been checked
+        // by the base class.
+        unique_ptr<XMLRequestMapperImpl> impl(
+            new XMLRequestMapperImpl(raw.second->get_child(REQUEST_MAP_PROP_PATH), m_log));
 
         // If we held the document, transfer it to the impl. If we didn't, it's a no-op.
         impl->setTree(treejanitor.release());
 
-    // Perform the swap inside a lock.
-#ifdef HAVE_CXX14
+        // Perform the swap inside a lock.
         unique_lock<ReloadableXMLFile> locker(*this);
-#endif
         m_impl.swap(impl);
 
         return make_pair(false, raw.second);
     }
-    catch (exception& e) {
+    catch (const exception& e) {
         m_log.error("exception loading RequestMapper: %s", e.what());
-        return make_pair(false, nullptr);
     }
+
+    return make_pair(false, nullptr);
 }
 
 RequestMapper::Settings XMLRequestMapper::getSettings(const HTTPRequest& request) const
