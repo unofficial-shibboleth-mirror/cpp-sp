@@ -24,6 +24,7 @@
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
+#include "logging/Category.h"
 #include "util/CGIParser.h"
 
 #include <boost/lexical_cast.hpp>
@@ -41,11 +42,11 @@ SPRequest::~SPRequest()
 
 
 AbstractSPRequest::AbstractSPRequest(const char* category)
-    : m_sp(SPConfig::getConfig().getServiceProvider()),
-        m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr),
-        m_log(nullptr)
+    : m_log(Category::getInstance(category)), m_sp(SPConfig::getConfig().getServiceProvider()),
+        m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr)
 {
-    m_sp->lock();
+    if (m_sp)
+        m_sp->lock();
 }
 
 AbstractSPRequest::~AbstractSPRequest()
@@ -343,25 +344,21 @@ void AbstractSPRequest::setCookie(const char* name, const char* value, time_t ex
 
 void AbstractSPRequest::log(SPLogLevel level, const std::string& msg) const
 {
-    /*
-    reinterpret_cast<Category*>(m_log)->log(
-        (level == SPDebug ? Priority::DEBUG :
-        (level == SPInfo ? Priority::INFO :
-        (level == SPWarn ? Priority::WARN :
-        (level == SPError ? Priority::ERROR : Priority::CRIT)))),
+    m_log.log(
+        (level == SPDebug ? Priority::SHIB_DEBUG :
+        (level == SPInfo ? Priority::SHIB_INFO :
+        (level == SPWarn ? Priority::SHIB_WARN :
+        (level == SPError ? Priority::SHIB_ERROR : Priority::SHIB_CRIT)))),
         msg
         );
-        */
 }
 
 bool AbstractSPRequest::isPriorityEnabled(SPLogLevel level) const
 {
-    /*
-    return reinterpret_cast<Category*>(m_log)->isPriorityEnabled(
-        (level == SPDebug ? Priority::DEBUG :
-        (level == SPInfo ? Priority::INFO :
-        (level == SPWarn ? Priority::WARN :
-        (level == SPError ? Priority::ERROR : Priority::CRIT))))
+    return m_log.isPriorityEnabled(
+        (level == SPDebug ? Priority::SHIB_DEBUG :
+        (level == SPInfo ? Priority::SHIB_INFO :
+        (level == SPWarn ? Priority::SHIB_WARN :
+        (level == SPError ? Priority::SHIB_ERROR : Priority::SHIB_CRIT))))
         );
-        */
 }

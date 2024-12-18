@@ -27,6 +27,7 @@
 namespace shibsp {
     
     class SHIBSP_API CGIParser;
+    class SHIBSP_API Category;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -76,6 +77,7 @@ namespace shibsp {
         bool isPriorityEnabled(SPLogLevel level) const;
 
     private:
+        Category& m_log;
         ServiceProvider* m_sp;
         mutable RequestMapper* m_mapper;
         mutable RequestMapper::Settings m_settings;
@@ -84,7 +86,6 @@ namespace shibsp {
         mutable Session* m_session;
         std::string m_uri;
         mutable std::string m_url;
-        void* m_log; // declared void* to avoid log4cpp header conflicts in Apache
         mutable std::string m_handlerURL;
         mutable boost::scoped_ptr<CGIParser> m_parser;
     };

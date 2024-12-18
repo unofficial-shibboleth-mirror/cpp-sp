@@ -19,6 +19,7 @@
  */
 
 #include "exceptions.h"
+#include "AbstractSPRequest.h"
 #include "AccessControl.h"
 #include "AgentConfig.h"
 #include "SessionCache.h"
@@ -37,7 +38,7 @@ using namespace std;
 namespace {
 
 /** Open structure for testing manipulation. */
-struct DummySession : public Session
+struct DummySession : public Session, public NoOpBasicLockable
 {
 public:
     DummySession() {}
@@ -92,6 +93,28 @@ public:
     string m_ac;
     vector<unique_ptr<Attribute>> m_attributes;
     mutable multimap<string,const Attribute*> m_attributeIndex;
+};
+
+class DummyRequest : public AbstractSPRequest {
+public:
+    DummyRequest() : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest") {}
+    const char* getMethod() const { return nullptr; }
+    const char* getScheme() const { return nullptr; }
+    const char* getHostname() const { return nullptr; }
+    int getPort() const { return 0; }
+    string getContentType() const { return ""; }
+    long getContentLength() const { return -1; }
+    const char* getQueryString() const { return nullptr; }
+    const char* getRequestBody() const { return nullptr; }
+    string getHeader(const char*) const { return nullptr; }
+    string getRemoteUser() const { return nullptr; }
+    string getAuthType() const { return nullptr; }
+    long sendResponse(istream&, long status) { return status; }
+    void clearHeader(const char*, const char*) {}
+    void setHeader(const char*, const char*) {}
+    void setRemoteUser(const char*) {}
+    long returnDecline() { return 200; }
+    long returnOK() { return 200; }
 };
 
 class exceptionCheck {
@@ -185,44 +208,45 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid_internal, Inline_Invalid
             ConfigurationException, checker.check_message);
 }
 
-/*
-struct Inline_Valid_Fixture : public BaseFixture
+/////////////
+// Inline ACL test for authnContextClassRef rule.
+/////////////
+
+struct Inline_ACRule_Fixture : public BaseFixture
 {
-    Inline_Valid_Fixture() {
-        xml_parser::read_xml(data_path + "inline.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-    ~Inline_Valid_Fixture() {
+    Inline_ACRule_Fixture() {
+        xml_parser::read_xml(data_path + "inline-ac-acl.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
     }
 
     ptree tree;
 };
 
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_valid, Inline_Valid_Fixture)
+BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_ACRule, Inline_ACRule_Fixture)
 {
     BOOST_CHECK_EQUAL(tree.size(), 1);
-    DummyXMLFile dummy(tree.front().second);
 
-    dummy.lock_shared();
-    time_t ts1 = dummy.getLastModified();
-    BOOST_CHECK_EQUAL(ts1, 0);
-    dummy.unlock();
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
 
-    // No-op since there's no locking internally.
-    dummy.forceReload();
-    sleep(2);
+    acl->lock_shared();
 
-    dummy.lock_shared();
-    time_t ts2 = dummy.getLastModified();
-    BOOST_CHECK_EQUAL(ts2, 0);
-    dummy.unlock();
+    DummyRequest request;
+    DummySession session;
+    session.m_ac = "Foo";
+
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    session.m_ac = "urn:oasis:names:tc:SAML:2.0:ac:classes:TimeSyncToken";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+
+    acl->unlock_shared();
 }
 
+/*
 struct External_Valid_Fixture : public BaseFixture
 {
     External_Valid_Fixture() {
         xml_parser::read_xml(data_path + "external.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-    ~External_Valid_Fixture() {
     }
 
     ptree tree;
