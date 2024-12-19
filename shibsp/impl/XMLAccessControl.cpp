@@ -323,7 +323,7 @@ Operator::Operator(const string& name, const ptree& pt)
     }
 
     if (m_op == OP_NOT && m_operands.size() != 1) {
-        throw new ConfigurationException("NOT operator contained more than one child");
+        throw ConfigurationException("NOT operator contained more than one child");
     }
 }
 

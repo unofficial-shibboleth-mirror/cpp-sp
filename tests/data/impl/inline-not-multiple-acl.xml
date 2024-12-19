@@ -1,0 +1,8 @@
+<AccessControlProvider type="XML">
+	<AccessControl>
+		<NOT>
+			<Rule require="authnContextClassRef">urn:oasis:names:tc:SAML:2.0:ac:classes:TimeSyncToken</Rule>
+			<Rule require="valid-user" />
+		</NOT>
+	</AccessControl>
+</AccessControlProvider>

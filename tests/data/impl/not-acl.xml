@@ -1,0 +1,5 @@
+<AccessControl>
+	<NOT>
+		<Rule require="affiliation">student</Rule>
+	</NOT>
+</AccessControl>
