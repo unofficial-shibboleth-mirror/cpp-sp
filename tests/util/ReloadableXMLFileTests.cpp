@@ -109,32 +109,28 @@ private:
     string m_msg;
 };
 
-struct BaseFixture
+struct ReloadableXMLFileFixture
 {
-    BaseFixture() : data_path(DATA_PATH) {
+    ReloadableXMLFileFixture() : data_path(DATA_PATH) {
         AgentConfig::getConfig().init(nullptr, (data_path + "console-shibboleth.ini").c_str(), true);
     }
-    ~BaseFixture() {
+    ~ReloadableXMLFileFixture() {
         AgentConfig::getConfig().term();
     }
+
+    void parse(const string& filename) {
+        xml_parser::read_xml(data_path + filename, tree, xml_parser::no_comments|xml_parser::trim_whitespace);
+    }
+
     string data_path;
+    ptree tree;
 };
 
 /////////////
 
-struct External_Invalid_Fixture : public BaseFixture
+BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_invalid, ReloadableXMLFileFixture)
 {
-    External_Invalid_Fixture() {
-        xml_parser::read_xml(data_path + "external-invalid.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-    ~External_Invalid_Fixture() {
-    }
-
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_invalid, External_Invalid_Fixture)
-{
+    parse("external-invalid.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     exceptionCheck checker("Invalid configuration.");
@@ -143,19 +139,9 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_invalid, External_Invalid_Fi
 
 /////////////
 
-struct Inline_Invalid_Fixture : public BaseFixture
+BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_invalid, ReloadableXMLFileFixture)
 {
-    Inline_Invalid_Fixture() {
-        xml_parser::read_xml(data_path + "inline-invalid.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-    ~Inline_Invalid_Fixture() {
-    }
-
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_invalid, Inline_Invalid_Fixture)
-{
+    parse("inline-invalid.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     exceptionCheck checker("Invalid configuration.");
@@ -164,26 +150,16 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_invalid, Inline_Invalid_Fixtur
 
 /////////////
 
-struct Inline_Valid_Fixture : public BaseFixture
+BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_valid, ReloadableXMLFileFixture)
 {
-    Inline_Valid_Fixture() {
-        xml_parser::read_xml(data_path + "inline.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-    ~Inline_Valid_Fixture() {
-    }
-
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_valid, Inline_Valid_Fixture)
-{
+    parse("inline.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
     DummyXMLFile dummy(tree.front().second);
 
     dummy.lock_shared();
     time_t ts1 = dummy.getLastModified();
     BOOST_CHECK_EQUAL(ts1, 0);
-    dummy.unlock();
+    dummy.unlock_shared();
 
     // No-op since there's no locking internally.
     dummy.forceReload();
@@ -192,29 +168,19 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_valid, Inline_Valid_Fixture)
     dummy.lock_shared();
     time_t ts2 = dummy.getLastModified();
     BOOST_CHECK_EQUAL(ts2, 0);
-    dummy.unlock();
+    dummy.unlock_shared();
 }
 
-struct External_Valid_Fixture : public BaseFixture
+BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_valid, ReloadableXMLFileFixture)
 {
-    External_Valid_Fixture() {
-        xml_parser::read_xml(data_path + "external.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-    ~External_Valid_Fixture() {
-    }
-
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_valid, External_Valid_Fixture)
-{
+    parse("external.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
     DummyXMLFile dummy(tree.front().second);
 
     dummy.lock_shared();
     time_t ts1 = dummy.getLastModified();
     BOOST_CHECK_GT(ts1, 0);
-    dummy.unlock();
+    dummy.unlock_shared();
 
     dummy.forceReload();
     sleep(2);
@@ -222,7 +188,7 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_valid, External_Valid_Fixtur
     dummy.lock_shared();
     time_t ts2 = dummy.getLastModified();
     BOOST_CHECK_GT(ts2, ts1);
-    dummy.unlock();
+    dummy.unlock_shared();
 }
 
 };

@@ -354,8 +354,8 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
         {
             // Look for a rule that returns true.
             for (const auto& i : m_operands) {
-                if (i->authorized(request,session) != shib_acl_true)
-                    return shib_acl_false;
+                if (i->authorized(request,session) == shib_acl_true)
+                    return shib_acl_true;
             }
             return shib_acl_false;
         }

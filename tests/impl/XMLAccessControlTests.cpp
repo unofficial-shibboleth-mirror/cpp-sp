@@ -24,7 +24,12 @@
 #include "AgentConfig.h"
 #include "SessionCache.h"
 #include "attribute/Attribute.h"
+#include "attribute/SimpleAttribute.h"
 #include "logging/Category.h"
+
+#ifdef HAVE_CXX14
+# include <shared_mutex>
+#endif
 
 #include <boost/test/unit_test.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -107,7 +112,7 @@ public:
     const char* getQueryString() const { return nullptr; }
     const char* getRequestBody() const { return nullptr; }
     string getHeader(const char*) const { return nullptr; }
-    string getRemoteUser() const { return nullptr; }
+    string getRemoteUser() const { return m_user; }
     string getAuthType() const { return nullptr; }
     long sendResponse(istream&, long status) { return status; }
     void clearHeader(const char*, const char*) {}
@@ -115,6 +120,8 @@ public:
     void setRemoteUser(const char*) {}
     long returnDecline() { return 200; }
     long returnOK() { return 200; }
+
+    string m_user;
 };
 
 class exceptionCheck {
@@ -127,15 +134,20 @@ private:
     string m_msg;
 };
 
-struct BaseFixture
+struct XMLAccessControlFixture
 {
-    BaseFixture() : data_path(DATA_PATH) {
+    XMLAccessControlFixture() : data_path(DATA_PATH) {
         AgentConfig::getConfig().init(nullptr, (data_path + "console-shibboleth.ini").c_str(), true);
     }
-    ~BaseFixture() {
+    ~XMLAccessControlFixture() {
         AgentConfig::getConfig().term();
     }
 
+    void parse(const string& filename) {
+        xml_parser::read_xml(data_path + filename, tree, xml_parser::no_comments|xml_parser::trim_whitespace);
+    }
+
+    ptree tree;
     string data_path;
 };
 
@@ -143,17 +155,9 @@ struct BaseFixture
 // File pointing to external ACL file that's invalid XML.
 /////////////
 
-struct External_Invalid_Fixture : public BaseFixture
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_invalid, XMLAccessControlFixture)
 {
-    External_Invalid_Fixture() {
-        xml_parser::read_xml(data_path + "external-acl-badxml.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_invalid, External_Invalid_Fixture)
-{
+    parse("external-acl-badxml.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     exceptionCheck checker("Initial AccessControl configuration was invalid.");
@@ -166,17 +170,9 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_invalid, External_Invalid_Fixt
 // Inline ACL content that has the wrong child element.
 /////////////
 
-struct Inline_Invalid_Fixture : public BaseFixture
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid, XMLAccessControlFixture)
 {
-    Inline_Invalid_Fixture() {
-        xml_parser::read_xml(data_path + "internal-acl-invalid.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid, Inline_Invalid_Fixture)
-{
+    parse("internal-acl-invalid.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     exceptionCheck checker("Initial AccessControl configuration was invalid.");
@@ -189,17 +185,9 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid, Inline_Invalid_Fixture)
 // Inline ACL content that has a bad internal element.
 /////////////
 
-struct Inline_InvalidInternal_Fixture : public BaseFixture
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid_internal, XMLAccessControlFixture)
 {
-    Inline_InvalidInternal_Fixture() {
-        xml_parser::read_xml(data_path + "internal-acl-invalid2.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid_internal, Inline_InvalidInternal_Fixture)
-{
+    parse("internal-acl-invalid2.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     exceptionCheck checker("Initial AccessControl configuration was invalid.");
@@ -209,68 +197,141 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_invalid_internal, Inline_Invalid
 }
 
 /////////////
-// Inline ACL test for authnContextClassRef rule.
+// Inline ACL test for valid-user rule.
 /////////////
 
-struct Inline_ACRule_Fixture : public BaseFixture
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_ValidUserRule, XMLAccessControlFixture)
 {
-    Inline_ACRule_Fixture() {
-        xml_parser::read_xml(data_path + "inline-ac-acl.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
-
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_ACRule, Inline_ACRule_Fixture)
-{
+    parse("inline-valid-user-acl.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
         tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
 
-    acl->lock_shared();
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
 
     DummyRequest request;
     DummySession session;
-    session.m_ac = "Foo";
 
+    BOOST_CHECK_EQUAL(acl->authorized(request, nullptr), AccessControl::shib_acl_false);
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+}
+
+/////////////
+// Inline ACL test for user rule.
+/////////////
+
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRule, XMLAccessControlFixture)
+{
+    parse("inline-user-acl.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    DummyRequest request;
+    DummySession session;
+
+    request.m_user = "smith";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    request.m_user = "jdoe";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+}
+
+/////////////
+// Inline ACL test for authnContextClassRef rule.
+/////////////
+
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_ACRule, XMLAccessControlFixture)
+{
+    parse("inline-ac-acl.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    DummyRequest request;
+    DummySession session;
+
+    session.m_ac = "Foo";
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 
     session.m_ac = "urn:oasis:names:tc:SAML:2.0:ac:classes:TimeSyncToken";
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
-
-    acl->unlock_shared();
 }
 
-/*
-struct External_Valid_Fixture : public BaseFixture
-{
-    External_Valid_Fixture() {
-        xml_parser::read_xml(data_path + "external.xml", tree, xml_parser::no_comments|xml_parser::trim_whitespace);
-    }
+/////////////
+// Inline ACL test for attribute rule.
+/////////////
 
-    ptree tree;
-};
-
-BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_valid, External_Valid_Fixture)
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_AttrRule, XMLAccessControlFixture)
 {
+    parse("inline-attr-acl.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
-    DummyXMLFile dummy(tree.front().second);
 
-    dummy.lock_shared();
-    time_t ts1 = dummy.getLastModified();
-    BOOST_CHECK_GT(ts1, 0);
-    dummy.unlock();
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
 
-    dummy.forceReload();
-    sleep(2);
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
 
-    dummy.lock_shared();
-    time_t ts2 = dummy.getLastModified();
-    BOOST_CHECK_GT(ts2, ts1);
-    dummy.unlock();
+    DummyRequest request;
+    DummySession session;
+
+    session.m_attributes.push_back(unique_ptr<Attribute>(new SimpleAttribute({"affiliation"})));
+    SimpleAttribute& attr = dynamic_cast<SimpleAttribute&>(*(session.m_attributes.back()));
+
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    attr.getValues().push_back("staff");
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    attr.getValues().push_back("student");
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 }
 
-*/
+/////////////
+// External ACL test for OR operator
+/////////////
+
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_OR, XMLAccessControlFixture)
+{
+    parse("external-or-acl.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    DummyRequest request;
+    DummySession session;
+
+    session.m_attributes.push_back(unique_ptr<Attribute>(new SimpleAttribute({"affiliation"})));
+    SimpleAttribute& attr = dynamic_cast<SimpleAttribute&>(*(session.m_attributes.back()));
+
+    request.m_user = "jdoe";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+
+    request.m_user = "smith";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    attr.getValues().push_back("student");
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+}
 
 };
