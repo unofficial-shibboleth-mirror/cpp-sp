@@ -664,6 +664,7 @@ pair<bool,ptree*> XMLRequestMapper::load() noexcept
         // Perform the swap inside a lock.
         unique_lock<ReloadableXMLFile> locker(*this);
         m_impl.swap(impl);
+        updateModificationTime();
 
         return make_pair(false, raw.second);
     }

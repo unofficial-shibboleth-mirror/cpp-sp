@@ -418,6 +418,7 @@ pair<bool,ptree*> XMLAccessControl::load() noexcept
         // Perform the swap inside a lock.
         unique_lock<ReloadableXMLFile> locker(*this);
         m_rootAuthz.swap(authz);
+        updateModificationTime();
         return make_pair(false, raw.second);
     }
     catch (const exception& e) {
