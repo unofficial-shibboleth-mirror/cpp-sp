@@ -38,7 +38,7 @@ using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
 
-#define DATA_PATH "./data/impl/"
+#define DATA_PATH "./data/impl/acl/"
 
 namespace {
 
@@ -137,7 +137,7 @@ private:
 struct XMLAccessControlFixture
 {
     XMLAccessControlFixture() : data_path(DATA_PATH) {
-        AgentConfig::getConfig().init(nullptr, (data_path + "console-shibboleth.ini").c_str(), true);
+        AgentConfig::getConfig().init(nullptr, (data_path + "../console-shibboleth.ini").c_str(), true);
     }
     ~XMLAccessControlFixture() {
         AgentConfig::getConfig().term();
