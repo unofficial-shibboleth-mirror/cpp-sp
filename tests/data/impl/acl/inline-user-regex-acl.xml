@@ -1,0 +1,5 @@
+<AccessControlProvider type="XML">
+	<AccessControl>
+		<RuleRegex require="user">jd.*</Rule>
+	</AccessControl>
+</AccessControlProvider>
