@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <set>
 #include <regex>
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>

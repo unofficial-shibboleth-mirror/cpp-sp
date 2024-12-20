@@ -32,6 +32,7 @@
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutInitiator.h"
+#include <mutex>
 
 using namespace shibsp;
 using namespace xmltooling;

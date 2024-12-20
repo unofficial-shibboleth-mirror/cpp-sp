@@ -38,6 +38,7 @@
 #include "util/TemplateParameters.h"
 
 #include <memory>
+#include <mutex>
 #include <fstream>
 #include <sstream>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
