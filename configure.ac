@@ -93,6 +93,22 @@ BOOST_STRING_ALGO
 BOOST_TEST
 BOOST_TUPLE
 
+## Use Boost for regex?
+AC_ARG_ENABLE([boost-regex],
+    AS_HELP_STRING([--disable-boost-regex],[do not use Boost for regular expression support]),
+    [boostregex_enabled=$enableval], [boostregex_enabled=yes])
+if test "x$boostregex_enabled" = "x" ; then
+    boostregex_enabled=yes
+fi
+AC_MSG_CHECKING(whether to use Boost for regular expressions)
+if test "$boostregex_enabled" = "no" ; then
+    AC_MSG_RESULT(no)
+else
+    AC_MSG_RESULT(yes)
+    BOOST_REGEX
+    AC_DEFINE([SHIBSP_USE_BOOST_REGEX],[1],[Define if using Boost for regular expressions.])
+fi
+
 # Thank you Solaris, really.
 AC_MSG_CHECKING(for ctime_r)
 if test -z "$ac_cv_ctime_args"; then

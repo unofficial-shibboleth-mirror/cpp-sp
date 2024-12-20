@@ -261,6 +261,32 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRule, XMLAccessControlFixtur
 }
 
 /////////////
+// Inline ACL test for user regex rule.
+/////////////
+
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRegexRule, XMLAccessControlFixture)
+{
+    parse("inline-user-regex-acl.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    DummyRequest request;
+    DummySession session;
+
+    request.m_user = "smith";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    request.m_user = "jdoe";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+}
+
+/////////////
 // Inline ACL test for authnContextClassRef rule.
 /////////////
 

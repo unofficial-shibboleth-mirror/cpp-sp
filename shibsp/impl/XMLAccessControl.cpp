@@ -32,9 +32,16 @@
 #include <algorithm>
 #include <memory>
 #include <set>
-#include <regex>
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
+
+#ifdef SHIBSP_USE_BOOST_REGEX
+# include <boost/regex.hpp>
+namespace exp = boost;
+#else
+# include <regex>
+namespace exp = std;
+#endif
 
 #ifndef HAVE_STRCASECMP
 # define strcasecmp _stricmp
@@ -70,7 +77,7 @@ namespace {
     private:
         string m_alias;
         string m_exp;
-        regex m_re;
+        exp::regex m_re;
     };
 
     class Operator : public AccessControl, public NoOpSharedLockable
@@ -168,14 +175,14 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
 
     if (m_alias == "valid-user") {
         if (session) {
-            request.log(SPRequest::SPDebug,"AccessControl plugin accepting valid-user based on active session");
+            request.log(SPRequest::SPDebug,"AccessControl rule accepting valid-user based on active session");
             return shib_acl_true;
         }
         return shib_acl_false;
     }
     if (m_alias == "user") {
         if (m_vals.find(request.getRemoteUser()) != m_vals.end()) {
-            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting REMOTE_USER (") + request.getRemoteUser() + "), authz granted");
+            request.log(SPRequest::SPDebug, string("AccessControl rule expecting REMOTE_USER (") + request.getRemoteUser() + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
@@ -183,7 +190,7 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     else if (m_alias == "authnContextClassRef") {
         const char* ref = session->getAuthnContextClassRef();
         if (ref && m_vals.find(ref) != m_vals.end()) {
-            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextClassRef (") + ref + "), authz granted");
+            request.log(SPRequest::SPDebug, string("AccessControl rule expecting authnContextClassRef (") + ref + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
@@ -193,11 +200,11 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> attrs =
         session->getIndexedAttributes().equal_range(m_alias);
     if (attrs.first == attrs.second) {
-        request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
+        request.log(SPRequest::SPWarn, string("AccessControl rule requires attribute (") + m_alias + "), not found in session");
         return shib_acl_false;
     }
     else if (m_vals.empty()) {
-        request.log(SPRequest::SPDebug, string("AccessControl plugin requires presence of attribute (") + m_alias + "), authz granted");
+        request.log(SPRequest::SPDebug, string("AccessControl rule requires presence of attribute (") + m_alias + "), authz granted");
         return shib_acl_true;
     }
 
@@ -209,7 +216,7 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
         for (set<string>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i) {
             for (vector<string>::const_iterator j = vals.begin(); j != vals.end(); ++j) {
                 if ((caseSensitive && *i == *j) || (!caseSensitive && !strcasecmp(i->c_str(),j->c_str()))) {
-                    request.log(SPRequest::SPDebug, string("AccessControl plugin expecting (") + *j + "), authz granted");
+                    request.log(SPRequest::SPDebug, string("AccessControl rule expecting (") + *j + "), authz granted");
                     return shib_acl_true;
                 }
             }
@@ -229,24 +236,21 @@ RuleRegex::RuleRegex(const ptree& pt)
     static string_to_bool_translator tr;
     bool caseSensitive = pt.get(CASE_SENSITIVE_PROP_PATH, true);
     try {
-        // TODO: more flag options, particular for dialect.
-        regex::flag_type flags = regex_constants::optimize;
+        exp::regex_constants::syntax_option_type flags = exp::regex_constants::extended | exp::regex_constants::optimize;
         if (!caseSensitive) {
-            flags |= regex_constants::icase;
+            flags |= exp::regex_constants::icase;
         }
-        m_re = regex(m_exp, flags);
+        m_re = exp::regex(m_exp, flags);
     }
-    catch (const regex_error&) {
+    catch (const exp::regex_error&) {
         throw ConfigurationException("Caught exception while parsing RuleRegex regular expression.");
     }
 }
 
 AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const Session* session) const
 {
-    // TODO: Have to confirm we want regex_match here vs. regex_search.
-    // TODO: Have to consider match_flags as well, particularly against some open issues raised against the Xerces behavior.
 
-    // Map alias in rule to the attribute.
+    static exp::regex_constants::match_flag_type match_flags = exp::regex_constants::match_any | exp::regex_constants::match_not_null;
 
     if (!session) {
         request.log(SPRequest::SPWarn, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
@@ -255,22 +259,22 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
 
     if (m_alias == "valid-user") {
         if (session) {
-            request.log(SPRequest::SPDebug,"AccessControl plugin accepting valid-user based on active session");
+            request.log(SPRequest::SPDebug,"AccessControl rule accepting valid-user based on active session");
             return shib_acl_true;
         }
         return shib_acl_false;
     }
 
     if (m_alias == "user") {
-        if (regex_match(request.getRemoteUser(), m_re)) {
-            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting REMOTE_USER (") + m_exp + "), authz granted");
+        if (exp::regex_match(request.getRemoteUser(), m_re, match_flags)) {
+            request.log(SPRequest::SPDebug, string("AccessControl rule expecting REMOTE_USER regex (") + m_exp + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
     }
     else if (m_alias == "authnContextClassRef") {
-        if (session->getAuthnContextClassRef() && regex_match(session->getAuthnContextClassRef(), m_re)) {
-            request.log(SPRequest::SPDebug, string("AccessControl plugin expecting authnContextClassRef (") + m_exp + "), authz granted");
+        if (session->getAuthnContextClassRef() && exp::regex_match(session->getAuthnContextClassRef(), m_re, match_flags)) {
+            request.log(SPRequest::SPDebug, string("AccessControl rule expecting authnContextClassRef regex (") + m_exp + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
@@ -279,15 +283,15 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
     // Find the attribute(s) matching the require rule.
     auto attrs = session->getIndexedAttributes().equal_range(m_alias);
     if (attrs.first == attrs.second) {
-        request.log(SPRequest::SPWarn, string("rule requires attribute (") + m_alias + "), not found in session");
+        request.log(SPRequest::SPWarn, string("AccessControl rule requires attribute (") + m_alias + "), not found in session");
         return shib_acl_false;
     }
 
     for (; attrs.first != attrs.second; ++attrs.first) {
         // Now we have to intersect the attribute's values against the regular expression.
         for (const string& v : attrs.first->second->getSerializedValues()) {
-            if (regex_match(v, m_re)) {
-                request.log(SPRequest::SPDebug, string("AccessControl plugin expecting (") + m_exp + "), authz granted");
+            if (exp::regex_match(v, m_re, match_flags)) {
+                request.log(SPRequest::SPDebug, string("AccessControl rule expecting regex (") + m_exp + "), authz granted");
                 return shib_acl_true;
             }
         }

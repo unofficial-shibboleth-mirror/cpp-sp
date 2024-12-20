@@ -57,14 +57,19 @@
 #include <set>
 #include <memory>
 #include <fstream>
-#include <regex>
 #ifdef HAVE_CXX14
 # include <shared_mutex>
 #endif
 #include <stdexcept>
-#include <boost/lexical_cast.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
+#ifdef SHIBSP_USE_BOOST_REGEX
+# include <boost/regex.hpp>
+namespace exp = boost;
+#else
+# include <regex>
+namespace exp = std;
+#endif
 // Apache specific header files
 #include <httpd.h>
 #include <http_config.h>
@@ -89,7 +94,6 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost::property_tree;
-using namespace boost;
 using namespace std;
 
 extern "C" module AP_MODULE_DECLARE_DATA shib_module;
@@ -891,10 +895,10 @@ AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, 
         if (regexp) {
             try {
                 // TODO: support regex options?
-                regex re(w);
-                match = regex_match(sta.getRemoteUser(), re);
+                exp::regex re(w, exp::regex_constants::extended);
+                match = exp::regex_match(sta.getRemoteUser(), re, exp::regex_constants::match_any | exp::regex_constants::match_not_null);
             }
-            catch (const regex_error& e) {
+            catch (const exp::regex_error& e) {
                 sta.log(SPRequest::SPError,
                     string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
             }
@@ -936,11 +940,10 @@ AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApach
             bool match = false;
             if (regexp) {
                 try {
-                    // TODO: support regex options?
-                    regex re(w);
-                    match = regex_match(ref, re);
+                    exp::regex re(w, exp::regex_constants::extended);
+                    match = exp::regex_match(ref, re, exp::regex_constants::match_any | exp::regex_constants::match_not_null);
                 }
-                catch (const regex_error& e) {
+                catch (const exp::regex_error& e) {
                     sta.log(SPRequest::SPError,
                         string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
                 }
@@ -970,18 +973,18 @@ bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* 
     const vector<string>& vals = attr->getSerializedValues();
     for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
         if (isRegex) {
-            regex::flag_type flags = regex_constants::optimize;
+            exp::regex_constants::syntax_option_type flags = exp::regex_constants::extended;
             if (!caseSensitive) {
-                flags |= regex_constants::icase;
+                flags |= exp::regex_constants::icase;
             }
             try {
-                regex exp(toMatch, flags);
-                if (regex_match(*v, exp)) {
+                exp::regex exp(toMatch, flags);
+                if (exp::regex_match(*v, exp, exp::regex_constants::match_any | exp::regex_constants::match_not_null)) {
                     if (request.isPriorityEnabled(SPRequest::SPDebug))
                         request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": accepted");
                     return true;
                 }
-            } catch (const regex_error& e) {
+            } catch (const exp::regex_error& e) {
                 request.log(SPRequest::SPError,
                     string("htaccess plugin caught exception while parsing regular expression (") + toMatch + "): " + e.what());
             }

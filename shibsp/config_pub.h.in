@@ -9,3 +9,7 @@
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #undef SHIBSP_HAVE_SYS_SOCKET_H
+
+/* Define if using Boost for regular expressions. */
+#undef SHIBSP_USE_BOOST_REGEX
+

@@ -21,3 +21,6 @@
 /* define if the compiler supports basic C++17 syntax */
 #define HAVE_CXX17 1
 
+/* Define if using Boost for regular expressions. */
+#define SHIBSP_USE_BOOST_REGEX 1
+

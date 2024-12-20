@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-/** XMLRequestMapper.cpp
+/** impl/XMLRequestMapper.cpp
  *
  * XML-based RequestMapper implementation.
  */
@@ -33,13 +33,20 @@
 
 #include <algorithm>
 #include <memory>
-#include <regex>
 #include <tuple>
 #include <utility>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/algorithm/string.hpp>
+
+#ifdef SHIBSP_USE_BOOST_REGEX
+# include <boost/regex.hpp>
+namespace exp = boost;
+#else
+# include <regex>
+namespace exp = std;
+#endif
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -75,8 +82,8 @@ namespace {
         // This uses shared_ptr to support multiple mappings for a given Override for Host.
         // For Path, it's just overhead.
         map< string,shared_ptr<Override> > m_map;
-        vector< pair< regex,unique_ptr<Override> > > m_regexps;
-        vector< tuple< string,boost::optional<regex>,unique_ptr<Override> > > m_queries;
+        vector< pair< exp::regex,unique_ptr<Override> > > m_regexps;
+        vector< tuple< string,boost::optional<exp::regex>,unique_ptr<Override> > > m_queries;
 
     private:
         unique_ptr<AccessControl> m_acl;
@@ -134,6 +141,9 @@ namespace {
     {
         return new XMLRequestMapper(pt);
     }
+
+    static exp::regex_constants::match_flag_type match_flags =
+        exp::regex_constants::match_any | exp::regex_constants::match_not_null;
 }
 
 void SHIBSP_API shibsp::registerRequestMappers()
@@ -316,15 +326,15 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
 
             try {
                 // TODO: more flag options, particular for dialect.
-                regex::flag_type flags = regex_constants::optimize;
+                exp::regex::flag_type flags = exp::regex_constants::extended | exp::regex_constants::optimize;
                 if (!getBool("caseSensitive", false)) {
-                    flags |= regex_constants::icase;
+                    flags |= exp::regex_constants::icase;
                 }
-                regex exp(regexpprop, flags);
+                exp::regex exp(regexpprop, flags);
                 m_regexps.push_back(make_pair(exp, std::move(o)));
                 log.debug("added <PathRegex> mapping (%s)", regexpprop.c_str());
             }
-            catch (const regex_error& e) {
+            catch (const exp::regex_error& e) {
                 log.error("error parsing PathRegex regular expression: %s", e.what());
                 throw ConfigurationException("Invalid regular expression in PathRegex element.");
             }
@@ -341,21 +351,21 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
             string regexpprop(getString("regex", ""));
 
             if (regexpprop.empty()) {
-                m_queries.push_back(make_tuple(nameprop, boost::optional<regex>(), std::move(o)));
+                m_queries.push_back(make_tuple(nameprop, boost::optional<exp::regex>(), std::move(o)));
             }
             else {
                 try {
                     // TODO: more flag options, particular for dialect.
-                    regex::flag_type flags = regex_constants::optimize;
+                    exp::regex::flag_type flags = exp::regex_constants::extended | exp::regex_constants::optimize;
                     if (!getBool("caseSensitive", false)) {
-                        flags |= regex_constants::icase;
+                        flags |= exp::regex_constants::icase;
                     }
-                    regex exp(regexpprop, flags);
+                    exp::regex exp(regexpprop, flags);
 
-                    m_queries.push_back(make_tuple(nameprop, boost::optional<regex>(exp), std::move(o)));
+                    m_queries.push_back(make_tuple(nameprop, boost::optional<exp::regex>(exp), std::move(o)));
                     log.debug("added <Query> mapping (%s)", nameprop.c_str());
                 }
-                catch (const regex_error& e) {
+                catch (const exp::regex_error& e) {
                     log.error("caught exception while parsing Query regular expression: %s", e.what());
                     throw ConfigurationException("Invalid regular expression in Query element.");
                 }
@@ -435,7 +445,7 @@ const Override* Override::locate(const HTTPRequest& request) const
     // If there's anything left, we try for a regex match on the rest of the path minus the query string.
     if (*path) {
         for (const auto& re : m_regexps) {
-            if (regex_match(path, re.first)) {
+            if (regex_match(path, re.first, match_flags)) {
                 o = re.second.get();
                 break;
             }
@@ -455,7 +465,7 @@ const Override* Override::locate(const HTTPRequest& request) const
                     if (get<1>(*q)) {
                         // We have to match one of the values.
                         while (vals.first != vals.second) {
-                            if (regex_match(vals.first->second, get<1>(*q).get())) {
+                            if (exp::regex_match(vals.first->second, get<1>(*q).get(), match_flags)) {
                                 o = get<2>(*q).get();
                                 descended = true;
                                 break;
@@ -507,14 +517,14 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
             unique_ptr<Override> o(new Override(m_unicodeAware, child.second, log, this));
 
             try {
-                regex::flag_type flags = regex_constants::optimize;
+                exp::regex::flag_type flags = exp::regex_constants::extended | exp::regex_constants::optimize;
                 if (!getBool("caseSensitive", false)) {
-                    flags |= regex_constants::icase;
+                    flags |= exp::regex_constants::icase;
                 }
-                regex exp(regexprop, flags);
+                exp::regex exp(regexprop, flags);
                 m_regexps.push_back(make_pair(exp, std::move(o)));
             }
-            catch (const regex_error& e) {
+            catch (const exp::regex_error& e) {
                 log.error("caught exception while parsing HostRegex regular expression: %s", e.what());
             }
 
@@ -632,7 +642,7 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const HTTP
         o = i->second.get();
     else {
         for (const auto& re : m_regexps) {
-            if (regex_match(vhost, re.first)) {
+            if (exp::regex_match(vhost, re.first, match_flags)) {
                 o = re.second.get();
             }
         }
