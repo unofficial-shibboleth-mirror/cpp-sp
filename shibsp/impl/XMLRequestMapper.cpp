@@ -111,6 +111,8 @@ namespace {
 #endif
 
     static const char REQUEST_MAP_PROP_PATH[] = "RequestMap";
+    static const char NAME_PROP_PATH[] = "<xmlattr>.name";
+    static const char REGEX_PROP_PATH[] = "<xmlattr>.regex";
 
     class XMLRequestMapper : public RequestMapper, public ReloadableXMLFile
     {
@@ -118,7 +120,7 @@ namespace {
         XMLRequestMapper(const ptree& pt)
             : ReloadableXMLFile(REQUEST_MAP_PROP_PATH, pt, Category::getInstance(SHIBSP_LOGCAT ".RequestMapper")) {
             if (!load().second) {
-                throw ConfigurationException("Initial ReqyestMapper configuration was invalid.");
+                throw ConfigurationException("Initial RequestMapper configuration was invalid.");
             }
         }
 
@@ -210,9 +212,9 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
     : m_unicodeAware(unicodeAware)
 {
     // Load the <xmlattr> tree as a property set.
-    const boost::optional<ptree&> xmlattrs = pt.get_child_optional("<xmlattr>");
-    if (xmlattrs) {
-        load(xmlattrs.get(), "unset");
+    const boost::optional<ptree&> xmlattr = pt.get_child_optional("<xmlattr>");
+    if (xmlattr) {
+        load(xmlattr.get(), "unset");
     }
     setParent(base);
 
@@ -222,14 +224,12 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
     static const char PATH_PROP_PATH[] = "Path";
     static const char PATH_REGEX_PROP_PATH[] = "PathRegex";
     static const char QUERY_PROP_PATH[] = "Query";
-    static const char NAME_PROP_PATH[] = "<xmlattr>.name";
-    static const char REGEX_PROP_PATH[] = "<xmlattr>.regex";
 
     // Process the various child types.
 
     for (auto& child : pt) {
         if (child.first == PATH_PROP_PATH) {
-            const string nameprop(getString("name", ""));
+            const string nameprop(child.second.get(NAME_PROP_PATH, ""));
             const char* n = nameprop.c_str();
 
             // Skip any leading slashes.
@@ -259,46 +259,43 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
                     ++n;
 
                 if (*n) {
-                    // TODO: Seriously doubt any of this will work, but fixing it will
-                    // require substantial redesign.
+                    // TODO: Tests suggest this is working, but that's extremely hard to
+                    // fully believe yet.
 
                     // namebuf has the segment to process at "this" level
-                    // The "new" injected Path Oevrride containing it would have no other
-                    // attributes since the settings in the slash-containing Path would
-                    // apply only to the final "leaf" of the Path's directory tree.
+                    // The "new" injected Path Oevrride containing it should have no other
+                    // attributes since the settings in the slash-containing Path apply
+                    // only to the final "leaf" of the Path's directory tree.
 
                     // The currently iterated pair's second member is the original Path
                     // tree with the multi-part pathname and all the settings under <xmlattr>.
-                    // We would have to make the iterated pair's second member be a tree
+                    // We have to make the iterated pair's second member be a tree
                     // containing the namebuf path segment under <xmlattr>.name and containing
-                    // the original tree with a modified <xmlattr>.name set to *n under a child named Path.
+                    // the original tree with a modified <xmlattr>.name set to *n under a child
+                    // named Path.
 
                     // Copy the old child tree into a local variable and adjust its name.
                     ptree old_child(child.second);
                     old_child.put(NAME_PROP_PATH, n);
 
-                    // Create a new tree with just the namebuf prefix and the new child under it.
+                    // Create a new tree with just the namebuf prefix and the old child under it.
                     ptree new_child;
                     new_child.put(NAME_PROP_PATH, namebuf);
                     new_child.add_child(PATH_PROP_PATH, old_child);
 
                     // Replace the original child iterated with the "new" child.
                     child.second = new_child;
-                    
-                    // Repoint our locals at the new parent.
-                    n = namebuf.c_str();    // seems like this shouldn't be needed
                 }
                 else {
                     // All we had was a pathname with trailing slash(es), so just reset it without them.
                     child.second.put(NAME_PROP_PATH, namebuf);
-                    n = namebuf.c_str();    // seems like this shouldn't be needed
                 }
             }
 
             shared_ptr<Override> o(new Override(m_unicodeAware, child.second, log, this));
             string mutable_path = o->getString("name", "");
             if (mutable_path.empty()) {
-                throw new ConfigurationException("Path element did not contain a name attribute.");
+                throw ConfigurationException("Path element did not contain a name attribute.");
             }
 
             // The thinking here is that the Unicode flag tells it to treat the
@@ -327,7 +324,7 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
             try {
                 // TODO: more flag options, particular for dialect.
                 exp::regex::flag_type flags = exp::regex_constants::extended | exp::regex_constants::optimize;
-                if (!getBool("caseSensitive", false)) {
+                if (!o->getBool("caseSensitive", false)) {
                     flags |= exp::regex_constants::icase;
                 }
                 exp::regex exp(regexpprop, flags);
@@ -340,7 +337,7 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
             }
         }
         else if (child.first == QUERY_PROP_PATH) {
-            string nameprop(getString("name", ""));
+            string nameprop(child.second.get(NAME_PROP_PATH, ""));
             if (nameprop.empty()) {
                 log.warn("skipping Query element with empty name attribute");
                 continue;
@@ -348,7 +345,7 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
 
             unique_ptr<Override> o(new Override(m_unicodeAware, child.second, log, this));
 
-            string regexpprop(getString("regex", ""));
+            string regexpprop(o->getString("regex", ""));
 
             if (regexpprop.empty()) {
                 m_queries.push_back(make_tuple(nameprop, boost::optional<exp::regex>(), std::move(o)));
@@ -357,7 +354,7 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
                 try {
                     // TODO: more flag options, particular for dialect.
                     exp::regex::flag_type flags = exp::regex_constants::extended | exp::regex_constants::optimize;
-                    if (!getBool("caseSensitive", false)) {
+                    if (!o->getBool("caseSensitive", false)) {
                         flags |= exp::regex_constants::icase;
                     }
                     exp::regex exp(regexpprop, flags);
@@ -370,6 +367,9 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
                     throw ConfigurationException("Invalid regular expression in Query element.");
                 }
             }
+        }
+        else if (child.first != "<xmlattr>") {
+            throw ConfigurationException(string("Unrecognized child element: ") + child.first);
         }
     }
 }
@@ -488,29 +488,32 @@ const Override* Override::locate(const HTTPRequest& request) const
 
 XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
 {
-    // Load the property set.
-    load(pt, "unset");
+
+    static const char HOST_PROP_PATH[] = "Host";
+    static const char HOST_REGEX_PROP_PATH[] = "HostRegex";
+    static const char APPLICATION_ID_PROP_PATH[] = "<xmlattr>.applicationId";
 
     // This probably will go away at some point but for now just leaving it.
     // Inject "default" app ID if not explicit.
-    if (!getString("applicationId")) {
-        pt.put("applicationId", "default");
+    const boost::optional<string> appId = pt.get_optional<string>(APPLICATION_ID_PROP_PATH);
+    if (!appId) {
+        pt.put(APPLICATION_ID_PROP_PATH, "default");
     }
+
+    // Load the property set.
+    load(pt.get_child("<xmlattr>"), "unset");
 
     // Load any AccessControl provider.
     loadACL(pt, log);
 
     m_unicodeAware = getBool("unicodeAware", false);
 
-    static const char HOST_PROP_PATH[] = "Host";
-    static const char HOST_REGEX_PROP_PATH[] = "HostRegex";
-
     // Loop over the HostRegex elements.
     for (auto& child : pt) {
         if (child.first == HOST_REGEX_PROP_PATH) {
-            string regexprop(getString("regex", ""));
+            string regexprop(child.second.get(REGEX_PROP_PATH, ""));
             if (regexprop.empty()) {
-                log.warn("Skipping HostRegex element with empty regex attribute");
+                log.warn("skipping HostRegex element with empty regex attribute");
                 continue;
             }
 
@@ -518,7 +521,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
 
             try {
                 exp::regex::flag_type flags = exp::regex_constants::extended | exp::regex_constants::optimize;
-                if (!getBool("caseSensitive", false)) {
+                if (!o->getBool("caseSensitive", false)) {
                     flags |= exp::regex_constants::icase;
                 }
                 exp::regex exp(regexprop, flags);
@@ -528,12 +531,12 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
                 log.error("caught exception while parsing HostRegex regular expression: %s", e.what());
             }
 
-            log.debug("Added <HostRegex> mapping for %s", regexprop.c_str());
+            log.debug("added <HostRegex> mapping for %s", regexprop.c_str());
         }
         else if (child.first == HOST_PROP_PATH) {
-            string name(getString("name", ""));
+            string name(child.second.get(NAME_PROP_PATH, ""));
             if (name.empty()) {
-                log.warn("Skipping Host element with empty name attribute");
+                log.warn("skipping Host element with empty name attribute");
                 continue;
             }
 
@@ -574,25 +577,25 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
                     (!strcmp(scheme,"ldaps") && !strcmp(port,"636"))) {
                     // First store a port-less version.
                     if (m_map.count(url)) {
-                        log.warn("Skipping duplicate Host element (%s)", url.c_str());
+                        log.warn("skipping duplicate Host element (%s)", url.c_str());
                         continue;
                     }
                     m_map[url] = o;
-                    log.debug("Added <Host> mapping for %s", url.c_str());
+                    log.debug("added <Host> mapping for %s", url.c_str());
 
                     // Now append the port. The shared_ptr should refcount the Override to avoid double deletes.
                     url=url + ':' + port;
                     m_map[url] = o;
-                    log.debug("Added <Host> mapping for %s", url.c_str());
+                    log.debug("added <Host> mapping for %s", url.c_str());
                 }
                 else {
                     url=url + ':' + port;
                     if (m_map.count(url)) {
-                        log.warn("Skipping duplicate Host element (%s)", url.c_str());
+                        log.warn("skipping duplicate Host element (%s)", url.c_str());
                         continue;
                     }
                     m_map[url] = o;
-                    log.debug("Added <Host> mapping for %s", url.c_str());
+                    log.debug("added <Host> mapping for %s", url.c_str());
                 }
             }
             else {
@@ -600,36 +603,39 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
                 string url("http://");
                 url += name;
                 if (m_map.count(url)) {
-                    log.warn("Skipping duplicate Host element (%s)", url.c_str());
+                    log.warn("skipping duplicate Host element (%s)", url.c_str());
                     continue;
                 }
                 m_map[url] = o;
-                log.debug("Added <Host> mapping for %s", url.c_str());
+                log.debug("added <Host> mapping for %s", url.c_str());
 
                 url += ":80";
                 if (m_map.count(url)) {
-                    log.warn("Skipping duplicate Host element (%s)", url.c_str());
+                    log.warn("skipping duplicate Host element (%s)", url.c_str());
                     continue;
                 }
                 m_map[url] = o;
-                log.debug("Added <Host> mapping for %s", url.c_str());
+                log.debug("added <Host> mapping for %s", url.c_str());
 
                 url = "https://" + name;
                 if (m_map.count(url)) {
-                    log.warn("Skipping duplicate Host element (%s)", url.c_str());
+                    log.warn("skipping duplicate Host element (%s)", url.c_str());
                     continue;
                 }
                 m_map[url] = o;
-                log.debug("Added <Host> mapping for %s", url.c_str());
+                log.debug("added <Host> mapping for %s", url.c_str());
 
                 url += ":443";
                 if (m_map.count(url)) {
-                    log.warn("Skipping duplicate Host element (%s)", url.c_str());
+                    log.warn("skipping duplicate Host element (%s)", url.c_str());
                     continue;
                 }
                 m_map[url] = o;
-                log.debug("Added <Host> mapping for %s", url.c_str());
+                log.debug("added <Host> mapping for %s", url.c_str());
             }
+        }
+        else if (child.first != "<xmlattr>") {
+            throw ConfigurationException(string("Unrecognized child element: ") + child.first);
         }
     }
 }
@@ -638,8 +644,9 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const HTTP
 {
     const Override* o = nullptr;
     const auto& i = m_map.find(vhost);
-    if (i != m_map.end())
+    if (i != m_map.end()) {
         o = i->second.get();
+    }
     else {
         for (const auto& re : m_regexps) {
             if (exp::regex_match(vhost, re.first, match_flags)) {

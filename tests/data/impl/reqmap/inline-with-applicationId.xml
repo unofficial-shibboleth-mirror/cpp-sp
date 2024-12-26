@@ -1,0 +1,6 @@
+<RequestMapper type="XML">
+	<RequestMap applicationId="custom">
+		<Host name="sp.example.org">
+		</Host>
+	</RequestMap>
+</RequestMapper>

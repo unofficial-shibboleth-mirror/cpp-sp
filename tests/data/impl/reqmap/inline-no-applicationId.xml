@@ -1,0 +1,14 @@
+<RequestMapper type="XML">
+	<RequestMap>
+		<Host name="sp.example.org">
+			<Path name="/" />
+			<Path name="secure" requireSession="true">
+				<Query name="foo" entityId="https://idp.example.org/foo" />
+				<Query name="bar" regex="baz" entityId="https://idp.example.org/bar" />
+			</Path>
+			<PathRegex regex="FoLdEr\d" requireSessionWith="custom" />
+			<Path name="foo/bar/baz" forceAuthn="1" />
+		</Host>
+		<HostRegex regex="https\://sp\d\.example\.org\:443" isPassive="1" />
+	</RequestMap>
+</RequestMapper>

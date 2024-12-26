@@ -13,6 +13,7 @@ shibsptest_SOURCES = \
 	AgentTestSuite.cpp \
 	AgentConfigTests.cpp \
 	impl/XMLAccessControlTests.cpp \
+	impl/XMLRequestMapperTests.cpp \
 	util/PropertyTreeTests.cpp \
 	util/BoostPropertySetTests.cpp \
 	util/ReloadableXMLFileTests.cpp
