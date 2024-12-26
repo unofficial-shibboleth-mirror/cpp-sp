@@ -99,6 +99,11 @@ namespace shibsp {
         PluginManager<AccessControl,std::string,const boost::property_tree::ptree&> AccessControlManager;
 
         /**
+         * Manages factories for Agent plugins.
+         */
+        PluginManager<Agent,std::string,const boost::property_tree::ptree&> AgentManager;
+
+        /**
          * Manages factories for LoggingService plugins.
          */
         PluginManager<LoggingService,std::string,const boost::property_tree::ptree&> LoggingServiceManager;

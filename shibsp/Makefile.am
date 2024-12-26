@@ -95,6 +95,7 @@ noinst_HEADERS = \
 
 libshibsp_la_SOURCES = \
 	AbstractSPRequest.cpp \
+	Agent.cpp \
 	Application.cpp \
 	ServiceProvider.cpp \
 	SPConfig.cpp \
@@ -124,10 +125,11 @@ libshibsp_la_SOURCES = \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/StatusHandler.cpp \
 	impl/AgentConfig.cpp \
-	impl/XMLAccessControl.cpp \
+	impl/DefaultAgent.cpp \
 	impl/ChainingAccessControl.cpp \
 	impl/StoredSession.cpp \
 	impl/StorageServiceSessionCache.cpp \
+        impl/XMLAccessControl.cpp \
 	impl/XMLApplication.cpp \
 	impl/XMLRequestMapper.cpp \
 	impl/XMLServiceProvider.cpp \

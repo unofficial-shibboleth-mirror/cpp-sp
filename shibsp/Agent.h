@@ -21,7 +21,6 @@
 #ifndef __shibsp_agent_h__
 #define __shibsp_agent_h__
 
-#include <shibsp/util/Lockable.h>
 #include <shibsp/util/PropertySet.h>
 
 #include <set>
@@ -46,7 +45,7 @@ namespace shibsp {
      * <p>A ServiceProvider exposes configuration and infrastructure services required
      * by the SP implementation, allowing a flexible configuration format.
      */
-	class SHIBSP_API Agent : public virtual SharedLockable, public virtual PropertySet2
+	class SHIBSP_API Agent : public virtual PropertySet2
     {
         MAKE_NONCOPYABLE(Agent);
     protected:

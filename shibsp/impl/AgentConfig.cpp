@@ -229,19 +229,17 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
 
     registerAttributeFactories();
 
-    if (isEnabled(Handlers)) {
-        registerHandlers();
-        registerLogoutInitiators();
-        registerSessionInitiators();
-    }
+    registerHandlers();
+    registerLogoutInitiators();
+    registerSessionInitiators();
+    */
 
-    registerServiceProviders();
+    registerAgents();
 
-    if (isEnabled(Listener))
-        registerListenerServices();
+    /*
+    registerListenerServices();
 
-    if (isEnabled(Caching))
-        registerSessionCaches();
+    registerSessionCaches();
 
     // Yes, this isn't secure, will review where we do any random generation
     // after full code cleanup is done.
@@ -315,27 +313,19 @@ void AgentInternalConfig::_term()
     m_logging->term();
 
     /*
-    setServiceProvider(nullptr);
-    if (m_configDoc)
-        m_configDoc->release();
-    m_configDoc = nullptr;
+    AssertionConsumerServiceManager.deregisterFactories();
+    LogoutInitiatorManager.deregisterFactories();
+    SessionInitiatorManager.deregisterFactories();
+    SingleLogoutServiceManager.deregisterFactories();
+    HandlerManager.deregisterFactories();
+    */
 
-    if (isEnabled(Handlers)) {
-        AssertionConsumerServiceManager.deregisterFactories();
-        LogoutInitiatorManager.deregisterFactories();
-        SessionInitiatorManager.deregisterFactories();
-        SingleLogoutServiceManager.deregisterFactories();
-        HandlerManager.deregisterFactories();
-    }
+    AgentManager.deregisterFactories();
 
-    ServiceProviderManager.deregisterFactories();
+    /*
     Attribute::deregisterFactories();
-
-    if (isEnabled(Listener))
-        ListenerServiceManager.deregisterFactories();
-
-    if (isEnabled(Caching))
-        SessionCacheManager.deregisterFactories();
+    ListenerServiceManager.deregisterFactories();
+    SessionCacheManager.deregisterFactories();
     */
 }
 
