@@ -322,7 +322,6 @@ class ShibTargetApache : public AbstractSPRequest
 {
   mutable string m_body;
   mutable bool m_gotBody,m_firsttime;
-  mutable vector<string> m_certs;
   set<string> m_allhttp;
 
 public:
@@ -593,20 +592,6 @@ public:
         apr_table_set(m_req->err_headers_out, "Cache-Control", "private,no-store,no-cache,max-age=0");
     }
     return HTTP_MOVED_TEMPORARILY;
-  }
-  const vector<string>& getClientCertificates() const {
-      if (m_certs.empty()) {
-          const char* cert = apr_table_get(m_req->subprocess_env, "SSL_CLIENT_CERT");
-          if (cert)
-              m_certs.push_back(cert);
-          int i = 0;
-          do {
-              cert = apr_table_get(m_req->subprocess_env, apr_psprintf(m_req->pool, "SSL_CLIENT_CERT_CHAIN_%d", i++));
-              if (cert)
-                  m_certs.push_back(cert);
-          } while (cert);
-      }
-      return m_certs;
   }
   long returnDecline(void) { return DECLINED; }
   long returnOK(void) { return OK; }
