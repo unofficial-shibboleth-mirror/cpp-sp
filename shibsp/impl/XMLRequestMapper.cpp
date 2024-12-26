@@ -182,15 +182,14 @@ void Override::loadACL(const ptree& pt, Category& log)
         else {
             acl = pt.get_child_optional(ACCESS_CONTROL_PROP_PATH);
             if (acl) {
-                log.info("building XML-based AccessControl provider...");
-                // TODO: this is tenative, but it seems like we need to pass in the parent tree to allow it to
-                // walk down to the "expected" element, but TBD.
+                log.info("building inline XML-based AccessControl provider...");
+                // We need to pass in the parent tree to allow it to walk down to the "expected" inline element.
                 m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, pt, false));
             }
             else {
                 acl = pt.get_child_optional(ACCESS_CONTROL_PROVIDER_PROP_PATH);
                 if (acl) {
-                    string t(pt.get(TYPE_PROP_PATH, ""));
+                    string t(acl->get(TYPE_PROP_PATH, ""));
                     if (!t.empty()) {
                         log.info("building AccessControl provider of type %s...", t.c_str());
                         m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acl.get(), false));
@@ -367,9 +366,6 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
                     throw ConfigurationException("Invalid regular expression in Query element.");
                 }
             }
-        }
-        else if (child.first != "<xmlattr>") {
-            throw ConfigurationException(string("Unrecognized child element: ") + child.first);
         }
     }
 }
@@ -633,9 +629,6 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
                 m_map[url] = o;
                 log.debug("added <Host> mapping for %s", url.c_str());
             }
-        }
-        else if (child.first != "<xmlattr>") {
-            throw ConfigurationException(string("Unrecognized child element: ") + child.first);
         }
     }
 }

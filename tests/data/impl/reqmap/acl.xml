@@ -1,0 +1,3 @@
+<AccessControl>
+	<Rule require="user">jsmith</Rule>
+</AccessControl>

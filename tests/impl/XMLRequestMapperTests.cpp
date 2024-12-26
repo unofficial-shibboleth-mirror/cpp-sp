@@ -23,6 +23,8 @@
 #include "AccessControl.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
+#include "SessionCache.h"
+#include "attribute/Attribute.h"
 #include "logging/Category.h"
 #include "util/PropertySet.h"
 
@@ -41,6 +43,64 @@ using namespace std;
 
 namespace {
 
+/** Open structure for testing manipulation. */
+struct DummySession : public Session, public NoOpBasicLockable
+{
+public:
+    DummySession() {}
+    ~DummySession() {}
+
+    const char* getID() const {
+        return nullptr;
+    }
+    const char* getApplicationID() const {
+        return nullptr;
+    }
+    time_t getExpiration() const {
+        return 0;
+    }
+    time_t getLastAccess() const {
+        return 0;
+    }
+    const char* getClientAddress() const {
+        return nullptr;
+    }
+    const char* getEntityID() const {
+        return nullptr;
+    }
+    const char* getProtocol() const {
+        return nullptr;
+    }
+    time_t getAuthnInstant() const {
+        return m_authInstant;
+    }
+    const char* getSessionIndex() const {
+        return nullptr;
+    }
+    const char* getAuthnContextClassRef() const {
+        return m_ac.c_str();
+    }
+    const vector<unique_ptr<Attribute>>& getAttributes() const {
+    }
+
+    const multimap<string,const Attribute*>& getIndexedAttributes() const {
+        if (m_attributeIndex.empty()) {
+            for (const unique_ptr<Attribute>& a : m_attributes) {
+                const vector<string>& aliases = a->getAliases();
+                for (const string& alias : a->getAliases()) {
+                    m_attributeIndex.insert(multimap<string, const Attribute*>::value_type(alias, a.get()));
+                }
+            }
+        }
+        return m_attributeIndex;
+    }
+
+    time_t m_authInstant;
+    string m_ac;
+    vector<unique_ptr<Attribute>> m_attributes;
+    mutable multimap<string,const Attribute*> m_attributeIndex;
+};
+
 class DummyRequest : public AbstractSPRequest {
 public:
     DummyRequest(const char* uri=nullptr) : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest") {
@@ -55,7 +115,7 @@ public:
     const char* getQueryString() const { return m_query.c_str(); }
     const char* getRequestBody() const { return nullptr; }
     string getHeader(const char*) const { return nullptr; }
-    string getRemoteUser() const { return nullptr; }
+    string getRemoteUser() const { return m_user.c_str(); }
     string getAuthType() const { return nullptr; }
     long sendResponse(istream&, long status) { return status; }
     void clearHeader(const char*, const char*) {}
@@ -68,6 +128,7 @@ public:
     string m_hostname;
     int m_port;
     string m_query;
+    string m_user;
 };
 
 class exceptionCheck {
@@ -119,21 +180,6 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_external_invalid, XMLRequestMapperFixtu
 BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_invalid, XMLRequestMapperFixture)
 {
     parse("internal-invalid.xml");
-    BOOST_CHECK_EQUAL(tree.size(), 1);
-
-    exceptionCheck checker("Initial RequestMapper configuration was invalid.");
-    BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().RequestMapperManager.newPlugin(
-        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true),
-            ConfigurationException, checker.check_message);
-}
-
-/////////////
-// Inline content that has a bad internal element.
-/////////////
-
-BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_invalid_internal, XMLRequestMapperFixture)
-{
-    parse("internal-invalid2.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     exceptionCheck checker("Initial RequestMapper configuration was invalid.");
@@ -477,4 +523,51 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_Query_regex_mapping, XMLRequestM
     BOOST_CHECK(settings.first->getBool("requireSession", false));
     BOOST_CHECK_EQUAL(settings.first->getString("entityId"), "https://idp.example.org/bar");
 }
+
+/////////////
+// External tests to check for embedded ACLs.
+/////////////
+
+BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_external_ACL, XMLRequestMapperFixture)
+{
+    parse("external-with-acl.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<RequestMapper> mapper(AgentConfig::getConfig().RequestMapperManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*mapper);
+#endif
+
+    DummySession session;
+    DummyRequest request("/secure");
+    request.m_scheme = "https";
+    request.m_hostname = "sp.example.org";
+    request.m_port = 443;
+    request.m_user = "jdoe";
+
+    const RequestMapper::Settings settings = mapper->getSettings(request);
+    BOOST_CHECK(settings.second);
+#ifdef HAVE_CXX14
+    shared_lock<AccessControl> acllock(*settings.second);
+#endif
+    BOOST_CHECK_EQUAL(settings.first->getString("name"), "secure");
+    BOOST_CHECK_EQUAL(settings.second->authorized(request, &session), AccessControl::shib_acl_true);
+
+    DummyRequest request2("/secure2");
+    request2.m_scheme = "https";
+    request2.m_hostname = "sp.example.org";
+    request2.m_port = 443;
+    request2.m_user = "jsmith";
+
+    const RequestMapper::Settings settings2 = mapper->getSettings(request2);
+    BOOST_CHECK(settings2.second);
+#ifdef HAVE_CXX14
+    shared_lock<AccessControl> acllock2(*settings2.second);
+#endif
+    BOOST_CHECK_EQUAL(settings2.first->getString("name"), "sp.example.org");
+    BOOST_CHECK_EQUAL(settings2.second->authorized(request2, &session), AccessControl::shib_acl_true);
+}
+
 };

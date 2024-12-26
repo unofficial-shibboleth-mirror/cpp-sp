@@ -1,0 +1,10 @@
+<RequestMap>
+	<Host name="sp.example.org">
+		<Path name="secure">
+			<AccessControl>
+				<Rule require="user">jdoe</Rule>
+			</AccessControl>
+		</Path>
+		<AccessControlProvider type="XML" path="./data/impl/reqmap/acl.xml" reloadChanges="true" />
+	</Host>
+</RequestMap>
