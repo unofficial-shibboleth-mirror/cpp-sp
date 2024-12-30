@@ -57,8 +57,8 @@ namespace shibsp {
          * Loads a configuration and prepares the instance for use.
          * 
          * <p>Implemented as a separate method so that services can rely on
-         * other services while they initialize by accessing the ServiceProvider
-         * from the SPConfig singleton.
+         * other services while they initialize by accessing the Agent
+         * from the AgentConfig singleton.
          */
         virtual void init()=0;
 

@@ -51,6 +51,9 @@ Agent::~Agent()
 {
 }
 
+// TODO: we'll eventually copy/port in substantially similar versions of the old ServiceProvider
+// method impls.
+
 pair<bool,long> Agent::doAuthentication(AgentRequest& request, bool handler) const
 {
 }

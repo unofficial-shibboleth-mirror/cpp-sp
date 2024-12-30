@@ -18,12 +18,11 @@
  * Unit tests for agent config machinery and logging.
  */
 
-#include <stdexcept>
+#include "AgentConfig.h"
 
+#include <stdexcept>
 #include <boost/test/unit_test.hpp>
 #include <boost/property_tree/ini_parser.hpp>
-
-#include "AgentConfig.h"
 
 using namespace boost::property_tree::ini_parser;
 using namespace shibsp;
@@ -41,8 +40,7 @@ class exceptionCheck {
 public:
     exceptionCheck(const string& msg) : m_msg(msg) {}
     bool check_message(const exception& e) {
-        cout << e.what() << endl;
-        return m_msg.compare(e.what()) == 0;
+        return strstr(e.what(), m_msg.c_str()) != nullptr;
     }
 private:
     string m_msg;
@@ -82,7 +80,7 @@ BOOST_FIXTURE_TEST_CASE(AgentConfig_init_bad_format, AC_Fixture)
 
 BOOST_AUTO_TEST_CASE(AgentConfig_term_without_init)
 {
-    exceptionCheck checker_term("Library terminated without initialization.");
+    exceptionCheck checker_term("Agent library terminated without initialization.");
     BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().term(),
         runtime_error, checker_term.check_message);
 }
@@ -96,5 +94,19 @@ BOOST_FIXTURE_TEST_CASE(AgentConfig_init_console, AC_Fixture)
 BOOST_FIXTURE_TEST_CASE(AgentConfig_init_syslog, AC_Fixture)
 {
     BOOST_CHECK(AgentConfig::getConfig().init(nullptr, (data_path + "syslog-shibboleth.ini").c_str(), true));
+    AgentConfig::getConfig().term();
+}
+
+BOOST_FIXTURE_TEST_CASE(AgentConfig_init_fatal_exts, AC_Fixture)
+{
+    // TODO: this is probably going to vary by platform and require alternate validation.
+    exceptionCheck checker_fatal("dlopen(/path/to/extension.so, 0x0001): tried: ");
+    BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().init(nullptr, (data_path + "fatal-exts-shibboleth.ini").c_str(), true),
+        runtime_error, checker_fatal.check_message);
+}
+
+BOOST_FIXTURE_TEST_CASE(AgentConfig_init_nonfatal_exts, AC_Fixture)
+{
+    BOOST_CHECK(AgentConfig::getConfig().init(nullptr, (data_path + "nonfatal-exts-shibboleth.ini").c_str(), true));
     AgentConfig::getConfig().term();
 }

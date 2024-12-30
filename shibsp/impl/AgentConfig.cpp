@@ -27,6 +27,7 @@
 #include "AgentConfig.h"
 #include "RequestMapper.h"
 #include "logging/LoggingService.h"
+#include "util/Misc.h"
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
 
@@ -61,7 +62,6 @@ namespace shibsp {
 
         bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
         void term();
-        bool load_library(const char* path, void* context=nullptr);
 
         const PathResolver& getPathResolver() const {
             return m_pathResolver;
@@ -79,6 +79,8 @@ namespace shibsp {
         void _term();
 
         bool initLogging();
+        bool load_library(const char* path, void* context=nullptr);
+        void loadExtensions(Category& log);
 
         unsigned int m_initCount;
         mutex m_lock;
@@ -196,57 +198,60 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
 
     try {
         ini_parser::read_ini(config_file_resolved, m_config);
-    } catch (const ini_parser_error& e) {
-        if (rethrow) {
-            throw;
-        }
-        return false;
-    }
 
-    registerLoggingServices();
+        registerLoggingServices();
 
-    try {
         if (!initLogging()) {
             return false;
         }
-    } catch (const std::exception& e) {
+
+        // At this point, logging is active/usable.
+
+        Category& log=Category::getInstance(SHIBSP_LOGCAT ".AgentConfig");
+        log.info("%s agent initialization started", PACKAGE_STRING);
+
+        registerAccessControls();
+        registerRequestMappers();
+
+        /*
+        XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
+
+        registerAttributeFactories();
+
+        registerHandlers();
+        registerLogoutInitiators();
+        registerSessionInitiators();
+        */
+
+        registerAgents();
+
+        /*
+        registerListenerServices();
+
+        registerSessionCaches();
+
+        // Yes, this isn't secure, will review where we do any random generation
+        // after full code cleanup is done.
+        srand(static_cast<unsigned int>(std::time(nullptr)));
+        */
+
+        loadExtensions(log);
+
+        // Check for an overridden "agent-type" under the "global" subtree.
+        static const char AGENT_TYPE_PROP_PATH[] = "global.agent-type";
+        string type = m_config.get(AGENT_TYPE_PROP_PATH, DEFAULT_AGENT);
+        m_agent.reset(AgentManager.newPlugin(type, m_config, true));
+        m_agent->init();
+
+        log.info("%s agent initialization complete", PACKAGE_STRING);
+    }
+    catch (const std::exception& e) {
         if (rethrow) {
             throw;
         }
         return false;
     }
 
-    // At this point, logging is active/usable.
-
-    Category& log=Category::getInstance(SHIBSP_LOGCAT ".AgentConfig");
-    log.info("%s agent initialization underway", PACKAGE_STRING);
-
-    registerAccessControls();
-    registerRequestMappers();
-
-    /*
-    XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
-
-    registerAttributeFactories();
-
-    registerHandlers();
-    registerLogoutInitiators();
-    registerSessionInitiators();
-    */
-
-    registerAgents();
-
-    /*
-    registerListenerServices();
-
-    registerSessionCaches();
-
-    // Yes, this isn't secure, will review where we do any random generation
-    // after full code cleanup is done.
-    srand(static_cast<unsigned int>(std::time(nullptr)));
-
-    log.info("%s library initialization complete", PACKAGE_STRING);
-    */
     return true;
 }
 
@@ -260,7 +265,7 @@ bool AgentInternalConfig::initLogging()
         SYSLOG_LOGGING_SERVICE
 #endif
         );
-    m_logging = unique_ptr<LoggingService>(LoggingServiceManager.newPlugin(type, m_config, false));
+    m_logging.reset(LoggingServiceManager.newPlugin(type, m_config, false));
     if (!m_logging->init()) {
         return false;
     }
@@ -272,7 +277,7 @@ void AgentInternalConfig::term()
     lock_guard<mutex> locker(m_lock);
 
     if (m_initCount == 0) {
-        throw runtime_error("Library terminated without initialization.");
+        throw runtime_error("Agent library terminated without initialization.");
         return;
     }
     else if (--m_initCount > 0) {
@@ -313,10 +318,8 @@ void AgentInternalConfig::_term()
     m_logging->term();
 
     /*
-    AssertionConsumerServiceManager.deregisterFactories();
     LogoutInitiatorManager.deregisterFactories();
     SessionInitiatorManager.deregisterFactories();
-    SingleLogoutServiceManager.deregisterFactories();
     HandlerManager.deregisterFactories();
     */
 
@@ -329,6 +332,41 @@ void AgentInternalConfig::_term()
     */
 }
 
+void AgentInternalConfig::loadExtensions(Category& log)
+{
+    static const char EXTENSIONS_PATH[] = "extensions";
+    const boost::optional<ptree&> exts = m_config.get_child_optional(EXTENSIONS_PATH);
+    if (!exts) {
+        return;
+    }
+
+    for (const auto& path : exts.get()) {
+        if (path.first.empty()) {
+            continue;
+        }
+
+        cout << path.first << endl;
+        
+        try {
+            if (!load_library(path.first.c_str(), const_cast<ptree*>(&path.second))) {
+                throw ConfigurationException("Extension library failed to load.");
+            }
+            log.debug("loaded extension library (%s)", path.first.c_str());
+        }
+        catch (const std::exception& e) {
+            // The value of the subtree dictates whether failure is fatal.
+            string_to_bool_translator tr;
+            if (path.second.get_value(false, tr)) {
+                log.crit("unable to load mandatory extension library %s: %s", path.first.c_str(), e.what());
+                throw;
+            }
+            else {
+                log.crit("unable to load optional extension library %s: %s", path.first.c_str(), e.what());
+            }
+        }        
+    }
+}
+
 bool AgentInternalConfig::load_library(const char* path, void* context)
 {
 #ifdef _DEBUG
@@ -336,8 +374,6 @@ bool AgentInternalConfig::load_library(const char* path, void* context)
 #endif
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
     log.info("loading extension: %s", path);
-
-    lock_guard<mutex> locker(m_lock);
 
     string resolved(path);
     m_pathResolver.resolve(resolved, PathResolver::SHIBSP_LIB_FILE);
@@ -354,12 +390,12 @@ bool AgentInternalConfig::load_library(const char* path, void* context)
         if (!handle)
              handle=LoadLibraryExA(resolved.c_str(),nullptr,0);
         if (!handle)
-            throw runtime_error(string("unable to load extension library: ") + resolved);
+            throw runtime_error(string("Unable to load extension library: ") + resolved);
         FARPROC fn=GetProcAddress(handle,"shibsp_extension_init");
         if (!fn)
-            throw runtime_error(string("unable to locate shibsp_extension_init entry point: ") + resolved);
+            throw runtime_error(string("Unable to locate shibsp_extension_init entry point: ") + resolved);
         if (reinterpret_cast<int(*)(void*)>(fn)(context)!=0)
-            throw runtime_error(string("detected error in shibsp_extension_init: ") + resolved);
+            throw runtime_error(string("Detected error in shibsp_extension_init: ") + resolved);
         SetErrorMode(em);
     }
     catch(std::exception&) {
@@ -371,18 +407,18 @@ bool AgentInternalConfig::load_library(const char* path, void* context)
 #elif defined(HAVE_DLFCN_H)
     void* handle=dlopen(resolved.c_str(),RTLD_LAZY);
     if (!handle)
-        throw runtime_error(string("unable to load extension library '") + resolved + "': " + dlerror());
+        throw runtime_error(dlerror());
     int (*fn)(void*)=(int (*)(void*))(dlsym(handle,"shibsp_extension_init"));
     if (!fn) {
         dlclose(handle);
         throw runtime_error(
-            string("unable to locate shibsp_extension_init entry point in '") + resolved + "': " +
+            string("Unable to locate shibsp_extension_init entry point in '") + resolved + "': " +
                 (dlerror() ? dlerror() : "unknown error")
             );
     }
     try {
         if (fn(context)!=0)
-            throw runtime_error(string("detected error in shibsp_extension_init in ") + resolved);
+            throw runtime_error(string("Detected error in shibsp_extension_init in ") + resolved);
     }
     catch(std::exception&) {
         if (handle)

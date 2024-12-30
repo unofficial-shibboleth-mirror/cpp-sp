@@ -80,7 +80,6 @@ namespace {
         }
 
     private:
-        void doExtensions(const ptree&);
         //void doListener(const xercesc::DOMElement*);
         //void doCaching(const xercesc::DOMElement*);
 
@@ -100,8 +99,6 @@ namespace {
 #endif
 
     static const XMLCh applicationId[] =        UNICODE_LITERAL_13(a,p,p,l,i,c,a,t,i,o,n,I,d);
-    static const XMLCh _ArtifactMap[] =         UNICODE_LITERAL_11(A,r,t,i,f,a,c,t,M,a,p);
-    static const XMLCh _DataSealer[] =          UNICODE_LITERAL_10(D,a,t,a,S,e,a,l,e,r);
     static const XMLCh _default[] =             UNICODE_LITERAL_7(d,e,f,a,u,l,t);
     static const XMLCh _Extensions[] =          UNICODE_LITERAL_10(E,x,t,e,n,s,i,o,n,s);
     static const XMLCh _fatal[] =               UNICODE_LITERAL_5(f,a,t,a,l);
@@ -113,20 +110,12 @@ namespace {
     static const XMLCh _option[] =              UNICODE_LITERAL_6(o,p,t,i,o,n);
     static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
     static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
-    static const XMLCh _ProtocolProvider[] =    UNICODE_LITERAL_16(P,r,o,t,o,c,o,l,P,r,o,v,i,d,e,r);
     static const XMLCh _provider[] =            UNICODE_LITERAL_8(p,r,o,v,i,d,e,r);
-    static const XMLCh _ReplayCache[] =         UNICODE_LITERAL_11(R,e,p,l,a,y,C,a,c,h,e);
     static const XMLCh _RequestMapper[] =       UNICODE_LITERAL_13(R,e,q,u,e,s,t,M,a,p,p,e,r);
     static const XMLCh RequestMap[] =           UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
-    static const XMLCh SecurityPolicies[] =     UNICODE_LITERAL_16(S,e,c,u,r,i,t,y,P,o,l,i,c,i,e,s);
-    static const XMLCh _SecurityPolicyProvider[] = UNICODE_LITERAL_22(S,e,c,u,r,i,t,y,P,o,l,i,c,y,P,r,o,v,i,d,e,r);
     static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
     static const XMLCh Site[] =                 UNICODE_LITERAL_4(S,i,t,e);
-    static const XMLCh _StorageService[] =      UNICODE_LITERAL_14(S,t,o,r,a,g,e,S,e,r,v,i,c,e);
     static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
-    static const XMLCh tranLogFiller[] =        UNICODE_LITERAL_13(t,r,a,n,L,o,g,F,i,l,l,e,r);
-    static const XMLCh tranLogFormat[] =        UNICODE_LITERAL_13(t,r,a,n,L,o,g,F,o,r,m,a,t);
-    static const XMLCh TransportOption[] =      UNICODE_LITERAL_15(T,r,a,n,s,p,o,r,t,O,p,t,i,o,n);
     static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
     static const XMLCh UnixListener[] =         UNICODE_LITERAL_12(U,n,i,x,L,i,s,t,e,n,e,r);
 
@@ -299,36 +288,6 @@ void DefaultAgent::init()
                 split(outer->m_authTypes, types, is_space(), algorithm::token_compress_on);
                 outer->m_authTypes.insert("shibboleth");
             }
-        }
-    }
-    */
-}
-
-void DefaultAgent::doExtensions(const ptree& pt)
-{
-    /*
-    const DOMElement* exts = XMLHelper::getFirstChildElement(e, _Extensions);
-    if (exts) {
-        exts = XMLHelper::getFirstChildElement(exts, Library);
-        while (exts) {
-            string path(XMLHelper::getAttrString(exts, nullptr, _path));
-            try {
-                if (!path.empty()) {
-                    if (!XMLToolingConfig::getConfig().load_library(path.c_str(), (void*)exts))
-                        throw ConfigurationException("XMLToolingConfig::load_library failed.");
-                    log.debug("loaded %s extension library (%s)", label, path.c_str());
-                }
-            }
-            catch (const std::exception& e) {
-                if (XMLHelper::getAttrBool(exts, false, _fatal)) {
-                    log.crit("unable to load mandatory %s extension library %s: %s", label, path.c_str(), e.what());
-                    throw;
-                }
-                else {
-                    log.crit("unable to load optional %s extension library %s: %s", label, path.c_str(), e.what());
-                }
-            }
-            exts = XMLHelper::getNextSiblingElement(exts, Library);
         }
     }
     */
