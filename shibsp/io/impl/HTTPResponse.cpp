@@ -23,12 +23,12 @@
 
 #include <stdexcept>
 
-#include <boost/algorithm/string/predicate.hpp>
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-#include <boost/bind.hpp>
+#ifndef HAVE_STRCASECMP
+# define strcasecmp _stricmp
+#endif
+
 
 using namespace shibsp;
-using namespace boost;
 using namespace std;
 
 GenericResponse::GenericResponse()
@@ -48,9 +48,6 @@ vector<string>& HTTPResponse::getAllowedSchemes()
 
 void HTTPResponse::sanitizeURL(const char* url)
 {
-    // predicate for checking scheme below
-    static bool (*fn)(const string&, const string&, const std::locale&) = iequals;
-
     const char* ch;
     for (ch=url; *ch; ++ch) {
         if (iscntrl((unsigned char)(*ch)))  // convert to unsigned to allow full range from 00-FF
@@ -61,11 +58,12 @@ void HTTPResponse::sanitizeURL(const char* url)
     if (!ch)
         throw domain_error("URL is missing a colon where expected; improper URL encoding?");
     string s(url, ch - url);
-    std::locale loc;
-    vector<string>::const_iterator i =
-        find_if(m_allowedSchemes.begin(), m_allowedSchemes.end(), boost::bind(fn, boost::cref(s), _1, boost::cref(loc)));
-    if (i != m_allowedSchemes.end())
-        return;
+
+    for (const string& scheme : m_allowedSchemes) {
+        if (strcasecmp(s.c_str(), scheme.c_str()) == 0) {
+            return;
+        }
+    }
 
     throw domain_error("URL contains invalid scheme.");
 }
