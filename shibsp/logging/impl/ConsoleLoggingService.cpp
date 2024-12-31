@@ -42,7 +42,7 @@ namespace shibsp {
 
     };
 
-    LoggingService* SHIBSP_DLLLOCAL ConsoleLoggingServiceFactory(const ptree& pt, bool) {
+    LoggingService* SHIBSP_DLLLOCAL ConsoleLoggingServiceFactory(ptree& pt, bool) {
         return new ConsoleLoggingService(pt);
     }
 

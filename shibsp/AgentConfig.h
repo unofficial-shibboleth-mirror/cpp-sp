@@ -79,39 +79,24 @@ namespace shibsp {
         virtual void term()=0;
 
         /**
-         * Loads a shared/dynamic library extension.
-         *
-         * <p>Extension libraries are managed using a pair of "C" linkage functions:<br>
-         *      extern "C" int shibsp_extension_init(void* context);<br>
-         *      extern "C" void shibsp_extension_term();
-         *
-         * <p>This method is internally synchronized.</p>
-         *
-         * @param path      pathname of shared library to load into process
-         * @param context   arbitrary data to pass to library initialization hook
-         * @return true iff library was loaded successfully
-         */
-        virtual bool load_library(const char* path, void* context=nullptr)=0;
-
-        /**
          * Manages factories for AccessControl plugins.
          */
-        PluginManager<AccessControl,std::string,const boost::property_tree::ptree&> AccessControlManager;
+        PluginManager<AccessControl,std::string,boost::property_tree::ptree&> AccessControlManager;
 
         /**
          * Manages factories for Agent plugins.
          */
-        PluginManager<Agent,std::string,const boost::property_tree::ptree&> AgentManager;
+        PluginManager<Agent,std::string,boost::property_tree::ptree&> AgentManager;
 
         /**
          * Manages factories for LoggingService plugins.
          */
-        PluginManager<LoggingService,std::string,const boost::property_tree::ptree&> LoggingServiceManager;
+        PluginManager<LoggingService,std::string,boost::property_tree::ptree&> LoggingServiceManager;
 
         /**
          * Manages factories for RequestMapper plugins.
          */
-        PluginManager<RequestMapper,std::string,const boost::property_tree::ptree&> RequestMapperManager;
+        PluginManager<RequestMapper,std::string,boost::property_tree::ptree&> RequestMapperManager;
 
         /**
          * Returns a PathResolver instance.
@@ -128,15 +113,6 @@ namespace shibsp {
         virtual const URLEncoder& getURLEncoder() const=0;
 
         /**
-         * Returns the global Agent instance.
-         * 
-         * <p>This method will throw in the event the library is not yet initialized.</p>
-         *
-         * @return  global Agent
-         */
-        virtual Agent& getAgent() const=0;
-
-        /**
          * Returns the configured logging service.
          * 
          * <p>This method will throw in the event the library is not yet initialized.</p>
@@ -144,6 +120,15 @@ namespace shibsp {
          * @return logging service
          */
         virtual LoggingService& getLoggingService() const=0;
+
+        /**
+         * Returns the global Agent instance.
+         * 
+         * <p>This method will throw in the event the library is not yet initialized.</p>
+         *
+         * @return  global Agent
+         */
+        virtual Agent& getAgent() const=0;
 
         /**
          * Helper for deprecation warnings about an at-risk feature or setting.

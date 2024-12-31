@@ -36,9 +36,6 @@ namespace shibsp {
     public:
         SyslogLoggingService(const ptree& pt);
 
-        static const char OPENSYSLOG_PROP_PATH[];
-        static const char FACILITY_PROP_PATH[];
-
         bool init();
         void term();
 
@@ -54,18 +51,18 @@ namespace shibsp {
         int m_facility;
     };
 
-    LoggingService* SHIBSP_DLLLOCAL SyslogLoggingServiceFactory(const ptree& pt, bool) {
+    LoggingService* SHIBSP_DLLLOCAL SyslogLoggingServiceFactory(ptree& pt, bool) {
         return new SyslogLoggingService(pt);
     }
 
 }
 
-const char SyslogLoggingService::OPENSYSLOG_PROP_PATH[] = "logging.open-syslog";
-const char SyslogLoggingService::FACILITY_PROP_PATH[] = "logging.facility";
-
 SyslogLoggingService::SyslogLoggingService(const ptree& pt)
     : AbstractLoggingService(pt), m_open(false), m_facility(LOG_USER)
 {
+    static const char OPENSYSLOG_PROP_PATH[] = "logging.openSyslog";
+    static const char FACILITY_PROP_PATH[] = "logging.facility";
+
     string opt = pt.get(OPENSYSLOG_PROP_PATH, "1");
     m_open = (opt == "1" || opt == "true");
 

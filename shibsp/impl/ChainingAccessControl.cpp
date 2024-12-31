@@ -36,7 +36,7 @@ using namespace boost::property_tree;
 using namespace std;
 
 namespace shibsp {
-    extern AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const ptree& pt, bool deprecationSupport);
+    extern AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(ptree& pt, bool deprecationSupport);
 }
 
 AccessControl::AccessControl()
@@ -53,7 +53,7 @@ namespace {
     class ChainingAccessControl : public AccessControl
     {
     public:
-        ChainingAccessControl(const ptree& pt, bool deprecationSupport);
+        ChainingAccessControl(ptree& pt, bool deprecationSupport);
 
         ~ChainingAccessControl() {}
 
@@ -79,7 +79,7 @@ namespace {
         vector<unique_ptr<AccessControl>> m_ac;
     };
 
-    AccessControl* SHIBSP_DLLLOCAL ChainingAccessControlFactory(const ptree& pt, bool deprecationSupport)
+    AccessControl* SHIBSP_DLLLOCAL ChainingAccessControlFactory(ptree& pt, bool deprecationSupport)
     {
         return new ChainingAccessControl(pt, deprecationSupport);
     }
@@ -92,7 +92,7 @@ void SHIBSP_API shibsp::registerAccessControls()
     conf.AccessControlManager.registerFactory(XML_ACCESS_CONTROL, XMLAccessControlFactory);
 }
 
-ChainingAccessControl::ChainingAccessControl(const ptree& pt, bool deprecationSupport) : m_op(OP_AND)
+ChainingAccessControl::ChainingAccessControl(ptree& pt, bool deprecationSupport) : m_op(OP_AND)
 {
     static const char OPERATOR_PROP_PATH[] = "<xmlattr>.operator";
     static const char AND_OPERATOR[] = "AND";

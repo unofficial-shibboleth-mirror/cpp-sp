@@ -15,8 +15,8 @@
 /**
  * logging/impl/AbstractLoggingService.cpp
  *
- * Base class for logging service implementations.
- */
+ * Base class for logging service implementations. 
+ */    
 
 #include "internal.h"
 
@@ -39,11 +39,11 @@ namespace shibsp {
         }
     };
 
-    extern LoggingService* SHIBSP_DLLLOCAL ConsoleLoggingServiceFactory(const ptree& pt, bool);
+    extern LoggingService* SHIBSP_DLLLOCAL ConsoleLoggingServiceFactory(ptree& pt, bool);
 #ifdef WIN32
-    extern LoggingService* SHIBSP_DLLLOCAL WindowsLoggingServiceFactory(const ptree& pt, bool);
+    extern LoggingService* SHIBSP_DLLLOCAL WindowsLoggingServiceFactory(ptree& pt, bool);
 #else
-    extern LoggingService* SHIBSP_DLLLOCAL SyslogLoggingServiceFactory(const ptree& pt, bool);
+    extern LoggingService* SHIBSP_DLLLOCAL SyslogLoggingServiceFactory(ptree& pt, bool);
 #endif
 }
 
@@ -60,7 +60,7 @@ void SHIBSP_API shibsp::registerLoggingServices()
 
 const char LoggingService::LOGGING_TYPE_PROP_PATH[] = "logging.type";
 const char AbstractLoggingService::CATEGORIES_SECTION_NAME[] = "logging-categories";
-const char AbstractLoggingService::DEFAULT_LEVEL_PROP_PATH[] = "logging.default-level";
+const char AbstractLoggingService::DEFAULT_LEVEL_PROP_PATH[] = "logging.defaultLevel";
 
 LoggingService::LoggingService() {}
 

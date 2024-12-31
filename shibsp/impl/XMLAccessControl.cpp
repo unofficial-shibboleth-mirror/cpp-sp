@@ -131,7 +131,7 @@ namespace {
 }
 
 namespace shibsp {
-    AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(const ptree& pt, bool deprecationSupport)
+    AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(ptree& pt, bool deprecationSupport)
     {
         return new XMLAccessControl(pt);
     }

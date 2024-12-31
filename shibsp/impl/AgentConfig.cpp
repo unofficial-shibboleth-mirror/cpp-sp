@@ -26,6 +26,7 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
+#include "io/HTTPResponse.h"
 #include "logging/LoggingService.h"
 #include "util/Misc.h"
 #include "util/PathResolver.h"
@@ -50,7 +51,6 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost::property_tree;
-using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -71,8 +71,8 @@ namespace shibsp {
             return m_urlEncoder;
         }
 
-        Agent& getAgent() const;
         LoggingService& getLoggingService() const;
+        Agent& getAgent() const;
 
     private:
         bool _init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
@@ -238,7 +238,7 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
         loadExtensions(log);
 
         // Check for an overridden "agent-type" under the "global" subtree.
-        static const char AGENT_TYPE_PROP_PATH[] = "global.agent-type";
+        static const char AGENT_TYPE_PROP_PATH[] = "global.agentType";
         string type = m_config.get(AGENT_TYPE_PROP_PATH, DEFAULT_AGENT);
         m_agent.reset(AgentManager.newPlugin(type, m_config, true));
         m_agent->init();

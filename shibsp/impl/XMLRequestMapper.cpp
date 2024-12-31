@@ -76,7 +76,7 @@ namespace {
         }
 
     protected:
-        void loadACL(const ptree& pt, Category& log);
+        void loadACL(ptree& pt, Category& log);
 
         bool m_unicodeAware;
         // This uses shared_ptr to support multiple mappings for a given Override for Host.
@@ -117,7 +117,7 @@ namespace {
     class XMLRequestMapper : public RequestMapper, public ReloadableXMLFile
     {
     public:
-        XMLRequestMapper(const ptree& pt)
+        XMLRequestMapper(ptree& pt)
             : ReloadableXMLFile(REQUEST_MAP_PROP_PATH, pt, Category::getInstance(SHIBSP_LOGCAT ".RequestMapper")) {
             if (!load().second) {
                 throw ConfigurationException("Initial RequestMapper configuration was invalid.");
@@ -139,7 +139,7 @@ namespace {
     #pragma warning( pop )
 #endif
 
-    RequestMapper* SHIBSP_DLLLOCAL XMLRequestMapperFactory(const ptree& pt, bool deprecationSupport)
+    RequestMapper* SHIBSP_DLLLOCAL XMLRequestMapperFactory(ptree& pt, bool deprecationSupport)
     {
         return new XMLRequestMapper(pt);
     }
@@ -163,7 +163,7 @@ RequestMapper::~RequestMapper()
 {
 }
 
-void Override::loadACL(const ptree& pt, Category& log)
+void Override::loadACL(ptree& pt, Category& log)
 {
     // This method looks for a supported child element to use as the basis
     // of constructing an AccessControl plugin.
@@ -174,7 +174,7 @@ void Override::loadACL(const ptree& pt, Category& log)
     static const char TYPE_PROP_PATH[] = "<xmlattr>.type";
 
     try {
-        boost::optional<const ptree&> acl = pt.get_child_optional(HTACCESS_PROP_PATH);
+        boost::optional<ptree&> acl = pt.get_child_optional(HTACCESS_PROP_PATH);
         if (acl) {
             log.info("building Apache htaccess AccessControl provider...");
             m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(HT_ACCESS_CONTROL, acl.get(), false));

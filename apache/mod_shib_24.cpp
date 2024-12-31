@@ -1021,7 +1021,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
 class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet2
 {
 public:
-    ApacheRequestMapper(const ptree& pt, bool deprecationSupport=true);
+    ApacheRequestMapper(ptree& pt, bool deprecationSupport=true);
     ~ApacheRequestMapper() {}
     void lock_shared() { m_mapper->lock_shared(); }
     bool try_lock_shared() { return m_mapper->try_lock_shared(); }
@@ -1043,12 +1043,12 @@ private:
     mutable htAccessControl m_htaccess;
 };
 
-RequestMapper* ApacheRequestMapFactory(const ptree& pt, bool deprecationSupport)
+RequestMapper* ApacheRequestMapFactory(ptree& pt, bool deprecationSupport)
 {
     return new ApacheRequestMapper(pt, deprecationSupport);
 }
 
-ApacheRequestMapper::ApacheRequestMapper(const ptree& pt, bool deprecationSupport)
+ApacheRequestMapper::ApacheRequestMapper(ptree& pt, bool deprecationSupport)
     : m_mapper(AgentConfig::getConfig().RequestMapperManager.newPlugin(XML_REQUEST_MAPPER, pt, deprecationSupport))
 {
 }
