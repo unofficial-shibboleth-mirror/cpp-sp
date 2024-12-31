@@ -24,6 +24,7 @@
 #include <shibsp/RequestMapper.h>
 #include <shibsp/io/HTTPRequest.h>
 #include <shibsp/io/HTTPResponse.h>
+#include <shibsp/logging/Priority.h>
 
 namespace shibsp {
 
@@ -128,22 +129,13 @@ namespace shibsp {
          */
         virtual void setAuthType(const char* authtype)=0;
 
-        /** Portable logging levels. */
-        enum SPLogLevel {
-          SPDebug,
-          SPInfo,
-          SPWarn,
-          SPError,
-          SPCrit
-        };
-
         /**
          * Log to native server environment.
          *
          * @param level logging level
          * @param msg   message to log
          */
-        virtual void log(SPLogLevel level, const std::string& msg) const=0;
+        virtual void log(Priority::Value level, const std::string& msg) const=0;
 
         /**
          * Test logging level.
@@ -151,7 +143,7 @@ namespace shibsp {
          * @param level logging level
          * @return true iff logging level is enabled
          */
-        virtual bool isPriorityEnabled(SPLogLevel level) const=0;
+        virtual bool isPriorityEnabled(Priority::Value level) const=0;
 
         /**
          * Indicates that processing was declined, meaning no action is required during this phase of processing.

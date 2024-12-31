@@ -150,8 +150,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 
     if (isEnabled(Handlers)) {
         registerHandlers();
-        registerLogoutInitiators();
-        registerSessionInitiators();
     }
 
     registerServiceProviders();

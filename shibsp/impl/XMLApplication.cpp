@@ -451,10 +451,6 @@ void XMLApplication::doHandlers(const DOMElement* e, Category& log)
                 handler.reset(
                     conf.AssertionConsumerServiceManager.newPlugin(bindprop.c_str(), pair<const DOMElement*,const char*>(child, getId()), m_deprecationSupport)
                     );
-                // Map by protocol.
-                const XMLCh* protfamily = handler->getProtocolFamily();
-                if (protfamily)
-                    m_acsProtocolMap[protfamily].push_back(handler.get());
                 m_acsIndexMap[handler->getUnsignedInt("index").second] = handler.get();
 
                 if (!hardACS) {

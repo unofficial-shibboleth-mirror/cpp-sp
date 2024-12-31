@@ -342,23 +342,12 @@ void AbstractSPRequest::setCookie(const char* name, const char* value, time_t ex
     }
 }
 
-void AbstractSPRequest::log(SPLogLevel level, const std::string& msg) const
+void AbstractSPRequest::log(Priority::Value level, const std::string& msg) const
 {
-    m_log.log(
-        (level == SPDebug ? Priority::SHIB_DEBUG :
-        (level == SPInfo ? Priority::SHIB_INFO :
-        (level == SPWarn ? Priority::SHIB_WARN :
-        (level == SPError ? Priority::SHIB_ERROR : Priority::SHIB_CRIT)))),
-        msg
-        );
+    m_log.log(level, msg);
 }
 
-bool AbstractSPRequest::isPriorityEnabled(SPLogLevel level) const
+bool AbstractSPRequest::isPriorityEnabled(Priority::Value level) const
 {
-    return m_log.isPriorityEnabled(
-        (level == SPDebug ? Priority::SHIB_DEBUG :
-        (level == SPInfo ? Priority::SHIB_INFO :
-        (level == SPWarn ? Priority::SHIB_WARN :
-        (level == SPError ? Priority::SHIB_ERROR : Priority::SHIB_CRIT))))
-        );
+    return m_log.isPriorityEnabled(level);
 }

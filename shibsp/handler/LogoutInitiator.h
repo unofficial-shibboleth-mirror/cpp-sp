@@ -41,18 +41,7 @@ namespace shibsp {
     public:
         virtual ~LogoutInitiator();
     };
-    
-    /** Registers LogoutInitiator implementations. */
-    void SHIBSP_API registerLogoutInitiators();
 
-    /** LogoutInitiator that supports administrative logout. */
-    #define ADMIN_LOGOUT_INITIATOR "Admin"
-
-    /** LogoutInitiator that supports SAML 2.0 LogoutRequests. */
-    #define SAML2_LOGOUT_INITIATOR "SAML2"
-
-    /** LogoutInitiator that supports local-only logout. */
-    #define LOCAL_LOGOUT_INITIATOR "Local"
 };
 
 #endif /* __shibsp_logoutinitiator_h__ */

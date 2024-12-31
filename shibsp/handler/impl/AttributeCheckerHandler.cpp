@@ -152,10 +152,10 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     try {
         session = request.getSession(true, false, false);
         if (!session)
-            request.log(SPRequest::SPWarn, "AttributeChecker found session unavailable immediately after creation");
+            request.log(Priority::SHIB_WARN, "AttributeChecker found session unavailable immediately after creation");
     }
     catch (const std::exception& ex) {
-        request.log(SPRequest::SPWarn, string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
+        request.log(Priority::SHIB_WARN, string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
     }
 
     unique_lock<Session> sessionLocker(*session, adopt_lock);

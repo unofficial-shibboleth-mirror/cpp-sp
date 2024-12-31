@@ -31,20 +31,6 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
-namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AdminLogoutInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2LogoutInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory LocalLogoutInitiatorFactory;
-};
-
-void SHIBSP_API shibsp::registerLogoutInitiators()
-{
-    SPConfig& conf=SPConfig::getConfig();
-    conf.LogoutInitiatorManager.registerFactory(ADMIN_LOGOUT_INITIATOR, AdminLogoutInitiatorFactory);
-    conf.LogoutInitiatorManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
-    conf.LogoutInitiatorManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
-}
-
 LogoutInitiator::LogoutInitiator()
 {
 }

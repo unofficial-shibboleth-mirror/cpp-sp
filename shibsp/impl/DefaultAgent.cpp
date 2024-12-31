@@ -30,10 +30,8 @@
 #include "logging/Category.h"
 #include "remoting/RemotingService.h"
 #include "util/BoostPropertySet.h"
-#include "util/PathResolver.h"
 #include "util/SPConstants.h"
 
-#include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -146,14 +144,9 @@ void DefaultAgent::doRemotingService()
 {
     boost::optional<ptree&> child = m_pt.get_child_optional("remoting");
     if (child) {
-        string t(child->get("type", ""));
-        if (!t.empty()) {
-            m_log.info("building RemotingService of type %s...", t.c_str());
-            m_remotingService.reset(AgentConfig::getConfig().RemotingServiceManager.newPlugin(t.c_str(), *child, true));
-        } else {
-            m_log.error("[remoting] section missing type property");
-            throw ConfigurationException("Missing type property in [remoting] section.");
-        }
+        string t(child->get("type", HTTP_REMOTING_SERVICE));
+        m_log.info("building RemotingService of type %s...", t.c_str());
+        m_remotingService.reset(AgentConfig::getConfig().RemotingServiceManager.newPlugin(t.c_str(), *child, true));
     } else {
         m_log.debug("[remoting] section absent, skipping RemotingService creation");
     }
@@ -163,14 +156,10 @@ void DefaultAgent::doSessionCache()
 {
     boost::optional<ptree&> child = m_pt.get_child_optional("session-cache");
     if (child) {
-        string t(child->get("type", ""));
-        if (!t.empty()) {
-            m_log.info("building SessionCache of type %s...", t.c_str());
-            m_sessionCache.reset(AgentConfig::getConfig().SessionCacheManager.newPlugin(t.c_str(), *child, true));
-        } else {
-            m_log.error("[session-cache] section missing type property");
-            throw ConfigurationException("Missing type property in [session-cache] section.");
-        }
+        // TODO: change the expected default type
+        string t(child->get("type", STORAGESERVICE_SESSION_CACHE));
+        m_log.info("building SessionCache of type %s...", t.c_str());
+        m_sessionCache.reset(AgentConfig::getConfig().SessionCacheManager.newPlugin(t.c_str(), *child, true));
     } else {
         m_log.debug("[session-cache] section absent, skipping SessionCache creation");
     }
@@ -180,14 +169,9 @@ void DefaultAgent::doRequestMapper()
 {
     boost::optional<ptree&> child = m_pt.get_child_optional("request-mapper");
     if (child) {
-        string t(child->get("type", ""));
-        if (!t.empty()) {
-            m_log.info("building RequestMapper of type %s...", t.c_str());
-            m_requestMapper.reset(AgentConfig::getConfig().RequestMapperManager.newPlugin(t.c_str(), *child, true));
-        } else {
-            m_log.error("[request-mapper] section missing type property");
-            throw ConfigurationException("Missing type property in [request-mapper] section.");
-        }
+        string t(child->get("type", NATIVE_REQUEST_MAPPER));
+        m_log.info("building RequestMapper of type %s...", t.c_str());
+        m_requestMapper.reset(AgentConfig::getConfig().RequestMapperManager.newPlugin(t.c_str(), *child, true));
     } else {
         m_log.debug("[request-mapper] section absent, skipping RequestMapper creation");
     }

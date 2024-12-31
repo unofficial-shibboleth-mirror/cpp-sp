@@ -64,7 +64,7 @@ namespace shibsp {
             const Remapper* remapper=nullptr
             );
 
-        void log(SPRequest::SPLogLevel level, const std::string& msg) const;
+        void log(Priority::Value level, const std::string& msg) const;
 
 #ifndef SHIBSP_LITE
         /**

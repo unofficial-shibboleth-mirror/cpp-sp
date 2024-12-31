@@ -73,8 +73,8 @@ namespace shibsp {
         const char* getCookie(const char* name) const;
         void setAuthType(const char* authtype);
         void setCookie(const char* name, const char* value, time_t expires = 0, samesite_t sameSite = SAMESITE_ABSENT);
-        void log(SPLogLevel level, const std::string& msg) const;
-        bool isPriorityEnabled(SPLogLevel level) const;
+        void log(Priority::Value level, const std::string& msg) const;
+        bool isPriorityEnabled(Priority::Value level) const;
 
     private:
         Category& m_log;

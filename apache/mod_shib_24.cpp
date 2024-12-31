@@ -363,7 +363,7 @@ public:
                 m_firsttime = false;
         }
         if (!m_firsttime)
-            log(SPDebug, "shib_check_user running more than once");
+            log(Priority::SHIB_DEBUG, "shib_check_user running more than once");
     }
     return true;
   }
@@ -400,14 +400,14 @@ public:
         return ret;
     return m_req->useragent_ip;
   }
-  void log(SPLogLevel level, const string& msg) const {
+  void log(Priority::Value level, const string& msg) const {
     AbstractSPRequest::log(level,msg);
     ap_log_rerror(
         APLOG_MARK,
-        (level == SPDebug ? APLOG_DEBUG :
-        (level == SPInfo ? APLOG_INFO :
-        (level == SPWarn ? APLOG_WARNING :
-        (level == SPError ? APLOG_ERR : APLOG_CRIT))))|APLOG_NOERRNO,
+        (level == Priority::SHIB_DEBUG ? APLOG_DEBUG :
+        (level == Priority::SHIB_INFO ? APLOG_INFO :
+        (level == Priority::SHIB_WARN ? APLOG_WARNING :
+        (level == Priority::SHIB_ERROR ? APLOG_ERR : APLOG_CRIT))))|APLOG_NOERRNO,
         0, m_req,
         "%s",
         msg.c_str()
@@ -426,7 +426,7 @@ public:
         apr_bucket *bucket;
         apr_status_t rv = ap_get_brigade(m_req->input_filters, bb, AP_MODE_READBYTES, APR_BLOCK_READ, HUGE_STRING_LEN);
         if (rv != APR_SUCCESS) {
-            log(SPError, "Apache function (ap_get_brigade) failed while reading request body.");
+            log(Priority::SHIB_ERROR, "Apache function (ap_get_brigade) failed while reading request body.");
             break;
         }
 
@@ -852,7 +852,7 @@ AccessControl::aclresult_t htAccessControl::doAccessControl(const ShibTargetApac
         result = aclplugin->authorized(sta, session);
     }
     catch (const xml_parser_error& e) {
-        sta.log(SPRequest::SPError, e.what());
+        sta.log(Priority::SHIB_ERROR, e.what());
     }
     return result;
 }
@@ -884,7 +884,7 @@ AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, 
                 match = exp::regex_match(sta.getRemoteUser(), re, exp::regex_constants::match_any | exp::regex_constants::match_not_null);
             }
             catch (const exp::regex_error& e) {
-                sta.log(SPRequest::SPError,
+                sta.log(Priority::SHIB_ERROR,
                     string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
             }
         }
@@ -893,8 +893,8 @@ AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, 
         }
 
         if (match) {
-            if (sta.isPriorityEnabled(SPRequest::SPDebug))
-                sta.log(SPRequest::SPDebug,
+            if (sta.isPriorityEnabled(Priority::SHIB_DEBUG))
+                sta.log(Priority::SHIB_DEBUG,
                     string("htaccess: require user ") + (negated ? "rejecting (" : "accepting (") + sta.getRemoteUser() + ")");
             return (negated ? shib_acl_false : shib_acl_true);
         }
@@ -929,7 +929,7 @@ AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApach
                     match = exp::regex_match(ref, re, exp::regex_constants::match_any | exp::regex_constants::match_not_null);
                 }
                 catch (const exp::regex_error& e) {
-                    sta.log(SPRequest::SPError,
+                    sta.log(Priority::SHIB_ERROR,
                         string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
                 }
             }
@@ -938,8 +938,8 @@ AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApach
             }
 
             if (match) {
-                if (sta.isPriorityEnabled(SPRequest::SPDebug))
-                    sta.log(SPRequest::SPDebug,
+                if (sta.isPriorityEnabled(Priority::SHIB_DEBUG))
+                    sta.log(Priority::SHIB_DEBUG,
                         string("htaccess: require authnContext ") + (negated ? "rejecting (" : "accepting (") + ref + ")");
                 return (negated ? shib_acl_false : shib_acl_true);
             }
@@ -947,8 +947,8 @@ AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApach
         return (negated ? shib_acl_true : shib_acl_false);
     }
 
-    if (sta.isPriorityEnabled(SPRequest::SPDebug))
-        sta.log(SPRequest::SPDebug, "htaccess: require authnContext rejecting session with no context associated");
+    if (sta.isPriorityEnabled(Priority::SHIB_DEBUG))
+        sta.log(Priority::SHIB_DEBUG, "htaccess: require authnContext rejecting session with no context associated");
     return shib_acl_false;
 }
 
@@ -965,22 +965,22 @@ bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* 
             try {
                 exp::regex exp(toMatch, flags);
                 if (exp::regex_match(*v, exp, exp::regex_constants::match_any | exp::regex_constants::match_not_null)) {
-                    if (request.isPriorityEnabled(SPRequest::SPDebug))
-                        request.log(SPRequest::SPDebug, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": accepted");
+                    if (request.isPriorityEnabled(Priority::SHIB_DEBUG))
+                        request.log(Priority::SHIB_DEBUG, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": accepted");
                     return true;
                 }
             } catch (const exp::regex_error& e) {
-                request.log(SPRequest::SPError,
+                request.log(Priority::SHIB_ERROR,
                     string("htaccess plugin caught exception while parsing regular expression (") + toMatch + "): " + e.what());
             }
         }
         else if ((caseSensitive && *v == toMatch) || (!caseSensitive && !strcasecmp(v->c_str(), toMatch))) {
-            if (request.isPriorityEnabled(SPRequest::SPDebug))
-                request.log(SPRequest::SPDebug, string("htaccess: expecting ") + toMatch + ", got " + *v + ": accepted");
+            if (request.isPriorityEnabled(Priority::SHIB_DEBUG))
+                request.log(Priority::SHIB_DEBUG, string("htaccess: expecting ") + toMatch + ", got " + *v + ": accepted");
             return true;
         }
-        else if (request.isPriorityEnabled(SPRequest::SPDebug)) {
-            request.log(SPRequest::SPDebug, string("htaccess: expecting ") + toMatch + ", got " + *v + ": rejected");
+        else if (request.isPriorityEnabled(Priority::SHIB_DEBUG)) {
+            request.log(Priority::SHIB_DEBUG, string("htaccess: expecting ") + toMatch + ", got " + *v + ": rejected");
         }
     }
     return false;
@@ -1188,15 +1188,15 @@ extern "C" authz_status shib_session_check_authz(request_rec* r, const char*, co
         Session* session = sta.first->getSession(false, true, false);
         lock_guard<Session> slocker(*session, adopt_lock);
         if (session) {
-            sta.first->log(SPRequest::SPDebug, "htaccess: accepting shib-session/valid-user based on active session");
+            sta.first->log(Priority::SHIB_DEBUG, "htaccess: accepting shib-session/valid-user based on active session");
             return AUTHZ_GRANTED;
         }
     }
     catch (std::exception& e) {
-        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+        sta.first->log(Priority::SHIB_WARN, string("htaccess: unable to obtain session for access control check: ") +  e.what());
     }
 
-    sta.first->log(SPRequest::SPDebug, "htaccess: denying shib-access/valid-user rule, no active session");
+    sta.first->log(Priority::SHIB_DEBUG, "htaccess: denying shib-access/valid-user rule, no active session");
     return AUTHZ_DENIED_NO_USER;
 }
 
@@ -1289,7 +1289,7 @@ extern "C" authz_status shib_acclass_check_authz(request_rec* r, const char* req
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
-        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+        sta.first->log(Priority::SHIB_WARN, string("htaccess: unable to obtain session for access control check: ") +  e.what());
     }
 
     return AUTHZ_GENERAL_ERROR;
@@ -1314,7 +1314,7 @@ extern "C" authz_status shib_attr_check_authz(request_rec* r, const char* requir
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
-        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+        sta.first->log(Priority::SHIB_WARN, string("htaccess: unable to obtain session for access control check: ") +  e.what());
     }
 
     return AUTHZ_GENERAL_ERROR;
@@ -1339,7 +1339,7 @@ extern "C" authz_status shib_plugin_check_authz(request_rec* r, const char* requ
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
-        sta.first->log(SPRequest::SPWarn, string("htaccess: unable to obtain session for access control check: ") +  e.what());
+        sta.first->log(Priority::SHIB_WARN, string("htaccess: unable to obtain session for access control check: ") +  e.what());
     }
 
     return AUTHZ_GENERAL_ERROR;

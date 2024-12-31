@@ -34,19 +34,6 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace std;
 
-
-namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory SAML2SessionInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager< SessionInitiator,string,pair<const DOMElement*,const char*> >::Factory SAMLDSSessionInitiatorFactory;
-};
-
-void SHIBSP_API shibsp::registerSessionInitiators()
-{
-    SPConfig& conf=SPConfig::getConfig();
-    conf.SessionInitiatorManager.registerFactory(SAML2_SESSION_INITIATOR, SAML2SessionInitiatorFactory);
-    conf.SessionInitiatorManager.registerFactory(SAMLDS_SESSION_INITIATOR, SAMLDSSessionInitiatorFactory);
-}
-
 SessionInitiator::SessionInitiator()
 {
 }
@@ -99,7 +86,7 @@ bool SessionInitiator::checkCompatibility(SPRequest& request, bool isHandler) co
     // Check for support of isPassive if it's used.
     if (isPassive && getSupportedOptions().count("isPassive") == 0) {
         if (getParent()) {
-            log(SPRequest::SPInfo, "handler does not support isPassive option");
+            log(Priority::SHIB_INFO, "handler does not support isPassive option");
             return false;
         }
         throw ConfigurationException("Unsupported option (isPassive) supplied to SessionInitiator.");
@@ -159,8 +146,8 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 
             if (returnOnError) {
                 // Log it and attempt to recover relay state so we can get back.
-                log(SPRequest::SPError, ex.what());
-                log(SPRequest::SPInfo, "trapping SessionInitiator error condition and returning to target location");
+                log(Priority::SHIB_ERROR, ex.what());
+                log(Priority::SHIB_INFO, "trapping SessionInitiator error condition and returning to target location");
                 flag = request.getParameter("target");
                 string target(flag ? flag : "");
                 recoverRelayState(request.getApplication(), request, request, target, false);

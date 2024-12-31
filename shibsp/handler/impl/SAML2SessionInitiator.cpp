@@ -212,9 +212,9 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
             ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
             if (!ACS)
-                request.log(SPRequest::SPWarn, "invalid acsIndex specified in request, using acsIndex property");
+                request.log(Priority::SHIB_WARN, "invalid acsIndex specified in request, using acsIndex property");
             else if (ECP && !XMLString::equals(ACS->getString("Binding").second, nullptr)) {
-                request.log(SPRequest::SPWarn, "acsIndex in request referenced a non-PAOS ACS, using default ACS location");
+                request.log(Priority::SHIB_WARN, "acsIndex in request referenced a non-PAOS ACS, using default ACS location");
                 ACS = nullptr;
             }
         }
@@ -283,7 +283,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
 
     if (!ACS) {
         if (ECP) {
-            ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily(), nullptr);
+            //ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily(), nullptr);
             if (!ACS)
                 throw ConfigurationException("Unable to locate PAOS response endpoint.");
         }
@@ -295,15 +295,6 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
                 ACS = app.getAssertionConsumerServiceByIndex(index.second);
             }
         }
-    }
-
-    // If we picked by index, validate the ACS for use with this protocol.
-    if (!ECP && (!ACS || !XMLString::equals(getProtocolFamily(), ACS->getProtocolFamily()))) {
-        if (ACS)
-            request.log(SPRequest::SPWarn, "invalid acsIndex property, or non-SAML 2.0 ACS, using default SAML 2.0 ACS");
-        ACS = app.getAssertionConsumerServiceByProtocol(getProtocolFamily());
-        if (!ACS)
-            throw ConfigurationException("Unable to locate a SAML 2.0 ACS endpoint to use for response.");
     }
 
     // To invoke the request builder, the key requirement is to figure out how

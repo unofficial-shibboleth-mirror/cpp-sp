@@ -216,7 +216,7 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
         return make_pair(true, request.sendResponse(feed));
     }
     catch (std::exception& ex) {
-        request.log(SPRequest::SPError, string("error while processing request:") + ex.what());
+        request.log(Priority::SHIB_ERROR, string("error while processing request:") + ex.what());
         istringstream msg("Discovery Request Failed");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
     }

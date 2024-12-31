@@ -427,7 +427,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         return make_pair(false,0L);
     }
     catch (const exception& e) {
-        request.log(SPRequest::SPError, e.what());
+        request.log(Priority::SHIB_ERROR, e.what());
         TemplateParameters tp(&e);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true, sendError(log, request, app, "session", tp));
@@ -498,7 +498,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
         }
     }
     catch (const exception& e) {
-        request.log(SPRequest::SPError, e.what());
+        request.log(Priority::SHIB_ERROR, e.what());
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true, sendError(log, request, app, "access", tp));
@@ -586,7 +586,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         return make_pair(false,0L);
     }
     catch (const exception& e) {
-        request.log(SPRequest::SPError, e.what());
+        request.log(Priority::SHIB_ERROR, e.what());
         TemplateParameters tp(&e, nullptr, session);
         tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
         return make_pair(true, sendError(log, request, app, "session", tp));
@@ -661,7 +661,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
     catch (const exception& e) {
-        request.log(SPRequest::SPError, e.what());
+        request.log(Priority::SHIB_ERROR, e.what());
         Session* session = nullptr;
         try {
             session = request.getSession(false, true, false);   // do not cache

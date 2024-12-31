@@ -60,6 +60,12 @@ namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory StatusHandlerFactory;
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SessionHandlerFactory;
 
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AdminLogoutInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2LogoutInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory LocalLogoutInitiatorFactory;
+
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2SessionInitiatorFactory;
+    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAMLDSSessionInitiatorFactory;
 
     void SHIBSP_DLLLOCAL generateRandomHex(std::string& buf, unsigned int len) {
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -82,7 +88,7 @@ void SHIBSP_API shibsp::registerHandlers()
 {
     SPConfig& conf=SPConfig::getConfig();
 
-    conf.AssertionConsumerServiceManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
+    //conf.AssertionConsumerServiceManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
  
     conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
     conf.HandlerManager.registerFactory(DISCOVERY_FEED_HANDLER, DiscoveryFeedFactory);
@@ -90,7 +96,14 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
     conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
 
-    conf.SingleLogoutServiceManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
+    //conf.HandlerManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
+
+    //conf.HandlerManager.registerFactory(ADMIN_LOGOUT_INITIATOR, AdminLogoutInitiatorFactory);
+    //conf.HandlerManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
+    //conf.HandlerManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
+
+    //conf.SessionInitiatorManager.registerFactory(SAML2_SESSION_INITIATOR, SAML2SessionInitiatorFactory);
+    //conf.SessionInitiatorManager.registerFactory(SAMLDS_SESSION_INITIATOR, SAMLDSSessionInitiatorFactory);
 } 
 
 Handler::Handler()
@@ -101,25 +114,14 @@ Handler::~Handler()
 {
 }
 
-const XMLCh* Handler::getProtocolFamily() const
-{
-    return nullptr;
-}
-
 const char* Handler::getEventType() const
 {
     return nullptr;
 }
 
-void Handler::log(SPRequest::SPLogLevel level, const string& msg) const
+void Handler::log(Priority::Value level, const string& msg) const
 {
-    Category::getInstance(SHIBSP_LOGCAT ".Handler").log(
-        (level == SPRequest::SPDebug ? Priority::SHIB_DEBUG :
-        (level == SPRequest::SPInfo ? Priority::SHIB_INFO :
-        (level == SPRequest::SPWarn ? Priority::SHIB_WARN :
-        (level == SPRequest::SPError ? Priority::SHIB_ERROR : Priority::SHIB_CRIT)))),
-        msg
-        );
+    Category::getInstance(SHIBSP_LOGCAT ".Handler").log(level, msg);
 }
 
 void Handler::cleanRelayState(
@@ -176,9 +178,9 @@ void Handler::cleanRelayState(
     }
 
     if (purgedRSCookies > 0)
-        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedRSCookies) + " stale relay state cookie(s) from client");
+        log(Priority::SHIB_DEBUG, string("purged ") + lexical_cast<string>(purgedRSCookies) + " stale relay state cookie(s) from client");
     if (purgedOSCookies > 0)
-        log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedOSCookies) + " stale request correlation cookie(s) from client");
+        log(Priority::SHIB_DEBUG, string("purged ") + lexical_cast<string>(purgedOSCookies) + " stale request correlation cookie(s) from client");
 }
 
 void Handler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
@@ -324,7 +326,7 @@ void Handler::recoverRelayState(
                     DDFJanitor jin(in),jout(out);
                     //out = application.getServiceProvider().getListenerService()->send(in);
                     if (!out.isstring()) {
-                        log(SPRequest::SPError, "StorageService-backed RelayState mechanism did not return a state value.");
+                        log(Priority::SHIB_ERROR, "StorageService-backed RelayState mechanism did not return a state value.");
                         relayState.erase();
                     }
                     else {
@@ -384,15 +386,9 @@ AbstractHandler::~AbstractHandler()
 {
 }
 
-void AbstractHandler::log(SPRequest::SPLogLevel level, const string& msg) const
+void AbstractHandler::log(Priority::Value level, const string& msg) const
 {
-    m_log.log(
-        (level == SPRequest::SPDebug ? Priority::SHIB_DEBUG :
-        (level == SPRequest::SPInfo ? Priority::SHIB_INFO :
-        (level == SPRequest::SPWarn ? Priority::SHIB_WARN :
-        (level == SPRequest::SPError ? Priority::SHIB_ERROR : Priority::SHIB_CRIT)))),
-        msg
-        );
+    m_log.log(level, msg);
 }
 
 #ifndef SHIBSP_LITE
@@ -626,7 +622,7 @@ void AbstractHandler::preservePostData(
         }
 
         if (purgedCookies > 0)
-            log(SPRequest::SPDebug, string("purged ") + lexical_cast<string>(purgedCookies) + " stale POST preservation cookie(s) from client");
+            log(Priority::SHIB_DEBUG, string("purged ") + lexical_cast<string>(purgedCookies) + " stale POST preservation cookie(s) from client");
 
         // Set a cookie with key info.
         response.setCookie(shib_cookie.c_str(), postkey.c_str(), 0, HTTPResponse::SAMESITE_NONE);

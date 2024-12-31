@@ -28,6 +28,7 @@
 #define __shibsp_handler_h__
 
 #include <shibsp/SPRequest.h>
+#include <shibsp/logging/Priority.h>
 #include <shibsp/util/PropertySet.h>
 
 namespace shibsp {
@@ -50,7 +51,7 @@ namespace shibsp {
          * @param level logging level
          * @param msg   message to log
          */
-        virtual void log(SPRequest::SPLogLevel level, const std::string& msg) const;
+        virtual void log(Priority::Value level, const std::string& msg) const;
 
         /**
          * Prevents unused relay state from building up by cleaning old state from the client.
@@ -106,13 +107,6 @@ namespace shibsp {
         virtual ~Handler();
 
         /**
-         * Returns an identifier for the protocol family associated with the handler, if any.
-         *
-         * @return  a protocol identifier, or nullptr
-         */
-        virtual const XMLCh* getProtocolFamily() const;
-
-        /**
          * Executes handler functionality as an incoming request.
          * 
          * <p>Handlers can be run either directly by incoming web requests
@@ -135,17 +129,20 @@ namespace shibsp {
     /** Registers Handler implementations. */
     void SHIBSP_API registerHandlers();
 
-    /** Handler for SAML 2.0 SSO. */
-    #define SAML20_ASSERTION_CONSUMER_SERVICE "SAML2"
+    /** SessionInitiator that supports SAML 2.0 AuthnRequests. */
+    #define SESSION_INITIATOR "SessionInitiator"
 
-    /** Handler for SAML 2.0 SLO. */
-    #define SAML20_LOGOUT_HANDLER "SAML2"
+    /** Handler for SSO token handling (the inbound side of SSO). */
+    #define TOKEN_CONSUMER_HANDLER "TokenConsumer"
 
-    /** Handler for SAML 2.0 NIM. */
-    #define SAML20_NAMEID_MGMT_SERVICE "SAML2"
+    /** Handler for logout. */
+    #define LOGOUT_INITIATOR_HANDLER "LogoutInitiator"
 
-    /** Handler for SAML 2.0 Artifact Resolution. */
-    #define SAML20_ARTIFACT_RESOLUTION_SERVICE "SAML2"
+    /** Handler for logout. */
+    #define LOGOUT_CONSUMER_HANDLER "LogoutConsumer"
+
+    /** LogoutInitiator that supports administrative logout. */
+    #define ADMIN_LOGOUT "AdminLogout"
 
     /** Handler for hooking new sessions with attribute checking. */
     #define ATTR_CHECKER_HANDLER "AttributeChecker"

@@ -141,7 +141,7 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
         {
             for (const auto& i : m_ac) {
                 if (i->authorized(request, session) != shib_acl_true) {
-                    request.log(SPRequest::SPDebug, "embedded AccessControl plugin unsuccessful, denying access");
+                    request.log(Priority::SHIB_DEBUG, "embedded AccessControl plugin unsuccessful, denying access");
                     return shib_acl_false;
                 }
             }
@@ -154,10 +154,10 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
                 if (i->authorized(request,session) == shib_acl_true)
                     return shib_acl_true;
             }
-            request.log(SPRequest::SPDebug, "all embedded AccessControl plugins unsuccessful, denying access");
+            request.log(Priority::SHIB_DEBUG, "all embedded AccessControl plugins unsuccessful, denying access");
             return shib_acl_false;
         }
     }
-    request.log(SPRequest::SPWarn, "unknown operation in access control policy, denying access");
+    request.log(Priority::SHIB_DEBUG, "unknown operation in access control policy, denying access");
     return shib_acl_false;
 }

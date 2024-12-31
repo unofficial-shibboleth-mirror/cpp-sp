@@ -96,15 +96,6 @@ namespace shibsp {
         const char* remap(const char* src, Category& log) const;
     };
     
-    /** Registers SessionInitiator implementations. */
-    void SHIBSP_API registerSessionInitiators();
-
-    /** SessionInitiator that supports SAML 2.0 AuthnRequests. */
-    #define SAML2_SESSION_INITIATOR "SAML2"
-
-    /** SessionInitiator that supports SAML Discovery Service protocol. */
-    #define SAMLDS_SESSION_INITIATOR "SAMLDS"
-    
 };
 
 #if defined (_MSC_VER)
