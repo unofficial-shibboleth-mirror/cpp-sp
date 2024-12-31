@@ -29,10 +29,9 @@
 
 #include "SessionCache.h"
 #include "io/HTTPResponse.h"
-#include "remoting/ListenerService.h"
 
 #include <ctime>
-#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
 namespace xmltooling {
     class CondWait;

@@ -33,7 +33,9 @@ namespace shibsp {
     class SHIBSP_API Category;
     class SHIBSP_API LoggingService;
     class SHIBSP_API PathResolver;
+    class SHIBSP_API RemotingService;
     class SHIBSP_API RequestMapper;
+    class SHIBSP_API SessionCache;
     class SHIBSP_API URLEncoder;
 
 #if defined (_MSC_VER)
@@ -94,9 +96,19 @@ namespace shibsp {
         PluginManager<LoggingService,std::string,boost::property_tree::ptree&> LoggingServiceManager;
 
         /**
+         * Manages factories for RemotingService plugins.
+         */
+        PluginManager<RemotingService,std::string,boost::property_tree::ptree&> RemotingServiceManager;
+
+        /**
          * Manages factories for RequestMapper plugins.
          */
         PluginManager<RequestMapper,std::string,boost::property_tree::ptree&> RequestMapperManager;
+
+        /**
+         * Manages factories for SessionCache plugins.
+         */
+        PluginManager<SessionCache,std::string,boost::property_tree::ptree&> SessionCacheManager;
 
         /**
          * Returns a PathResolver instance.

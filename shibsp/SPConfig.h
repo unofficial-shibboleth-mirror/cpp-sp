@@ -179,11 +179,6 @@ namespace shibsp {
         PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > HandlerManager;
 
         /**
-         * Manages factories for ListenerService plugins.
-         */
-        PluginManager<ListenerService,std::string,const xercesc::DOMElement*> ListenerServiceManager;
-
-        /**
          * Manages factories for Handler plugins that implement LogoutInitiator functionality.
          */
         PluginManager< Handler,std::string,std::pair<const xercesc::DOMElement*,const char*> > LogoutInitiatorManager;

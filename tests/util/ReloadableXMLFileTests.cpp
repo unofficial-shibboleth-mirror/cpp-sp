@@ -36,7 +36,7 @@ namespace {
 class DummyXMLFile : virtual public ReloadableXMLFile
 {
 public:
-    DummyXMLFile(const ptree& pt)
+    DummyXMLFile(ptree& pt)
         : ReloadableXMLFile("RequestMap", pt, Category::getInstance("DummyXMLFile")),
             m_log(Category::getInstance("DummyXMLFile")), m_tree(nullptr), m_forceReload(false) {
         if (!load().second) {

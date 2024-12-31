@@ -20,6 +20,7 @@
 
 #include "internal.h"
 #include "logging/impl/AbstractLoggingService.h"
+#include "util/Misc.h"
 
 #include <syslog.h>
 #include <boost/lexical_cast.hpp>
@@ -63,10 +64,10 @@ SyslogLoggingService::SyslogLoggingService(const ptree& pt)
     static const char OPENSYSLOG_PROP_PATH[] = "logging.openSyslog";
     static const char FACILITY_PROP_PATH[] = "logging.facility";
 
-    string opt = pt.get(OPENSYSLOG_PROP_PATH, "1");
-    m_open = (opt == "1" || opt == "true");
+    string_to_bool_translator tr;
+    m_open = pt.get(OPENSYSLOG_PROP_PATH, true, tr);
 
-    opt = pt.get(FACILITY_PROP_PATH, "0");
+    string opt = pt.get(FACILITY_PROP_PATH, "0");
     try {
         m_facility = lexical_cast<int>(opt);
         if (m_facility == 0) {

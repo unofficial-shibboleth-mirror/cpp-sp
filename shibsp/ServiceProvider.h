@@ -77,14 +77,6 @@ namespace shibsp {
          * @return  a SessionCache
          */
         virtual SessionCache* getSessionCache(bool required=true) const=0;
-
-        /**
-         * Returns a ListenerService instance.
-         * 
-         * @param required  true iff an exception should be thrown if no ListenerService is available
-         * @return  a ListenerService
-         */
-        virtual ListenerService* getListenerService(bool required=true) const=0;
         
         /**
          * Returns a RequestMapper instance.

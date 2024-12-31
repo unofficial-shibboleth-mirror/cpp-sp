@@ -30,7 +30,6 @@
 #include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
-#include "remoting/ListenerService.h"
 #include "util/DOMPropertySet.h"
 #include "util/PluginManager.h"
 
@@ -79,7 +78,6 @@ namespace shibsp {
 
     private:
         void doExtensions(const xercesc::DOMElement*, const char*, Category&);
-        void doListener(const xercesc::DOMElement*, XMLConfig*, Category&);
         void doCaching(const xercesc::DOMElement*, XMLConfig*, Category&);
 
         xercesc::DOMDocument* m_document;
@@ -105,13 +103,6 @@ namespace shibsp {
         std::pair<bool, unsigned int> getUnsignedInt(const char* name) const { return m_impl->getUnsignedInt(name); }
         std::pair<bool, int> getInt(const char* name) const { return m_impl->getInt(name); }
         const PropertySet* getPropertySet(const char* name) const { return m_impl->getPropertySet(name); }
-
-        // ServiceProvider
-        ListenerService* getListenerService(bool required = true) const {
-            if (required && !m_listener)
-                throw ConfigurationException("No ListenerService available.");
-            return m_listener.get();
-        }
 
         SessionCache* getSessionCache(bool required = true) const {
             if (required && !m_sessionCache)
@@ -143,7 +134,6 @@ namespace shibsp {
         // The order of these members actually matters. If we want to rely on auto-destruction, then
         // anything dependent on anything else has to come later in the object so it will pop first.
         // Remoring is the lowest, then the cache, and finally the rest.
-        boost::scoped_ptr<ListenerService> m_listener;
         boost::scoped_ptr<SessionCache> m_sessionCache;
         boost::scoped_ptr<XMLConfigImpl> m_impl;
     };

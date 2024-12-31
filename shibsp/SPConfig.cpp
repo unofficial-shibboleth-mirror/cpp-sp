@@ -36,7 +36,6 @@
 #include "attribute/Attribute.h"
 #include "handler/LogoutInitiator.h"
 #include "handler/SessionInitiator.h"
-#include "remoting/ListenerService.h"
 
 #include <ctime>
 #include <sstream>
@@ -157,9 +156,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
 
     registerServiceProviders();
 
-    if (isEnabled(Listener))
-        registerListenerServices();
-
     if (isEnabled(RequestMapping)) {
         registerAccessControls();
         registerRequestMappers();
@@ -196,9 +192,6 @@ void SPConfig::term()
 
     ServiceProviderManager.deregisterFactories();
     Attribute::deregisterFactories();
-
-    if (isEnabled(Listener))
-        ListenerServiceManager.deregisterFactories();
 
     if (isEnabled(RequestMapping)) {
         AccessControlManager.deregisterFactories();

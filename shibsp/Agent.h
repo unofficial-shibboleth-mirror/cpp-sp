@@ -29,7 +29,7 @@ namespace shibsp {
 
     class SHIBSP_API Application;
     class SHIBSP_API Handler;
-    class SHIBSP_API ListenerService;
+    class SHIBSP_API RemotingService;
     class SHIBSP_API RequestMapper;
     class SHIBSP_API SessionCache;
     class SHIBSP_API AgentRequest;
@@ -71,12 +71,12 @@ namespace shibsp {
         virtual SessionCache* getSessionCache(bool required=true) const=0;
 
         /**
-         * Returns a ListenerService instance.
+         * Returns a RemotingService instance.
          * 
-         * @param required  true iff an exception should be thrown if no ListenerService is available
-         * @return  a ListenerService
+         * @param required  true iff an exception should be thrown if no RemotingService is available
+         * @return  a RemotingService
          */
-        virtual ListenerService* getListenerService(bool required=true) const=0;
+        virtual RemotingService* getRemotingService(bool required=true) const=0;
         
         /**
          * Returns a RequestMapper instance.

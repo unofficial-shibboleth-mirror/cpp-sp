@@ -27,7 +27,6 @@
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutHandler.h"
-#include "remoting/ListenerService.h"
 #include "util/CGIParser.h"
 #include "util/SPConstants.h"
 #include "util/PathResolver.h"
@@ -254,7 +253,7 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
                     in.addmember("id").string(mech.second);
                     in.addmember("value").unsafe_string(relayState.c_str());
                     DDFJanitor jin(in),jout(out);
-                    out = application.getServiceProvider().getListenerService()->send(in);
+                    //out = application.getServiceProvider().getListenerService()->send(in);
                     if (!out.isstring())
                         throw IOException("StorageService-backed RelayState mechanism did not return a state key.");
                     relayState = string(mech.second-3) + ':' + out.string();
@@ -323,7 +322,7 @@ void Handler::recoverRelayState(
                     in.addmember("key").string(key);
                     in.addmember("clear").integer(clear ? 1 : 0);
                     DDFJanitor jin(in),jout(out);
-                    out = application.getServiceProvider().getListenerService()->send(in);
+                    //out = application.getServiceProvider().getListenerService()->send(in);
                     if (!out.isstring()) {
                         log(SPRequest::SPError, "StorageService-backed RelayState mechanism did not return a state value.");
                         relayState.erase();
@@ -598,7 +597,7 @@ void AbstractHandler::preservePostData(
             DDFJanitor jin(in),jout(out);
             in.addmember("id").string(mech.second);
             in.add(postData);
-            out = application.getServiceProvider().getListenerService()->send(in);
+            //out = application.getServiceProvider().getListenerService()->send(in);
             if (!out.isstring())
                 throw IOException("StorageService-backed PostData mechanism did not return a state key.");
             postkey = string(mech.second-3) + ':' + out.string();
@@ -687,10 +686,10 @@ DDF AbstractHandler::recoverPostData(
                     DDFJanitor jin(in);
                     in.addmember("id").string(ssid.c_str());
                     in.addmember("key").string(key);
-                    DDF out = application.getServiceProvider().getListenerService()->send(in);
-                    if (out.islist())
-                        return out;
-                    out.destroy();
+                    //DDF out = application.getServiceProvider().getListenerService()->send(in);
+                    //if (out.islist())
+                    //    return out;
+                    //out.destroy();
                     m_log.error("storageService-backed PostData mechanism did not return preserved data.");
                 }
             }

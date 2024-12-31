@@ -28,7 +28,7 @@
 #define __shibsp_remhandler_h__
 
 #include <shibsp/handler/Handler.h>
-#include <shibsp/remoting/ListenerService.h>
+#include <shibsp/remoting/ddf.h>
 
 #include <set>
 
@@ -45,7 +45,7 @@ namespace shibsp {
     /**
      * Base class for handlers that need HTTP request/response layer to be remoted.
      */
-    class SHIBSP_API RemotedHandler : public virtual Handler, public Remoted 
+    class SHIBSP_API RemotedHandler : public virtual Handler
     {
         static std::set<std::string> m_remotedHeaders;
 

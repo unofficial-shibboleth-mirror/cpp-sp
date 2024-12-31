@@ -154,34 +154,6 @@ void XMLConfigImpl::doExtensions(const DOMElement* e, const char* label, Categor
     }
 }
 
-void XMLConfigImpl::doListener(const DOMElement* e, XMLConfig* conf, Category& log)
-{
-#ifdef WIN32
-    string plugtype(TCP_LISTENER_SERVICE);
-#else
-    string plugtype(UNIX_LISTENER_SERVICE);
-#endif
-    DOMElement* child = XMLHelper::getFirstChildElement(e, UnixListener);
-    if (child)
-        plugtype = UNIX_LISTENER_SERVICE;
-    else {
-        child = XMLHelper::getFirstChildElement(e, TCPListener);
-        if (child)
-            plugtype = TCP_LISTENER_SERVICE;
-        else {
-            child = XMLHelper::getFirstChildElement(e, Listener);
-            if (child) {
-                auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-                if (type.get() && *type.get())
-                    plugtype = type.get();
-            }
-        }
-    }
-
-    log.info("building ListenerService of type %s...", plugtype.c_str());
-    conf->m_listener.reset(SPConfig::getConfig().ListenerServiceManager.newPlugin(plugtype.c_str(), child, m_deprecationSupport));
-}
-
 void XMLConfigImpl::doCaching(const DOMElement* e, XMLConfig* conf, Category& log)
 {
     const SPConfig& spConf = SPConfig::getConfig();
@@ -280,10 +252,6 @@ XMLConfigImpl::XMLConfigImpl(const DOMElement* e, bool first, XMLConfig* outer, 
 
         if (conf.isEnabled(SPConfig::InProcess))
             doExtensions(SHIRE, "in process", log);
-
-        // Instantiate the ListenerService and SessionCache objects.
-        if (conf.isEnabled(SPConfig::Listener))
-            doListener(e, outer, log);
 
         if (conf.isEnabled(SPConfig::Caching))
             doCaching(e, outer, log);

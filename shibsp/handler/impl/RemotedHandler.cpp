@@ -279,9 +279,6 @@ void RemotedHandler::setAddress(const char* address)
     if (!m_address.empty())
         throw ConfigurationException("Cannot register a remoting address twice for the same Handler.");
     m_address = address;
-    SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess))
-        conf.getServiceProvider()->regListener(address, this);
 }
 
 set<string> RemotedHandler::m_remotedHeaders;
@@ -292,9 +289,6 @@ RemotedHandler::RemotedHandler()
 
 RemotedHandler::~RemotedHandler()
 {
-    SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::OutOfProcess) && !conf.isEnabled(SPConfig::InProcess))
-        conf.getServiceProvider()->unregListener(m_address.c_str(), this);
 }
 
 void RemotedHandler::addRemotedHeader(const char* header)
@@ -314,7 +308,7 @@ DDF RemotedHandler::send(const SPRequest& request, DDF& in) const
         in.addmember("_mapped.entityID").string(s.c_str());
     }
 
-    return request.getServiceProvider().getListenerService()->send(in);
+    //return request.getServiceProvider().getListenerService()->send(in);
 }
 
 DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers, bool certs) const

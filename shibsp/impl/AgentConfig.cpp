@@ -26,8 +26,10 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
+#include "SessionCache.h"
 #include "io/HTTPResponse.h"
 #include "logging/LoggingService.h"
+#include "remoting/RemotingService.h"
 #include "util/Misc.h"
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
@@ -217,19 +219,16 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
         XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
 
         registerAttributeFactories();
-
         registerHandlers();
         registerLogoutInitiators();
         registerSessionInitiators();
         */
 
         registerAgents();
-
-        /*
-        registerListenerServices();
-
+        registerRemotingServices();
         registerSessionCaches();
 
+        /*
         // Yes, this isn't secure, will review where we do any random generation
         // after full code cleanup is done.
         srand(static_cast<unsigned int>(std::time(nullptr)));
@@ -324,11 +323,11 @@ void AgentInternalConfig::_term()
     */
 
     AgentManager.deregisterFactories();
+    RemotingServiceManager.deregisterFactories();
+    SessionCacheManager.deregisterFactories();
 
     /*
     Attribute::deregisterFactories();
-    ListenerServiceManager.deregisterFactories();
-    SessionCacheManager.deregisterFactories();
     */
 }
 
@@ -345,8 +344,6 @@ void AgentInternalConfig::loadExtensions(Category& log)
             continue;
         }
 
-        cout << path.first << endl;
-        
         try {
             if (!load_library(path.first.c_str(), const_cast<ptree*>(&path.second))) {
                 throw ConfigurationException("Extension library failed to load.");
@@ -369,9 +366,6 @@ void AgentInternalConfig::loadExtensions(Category& log)
 
 bool AgentInternalConfig::load_library(const char* path, void* context)
 {
-#ifdef _DEBUG
-    xmltooling::NDC ndc("LoadLibrary");
-#endif
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".Config");
     log.info("loading extension: %s", path);
 

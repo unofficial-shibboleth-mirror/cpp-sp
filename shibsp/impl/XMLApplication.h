@@ -31,7 +31,6 @@
 #include "exceptions.h"
 #include "SPRequest.h"
 #include "handler/Handler.h"
-#include "remoting/ListenerService.h"
 #include "util/DOMPropertySet.h"
 #include "util/PluginManager.h"
 
@@ -55,7 +54,7 @@ namespace shibsp {
 #endif
 
     class SHIBSP_DLLLOCAL XMLApplication
-        : public Application, public Remoted, public DOMPropertySet, public xercesc::DOMNodeFilter
+        : public Application, public DOMPropertySet, public xercesc::DOMNodeFilter
     {
     public:
         XMLApplication(
@@ -96,8 +95,6 @@ namespace shibsp {
         const Handler* getHandler(const char* path) const;
         void getHandlers(std::vector<const Handler*>& handlers) const;
         void limitRedirect(const GenericRequest& request, const char* url) const;
-
-        void receive(DDF& in, std::ostream& out);
 
         // Provides filter to exclude special config elements.
         xercesc::DOMNodeFilter::FilterAction acceptNode(const xercesc::DOMNode* node) const;

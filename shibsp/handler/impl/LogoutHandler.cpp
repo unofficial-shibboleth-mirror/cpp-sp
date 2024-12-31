@@ -282,6 +282,6 @@ bool LogoutHandler::notifyBackChannel(
         DDF temp = DDF(nullptr).string(i->c_str());
         s.add(temp);
     }
-    out = application.getServiceProvider().getListenerService()->send(in);
+    //out = application.getServiceProvider().getListenerService()->send(in);
     return (out.integer() == 1);
 }

@@ -187,27 +187,11 @@ SSCache::SSCache(const DOMElement* e, bool deprecationSupport)
         }
     }
 
-    ListenerService* listener=conf.getServiceProvider()->getListenerService(false);
     if (inproc) {
-        if (!conf.isEnabled(SPConfig::OutOfProcess) && !listener)
-            throw ConfigurationException("SessionCache requires a ListenerService, but none available.");
         m_lock.reset(RWLock::create());
         shutdown_wait.reset(CondWait::create());
         cleanup_thread.reset(Thread::create(&cleanup_fn, this));
     }
-#ifndef SHIBSP_LITE
-    else {
-        if (listener && conf.isEnabled(SPConfig::OutOfProcess)) {
-            listener->regListener("find::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
-            listener->regListener("recover::" STORAGESERVICE_SESSION_CACHE "::SessionCache", this);
-            listener->regListener("remove::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
-            listener->regListener("touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache",this);
-        }
-        else {
-            m_log.info("no ListenerService available, cache remoting disabled");
-        }
-    }
-#endif
 }
 
 SSCache::~SSCache()
@@ -881,7 +865,7 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
             }
 
             try {
-                out=app.getServiceProvider().getListenerService()->send(in);
+                //out=app.getServiceProvider().getListenerService()->send(in);
                 if (!out.isstruct()) {
                     out.destroy();
                     m_log.debug("session not found in remote cache");
@@ -1051,7 +1035,7 @@ bool SSCache::recover(const Application& app, const char* key, const char* data)
         in.addmember("application_id").string(app.getId());
         in.addmember("sealed").string(data);
 
-        out = app.getServiceProvider().getListenerService()->send(in);
+        //out = app.getServiceProvider().getListenerService()->send(in);
         if (!out.isint() || out.integer() != 1) {
             out.destroy();
             m_log.debug("recovery of session (%s) failed", key);
@@ -1228,8 +1212,8 @@ void SSCache::remove(const Application& app, const char* key, time_t revocationE
         in.addmember("key").string(key);
         in.addmember("application_id").string(app.getId());
 
-        DDF out = app.getServiceProvider().getListenerService()->send(in);
-        out.destroy();
+        //DDF out = app.getServiceProvider().getListenerService()->send(in);
+        //out.destroy();
     }
 }
 

@@ -262,20 +262,10 @@ XMLApplication::XMLApplication(
         }
     }
 #endif
-
-    // Out of process only, we register a listener endpoint.
-    if (!conf.isEnabled(SPConfig::InProcess)) {
-        string addr=string(getId()) + "::getHeaders::Application";
-        const_cast<ServiceProvider*>(sp)->regListener(addr.c_str(), this);
-    }
 }
 
 XMLApplication::~XMLApplication()
 {
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess) && !SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
-        string addr=string(getId()) + "::getHeaders::Application";
-        const_cast<ServiceProvider&>(getServiceProvider()).unregListener(addr.c_str(), this);
-    }
     if (m_doc)
         m_doc->release();
 }
@@ -566,19 +556,6 @@ void XMLApplication::doLogout(set<string>& protocols, DOMElement* e, Category& l
 void XMLApplication::doArtifactResolution(const char* protocol, DOMElement* e, Category& log)
 {
  
-}
-
-void XMLApplication::receive(DDF& in, ostream& out)
-{
-    // Only current function is to return the headers to clear.
-    DDF header;
-    DDF ret = DDF(nullptr).list();
-    DDFJanitor jret(ret);
-    for (vector< pair<string, string> >::const_iterator i = m_unsetHeaders.begin(); i != m_unsetHeaders.end(); ++i) {
-        header = DDF(i->first.c_str()).string(i->second.c_str());
-        ret.add(header);
-    }
-    out << ret;
 }
 
 DOMNodeFilter::FilterAction XMLApplication::acceptNode(const DOMNode* node) const

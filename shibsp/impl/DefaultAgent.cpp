@@ -28,6 +28,7 @@
 #include "SessionCache.h"
 #include "io/HTTPResponse.h"
 #include "logging/Category.h"
+#include "remoting/RemotingService.h"
 #include "util/BoostPropertySet.h"
 #include "util/PathResolver.h"
 #include "util/SPConstants.h"
@@ -39,10 +40,6 @@
 using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
-
-#ifndef min
-# define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
 
 namespace {
 
@@ -62,16 +59,16 @@ namespace {
 
         // Agent services.
 
-        ListenerService* getListenerService(bool required = true) const {
-            //if (required && !m_listener)
+        RemotingService* getRemotingService(bool required = true) const {
+            if (required && !m_remotingService)
                 throw ConfigurationException("No ListenerService available.");
-            //return m_listener.get();
+            return m_remotingService.get();
         }
 
         SessionCache* getSessionCache(bool required = true) const {
-            //if (required && !m_sessionCache)
+            if (required && !m_sessionCache)
                 throw ConfigurationException("No SessionCache available.");
-            //return m_sessionCache.get();
+            return m_sessionCache.get();
         }
 
         RequestMapper* getRequestMapper(bool required = true) const {
@@ -81,7 +78,7 @@ namespace {
         }
 
     private:
-        void doRemoting();
+        void doRemotingService();
         void doSessionCache();
         void doRequestMapper();
 
@@ -91,7 +88,7 @@ namespace {
         // The order of these members actually matters. If we want to rely on auto-destruction, then
         // anything dependent on anything else has to come later in the object so it will pop first.
         // Remoting is the lowest, then the cache, and finally the rest.
-        //unique_ptr<ListenerService> m_listener;
+        unique_ptr<RemotingService> m_remotingService;
         unique_ptr<SessionCache> m_sessionCache;
         unique_ptr<RequestMapper> m_requestMapper;
     };
@@ -99,24 +96,6 @@ namespace {
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
-
-    static const XMLCh applicationId[] =        UNICODE_LITERAL_13(a,p,p,l,i,c,a,t,i,o,n,I,d);
-    static const XMLCh _default[] =             UNICODE_LITERAL_7(d,e,f,a,u,l,t);
-    static const XMLCh _id[] =                  UNICODE_LITERAL_2(i,d);
-    static const XMLCh InProcess[] =            UNICODE_LITERAL_9(I,n,P,r,o,c,e,s,s);
-    static const XMLCh Listener[] =             UNICODE_LITERAL_8(L,i,s,t,e,n,e,r);
-    static const XMLCh logger[] =               UNICODE_LITERAL_6(l,o,g,g,e,r);
-    static const XMLCh _option[] =              UNICODE_LITERAL_6(o,p,t,i,o,n);
-    static const XMLCh OutOfProcess[] =         UNICODE_LITERAL_12(O,u,t,O,f,P,r,o,c,e,s,s);
-    static const XMLCh _path[] =                UNICODE_LITERAL_4(p,a,t,h);
-    static const XMLCh _provider[] =            UNICODE_LITERAL_8(p,r,o,v,i,d,e,r);
-    static const XMLCh _RequestMapper[] =       UNICODE_LITERAL_13(R,e,q,u,e,s,t,M,a,p,p,e,r);
-    static const XMLCh RequestMap[] =           UNICODE_LITERAL_10(R,e,q,u,e,s,t,M,a,p);
-    static const XMLCh _SessionCache[] =        UNICODE_LITERAL_12(S,e,s,s,i,o,n,C,a,c,h,e);
-    static const XMLCh Site[] =                 UNICODE_LITERAL_4(S,i,t,e);
-    static const XMLCh TCPListener[] =          UNICODE_LITERAL_11(T,C,P,L,i,s,t,e,n,e,r);
-    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
-    static const XMLCh UnixListener[] =         UNICODE_LITERAL_12(U,n,i,x,L,i,s,t,e,n,e,r);
 
     Agent* DefaultAgentFactory(ptree& pt, bool deprecationSupport)
     {
@@ -156,83 +135,60 @@ void DefaultAgent::init()
 
     const AgentConfig& conf = AgentConfig::getConfig();
 
-    doRemoting();
+    doRemotingService();
     doSessionCache();
     doRequestMapper();
 
     // TODO: the Application related material needs to be replaced with new approaches.
 }
 
-void DefaultAgent::doRemoting()
+void DefaultAgent::doRemotingService()
 {
-    /*
-#ifdef WIN32
-    string plugtype(TCP_LISTENER_SERVICE);
-#else
-    string plugtype(UNIX_LISTENER_SERVICE);
-#endif
-    DOMElement* child = XMLHelper::getFirstChildElement(e, UnixListener);
-    if (child)
-        plugtype = UNIX_LISTENER_SERVICE;
-    else {
-        child = XMLHelper::getFirstChildElement(e, TCPListener);
-        if (child)
-            plugtype = TCP_LISTENER_SERVICE;
-        else {
-            child = XMLHelper::getFirstChildElement(e, Listener);
-            if (child) {
-                auto_ptr_char type(child->getAttributeNS(nullptr, _type));
-                if (type.get() && *type.get())
-                    plugtype = type.get();
-            }
+    boost::optional<ptree&> child = m_pt.get_child_optional("remoting");
+    if (child) {
+        string t(child->get("type", ""));
+        if (!t.empty()) {
+            m_log.info("building RemotingService of type %s...", t.c_str());
+            m_remotingService.reset(AgentConfig::getConfig().RemotingServiceManager.newPlugin(t.c_str(), *child, true));
+        } else {
+            m_log.error("[remoting] section missing type property");
+            throw ConfigurationException("Missing type property in [remoting] section.");
         }
+    } else {
+        m_log.debug("[remoting] section absent, skipping RemotingService creation");
     }
-
-    log.info("building ListenerService of type %s...", plugtype.c_str());
-    conf->m_listener.reset(SPConfig::getConfig().ListenerServiceManager.newPlugin(plugtype.c_str(), child, m_deprecationSupport));
-    */
 }
 
 void DefaultAgent::doSessionCache()
 {
-    /*
-    const SPConfig& spConf = SPConfig::getConfig();
-
-    DOMElement* child = XMLHelper::getFirstChildElement(e, _SessionCache);
+    boost::optional<ptree&> child = m_pt.get_child_optional("session-cache");
     if (child) {
-        string t(XMLHelper::getAttrString(child, nullptr, _type));
+        string t(child->get("type", ""));
         if (!t.empty()) {
-            log.info("building SessionCache of type %s...", t.c_str());
-            conf->m_sessionCache.reset(spConf.SessionCacheManager.newPlugin(t.c_str(), child, m_deprecationSupport));
+            m_log.info("building SessionCache of type %s...", t.c_str());
+            m_sessionCache.reset(AgentConfig::getConfig().SessionCacheManager.newPlugin(t.c_str(), *child, true));
+        } else {
+            m_log.error("[session-cache] section missing type property");
+            throw ConfigurationException("Missing type property in [session-cache] section.");
         }
+    } else {
+        m_log.debug("[session-cache] section absent, skipping SessionCache creation");
     }
-    if (!conf->m_sessionCache) {
-        log.info("no SessionCache specified, using StorageService-backed instance");
-        conf->m_sessionCache.reset(spConf.SessionCacheManager.newPlugin(STORAGESERVICE_SESSION_CACHE, nullptr, m_deprecationSupport));
-    }
-    */
 }
 
 void DefaultAgent::doRequestMapper()
 {
-    const boost::optional<ptree&> child = m_pt.get_child_optional("request-mapper");
-
-    /*
-    // Back to the fully dynamic stuff...next up is the RequestMapper.
-    if (child = XMLHelper::getFirstChildElement(e, _RequestMapper)) {
-        string t(XMLHelper::getAttrString(child, nullptr, _type));
+    boost::optional<ptree&> child = m_pt.get_child_optional("request-mapper");
+    if (child) {
+        string t(child->get("type", ""));
         if (!t.empty()) {
-            log.info("building RequestMapper of type %s...", t.c_str());
-            m_requestMapper.reset(conf.RequestMapperManager.newPlugin(t.c_str(), child, m_deprecationSupport));
+            m_log.info("building RequestMapper of type %s...", t.c_str());
+            m_requestMapper.reset(AgentConfig::getConfig().RequestMapperManager.newPlugin(t.c_str(), *child, true));
+        } else {
+            m_log.error("[request-mapper] section missing type property");
+            throw ConfigurationException("Missing type property in [request-mapper] section.");
         }
+    } else {
+        m_log.debug("[request-mapper] section absent, skipping RequestMapper creation");
     }
-    if (!m_requestMapper) {
-        log.info("no RequestMapper specified, using 'Native' plugin with empty/default map");
-        child = e->getOwnerDocument()->createElementNS(nullptr, _RequestMapper);
-        DOMElement* mapperDummy = e->getOwnerDocument()->createElementNS(e->getNamespaceURI(), RequestMap);
-        mapperDummy->setAttributeNS(nullptr, applicationId, _default);
-        child->appendChild(mapperDummy);
-        m_requestMapper.reset(conf.RequestMapperManager.newPlugin(NATIVE_REQUEST_MAPPER, child, m_deprecationSupport));
-    }
-    */
 }

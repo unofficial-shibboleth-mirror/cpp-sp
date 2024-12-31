@@ -34,10 +34,10 @@ using namespace boost::property_tree;
 using namespace shibsp;
 using namespace std;
 
-const char ReloadableXMLFile::PATH_PROP_NAME[] = "<xmlattr>.path";
-const char ReloadableXMLFile::RELOAD_CHANGES_PROP_NAME[] = "<xmlattr>.reloadChanges";
+const char ReloadableXMLFile::PATH_PROP_NAME[] = "path";
+const char ReloadableXMLFile::RELOAD_CHANGES_PROP_NAME[] = "reloadChanges";
 
-ReloadableXMLFile::ReloadableXMLFile(const string& rootElementName, const ptree& pt, Category& log)
+ReloadableXMLFile::ReloadableXMLFile(const string& rootElementName, ptree& pt, Category& log)
     : m_root(pt), m_log(log), m_rootElementName(rootElementName), m_filestamp(0)
 #ifdef HAVE_CXX17
         , m_lock(nullptr)
@@ -45,13 +45,16 @@ ReloadableXMLFile::ReloadableXMLFile(const string& rootElementName, const ptree&
         , m_lock(nullptr)
 #endif
 {
-    boost::optional<string> path = pt.get_optional<string>(PATH_PROP_NAME);
+    boost::optional<ptree&> xmlattr = pt.get_child_optional("<xmlattr>");
+    const ptree& property_root = xmlattr ? xmlattr.get() : pt;
+
+    boost::optional<string> path = property_root.get_optional<string>(PATH_PROP_NAME);
     if (path) {
         m_source = path.get();
         AgentConfig::getConfig().getPathResolver().resolve(m_source, PathResolver::SHIBSP_CFG_FILE);
 
         string_to_bool_translator tr;
-        bool reloadChanges = pt.get(RELOAD_CHANGES_PROP_NAME, false, tr);
+        bool reloadChanges = property_root.get(RELOAD_CHANGES_PROP_NAME, false, tr);
 #ifndef HAVE_CXX14
         if (reloadChanges) {
             log.warn("C++ compiler level does not allow for reloadChanges, ignoring");

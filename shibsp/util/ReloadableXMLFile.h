@@ -88,7 +88,7 @@ namespace shibsp {
          * @param rootElementName       name of expexcted root element of XML configuration
          * @param log                   logging object to use
          */
-        ReloadableXMLFile(const std::string& rootElementName, const boost::property_tree::ptree& pt, Category& log);
+        ReloadableXMLFile(const std::string& rootElementName, boost::property_tree::ptree& pt, Category& log);
     
         virtual ~ReloadableXMLFile();
 

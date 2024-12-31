@@ -64,7 +64,7 @@ loginclude_HEADERS = \
 
 reminclude_HEADERS = \
 	remoting/ddf.h \
-	remoting/ListenerService.h
+	remoting/RemotingService.h
 	
 utilinclude_HEADERS = \
 	util/BoostPropertySet.h \
@@ -142,10 +142,7 @@ libshibsp_la_SOURCES = \
 	logging/impl/StringUtil.cpp \
 	logging/impl/SyslogLoggingService.cpp \
 	remoting/impl/ddf.cpp \
-	remoting/impl/ListenerService.cpp \
-	remoting/impl/SocketListener.cpp \
-	remoting/impl/TCPListener.cpp \
-	remoting/impl/UnixListener.cpp \
+	remoting/impl/RemotingService.cpp \
 	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
 	util/DOMPropertySet.cpp \

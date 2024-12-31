@@ -29,7 +29,7 @@
 #include "SPRequest.h"
 #include "ServiceProvider.h"
 #include "attribute/Attribute.h"
-#include "remoting/ListenerService.h"
+#include "remoting/RemotingService.h"
 
 #include <algorithm>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
@@ -149,7 +149,7 @@ void Application::clearAttributeHeaders(SPRequest& request) const
             string addr=string(getId()) + "::getHeaders::Application";
             DDF out,in = DDF(addr.c_str());
             DDFJanitor jin(in),jout(out);
-            out = getServiceProvider().getListenerService()->send(in);
+            //out = getServiceProvider().getListenerService()->send(in);
             if (out.islist()) {
                 DDF header = out.first();
                 while (header.name() && header.isstring()) {

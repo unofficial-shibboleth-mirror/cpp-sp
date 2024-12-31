@@ -106,7 +106,7 @@ namespace {
     class XMLAccessControl : public AccessControl, public ReloadableXMLFile
     {
     public:
-        XMLAccessControl(const ptree& pt)
+        XMLAccessControl(ptree& pt)
             : ReloadableXMLFile(ACCESS_CONTROL_PROP_PATH, pt, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML")) {
             if (!load().second) {
                 throw ConfigurationException("Initial AccessControl configuration was invalid.");

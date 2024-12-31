@@ -172,7 +172,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
             in.addmember("timeout").string(timebuf);
         }
 
-        out = app.getServiceProvider().getListenerService()->send(in);
+        //out = app.getServiceProvider().getListenerService()->send(in);
         if (out.isstruct()) {
             // We got an updated record back.
             m_cache->m_log.debug("session updated, reconstituting it");
