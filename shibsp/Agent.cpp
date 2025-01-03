@@ -56,16 +56,24 @@ Agent::~Agent()
 
 pair<bool,long> Agent::doAuthentication(AgentRequest& request, bool handler) const
 {
+    pair<bool,long> foo;
+    return foo;
 }
 
 pair<bool,long> Agent::doAuthorization(AgentRequest& request) const
 {
+    pair<bool, long> foo;
+    return foo;
 }
 
 pair<bool,long> Agent::doExport(AgentRequest& request, bool requireSession) const
 {
+    pair<bool, long> foo;
+    return foo;
 }
 
 pair<bool,long> Agent::doHandler(AgentRequest& request) const
 {
+    pair<bool, long> foo;
+    return foo;
 }
