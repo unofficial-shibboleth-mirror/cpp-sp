@@ -356,9 +356,9 @@ Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* 
                     if (!o->getBool("caseSensitive", false)) {
                         flags |= exp::regex_constants::icase;
                     }
-                    exp::regex exp(regexpprop, flags);
+                    exp::regex expr(regexpprop, flags);
 
-                    m_queries.push_back(make_tuple(nameprop, boost::optional<exp::regex>(exp), std::move(o)));
+                    m_queries.push_back(make_tuple(nameprop, boost::optional<exp::regex>(expr), std::move(o)));
                     log.debug("added <Query> mapping (%s)", nameprop.c_str());
                 }
                 catch (const exp::regex_error& e) {
@@ -520,8 +520,8 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
                 if (!o->getBool("caseSensitive", false)) {
                     flags |= exp::regex_constants::icase;
                 }
-                exp::regex exp(regexprop, flags);
-                m_regexps.push_back(make_pair(exp, std::move(o)));
+                exp::regex expr(regexprop, flags);
+                m_regexps.push_back(make_pair(expr, std::move(o)));
             }
             catch (const exp::regex_error& e) {
                 log.error("caught exception while parsing HostRegex regular expression: %s", e.what());
