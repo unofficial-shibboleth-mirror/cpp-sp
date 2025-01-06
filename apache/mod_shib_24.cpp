@@ -479,7 +479,7 @@ public:
             }
 
             if (m_allhttp.count(cginame) > 0)
-                throw XMLToolingException("Attempt to spoof header ($1) was detected.", params(1, rawname));
+                throw SessionException(string("Attempt to spoof header ") + rawname + " was detected.");
         }
         apr_table_unset(m_req->headers_in, rawname);
         apr_table_set(m_req->headers_in, rawname, g_unsetHeaderValue.c_str());
@@ -573,14 +573,14 @@ public:
     }
   }
   long sendResponse(istream& in, long status) {
-    if (status != XMLTOOLING_HTTP_STATUS_OK)
+    if (status != SHIBSP_HTTP_STATUS_OK)
         m_req->status = status;
     char buf[1024];
     while (in) {
         in.read(buf,1024);
         ap_rwrite(buf,in.gcount(),m_req);
     }
-    if (status != XMLTOOLING_HTTP_STATUS_OK && status != XMLTOOLING_HTTP_STATUS_ERROR)
+    if (status != SHIBSP_HTTP_STATUS_OK && status != SHIBSP_HTTP_STATUS_ERROR)
         return status;
     return DONE;
   }

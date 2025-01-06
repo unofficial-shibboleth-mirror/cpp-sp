@@ -30,7 +30,6 @@
 #include "util/CGIParser.h"
 #include "util/SPConstants.h"
 #include "util/PathResolver.h"
-#include "util/TemplateParameters.h"
 #include "util/URLEncoder.h"
 
 #include <vector>
@@ -39,13 +38,8 @@
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
-#include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/URLEncoder.h>
-
-#include <xmltooling/XMLToolingConfig.h>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace xercesc;
 using namespace boost;
 using namespace std;
@@ -213,8 +207,8 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
             rsKey = lexical_cast<string>(time(nullptr)) + '_' + rsKey;
             string shib_cookie_name = "_shibstate_" + rsKey;
             response.setCookie(shib_cookie_name.c_str(),
-                XMLToolingConfig::getConfig().getURLEncoder()->encode(relayState.c_str()).c_str(),
-                0, HTTPResponse::SAMESITE_NONE);
+                AgentConfig::getConfig().getURLEncoder().encode(relayState.c_str()).c_str(),
+                    0, HTTPResponse::SAMESITE_NONE);
             relayState = "cookie:" + rsKey;
         }
     }
@@ -264,7 +258,7 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
         }
     }
     else {
-        throw ConfigurationException("Unsupported relayState mechanism ($1).", params(1,mech.second));
+        throw ConfigurationException("Unsupported relayState mechanism.");
     }
 }
 
@@ -350,7 +344,7 @@ void Handler::recoverRelayState(
             if (state && *state) {
                 // URL-decode the value.
                 char* rscopy = strdup(state);
-                XMLToolingConfig::getConfig().getURLEncoder()->decode(rscopy);
+                AgentConfig::getConfig().getURLEncoder().decode(rscopy);
                 relayState = rscopy;
                 free(rscopy);
                 if (clear) {
@@ -562,7 +556,7 @@ void AbstractHandler::preservePostData(
         mech.second+=3;
         if (!*mech.second) {
             postData.destroy();
-            throw ConfigurationException("Unsupported postData mechanism ($1).", params(1, mech.second - 3));
+            throw ConfigurationException("Unsupported postData mechanism.");
         }
 
         string postkey;
@@ -629,7 +623,7 @@ void AbstractHandler::preservePostData(
     }
     else {
         postData.destroy();
-        throw ConfigurationException("Unsupported postData mechanism ($1).", params(1,mech.second));
+        throw ConfigurationException("Unsupported postData mechanism.");
     }
 }
 
@@ -700,6 +694,9 @@ long AbstractHandler::sendPostResponse(
 {
     HTTPResponse::sanitizeURL(url);
 
+    // TODO: this will require handling by the hub.
+
+    /*
     const PropertySet* props=application.getPropertySet("Sessions");
     pair<bool,const char*> postTemplate = props ? props->getString("postTemplate") : pair<bool,const char*>(true,nullptr);
     if (!postTemplate.first)
@@ -732,6 +729,8 @@ long AbstractHandler::sendPostResponse(
         httpResponse.setResponseHeader("Pragma", "no-cache");
     }
     return httpResponse.sendResponse(str);
+    */
+   return 0;
 }
 
 string AbstractHandler::getPostCookieName(const Application& app, const char* relayState) const

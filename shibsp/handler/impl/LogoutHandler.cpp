@@ -32,16 +32,13 @@
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/LogoutHandler.h"
-#include "util/TemplateParameters.h"
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
 
 #include <fstream>
 #include <boost/lexical_cast.hpp>
-#include <xmltooling/XMLToolingConfig.h>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
@@ -71,8 +68,8 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
     string fname(prop.second);
     ifstream infile(AgentConfig::getConfig().getPathResolver().resolve(fname, PathResolver::SHIBSP_CFG_FILE).c_str());
     if (!infile)
-        throw ConfigurationException("Unable to access $1 HTML template.", params(1,prop.second));
-    TemplateParameters tp;
+        throw ConfigurationException("Unable to access HTML template.");
+    //TemplateParameters tp;
 
     // If the externalParameters option isn't set, don't populate the request field.
     pair<bool,bool> externalParameters =
@@ -81,10 +78,10 @@ pair<bool,long> LogoutHandler::sendLogoutPage(
         //tp.m_request = &request;
     }
 
-    tp.setPropertySet(props);
-    tp.m_map["logoutStatus"] = "Logout completed successfully.";  // Backward compatibility.
+    //tp.setPropertySet(props);
+    //tp.m_map["logoutStatus"] = "Logout completed successfully.";  // Backward compatibility.
     stringstream str;
-    XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
+    //XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
     return make_pair(true,response.sendResponse(str));
 }
 
@@ -107,7 +104,7 @@ void LogoutHandler::receive(DDF& in, ostream& out)
     DDF ret(nullptr);
     DDFJanitor jout(ret);
     if (in["notify"].integer() != 1)
-        throw ListenerException("Unsupported operation.");
+        throw RemotintgException("Unsupported operation.");
 
     // Find application.
     const char* aid=in["application_id"].string();

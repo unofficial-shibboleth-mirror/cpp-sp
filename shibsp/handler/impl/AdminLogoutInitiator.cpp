@@ -176,7 +176,7 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
         // Something's horribly wrong.
         m_log.error("no session parameter supplied for request");
         istringstream msg("NO SESSION PARAMETER");
-        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_BADREQUEST));
+        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_BADREQUEST));
     }
 
     Session* session = nullptr;
@@ -191,7 +191,7 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
     if (!session) {
         application.getServiceProvider().getSessionCache()->remove(application, sessionId);
         istringstream msg("NOT FOUND");
-        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_NOTFOUND));
+        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_NOTFOUND));
     }
 
     time_t revocationExp = session->getExpiration();
@@ -231,7 +231,7 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
         application.getServiceProvider().getSessionCache()->remove(application, sessionId, revocationExp);
 
         istringstream msg("OK");
-        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_OK));
+        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_OK));
     }
 
 #ifndef SHIBSP_LITE

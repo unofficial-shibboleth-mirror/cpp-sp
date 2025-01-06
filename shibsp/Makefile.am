@@ -78,7 +78,6 @@ utilinclude_HEADERS = \
 	util/PropertySet.h \
 	util/ReloadableXMLFile.h \
 	util/SPConstants.h \
-	util/TemplateParameters.h \
 	util/URLEncoder.h
 
 noinst_HEADERS = \
@@ -90,13 +89,13 @@ noinst_HEADERS = \
 	logging/impl/AbstractLoggingService.h \
 	logging/impl/LoggingServiceSPI.h \
 	logging/impl/StringUtil.h \
-	remoting/impl/SocketListener.h \
 	util/Misc.h
 
 libshibsp_la_SOURCES = \
 	AbstractSPRequest.cpp \
 	Agent.cpp \
 	Application.cpp \
+	exceptions.cpp \
 	ServiceProvider.cpp \
 	SPConfig.cpp \
 	version.cpp \
@@ -150,7 +149,6 @@ libshibsp_la_SOURCES = \
 	util/PathResolver.cpp \
 	util/ReloadableXMLFile.cpp \
 	util/SPConstants.cpp \
-	util/TemplateParameters.cpp \
 	util/URLEncoder.cpp
 
 

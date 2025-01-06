@@ -361,11 +361,11 @@ long IIS7Request::sendResponse(istream& in, long status)
 {
     const char* codestr="200 OK";
     switch (status) {
-    case XMLTOOLING_HTTP_STATUS_NOTMODIFIED:    codestr="304 Not Modified"; break;
-    case XMLTOOLING_HTTP_STATUS_UNAUTHORIZED:   codestr="401 Authorization Required"; break;
-    case XMLTOOLING_HTTP_STATUS_FORBIDDEN:      codestr="403 Forbidden"; break;
-    case XMLTOOLING_HTTP_STATUS_NOTFOUND:       codestr="404 Not Found"; break;
-    case XMLTOOLING_HTTP_STATUS_ERROR:          codestr="500 Server Error"; break;
+    case SHIBSP_HTTP_STATUS_NOTMODIFIED:    codestr="304 Not Modified"; break;
+    case SHIBSP_HTTP_STATUS_UNAUTHORIZED:   codestr="401 Authorization Required"; break;
+    case SHIBSP_HTTP_STATUS_FORBIDDEN:      codestr="403 Forbidden"; break;
+    case SHIBSP_HTTP_STATUS_NOTFOUND:       codestr="404 Not Found"; break;
+    case SHIBSP_HTTP_STATUS_ERROR:          codestr="500 Server Error"; break;
     }
 
     HRESULT hr = m_response->SetStatus(static_cast<USHORT>(status), codestr);
@@ -440,7 +440,7 @@ void IIS7Request::logFatal(const string& operation, HRESULT hr) const
     string msg(operation + " failed: " + lexical_cast<string>(hr));
     log(SPRequest::SPCrit, msg.c_str());
     if (m_response) {
-        m_response->SetStatus(static_cast<USHORT>(XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
+        m_response->SetStatus(static_cast<USHORT>(SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
     }
 }
 

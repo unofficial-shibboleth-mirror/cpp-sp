@@ -28,6 +28,7 @@
 
 namespace shibsp {
 
+    class SHIBSP_API Agent;
     class SHIBSP_API Application;
     class SHIBSP_API ServiceProvider;
     class SHIBSP_API Session;
@@ -49,7 +50,16 @@ namespace shibsp {
         virtual ~SPRequest();
 
         /**
+         * Returns the Agent processing the request.
+         *
+         * @return reference to Agent
+         */
+        virtual const Agent& getAgent() const=0;
+
+        /**
          * Returns the locked ServiceProvider processing the request.
+         * 
+         * TODO: remove
          *
          * @return reference to ServiceProvider
          */
@@ -65,6 +75,8 @@ namespace shibsp {
 
         /**
          * Returns the Application governing the request.
+         * 
+         * TODO: remove
          *
          * @return reference to Application
          */

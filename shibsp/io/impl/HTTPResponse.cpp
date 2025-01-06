@@ -156,15 +156,15 @@ void HTTPResponse::setResponseHeader(const char* name, const char* value, bool)
 long HTTPResponse::sendRedirect(const char* url)
 {
     sanitizeURL(url);
-    return XMLTOOLING_HTTP_STATUS_MOVED;
+    return SHIBSP_HTTP_STATUS_MOVED;
 }
 
 long HTTPResponse::sendError(istream& inputStream)
 {
-    return sendResponse(inputStream, XMLTOOLING_HTTP_STATUS_ERROR);
+    return sendResponse(inputStream, SHIBSP_HTTP_STATUS_ERROR);
 }
 
 long HTTPResponse::sendResponse(istream& inputStream)
 {
-    return sendResponse(inputStream, XMLTOOLING_HTTP_STATUS_OK);
+    return sendResponse(inputStream, SHIBSP_HTTP_STATUS_OK);
 }

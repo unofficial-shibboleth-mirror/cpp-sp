@@ -35,7 +35,6 @@
 #include "attribute/Attribute.h"
 #include "handler/AbstractHandler.h"
 #include "util/PathResolver.h"
-#include "util/TemplateParameters.h"
 
 #include <memory>
 #include <mutex>
@@ -45,7 +44,6 @@
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
-#include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
@@ -191,7 +189,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     ifstream infile(m_template.c_str());
     if (infile) {
         const PropertySet* props = request.getApplication().getPropertySet("Errors");
-        TemplateParameters tp(nullptr, props, session);
+        //TemplateParameters tp(nullptr, props, session);
 
         // If the externalParameters option isn't set, don't populate the request field.
         pair<bool,bool> externalParameters =
@@ -201,7 +199,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         }
 
         stringstream str;
-        XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
+        //XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
         if (m_flushSession && session) {
             time_t revocationExp = session->getExpiration();
             sessionLocker.unlock(); // unlock the session

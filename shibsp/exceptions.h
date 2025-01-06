@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -28,14 +22,121 @@
 #define __shibsp_exceptions_h__
 
 #include <shibsp/base.h>
-#include <xmltooling/exceptions.h>
+
+#include <exception>
+#include <string>
+#include <unordered_map>
+
+/**
+ * Declares an SP exception subclass.
+ * 
+ * @param name      the exception class
+ * @param linkage   linkage specification for class
+ * @param base      the base class
+ */
+#define DECL_SHIBSP_EXCEPTION(name,linkage,base) \
+    class linkage name : public base { \
+    public: \
+        name(const char* msg=nullptr) : base(msg) {} \
+        name(const std::string& msg) : base(msg) {} \
+        virtual ~name() noexcept {} \
+    }
 
 namespace shibsp {
-    
-    DECL_XMLTOOLING_EXCEPTION(AttributeException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,xmltooling::XMLToolingException,Exceptions during attribute processing.);
-    DECL_XMLTOOLING_EXCEPTION(ConfigurationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,xmltooling::XMLToolingException,Exceptions during configuration.);
-    DECL_XMLTOOLING_EXCEPTION(ListenerException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,xmltooling::XMLToolingException,Exceptions during inter-process communication.);
-    DECL_XMLTOOLING_EXCEPTION(SessionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp,xmltooling::XMLToolingException,Exceptions during session processing.);
+
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4250 4251 )
+#endif
+
+    /**
+     * Base exception class, supports attaching additional data for error handling.
+     */
+    class SHIBSP_EXCEPTIONAPI(SHIBSP_API) agent_exception : public std::exception
+    {
+    public:
+        virtual ~agent_exception() noexcept;
+
+        /**
+         * Constructs an exception using a message.
+         * 
+         * @param msg   error message
+         */
+        agent_exception(const char* msg=nullptr);
+
+        /**
+         * Constructs an exception using a message.
+         * 
+         * @param msg   error message
+         */
+        agent_exception(const std::string& msg);
+
+        /**
+         * Returns the error message, after processing any parameter references.
+         * 
+         * @return  the processed message
+         */
+        const char* what() const noexcept;
+
+        /**
+         * Gets the HTTP status code for the error condition.
+         * 
+         * @return status code
+         */
+        int getStatusCode() const noexcept;
+
+        /**
+         * Sets the HTTP status code for the error condition if not the default of 500.
+         * 
+         * @param code status code
+         */
+        void setStatusCode(int code) noexcept;
+
+        /**
+         * Gets the properties attacked to this exception.
+         * 
+         * @return property map
+         */
+        const std::unordered_map<std::string,std::string>& getProperties() const noexcept;
+
+        /**
+         * Attach a set of named properties to the exception.
+         * 
+         * @param params properties to attach
+         */
+        void addProperties(const std::unordered_map<std::string,std::string>& props);
+
+        /**
+         * Attach a single named property.
+         * 
+         * @param name  the property name
+         * @param value the property value
+         */
+        void addProperty(const char* name, const char* value);
+
+        /**
+         * Returns a set of query string name/value pairs, URL-encoded, representing the
+         * exception's type, message, and parameters.
+         *
+         * @return  the query string representation
+         */
+        std::string toQueryString() const;
+
+    private:
+        int m_status;
+        std::string m_msg;
+        std::unordered_map<std::string,std::string> m_props;
+    };
+
+    DECL_SHIBSP_EXCEPTION(AttributeException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+    DECL_SHIBSP_EXCEPTION(ConfigurationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+    DECL_SHIBSP_EXCEPTION(IOException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+    DECL_SHIBSP_EXCEPTION(RemotintgException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+    DECL_SHIBSP_EXCEPTION(SessionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
 
 };
 

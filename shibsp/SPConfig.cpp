@@ -43,7 +43,6 @@
 #include <xmltooling/version.h>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/ParserPool.h>
-#include <xmltooling/util/TemplateEngine.h>
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -51,11 +50,6 @@ using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;
 using namespace std;
-
-DECL_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
-DECL_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
-DECL_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
-DECL_XMLTOOLING_EXCEPTION_FACTORY(SessionException,shibsp);
 
 namespace shibsp {
     class SHIBSP_DLLLOCAL SPInternalConfig : public SPConfig
@@ -137,14 +131,6 @@ bool SPConfig::init(const char* catalog_path, const char* inst_prefix)
     if (!XMLToolingConfig::getConfig().getValidatingParser().loadCatalogs(catalog_path)) {
         log.warn("failed to load schema catalogs into validating parser");
     }
-
-    XMLToolingConfig::getConfig().setTemplateEngine(new TemplateEngine());
-    XMLToolingConfig::getConfig().getTemplateEngine()->setTagPrefix("shibmlp");
-
-    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(AttributeException,shibsp);
-    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ConfigurationException,shibsp);
-    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(ListenerException,shibsp);
-    REGISTER_XMLTOOLING_EXCEPTION_FACTORY(SessionException,shibsp);
 
     registerAttributeFactories();
 

@@ -35,7 +35,6 @@
 #include <sstream>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
@@ -104,7 +103,7 @@ pair<bool,long> SecuredHandler::run(SPRequest& request, bool isHandler) const
         if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
             request.log(Priority::SHIB_WARN, string("handler request blocked from invalid address (") + request.getRemoteAddr() + ')');
             istringstream msg("Access Denied");
-            return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN));
+            return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN));
         }
     }
     return make_pair(false, 0L);

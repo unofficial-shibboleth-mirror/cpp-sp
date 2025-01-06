@@ -201,13 +201,13 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
         if (s.empty()) {
             m_log.debug("client's cache tag matches our feed");
             istringstream msg("Not Modified");
-            return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_NOTMODIFIED));
+            return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_NOTMODIFIED));
         }
 
         string fname = m_dir + '/' + request.getApplication().getHash() + '_' + s + ".json";
         ifstream feed(fname.c_str());
         if (!feed)
-            throw ConfigurationException("Unable to access cached feed in ($1).", params(1,fname.c_str()));
+            throw ConfigurationException("Unable to access cached feed.");
         if (m_cacheToClient) {
             string etag = '"' + s + '"';
             request.setResponseHeader("ETag", etag.c_str());
@@ -218,7 +218,7 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
     catch (std::exception& ex) {
         request.log(Priority::SHIB_ERROR, string("error while processing request:") + ex.what());
         istringstream msg("Discovery Request Failed");
-        return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
 }
 

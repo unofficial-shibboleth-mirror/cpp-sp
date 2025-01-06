@@ -47,7 +47,6 @@
 
 using namespace shibsp;
 using namespace xmltooling;
-using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -211,7 +210,7 @@ namespace shibsp {
         }
 
     private:
-        mutable scoped_ptr<CGIParser> m_parser;
+        mutable boost::scoped_ptr<CGIParser> m_parser;
         const char* m_url;
         const char* m_scheme;
         const char* m_query;
@@ -279,7 +278,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
             return unwrap(request, out);
         }
     }
-    catch (XMLToolingException& ex) {
+    catch (exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
         XMLDateTime now(time(nullptr), false);
         now.parseDateTime();
@@ -294,9 +293,9 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
                 << "' OpenSAML-C='" << gOpenSAMLDotVersionStr
 #endif
                 << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
-            systemInfo(msg) << "<Status><Exception type='" << ex.getClassName() << "'>" << ex.what() << "</Exception></Status>";
+            systemInfo(msg) << "<Status><Exception>" << ex.what() << "</Exception></Status>";
         msg << "</StatusHandler>";
-        return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
     catch (std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
@@ -315,7 +314,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
                 << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
             systemInfo(msg) << "<Status><Exception type='std::exception'>" << ex.what() << "</Exception></Status>";
         msg << "</StatusHandler>";
-        return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
 }
 
@@ -333,8 +332,8 @@ void StatusHandler::receive(DDF& in, ostream& out)
     // Wrap a response shim.
     DDF ret(nullptr);
     DDFJanitor jout(ret);
-    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
-    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
+    boost::scoped_ptr<HTTPRequest> req(getRequest(*app, in));
+    boost::scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
 
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,

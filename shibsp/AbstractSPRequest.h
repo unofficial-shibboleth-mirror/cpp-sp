@@ -22,7 +22,8 @@
 #define __shibsp_abstreq_h__
 
 #include <shibsp/SPRequest.h>
-#include <boost/scoped_ptr.hpp>
+
+#include <memory>
 
 namespace shibsp {
     
@@ -59,6 +60,7 @@ namespace shibsp {
         virtual ~AbstractSPRequest();
 
         // Virtual function overrides.
+        const Agent& getAgent() const;
         const ServiceProvider& getServiceProvider() const;
         RequestMapper::Settings getRequestSettings() const;
         const Application& getApplication() const;
@@ -78,16 +80,17 @@ namespace shibsp {
 
     private:
         Category& m_log;
-        ServiceProvider* m_sp;
+        Agent& m_agent;
+        ServiceProvider* m_sp; // TODO: remove
         mutable RequestMapper* m_mapper;
         mutable RequestMapper::Settings m_settings;
-        mutable const Application* m_app;
+        mutable const Application* m_app; // TODO: remove
         mutable bool m_sessionTried;
         mutable Session* m_session;
         std::string m_uri;
         mutable std::string m_url;
         mutable std::string m_handlerURL;
-        mutable boost::scoped_ptr<CGIParser> m_parser;
+        mutable std::unique_ptr<CGIParser> m_parser;
     };
 
 #if defined (_MSC_VER)

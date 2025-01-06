@@ -30,7 +30,6 @@
 #include "handler/SessionInitiator.h"
 #include "util/Date.h"
 #include "util/PathResolver.h"
-#include "util/TemplateParameters.h"
 #include "util/URLEncoder.h"
 
 #include <fstream>
@@ -41,8 +40,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-// This is there until we figure out the TemplateEngine remediation/removal.
-#include <xmltooling/XMLToolingConfig.h>
+#ifndef HAVE_STRCASECMP
+# define strcasecmp _stricmp
+#endif
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -51,39 +51,20 @@ using namespace std;
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager<ServiceProvider,string,const DOMElement*>::Factory XMLServiceProviderFactory;
 
-    long SHIBSP_DLLLOCAL sendError(
-        Category& log, SPRequest& request, const Application* app, const char* page, TemplateParameters& tp, bool mayRedirect=true
+    long SHIBSP_DLLLOCAL handleError(
+        Category& log, SPRequest& request, const Session* session=nullptr, const exception* ex=nullptr, bool mayRedirect=true
         )
     {
         // The properties we need can be set in the RequestMap, or the Errors element.
-        bool mderror = false;
-        bool accesserror = (strcmp(page, "access")==0);
+        bool externalParameters = false;
         const char* redirectErrors = nullptr;
-        const char* pathname = nullptr;
 
-        // Strictly for error handling, detect a nullptr application and point at the default.
-        if (!app)
-            app = request.getServiceProvider().getApplication(nullptr);
+        const agent_exception* richEx = dynamic_cast<const agent_exception*>(ex);
 
-        const PropertySet* props = app->getPropertySet("Errors");
-
-        // If the externalParameters option isn't set, clear out the request field.
-        pair<bool,bool> externalParameters =
-                props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
-        if (!externalParameters.first || !externalParameters.second) {
-            tp.m_request = nullptr;
-        }
-
-        // Now look for settings in the request map of the form pageError.
+        // Now look for settings in the request map.
         try {
             RequestMapper::Settings settings = request.getRequestSettings();
-            if (mderror)
-                pathname = settings.first->getString("metadataError");
-            if (!pathname) {
-                string pagename(page);
-                pagename += "Error";
-                pathname = settings.first->getString(pagename.c_str());
-            }
+            externalParameters = settings.first->getBool("externalParameters", false);
             if (mayRedirect)
                 redirectErrors = settings.first->getString("redirectErrors");
         }
@@ -91,62 +72,23 @@ namespace shibsp {
             log.error(ex.what());
         }
 
-        // Check for redirection on errors instead of template.
-        if (mayRedirect) {
-            if (!redirectErrors && props)
-                redirectErrors = props->getString("redirectErrors").second;
-            if (redirectErrors) {
-                string loc(redirectErrors);
-                request.absolutize(loc);
-                loc = loc + '?' + tp.toQueryString();
-                return request.sendRedirect(loc.c_str());
+        // Check for redirection on errors.
+        if (mayRedirect && redirectErrors) {
+            string loc(redirectErrors);
+            request.absolutize(loc);
+            const agent_exception* richEx = dynamic_cast<const agent_exception*>(ex);
+            if (richEx) {
+                // TODO: probably alter how this works or what's included.
+                loc = loc + '?' + richEx->toQueryString();
             }
+            return request.sendRedirect(loc.c_str());
         }
 
-        request.setContentType("text/html");
-        request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
-        request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
+        // TODO: this probably changes significantly, but ultimately we're trying to pass
+        // back a status code.
 
-        // Nothing in the request map, so check for a property named "page" in the Errors property set.
-        if (!pathname && props) {
-            if (mderror)
-                pathname=props->getString("metadata").second;
-            if (!pathname)
-                pathname=props->getString(page).second;
-        }
-
-        // If there's still no template to use, just use pageError.html unless it's an access issue.
-        string fname;
-        if (!pathname) {
-            if (!accesserror) {
-                fname = string(mderror ? "metadata" : page) + "Error.html";
-                pathname = fname.c_str();
-            }
-        }
-        else {
-            fname = pathname;
-        }
-
-        // If we have a template to use, use it.
-        if (!fname.empty()) {
-            ifstream infile(AgentConfig::getConfig().getPathResolver().resolve(fname, PathResolver::SHIBSP_CFG_FILE).c_str());
-            if (infile) {
-                tp.setPropertySet(props);
-                stringstream str;
-                XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp, tp.getRichException());
-                return request.sendError(str);
-            }
-        }
-
-        // If we got here, then either it's an access error or a template failed.
-        if (accesserror) {
-            istringstream msg("Access Denied");
-            return request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_FORBIDDEN);
-        }
-
-        log.error("sendError could not process error template (%s)", pathname);
         istringstream msg("Internal Server Error. Please contact the site administrator.");
-        return request.sendError(msg);
+        return request.sendResponse(msg, richEx ? richEx->getStatusCode() : HTTPResponse::SHIBSP_HTTP_STATUS_ERROR);
     }
 
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
@@ -303,11 +245,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
         if (!request.isSecure()) {
             const char* redirectToSSL = settings.first->getString("redirectToSSL");
             if (redirectToSSL) {
-#ifdef HAVE_STRCASECMP
                 if (!strcasecmp("GET",request.getMethod()) || !strcasecmp("HEAD",request.getMethod())) {
-#else
-                if (!stricmp("GET",request.getMethod()) || !stricmp("HEAD",request.getMethod())) {
-#endif
                     // Compute the new target URL
                     string redirectURL = string("https://") + request.getHostname();
                     if (strcmp(redirectToSSL,"443")) {
@@ -317,9 +255,8 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                     return make_pair(true, request.sendRedirect(redirectURL.c_str()));
                 }
                 else {
-                    TemplateParameters tp;
-                    tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-                    return make_pair(true, sendError(log, request, app, "ssl", tp, false));
+                    agent_exception ex("Access via unencrypted HTTP was blocked.");
+                    return make_pair(true, handleError(log, request, nullptr, &ex, false));
                 }
             }
         }
@@ -428,9 +365,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
     }
     catch (const exception& e) {
         request.log(Priority::SHIB_ERROR, e.what());
-        TemplateParameters tp(&e);
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true, sendError(log, request, app, "session", tp));
+        return make_pair(true, handleError(log, request, nullptr, &e));
     }
 }
 
@@ -483,9 +418,9 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
                 case AccessControl::shib_acl_false:
                 {
                     log.warn("access control provider denied access");
-                    TemplateParameters tp(nullptr, nullptr, session);
-                    tp.m_map["requestURL"] = targetURL;
-                    return make_pair(true, sendError(log, request, app, "access", tp, false));
+                    agent_exception ex("Access to resource denied.");
+                    ex.setStatusCode(HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN);
+                    return make_pair(true, handleError(log, request, session, nullptr, false));
                 }
 
                 default:
@@ -499,9 +434,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
     }
     catch (const exception& e) {
         request.log(Priority::SHIB_ERROR, e.what());
-        TemplateParameters tp(&e, nullptr, session);
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true, sendError(log, request, app, "access", tp));
+        return make_pair(true, handleError(log, request, nullptr, &e));
     }
 }
 
@@ -535,7 +468,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 		// Still no data?
         if (!session) {
         	if (requireSession)
-                throw XMLToolingException("Unable to obtain session to export to request.");
+                throw SessionException("Unable to obtain session to export to request.");
         	else
         		return make_pair(false, 0L);	// just bail silently
         }
@@ -587,9 +520,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     }
     catch (const exception& e) {
         request.log(Priority::SHIB_ERROR, e.what());
-        TemplateParameters tp(&e, nullptr, session);
-        tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-        return make_pair(true, sendError(log, request, app, "session", tp));
+        return make_pair(true, handleError(log, request, session, &e));
     }
 }
 
@@ -608,11 +539,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         if (!request.isSecure()) {
             const char* redirectToSSL = settings.first->getString("redirectToSSL");
             if (redirectToSSL) {
-#ifdef HAVE_STRCASECMP
                 if (!strcasecmp("GET",request.getMethod()) || !strcasecmp("HEAD",request.getMethod())) {
-#else
-                if (!stricmp("GET",request.getMethod()) || !stricmp("HEAD",request.getMethod())) {
-#endif
                     // Compute the new target URL
                     string redirectURL = string("https://") + request.getHostname();
                     if (strcmp(redirectToSSL,"443")) {
@@ -622,9 +549,7 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
                     return make_pair(true, request.sendRedirect(redirectURL.c_str()));
                 }
                 else {
-                    TemplateParameters tp;
-                    tp.m_map["requestURL"] = targetURL.substr(0,targetURL.find('?'));
-                    return make_pair(true,sendError(log, request, app, "ssl", tp, false));
+                    throw IOException("Blocked non-SSL access to Shibboleth handler.");
                 }
             }
         }
@@ -643,10 +568,6 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 
         // Process incoming request.
         pair<bool,bool> handlerSSL = sessionProps->getBool("handlerSSL");
-
-        // Make sure this is SSL, if it should be
-        if ((!handlerSSL.first || handlerSSL.second) && !request.isSecure())
-            throw xmltooling::XMLToolingException("Blocked non-SSL access to Shibboleth handler.");
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
@@ -669,9 +590,6 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         catch (const exception&) {
         }
         lock_guard<Session> slocker(*session, adopt_lock); // pop existing lock on exit
-        TemplateParameters tp(&e, nullptr, session);
-        tp.m_map["requestURL"] = targetURL.substr(0, targetURL.find('?'));
-        //stp.m_request = &request;
-        return make_pair(true, sendError(log, request, app, "session", tp));
+        return make_pair(true, handleError(log, request, session, &e));
     }
 }

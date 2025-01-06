@@ -21,6 +21,8 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AbstractSPRequest.h"
+#include "Agent.h"
+#include "AgentConfig.h"
 #include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
@@ -42,7 +44,9 @@ SPRequest::~SPRequest()
 
 
 AbstractSPRequest::AbstractSPRequest(const char* category)
-    : m_log(Category::getInstance(category)), m_sp(SPConfig::getConfig().getServiceProvider()),
+    : m_log(Category::getInstance(category)),
+        m_agent(AgentConfig::getConfig().getAgent()),
+        m_sp(SPConfig::getConfig().getServiceProvider()),
         m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr)
 {
     if (m_sp)
@@ -59,6 +63,11 @@ AbstractSPRequest::~AbstractSPRequest()
         m_sp->unlock();
 }
 
+const Agent& AbstractSPRequest::getAgent() const
+{
+    return m_agent;
+}
+
 const ServiceProvider& AbstractSPRequest::getServiceProvider() const
 {
     return *m_sp;
@@ -68,17 +77,13 @@ RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
 {
     if (!m_mapper) {
         // Map request to application and content settings.
-        m_mapper = m_sp->getRequestMapper();
+        m_mapper = m_agent.getRequestMapper();
         m_mapper->lock_shared();
         m_settings = m_mapper->getSettings(*this);
 
-/*
-        if (reinterpret_cast<Category*>(m_log)->isDebugEnabled()) {
-            reinterpret_cast<Category*>(m_log)->debug(
-                "mapped %s to %s", getRequestURL(), m_settings.first->getString("applicationId").second
-                );
+        if (m_log.isDebugEnabled()) {
+            m_log.debug("mapped %s to %s", getRequestURL(), m_settings.first->getString("applicationId", ""));
         }
-    */
     }
     return m_settings;
 }
@@ -105,21 +110,14 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
     // Need address checking and timeout settings.
     time_t timeout = 3600;
     if (checkTimeout || !ignoreAddress) {
-        const PropertySet* props = getApplication().getPropertySet("Sessions");
-        if (props) {
-            if (checkTimeout) {
-                pair<bool,unsigned int> p = props->getUnsignedInt("timeout");
-                if (p.first)
-                    timeout = p.second;
-            }
-            pair<bool,bool> pcheck = props->getBool("consistentAddress");
-            if (pcheck.first)
-                ignoreAddress = !pcheck.second;
+        if (checkTimeout) {
+            timeout = getRequestSettings().first->getUnsignedInt("timeout", 3600);
         }
+        ignoreAddress = !getRequestSettings().first->getBool("consistentAddress", true);
     }
 
     // The cache will either silently pass a session or nullptr back, or throw an exception out.
-    Session* session = getServiceProvider().getSessionCache()->find(
+    Session* session = getAgent().getSessionCache()->find(
         getApplication(), *this, (ignoreAddress ? nullptr : getRemoteAddr().c_str()), (checkTimeout ? &timeout : nullptr)
         );
     if (cache)

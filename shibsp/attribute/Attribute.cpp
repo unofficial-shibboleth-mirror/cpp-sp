@@ -33,13 +33,7 @@
 #endif
 #include "util/SPConstants.h"
 
-#include <xmltooling/XMLObject.h>
-#include <xmltooling/security/SecurityHelper.h>
-#include <xmltooling/util/XMLHelper.h>
-#include <xercesc/util/XMLUniDefs.hpp>
-
 using namespace shibsp;
-using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
@@ -182,6 +176,6 @@ Attribute* Attribute::unmarshall(DDF& in)
 {
     map<string,AttributeFactory*>::const_iterator i = m_factoryMap.find(in.name() ? in.name() : "");
     if (i == m_factoryMap.end())
-        throw AttributeException("No registered factory for Attribute of type ($1).", params(1,in.name()));
+        throw AttributeException(string("No registered factory for Attribute of type ") + in.name());
     return (i->second)(in);
 }

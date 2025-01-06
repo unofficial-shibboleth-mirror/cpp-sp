@@ -137,7 +137,7 @@ XMLApplication::XMLApplication(
                     m_redirectLimit = REDIRECT_LIMIT_ALLOW;
                 }
                 else {
-                    throw ConfigurationException("Unrecognized redirectLimit setting ($1)", params(1, prop.second));
+                    throw ConfigurationException(string("Unrecognized redirectLimit setting ") + prop.second);
                 }
                 prop = sessionProps->getString("redirectAllow");
                 if (prop.first) {
@@ -306,7 +306,7 @@ template <class T> T* XMLApplication::doChainedPlugins(
                 return pluginMgr.newPlugin(t.c_str(), child, m_deprecationSupport);
             }
             else {
-                throw ConfigurationException("$1 element had no type attribute.", params(1, pluginType));
+                throw ConfigurationException("Eelement had no type attribute.");
             }
         }
         catch (const std::exception& ex) {
@@ -695,10 +695,7 @@ string XMLApplication::getNotificationURL(const char* resource, bool front, unsi
 
     // Should never happen...
     if (!handler || (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)))
-        throw ConfigurationException(
-            "Invalid Location property ($1) in Notify element for Application ($2)",
-            params(2, handler ? handler : "null", getId())
-            );
+        throw ConfigurationException("Invalid Location property in Notify element");
 
     // The "Location" property can be in one of three formats:
     //

@@ -111,20 +111,20 @@ namespace shibsp {
          * <p>The URL will be validated with the sanitizeURL method below.
          *
          * @param url   location to redirect client
-         * @return a result code to return from the calling MessageEncoder
+         * @return a result code to return
          */
         virtual long sendRedirect(const char* url);
         
         /** Some common HTTP status codes. */
         enum status_t {
-            XMLTOOLING_HTTP_STATUS_OK = 200,
-            XMLTOOLING_HTTP_STATUS_MOVED = 302,
-            XMLTOOLING_HTTP_STATUS_NOTMODIFIED = 304,
-            XMLTOOLING_HTTP_STATUS_BADREQUEST = 400,
-            XMLTOOLING_HTTP_STATUS_UNAUTHORIZED = 401,
-            XMLTOOLING_HTTP_STATUS_FORBIDDEN = 403,
-            XMLTOOLING_HTTP_STATUS_NOTFOUND = 404,
-            XMLTOOLING_HTTP_STATUS_ERROR = 500
+            SHIBSP_HTTP_STATUS_OK = 200,
+            SHIBSP_HTTP_STATUS_MOVED = 302,
+            SHIBSP_HTTP_STATUS_NOTMODIFIED = 304,
+            SHIBSP_HTTP_STATUS_BADREQUEST = 400,
+            SHIBSP_HTTP_STATUS_UNAUTHORIZED = 401,
+            SHIBSP_HTTP_STATUS_FORBIDDEN = 403,
+            SHIBSP_HTTP_STATUS_NOTFOUND = 404,
+            SHIBSP_HTTP_STATUS_ERROR = 500
         };
         
         long sendError(std::istream& inputStream);

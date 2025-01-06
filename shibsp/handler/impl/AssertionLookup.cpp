@@ -115,7 +115,7 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
     catch (std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
         istringstream msg("Assertion Lookup Failed");
-        return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
 }
 

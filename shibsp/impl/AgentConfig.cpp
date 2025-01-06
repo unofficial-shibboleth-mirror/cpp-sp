@@ -51,7 +51,6 @@
 #endif
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace boost::property_tree;
 using namespace std;
 

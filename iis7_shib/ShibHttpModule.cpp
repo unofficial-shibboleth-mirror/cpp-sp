@@ -84,7 +84,7 @@ ShibHttpModule::DoFilter(
     if (!g_spoofKey.empty() && filter.isUseHeaders()) {
         const HRESULT hr(pHttpContext->GetRequest()->SetHeader(SpoofHeaderName, g_spoofKey.c_str(), static_cast<USHORT>(g_spoofKey.length()), TRUE));
         if (FAILED(hr)) {
-            (void)pHttpContext->GetResponse()->SetStatus(static_cast<USHORT>(filter.XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
+            (void)pHttpContext->GetResponse()->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
             return RQ_NOTIFICATION_FINISH_REQUEST;
         }
     }

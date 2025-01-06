@@ -37,7 +37,6 @@
 #include <boost/iterator/indirect_iterator.hpp>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
@@ -367,7 +366,7 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
     catch (std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
         istringstream msg("Metadata Request Failed");
-        return make_pair(true, request.sendResponse(msg, HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
 }
 

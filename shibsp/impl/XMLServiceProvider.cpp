@@ -346,7 +346,7 @@ boost::shared_ptr<Application> XMLConfigImpl::findExternalOverride(const char* i
 
                 string id2(XMLHelper::getAttrString(doc->getDocumentElement(), nullptr, _id));
                 if (id2 != id)
-                    throw ConfigurationException("External override's id ($1) did not match the expected value", params(1, id2.c_str()));
+                    throw ConfigurationException("External override's id did not match the expected value.");
 
                 boost::shared_ptr<XMLApplication> iapp(
                     new XMLApplication(config, doc->getDocumentElement(), m_deprecationSupport, m_defaultApplication, doc)

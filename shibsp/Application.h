@@ -33,12 +33,9 @@
 #include <vector>
 
 namespace xmltooling {
-    class XMLTOOL_API CredentialResolver;
     class XMLTOOL_API RWLock;
-    class XMLTOOL_API SOAPTransport;
-    class XMLTOOL_API StorageService;
-    class XMLTOOL_API TrustEngine;
 };
+
 namespace shibsp {
 
     class SHIBSP_API Attribute;

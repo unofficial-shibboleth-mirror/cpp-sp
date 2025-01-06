@@ -26,11 +26,6 @@
 #include <set>
 #include <xmltooling/Lockable.h>
 
-namespace xmltooling {
-    class XMLTOOL_API SOAPTransport;
-    class XMLTOOL_API StorageService;
-};
-
 namespace shibsp {
 
     class SHIBSP_API Application;
