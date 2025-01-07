@@ -22,10 +22,10 @@
 #include "exceptions.h"
 
 #include "AccessControl.h"
-#include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "logging/Category.h"
+#include "session/SessionCache.h"
 #include "util/Lockable.h"
 #include "util/Misc.h"
 #include "util/ReloadableXMLFile.h"

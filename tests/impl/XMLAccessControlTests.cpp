@@ -22,10 +22,10 @@
 #include "AbstractSPRequest.h"
 #include "AccessControl.h"
 #include "AgentConfig.h"
-#include "SessionCache.h"
 #include "attribute/Attribute.h"
 #include "attribute/SimpleAttribute.h"
 #include "logging/Category.h"
+#include "session/SessionCache.h"
 
 #ifdef HAVE_CXX14
 # include <shared_mutex>

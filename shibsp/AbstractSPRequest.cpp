@@ -23,8 +23,8 @@
 #include "AbstractSPRequest.h"
 #include "Agent.h"
 #include "AgentConfig.h"
-#include "SessionCache.h"
 #include "logging/Category.h"
+#include "session/SessionCache.h"
 #include "util/CGIParser.h"
 
 #include <boost/lexical_cast.hpp>

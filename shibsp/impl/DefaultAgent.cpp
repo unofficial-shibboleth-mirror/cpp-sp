@@ -25,10 +25,10 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
-#include "SessionCache.h"
 #include "io/HTTPResponse.h"
 #include "logging/Category.h"
 #include "remoting/RemotingService.h"
+#include "session/SessionCache.h"
 #include "util/BoostPropertySet.h"
 #include "util/SPConstants.h"
 

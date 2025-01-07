@@ -28,9 +28,9 @@
 #include "exceptions.h"
 #include "Agent.h"
 #include "AgentConfig.h"
-#include "SessionCache.h"
 #include "handler/SecuredHandler.h"
 #include "handler/LogoutInitiator.h"
+#include "session/SessionCache.h"
 
 #include <sstream>
 

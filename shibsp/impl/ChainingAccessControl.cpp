@@ -23,7 +23,6 @@
 
 #include "AccessControl.h"
 #include "AgentConfig.h"
-#include "SessionCache.h"
 #include "SPRequest.h"
 #include "logging/Category.h"
 
@@ -152,7 +151,7 @@ AccessControl::aclresult_t ChainingAccessControl::authorized(const SPRequest& re
         case OP_OR:
         {
             for (const auto& i : m_ac) {
-                if (i->authorized(request,session) == shib_acl_true)
+                if (i->authorized(request, session) == shib_acl_true)
                     return shib_acl_true;
             }
             request.log(Priority::SHIB_DEBUG, "all embedded AccessControl plugins unsuccessful, denying access");

@@ -29,10 +29,10 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "exceptions.h"
-#include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/AbstractHandler.h"
+#include "session/SessionCache.h"
 #include "util/PathResolver.h"
 
 #include <memory>

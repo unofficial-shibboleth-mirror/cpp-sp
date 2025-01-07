@@ -26,10 +26,10 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
+#include "session/SessionCache.h"
 #include "util/SPConstants.h"
 
 #include <sstream>

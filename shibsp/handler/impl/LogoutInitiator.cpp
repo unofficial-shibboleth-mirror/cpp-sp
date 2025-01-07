@@ -28,9 +28,6 @@
 #include "handler/LogoutInitiator.h"
 
 using namespace shibsp;
-using namespace xmltooling;
-using namespace xercesc;
-using namespace std;
 
 LogoutInitiator::LogoutInitiator()
 {

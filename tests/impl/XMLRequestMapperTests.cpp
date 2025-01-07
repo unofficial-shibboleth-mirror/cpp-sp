@@ -23,9 +23,9 @@
 #include "AccessControl.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
-#include "SessionCache.h"
 #include "attribute/Attribute.h"
 #include "logging/Category.h"
+#include "session/SessionCache.h"
 #include "util/PropertySet.h"
 
 #ifdef HAVE_CXX14

@@ -42,8 +42,8 @@
 #include <shibsp/Agent.h>
 #include <shibsp/AgentConfig.h>
 #include <shibsp/RequestMapper.h>
-#include <shibsp/SessionCache.h>
 #include <shibsp/attribute/Attribute.h>
+#include <shibsp/session/SessionCache.h>
 #include <shibsp/util/Lockable.h>
 
 #ifdef WIN32

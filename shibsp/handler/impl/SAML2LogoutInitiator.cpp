@@ -27,9 +27,9 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "Agent.h"
-#include "SessionCache.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutInitiator.h"
+#include "session/SessionCache.h"
 
 #include <mutex>
 

@@ -14,6 +14,8 @@ logincludedir = $(includedir)/shibsp/logging
 
 remincludedir = $(includedir)/shibsp/remoting
 
+sessionincludedir = $(includedir)/shibsp/session
+
 utilincludedir = $(includedir)/shibsp/util
 
 nodist_libshibspinclude_HEADERS = \
@@ -28,7 +30,6 @@ libshibspinclude_HEADERS = \
 	base.h \
 	exceptions.h \
 	RequestMapper.h \
-	SessionCache.h \
 	SPRequest.h \
 	version.h
 
@@ -62,6 +63,9 @@ loginclude_HEADERS = \
 reminclude_HEADERS = \
 	remoting/ddf.h \
 	remoting/RemotingService.h
+
+sessioninclude_HEADERS = \
+	session/SessionCache.h
 	
 utilinclude_HEADERS = \
 	util/BoostPropertySet.h \
@@ -79,10 +83,6 @@ utilinclude_HEADERS = \
 
 noinst_HEADERS = \
 	internal.h \
-	impl/StoredSession.h \
-	impl/StorageServiceSessionCache.h \
-	impl/XMLApplication.h \
-	impl/XMLServiceProvider.h \
 	logging/impl/AbstractLoggingService.h \
 	logging/impl/LoggingServiceSPI.h \
 	logging/impl/StringUtil.h \
@@ -120,8 +120,6 @@ libshibsp_la_SOURCES = \
 	impl/AgentConfig.cpp \
 	impl/DefaultAgent.cpp \
 	impl/ChainingAccessControl.cpp \
-	impl/StoredSession.cpp \
-	impl/StorageServiceSessionCache.cpp \
         impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
 	io/impl/HTTPRequest.cpp \
@@ -134,6 +132,7 @@ libshibsp_la_SOURCES = \
 	logging/impl/SyslogLoggingService.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/RemotingService.cpp \
+	session/impl/AbstractSessionCache.cpp \
 	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
 	util/DOMPropertySet.cpp \

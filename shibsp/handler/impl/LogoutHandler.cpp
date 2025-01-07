@@ -27,10 +27,10 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AgentConfig.h"
-#include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/LogoutHandler.h"
 #include "logging/Category.h"
+#include "session/SessionCache.h"
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
 
