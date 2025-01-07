@@ -27,7 +27,6 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "Agent.h"
-#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
@@ -35,6 +34,7 @@
 #include <mutex>
 
 using namespace shibsp;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
@@ -100,7 +100,7 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
     if (ret.first)
         return ret;
 
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+    if (false) {
         // When out of process, we run natively.
         Session* session = nullptr;
         try {

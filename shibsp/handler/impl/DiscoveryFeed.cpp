@@ -27,7 +27,6 @@
 #include "internal.h"
 #include "AgentConfig.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
@@ -40,6 +39,7 @@
 #include <xmltooling/util/Threads.h>
 
 using namespace shibsp;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
@@ -140,14 +140,12 @@ DiscoveryFeed::~DiscoveryFeed()
 pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
 {
     try {
-        SPConfig& conf = SPConfig::getConfig();
-
         string s;
         if (m_cacheToClient) {
             s = request.getHeader("If-None-Match");
         }
 
-        if (conf.isEnabled(SPConfig::OutOfProcess)) {
+        if (false) {
             // When out of process, we run natively and directly process the message.
             if (m_dir.empty()) {
                 // The feed is directly returned.

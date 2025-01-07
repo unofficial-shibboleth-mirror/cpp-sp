@@ -51,11 +51,7 @@
 #endif
 
 #include "base.h"
-#include "SPConfig.h"
-#include "logging/Category.h"
 
 #include <memory>
-
-using namespace xercesc;
 
 #endif /* __shibsp_internal_h__ */

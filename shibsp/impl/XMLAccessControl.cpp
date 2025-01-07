@@ -25,6 +25,7 @@
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
+#include "logging/Category.h"
 #include "util/Lockable.h"
 #include "util/Misc.h"
 #include "util/ReloadableXMLFile.h"

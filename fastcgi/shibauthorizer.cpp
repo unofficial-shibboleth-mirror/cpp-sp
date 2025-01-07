@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /* shibauthorizer.cpp - Shibboleth FastCGI Authorizer
@@ -31,13 +25,8 @@
 #define _SCL_SECURE_NO_WARNINGS 1
 
 #include <shibsp/AbstractSPRequest.h>
-#include <shibsp/SPConfig.h>
-#include <shibsp/ServiceProvider.h>
-#include <xmltooling/unicode.h>
-#include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/XMLConstants.h>
-#include <xmltooling/util/XMLHelper.h>
-#include <xercesc/util/XMLUniDefs.hpp>
+#include <shibsp/Agent.h>
+#include <shibsp/AgentConfig.h>
 
 #include <stdexcept>
 #include <stdlib.h>
@@ -48,12 +37,7 @@
 #include <fcgio.h>
 
 using namespace shibsp;
-using namespace xmltooling;
-using namespace xercesc;
 using namespace std;
-
-static const XMLCh path[] =     UNICODE_LITERAL_4(p,a,t,h);
-static const XMLCh validate[] = UNICODE_LITERAL_8(v,a,l,i,d,a,t,e);
 
 typedef enum {
     SHIB_RETURN_OK,
@@ -123,11 +107,6 @@ public:
             return ret;
         const char* s = FCGX_GetParam("REMOTE_ADDR", m_req->envp);
         return s ? s : "";
-    }
-    void log(SPLogLevel level, const string& msg) const {
-        AbstractSPRequest::log(level,msg);
-        if (level >= SPError)
-            cerr << "shib: " << msg;
     }
     void clearHeader(const char* rawname, const char* cginame) {
         // No need, since we use environment variables.
@@ -276,27 +255,9 @@ static void print_error(const char* msg)
 
 int main(void)
 {
-    SPConfig* g_Config=&SPConfig::getConfig();
-    g_Config->setFeatures(
-        SPConfig::Listener |
-        SPConfig::Caching |
-        SPConfig::RequestMapping |
-        SPConfig::InProcess |
-        SPConfig::Logging |
-        SPConfig::Handlers
-        );
+    AgentConfig* g_Config = &AgentConfig::getConfig();
     if (!g_Config->init()) {
-        cerr << "failed to initialize Shibboleth libraries" << endl;
-        exit(1);
-    }
-
-    try {
-        if (!g_Config->instantiate(nullptr, true))
-            throw runtime_error("unknown error");
-    }
-    catch (exception& ex) {
-        g_Config->term();
-        cerr << "exception while initializing Shibboleth configuration: " << ex.what() << endl;
+        cerr << "failed to initialize Shibboleth agent" << endl;
         exit(1);
     }
 
@@ -338,9 +299,9 @@ int main(void)
         try {
             ShibTargetFCGIAuth sta(&request, g_ServerScheme.c_str(), g_ServerName.c_str(), g_ServerPort);
 
-            pair<bool,long> res = sta.getServiceProvider().doAuthentication(sta);
+            pair<bool,long> res = sta.getAgent().doAuthentication(sta);
             if (res.first) {
-                sta.log(SPRequest::SPDebug, "shib: doAuthentication handled the request");
+                sta.debug(Priority::SHIB_DEBUG, "shib: doAuthentication handled the request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
@@ -360,9 +321,9 @@ int main(void)
                 }
             }
 
-            res = sta.getServiceProvider().doExport(sta);
+            res = sta.getAgent().doExport(sta);
             if (res.first) {
-                sta.log(SPRequest::SPDebug, "shib: doExport handled request");
+                sta.log(Priority::SHIB_DEBUG, "shib: doExport handled request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
@@ -382,9 +343,9 @@ int main(void)
                 }
             }
 
-            res = sta.getServiceProvider().doAuthorization(sta);
+            res = sta.getAgent().doAuthorization(sta);
             if (res.first) {
-                sta.log(SPRequest::SPDebug, "shib: doAuthorization handled request");
+                sta.log(Priority::SHIB_DEBUG, "shib: doAuthorization handled request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
@@ -407,7 +368,7 @@ int main(void)
             print_ok(sta.m_request_headers);
 
         }
-        catch (exception& e) {
+        catch (const exception& e) {
             cerr << "shib: FastCGI authorizer caught an exception: " << e.what() << endl;
             print_error("<html><body>FastCGI Shibboleth authorizer caught an exception, check log for details.</body></html>");
         }

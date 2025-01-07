@@ -112,17 +112,17 @@ ShibHttpModule::OnBeginRequest(
         return DoHandler(pHttpContext, pProvider);
     }
     catch (const bad_alloc&) {
-        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Memory Error", 0, E_OUTOFMEMORY);
+        res->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Memory Error", 0, E_OUTOFMEMORY);
     }
     catch (long e) {
-        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Win32 Error", 0, HRESULT_FROM_WIN32(e));
+        res->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Win32 Error", 0, HRESULT_FROM_WIN32(e));
     }
     catch (const std::exception& e) {
-        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), e.what());
+        res->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), e.what());
     }
     catch (...) {
         if (g_catchAll) {
-            res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error Caught");
+            res->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Error Caught");
         }
         else {
             throw;
@@ -144,17 +144,17 @@ ShibHttpModule::OnAuthenticateRequest(
         return DoFilter(pHttpContext, pProvider);
     }
     catch (const bad_alloc&) {
-        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Memory Error", 0, E_OUTOFMEMORY);
+        res->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Memory Error", 0, E_OUTOFMEMORY);
     }
     catch (long e) {
-        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Win32 Error", 0, HRESULT_FROM_WIN32(e));
+        res->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Win32 Error", 0, HRESULT_FROM_WIN32(e));
     }
     catch (const std::exception& e) {
-        res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), e.what());
+        res->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), e.what());
     }
     catch (...) {
         if (g_catchAll) {
-            res->SetStatus(static_cast<USHORT>(xmltooling::HTTPResponse::XMLTOOLING_HTTP_STATUS_ERROR), "Fatal Server Error Caught");
+            res->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Error Caught");
         }
         else {
             throw;

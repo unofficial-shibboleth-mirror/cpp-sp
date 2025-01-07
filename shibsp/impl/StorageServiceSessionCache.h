@@ -32,6 +32,7 @@
 
 #include <ctime>
 #include <boost/scoped_ptr.hpp>
+#include <xercesc/dom/DOM.hpp>
 
 namespace xmltooling {
     class CondWait;
@@ -41,8 +42,10 @@ namespace xmltooling {
 
 namespace shibsp {
 
+    class Category;
     class IPRange;
     class StoredSession;
+    
     class SHIBSP_DLLLOCAL SSCache : public SessionCache
     {
     public:

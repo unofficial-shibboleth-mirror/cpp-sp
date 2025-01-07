@@ -30,6 +30,7 @@
 #include "handler/SessionInitiator.h"
 
 using namespace shibsp;
+using namespace xercesc;
 using namespace std;
 
 SessionInitiator::SessionInitiator()
@@ -43,7 +44,6 @@ SessionInitiator::~SessionInitiator()
 const char* SessionInitiator::remap(const char* src, Category& log) const
 {
     if (XMLString::equals(src, "defaultACSIndex")) {
-        SPConfig::getConfig().deprecation().warn("old setting - remapping property (defaultACSIndex) to (acsIndex)");
         return "acsIndex";
     }
     else {

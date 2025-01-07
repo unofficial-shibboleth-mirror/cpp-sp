@@ -29,7 +29,6 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
@@ -49,6 +48,7 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
@@ -108,8 +108,6 @@ namespace shibsp {
 AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char* appId, bool deprecationSupport)
     : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.AttributeChecker"), &g_Blocker)
 {
-    if (!SPConfig::getConfig().isEnabled(SPConfig::InProcess))
-        return;
     m_template = XMLHelper::getAttrString(e, nullptr, _template);
     if (m_template.empty())
         throw ConfigurationException("AttributeChecker missing required template setting.");
@@ -128,7 +126,7 @@ AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char
         throw ConfigurationException("AttributeChecker requires either the attributes setting or an ACL");
     }
     else {
-        m_acl.reset(SPConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, e, deprecationSupport));
+        //m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, e, deprecationSupport));
     }
 }
 

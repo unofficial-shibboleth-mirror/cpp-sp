@@ -29,6 +29,7 @@
 #include "attribute/Attribute.h"
 #include "impl/StoredSession.h"
 #include "impl/StorageServiceSessionCache.h"
+#include "logging/Category.h"
 
 using namespace shibsp;
 using namespace boost;
@@ -149,7 +150,7 @@ void StoredSession::validate(const char* bucketID, const char* client_addr, time
     if (!timeout && !client_addr)
         return;
 
-    if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+    if (true) {
         DDF in("touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache"), out;
         DDFJanitor jin(in);
         in.structure();

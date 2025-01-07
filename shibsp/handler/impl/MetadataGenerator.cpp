@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
@@ -37,6 +36,7 @@
 
 using namespace shibsp;
 using namespace boost;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
@@ -160,7 +160,7 @@ MetadataGenerator::MetadataGenerator(const DOMElement* e, const char* appId)
         ,m_http(0), m_https(0), m_encryptionBuilder(nullptr), m_digestBuilder(nullptr)
 #endif
 {
-    SPConfig::getConfig().deprecation().warn(METADATA_GENERATOR_HANDLER" handler");
+    //SPConfig::getConfig().deprecation().warn(METADATA_GENERATOR_HANDLER" handler");
 
     string address(appId);
     address += getString("Location").second;
@@ -344,7 +344,7 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
         return ret;
 
     try {
-        if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        if (false) {
             // When out of process, we run natively and directly process the message.
             return processMessage(request.getHandlerURL(), request.getParameter("entityID"), request);
         }

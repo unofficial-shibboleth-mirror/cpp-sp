@@ -28,9 +28,11 @@
 #define __shibsp_dompropset_h__
 
 #include <shibsp/util/PropertySet.h>
+#include <xmltooling/unicode.h>
 
 #include <set>
 #include <boost/shared_ptr.hpp>
+#include <xercesc/dom/DOM.hpp>
 
 #if defined (_MSC_VER)
 #    pragma warning( push )
@@ -42,6 +44,8 @@ namespace xmltooling {
 }
 
 namespace shibsp {
+
+    class SHIBSP_API Category;
 
     /**
      * DOM-based property set implementation.

@@ -27,7 +27,6 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "Agent.h"
-#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
@@ -47,6 +46,7 @@
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
@@ -266,7 +266,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
 
     try {
-        if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        if (false) {
             // When out of process, we run natively and directly process the message.
             return processMessage(request);
         }

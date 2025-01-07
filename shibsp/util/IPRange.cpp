@@ -19,13 +19,14 @@
  */
 
 /**
- * @file IPRange.cpp
+ * util/IPRange.cpp
  * 
  * Represents a range of IP addresses.
  */
 
 #include "internal.h"
 #include "exceptions.h"
+#include "logging/Category.h"
 #include "util/IPRange.h"
 
 #ifdef WIN32

@@ -19,15 +19,15 @@
  */
 
 #include "internal.h"
-#include "AgentConfig.h"
 #include "exceptions.h"
+#include "Agent.h"
+#include "AgentConfig.h"
 #include "AccessControl.h"
-#include "Application.h"
-#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/SessionInitiator.h"
+#include "logging/Category.h"
 #include "util/Date.h"
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
@@ -45,193 +45,183 @@
 #endif
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace std;
 
-namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager<ServiceProvider,string,const DOMElement*>::Factory XMLServiceProviderFactory;
-
-    long SHIBSP_DLLLOCAL handleError(
-        Category& log, SPRequest& request, const Session* session=nullptr, const exception* ex=nullptr, bool mayRedirect=true
-        )
-    {
-        // The properties we need can be set in the RequestMap, or the Errors element.
-        bool externalParameters = false;
-        const char* redirectErrors = nullptr;
-
-        const agent_exception* richEx = dynamic_cast<const agent_exception*>(ex);
-
-        // Now look for settings in the request map.
-        try {
-            RequestMapper::Settings settings = request.getRequestSettings();
-            externalParameters = settings.first->getBool("externalParameters", false);
-            if (mayRedirect)
-                redirectErrors = settings.first->getString("redirectErrors");
-        }
-        catch (const exception& ex) {
-            log.error(ex.what());
-        }
-
-        // Check for redirection on errors.
-        if (mayRedirect && redirectErrors) {
-            string loc(redirectErrors);
-            request.absolutize(loc);
-            const agent_exception* richEx = dynamic_cast<const agent_exception*>(ex);
-            if (richEx) {
-                // TODO: probably alter how this works or what's included.
-                loc = loc + '?' + richEx->toQueryString();
-            }
-            return request.sendRedirect(loc.c_str());
-        }
-
-        // TODO: this probably changes significantly, but ultimately we're trying to pass
-        // back a status code.
-
-        istringstream msg("Internal Server Error. Please contact the site administrator.");
-        return request.sendResponse(msg, richEx ? richEx->getStatusCode() : HTTPResponse::SHIBSP_HTTP_STATUS_ERROR);
-    }
-
-    void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
-        request.clearHeader("Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
-        request.clearHeader("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
-        request.clearHeader("Shib-Session-Index", "HTTP_SHIB_SESSION_INDEX");
-        request.clearHeader("Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
-        request.clearHeader("Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
-        request.clearHeader("Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
-        request.clearHeader("Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
-        request.clearHeader("Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
-        request.clearHeader("Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
-        request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
-        request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
-        request.clearHeader("Shib-Handler", "HTTP_SHIB_HANDLER");
-        request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
-        // TODO: Redo the handling of attribute headers in the code, likely supplanting all of the above...
-        //request.clearAttributeHeaders();
-    }
-
-    void SHIBSP_DLLLOCAL exportAttributes(SPRequest& request, const Session* session, RequestMapper::Settings settings) {
-
-        const char* enc = settings.first->getString("encoding");
-        if (enc && strcmp(enc, "URL"))
-            throw ConfigurationException(string("Unsupported value for 'encoding' content setting: ") + enc);
-
-        const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
-
-        // Default delimiter is semicolon but is now configurable.
-        const char* delim = settings.first->getString("attributeValueDelimiter", ";");
-        size_t delim_len = strlen(delim);
-
-        bool exportDups = settings.first->getBool("exportDuplicateValues", true);
-        const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
-
-        // Default export strategy will include duplicates.
-        if (exportDups) {
-            for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
-                if (a->second->isInternal())
-                    continue;
-                string header(request.getSecureHeader(a->first.c_str()));
-                const vector<string>& vals = a->second->getSerializedValues();
-                for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
-                    if (!header.empty())
-                        header += delim;
-                    if (enc) {
-                        // If URL-encoding, any semicolons will get escaped anyway.
-                        header += encoder.encode(v->c_str());
-                    }
-                    else {
-                        string::size_type pos = v->find(delim, string::size_type(0));
-                        if (pos != string::npos) {
-                            string value(*v);
-                            for (; pos != string::npos; pos = value.find(delim, pos)) {
-                                value.insert(pos, "\\");
-                                pos += delim_len + 1;
-                            }
-                            header += value;
-                        }
-                        else {
-                            header += (*v);
-                        }
-                    }
-                }
-                request.setHeader(a->first.c_str(), header.c_str());
-            }
-        }
-        else {
-            // Capture values in a map of sets to check for duplicates on the fly.
-            map< string,set<string> > valueMap;
-            for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
-                if (a->second->isInternal())
-                    continue;
-                const vector<string>& vals = a->second->getSerializedValues();
-                valueMap[a->first].insert(vals.begin(), vals.end());
-            }
-
-            // Export the mapped sets to the headers.
-            for (map< string,set<string> >::const_iterator deduped = valueMap.begin(); deduped != valueMap.end(); ++deduped) {
-                string header;
-                for (set<string>::const_iterator v = deduped->second.begin(); v != deduped->second.end(); ++v) {
-                    if (!header.empty())
-                        header += delim;
-                    if (enc) {
-                        // If URL-encoding, any semicolons will get escaped anyway.
-                        header += encoder.encode(v->c_str());
-                    }
-                    else {
-                        string::size_type pos = v->find(delim, string::size_type(0));
-                        if (pos != string::npos) {
-                            string value(*v);
-                            for (; pos != string::npos; pos = value.find(delim, pos)) {
-                                value.insert(pos, "\\");
-                                pos += delim_len + 1;
-                            }
-                            header += value;
-                        }
-                        else {
-                            header += (*v);
-                        }
-                    }
-                }
-                request.setHeader(deduped->first.c_str(), header.c_str());
-            }
-        }
-
-        // Check for REMOTE_USER.
-        bool remoteUserSet = false;
-        vector<string> dummy;
-        const vector<string>& rmids = dummy; // app.getRemoteUserAttributeIds(); TODO: re implement this elsewhere
-        for (vector<string>::const_iterator rmid = rmids.begin(); !remoteUserSet && rmid != rmids.end(); ++rmid) {
-            pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> matches =
-                attributes.equal_range(*rmid);
-            for (; matches.first != matches.second; ++matches.first) {
-                const vector<string>& vals = matches.first->second->getSerializedValues();
-                if (!vals.empty()) {
-                    if (enc)
-                        request.setRemoteUser(encoder.encode(vals.front().c_str()).c_str());
-                    else
-                        request.setRemoteUser(vals.front().c_str());
-                    remoteUserSet = true;
-                    break;
-                }
-            }
-        }
-    }
-};
-
-void SHIBSP_API shibsp::registerServiceProviders()
-{
-    SPConfig::getConfig().ServiceProviderManager.registerFactory(XML_SERVICE_PROVIDER, XMLServiceProviderFactory);
-}
-
-ServiceProvider::ServiceProvider()
+Agent::Agent()
 {
     m_authTypes.insert("shibboleth");
 }
 
-ServiceProvider::~ServiceProvider()
+Agent::~Agent()
 {
 }
 
-pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handler) const
+long Agent::handleError(Category& log, SPRequest& request, const Session* session, const exception* ex, bool mayRedirect) const
+{
+    // The properties we need can be set in the RequestMap, or the Errors element.
+    bool externalParameters = false;
+    const char* redirectErrors = nullptr;
+
+    const agent_exception* richEx = dynamic_cast<const agent_exception*>(ex);
+
+    // Now look for settings in the request map.
+    try {
+        RequestMapper::Settings settings = request.getRequestSettings();
+        externalParameters = settings.first->getBool("externalParameters", false);
+        if (mayRedirect)
+            redirectErrors = settings.first->getString("redirectErrors");
+    }
+    catch (const exception& ex) {
+        log.error(ex.what());
+    }
+
+    // Check for redirection on errors.
+    if (mayRedirect && redirectErrors) {
+        string loc(redirectErrors);
+        request.absolutize(loc);
+        const agent_exception* richEx = dynamic_cast<const agent_exception*>(ex);
+        if (richEx) {
+            // TODO: probably alter how this works or what's included.
+            loc = loc + '?' + richEx->toQueryString();
+        }
+        return request.sendRedirect(loc.c_str());
+    }
+
+    // TODO: this probably changes significantly, but ultimately we're trying to pass
+    // back a status code.
+
+    istringstream msg("Internal Server Error. Please contact the site administrator.");
+    return request.sendResponse(msg, richEx ? richEx->getStatusCode() : HTTPResponse::SHIBSP_HTTP_STATUS_ERROR);
+}
+
+void Agent::clearHeaders(SPRequest& request) const {
+    request.clearHeader("Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
+    request.clearHeader("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
+    request.clearHeader("Shib-Session-Index", "HTTP_SHIB_SESSION_INDEX");
+    request.clearHeader("Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
+    request.clearHeader("Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
+    request.clearHeader("Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
+    request.clearHeader("Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
+    request.clearHeader("Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
+    request.clearHeader("Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
+    request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
+    request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
+    request.clearHeader("Shib-Handler", "HTTP_SHIB_HANDLER");
+    request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
+    // TODO: Redo the handling of attribute headers in the code, likely supplanting all of the above...
+    //request.clearAttributeHeaders();
+}
+
+void Agent::exportAttributes(SPRequest& request, const Session* session) const {
+
+    RequestMapper::Settings settings = request.getRequestSettings();
+
+    const char* enc = settings.first->getString("encoding");
+    if (enc && strcmp(enc, "URL"))
+        throw ConfigurationException(string("Unsupported value for 'encoding' content setting: ") + enc);
+
+    const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
+
+    // Default delimiter is semicolon but is now configurable.
+    const char* delim = settings.first->getString("attributeValueDelimiter", ";");
+    size_t delim_len = strlen(delim);
+
+    bool exportDups = settings.first->getBool("exportDuplicateValues", true);
+    const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
+
+    // Default export strategy will include duplicates.
+    if (exportDups) {
+        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
+            if (a->second->isInternal())
+                continue;
+            string header(request.getSecureHeader(a->first.c_str()));
+            const vector<string>& vals = a->second->getSerializedValues();
+            for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
+                if (!header.empty())
+                    header += delim;
+                if (enc) {
+                    // If URL-encoding, any semicolons will get escaped anyway.
+                    header += encoder.encode(v->c_str());
+                }
+                else {
+                    string::size_type pos = v->find(delim, string::size_type(0));
+                    if (pos != string::npos) {
+                        string value(*v);
+                        for (; pos != string::npos; pos = value.find(delim, pos)) {
+                            value.insert(pos, "\\");
+                            pos += delim_len + 1;
+                        }
+                        header += value;
+                    }
+                    else {
+                        header += (*v);
+                    }
+                }
+            }
+            request.setHeader(a->first.c_str(), header.c_str());
+        }
+    }
+    else {
+        // Capture values in a map of sets to check for duplicates on the fly.
+        map< string,set<string> > valueMap;
+        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
+            if (a->second->isInternal())
+                continue;
+            const vector<string>& vals = a->second->getSerializedValues();
+            valueMap[a->first].insert(vals.begin(), vals.end());
+        }
+
+        // Export the mapped sets to the headers.
+        for (map< string,set<string> >::const_iterator deduped = valueMap.begin(); deduped != valueMap.end(); ++deduped) {
+            string header;
+            for (set<string>::const_iterator v = deduped->second.begin(); v != deduped->second.end(); ++v) {
+                if (!header.empty())
+                    header += delim;
+                if (enc) {
+                    // If URL-encoding, any semicolons will get escaped anyway.
+                    header += encoder.encode(v->c_str());
+                }
+                else {
+                    string::size_type pos = v->find(delim, string::size_type(0));
+                    if (pos != string::npos) {
+                        string value(*v);
+                        for (; pos != string::npos; pos = value.find(delim, pos)) {
+                            value.insert(pos, "\\");
+                            pos += delim_len + 1;
+                        }
+                        header += value;
+                    }
+                    else {
+                        header += (*v);
+                    }
+                }
+            }
+            request.setHeader(deduped->first.c_str(), header.c_str());
+        }
+    }
+
+    // Check for REMOTE_USER.
+    bool remoteUserSet = false;
+    vector<string> dummy;
+    const vector<string>& rmids = dummy; // app.getRemoteUserAttributeIds(); TODO: re implement this elsewhere
+    for (vector<string>::const_iterator rmid = rmids.begin(); !remoteUserSet && rmid != rmids.end(); ++rmid) {
+        pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> matches =
+            attributes.equal_range(*rmid);
+        for (; matches.first != matches.second; ++matches.first) {
+            const vector<string>& vals = matches.first->second->getSerializedValues();
+            if (!vals.empty()) {
+                if (enc)
+                    request.setRemoteUser(encoder.encode(vals.front().c_str()).c_str());
+                else
+                    request.setRemoteUser(vals.front().c_str());
+                remoteUserSet = true;
+                break;
+            }
+        }
+    }
+}
+
+pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
@@ -324,26 +314,29 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
                     return make_pair(true, request.sendRedirect(loc.c_str()));
                 }
             }
-            app->setHeader(request, "Shib-Handler", handlerURL);
+            request.setHeader("Shib-Handler", handlerURL);
         }
         else {
             // No session.  Maybe that's acceptable?
             if (!requireSession && !requireSessionWith) {
-                app->setHeader(request, "Shib-Handler", handlerURL);
+                request.setHeader("Shib-Handler", handlerURL);
                 return make_pair(true, request.returnOK());
             }
 
             // No session, but we require one. Initiate a new session using the indicated method.
+
+            // TODO: replace with new handler infra
+
             const SessionInitiator* initiator=nullptr;
             if (requireSessionWith) {
-                SPConfig::getConfig().deprecation().warn("requireSessionWith");
-                initiator=app->getSessionInitiatorById(requireSessionWith);
+                AgentConfig::getConfig().deprecation().warn("requireSessionWith");
+                //initiator = app->getSessionInitiatorById(requireSessionWith);
                 if (!initiator) {
                     throw ConfigurationException(string("No session initiator found with id: ") + requireSessionWith);
                 }
             }
             else {
-                initiator=app->getDefaultSessionInitiator();
+                //initiator = app->getDefaultSessionInitiator();
                 if (!initiator)
                     throw ConfigurationException("No default session initiator found, check configuration.");
             }
@@ -369,7 +362,7 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
     }
 }
 
-pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
+pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
@@ -437,7 +430,7 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
     }
 }
 
-pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSession) const
+pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
@@ -471,10 +464,8 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         		return make_pair(false, 0L);	// just bail silently
         }
 
-        app->setHeader(request, "Shib-Application-ID", app->getId());
-        app->setHeader(request, "Shib-Session-ID", session->getID());
-
-        const PropertySet* sessionProps = app->getPropertySet("Sessions");
+        request.setHeader("Shib-Application-ID", settings.first->getString("applicationId", "default"));
+        request.setHeader("Shib-Session-ID", session->getID());
 
         // Check for export of "standard" variables.
         // A 3.0 release would switch this default to false and rely solely on the
@@ -483,36 +474,36 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
         if (stdvars) {
             const char* hval = session->getEntityID();
             if (hval)
-                app->setHeader(request, "Shib-Identity-Provider", hval);
+                request.setHeader("Shib-Identity-Provider", hval);
             time_t ts = session->getAuthnInstant();
             if (ts > 0) {
                 // TODO: Need to see what the output format of this really is.
                 ostringstream os;
                 os << date::format("%FT%TZ", chrono::system_clock::from_time_t(ts));
-                app->setHeader(request, "Shib-Authentication-Instant", os.str().c_str());
+                request.setHeader("Shib-Authentication-Instant", os.str().c_str());
             }
             hval = session->getAuthnContextClassRef();
             if (hval) {
-                app->setHeader(request, "Shib-Authentication-Method", hval);
-                app->setHeader(request, "Shib-AuthnContext-Class", hval);
+                request.setHeader("Shib-Authentication-Method", hval);
+                request.setHeader("Shib-AuthnContext-Class", hval);
             }
 
-            app->setHeader(request, "Shib-Session-Expires", boost::lexical_cast<string>(session->getExpiration()).c_str());
-            pair<bool,unsigned int> timeout = sessionProps ? sessionProps->getUnsignedInt("timeout") : pair<bool,unsigned int>(false, 0);
-            if (timeout.first && timeout.second > 0) {
-                app->setHeader(request, "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout.second).c_str());
+            request.setHeader( "Shib-Session-Expires", boost::lexical_cast<string>(session->getExpiration()).c_str());
+            unsigned int timeout = settings.first->getUnsignedInt("timeout", 3600);
+            if (timeout > 0) {
+                request.setHeader( "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout).c_str());
             }
         }
 
         // Check for export of algorithmically-derived portion of cookie names.
         bool exportCookie = settings.first->getBool("exportCookie", false);
         if (exportCookie) {
-            pair<string,const char*> cookieprops = app->getCookieNameProps(nullptr);
-            app->setHeader(request, "Shib-Cookie-Name", cookieprops.first.c_str());
+            pair<string,const char*> cookieprops = request.getCookieNameProps(nullptr);
+            request.setHeader("Shib-Cookie-Name", cookieprops.first.c_str());
         }
 
         // Export the attributes.
-        exportAttributes(request, session, settings);
+        exportAttributes(request, session);
 
         return make_pair(false,0L);
     }
@@ -522,7 +513,7 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
     }
 }
 
-pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
+pair<bool,long> Agent::doHandler(SPRequest& request) const
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
@@ -559,16 +550,11 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
         if (!boost::contains(targetURL, handlerURL))
             return make_pair(true, request.returnDecline());
 
-        const PropertySet* sessionProps = app->getPropertySet("Sessions");
-        if (!sessionProps)
-            throw ConfigurationException("Unable to map request to application session settings, check configuration.");
-
-        // Process incoming request.
-        pair<bool,bool> handlerSSL = sessionProps->getBool("handlerSSL");
-
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
-        const Handler* handler = app->getHandler(targetURL.c_str() + strlen(handlerURL));
+
+        // TODO: replace with new handler infra
+        const Handler* handler = nullptr; // app->getHandler(targetURL.c_str() + strlen(handlerURL));
         if (!handler)
             throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
 

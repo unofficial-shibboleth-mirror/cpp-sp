@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
@@ -39,6 +38,7 @@
 using namespace shibspconstants;
 using namespace shibsp;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace boost;
 using namespace std;
 
@@ -98,7 +98,7 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
         return ret;
 
     try {
-        if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        if (false) {
             // When out of process, we run natively and directly process the message.
             return processMessage(request);
         }

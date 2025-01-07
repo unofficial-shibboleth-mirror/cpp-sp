@@ -98,46 +98,6 @@ namespace shibsp {
          */
         virtual std::pair<bool,long> unwrap(SPRequest& request, DDF& out) const;
 
-        /**
-         * Builds a new request instance around a remoted data object.
-         * 
-         * @param app the application
-         * @param in    the dataflow object containing the remoted request
-         * @return  a call-specific request object based on the input, to be freed by the caller 
-         */
-        HTTPRequest* getRequest(const Application& app, DDF& in) const;
-        
-        /**
-         * Builds a new response instance around an outgoing data object.
-         * 
-         * @param app   the application
-         * @param out   the dataflow object to be returned by the caller
-         * @return  a call-specific response object, to be freed by the caller 
-         */
-        HTTPResponse* getResponse(const Application& app, DDF& out) const;
-
-        /**
-        * @Deprecated
-        *
-        * Builds a new request instance around a remoted data object.
-        * 
-        * @param app the application
-        * @param in    the dataflow object containing the remoted request
-        * @return  a call-specific request object based on the input, to be freed by the caller 
-        */
-        HTTPRequest* getRequest(DDF& in) const;
-
-        /**
-        * @Deprecated
-        *
-        * Builds a new response instance around an outgoing data object.
-        * 
-        * @param app   the application
-        * @param out   the dataflow object to be returned by the caller
-        * @return  a call-specific response object, to be freed by the caller 
-        */
-        HTTPResponse* getResponse(DDF& out) const;
-
         /** Message address for remote half. */
         std::string m_address;
     };

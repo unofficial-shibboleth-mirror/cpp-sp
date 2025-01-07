@@ -25,13 +25,10 @@ libshibspinclude_HEADERS = \
 	AccessControl.h \
 	Agent.h \
 	AgentConfig.h \
-	Application.h \
 	base.h \
 	exceptions.h \
 	RequestMapper.h \
-	ServiceProvider.h \
 	SessionCache.h \
-	SPConfig.h \
 	SPRequest.h \
 	version.h
 
@@ -94,10 +91,7 @@ noinst_HEADERS = \
 libshibsp_la_SOURCES = \
 	AbstractSPRequest.cpp \
 	Agent.cpp \
-	Application.cpp \
 	exceptions.cpp \
-	ServiceProvider.cpp \
-	SPConfig.cpp \
 	version.cpp \
 	attribute/Attribute.cpp \
 	attribute/BinaryAttribute.cpp \
@@ -129,9 +123,7 @@ libshibsp_la_SOURCES = \
 	impl/StoredSession.cpp \
 	impl/StorageServiceSessionCache.cpp \
         impl/XMLAccessControl.cpp \
-	impl/XMLApplication.cpp \
 	impl/XMLRequestMapper.cpp \
-	impl/XMLServiceProvider.cpp \
 	io/impl/HTTPRequest.cpp \
 	io/impl/HTTPResponse.cpp \
 	logging/impl/AbstractLoggingService.cpp \

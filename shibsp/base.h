@@ -28,12 +28,9 @@
 #ifndef __shibsp_base_h__
 #define __shibsp_base_h__
 
-#ifdef SHIBSP_LITE
-# define XMLTOOLING_LITE
-# include <xmltooling/base.h>
-#else
-# include <saml/base.h>
-#endif
+// TODO: remove
+#define XMLTOOLING_LITE
+#include <xmltooling/base.h>
 
 #if defined (_MSC_VER) || defined(__BORLANDC__)
   #include <shibsp/config_pub_win32.h>

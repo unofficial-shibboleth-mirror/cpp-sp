@@ -31,6 +31,7 @@
 
 using namespace shibsp;
 using namespace boost;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {

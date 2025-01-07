@@ -25,6 +25,7 @@
 #include "AgentConfig.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
+#include "logging/Category.h"
 
 #include <algorithm>
 #include <memory>

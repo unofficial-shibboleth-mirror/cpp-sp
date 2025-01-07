@@ -28,7 +28,6 @@
 #include "exceptions.h"
 #include "Agent.h"
 #include "AgentConfig.h"
-#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "handler/SecuredHandler.h"
 #include "handler/LogoutInitiator.h"
@@ -37,6 +36,7 @@
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace boost;
 using namespace std;
 
@@ -125,7 +125,7 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
     if (ret.first)
         return ret;
 
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+    if (false) {
         // When out of process, we run natively.
         return doRequest(request);
     }

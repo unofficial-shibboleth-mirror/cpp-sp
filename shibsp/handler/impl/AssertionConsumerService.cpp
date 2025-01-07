@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AssertionConsumerService.h"
 #include "util/CGIParser.h"
@@ -37,6 +36,7 @@
 using namespace shibspconstants;
 using namespace shibsp;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace boost;
 using namespace std;
 
@@ -77,7 +77,7 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
         }
     }
 
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+    if (false) {
         // When out of process, we run natively and directly process the message.
         return processMessage(request);
     }

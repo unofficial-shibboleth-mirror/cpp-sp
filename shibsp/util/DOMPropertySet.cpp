@@ -25,12 +25,16 @@
  */
 
 #include "internal.h"
+
+#include "AgentConfig.h"
+#include "logging/Category.h"
 #include "util/DOMPropertySet.h"
 #include "util/SPConstants.h"
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <xmltooling/QName.h>
 #include <xmltooling/util/XMLConstants.h>
 #include <xmltooling/util/XMLHelper.h>
 
@@ -60,7 +64,7 @@ const char* DOMPropertySet::STLRemapper::remap(const char* src, Category& log) c
 {
     map<string,string>::const_iterator i = src ? m_rules.find(src) : m_rules.end();
     if (i != m_rules.end()) {
-        SPConfig::getConfig().deprecation().warn("legacy configuration, remapping property/set (%s) to (%s)", src, i->second.c_str());
+        AgentConfig::getConfig().deprecation().warn("legacy configuration, remapping property/set (%s) to (%s)", src, i->second.c_str());
         return i->second.c_str();
     }
     else {

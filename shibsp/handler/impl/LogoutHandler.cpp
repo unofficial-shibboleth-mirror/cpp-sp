@@ -27,10 +27,10 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AgentConfig.h"
-#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "handler/LogoutHandler.h"
+#include "logging/Category.h"
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
 
@@ -38,6 +38,7 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace shibsp;
+using namespace xercesc;
 using namespace std;
 
 LogoutHandler::LogoutHandler() : m_initiator(true)
@@ -181,7 +182,7 @@ bool LogoutHandler::notifyBackChannel(const SPRequest& request, const vector<str
     if (endpoint.empty())
         return true;
 
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+    if (false) {
 #ifndef SHIBSP_LITE
         scoped_ptr<Envelope> env(EnvelopeBuilder::buildEnvelope());
         Body* body = BodyBuilder::buildBody();

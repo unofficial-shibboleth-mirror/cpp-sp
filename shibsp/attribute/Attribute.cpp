@@ -26,11 +26,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "SPConfig.h"
 #include "attribute/SimpleAttribute.h"
-#ifndef SHIBSP_LITE
-# include "attribute/AttributeDecoder.h"
-#endif
 #include "util/SPConstants.h"
 
 using namespace shibsp;

@@ -29,6 +29,7 @@
 #include <xercesc/util/XMLUniDefs.hpp>
 
 using namespace shibspconstants;
+using namespace xercesc;
 
 const XMLCh shibspconstants::SHIB1_PROTOCOL_ENUM[] = // urn:mace:shibboleth:1.0
 { chLatin_u, chLatin_r, chLatin_n, chColon, chLatin_m, chLatin_a, chLatin_c, chLatin_e, chColon,

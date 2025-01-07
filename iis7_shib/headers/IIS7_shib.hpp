@@ -24,6 +24,18 @@
 #include <http.h>
 #include "httpserv.h"
 
+// Shibboleth
+#define SHIBSP_LITE
+#include "config_win32.h"
+#include <shibsp/Agent.h>
+#include <shibsp/AgentConfig.h>
+#include <shibsp/exceptions.h>
+#include <shibsp/logging/Priority.h>
+#include <shibsp/util/PropertySet.h>
+
+#include <xmltooling/Lockable.h>
+#include <xmltooling/util/XMLHelper.h>
+
 //
 // Miscelanea
 //
@@ -31,18 +43,6 @@
 #include <list>
 #include <boost/lexical_cast.hpp>
 #include <string>
-
-// Shibboleth
-#define SHIBSP_LITE
-#include "config_win32.h"
-#include <shibsp/SPConfig.h>
-#include <shibsp/ServiceProvider.h>
-#include <shibsp/util/PropertySet.h>
-
-#include <xmltooling/Lockable.h>
-#include <xmltooling/logging.h>
-#include <xmltooling/util/XMLHelper.h>
-#include <shibsp/exceptions.h>
 
 using namespace shibsp;
 using namespace xmltooling;
@@ -111,5 +111,5 @@ namespace Config {
 BOOL LogEvent(
     WORD  wType,
     DWORD  dwEventID,
-    xmltooling::logging::Priority::PriorityLevel priority,
+    Priority::Value priority,
     LPCSTR  message);

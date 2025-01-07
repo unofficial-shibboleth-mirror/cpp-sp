@@ -28,8 +28,10 @@
 #include "attribute/BinaryAttribute.h"
 
 #include <xercesc/util/Base64.hpp>
+#include <xercesc/util/XMLString.hpp>
 
 using namespace shibsp;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {

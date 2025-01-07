@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
@@ -38,6 +37,7 @@
 
 using namespace shibsp;
 using namespace xmltooling;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {

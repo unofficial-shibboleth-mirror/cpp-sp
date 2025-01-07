@@ -36,6 +36,7 @@
 
 using namespace shibsp;
 using namespace boost;
+using namespace xercesc;
 using namespace std;
 
 namespace {
@@ -59,24 +60,22 @@ SecuredHandler::SecuredHandler(
     const Remapper* remapper
     ) : AbstractHandler(e, log, filter ? filter : &g_Blocker, remapper)
 {
-    if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
-        pair<bool,const char*> acl = getString(aclProperty);
-        if (!acl.first && defaultACL) {
-            m_log.info("installing default ACL (%s)", defaultACL);
-            acl.first = true;
-            acl.second = defaultACL;
-        }
-        if (acl.first) {
-            string aclbuf(acl.second);
-            trim(aclbuf);
-            vector<string> aclarray;
-            split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
-            for_each(aclarray.begin(), aclarray.end(), boost::bind(&SecuredHandler::parseACL, this, _1));
-            if (m_acl.empty()) {
-                m_log.warn("invalid CIDR range(s) in handler's acl property, allowing 127.0.0.1 and ::1 as a fall back");
-                m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
-                m_acl.push_back(IPRange::parseCIDRBlock("::1"));
-            }
+    pair<bool,const char*> acl = getString(aclProperty);
+    if (!acl.first && defaultACL) {
+        m_log.info("installing default ACL (%s)", defaultACL);
+        acl.first = true;
+        acl.second = defaultACL;
+    }
+    if (acl.first) {
+        string aclbuf(acl.second);
+        trim(aclbuf);
+        vector<string> aclarray;
+        split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
+        for_each(aclarray.begin(), aclarray.end(), boost::bind(&SecuredHandler::parseACL, this, _1));
+        if (m_acl.empty()) {
+            m_log.warn("invalid CIDR range(s) in handler's acl property, allowing 127.0.0.1 and ::1 as a fall back");
+            m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
+            m_acl.push_back(IPRange::parseCIDRBlock("::1"));
         }
     }
 }
@@ -97,8 +96,7 @@ void SecuredHandler::parseACL(const string& acl)
 
 pair<bool,long> SecuredHandler::run(SPRequest& request, bool isHandler) const
 {
-    SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::InProcess) && !m_acl.empty()) {
+    if (!m_acl.empty()) {
         static bool (IPRange::* contains)(const char*) const = &IPRange::contains;
         if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
             request.log(Priority::SHIB_WARN, string("handler request blocked from invalid address (") + request.getRemoteAddr() + ')');

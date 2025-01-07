@@ -40,6 +40,7 @@
 #include "handler/RemotedHandler.h"
 #include "impl/StoredSession.h"
 #include "impl/StorageServiceSessionCache.h"
+#include "logging/Category.h"
 #include "util/IPRange.h"
 #include "util/SPConstants.h"
 
@@ -57,6 +58,7 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;
+using namespace xercesc;
 using namespace std;
 
 SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const & e, bool deprecationSupport)
@@ -66,7 +68,7 @@ SessionCache* SHIBSP_DLLLOCAL StorageServiceCacheFactory(const DOMElement* const
 
 void SHIBSP_API shibsp::registerSessionCaches()
 {
-    SPConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
+    //SPConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceCacheFactory);
 }
 
 SessionCache::SessionCache()
@@ -85,8 +87,7 @@ SSCache::SSCache(const DOMElement* e, bool deprecationSupport)
       m_root(e), m_inprocTimeout(900), m_cacheTimeout(0), m_cacheAllowance(0),
       m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache")), inproc(true), shutdown(false)
 {
-    SPConfig& conf = SPConfig::getConfig();
-    inproc = conf.isEnabled(SPConfig::InProcess);
+    inproc = true;
 
     static const XMLCh cacheAllowance[] =       UNICODE_LITERAL_14(c,a,c,h,e,A,l,l,o,w,a,n,c,e);
     static const XMLCh cacheAssertions[] =      UNICODE_LITERAL_15(c,a,c,h,e,A,s,s,e,r,t,i,o,n,s);
@@ -104,7 +105,7 @@ SSCache::SSCache(const DOMElement* e, bool deprecationSupport)
     static const XMLCh _unreliableNetworks[] =  UNICODE_LITERAL_18(u,n,r,e,l,i,a,b,l,e,N,e,t,w,o,r,k,s);
 
     if (e && e->hasAttributeNS(nullptr, cacheTimeout)) {
-        SPConfig::getConfig().deprecation().warn("cacheTimeout property replaced by cacheAllowance (see documentation)");
+        //SPConfig::getConfig().deprecation().warn("cacheTimeout property replaced by cacheAllowance (see documentation)");
         m_cacheTimeout = XMLHelper::getAttrInt(e, 0, cacheTimeout);
     }
     m_cacheAllowance = XMLHelper::getAttrInt(e, 0, cacheAllowance);
@@ -843,7 +844,7 @@ Session* SSCache::_find(const char* bucketID, const char* key, const char* recov
     }
 
     if (!session) {
-        if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        if (true) {
             m_log.debug("session not found locally, remoting the search");
             // Remote the request.
             DDF in("find::" STORAGESERVICE_SESSION_CACHE "::SessionCache"), out;
@@ -1052,7 +1053,7 @@ void SSCache::remove(const char* bucketID, const char* key, time_t revocationExp
     if (inproc)
         dormant(key);
 
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+    if (false) {
         // Remove the session from storage directly.
 #ifndef SHIBSP_LITE
         m_storage->deleteContext(key);

@@ -23,6 +23,7 @@
 #include "util/Date.h"
 
 #include <chrono>
+#include <iostream>
 #include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;

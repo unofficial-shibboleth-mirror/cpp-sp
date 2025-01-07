@@ -84,15 +84,15 @@ namespace shibsp {
 
 void SHIBSP_API shibsp::registerHandlers()
 {
-    SPConfig& conf=SPConfig::getConfig();
+    AgentConfig& conf=AgentConfig::getConfig();
 
     //conf.AssertionConsumerServiceManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
  
-    conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
-    conf.HandlerManager.registerFactory(DISCOVERY_FEED_HANDLER, DiscoveryFeedFactory);
-    conf.HandlerManager.registerFactory(METADATA_GENERATOR_HANDLER, MetadataGeneratorFactory);
-    conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
-    conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
+    //conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
+    //conf.HandlerManager.registerFactory(DISCOVERY_FEED_HANDLER, DiscoveryFeedFactory);
+    //conf.HandlerManager.registerFactory(METADATA_GENERATOR_HANDLER, MetadataGeneratorFactory);
+    //conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
+    //conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
 
     //conf.HandlerManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
 
@@ -206,7 +206,7 @@ void Handler::preserveRelayState(SPRequest& request, string& relayState) const
         if (relayState.find("cookie:") != 0 && relayState.find("ss:") != 0) {
             mech+=3;
             if (*mech) {
-                if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+                if (false) {
 #ifndef SHIBSP_LITE
                     StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
                     if (storage) {
@@ -234,7 +234,7 @@ void Handler::preserveRelayState(SPRequest& request, string& relayState) const
                     throw ConfigurationException("Lite version of library cannot be used out of process.");
 #endif
                 }
-                else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+                else if (true) {
                     DDF out,in = DDF("set::RelayState").structure();
                     in.addmember("id").string(mech);
                     in.addmember("value").unsafe_string(relayState.c_str());
@@ -269,7 +269,7 @@ void Handler::recoverRelayState(SPRequest& request, string& relayState, bool cle
             string ssid = relayState.substr(3, key - state);
             key++;
             if (!ssid.empty() && *key) {
-                if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+                if (false) {
 #ifndef SHIBSP_LITE
                     StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
                     if (storage) {
@@ -298,7 +298,7 @@ void Handler::recoverRelayState(SPRequest& request, string& relayState, bool cle
                     }
 #endif
                 }
-                else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+                else if (true) {
                     DDF out,in = DDF("get::RelayState").structure();
                     in.addmember("id").string(ssid.c_str());
                     in.addmember("key").string(key);
@@ -537,7 +537,7 @@ void AbstractHandler::preservePostData(SPRequest& request, const char* relayStat
         }
 
         string postkey;
-        if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
+        if (false) {
             DDFJanitor postjan(postData);
 #ifndef SHIBSP_LITE
             StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
@@ -559,7 +559,7 @@ void AbstractHandler::preservePostData(SPRequest& request, const char* relayStat
             throw ConfigurationException("Lite version of library cannot be used out of process.");
 #endif
         }
-        else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
+        else if (true) {
             DDF out,in = DDF("set::PostData").structure();
             DDFJanitor jin(in),jout(out);
             in.addmember("id").string(mech);
@@ -625,8 +625,7 @@ DDF AbstractHandler::recoverPostData(SPRequest& request, const char* relayState)
             string ssid = string(cookie).substr(3, key - state);
             key++;
             if (!ssid.empty() && *key) {
-                SPConfig& conf = SPConfig::getConfig();
-                if (conf.isEnabled(SPConfig::OutOfProcess)) {
+                if (false) {
 #ifndef SHIBSP_LITE
                     StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
                     if (storage) {
@@ -646,7 +645,7 @@ DDF AbstractHandler::recoverPostData(SPRequest& request, const char* relayState)
                     }
 #endif
                 }
-                else if (conf.isEnabled(SPConfig::InProcess)) {
+                else if (true) {
                     DDF in = DDF("get::PostData").structure();
                     DDFJanitor jin(in);
                     in.addmember("id").string(ssid.c_str());

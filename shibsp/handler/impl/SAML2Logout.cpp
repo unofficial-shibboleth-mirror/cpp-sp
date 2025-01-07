@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutHandler.h"
@@ -36,6 +35,7 @@
 
 using namespace shibsp;
 using namespace boost;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
@@ -141,8 +141,7 @@ pair<bool,long> SAML2Logout::run(SPRequest& request, bool isHandler) const
     if (ret.first)
         return ret;
 
-    SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+    if (false) {
         // When out of process, we run natively and directly process the message.
         return doRequest(request);
     }

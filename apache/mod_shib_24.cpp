@@ -42,8 +42,6 @@
 #include <shibsp/Agent.h>
 #include <shibsp/AgentConfig.h>
 #include <shibsp/RequestMapper.h>
-#include <shibsp/SPConfig.h>
-#include <shibsp/ServiceProvider.h>
 #include <shibsp/SessionCache.h>
 #include <shibsp/attribute/Attribute.h>
 #include <shibsp/util/Lockable.h>
@@ -93,7 +91,6 @@ namespace exp = std;
 #endif
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace boost::property_tree;
 using namespace std;
 
@@ -104,7 +101,7 @@ namespace {
     char* g_szSHIBConfig = nullptr;
     char* g_szSchemaDir = nullptr;
     char* g_szPrefix = nullptr;
-    SPConfig* g_Config = nullptr;
+    AgentConfig* g_Config = nullptr;
     string g_unsetHeaderValue,g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
@@ -829,7 +826,7 @@ private:
     bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, bool isRegex=false) const;
 };
 
-AccessControl* htAccessFactory(const xercesc::DOMElement* const &, bool)
+AccessControl* htAccessFactory(const ptree&, bool)
 {
     return new htAccessControl();
 }
@@ -1422,21 +1419,13 @@ apr_status_t shib_post_config(apr_pool_t* p, apr_pool_t*, apr_pool_t*, server_re
         return !OK;
     }
 
-    g_Config = &SPConfig::getConfig();
-    g_Config->setFeatures(
-        SPConfig::Listener |
-        SPConfig::Caching |
-        SPConfig::RequestMapping |
-        SPConfig::InProcess |
-        SPConfig::Logging |
-        SPConfig::Handlers
-        );
+    AgentConfig::getConfig().RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
+
+    g_Config = &AgentConfig::getConfig();
     if (!g_Config->init(g_szSchemaDir, g_szPrefix)) {
         ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, 0, s, "post_config: shib_module failed to initialize libraries");
         return !OK;
     }
-
-    AgentConfig::getConfig().RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
 
     // Set the cleanup handler, passing in the server_rec for logging.
     apr_pool_cleanup_register(p, s, &shib_exit, apr_pool_cleanup_null);
@@ -1447,8 +1436,9 @@ apr_status_t shib_post_config(apr_pool_t* p, apr_pool_t*, apr_pool_t*, server_re
 /*
  * shib_child_init()
  *  Things to do when the child process is initialized.
- *  We can't use post-config for all of it on 2.x because only the forking thread shows
- *  up in the child, losing the internal threads spun up by plugins in the SP.
+ *  For now, we have no background threads, but if we introduce any, we'd have to switch
+ *  back to deferring their creation until this step because only the forking thread shows
+ *  up in the child, losing any internal threads spun up by plugins in the agent library.
  */
 extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 {
@@ -1456,33 +1446,15 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 
     ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, 0, s, "child_init: shib_module initializing in pid (%d)", (int)getpid());
 
-    try {
-        if (!g_Config->instantiate(g_szSHIBConfig, true))
-            throw runtime_error("unknown error");
+    const Agent& agent = g_Config->getAgent();
+    g_unsetHeaderValue = agent.getString("unsetHeaderValue");
+    g_checkSpoofing = agent.getBool("checkSpoofing", true);
+    if (g_checkSpoofing) {
+        const char* altkey = agent.getString("spoofKey");
+        if (altkey)
+            g_spoofKey = altkey;
     }
-    catch (std::exception& ex) {
-        ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, 0, s, "child_init: shib_module failed to load configuration: %s", ex.what());
-        g_Config->term();
-        exit(1);
-    }
-
-    ServiceProvider* sp = g_Config->getServiceProvider();
-    xmltooling::Locker locker(sp);
-    const PropertySet* props = sp->getPropertySet("InProcess");
-    if (props) {
-        pair<bool,const char*> unsetValue = props->getString("unsetHeaderValue");
-        if (unsetValue.first)
-            g_unsetHeaderValue = unsetValue.second;
-        pair<bool,bool> flag=props->getBool("checkSpoofing");
-        g_checkSpoofing = !flag.first || flag.second;
-        if (g_checkSpoofing) {
-            unsetValue=props->getString("spoofKey");
-            if (unsetValue.first)
-                g_spoofKey = unsetValue.second;
-        }
-        flag=props->getBool("catchAll");
-        g_catchAll = flag.first && flag.second;
-    }
+    g_catchAll = agent.getBool("catchAll", false);
 
     // Set the cleanup handler, passing in the server_rec for logging.
     apr_pool_cleanup_register(p, s, &shib_exit, apr_pool_cleanup_null);

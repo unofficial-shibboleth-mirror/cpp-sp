@@ -20,7 +20,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
 
@@ -373,42 +372,4 @@ pair<bool,long> RemotedHandler::unwrap(SPRequest& request, DDF& out) const
         }
     }
     return make_pair(false, 0L);
-}
-
-HTTPRequest* RemotedHandler::getRequest(DDF& in) const
-{
-    // TODO: remove in V4
-#ifndef SHIBSP_LITE
-    return new RemotedRequest(nullptr, in);
-#else
-    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
-#endif
-}
-
-HTTPResponse* RemotedHandler::getResponse(DDF& out) const
-{
-    // TODO: remove in V4
-#ifndef SHIBSP_LITE
-    return new RemotedResponse(nullptr, out);
-#else
-    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
-#endif
-}
-
-HTTPRequest* RemotedHandler::getRequest(const Application& app, DDF& in) const
-{
-#ifndef SHIBSP_LITE
-    return new RemotedRequest(&app, in);
-#else
-    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
-#endif
-}
-
-HTTPResponse* RemotedHandler::getResponse(const Application& app, DDF& out) const
-{
-#ifndef SHIBSP_LITE
-    return new RemotedResponse(&app, out);
-#else
-    throw ConfigurationException("Cannot process message using lite version of shibsp library.");
-#endif
 }

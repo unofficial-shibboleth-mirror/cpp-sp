@@ -27,12 +27,12 @@
 
 namespace shibsp {
 
-    class SHIBSP_API Application;
+    class SHIBSP_API Category;
     class SHIBSP_API Handler;
     class SHIBSP_API RemotingService;
     class SHIBSP_API RequestMapper;
+    class SHIBSP_API Session;
     class SHIBSP_API SessionCache;
-    //class SHIBSP_API AgentRequest;
     class SHIBSP_API SPRequest;
 
 #if defined (_MSC_VER)
@@ -136,6 +136,18 @@ namespace shibsp {
     protected:
         /** The AuthTypes to "recognize" (defaults to "shibboleth"). */
         std::set<std::string> m_authTypes;
+
+    private:
+        long handleError(
+            Category& log,
+            SPRequest& request,
+            const Session* session=nullptr,
+            const std::exception* ex=nullptr,
+            bool mayRedirect=true
+        ) const;
+        void clearHeaders(SPRequest& request) const;
+        void exportAttributes(SPRequest& request, const Session* session) const;
+
     };
 
 #if defined (_MSC_VER)

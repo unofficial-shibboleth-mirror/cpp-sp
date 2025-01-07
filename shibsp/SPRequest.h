@@ -29,8 +29,6 @@
 namespace shibsp {
 
     class SHIBSP_API Agent;
-    class SHIBSP_API Application;
-    class SHIBSP_API ServiceProvider;
     class SHIBSP_API Session;
 
     /**
@@ -40,7 +38,7 @@ namespace shibsp {
      * a shim must be supplied in the form of this interface to adapt the
      * library to different proprietary server APIs.
      *
-     * <p>This interface need not be threadsafe.
+     * <p>This interface need not be threadsafe.</p>
      */
     class SHIBSP_API SPRequest : public virtual HTTPRequest, public virtual HTTPResponse
     {

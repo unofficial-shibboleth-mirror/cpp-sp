@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SessionInitiator.h"
@@ -37,6 +36,7 @@
 using namespace shibsp;
 using namespace xmltooling;
 using namespace boost;
+using namespace xercesc;
 using namespace std;
 
 namespace shibsp {
@@ -203,7 +203,6 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     if (isHandler) {
         prop.second = request.getParameter("acsIndex");
         if (prop.second && *prop.second) {
-            SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
             //ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
             if (!ACS)
                 request.log(Priority::SHIB_WARN, "invalid acsIndex specified in request, using acsIndex property");
@@ -285,7 +284,6 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             // Try fixed index property.
             pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
             if (index.first) {
-                SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
                 //ACS = app.getAssertionConsumerServiceByIndex(index.second);
             }
         }
@@ -297,8 +295,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     // flip the index to an SSL-version.
     string ACSloc = request.getHandlerURL(target.c_str());
 
-    SPConfig& conf = SPConfig::getConfig();
-    if (conf.isEnabled(SPConfig::OutOfProcess)) {
+    if (false) {
     	if (acsByIndex.first && acsByIndex.second) {
             // Pass by Index.
             if (isHandler) {
