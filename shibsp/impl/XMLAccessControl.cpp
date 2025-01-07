@@ -37,10 +37,10 @@
 
 #ifdef SHIBSP_USE_BOOST_REGEX
 # include <boost/regex.hpp>
-namespace exp = boost;
+namespace regexp = boost;
 #else
 # include <regex>
-namespace exp = std;
+namespace regexp = std;
 #endif
 
 #ifndef HAVE_STRCASECMP
@@ -77,7 +77,7 @@ namespace {
     private:
         string m_alias;
         string m_exp;
-        exp::regex m_re;
+        regexp::regex m_re;
     };
 
     class Operator : public AccessControl, public NoOpSharedLockable
@@ -236,13 +236,13 @@ RuleRegex::RuleRegex(const ptree& pt)
     static string_to_bool_translator tr;
     bool caseSensitive = pt.get(CASE_SENSITIVE_PROP_PATH, true);
     try {
-        exp::regex_constants::syntax_option_type flags = exp::regex_constants::extended | exp::regex_constants::optimize;
+        regexp::regex_constants::syntax_option_type flags = regexp::regex_constants::extended | regexp::regex_constants::optimize;
         if (!caseSensitive) {
-            flags |= exp::regex_constants::icase;
+            flags |= regexp::regex_constants::icase;
         }
-        m_re = exp::regex(m_exp, flags);
+        m_re = regexp::regex(m_exp, flags);
     }
-    catch (const exp::regex_error&) {
+    catch (const regexp::regex_error&) {
         throw ConfigurationException("Caught exception while parsing RuleRegex regular expression.");
     }
 }
@@ -250,7 +250,7 @@ RuleRegex::RuleRegex(const ptree& pt)
 AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const Session* session) const
 {
 
-    static exp::regex_constants::match_flag_type match_flags = exp::regex_constants::match_any | exp::regex_constants::match_not_null;
+    static regexp::regex_constants::match_flag_type match_flags = regexp::regex_constants::match_any | regexp::regex_constants::match_not_null;
 
     if (!session) {
         request.log(Priority::SHIB_WARN, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
@@ -266,14 +266,14 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
     }
 
     if (m_alias == "user") {
-        if (exp::regex_match(request.getRemoteUser(), m_re, match_flags)) {
+        if (regexp::regex_match(request.getRemoteUser(), m_re, match_flags)) {
             request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting REMOTE_USER regex (") + m_exp + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
     }
     else if (m_alias == "authnContextClassRef") {
-        if (session->getAuthnContextClassRef() && exp::regex_match(session->getAuthnContextClassRef(), m_re, match_flags)) {
+        if (session->getAuthnContextClassRef() && regexp::regex_match(session->getAuthnContextClassRef(), m_re, match_flags)) {
             request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting authnContextClassRef regex (") + m_exp + "), authz granted");
             return shib_acl_true;
         }
@@ -290,7 +290,7 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
     for (; attrs.first != attrs.second; ++attrs.first) {
         // Now we have to intersect the attribute's values against the regular expression.
         for (const string& v : attrs.first->second->getSerializedValues()) {
-            if (exp::regex_match(v, m_re, match_flags)) {
+            if (regexp::regex_match(v, m_re, match_flags)) {
                 request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting regex (") + m_exp + "), authz granted");
                 return shib_acl_true;
             }
