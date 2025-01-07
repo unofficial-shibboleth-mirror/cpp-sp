@@ -32,6 +32,7 @@
 
 #ifndef HAVE_STRCASECMP
 # define strncasecmp _strnicmp
+# define strcasecmp _stricmp
 #endif
 
 using namespace shibsp;
