@@ -137,4 +137,5 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         throw;
     }
     */
+    return pair(true,0);
 }

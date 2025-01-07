@@ -58,6 +58,7 @@ DDF RemotedHandler::send(const SPRequest& request, DDF& in) const
     }
 
     //return request.getServiceProvider().getListenerService()->send(in);
+    return DDF();
 }
 
 DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers, bool certs) const

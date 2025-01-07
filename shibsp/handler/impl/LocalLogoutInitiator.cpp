@@ -110,4 +110,5 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
     }
 
     //return sendLogoutPage(application, httpRequest, httpResponse, "local");
+    return pair(false, 0);
 }

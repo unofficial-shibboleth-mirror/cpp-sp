@@ -87,4 +87,5 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
         istringstream msg("Metadata Request Failed");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
+    return ret;
 }

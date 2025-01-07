@@ -194,4 +194,5 @@ bool LogoutHandler::notifyBackChannel(const SPRequest& request, const vector<str
     //out = application.getServiceProvider().getListenerService()->send(in);
     return (out.integer() == 1);
 */
+return false;
 }

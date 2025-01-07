@@ -80,6 +80,7 @@ public:
         return m_ac.c_str();
     }
     const vector<unique_ptr<Attribute>>& getAttributes() const {
+        return m_attributes;
     }
 
     const multimap<string,const Attribute*>& getIndexedAttributes() const {
