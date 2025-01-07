@@ -26,7 +26,8 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "Application.h"
+#include "Agent.h"
+#include "AgentConfig.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "handler/SecuredHandler.h"
@@ -59,7 +60,7 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        pair<bool,long> doRequest(const Application& application, const HTTPRequest& request, HTTPResponse& httpResponse) const;
+        pair<bool,long> doRequest(SPRequest& request) const;
 
         string m_appId;
 #ifndef SHIBSP_LITE
@@ -126,7 +127,7 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
-        return doRequest(request.getApplication(), request, request);
+        return doRequest(request);
     }
     else {
         // When not out of process, we remote the request.
@@ -169,19 +170,19 @@ void AdminLogoutInitiator::receive(DDF& in, ostream& out)
 #endif
 }
 
-pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const
+pair<bool,long> AdminLogoutInitiator::doRequest(SPRequest& request) const
 {
-    const char* sessionId = httpRequest.getParameter("session");
+    const char* sessionId = request.getParameter("session");
     if (!sessionId || !*sessionId) {
         // Something's horribly wrong.
         m_log.error("no session parameter supplied for request");
         istringstream msg("NO SESSION PARAMETER");
-        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_BADREQUEST));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_BADREQUEST));
     }
 
     Session* session = nullptr;
     try {
-        session = application.getServiceProvider().getSessionCache()->find(application, sessionId);
+        session = AgentConfig::getConfig().getAgent().getSessionCache()->find(request, sessionId);
     }
     catch (const std::exception& ex) {
         m_log.error("error accessing designated session: %s", ex.what());
@@ -189,9 +190,10 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
 
     // With no session, we return a 404 after "revoking" the session just to be safe.
     if (!session) {
-        application.getServiceProvider().getSessionCache()->remove(application, sessionId);
+        AgentConfig::getConfig().getAgent().getSessionCache()->remove(
+            request.getRequestSettings().first->getString("sessionBucket", "default"), sessionId);
         istringstream msg("NOT FOUND");
-        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_NOTFOUND));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_NOTFOUND));
     }
 
     time_t revocationExp = session->getExpiration();
@@ -200,38 +202,26 @@ pair<bool,long> AdminLogoutInitiator::doRequest(const Application& application, 
 
     bool doSAML = false;
 
-#ifndef SHIBSP_LITE
-    if (XMLString::equals(session->getProtocol(), m_protocol.get())) {
-        if (!session->getEntityID() || !session->getNameID()) {
-            m_log.info("skipping SAML 2.0 logout attempt, no NameID or issuing entityID found in session");
-        }
-        else {
-            doSAML = true;
-        }
-    }
-    else {
-        m_log.info("skipping global logout for non-SAML2 session");
-    }
-#endif
-
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
-    if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, true)) {
+    if (!notifyBackChannel(request, sessions, true)) {
         sessionLocker.unlock();
         session = nullptr;
-        application.getServiceProvider().getSessionCache()->remove(application, sessionId, revocationExp);
+        AgentConfig::getConfig().getAgent().getSessionCache()->remove(
+            request.getRequestSettings().first->getString("sessionBucket", "default"), sessionId, revocationExp);
         
         istringstream msg("PARTIAL");
-        return make_pair(true, httpResponse.sendResponse(msg, 206)); // misuse of an HTTP code, but whatever
+        return make_pair(true, request.sendResponse(msg, 206)); // misuse of an HTTP code, but whatever
     }
 
     if (!doSAML) {
         sessionLocker.unlock();
         session = nullptr;
-        application.getServiceProvider().getSessionCache()->remove(application, sessionId, revocationExp);
+        AgentConfig::getConfig().getAgent().getSessionCache()->remove(
+            request.getRequestSettings().first->getString("sessionBucket", "default"), sessionId, revocationExp);
 
         istringstream msg("OK");
-        return make_pair(true, httpResponse.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_OK));
+        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_OK));
     }
 
 #ifndef SHIBSP_LITE

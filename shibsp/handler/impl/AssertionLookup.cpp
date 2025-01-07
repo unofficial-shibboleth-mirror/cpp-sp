@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
@@ -64,7 +63,7 @@ namespace shibsp {
         }
 
     private:
-        pair<bool,long> processMessage(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
+        pair<bool,long> processMessage(SPRequest& request) const;
     };
 
 #if defined (_MSC_VER)
@@ -101,7 +100,7 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
     try {
         if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
-            return processMessage(request.getApplication(), request, request);
+            return processMessage(request);
         }
         else {
             // When not out of process, we remote all the message processing.
@@ -121,6 +120,7 @@ pair<bool,long> AssertionLookup::run(SPRequest& request, bool isHandler) const
 
 void AssertionLookup::receive(DDF& in, ostream& out)
 {
+    /*
     // Find application.
     const char* aid = in["application_id"].string();
     const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
@@ -144,9 +144,10 @@ void AssertionLookup::receive(DDF& in, ostream& out)
     // which we capture in the facade and send back.
     processMessage(*app, *req, *resp);
     out << ret;
+    */
 }
 
-pair<bool,long> AssertionLookup::processMessage(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const
+pair<bool,long> AssertionLookup::processMessage(SPRequest& request) const
 {
 #ifndef SHIBSP_LITE
     const char* key = httpRequest.getParameter("key");

@@ -83,45 +83,24 @@ namespace shibsp {
         /**
          * Perform front-channel logout notifications for an Application.
          *
-         * @param application   the Application to notify
          * @param request       last request from browser
-         * @param response      response to use for next notification
          * @param params        map of query string parameters to preserve across this notification
          * @return  indicator of a completed response along with the status code to return from the handler
          */
         std::pair<bool,long> notifyFrontChannel(
-            const Application& application,
-            const HTTPRequest& request,
-            HTTPResponse& response,
-            const std::map<std::string,std::string>* params=nullptr
+            SPRequest& request, const std::map<std::string,std::string>* params=nullptr
             ) const;
 
         /**
          * Perform back-channel logout notifications for an Application.
          *
-         * @param application   the Application to notify
-         * @param requestURL    requestURL that resulted in method call
+         * @param request       request resulting in method call
          * @param sessions      array of session keys being logged out
          * @param local         true iff the logout operation is local to the SP, false iff global
          * @return  true iff all notifications succeeded
          */
         bool notifyBackChannel(
-            const Application& application, const char* requestURL, const std::vector<std::string>& sessions, bool local
-            ) const;
-
-        /**
-         * Sends a response template to the user agent informing it of the results of a logout attempt.
-         *
-         * @param application   the Application to use in determining the logout template
-         * @param request       the HTTP client request to supply to the template
-         * @param response      the HTTP response to use
-         * @param type          designates the prefix of logout template name to use
-         */
-        std::pair<bool,long> sendLogoutPage(
-            const Application& application,
-            const HTTPRequest& request,
-            HTTPResponse& response,
-            const char* type
+            const SPRequest& request, const std::vector<std::string>& sessions, bool local
             ) const;
     };
 

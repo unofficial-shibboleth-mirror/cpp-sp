@@ -30,8 +30,6 @@
 #include <shibsp/handler/AbstractHandler.h>
 #include <shibsp/handler/RemotedHandler.h>
 
-#include <boost/scoped_ptr.hpp>
-
 namespace shibsp {
 
     class SHIBSP_API Attribute;
@@ -77,27 +75,19 @@ namespace shibsp {
         /**
          * Enforce address checking requirements.
          * 
-         * @param application   reference to application receiving message
-         * @param httpRequest   client request that initiated session
+         * @param request       client request that initiated session
          * @param issuedTo      address for which security assertion was issued
          */
-        void checkAddress(const Application& application, const HTTPRequest& httpRequest, const char* issuedTo) const;
+        void checkAddress(const SPRequest& request, const char* issuedTo) const;
 
 
         /**
          * Complete the client's transition back to the expected resource.
          * 
-         * @param application   reference to application receiving message
-         * @param httpRequest   client request that included message
-         * @param httpResponse  response to client
+         * @param request       client request that included message
          * @param relayState    relay state token
          */
-        virtual std::pair<bool,long> finalizeResponse(
-            const Application& application,
-            const HTTPRequest& httpRequest,
-            HTTPResponse& httpResponse,
-            std::string& relayState
-            ) const;
+        virtual std::pair<bool,long> finalizeResponse(SPRequest& httpRequest, std::string& relayState) const;
 
 #ifndef SHIBSP_LITE
         /**
@@ -115,17 +105,13 @@ namespace shibsp {
          * modifications to the request/response objects to reflect processing
          * of the message.</p>
          * 
-         * @param application   reference to application receiving message
-         * @param httpRequest   client request that included message
-         * @param httpResponse  response to client
+         * @param request       client request that included message
          * @param policy        the SecurityPolicy in effect, after having evaluated the message
          * @param reserved      ignore this parameter
          * @param xmlObject     a protocol-specific message object
          */
         virtual void implementProtocol(
-            const Application& application,
-            const xmltooling::HTTPRequest& httpRequest,
-            xmltooling::HTTPResponse& httpResponse,
+            SPRequest& httpRequest,
             opensaml::SecurityPolicy& policy,
             const PropertySet* reserved,
             const xmltooling::XMLObject& xmlObject
@@ -149,7 +135,6 @@ namespace shibsp {
          * 
          * <p>The caller must free the returned context handle.</p>
          * 
-         * @param application           reference to application receiving message
          * @param request               request delivering message, if any
          * @param issuer                source of SSO tokens
          * @param protocol              SSO protocol used
@@ -163,8 +148,7 @@ namespace shibsp {
          * @param tokens                available assertions, if any
          */
         ResolutionContext* resolveAttributes(
-            const Application& application,
-            const xmltooling::GenericRequest* request=nullptr,
+            const SPRequest* request=nullptr,
             const opensaml::saml2md::RoleDescriptor* issuer=nullptr,
             const XMLCh* protocol=nullptr,
             const xmltooling::XMLObject* protmsg=nullptr,
@@ -176,19 +160,12 @@ namespace shibsp {
             const XMLCh* authncontext_decl=nullptr,
             const std::vector<const opensaml::Assertion*>* tokens=nullptr
             ) const;
-
-    public:
-        const XMLCh* getProtocolFamily() const;
 #endif
     private:
-        std::pair<bool,long> processMessage(
-            const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse
-            ) const;
+        std::pair<bool,long> processMessage(const SPRequest& request) const;
         
         std::pair<bool,long> sendRedirect(
-            const Application& application,
-            const HTTPRequest& request,
-            HTTPResponse& response,
+            SPRequest& request,
             const char* entityID,
             const char* relayState
             ) const;                

@@ -25,7 +25,6 @@
  */
 
 #include "internal.h"
-#include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
@@ -58,7 +57,6 @@ namespace shibsp {
 
     private:
         pair<bool,long> processMessage(
-            const Application& application,
             const char* handlerURL,
             const char* entityID,
             HTTPResponse& httpResponse
@@ -348,12 +346,11 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
     try {
         if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
-            return processMessage(request.getApplication(), request.getHandlerURL(), request.getParameter("entityID"), request);
+            return processMessage(request.getHandlerURL(), request.getParameter("entityID"), request);
         }
         else {
             // When not out of process, we remote all the message processing.
             DDF out,in = DDF(m_address.c_str());
-            in.addmember("application_id").string(request.getApplication().getId());
             in.addmember("handler_url").string(request.getHandlerURL());
             if (request.getParameter("entityID"))
                 in.addmember("entity_id").string(request.getParameter("entityID"));
@@ -372,16 +369,9 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
 
 void MetadataGenerator::receive(DDF& in, ostream& out)
 {
-    // Find application.
-    const char* aid = in["application_id"].string();
+    /*
     const char* hurl = in["handler_url"].string();
-    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
-    if (!app) {
-        // Something's horribly wrong.
-        m_log.error("couldn't find application (%s) for metadata request", aid ? aid : "(missing)");
-        throw ConfigurationException("Unable to locate application for metadata request, deleted?");
-    }
-    else if (!hurl) {
+    if (!hurl) {
         throw ConfigurationException("Missing handler_url parameter in remoted method call.");
     }
 
@@ -393,13 +383,12 @@ void MetadataGenerator::receive(DDF& in, ostream& out)
     // Since we're remoted, the result should either be a throw, a false/0 return,
     // which we just return as an empty structure, or a response/redirect,
     // which we capture in the facade and send back.
-    processMessage(*app, hurl, in["entity_id"].string(), *resp);
+    processMessage(hurl, in["entity_id"].string(), *resp);
     out << ret;
+    */
 }
 
-pair<bool,long> MetadataGenerator::processMessage(
-    const Application& application, const char* handlerURL, const char* entityID, HTTPResponse& httpResponse
-    ) const
+pair<bool,long> MetadataGenerator::processMessage(const char* handlerURL, const char* entityID, HTTPResponse& httpResponse) const
 {
 #ifndef SHIBSP_LITE
     m_log.debug("processing metadata request");

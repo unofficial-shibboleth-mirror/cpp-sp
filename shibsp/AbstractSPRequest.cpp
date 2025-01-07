@@ -23,13 +23,16 @@
 #include "AbstractSPRequest.h"
 #include "Agent.h"
 #include "AgentConfig.h"
-#include "Application.h"
-#include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "logging/Category.h"
 #include "util/CGIParser.h"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+
+#ifndef HAVE_STRCASECMP
+# define strncasecmp _strnicmp
+#endif
 
 using namespace shibsp;
 using namespace std;
@@ -46,11 +49,8 @@ SPRequest::~SPRequest()
 AbstractSPRequest::AbstractSPRequest(const char* category)
     : m_log(Category::getInstance(category)),
         m_agent(AgentConfig::getConfig().getAgent()),
-        m_sp(SPConfig::getConfig().getServiceProvider()),
-        m_mapper(nullptr), m_app(nullptr), m_sessionTried(false), m_session(nullptr)
+        m_mapper(nullptr), m_sessionTried(false), m_session(nullptr)
 {
-    if (m_sp)
-        m_sp->lock();
 }
 
 AbstractSPRequest::~AbstractSPRequest()
@@ -59,18 +59,11 @@ AbstractSPRequest::~AbstractSPRequest()
         m_session->unlock();
     if (m_mapper)
         m_mapper->unlock_shared();
-    if (m_sp)
-        m_sp->unlock();
 }
 
 const Agent& AbstractSPRequest::getAgent() const
 {
     return m_agent;
-}
-
-const ServiceProvider& AbstractSPRequest::getServiceProvider() const
-{
-    return *m_sp;
 }
 
 RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
@@ -86,17 +79,6 @@ RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
         }
     }
     return m_settings;
-}
-
-const Application& AbstractSPRequest::getApplication() const
-{
-    if (!m_app) {
-        // Now find the application from the URL settings
-        m_app = m_sp->getApplication(getRequestSettings().first->getString("applicationId"));
-        if (!m_app)
-            throw ConfigurationException("Unable to map non-default applicationId to an ApplicationOverride, check configuration.");
-    }
-    return *m_app;
 }
 
 Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bool cache)
@@ -118,7 +100,7 @@ Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bo
 
     // The cache will either silently pass a session or nullptr back, or throw an exception out.
     Session* session = getAgent().getSessionCache()->find(
-        getApplication(), *this, (ignoreAddress ? nullptr : getRemoteAddr().c_str()), (checkTimeout ? &timeout : nullptr)
+        *this, (ignoreAddress ? nullptr : getRemoteAddr().c_str()), (checkTimeout ? &timeout : nullptr)
         );
     if (cache)
         m_session = session;
@@ -180,6 +162,52 @@ vector<const char*>::size_type AbstractSPRequest::getParameters(const char* name
     return values.size();
 }
 
+string AbstractSPRequest::getCookieName(const char* prefix, time_t* lifetime) const
+{
+    if (lifetime) {
+        *lifetime = getRequestSettings().first->getUnsignedInt("cookieLifetime", 0);
+    }
+
+    if (!prefix)
+        prefix = "";
+
+    const char* p = getRequestSettings().first->getString("cookieName");
+    if (p) {
+        return string(prefix) + p;
+    }
+
+    return string(prefix); // + getHash(); TODO: uniqueify the cookie name
+}
+
+pair<string,const char*> AbstractSPRequest::getCookieNameProps(const char* prefix, time_t* lifetime) const
+{
+    static const char* defProps="; path=/; HttpOnly";
+    static const char* sslProps="; path=/; secure; HttpOnly";
+
+    if (lifetime) {
+        *lifetime = getRequestSettings().first->getUnsignedInt("cookieLifetime", 0);
+    }
+
+    if (!prefix)
+        prefix = "";
+
+    const char* cookieProps = getRequestSettings().first->getString("cookieProps");
+    if (!cookieProps || !strcasecmp(cookieProps, "http")) {
+        cookieProps = defProps;
+    }
+    else if (!strcasecmp(cookieProps, "https")) {
+        cookieProps = sslProps;
+    }
+
+    const char* cookieName = getRequestSettings().first->getString("cookieName");
+    if (cookieName) {
+        return make_pair(string(prefix) + cookieName, cookieProps);
+    }
+
+    // TODO: uniqueify the cookie name
+    return make_pair(string(prefix) /* + getHash() */, cookieProps);
+}
+
 const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 {
     if (!resource)
@@ -208,25 +236,11 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 #endif
         throw ConfigurationException("Target resource was not an absolute URL.");
 
-    bool ssl_only = true;
-    const char* handler = nullptr;
-    const PropertySet* props = getApplication().getPropertySet("Sessions");
-    if (props) {
-        pair<bool,bool> p = props->getBool("handlerSSL");
-        if (p.first)
-            ssl_only = p.second;
-        pair<bool,const char*> p2 = props->getString("handlerURL");
-        if (p2.first)
-            handler = p2.second;
-    }
+    bool ssl_only = getRequestSettings().first->getBool("handlerSSL", true);
+    const char* handler = getRequestSettings().first->getString("handlerURL", "/Shibboleth.sso");
 
-    if (!handler) {
-        handler = "/Shibboleth.sso";
-    }
-    else if (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)) {
-        throw ConfigurationException(
-            string("Invalid handlerURL property in <Sessions> element for Application ") + m_app->getId()
-            );
+    if (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)) {
+        throw ConfigurationException(string("Invalid handlerURL property: ") + handler);
     }
 
     // The "handlerURL" property can be in one of three formats:
@@ -282,6 +296,170 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     return m_handlerURL.c_str();
 }
 
+string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) const
+{
+    // We have to process the underlying setting each call to this method unfortunately.
+    const char* rawlocs = getRequestSettings().first->getString(front ? "frontNotifyURLs" : "backNotifyURLs");
+    vector<string> locs;
+    boost::split(locs, rawlocs, boost::is_space(), boost::algorithm::token_compress_on);
+
+    if (index >= locs.size())
+        return string();
+
+    const char* resource = getRequestURL();
+    if (!resource || (strncasecmp(resource,"http://", 7) && strncasecmp(resource,"https://", 8))) {
+        throw ConfigurationException("Request URL was not absolute.");
+    }
+
+    const char* handler = locs[index].c_str();
+
+    // Should never happen...
+    if (!handler || (*handler!='/' && strncasecmp(handler, "http:", 5) && strncasecmp(handler, "https:", 6))) {
+        throw ConfigurationException("Invalid Location property in Notify element");
+    }
+
+    // The "Location" property can be in one of three formats:
+    //
+    // 1) a full URI:       http://host/foo/bar
+    // 2) a hostless URI:   http:///foo/bar
+    // 3) a relative path:  /foo/bar
+    //
+    // #  Protocol  Host        Path
+    // 1  handler   handler     handler
+    // 2  handler   resource    handler
+    // 3  resource  resource    handler
+
+    const char* path = nullptr;
+
+    // Decide whether to use the handler or the resource for the "protocol"
+    const char* prot;
+    if (*handler != '/') {
+        prot = handler;
+    }
+    else {
+        prot = resource;
+        path = handler;
+    }
+
+    // break apart the "protocol" string into protocol, host, and "the rest"
+    const char* colon=strchr(prot,':');
+    colon += 3;
+    const char* slash=strchr(colon,'/');
+    if (!path)
+        path = slash;
+
+    // Compute the actual protocol and store.
+    string notifyURL(prot, colon-prot);
+
+    // create the "host" from either the colon/slash or from the target string
+    // If prot == handler then we're in either #1 or #2, else #3.
+    // If slash == colon then we're in #2.
+    if (prot != handler || slash == colon) {
+        colon = strchr(resource, ':');
+        colon += 3;      // Get past the ://
+        slash = strchr(colon, '/');
+    }
+    string host(colon, (slash ? slash-colon : strlen(colon)));
+
+    // Build the URL
+    notifyURL += host + path;
+    return notifyURL;
+}
+
+void AbstractSPRequest::limitRedirect(const char* url) const
+{
+    if (!url || *url == '/')
+        return;
+
+    enum {
+        REDIRECT_LIMIT_NONE,
+        REDIRECT_LIMIT_EXACT,
+        REDIRECT_LIMIT_HOST,
+        REDIRECT_LIMIT_ALLOW,
+        REDIRECT_LIMIT_EXACT_ALLOW,
+        REDIRECT_LIMIT_HOST_ALLOW
+    } redirectLimit;
+
+    // Derive the active rule.
+    vector<string> redirectAllow;
+    const char* prop = getRequestSettings().first->getString("redirectLimit", "exact");
+    if (!strcmp(prop, "none")) {
+        redirectLimit = REDIRECT_LIMIT_NONE;
+    }
+    else if (!strcmp(prop, "exact")) {
+        redirectLimit = REDIRECT_LIMIT_EXACT;
+    }
+    else if (!strcmp(prop, "host")) {
+        redirectLimit = REDIRECT_LIMIT_HOST;
+    }
+    else {
+        if (!strcmp(prop, "exact+allow")) {
+            redirectLimit = REDIRECT_LIMIT_EXACT_ALLOW;
+        }
+        else if (!strcmp(prop, "host+allow")) {
+            redirectLimit = REDIRECT_LIMIT_HOST_ALLOW;
+        }
+        else if (!strcmp(prop, "allow")) {
+            redirectLimit = REDIRECT_LIMIT_ALLOW;
+        }
+        else {
+            m_log.error("unrecognized redirectLimit setting (%s), falling back to 'exact' ", prop);
+        }
+        prop = getRequestSettings().first->getString("redirectAllow");
+        if (prop) {
+            string dup(prop);
+            boost::trim(dup);
+            boost::split(redirectAllow, dup, boost::is_space(), boost::algorithm::token_compress_on);
+        }
+    }
+
+    if (redirectLimit != REDIRECT_LIMIT_NONE) {
+
+        // This is ugly, but the purpose is to prevent blocking legitimate redirects
+        // that lack a trailing slash after the hostname. If there are fewer than 3
+        // slashes, we assume the hostname wasn't terminated.
+        string urlcopy(url);
+        if (count(urlcopy.begin(), urlcopy.end(), '/') < 3) {
+            urlcopy += '/';
+        }
+
+        vector<string> allowlist;
+        if (redirectLimit == REDIRECT_LIMIT_EXACT || redirectLimit == REDIRECT_LIMIT_EXACT_ALLOW) {
+            // Scheme and hostname have to match.
+            if (isDefaultPort()) {
+                allowlist.push_back(string(getScheme()) + "://" + getHostname() + '/');
+            }
+            allowlist.push_back(string(getScheme()) + "://" + getHostname() + ':' + boost::lexical_cast<string>(getPort()) + '/');
+        }
+        else if (redirectLimit == REDIRECT_LIMIT_HOST || redirectLimit == REDIRECT_LIMIT_HOST_ALLOW) {
+            // Allow any scheme or port.
+            allowlist.push_back(string("https://") + getHostname() + '/');
+            allowlist.push_back(string("http://") + getHostname() + '/');
+            allowlist.push_back(string("https://") + getHostname() + ':');
+            allowlist.push_back(string("http://") + getHostname() + ':');
+        }
+
+        if (!allowlist.empty()) {
+            for (const string& s : allowlist) {
+                if (boost::istarts_with(urlcopy, s)) {
+                    return;
+                }
+            }
+        }
+
+        if (!redirectAllow.empty()) {
+            for (const string& s : redirectAllow) {
+                if (boost::istarts_with(urlcopy, s)) {
+                    return;
+                }
+            }
+        }
+
+        m_log.warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
+        throw agent_exception("Blocked unacceptable redirect location.");
+    }
+}
+
 string AbstractSPRequest::getSecureHeader(const char* name) const
 {
     return getHeader(name);
@@ -294,50 +472,32 @@ void AbstractSPRequest::setAuthType(const char* authtype)
 
 const char* AbstractSPRequest::getCookie(const char* name) const
 {
-    pair<bool, bool> sameSiteFallback = pair<bool, bool>(false, false);
-    const PropertySet* props = getApplication().getPropertySet("Sessions");
-    if (props) {
-        sameSiteFallback = props->getBool("sameSiteFallback");
-    }
-    return HTTPRequest::getCookie(name, sameSiteFallback.first && sameSiteFallback.second);
+    bool sameSiteFallback = getRequestSettings().first->getBool("sameSiteFallback", false);
+    return HTTPRequest::getCookie(name, sameSiteFallback);
 }
 
 void AbstractSPRequest::setCookie(const char* name, const char* value, time_t expires, samesite_t sameSite)
 {
+    bool sameSiteFallback = false;
+    if (sameSite == SAMESITE_NONE) {
+        sameSiteFallback = getRequestSettings().first->getBool("sameSiteFallback", false);
+    }
+
     static const char* defProps="; path=/; HttpOnly";
     static const char* sslProps="; path=/; secure; HttpOnly";
 
-    const char* cookieProps = defProps;
-    pair<bool,bool> sameSiteFallback = pair<bool,bool>(false, false);
+    const char* cookieProps = getRequestSettings().first->getString("cookieProps", defProps);
+    if (!strcmp(cookieProps, "https"))
+        cookieProps = sslProps;
+    else if (!strcmp(cookieProps, "http"))
+        cookieProps = defProps;
 
-    const PropertySet* props = getApplication().getPropertySet("Sessions");
-    if (props) {
-        if (sameSite == SAMESITE_NONE) {
-            sameSiteFallback = props->getBool("sameSiteFallback");
-        }
-
-        pair<bool, const char*> p = props->getString("cookieProps");
-        if (p.first) {
-            if (!strcmp(p.second, "https"))
-                cookieProps = sslProps;
-            else if (strcmp(p.second, "http"))
-                cookieProps = p.second;
-        }
+    string decoratedValue(value ? value : "");
+    if (!value) {
+        decoratedValue += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
     }
-
-    if (cookieProps) {
-        string decoratedValue(value ? value : "");
-        if (!value) {
-            decoratedValue += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-        }
-        decoratedValue += cookieProps;
-        HTTPResponse::setCookie(name, decoratedValue.c_str(), expires, sameSite,
-            sameSiteFallback.first && sameSiteFallback.second);
-    }
-    else {
-        HTTPResponse::setCookie(name, value, expires, sameSite,
-            sameSiteFallback.first && sameSiteFallback.second);
-    }
+    decoratedValue += cookieProps;
+    HTTPResponse::setCookie(name, decoratedValue.c_str(), expires, sameSite, sameSiteFallback);
 }
 
 void AbstractSPRequest::log(Priority::Value level, const std::string& msg) const

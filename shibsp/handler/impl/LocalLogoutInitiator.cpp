@@ -26,7 +26,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "Application.h"
+#include "Agent.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
@@ -35,7 +35,6 @@
 #include <mutex>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
@@ -56,9 +55,7 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        pair<bool,long> doRequest(
-            const Application& application, const HTTPRequest& request, HTTPResponse& httpResponse, Session* session
-            ) const;
+        pair<bool,long> doRequest(SPRequest& request, Session* session) const;
 
         string m_appId;
     };
@@ -112,7 +109,7 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         catch (const std::exception& ex) {
             m_log.error("error accessing current session: %s", ex.what());
         }
-        return doRequest(request.getApplication(), request, request, session);
+        return doRequest(request, session);
     }
     else {
         // When not out of process, we remote the request.
@@ -166,9 +163,7 @@ void LocalLogoutInitiator::receive(DDF& in, ostream& out)
 #endif
 }
 
-pair<bool,long> LocalLogoutInitiator::doRequest(
-    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, Session* session
-    ) const
+pair<bool,long> LocalLogoutInitiator::doRequest(SPRequest& request, Session* session) const
 {
     if (session) {
         // Guard the session in case of exception.
@@ -177,25 +172,27 @@ pair<bool,long> LocalLogoutInitiator::doRequest(
         // Do back channel notification.
         bool result;
         vector<string> sessions(1, session->getID());
-        result = notifyBackChannel(application, httpRequest.getRequestURL(), sessions, true);
+        result = notifyBackChannel(request, sessions, true);
         time_t revocationExp = session->getExpiration();
         locker.unlock();    // unlock the session
-        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
-        if (!result)
-            return sendLogoutPage(application, httpRequest, httpResponse, "partial");
+        request.getAgent().getSessionCache()->remove(request, revocationExp);
+        if (!result) {
+            //return sendLogoutPage(request, "partial");
+        }
     }
 
     // Route back to return location specified, or use the local template.
-    const char* dest = httpRequest.getParameter("return");
+    const char* dest = request.getParameter("return");
     if (dest) {
         // Relative URLs get promoted, absolutes get validated.
         if (*dest == '/') {
             string d(dest);
-            httpRequest.absolutize(d);
-            return make_pair(true, httpResponse.sendRedirect(d.c_str()));
+            request.absolutize(d);
+            return make_pair(true, request.sendRedirect(d.c_str()));
         }
-        application.limitRedirect(httpRequest, dest);
-        return make_pair(true, httpResponse.sendRedirect(dest));
+        request.limitRedirect(dest);
+        return make_pair(true, request.sendRedirect(dest));
     }
-    return sendLogoutPage(application, httpRequest, httpResponse, "local");
+
+    //return sendLogoutPage(application, httpRequest, httpResponse, "local");
 }

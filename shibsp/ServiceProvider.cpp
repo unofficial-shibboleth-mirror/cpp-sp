@@ -92,21 +92,21 @@ namespace shibsp {
     }
 
     void SHIBSP_DLLLOCAL clearHeaders(SPRequest& request) {
-        const Application& app = request.getApplication();
-        app.clearHeader(request, "Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
-        app.clearHeader(request, "Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
-        app.clearHeader(request, "Shib-Session-Index", "HTTP_SHIB_SESSION_INDEX");
-        app.clearHeader(request, "Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
-        app.clearHeader(request, "Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
-        app.clearHeader(request, "Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
-        app.clearHeader(request, "Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
-        app.clearHeader(request, "Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
-        app.clearHeader(request, "Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
-        app.clearHeader(request, "Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
-        app.clearHeader(request, "Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
-        app.clearHeader(request, "Shib-Handler", "HTTP_SHIB_HANDLER");
-        app.clearAttributeHeaders(request);
+        request.clearHeader("Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
+        request.clearHeader("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
+        request.clearHeader("Shib-Session-Index", "HTTP_SHIB_SESSION_INDEX");
+        request.clearHeader("Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
+        request.clearHeader("Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
+        request.clearHeader("Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
+        request.clearHeader("Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
+        request.clearHeader("Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
+        request.clearHeader("Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
+        request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
+        request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
+        request.clearHeader("Shib-Handler", "HTTP_SHIB_HANDLER");
         request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
+        // TODO: Redo the handling of attribute headers in the code, likely supplanting all of the above...
+        //request.clearAttributeHeaders();
     }
 
     void SHIBSP_DLLLOCAL exportAttributes(SPRequest& request, const Session* session, RequestMapper::Settings settings) {
@@ -129,7 +129,7 @@ namespace shibsp {
             for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
                 if (a->second->isInternal())
                     continue;
-                string header(request.getApplication().getSecureHeader(request, a->first.c_str()));
+                string header(request.getSecureHeader(a->first.c_str()));
                 const vector<string>& vals = a->second->getSerializedValues();
                 for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
                     if (!header.empty())
@@ -153,7 +153,7 @@ namespace shibsp {
                         }
                     }
                 }
-                request.getApplication().setHeader(request, a->first.c_str(), header.c_str());
+                request.setHeader(a->first.c_str(), header.c_str());
             }
         }
         else {
@@ -191,13 +191,14 @@ namespace shibsp {
                         }
                     }
                 }
-                request.getApplication().setHeader(request, deduped->first.c_str(), header.c_str());
+                request.setHeader(deduped->first.c_str(), header.c_str());
             }
         }
 
         // Check for REMOTE_USER.
         bool remoteUserSet = false;
-        const vector<string>& rmids = request.getApplication().getRemoteUserAttributeIds();
+        vector<string> dummy;
+        const vector<string>& rmids = dummy; // app.getRemoteUserAttributeIds(); TODO: re implement this elsewhere
         for (vector<string>::const_iterator rmid = rmids.begin(); !remoteUserSet && rmid != rmids.end(); ++rmid) {
             pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> matches =
                 attributes.equal_range(*rmid);
@@ -239,7 +240,6 @@ pair<bool,long> ServiceProvider::doAuthentication(SPRequest& request, bool handl
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
-        app = &(request.getApplication());
 
         // If not SSL, check to see if we should block or redirect it.
         if (!request.isSecure()) {
@@ -380,7 +380,6 @@ pair<bool,long> ServiceProvider::doAuthorization(SPRequest& request) const
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
-        app = &(request.getApplication());
 
         // Three settings dictate how to proceed.
         const char* authType = settings.first->getString("authType");
@@ -449,7 +448,6 @@ pair<bool,long> ServiceProvider::doExport(SPRequest& request, bool requireSessio
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
-        app = &(request.getApplication());
 
         try {
             session = request.getSession(false, false, false);  // ignore timeout and do not cache
@@ -533,7 +531,6 @@ pair<bool,long> ServiceProvider::doHandler(SPRequest& request) const
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
-        app = &(request.getApplication());
 
         // If not SSL, check to see if we should block or redirect it.
         if (!request.isSecure()) {

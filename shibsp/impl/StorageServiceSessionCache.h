@@ -54,9 +54,7 @@ namespace shibsp {
 
         void insert(
             std::string& sessionID,
-            const Application& app,
-            const xmltooling::HTTPRequest& httpRequest,
-            xmltooling::HTTPResponse& httpResponse,
+            const SPRequest& request,
             time_t expires,
             const opensaml::saml2md::EntityDescriptor* issuer=nullptr,
             const XMLCh* protocol=nullptr,
@@ -69,52 +67,46 @@ namespace shibsp {
             const std::vector<Attribute*>* attributes=nullptr
             );
         std::vector<std::string>::size_type logout(
-            const Application& app,
+            const char* bucketID,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes,
             time_t expires,
             std::vector<std::string>& sessions
             ) {
-            return _logout(app, issuer, nameid, indexes, expires, sessions, 0);
+            return _logout(bucketID, issuer, nameid, indexes, expires, sessions, 0);
         }
         bool matches(
-            const Application& app,
-            xmltooling::HTTPRequest& request,
+            const SPRequest& request,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes
             );
 #endif
-        std::string active(const Application& app, const HTTPRequest& request);
-        Session* find(const Application& app, HTTPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr);
+        std::string active(const SPRequest& request);
+        Session* find(SPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr);
 
-        void remove(
-            const Application& app,
-            const HTTPRequest& request,
-            HTTPResponse* response=nullptr,
-            time_t revocationExp=0
-            );
+        void remove(SPRequest& request, time_t revocationExp=0);
 
-        Session* find(const Application& app, const char* key) {
-            return _find(app, key, nullptr, nullptr, nullptr);
+        Session* find(const char* bucketID, const char* key) {
+            return _find(bucketID, key, nullptr, nullptr, nullptr);
         }
-        void remove(const Application& app, const char* key, time_t revocationExp=0);
+        void remove(const char* bucketID, const char* key, time_t revocationExp=0);
         void test();
 
-        unsigned long getCacheTimeout(const Application& app) const;
+        unsigned long getCacheTimeout(const SPRequest& request) const;
 
     private:
         // internal delegates of external methods
         Session * _find(
-            const Application& app,
+            const char* bucketID,
             const char* key,
             const char* recovery,
             const char* client_addr,
             time_t* timeout);
 #ifndef SHIBSP_LITE
         std::vector<std::string>::size_type _logout(
-            const Application& app,
+            const char* bucketID,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes,
@@ -126,7 +118,6 @@ namespace shibsp {
         // maintain back-mappings of NameID/SessionIndex -> session key
         void insert(const char* key, time_t expires, const char* name, const char* index, short attempts=0);
         bool stronglyMatches(const XMLCh* idp, const XMLCh* sp, const opensaml::saml2::NameID& n1, const opensaml::saml2::NameID& n2) const;
-        LogoutEvent* newLogoutEvent(const Application& app) const;
 
         xmltooling::StorageService* m_storage;
         xmltooling::StorageService* m_storage_lite;
@@ -147,23 +138,13 @@ namespace shibsp {
         // handle potentially inexact address comparisons
         bool compareAddresses(const char* client_addr, const char* session_addr) const;
 
-        HTTPResponse::samesite_t getSameSitePolicy(const Application& app) const;
+        HTTPResponse::samesite_t getSameSitePolicy(const SPRequest& request) const;
+        std::string getCookieName(const SPRequest& request, const char* prefix, time_t* lifetime=nullptr) const;
+
 
         // management of buffered sessions
         void dormant(const char* key);
         static void* cleanup_fn(void*);
-
-#ifndef SHIBSP_LITE
-        // persistence across nodes
-        void persist(
-            const Application& app,
-            xmltooling::HTTPResponse& httpResponse,
-            DDF& session,
-            time_t expires,
-            xmltooling::HTTPResponse::samesite_t sameSitePolicy
-            ) const;
-#endif
-        bool recover(const Application& app, const char* key, const char* data);
 
         Category& m_log;
         bool inproc;

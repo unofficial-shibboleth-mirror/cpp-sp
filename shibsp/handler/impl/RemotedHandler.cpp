@@ -20,7 +20,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "Application.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
@@ -314,7 +313,6 @@ DDF RemotedHandler::send(const SPRequest& request, DDF& in) const
 DDF RemotedHandler::wrap(const SPRequest& request, const vector<string>* headers, bool certs) const
 {
     DDF in = DDF(m_address.c_str()).structure();
-    in.addmember("application_id").string(request.getApplication().getId());
     in.addmember("scheme").string(request.getScheme());
     in.addmember("hostname").unsafe_string(request.getHostname());
     in.addmember("port").integer(request.getPort());

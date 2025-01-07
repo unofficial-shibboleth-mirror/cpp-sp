@@ -26,8 +26,8 @@
 
 #include "internal.h"
 #include "AccessControl.h"
+#include "Agent.h"
 #include "AgentConfig.h"
-#include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
@@ -79,7 +79,7 @@ namespace shibsp {
     private:
         void flushSession(SPRequest& request, time_t exp) const {
             try {
-                request.getApplication().getServiceProvider().getSessionCache()->remove(request.getApplication(), request, &request, exp);
+                request.getAgent().getSessionCache()->remove(request, exp);
             }
             catch (const std::exception&) {
             }
@@ -137,14 +137,15 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     // If the checking passes, we route to the return URL, target URL, or homeURL in that order.
     const char* returnURL = request.getParameter("return");
     const char* target = request.getParameter("target");
-    if (!returnURL)
+    if (!returnURL) {
         returnURL = target;
-    if (returnURL)
-        request.getApplication().limitRedirect(request, returnURL);
-    else
-        returnURL = request.getApplication().getString("homeURL").second;
-    if (!returnURL)
-        returnURL = "/";
+    }
+    if (returnURL) {
+        request.limitRedirect(returnURL);
+    }
+    else {
+        returnURL = request.getRequestSettings().first->getString("homeURL", "/");
+    }
        
     Session* session = nullptr;
     try {
@@ -188,15 +189,14 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
 
     ifstream infile(m_template.c_str());
     if (infile) {
-        const PropertySet* props = request.getApplication().getPropertySet("Errors");
-        //TemplateParameters tp(nullptr, props, session);
-
+        /*
         // If the externalParameters option isn't set, don't populate the request field.
         pair<bool,bool> externalParameters =
                 props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
         if (externalParameters.first && externalParameters.second) {
             //tp.m_request = &request;
         }
+        */
 
         stringstream str;
         //XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);

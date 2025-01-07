@@ -57,30 +57,12 @@ namespace shibsp {
         virtual const Agent& getAgent() const=0;
 
         /**
-         * Returns the locked ServiceProvider processing the request.
-         * 
-         * TODO: remove
-         *
-         * @return reference to ServiceProvider
-         */
-        virtual const ServiceProvider& getServiceProvider() const=0;
-
-        /**
          * Returns RequestMapper Settings associated with the request, guaranteed
          * to be valid for the request's duration.
          *
          * @return copy of settings
          */
         virtual RequestMapper::Settings getRequestSettings() const=0;
-
-        /**
-         * Returns the Application governing the request.
-         * 
-         * TODO: remove
-         *
-         * @return reference to Application
-         */
-        virtual const Application& getApplication() const=0;
 
         /**
          * Returns a locked Session associated with the request.
@@ -93,6 +75,24 @@ namespace shibsp {
         virtual Session* getSession(bool checkTimeout=true, bool ignoreAddress=false, bool cache=true)=0;
 
         /**
+         * Returns the cookies name to use for this request.
+         *
+         * @param prefix    a value to prepend to the base cookie name
+         * @param lifetime  if non-null, will be populated with a suggested lifetime for the cookie, or 0 if session-bound
+         * @return  the assigned cookie name to use
+         */
+        virtual std::string getCookieName(const char* prefix, time_t* lifetime=nullptr) const=0;
+
+        /**
+         * Returns the name and cookie properties to use for this request.
+         *
+         * @param prefix    a value to prepend to the base cookie name
+         * @param lifetime  if non-null, will be populated with a suggested lifetime for the cookie, or 0 if session-bound
+         * @return  a pair containing the cookie name and the string to append to the cookie value
+         */
+        virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix, time_t* lifetime=nullptr) const=0;
+
+        /**
          * Returns the effective base Handler URL for a resource,
          * or the current request URL.
          *
@@ -100,6 +100,24 @@ namespace shibsp {
          * @return  base location of handler
          */
         virtual const char* getHandlerURL(const char* resource=nullptr) const=0;
+
+        /**
+         * Returns the designated notification URL, or an empty string if no more locations are specified.
+         *
+         * @param front     true iff front channel notification is desired, false iff back channel is desired
+         * @param index     zero-based index of URL to return
+         * @return  the designated URL, or an empty string
+         */
+        virtual std::string getNotificationURL(bool front, unsigned int index) const=0;
+
+        /**
+         * Checks a proposed redirect URL against policy settings for legal redirects,
+         * such as same-host restrictions or allowed domains, and raises an exception
+         * in the event of a violation.
+         *
+         * @param url       an absolute URL to validate
+         */
+        virtual void limitRedirect(const char* url) const=0;
 
         /**
          * Returns a non-spoofable request header value, if possible.

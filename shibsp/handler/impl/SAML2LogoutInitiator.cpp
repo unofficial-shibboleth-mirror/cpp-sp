@@ -26,16 +26,15 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "Application.h"
+#include "Agent.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutInitiator.h"
+
 #include <mutex>
 
 using namespace shibsp;
-using namespace xmltooling;
-using namespace boost;
 using namespace std;
 
 namespace shibsp {
@@ -58,9 +57,7 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        pair<bool,long> doRequest(
-            const Application& application, const HTTPRequest& request, HTTPResponse& httpResponse, Session* session
-            ) const;
+        pair<bool,long> doRequest(SPRequest& request, Session* session) const;
 
         string m_appId;
         bool m_deprecationSupport;
@@ -170,7 +167,7 @@ pair<bool,long> SAML2LogoutInitiator::run(SPRequest& request, bool isHandler) co
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively.
-        return doRequest(request.getApplication(), request, request, session);
+        return doRequest(request, session);
     }
     else {
         // When not out of process, we remote the request.
@@ -236,20 +233,18 @@ void SAML2LogoutInitiator::receive(DDF& in, ostream& out)
 #endif
 }
 
-pair<bool,long> SAML2LogoutInitiator::doRequest(
-    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, Session* session
-    ) const
+pair<bool,long> SAML2LogoutInitiator::doRequest(SPRequest& request, Session* session) const
 {
     unique_lock<Session> sessionLocker(*session, adopt_lock);
 
     // Do back channel notification.
     vector<string> sessions(1, session->getID());
-    if (!notifyBackChannel(application, httpRequest.getRequestURL(), sessions, false)) {
+    if (!notifyBackChannel(request, sessions, false)) {
         time_t revocationExp = session->getExpiration();
         sessionLocker.unlock();
         session = nullptr;
-        application.getServiceProvider().getSessionCache()->remove(application, httpRequest, &httpResponse, revocationExp);
-        return sendLogoutPage(application, httpRequest, httpResponse, "partial");
+        request.getAgent().getSessionCache()->remove(request, revocationExp);
+        //return sendLogoutPage(application, httpRequest, httpResponse, "partial");
     }
 
 #ifndef SHIBSP_LITE

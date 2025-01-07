@@ -25,8 +25,8 @@
  */
 
 #include "internal.h"
-#include "Application.h"
 #include "exceptions.h"
+#include "Agent.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
@@ -66,7 +66,7 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
 
     private:
-        pair<bool,long> processMessage(const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
+        pair<bool,long> processMessage(SPRequest& request) const;
         ostream& systemInfo(ostream& os) const;
     };
 
@@ -238,7 +238,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     if (target) {
         // RequestMap query, so handle it inproc.
         DummyRequest dummy(target);
-        RequestMapper::Settings settings = request.getApplication().getServiceProvider().getRequestMapper()->getSettings(dummy);
+        RequestMapper::Settings settings = request.getAgent().getRequestMapper()->getSettings(dummy);
         XMLDateTime now(time(nullptr), false);
         now.parseDateTime();
         auto_ptr_char timestamp(now.getFormattedString());
@@ -268,7 +268,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     try {
         if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
             // When out of process, we run natively and directly process the message.
-            return processMessage(request.getApplication(), request, request);
+            return processMessage(request);
         }
         else {
             // When not out of process, we remote all the message processing.
@@ -320,6 +320,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
 
 void StatusHandler::receive(DDF& in, ostream& out)
 {
+    /*
     // Find application.
     const char* aid = in["application_id"].string();
     const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
@@ -340,11 +341,10 @@ void StatusHandler::receive(DDF& in, ostream& out)
     // which we capture in the facade and send back.
     processMessage(*app, *req, *resp);
     out << ret;
+    */
 }
 
-pair<bool,long> StatusHandler::processMessage(
-    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse
-    ) const
+pair<bool,long> StatusHandler::processMessage(SPRequest& request) const
 {
 #ifndef SHIBSP_LITE
     m_log.debug("processing status request");

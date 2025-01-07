@@ -25,15 +25,12 @@
  */
 
 #include "internal.h"
-#include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "handler/AbstractHandler.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SessionInitiator.h"
 #include "util/SPConstants.h"
-
-#include <xercesc/util/XMLUniDefs.hpp>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -65,9 +62,7 @@ namespace shibsp {
 
     private:
         pair<bool,long> doRequest(
-            const Application& application,
-            const HTTPRequest* httpRequest,
-            HTTPResponse& httpResponse,
+            SPRequest& request,
             const char* entityID,
             const XMLCh* acsIndex,
             const char* attributeIndex,
@@ -201,7 +196,6 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     const char* requestTemplate = nullptr;
     const char* outgoingBinding = nullptr;
     bool isPassive=false,forceAuthn=false;
-    const Application& app = request.getApplication();
 
     // ECP means the ACS will be by value no matter what.
     pair<bool,bool> acsByIndex = ECP ? make_pair(true,false) : getBool("acsByIndex");
@@ -210,7 +204,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         prop.second = request.getParameter("acsIndex");
         if (prop.second && *prop.second) {
             SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
-            ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
+            //ACS = app.getAssertionConsumerServiceByIndex(atoi(prop.second));
             if (!ACS)
                 request.log(Priority::SHIB_WARN, "invalid acsIndex specified in request, using acsIndex property");
             else if (ECP && !XMLString::equals(ACS->getString("Binding").second, nullptr)) {
@@ -224,8 +218,8 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             target = prop.second;
 
         // Always need to recover target URL to compute handler below.
-        recoverRelayState(app, request, request, target, false);
-        app.limitRedirect(request, target.c_str());
+        recoverRelayState(request, target, false);
+        request.limitRedirect(target.c_str());
 
         // Default is to allow externally supplied settings.
         pair<bool,bool> externalInput = getBool("externalInput");
@@ -292,7 +286,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             pair<bool,unsigned int> index = getUnsignedInt("acsIndex", request, HANDLER_PROPERTY_MAP|HANDLER_PROPERTY_FIXED);
             if (index.first) {
                 SPConfig::getConfig().deprecation().warn("Use of acsIndex when specifying response endpoint");
-                ACS = app.getAssertionConsumerServiceByIndex(index.second);
+                //ACS = app.getAssertionConsumerServiceByIndex(index.second);
             }
         }
     }
@@ -317,7 +311,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
             }
 
             return doRequest(
-                app, &request, request, entityID.c_str(),
+                request, entityID.c_str(),
                 nullptr,
                 attributeIndex.first ? attributeIndex.second : nullptr,
                 false,
@@ -349,7 +343,7 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
         }
 
         return doRequest(
-            app, &request, request, entityID.c_str(),
+            request, entityID.c_str(),
             nullptr,
             attributeIndex.first ? attributeIndex.second : nullptr,
             false,
@@ -368,7 +362,6 @@ pair<bool,long> SAML2SessionInitiator::run(SPRequest& request, string& entityID,
     // Remote the call.
     DDF out,in = DDF(m_address.c_str()).structure();
     DDFJanitor jin(in), jout(out);
-    in.addmember("application_id").string(app.getId());
     if (!entityID.empty())
         in.addmember("entity_id").string(entityID.c_str());
     if (isPassive)
@@ -438,13 +431,14 @@ pair<bool,long> SAML2SessionInitiator::unwrap(SPRequest& request, DDF& out) cons
     // See if there's any response to send back.
     if (!out["redirect"].isnull() || !out["response"].isnull()) {
         // If so, we're responsible for handling the POST data, probably by dropping a cookie.
-        preservePostData(request.getApplication(), request, request, out["RelayState"].string());
+        preservePostData(request, out["RelayState"].string());
     }
     return RemotedHandler::unwrap(request, out);
 }
 
 void SAML2SessionInitiator::receive(DDF& in, ostream& out)
 {
+    /*
     // Find application.
     const char* aid = in["application_id"].string();
     const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
@@ -489,12 +483,11 @@ void SAML2SessionInitiator::receive(DDF& in, ostream& out)
         ret.structure();
     ret.addmember("RelayState").unsafe_string(relayState.c_str());
     out << ret;
+    */
 }
 
 pair<bool,long> SAML2SessionInitiator::doRequest(
-    const Application& app,
-    const HTTPRequest* httpRequest,
-    HTTPResponse& httpResponse,
+    SPRequest& request,
     const char* entityID,
     const XMLCh* acsIndex,
     const char* attributeIndex,

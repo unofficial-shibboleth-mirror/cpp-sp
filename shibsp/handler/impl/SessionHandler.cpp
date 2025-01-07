@@ -25,7 +25,6 @@
  */
 
 #include "internal.h"
-#include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"

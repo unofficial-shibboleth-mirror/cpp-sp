@@ -26,12 +26,10 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "Application.h"
 #include "SPRequest.h"
 #include "handler/SessionInitiator.h"
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace std;
 
 SessionInitiator::SessionInitiator()
@@ -97,7 +95,7 @@ bool SessionInitiator::checkCompatibility(SPRequest& request, bool isHandler) co
 
 pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 {
-    cleanRelayState(request.getApplication(), request, request);
+    cleanRelayState(request);
 
     const char* entityID = nullptr;
     pair<bool,const char*> param = getString("entityIDParam");
@@ -150,8 +148,8 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 log(Priority::SHIB_INFO, "trapping SessionInitiator error condition and returning to target location");
                 flag = request.getParameter("target");
                 string target(flag ? flag : "");
-                recoverRelayState(request.getApplication(), request, request, target, false);
-                request.getApplication().limitRedirect(request, target.c_str());
+                recoverRelayState(request, target, false);
+                request.limitRedirect(target.c_str());
                 return make_pair(true, request.sendRedirect(target.c_str()));
             }
         }

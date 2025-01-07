@@ -61,16 +61,19 @@ namespace shibsp {
 
         // Virtual function overrides.
         const Agent& getAgent() const;
-        const ServiceProvider& getServiceProvider() const;
         RequestMapper::Settings getRequestSettings() const;
-        const Application& getApplication() const;
         Session* getSession(bool checkTimeout=true, bool ignoreAddress=false, bool cache=true);
         const char* getRequestURI() const;
         const char* getRequestURL() const;
         std::string getRemoteAddr() const;
         const char* getParameter(const char* name) const;
         std::vector<const char*>::size_type getParameters(const char* name, std::vector<const char*>& values) const;
+        std::string getCookieName(const char* prefix, time_t* lifetime) const;
+        std::pair<std::string,const char*> getCookieNameProps(const char* prefix, time_t* lifetime) const;
         const char* getHandlerURL(const char* resource=nullptr) const;
+        std::string getNotificationURL(bool front, unsigned int index) const;
+        void limitRedirect(const char* url) const;
+
         std::string getSecureHeader(const char* name) const;
         const char* getCookie(const char* name) const;
         void setAuthType(const char* authtype);
@@ -81,10 +84,8 @@ namespace shibsp {
     private:
         Category& m_log;
         Agent& m_agent;
-        ServiceProvider* m_sp; // TODO: remove
         mutable RequestMapper* m_mapper;
         mutable RequestMapper::Settings m_settings;
-        mutable const Application* m_app; // TODO: remove
         mutable bool m_sessionTried;
         mutable Session* m_session;
         std::string m_uri;

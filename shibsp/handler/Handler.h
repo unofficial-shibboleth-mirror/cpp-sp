@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -60,12 +54,9 @@ namespace shibsp {
          * step.
          *
          * @param application   the associated Application
-         * @param request       incoming HTTP request
-         * @param response      outgoing HTTP response
+         * @param request       SP request
          */
-        virtual void cleanRelayState(
-            const Application& application, const HTTPRequest& request, HTTPResponse& response
-            ) const;
+        virtual void cleanRelayState(SPRequest& request) const;
 
         /**
          * Implements various mechanisms to preserve RelayState,
@@ -74,13 +65,10 @@ namespace shibsp {
          * <p>If a supported mechanism can be identified, the input parameter will be
          * replaced with a suitable state key.
          *
-         * @param application   the associated Application
          * @param response      outgoing HTTP response
          * @param relayState    RelayState token to supply with message
          */
-        virtual void preserveRelayState(
-            const Application& application, HTTPResponse& response, std::string& relayState
-            ) const;
+        virtual void preserveRelayState(SPRequest& response, std::string& relayState) const;
 
         /**
          * Implements various mechanisms to recover RelayState,
@@ -89,19 +77,11 @@ namespace shibsp {
          * <p>If a supported mechanism can be identified, the input parameter will be
          * replaced with the recovered state information.
          *
-         * @param application   the associated Application
-         * @param request       incoming HTTP request
-         * @param response      outgoing HTTP response
+         * @param request       SP request
          * @param relayState    RelayState token supplied with message
          * @param clear         true iff the token state should be cleared
          */
-        virtual void recoverRelayState(
-            const Application& application,
-            const HTTPRequest& request,
-            HTTPResponse& response,
-            std::string& relayState,
-            bool clear=true
-            ) const;
+        virtual void recoverRelayState(SPRequest& request, std::string& relayState, bool clear=true) const;
 
     public:
         virtual ~Handler();

@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
 #include "attribute/Attribute.h"
 #include "impl/StoredSession.h"
 #include "impl/StorageServiceSessionCache.h"
@@ -118,7 +117,7 @@ void StoredSession::unmarshallAttributes() const
     }
 }
 
-void StoredSession::validate(const Application& app, const char* client_addr, time_t* timeout)
+void StoredSession::validate(const char* bucketID, const char* client_addr, time_t* timeout)
 {
     time_t now = time(nullptr);
 
@@ -156,7 +155,7 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
         in.structure();
         in.addmember("key").string(getID());
         in.addmember("version").integer(m_obj["version"].integer());
-        in.addmember("application_id").string(app.getId());
+        in.addmember("bucket_id").string(bucketID);
         if (client_addr)    // signals we need to bind an additional address to the session
             in.addmember("client_addr").string(client_addr);
         if (timeout && *timeout) {
@@ -317,211 +316,3 @@ void StoredSession::validate(const Application& app, const char* client_addr, ti
 
     m_lastAccess = now;
 }
-
-#ifndef SHIBSP_LITE
-
-void StoredSession::addAttributes(const vector<Attribute*>& attributes)
-{
-    if (!m_cache->m_storage)
-        throw ConfigurationException("Session modification requires a StorageService.");
-
-    m_cache->m_log.debug("adding attributes to session (%s)", getID());
-
-    int ver;
-    short attempts = 0;
-    do {
-        DDF attr;
-        DDF attrs = m_obj["attributes"];
-        if (!attrs.islist())
-            attrs = m_obj.addmember("attributes").list();
-        for (vector<Attribute*>::const_iterator a=attributes.begin(); a!=attributes.end(); ++a) {
-            attr = (*a)->marshall();
-            attrs.add(attr);
-        }
-
-        // Tentatively increment the version.
-        m_obj["version"].integer(m_obj["version"].integer()+1);
-
-        ostringstream str;
-        str << m_obj;
-        string record(str.str());
-
-        try {
-            ver = m_cache->m_storage->updateText(getID(), "session", record.c_str(), 0, m_obj["version"].integer()-1);
-        }
-        catch (std::exception&) {
-            // Roll back modification to record.
-            m_obj["version"].integer(m_obj["version"].integer()-1);
-            vector<Attribute*>::size_type count = attributes.size();
-            while (count--)
-                attrs.last().destroy();
-            throw;
-        }
-
-        if (ver <= 0) {
-            // Roll back modification to record.
-            m_obj["version"].integer(m_obj["version"].integer()-1);
-            vector<Attribute*>::size_type count = attributes.size();
-            while (count--)
-                attrs.last().destroy();
-        }
-        if (!ver) {
-            // Fatal problem with update.
-            throw IOException("Unable to update stored session.");
-        }
-        else if (ver < 0) {
-            // Out of sync.
-            if (++attempts > 10) {
-                m_cache->m_log.error("failed to update stored session, update attempts exceeded limit");
-                throw IOException("Unable to update stored session, exceeded retry limit.");
-            }
-            m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
-            ver = m_cache->m_storage->readText(getID(), "session", &record);
-            if (!ver) {
-                m_cache->m_log.error("readText failed on StorageService for session (%s)", getID());
-                throw IOException("Unable to read back stored session.");
-            }
-
-            // Reset object.
-            DDF newobj;
-            istringstream in(record);
-            in >> newobj;
-
-            m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-            m_attributes.clear();
-            m_attributeIndex.clear();
-            newobj["version"].integer(ver);
-            m_obj.destroy();
-            m_obj = newobj;
-
-            ver = -1;
-        }
-    } while (ver < 0);  // negative indicates a sync issue so we retry
-
-    // We own them now, so clean them up.
-    for_each(attributes.begin(), attributes.end(), xmltooling::cleanup<Attribute>());
-}
-
-const Assertion* StoredSession::getAssertion(const char* id) const
-{
-    if (!m_cache->m_storage)
-        throw ConfigurationException("Assertion retrieval requires a StorageService.");
-
-    map< string,boost::shared_ptr<Assertion> >::const_iterator i = m_tokens.find(id);
-    if (i != m_tokens.end())
-        return i->second.get();
-
-    string tokenstr;
-    if (!m_cache->m_storage->readText(getID(), id, &tokenstr))
-        throw FatalProfileException("Assertion not found in cache.");
-
-    // Parse and bind the document into an XMLObject.
-    istringstream instr(tokenstr);
-    DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr);
-    XercesJanitor<DOMDocument> janitor(doc);
-    boost::shared_ptr<XMLObject> xmlObject(XMLObjectBuilder::buildOneFromElement(doc->getDocumentElement(), true));
-    janitor.release();
-    
-    boost::shared_ptr<Assertion> token = dynamic_pointer_cast<Assertion,XMLObject>(xmlObject);
-    if (!token)
-        throw FatalProfileException("Request for cached assertion returned an unknown object type.");
-
-    m_tokens[id] = token;
-    return token.get();
-}
-
-void StoredSession::addAssertion(Assertion* assertion)
-{
-    if (!m_cache->m_storage)
-        throw ConfigurationException("Session modification requires a StorageService.");
-    else if (!assertion)
-        throw FatalProfileException("Unknown object type passed to session for storage.");
-
-    auto_ptr_char id(assertion->getID());
-    if (!id.get() || !*id.get())
-        throw IOException("Assertion did not carry an ID.");
-    else if (strlen(id.get()) > m_cache->m_storage->getCapabilities().getKeySize())
-        throw IOException("Assertion ID ($1) exceeds allowable storage key size.", params(1, id.get()));
-
-    m_cache->m_log.debug("adding assertion (%s) to session (%s)", id.get(), getID());
-
-    time_t exp = 0;
-    if (!m_cache->m_storage->readText(getID(), "session", nullptr, &exp) || exp == 0)
-        throw IOException("Unable to load expiration time for stored session.");
-
-    ostringstream tokenstr;
-    tokenstr << *assertion;
-    if (!m_cache->m_storage->createText(getID(), id.get(), tokenstr.str().c_str(), exp))
-        throw IOException("Attempted to insert duplicate assertion ID into session.");
-
-    int ver;
-    short attempts = 0;
-    do {
-        DDF token = DDF(nullptr).string(id.get());
-        m_obj["assertions"].add(token);
-
-        // Tentatively increment the version.
-        m_obj["version"].integer(m_obj["version"].integer() + 1);
-
-        ostringstream str;
-        str << m_obj;
-        string record(str.str());
-
-        try {
-            ver = m_cache->m_storage->updateText(getID(), "session", record.c_str(), 0, m_obj["version"].integer()-1);
-        }
-        catch (std::exception&) {
-            token.destroy();
-            m_obj["version"].integer(m_obj["version"].integer() - 1);
-            m_cache->m_storage->deleteText(getID(), id.get());
-            throw;
-        }
-
-        if (ver <= 0) {
-            token.destroy();
-            m_obj["version"].integer(m_obj["version"].integer()-1);
-        }
-        if (!ver) {
-            // Fatal problem with update.
-            m_cache->m_log.error("updateText failed on StorageService for session (%s)", getID());
-            m_cache->m_storage->deleteText(getID(), id.get());
-            throw IOException("Unable to update stored session.");
-        }
-        else if (ver < 0) {
-            // Out of sync.
-            if (++attempts > 10) {
-                m_cache->m_log.error("failed to update stored session, update attempts exceeded limit");
-                throw IOException("Unable to update stored session, exceeded retry limit.");
-            }
-            m_cache->m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
-            ver = m_cache->m_storage->readText(getID(), "session", &record);
-            if (!ver) {
-                m_cache->m_log.error("readText failed on StorageService for session (%s)", getID());
-                m_cache->m_storage->deleteText(getID(), id.get());
-                throw IOException("Unable to read back stored session.");
-            }
-
-            // Reset object.
-            DDF newobj;
-            istringstream in(record);
-            in >> newobj;
-
-            m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-            m_attributes.clear();
-            m_attributeIndex.clear();
-            newobj["version"].integer(ver);
-            m_obj.destroy();
-            m_obj = newobj;
-
-            ver = -1;
-        }
-    } while (ver < 0); // negative indicates a sync issue so we retry
-
-    m_ids.clear();
-    delete assertion;
-}
-
-#endif
-

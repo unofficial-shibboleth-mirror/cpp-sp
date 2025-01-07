@@ -32,7 +32,8 @@ namespace shibsp {
     class SHIBSP_API RemotingService;
     class SHIBSP_API RequestMapper;
     class SHIBSP_API SessionCache;
-    class SHIBSP_API AgentRequest;
+    //class SHIBSP_API AgentRequest;
+    class SHIBSP_API SPRequest;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -96,7 +97,7 @@ namespace shibsp {
          * @param handler   true iff a request to a registered Handler location can be directly executed
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
-        virtual std::pair<bool,long> doAuthentication(AgentRequest& request, bool handler=false) const;
+        virtual std::pair<bool,long> doAuthentication(SPRequest& request, bool handler=false) const;
         
         /**
          * Enforces authorization requirements based on the authenticated session.
@@ -107,7 +108,7 @@ namespace shibsp {
          * @param request   SP request interface
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
-        virtual std::pair<bool,long> doAuthorization(AgentRequest& request) const;
+        virtual std::pair<bool,long> doAuthorization(SPRequest& request) const;
         
         /**
          * Publishes session contents to the request in the form of headers or environment variables.
@@ -119,7 +120,7 @@ namespace shibsp {
          * @param requireSession    set to true iff an error should result if no session exists 
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
-        virtual std::pair<bool,long> doExport(AgentRequest& request, bool requireSession=true) const;
+        virtual std::pair<bool,long> doExport(SPRequest& request, bool requireSession=true) const;
 
         /**
          * Services requests for registered Handler locations. 
@@ -130,7 +131,7 @@ namespace shibsp {
          * @param request   SP request interface
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
-        virtual std::pair<bool,long> doHandler(AgentRequest& request) const;
+        virtual std::pair<bool,long> doHandler(SPRequest& request) const;
 
     protected:
         /** The AuthTypes to "recognize" (defaults to "shibboleth"). */

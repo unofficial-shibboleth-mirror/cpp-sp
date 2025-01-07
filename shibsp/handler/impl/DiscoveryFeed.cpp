@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "AgentConfig.h"
-#include "Application.h"
 #include "exceptions.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
@@ -41,7 +40,6 @@
 #include <xmltooling/util/Threads.h>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace std;
 
 namespace shibsp {
@@ -71,8 +69,8 @@ namespace shibsp {
         void receive(DDF& in, ostream& out);
 
     private:
-        void feedToFile(const Application& application, string& cacheTag) const;
-        void feedToStream(const Application& application, string& cacheTag, ostream& os) const;
+        void feedToFile(string& cacheTag) const;
+        void feedToStream(string& cacheTag, ostream& os) const;
 
         string m_dir;
         bool m_cacheToClient;
@@ -154,7 +152,7 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
             if (m_dir.empty()) {
                 // The feed is directly returned.
                 stringstream buf;
-                feedToStream(request.getApplication(), s, buf);
+                feedToStream(s, buf);
                 if (!s.empty()) {
                     if (m_cacheToClient) {
                         string etag = '"' + s + '"';
@@ -166,13 +164,12 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
             }
             else {
                 // Indirect the feed through a file.
-                feedToFile(request.getApplication(), s);
+                feedToFile(s);
             }
         }
         else {
             // When not out of process, we remote all the message processing.
             DDF out,in = DDF(m_address.c_str());
-            in.addmember("application_id").string(request.getApplication().getId());
             if (!s.empty())
                 in.addmember("cache_tag").string(s.c_str());
             DDFJanitor jin(in), jout(out);
@@ -204,7 +201,8 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
             return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_NOTMODIFIED));
         }
 
-        string fname = m_dir + '/' + request.getApplication().getHash() + '_' + s + ".json";
+        // TODO: uniqueify name
+        string fname = m_dir + '/' + /* request.getApplication().getHash() + '_' + */ s + ".json";
         ifstream feed(fname.c_str());
         if (!feed)
             throw ConfigurationException("Unable to access cached feed.");
@@ -224,15 +222,6 @@ pair<bool,long> DiscoveryFeed::run(SPRequest& request, bool isHandler) const
 
 void DiscoveryFeed::receive(DDF& in, ostream& out)
 {
-    // Find application.
-    const char* aid = in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
-    if (!app) {
-        // Something's horribly wrong.
-        m_log.error("couldn't find application (%s) for discovery feed request", aid ? aid : "(missing)");
-        throw ConfigurationException("Unable to locate application for discovery feed request, deleted?");
-    }
-
     string cacheTag;
     if (in["cache_tag"].string())
         cacheTag = in["cache_tag"].string();
@@ -242,14 +231,14 @@ void DiscoveryFeed::receive(DDF& in, ostream& out)
 
     if (!m_dir.empty()) {
         // We're relaying the feed through a file.
-        feedToFile(*app, cacheTag);
+        feedToFile(cacheTag);
         if (!cacheTag.empty())
             ret.string(cacheTag.c_str());
     }
     else {
         // We're relaying the feed directly.
         ostringstream os;
-        feedToStream(*app, cacheTag, os);
+        feedToStream(cacheTag, os);
         if (!cacheTag.empty())
             ret.addmember("cache_tag").string(cacheTag.c_str());
         string feed = os.str();
@@ -259,7 +248,7 @@ void DiscoveryFeed::receive(DDF& in, ostream& out)
     out << ret;
 }
 
-void DiscoveryFeed::feedToFile(const Application& application, string& cacheTag) const
+void DiscoveryFeed::feedToFile(string& cacheTag) const
 {
 #ifndef SHIBSP_LITE
     m_log.debug("processing discovery feed request");
@@ -313,7 +302,7 @@ void DiscoveryFeed::feedToFile(const Application& application, string& cacheTag)
 #endif
 }
 
-void DiscoveryFeed::feedToStream(const Application& application, string& cacheTag, ostream& os) const
+void DiscoveryFeed::feedToStream(string& cacheTag, ostream& os) const
 {
 #ifndef SHIBSP_LITE
     m_log.debug("processing discovery feed request");

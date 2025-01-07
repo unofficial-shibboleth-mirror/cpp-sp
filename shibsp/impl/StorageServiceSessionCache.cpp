@@ -34,15 +34,12 @@
 
 #include "internal.h"
 
-#include "Application.h"
 #include "exceptions.h"
-#include "ServiceProvider.h"
+#include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/RemotedHandler.h"
 #include "impl/StoredSession.h"
 #include "impl/StorageServiceSessionCache.h"
-#include "io/HTTPRequest.h"
-#include "io/HTTPResponse.h"
 #include "util/IPRange.h"
 #include "util/SPConstants.h"
 
@@ -51,7 +48,6 @@
 #include <boost/bind.hpp>
 #include <xmltooling/security/DataSealer.h>
 #include <xmltooling/util/Threads.h>
-#include <xmltooling/util/URLEncoder.h>
 #include <xmltooling/util/XMLHelper.h>
 #include <xercesc/util/XMLStringTokenizer.hpp>
 #include <xercesc/util/XMLUniDefs.hpp>
@@ -220,34 +216,24 @@ SSCache::~SSCache()
 #endif
 }
 
-unsigned long SSCache::getCacheTimeout(const Application& app) const
+unsigned long SSCache::getCacheTimeout(const SPRequest& request) const
 {
     // Computes offset for adjusting expiration of sessions.
     // This can either be static, or dynamic based on the per-app session timeout or lifetime.
     if (m_cacheTimeout)
         return m_cacheTimeout;
-    pair<bool, unsigned int> timeout = pair<bool, unsigned int>(false, 3600);
-    const PropertySet* props = app.getPropertySet("Sessions");
-    if (props) {
-        timeout = props->getUnsignedInt("timeout");
-        if (!timeout.first)
-            timeout.second = 3600;
-    }
+
+    unsigned int timeout = request.getRequestSettings().first->getUnsignedInt("timeout", 3600);
+
     // As long as one of the two factors is set, add them together.
-    if (timeout.second > 0 || m_cacheAllowance > 0)
-        return timeout.second + m_cacheAllowance;
+    if (timeout > 0 || m_cacheAllowance > 0)
+        return timeout + m_cacheAllowance;
 
     // If timeouts are off, and there's no cache slop set, then use the lifetime.
-    timeout = pair<bool, unsigned int>(false, 28800);
-    if (props) {
-        timeout = props->getUnsignedInt("lifetime");
-        if (!timeout.first || timeout.second == 0)
-            timeout.second = 28800;
-    }
-    return timeout.second;
+    return request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
 }
 
-string SSCache::active(const Application& app, const HTTPRequest& request)
+string SSCache::active(const SPRequest& request)
 {
     if (!m_inboundHeader.empty()) {
         string session_id = request.getHeader(m_inboundHeader.c_str());
@@ -255,7 +241,7 @@ string SSCache::active(const Application& app, const HTTPRequest& request)
             return session_id;
     }
 
-    const char* session_id = request.getCookie(app.getCookieName("_shibsession_").c_str());
+    const char* session_id = request.getCookie(getCookieName(request, "_shibsession_").c_str());
     return (session_id ? session_id : "");
 }
 
@@ -801,27 +787,42 @@ bool SSCache::stronglyMatches(const XMLCh* idp, const XMLCh* sp, const saml2::Na
 
 #endif
 
-HTTPResponse::samesite_t SSCache::getSameSitePolicy(const Application& app) const
+HTTPResponse::samesite_t SSCache::getSameSitePolicy(const SPRequest& request) const
 {
-    const PropertySet* props = app.getPropertySet("Sessions");
-    if (props) {
-        pair<bool,const char*> sameSiteSession = props->getString("sameSiteSession");
-        if (sameSiteSession.first) {
-            if (!strcmp(sameSiteSession.second, "None")) {
-                return HTTPResponse::SAMESITE_NONE;
-            }
-            else if (!strcmp(sameSiteSession.second, "Lax")) {
-                return HTTPResponse::SAMESITE_LAX;
-            }
-            else if (!strcmp(sameSiteSession.second, "Strict")) {
-                return HTTPResponse::SAMESITE_STRICT;
-            }
+    const char* sameSiteSession = request.getRequestSettings().first->getString("sameSiteSession");
+    if (sameSiteSession) {
+        if (!strcmp(sameSiteSession, "None")) {
+            return HTTPResponse::SAMESITE_NONE;
+        }
+        else if (!strcmp(sameSiteSession, "Lax")) {
+            return HTTPResponse::SAMESITE_LAX;
+        }
+        else if (!strcmp(sameSiteSession, "Strict")) {
+            return HTTPResponse::SAMESITE_STRICT;
         }
     }
     return HTTPResponse::SAMESITE_ABSENT;
 }
 
-Session* SSCache::_find(const Application& app, const char* key, const char* recovery, const char* client_addr, time_t* timeout)
+string SSCache::getCookieName(const SPRequest& request, const char* prefix, time_t* lifetime) const
+{
+    if (lifetime)
+        *lifetime = 0;
+    if (!prefix)
+        prefix = "";
+    if (lifetime) {
+        unsigned int lt = request.getRequestSettings().first->getUnsignedInt("cookieLifetime", 0);
+        if (lt > 0)
+            *lifetime = lt;
+    }
+    const char* p = request.getRequestSettings().first->getString("cookieName");
+    if (p)
+        return string(prefix) + p;
+
+    return string(prefix);  // TODO: implement some form of uniqueification for agent + getHash();
+}
+
+Session* SSCache::_find(const char* bucketID, const char* key, const char* recovery, const char* client_addr, time_t* timeout)
 {
     StoredSession* session=nullptr;
 
@@ -850,7 +851,7 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
             in.structure();
             in.addmember("key").string(key);
             in.addmember("sealed").string(recovery);
-            in.addmember("application_id").string(app.getId());
+            in.addmember("bucket_id").string(bucketID);
             if (timeout && *timeout) {
                 // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.
 #ifndef HAVE_GMTIME_R
@@ -969,36 +970,37 @@ Session* SSCache::_find(const Application& app, const char* key, const char* rec
         }
     }
 
-    if (!XMLString::equals(session->getApplicationID(), app.getId())) {
-        m_log.warn("an application (%s) tried to access another application's session", app.getId());
+    if (!XMLString::equals(session->getBucketID(), bucketID)) {
+        m_log.warn("session did not contain the expected bucket identifier(%s)", bucketID);
         session->unlock();
         return nullptr;
     }
 
     // Verify currency and update the timestamp if indicated by caller.
     try {
-        session->validate(app, client_addr, timeout);
+        session->validate(bucketID, client_addr, timeout);
     }
     catch (...) {
         session->unlock();
-        remove(app, key);
+        remove(bucketID, key);
         throw;
     }
 
     return session;
 }
 
-Session* SSCache::find(const Application& app, HTTPRequest& request, const char* client_addr, time_t* timeout)
+Session* SSCache::find(SPRequest& request, const char* client_addr, time_t* timeout)
 {
-    string id = active(app, request);
+    string id = active(request);
     if (id.empty())
         return nullptr;
 
-    HTTPResponse::samesite_t sameSitePolicy = getSameSitePolicy(app);
-    const char* c = request.getCookie(app.getCookieName("_shibsealed_").c_str());
+    HTTPResponse::samesite_t sameSitePolicy = getSameSitePolicy(request);
+
+    const char* bucketID = request.getRequestSettings().first->getString("sessionBucket", "default");
 
     try {
-        Session* session = _find(app, id.c_str(), c, client_addr, timeout);
+        Session* session = _find(bucketID, id.c_str(), nullptr, client_addr, timeout);
         if (session)
             return session;
 
@@ -1006,8 +1008,7 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
         if (response) {
             if (!m_outboundHeader.empty())
                 response->setResponseHeader(m_outboundHeader.c_str(), nullptr);
-            response->setCookie(app.getCookieName("_shibsession_").c_str(), nullptr, 0, sameSitePolicy);
-            response->setCookie(app.getCookieName("_shibsealed_").c_str(), nullptr, 0, sameSitePolicy);
+            response->setCookie(getCookieName(request, "_shibsession_").c_str(), nullptr, 0, sameSitePolicy);
         }
     }
     catch (const std::exception&) {
@@ -1015,141 +1016,17 @@ Session* SSCache::find(const Application& app, HTTPRequest& request, const char*
         if (response) {
             if (!m_outboundHeader.empty())
                 response->setResponseHeader(m_outboundHeader.c_str(), nullptr);
-            response->setCookie(app.getCookieName("_shibsession_").c_str(), nullptr, 0, sameSitePolicy);
-            response->setCookie(app.getCookieName("_shibsealed_").c_str(), nullptr, 0, sameSitePolicy);
+            response->setCookie(getCookieName(request, "_shibsession_").c_str(), nullptr, 0, sameSitePolicy);
         }
         throw;
     }
     return nullptr;
 }
 
-bool SSCache::recover(const Application& app, const char* key, const char* data)
-{
-    if (!SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        m_log.debug("remoting recovery of session from sealed cookie");
-        // Remote the request.
-        DDF in("recover::" STORAGESERVICE_SESSION_CACHE "::SessionCache"), out;
-        DDFJanitor jin(in);
-        in.structure();
-        in.addmember("key").string(key);
-        in.addmember("application_id").string(app.getId());
-        in.addmember("sealed").string(data);
-
-        //out = app.getServiceProvider().getListenerService()->send(in);
-        if (!out.isint() || out.integer() != 1) {
-            out.destroy();
-            m_log.debug("recovery of session (%s) failed", key);
-            return false;
-        }
-
-        out.destroy();
-        m_log.debug("session (%s) recovered from sealed cookie", key);
-    }
-    else {
-        // We're out of process, so we can recover the session.
-#ifndef SHIBSP_LITE
-        const DataSealer* sealer = XMLToolingConfig::getConfig().getDataSealer();
-        if (!sealer) {
-            m_log.warn("can't attempt recovery of session (%s), no DataSealer configured", key);
-            return false;
-        }
-
-        m_log.debug("checking for revocation of session (%s)", key);
-        try {
-            if (m_storage_lite->readString("Revoked", key) > 0) {
-                m_log.warn("blocked recovery of revoked session (%s)", key);
-                return false;
-            }
-        }
-        catch (const std::exception& ex) {
-            if (m_softRevocation)
-                m_log.warn("ignoring failed check for revocation of session (%s): %s", ex.what());
-            else {
-                m_log.warn("check for revocation of session (%s) failed, treating as revoked: %s", ex.what());
-                return false;
-            }
-        }
-
-        m_log.debug("attempting recovery of session (%s)", key);
-
-        DDF obj;
-        DDFJanitor jobj(obj);
-        string unwrapped;
-
-        char* dup = nullptr;
-        try {
-            dup = strdup(data);
-            XMLToolingConfig::getConfig().getURLEncoder()->decode(dup);
-            unwrapped = sealer->unwrap(dup);
-            free(dup);
-
-            stringstream str(unwrapped);
-            str >> obj;
-        }
-        catch (const std::exception& e) {
-            if (dup)
-                free(dup);
-            m_log.error("failed to unwrap sealed session data with DataSealer: %s", e.what());
-            return false;
-        }
-
-        if (!obj.isstruct() || !obj.name() || strcmp(obj.name(), key)) {
-            m_log.info("recovered session data was invalid for session (%s)", key);
-            return false;
-        }
-
-        scoped_ptr<saml2::NameID> nameidObject;
-        const char* nameid = obj["nameid"].string();
-        if (nameid) {
-            // Parse and bind the document into an XMLObject.
-            istringstream instr(nameid);
-            DOMDocument* doc = XMLToolingConfig::getConfig().getParser().parse(instr);
-            XercesJanitor<DOMDocument> janitor(doc);
-            nameidObject.reset(saml2::NameIDBuilder::buildNameID());
-            nameidObject->unmarshall(doc->getDocumentElement(), true);
-            janitor.release();
-        }
-
-        m_log.debug("storing recovered session (%s)...", key);
-        time_t now = time(nullptr);
-        if (!m_storage->createText(key, "session", unwrapped.c_str(), now + getCacheTimeout(app))) {
-            m_log.debug("recovered session (%s) matched existing record, likely a race condition");
-            return true;
-        }
-
-        // Store the reverse mapping for logout.
-        auto_ptr_char name(nameidObject ? nameidObject->getName() : nullptr);
-        if (name.get() && *name.get() && m_reverseIndex
-            && (m_excludedNames.size() == 0 || m_excludedNames.count(nameidObject->getName()) == 0)) {
-            try {
-                auto_ptr_XMLCh exp(obj["expires"].string());
-                if (exp.get()) {
-                    XMLDateTime iso(exp.get());
-                    iso.parseDateTime();
-                    insert(key, iso.getEpoch(), name.get(), obj["session_index"].string());
-                }
-            }
-            catch (const std::exception& ex) {
-                m_log.error("error storing back mapping of NameID for logout: %s", ex.what());
-            }
-        }
-
-        const char* pid = obj["entity_id"].string();
-        const char* prot = obj["protocol"].string();
-        m_log.info("session recovered: ID (%s) IdP (%s) Protocol(%s)",
-            key, pid ? pid : "none", prot ? prot : "none");
-#else
-        throw ConfigurationException("SessionCache recovery requires a DataSealer.");
-#endif
-    }
-
-    return true;
-}
-
-void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPResponse* response, time_t revocationExp)
+void SSCache::remove(SPRequest& request, time_t revocationExp)
 {
     string session_id;
-    string shib_cookie = app.getCookieName("_shibsession_");
+    string shib_cookie = getCookieName(request, "_shibsession_");
 
     if (!m_inboundHeader.empty())
         session_id = request.getHeader(m_inboundHeader.c_str());
@@ -1160,18 +1037,16 @@ void SSCache::remove(const Application& app, const HTTPRequest& request, HTTPRes
     }
 
     if (!session_id.empty()) {
-        if (response) {
-            if (!m_outboundHeader.empty())
-                response->setResponseHeader(m_outboundHeader.c_str(), nullptr);
-            HTTPResponse::samesite_t sameSitePolicy = getSameSitePolicy(app);
-            response->setCookie(shib_cookie.c_str(), nullptr, 0, sameSitePolicy);
-            response->setCookie(app.getCookieName("_shibsealed_").c_str(), nullptr, 0, sameSitePolicy);
-        }
-        remove(app, session_id.c_str(), revocationExp);
+        if (!m_outboundHeader.empty())
+            request.setResponseHeader(m_outboundHeader.c_str(), nullptr);
+        HTTPResponse::samesite_t sameSitePolicy = getSameSitePolicy(request);
+        request.setCookie(shib_cookie.c_str(), nullptr, 0, sameSitePolicy);
+        request.setCookie(request.getCookieName("_shibsealed_").c_str(), nullptr, 0, sameSitePolicy);
+        remove(request.getRequestSettings().first->getString("sessionBucket", "default"), session_id.c_str(), revocationExp);
     }
 }
 
-void SSCache::remove(const Application& app, const char* key, time_t revocationExp)
+void SSCache::remove(const char* bucketID, const char* key, time_t revocationExp)
 {
     // Take care of local copy.
     if (inproc)
@@ -1210,7 +1085,7 @@ void SSCache::remove(const Application& app, const char* key, time_t revocationE
         DDFJanitor jin(in);
         in.structure();
         in.addmember("key").string(key);
-        in.addmember("application_id").string(app.getId());
+        in.addmember("bucket_id").string(bucketID);
 
         //DDF out = app.getServiceProvider().getListenerService()->send(in);
         //out.destroy();

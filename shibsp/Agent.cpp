@@ -54,25 +54,25 @@ Agent::~Agent()
 // TODO: we'll eventually copy/port in substantially similar versions of the old ServiceProvider
 // method impls.
 
-pair<bool,long> Agent::doAuthentication(AgentRequest& request, bool handler) const
+pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 {
     pair<bool,long> foo;
     return foo;
 }
 
-pair<bool,long> Agent::doAuthorization(AgentRequest& request) const
+pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 {
     pair<bool, long> foo;
     return foo;
 }
 
-pair<bool,long> Agent::doExport(AgentRequest& request, bool requireSession) const
+pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 {
     pair<bool, long> foo;
     return foo;
 }
 
-pair<bool,long> Agent::doHandler(AgentRequest& request) const
+pair<bool,long> Agent::doHandler(SPRequest& request) const
 {
     pair<bool, long> foo;
     return foo;

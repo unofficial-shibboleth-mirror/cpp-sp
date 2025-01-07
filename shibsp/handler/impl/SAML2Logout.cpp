@@ -26,7 +26,6 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "Application.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
@@ -36,7 +35,6 @@
 #include <boost/scoped_ptr.hpp>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
@@ -57,7 +55,7 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        pair<bool,long> doRequest(const Application& application, HTTPRequest& httpRequest, HTTPResponse& httpResponse) const;
+        pair<bool,long> doRequest(SPRequest& request) const;
     };
 
 #if defined (_MSC_VER)
@@ -146,7 +144,7 @@ pair<bool,long> SAML2Logout::run(SPRequest& request, bool isHandler) const
     SPConfig& conf = SPConfig::getConfig();
     if (conf.isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively and directly process the message.
-        return doRequest(request.getApplication(), request, request);
+        return doRequest(request);
     }
     else {
         // When not out of process, we remote all the message processing.
@@ -161,6 +159,7 @@ pair<bool,long> SAML2Logout::run(SPRequest& request, bool isHandler) const
 
 void SAML2Logout::receive(DDF& in, ostream& out)
 {
+    /*
     // Find application.
     const char* aid = in["application_id"].string();
     const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
@@ -183,9 +182,10 @@ void SAML2Logout::receive(DDF& in, ostream& out)
     // which we capture in the facade and send back.
     doRequest(*app, *req, *resp);
     out << ret;
+    */
 }
 
-pair<bool,long> SAML2Logout::doRequest(const Application& application, HTTPRequest& request, HTTPResponse& response) const
+pair<bool,long> SAML2Logout::doRequest(SPRequest& request) const
 {
 #ifndef SHIBSP_LITE
     // First capture the active session ID, if any.

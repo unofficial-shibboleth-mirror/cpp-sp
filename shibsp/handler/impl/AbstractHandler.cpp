@@ -21,12 +21,12 @@
 #include "internal.h"
 
 #include "exceptions.h"
+#include "Agent.h"
 #include "AgentConfig.h"
-#include "Application.h"
-#include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutHandler.h"
+#include "remoting/RemotingService.h"
 #include "util/CGIParser.h"
 #include "util/SPConstants.h"
 #include "util/PathResolver.h"
@@ -43,6 +43,10 @@ using namespace shibsp;
 using namespace xercesc;
 using namespace boost;
 using namespace std;
+
+#ifndef HAVE_STRCASECMP
+# define strcasecmp _stricmp
+#endif
 
 namespace shibsp {
     SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2ConsumerFactory;
@@ -118,26 +122,17 @@ void Handler::log(Priority::Value level, const string& msg) const
     Category::getInstance(SHIBSP_LOGCAT ".Handler").log(level, msg);
 }
 
-void Handler::cleanRelayState(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response
-    ) const
+void Handler::cleanRelayState(SPRequest& request) const
 {
-    pair<bool,const char*> mech = getString("relayState");
-    if (!mech.first) {
-        // Check for setting on Sessions element.
-        const PropertySet* sessionprop = application.getPropertySet("Sessions");
-        if (sessionprop) {
-            mech = sessionprop->getString("relayState");
-        }
-    }
+    const char* mech = request.getRequestSettings().first->getString("relayState");
 
     int maxRSCookies = 20,purgedRSCookies = 0;
     int maxOSCookies = 20,purgedOSCookies = 0;
 
-    if (mech.first && !strncmp(mech.second, "cookie", 6)) {
-        mech.second += 6;
-        if (*mech.second == ':' && isdigit(*(++mech.second))) {
-            maxRSCookies = maxOSCookies = atoi(mech.second);
+    if (mech && !strncmp(mech, "cookie", 6)) {
+        mech += 6;
+        if (*mech == ':' && isdigit(*(++mech))) {
+            maxRSCookies = maxOSCookies = atoi(mech);
             if (maxRSCookies == 0) {
                 maxRSCookies = maxOSCookies = 20;
             }
@@ -154,7 +149,7 @@ void Handler::cleanRelayState(
             }
             else {
                 // We're over the limit, so everything here and older gets cleaned up.
-                response.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
+                request.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
                 ++purgedRSCookies;
             }
         }
@@ -165,7 +160,7 @@ void Handler::cleanRelayState(
             }
             else {
                 // We're over the limit, so everything here and older gets cleaned up.
-                response.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
+                request.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
                 ++purgedOSCookies;
             }
         }
@@ -177,7 +172,7 @@ void Handler::cleanRelayState(
         log(Priority::SHIB_DEBUG, string("purged ") + lexical_cast<string>(purgedOSCookies) + " stale request correlation cookie(s) from client");
 }
 
-void Handler::preserveRelayState(const Application& application, HTTPResponse& response, string& relayState) const
+void Handler::preserveRelayState(SPRequest& request, string& relayState) const
 {
     // The empty string implies no state to deal with but we need to generate a correlation handle.
     if (relayState.empty()) {
@@ -187,17 +182,12 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
     }
 
     // No setting means just pass state by value.
-    pair<bool,const char*> mech = getString("relayState");
-    if (!mech.first) {
-        // Check for setting on Sessions element.
-        const PropertySet* sessionprop = application.getPropertySet("Sessions");
-        if (sessionprop)
-            mech = sessionprop->getString("relayState");
-    }
-    if (!mech.first || !mech.second || !*mech.second)
+    const char* mech = request.getRequestSettings().first->getString("relayState");
+    if (!mech || !*mech) {
         return;
+    }
 
-    if (!strncmp(mech.second, "cookie", 6)) {
+    if (!strncmp(mech, "cookie", 6)) {
         // Here we store the state in a cookie and send a fixed
         // value so we can recognize it on the way back.
         if (relayState.find("cookie:") != 0 && relayState.find("ss:") != 0) {
@@ -206,16 +196,16 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
             generateRandomHex(rsKey, 4);
             rsKey = lexical_cast<string>(time(nullptr)) + '_' + rsKey;
             string shib_cookie_name = "_shibstate_" + rsKey;
-            response.setCookie(shib_cookie_name.c_str(),
+            request.setCookie(shib_cookie_name.c_str(),
                 AgentConfig::getConfig().getURLEncoder().encode(relayState.c_str()).c_str(),
                     0, HTTPResponse::SAMESITE_NONE);
             relayState = "cookie:" + rsKey;
         }
     }
-    else if (!strncmp(mech.second, "ss:", 3)) {
+    else if (!strncmp(mech, "ss:", 3)) {
         if (relayState.find("cookie:") != 0 && relayState.find("ss:") != 0) {
-            mech.second+=3;
-            if (*mech.second) {
+            mech+=3;
+            if (*mech) {
                 if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
 #ifndef SHIBSP_LITE
                     StorageService* storage = application.getServiceProvider().getStorageService(mech.second);
@@ -246,13 +236,13 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
                 }
                 else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
                     DDF out,in = DDF("set::RelayState").structure();
-                    in.addmember("id").string(mech.second);
+                    in.addmember("id").string(mech);
                     in.addmember("value").unsafe_string(relayState.c_str());
                     DDFJanitor jin(in),jout(out);
-                    //out = application.getServiceProvider().getListenerService()->send(in);
+                    out = request.getAgent().getRemotingService()->send(in);
                     if (!out.isstring())
                         throw IOException("StorageService-backed RelayState mechanism did not return a state key.");
-                    relayState = string(mech.second-3) + ':' + out.string();
+                    relayState = string(mech-3) + ':' + out.string();
                 }
             }
         }
@@ -262,12 +252,8 @@ void Handler::preserveRelayState(const Application& application, HTTPResponse& r
     }
 }
 
-void Handler::recoverRelayState(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response, string& relayState, bool clear
-    ) const
+void Handler::recoverRelayState(SPRequest& request, string& relayState, bool clear) const
 {
-    SPConfig& conf = SPConfig::getConfig();
-
     // Sentry value that signifies it was only a correlation tool.
     if (starts_with(relayState, "corr:")) {
         relayState.clear();
@@ -283,7 +269,7 @@ void Handler::recoverRelayState(
             string ssid = relayState.substr(3, key - state);
             key++;
             if (!ssid.empty() && *key) {
-                if (conf.isEnabled(SPConfig::OutOfProcess)) {
+                if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
 #ifndef SHIBSP_LITE
                     StorageService* storage = conf.getServiceProvider()->getStorageService(ssid.c_str());
                     if (storage) {
@@ -312,13 +298,13 @@ void Handler::recoverRelayState(
                     }
 #endif
                 }
-                else if (conf.isEnabled(SPConfig::InProcess)) {
+                else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
                     DDF out,in = DDF("get::RelayState").structure();
                     in.addmember("id").string(ssid.c_str());
                     in.addmember("key").string(key);
                     in.addmember("clear").integer(clear ? 1 : 0);
                     DDFJanitor jin(in),jout(out);
-                    //out = application.getServiceProvider().getListenerService()->send(in);
+                    out = request.getAgent().getRemotingService()->send(in);
                     if (!out.isstring()) {
                         log(Priority::SHIB_ERROR, "StorageService-backed RelayState mechanism did not return a state value.");
                         relayState.erase();
@@ -348,7 +334,7 @@ void Handler::recoverRelayState(
                 relayState = rscopy;
                 free(rscopy);
                 if (clear) {
-                    response.setCookie(relay_cookie.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
+                    request.setCookie(relay_cookie.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
                 }
                 request.absolutize(relayState);
                 return;
@@ -360,11 +346,7 @@ void Handler::recoverRelayState(
 
     // Check for "default" value (or the old "cookie" value that might come from stale bookmarks).
     if (relayState.empty() || relayState == "default" || relayState == "cookie") {
-        pair<bool,const char*> homeURL=application.getString("homeURL");
-        if (homeURL.first)
-            relayState = homeURL.second;
-        else
-            relayState = '/';
+        relayState = request.getRequestSettings().first->getString("homeURL", "/");
     }
 
     request.absolutize(relayState);
@@ -530,31 +512,26 @@ long AbstractHandler::sendMessage(
 
 #endif
 
-void AbstractHandler::preservePostData(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* relayState
-    ) const
+void AbstractHandler::preservePostData(SPRequest& request, const char* relayState) const
 {
-#ifdef HAVE_STRCASECMP
-    if (strcasecmp(request.getMethod(), "POST")) return;
-#else
-    if (stricmp(request.getMethod(), "POST")) return;
-#endif
+    if (strcasecmp(request.getMethod(), "POST")) {
+        return;
+    }
 
     // No specs mean no save.
-    const PropertySet* props = application.getPropertySet("Sessions");
-    pair<bool,const char*> mech = props ? props->getString("postData") : pair<bool,const char*>(false,nullptr);
-    if (!mech.first) {
+    const char* mech = request.getRequestSettings().first->getString("postData");
+    if (!mech) {
         m_log.info("postData property not supplied, form data will not be preserved across SSO");
         return;
     }
 
-    DDF postData = getPostData(application, request);
+    DDF postData = getPostData(request);
     if (postData.isnull())
         return;
 
-    if (strstr(mech.second,"ss:") == mech.second) {
-        mech.second+=3;
-        if (!*mech.second) {
+    if (strstr(mech, "ss:") == mech) {
+        mech+=3;
+        if (!*mech) {
             postData.destroy();
             throw ConfigurationException("Unsupported postData mechanism.");
         }
@@ -585,15 +562,15 @@ void AbstractHandler::preservePostData(
         else if (SPConfig::getConfig().isEnabled(SPConfig::InProcess)) {
             DDF out,in = DDF("set::PostData").structure();
             DDFJanitor jin(in),jout(out);
-            in.addmember("id").string(mech.second);
+            in.addmember("id").string(mech);
             in.add(postData);
-            //out = application.getServiceProvider().getListenerService()->send(in);
+            out = request.getAgent().getRemotingService()->send(in);
             if (!out.isstring())
                 throw IOException("StorageService-backed PostData mechanism did not return a state key.");
-            postkey = string(mech.second-3) + ':' + out.string();
+            postkey = string(mech-3) + ':' + out.string();
         }
 
-        string shib_cookie = getPostCookieName(application, relayState);
+        string shib_cookie = getPostCookieName(request, relayState);
 
         // Purge any cookies in excess of 25.
         int maxCookies = 20,purgedCookies = 0;
@@ -609,7 +586,7 @@ void AbstractHandler::preservePostData(
                 }
                 else {
                     // We're over the limit, so everything here and older gets cleaned up.
-                    response.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
+                    request.setCookie(i->first.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
                     ++purgedCookies;
                 }
             }
@@ -619,7 +596,7 @@ void AbstractHandler::preservePostData(
             log(Priority::SHIB_DEBUG, string("purged ") + lexical_cast<string>(purgedCookies) + " stale POST preservation cookie(s) from client");
 
         // Set a cookie with key info.
-        response.setCookie(shib_cookie.c_str(), postkey.c_str(), 0, HTTPResponse::SAMESITE_NONE);
+        request.setCookie(shib_cookie.c_str(), postkey.c_str(), 0, HTTPResponse::SAMESITE_NONE);
     }
     else {
         postData.destroy();
@@ -627,11 +604,9 @@ void AbstractHandler::preservePostData(
     }
 }
 
-DDF AbstractHandler::recoverPostData(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* relayState
-    ) const
+DDF AbstractHandler::recoverPostData(SPRequest& request, const char* relayState) const
 {
-    string shib_cookie = getPostCookieName(application, relayState);
+    string shib_cookie = getPostCookieName(request, relayState);
 
     // First we need the post recovery cookie.
     const char* cookie = request.getCookie(shib_cookie.c_str());
@@ -639,7 +614,7 @@ DDF AbstractHandler::recoverPostData(
         return DDF();
 
     // Clear the cookie.
-    response.setCookie(shib_cookie.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
+    request.setCookie(shib_cookie.c_str(), nullptr, 0, HTTPResponse::SAMESITE_NONE);
 
     // Look for StorageService-backed state of the form "ss:SSID:key".
     const char* state = cookie;
@@ -676,10 +651,10 @@ DDF AbstractHandler::recoverPostData(
                     DDFJanitor jin(in);
                     in.addmember("id").string(ssid.c_str());
                     in.addmember("key").string(key);
-                    //DDF out = application.getServiceProvider().getListenerService()->send(in);
-                    //if (out.islist())
-                    //    return out;
-                    //out.destroy();
+                    DDF out = request.getAgent().getRemotingService()->send(in);
+                    if (out.islist())
+                        return out;
+                    out.destroy();
                     m_log.error("storageService-backed PostData mechanism did not return preserved data.");
                 }
             }
@@ -688,9 +663,7 @@ DDF AbstractHandler::recoverPostData(
     return DDF();
 }
 
-long AbstractHandler::sendPostResponse(
-    const Application& application, HTTPResponse& httpResponse, const char* url, DDF& postData
-    ) const
+long AbstractHandler::sendPostResponse(HTTPResponse& httpResponse, const char* url, DDF& postData) const
 {
     HTTPResponse::sanitizeURL(url);
 
@@ -733,7 +706,7 @@ long AbstractHandler::sendPostResponse(
    return 0;
 }
 
-string AbstractHandler::getPostCookieName(const Application& app, const char* relayState) const
+string AbstractHandler::getPostCookieName(const SPRequest& request, const char* relayState) const
 {
     // Decorates the name of the cookie with the relay state key, if any.
     // Doing so gives a better assurance that the recovered data really
@@ -746,18 +719,15 @@ string AbstractHandler::getPostCookieName(const Application& app, const char* re
         if (pch)
             return string("_shibpost_") + (pch + 1);
     }
-    return app.getCookieName("_shibpost_");
+    return request.getCookieName("_shibpost_");
 }
 
-DDF AbstractHandler::getPostData(const Application& application, const HTTPRequest& request) const
+DDF AbstractHandler::getPostData(const SPRequest& request) const
 {
     string contentType = request.getContentType();
     if (contentType.find("application/x-www-form-urlencoded") != string::npos) {
-        const PropertySet* props = application.getPropertySet("Sessions");
-        pair<bool,unsigned int> plimit = props ? props->getUnsignedInt("postLimit") : pair<bool,unsigned int>(false,0);
-        if (!plimit.first)
-            plimit.second = 1024 * 1024;
-        if (plimit.second == 0 || request.getContentLength() <= plimit.second) {
+        unsigned int plimit = request.getRequestSettings().first->getUnsignedInt("postLimit", 1024 * 1024);
+        if (plimit == 0 || request.getContentLength() <= plimit) {
             CGIParser cgi(request);
             pair<CGIParser::walker,CGIParser::walker> params = cgi.getParameters(nullptr);
             if (params.first == params.second)

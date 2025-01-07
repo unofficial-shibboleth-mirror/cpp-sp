@@ -33,8 +33,7 @@ namespace shibsp {
 
     class SHIBSP_API Application;
     class SHIBSP_API Attribute;
-    class SHIBSP_API HTTPRequest;
-    class SHIBSP_API HTTPResponse;
+    class SHIBSP_API SPRequest;
 
     /**
      * Encapsulates access to a user's security session.
@@ -59,11 +58,12 @@ namespace shibsp {
         virtual const char* getID() const=0;
 
         /**
-         * Returns the session's application ID.
+         * Returns the session's "bucket" ID, i.e., a value separating sessions into
+         * specific buckets based on resources.
          *
-         * @return unique ID of application bound to session
+         * @return unique ID of session bucket
          */
-        virtual const char* getApplicationID() const=0;
+        virtual const char* getBucketID() const=0;
 
         /**
          * Returns the session expiration.
@@ -158,9 +158,7 @@ namespace shibsp {
          * <p>The SSO tokens and Attributes remain owned by the caller and are copied by the cache.</p>
          *
          * @param sessionID         reference to string to capture newly inserted session ID
-         * @param application       reference to Application that owns the Session
-         * @param httpRequest       request that initiated session
-         * @param httpResponse      current response to client
+         * @param request           request that initiated session
          * @param expires           expiration time of session
          * @param issuer            issuing metadata of assertion issuer, if known
          * @param protocol          protocol family used to initiate the session
@@ -174,9 +172,7 @@ namespace shibsp {
          */
         virtual void insert(
             std::string& sessionID,
-            const Application& application,
-            const xmltooling::HTTPRequest& httpRequest,
-            xmltooling::HTTPResponse& httpResponse,
+            const SPRequest& request,
             time_t expires,
             const opensaml::saml2md::EntityDescriptor* issuer=nullptr,
             const XMLCh* protocol=nullptr,
@@ -192,7 +188,6 @@ namespace shibsp {
         /**
          * Determines whether the Session bound to a client request matches a set of input criteria.
          *
-         * @param application   reference to Application that owns the Session
          * @param request       request in which to locate Session
          * @param issuer        required source of session(s)
          * @param nameid        required name identifier
@@ -200,8 +195,7 @@ namespace shibsp {
          * @return  true iff the Session exists and matches the input criteria
          */
         virtual bool matches(
-            const Application& application,
-            xmltooling::HTTPRequest& request,
+            const SPRequest& request,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes
@@ -217,7 +211,7 @@ namespace shibsp {
         * <p>Until logout expiration, any attempt to create a session with the same parameters
         * will be blocked by the cache.
         *
-        * @param application   reference to Application that owns the session(s)
+        * @param bucketID      bucket for session
         * @param issuer        source of session(s)
         * @param nameid        name identifier associated with the session(s) to terminate
         * @param indexes       indexes of sessions, or nullptr for all sessions associated with other parameters
@@ -225,7 +219,7 @@ namespace shibsp {
         * @param sessions      on exit, contains the IDs of the matching sessions found
         */
         virtual std::vector<std::string>::size_type logout(
-            const Application& application,
+            const char* bucketID,
             const opensaml::saml2md::EntityDescriptor* issuer,
             const opensaml::saml2::NameID& nameid,
             const std::set<std::string>* indexes,
@@ -242,11 +236,10 @@ namespace shibsp {
         /**
          * Returns the ID of the session bound to the specified client request, if possible.
          *
-         * @param application   reference to Application that owns the Session
-         * @param request       request from client containing session, or a reference to it
+         * @param request   request from client containing session
          * @return  ID of session, if any known, or an empty string
          */
-        virtual std::string active(const Application& application, const HTTPRequest& request)=0;
+        virtual std::string active(const SPRequest& request)=0;
 
         /**
          * Locates an existing session bound to a request.
@@ -257,59 +250,49 @@ namespace shibsp {
          * <p>If a bound session is found to have expired, be invalid, etc., and if the request
          * can be used to "clear" the session from subsequent client requests, then it may be cleared.</p>
          *
-         * @param application   reference to Application that owns the Session
          * @param request       request from client bound to session
          * @param client_addr   network address of client (if known)
          * @param timeout       inactivity timeout to enforce (0 for none, nullptr to bypass check/update of last access)
          * @return  pointer to locked Session, or nullptr
          */
-        virtual Session* find(
-            const Application& application,
-            HTTPRequest& request,
-            const char* client_addr=nullptr,
-            time_t* timeout=nullptr
-            )=0;
+        virtual Session* find(SPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr)=0;
 
         /**
          * Deletes an existing session bound to a request.
          *
          * <p>Revocation may be supported by some implementations.</p>
          *
-         * @param application   reference to Application that owns the Session
-         * @param request       request from client containing session, or a reference to it
-         * @param response      optional response to client enabling removal of session or reference
+         * @param request       request from client containing session
          * @param revocationExp optional indicator for length of time to track revocation of this session
          */
-        virtual void remove(
-            const Application& application,
-            const HTTPRequest& request,
-            HTTPResponse* response=nullptr,
-            time_t revocationExp=0
-        )=0;
+        virtual void remove(SPRequest& request, time_t revocationExp=0)=0;
 
         /**
         * Locates an existing session by ID.
         *
-        * @param application   reference to Application that owns the Session
+        * @param bucketID      bucket for session
         * @param key           session key
         * @return  pointer to locked Session, or nullptr
         */
-        virtual Session* find(const Application& application, const char* key)=0;
+        virtual Session* find(const char* bucketID, const char* key)=0;
 
         /**
         * Deletes an existing session.
         *
         * <p>Revocation may be supported by some implementations.</p>
         *
-        * @param application   reference to Application that owns the Session
+        * @param bucketID      bucket for session
         * @param key           session key
         * @param revocationExp optional indicator for length of time to track revocation of this session
         */
-        virtual void remove(const Application& application, const char* key, time_t revocationExp=0)=0;
+        virtual void remove(const char* bucketID, const char* key, time_t revocationExp=0)=0;
     };
 
-    /** SessionCache implementation backed by a StorageService. */
-    #define STORAGESERVICE_SESSION_CACHE    "StorageService"
+    /** SessionCache implementation backed by the file system. */
+    #define FILESYSTEM_SESSION_CACHE    "filesystem"
+
+    /** SessionCache implementation backed by a hub-hosted StorageService. */
+    #define STORAGESERVICE_SESSION_CACHE    "storage"
 
     /**
      * Registers SessionCache classes into the runtime.

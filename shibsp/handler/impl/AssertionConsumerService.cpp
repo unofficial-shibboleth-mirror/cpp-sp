@@ -26,17 +26,13 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "Application.h"
 #include "ServiceProvider.h"
 #include "SPRequest.h"
 #include "handler/AssertionConsumerService.h"
 #include "util/CGIParser.h"
 #include "util/SPConstants.h"
 
-# include <ctime>
-
-#include <xmltooling/XMLToolingConfig.h>
-#include <xmltooling/util/URLEncoder.h>
+#include <ctime>
 
 using namespace shibspconstants;
 using namespace shibsp;
@@ -77,13 +73,13 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
             param = cgi.getParameters("target");
             if (param.first != param.second && param.first->second)
                 target = param.first->second;
-            return finalizeResponse(request.getApplication(), request, request, target);
+            return finalizeResponse(request, target);
         }
     }
 
     if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
         // When out of process, we run natively and directly process the message.
-        return processMessage(request.getApplication(), request, request);
+        return processMessage(request);
     }
     else {
         // When not out of process, we remote all the message processing.
@@ -99,6 +95,8 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
 
 void AssertionConsumerService::receive(DDF& in, ostream& out)
 {
+    /*
+
     // Find application.
     const char* aid = in["application_id"].string();
     const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
@@ -121,11 +119,11 @@ void AssertionConsumerService::receive(DDF& in, ostream& out)
     // which we capture in the facade and send back.
     processMessage(*app, *req, *resp);
     out << ret;
+
+    */
 }
 
-pair<bool,long> AssertionConsumerService::processMessage(
-    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse
-    ) const
+pair<bool,long> AssertionConsumerService::processMessage(const SPRequest& httpRequest) const
 {
 #ifndef SHIBSP_LITE
     // Locate policy key.
@@ -238,61 +236,44 @@ pair<bool,long> AssertionConsumerService::processMessage(
 #endif
 }
 
-pair<bool,long> AssertionConsumerService::finalizeResponse(
-    const Application& application, const HTTPRequest& httpRequest, HTTPResponse& httpResponse, string& relayState
-    ) const
+pair<bool,long> AssertionConsumerService::finalizeResponse(SPRequest& request, string& relayState) const
 {
-    DDF postData = recoverPostData(application, httpRequest, httpResponse, relayState.c_str());
+    DDF postData = recoverPostData(request, relayState.c_str());
     DDFJanitor postjan(postData);
-    recoverRelayState(application, httpRequest, httpResponse, relayState);
-    application.limitRedirect(httpRequest, relayState.c_str());
+    recoverRelayState(request, relayState);
+    request.limitRedirect(relayState.c_str());
 
     // Now redirect to the state value. By now, it should be set to *something* usable.
     // First check for POST data.
     if (!postData.islist()) {
         m_log.debug("ACS returning via redirect to: %s", relayState.c_str());
-        return make_pair(true, httpResponse.sendRedirect(relayState.c_str()));
+        return make_pair(true, request.sendRedirect(relayState.c_str()));
     }
     else {
         m_log.debug("ACS returning via POST to: %s", relayState.c_str());
-        return make_pair(true, sendPostResponse(application, httpResponse, relayState.c_str(), postData));
+        return make_pair(true, sendPostResponse(request, relayState.c_str(), postData));
     }
 }
 
-void AssertionConsumerService::checkAddress(const Application& application, const HTTPRequest& httpRequest, const char* issuedTo) const
+void AssertionConsumerService::checkAddress(const SPRequest& request, const char* issuedTo) const
 {
     if (!issuedTo || !*issuedTo)
         return;
 
-    const PropertySet* props = application.getPropertySet("Sessions");
-    pair<bool,bool> checkAddress = props ? props->getBool("checkAddress") : make_pair(false,true);
-    if (!checkAddress.first)
-        checkAddress.second = true;
-
-    if (checkAddress.second) {
+    if (request.getRequestSettings().first->getBool("checkAddress", true)) {
         m_log.debug("checking client address");
-        if (httpRequest.getRemoteAddr() != issuedTo) {
-            throw XMLToolingException(
-               "Your client's current address ($client_addr) differs from the one used when you authenticated "
-                "to your identity provider. To correct this problem, you may need to bypass a proxy server. "
-                "Please contact your local support staff or help desk for assistance.",
-                namedparams(1, "client_addr", httpRequest.getRemoteAddr().c_str())
+        if (request.getRemoteAddr() != issuedTo) {
+            throw agent_exception(
+               string("Your client's current address (") + request.getRemoteAddr() +
+                ") differs from the one used when you authenticated to your home organization. "
+                "To correct this problem, you may need to bypass a proxy server. "
+                "Please contact your local support staff or help desk for assistance."
                 );
         }
     }
 }
 
 #ifndef SHIBSP_LITE
-
-const char* AssertionConsumerService::getProfile() const
-{
-    return nullptr;
-}
-
-const XMLCh* AssertionConsumerService::getProtocolFamily() const
-{
-    return m_decoder ? m_decoder->getProtocolFamily() : nullptr;
-}
 
 namespace {
     class SHIBSP_DLLLOCAL DummyContext : public ResolutionContext

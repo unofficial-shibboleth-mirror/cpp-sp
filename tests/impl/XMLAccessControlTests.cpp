@@ -52,7 +52,7 @@ public:
     const char* getID() const {
         return nullptr;
     }
-    const char* getApplicationID() const {
+    const char* getBucketID() const {
         return nullptr;
     }
     time_t getExpiration() const {

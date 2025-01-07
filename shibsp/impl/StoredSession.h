@@ -27,7 +27,6 @@
 #ifndef __shibsp_storedsession_h__
 #define __shibsp_storedsession_h__
 
-#include "Application.h"
 #include "SessionCache.h"
 #include "remoting/ddf.h"
 
@@ -51,8 +50,8 @@ namespace shibsp {
         const char* getID() const {
             return m_obj.name();
         }
-        const char* getApplicationID() const {
-            return m_obj["application_id"].string();
+        const char* getBucketID() const {
+            return m_obj["bucket_id"].string();
         }
         const char* getClientAddress() const {
             return m_obj["client_addr"].first().string();
@@ -89,7 +88,7 @@ namespace shibsp {
         }
         const std::multimap<std::string, const Attribute*>& getIndexedAttributes() const;
 
-        void validate(const Application& application, const char* client_addr, time_t* timeout);
+        void validate(const char* bucketID, const char* client_addr, time_t* timeout);
 
         time_t getExpiration() const { return m_expires; }
         time_t getLastAccess() const { return m_lastAccess; }

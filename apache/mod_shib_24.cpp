@@ -39,6 +39,7 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/AbstractSPRequest.h>
 #include <shibsp/AccessControl.h>
+#include <shibsp/Agent.h>
 #include <shibsp/AgentConfig.h>
 #include <shibsp/RequestMapper.h>
 #include <shibsp/SPConfig.h>
@@ -648,7 +649,7 @@ extern "C" int shib_check_user(request_rec* r)
         }
 
         // Check user authentication and export information, then set the handler bypass
-        pair<bool,long> res = psta->getServiceProvider().doAuthentication(*psta, true);
+        pair<bool,long> res = psta->getAgent().doAuthentication(*psta, true);
         apr_pool_userdata_setn((const void*)42,g_UserDataKey,nullptr,r->pool);
         // If directed, install a spoof key to recognize when we've already cleared headers.
         if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &shib_module))->bUseHeaders == 1))
@@ -664,7 +665,7 @@ extern "C" int shib_check_user(request_rec* r)
         }
 
         // user auth was okay -- export the session data now
-        res = psta->getServiceProvider().doExport(*psta);
+        res = psta->getAgent().doExport(*psta);
         if (res.first) {
             // See above for explanation of this hack.
             if (res.second == OK && !r->user)
@@ -722,7 +723,7 @@ extern "C" int shib_handler(request_rec* r)
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        pair<bool,long> res = psta->getServiceProvider().doHandler(*psta);
+        pair<bool,long> res = psta->getAgent().doHandler(*psta);
         if (res.first) return res.second;
 
         ap_log_rerror(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, 0, r, "doHandler() did not handle the request");
@@ -769,7 +770,7 @@ extern "C" int shib_auth_checker(request_rec* r)
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        pair<bool,long> res = psta->getServiceProvider().doAuthorization(*psta);
+        pair<bool,long> res = psta->getAgent().doAuthorization(*psta);
         if (res.first) return res.second;
 
         // The SP method should always return true, so if we get this far, something unusual happened.

@@ -19,17 +19,17 @@
  */
 
 #include "internal.h"
-#include "Application.h"
 #include "exceptions.h"
+#include "AgentConfig.h"
 #include "handler/AbstractHandler.h"
 #include "handler/SessionInitiator.h"
+#include "util/URLEncoder.h"
 
 #include <boost/algorithm/string.hpp>
 #include <xmltooling/XMLToolingConfig.h>
 #include <xmltooling/util/URLEncoder.h>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace boost;
 using namespace std;
 
@@ -105,23 +105,22 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
     string target;
     pair<bool,const char*> prop;
     bool isPassive = false;
-    const Application& app = request.getApplication();
     pair<bool,const char*> discoveryURL = pair<bool,const char*>(false, nullptr);
 
     if (isHandler) {
         prop.second = request.getParameter("SAMLDS");
         if (prop.second && !strcmp(prop.second,"1")) {
-            XMLToolingException ex("No identity provider was selected by user.");
+            SessionException ex("No identity provider was selected by user.");
             ex.addProperty("statusCode", "urn:oasis:names:tc:SAML:2.0:status:Requester");
             ex.addProperty("statusCode2", "urn:oasis:names:tc:SAML:2.0:status:NoAvailableIDP");
-            ex.raise();
+            throw ex;
         }
 
         prop = getString("target", request);
         if (prop.first)
             target = prop.second;
 
-        recoverRelayState(app, request, request, target, false);
+        recoverRelayState(request, target, false);
 
         pair<bool,bool> passopt = getBool("isPassive", request);
         isPassive = passopt.first && passopt.second;
@@ -163,11 +162,11 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         if (prop.second && *prop.second)
             target = prop.second;
     }
-    preserveRelayState(app, request, target);
+    preserveRelayState(request, target);
     if (!isHandler)
-        preservePostData(app, request, request, target.c_str());
+        preservePostData(request, target.c_str());
 
-    const URLEncoder* urlenc = XMLToolingConfig::getConfig().getURLEncoder();
+    const URLEncoder& urlenc = AgentConfig::getConfig().getURLEncoder();
     if (isHandler) {
         // Now the hard part. The base assumption is to append the entire query string, if any,
         // to the self-link. But we want to replace target with the RelayState-preserved value
@@ -203,17 +202,17 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
 
         // Now append the sanitized target as needed.
         if (!target.empty())
-            returnURL = returnURL + "&target=" + urlenc->encode(target.c_str());
+            returnURL = returnURL + "&target=" + urlenc.encode(target.c_str());
     }
     else {
         // For a virtual handler, we append target to the return link.
          if (!target.empty())
-            returnURL = returnURL + "&target=" + urlenc->encode(target.c_str());
+            returnURL = returnURL + "&target=" + urlenc.encode(target.c_str());
          // Preserve designated request settings on the URL.
          for (vector<string>::const_iterator opt = m_preservedOptions.begin(); opt != m_preservedOptions.end(); ++ opt) {
              const char* optval = request.getRequestSettings().first->getString(opt->c_str());
              if (optval)
-                 returnURL = returnURL + '&' + (*opt) + '=' + urlenc->encode(optval);
+                 returnURL = returnURL + '&' + (*opt) + '=' + urlenc.encode(optval);
          }
     }
 
@@ -229,18 +228,18 @@ pair<bool,long> SAMLDSSessionInitiator::run(SPRequest& request, string& entityID
         }
     }
     else {
-        prop = app.getString("entityID");
+        prop.second = request.getRequestSettings().first->getString("entityID");
     }
 
-    string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "entityID=" + urlenc->encode(prop.second) +
-        "&return=" + urlenc->encode(returnURL.c_str());
+    string req=string(discoveryURL.second) + (strchr(discoveryURL.second,'?') ? '&' : '?') + "entityID=" + urlenc.encode(prop.second) +
+        "&return=" + urlenc.encode(returnURL.c_str());
     if (m_returnParam)
         req = req + "&returnIDParam=" + m_returnParam;
     if (isPassive)
         req += "&isPassive=true";
     prop = getString("discoveryPolicy");
     if (prop.first)
-        req += "&policy=" + urlenc->encode(prop.second);
+        req += "&policy=" + urlenc.encode(prop.second);
 
     return make_pair(true, request.sendRedirect(req.c_str()));
 }

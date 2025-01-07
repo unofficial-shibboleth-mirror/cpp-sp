@@ -24,11 +24,11 @@
 #include <shibsp/util/PropertySet.h>
 
 #include <set>
+#include <vector>
 #include <xmltooling/Lockable.h>
 
 namespace shibsp {
 
-    class SHIBSP_API Application;
     class SHIBSP_API Handler;
     class SHIBSP_API ListenerService;
     class SHIBSP_API Remoted;
@@ -81,14 +81,6 @@ namespace shibsp {
          */
         virtual RequestMapper* getRequestMapper(bool required=true) const=0;
         
-        /**
-         * Returns an Application instance matching the specified ID.
-         * 
-         * @param applicationId the ID of the application, or nullptr for the default
-         * @return  pointer to the application, or nullptr
-         */
-        virtual const Application* getApplication(const char* applicationId) const=0;
-
         /**
          * Enforces requirements for an authenticated session.
          * 

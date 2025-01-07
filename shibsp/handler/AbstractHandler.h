@@ -36,8 +36,6 @@ namespace xmltooling {
 
 namespace shibsp {
 
-    class SHIBSP_API Application;
-
 #if defined (_MSC_VER)
     #pragma warning( push )
     #pragma warning( disable : 4250 )
@@ -122,17 +120,10 @@ namespace shibsp {
         /**
          * Implements a mechanism to preserve form post data.
          *
-         * @param application   the associated Application
-         * @param request       incoming HTTP request
-         * @param response      outgoing HTTP response
+         * @param request       SP request
          * @param relayState    relay state information attached to current sequence, if any
          */
-        virtual void preservePostData(
-            const Application& application,
-            const HTTPRequest& request,
-            HTTPResponse& response,
-            const char* relayState
-            ) const;
+        virtual void preservePostData(SPRequest& request, const char* relayState) const;
 
         /**
          * Implements storage service and cookie mechanism to recover PostData.
@@ -140,33 +131,21 @@ namespace shibsp {
          * <p>If a supported mechanism can be identified, the return value will be
          * the recovered state information.
          *
-         * @param application   the associated Application
          * @param request       incoming HTTP request
          * @param response      outgoing HTTP response
          * @param relayState    relay state information attached to current sequence, if any
          * @return  recovered form post data associated with request as a DDF list of string members
          */
-        virtual DDF recoverPostData(
-            const Application& application,
-            const HTTPRequest& request,
-            HTTPResponse& response,
-            const char* relayState
-            ) const;
+        virtual DDF recoverPostData(SPRequest& request, const char* relayState) const;
 
         /**
          * Post a redirect response with post data.
          *
-         * @param application   the associated Application
          * @param response      outgoing HTTP response
          * @param url           action url for the form
          * @param postData      list of parameters to load into the form, as DDF string members
          */
-        virtual long sendPostResponse(
-            const Application& application,
-            HTTPResponse& response,
-            const char* url,
-            DDF& postData
-            ) const;
+        virtual long sendPostResponse(HTTPResponse& response, const char* url, DDF& postData) const;
 
         /**
          * Bitmask of property sources to read from
@@ -233,8 +212,8 @@ namespace shibsp {
         virtual ~AbstractHandler();
 
     private:
-        std::string getPostCookieName(const Application& app, const char* relayState) const;
-        DDF getPostData(const Application& application, const HTTPRequest& request) const;
+        std::string getPostCookieName(const SPRequest& request, const char* relayState) const;
+        DDF getPostData(const SPRequest& request) const;
     };
 
 #if defined (_MSC_VER)

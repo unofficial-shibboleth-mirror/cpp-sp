@@ -27,7 +27,6 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AgentConfig.h"
-#include "Application.h"
 #include "ServiceProvider.h"
 #include "SessionCache.h"
 #include "SPRequest.h"
@@ -39,7 +38,6 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace shibsp;
-using namespace boost;
 using namespace std;
 
 LogoutHandler::LogoutHandler() : m_initiator(true)
@@ -48,41 +46,6 @@ LogoutHandler::LogoutHandler() : m_initiator(true)
 
 LogoutHandler::~LogoutHandler()
 {
-}
-
-pair<bool,long> LogoutHandler::sendLogoutPage(
-    const Application& application, const HTTPRequest& request, HTTPResponse& response, const char* type
-    ) const
-{
-    string tname = string(type) + "Logout";
-    const PropertySet* props = application.getPropertySet("Errors");
-
-    pair<bool,const char*> prop = props ? props->getString(tname.c_str()) : pair<bool,const char*>(false,nullptr);
-    if (!prop.first) {
-        tname += ".html";
-        prop.second = tname.c_str();
-    }
-    response.setContentType("text/html");
-    response.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
-    response.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
-    string fname(prop.second);
-    ifstream infile(AgentConfig::getConfig().getPathResolver().resolve(fname, PathResolver::SHIBSP_CFG_FILE).c_str());
-    if (!infile)
-        throw ConfigurationException("Unable to access HTML template.");
-    //TemplateParameters tp;
-
-    // If the externalParameters option isn't set, don't populate the request field.
-    pair<bool,bool> externalParameters =
-            props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
-    if (externalParameters.first && externalParameters.second) {
-        //tp.m_request = &request;
-    }
-
-    //tp.setPropertySet(props);
-    //tp.m_map["logoutStatus"] = "Logout completed successfully.";  // Backward compatibility.
-    stringstream str;
-    //XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
-    return make_pair(true,response.sendResponse(str));
 }
 
 pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
@@ -96,7 +59,7 @@ pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
         return make_pair(false,0L);
 
     // Try another front-channel notification. No extra parameters and the session is implicit.
-    return notifyFrontChannel(request.getApplication(), request, request);
+    return notifyFrontChannel(request);
 }
 
 void LogoutHandler::receive(DDF& in, ostream& out)
@@ -106,32 +69,21 @@ void LogoutHandler::receive(DDF& in, ostream& out)
     if (in["notify"].integer() != 1)
         throw RemotintgException("Unsupported operation.");
 
-    // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
-    if (!app) {
-        // Something's horribly wrong.
-        Category::getInstance(SHIBSP_LOGCAT ".Logout").error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
-        throw ConfigurationException("Unable to locate application for logout, deleted?");
-    }
-
     vector<string> sessions;
     DDF s = in["sessions"];
     DDF temp = s.first();
     while (temp.isstring()) {
         sessions.push_back(temp.string());
         temp = s.next();
-        if (notifyBackChannel(*app, in["url"].string(), sessions, in["local"].integer()==1))
-            ret.integer(1);
+        //if (notifyBackChannel(*app, in["url"].string(), sessions, in["local"].integer()==1))
+            //ret.integer(1);
     }
 
     out << ret;
 }
 
 pair<bool,long> LogoutHandler::notifyFrontChannel(
-    const Application& application,
-    const HTTPRequest& request,
-    HTTPResponse& response,
+    SPRequest& request,
     const map<string,string>* params
     ) const
 {
@@ -145,7 +97,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     param = request.getParameter("return");
 
     // Fetch the next front notification URL and bump the index for the next round trip.
-    string loc = application.getNotificationURL(request.getRequestURL(), true, index++);
+    string loc = request.getNotificationURL(true, index++);
     if (loc.empty())
         return make_pair(false,0L);
 
@@ -160,7 +112,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     string locstr(start, end ? end - start : strlen(start));
 
     // Add a signal that we're coming back from notification and the next index.
-    locstr = locstr + "?notifying=1&index=" + lexical_cast<string>(index);
+    locstr = locstr + "?notifying=1&index=" + boost::lexical_cast<string>(index);
 
     // Add return if set.
     if (param)
@@ -182,7 +134,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     // Add the notifier's return parameter to the destination location and redirect.
     // This is NOT the same as the return parameter that might be embedded inside it ;-)
     loc = loc + "&return=" + encoder.encode(locstr.c_str());
-    return make_pair(true, response.sendRedirect(loc.c_str()));
+    return make_pair(true, request.sendRedirect(loc.c_str()));
 }
 
 #ifndef SHIBSP_LITE
@@ -217,9 +169,7 @@ namespace {
 };
 #endif
 
-bool LogoutHandler::notifyBackChannel(
-    const Application& application, const char* requestURL, const vector<string>& sessions, bool local
-    ) const
+bool LogoutHandler::notifyBackChannel(const SPRequest& request, const vector<string>& sessions, bool local) const
 {
     if (sessions.empty()) {
         Category::getInstance(SHIBSP_LOGCAT ".Logout").error("no sessions supplied to back channel notification method");
@@ -227,7 +177,7 @@ bool LogoutHandler::notifyBackChannel(
     }
 
     unsigned int index = 0;
-    string endpoint = application.getNotificationURL(requestURL, false, index++);
+    string endpoint = request.getNotificationURL(false, index++);
     if (endpoint.empty())
         return true;
 
@@ -267,11 +217,12 @@ bool LogoutHandler::notifyBackChannel(
     }
 
     // When not out of process, we remote the back channel work.
+    // TODO: remove anyway....
     DDF out,in(m_address.c_str());
     DDFJanitor jin(in), jout(out);
     in.addmember("notify").integer(1);
-    in.addmember("application_id").string(application.getId());
-    in.addmember("url").string(requestURL);
+    //in.addmember("application_id").string(application.getId());
+    in.addmember("url").string(request.getRequestURL());
     if (local)
         in.addmember("local").integer(1);
     DDF s = in.addmember("sessions").list();
