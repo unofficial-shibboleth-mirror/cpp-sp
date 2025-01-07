@@ -89,6 +89,7 @@ bool BoostPropertySet::hasProperty(const char* name) const
     if (m_parent && m_unset.find(name) == m_unset.end()) {
         return m_parent->hasProperty(name);
     }
+    return false;
 }
 
 bool BoostPropertySet::getBool(const char* name, bool defaultValue) const
