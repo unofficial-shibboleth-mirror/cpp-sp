@@ -45,7 +45,7 @@
 namespace regexp = boost;
 #else
 # include <regex>
-namespace regexpp = std;
+namespace regexp = std;
 #endif
 
 using namespace shibsp;
