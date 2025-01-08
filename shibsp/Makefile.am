@@ -69,7 +69,6 @@ sessioninclude_HEADERS = \
 utilinclude_HEADERS = \
 	util/BoostPropertySet.h \
 	util/CGIParser.h \
-	util/Date.h \
 	util/IPRange.h \
 	util/Lockable.h \
 	util/PathResolver.h \
@@ -84,6 +83,7 @@ noinst_HEADERS = \
 	logging/impl/AbstractLoggingService.h \
 	logging/impl/LoggingServiceSPI.h \
 	logging/impl/StringUtil.h \
+        util/Date.h \
 	util/Misc.h
 
 libshibsp_la_SOURCES = \
