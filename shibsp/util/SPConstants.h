@@ -28,7 +28,6 @@
 #define __shibsp_constants_h__
 
 #include <shibsp/base.h>
-#include <xercesc/util/XercesDefs.hpp>
 
 /**
  * Shibboleth SP XML constants.

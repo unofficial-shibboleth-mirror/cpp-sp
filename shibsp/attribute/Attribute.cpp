@@ -35,14 +35,12 @@ using namespace std;
 namespace shibsp {
     SHIBSP_DLLLOCAL Attribute* SimpleAttributeFactory(DDF& in);
     SHIBSP_DLLLOCAL Attribute* ScopedAttributeFactory(DDF& in);
-    SHIBSP_DLLLOCAL Attribute* BinaryAttributeFactory(DDF& in);
 };
 
 void shibsp::registerAttributeFactories()
 {
     Attribute::registerFactory("", SimpleAttributeFactory);
     Attribute::registerFactory("Simple", SimpleAttributeFactory);
-    Attribute::registerFactory("Binary", BinaryAttributeFactory);
     Attribute::registerFactory("Scoped", ScopedAttributeFactory);
 }
 

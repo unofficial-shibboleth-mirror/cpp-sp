@@ -35,7 +35,6 @@ libshibspinclude_HEADERS = \
 
 attrinclude_HEADERS = \
 	attribute/Attribute.h \
-	attribute/BinaryAttribute.h \
 	attribute/ScopedAttribute.h \
 	attribute/SimpleAttribute.h
 
@@ -93,7 +92,6 @@ libshibsp_la_SOURCES = \
 	exceptions.cpp \
 	version.cpp \
 	attribute/Attribute.cpp \
-	attribute/BinaryAttribute.cpp \
 	attribute/SimpleAttribute.cpp \
 	attribute/ScopedAttribute.cpp \
 	handler/impl/AbstractHandler.cpp \

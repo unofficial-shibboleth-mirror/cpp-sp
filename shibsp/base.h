@@ -22,10 +22,6 @@
 #ifndef __shibsp_base_h__
 #define __shibsp_base_h__
 
-// TODO: remove
-#define XMLTOOLING_LITE
-#include <xmltooling/base.h>
-
 #if defined (_MSC_VER) || defined(__BORLANDC__)
   #include <shibsp/config_pub_win32.h>
 #else
@@ -66,6 +62,14 @@
 #else
   #define SHIBSP_EXCEPTIONAPI(api)
 #endif
+
+/**
+ * Blocks copy c'tor and assignment operator for a class.
+ */
+#define MAKE_NONCOPYABLE(type) \
+    private: \
+        type(const type&); \
+        type& operator=(const type&)
 
 /** Logging category for Service Provider functions. */
 #define SHIBSP_LOGCAT "Shibboleth"

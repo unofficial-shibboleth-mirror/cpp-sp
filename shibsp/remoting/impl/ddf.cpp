@@ -28,7 +28,6 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace std;
 
 // defensive string functions

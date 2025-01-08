@@ -32,7 +32,6 @@
 #endif
 
 using namespace shibsp;
-using namespace xmltooling;
 using namespace std;
 
 namespace {

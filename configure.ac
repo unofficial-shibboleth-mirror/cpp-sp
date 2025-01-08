@@ -131,18 +131,6 @@ else
     AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
 fi 
 
-AX_PKG_CHECK_MODULES([xerces],,[xerces-c >= 3.2],,,
-    [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
-
-AX_PKG_CHECK_MODULES([xmltooling],,[xmltooling >= 3.1],,,
-    [SHIBSP_REQUIRES],[SHIBSP_REQUIRES_PRIVATE])
-PKG_CHECK_VAR([xmltooling_includedir],[xmltooling],[includedir])
-PKG_CHECK_VAR([XMLTOOLINGXMLDIR],[xmltooling],[pkgxmldir])
-DX_INCLUDE="$DX_INCLUDE $xmltooling_includedir"
-
-AX_PKG_CHECK_MODULES([xmltooling_lite],,[xmltooling-lite >= 3.1],,,
-    [SHIBSP_LITE_REQUIRES],[SHIBSP_LITE_REQUIRES_PRIVATE])
-
 # output the underlying makefiles
 WANT_SUBDIRS="doc schemas configs shibsp"
 AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \

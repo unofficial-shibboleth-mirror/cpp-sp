@@ -21,7 +21,7 @@
 #ifndef __shibsp_genreq_h__
 #define __shibsp_genreq_h__
 
-#include <xmltooling/unicode.h>
+#include <shibsp/base.h>
 
 #include <string>
 #include <vector>
