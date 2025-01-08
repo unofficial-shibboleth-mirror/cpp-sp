@@ -33,6 +33,9 @@
 #include "session/SessionCache.h"
 
 #include <sstream>
+#ifdef HAVE_CXX14
+# include <shared_mutex>
+#endif
 
 using namespace shibsp;
 using namespace xmltooling;
