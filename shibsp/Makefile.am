@@ -71,7 +71,6 @@ utilinclude_HEADERS = \
 	util/BoostPropertySet.h \
 	util/CGIParser.h \
 	util/Date.h \
-	util/DOMPropertySet.h \
 	util/IPRange.h \
 	util/Lockable.h \
 	util/PathResolver.h \
@@ -100,19 +99,12 @@ libshibsp_la_SOURCES = \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AdminLogoutInitiator.cpp \
 	handler/impl/AssertionConsumerService.cpp \
-	handler/impl/AssertionLookup.cpp \
 	handler/impl/AttributeCheckerHandler.cpp \
-	handler/impl/DiscoveryFeed.cpp \
 	handler/impl/LocalLogoutInitiator.cpp \
 	handler/impl/LogoutHandler.cpp \
 	handler/impl/LogoutInitiator.cpp \
 	handler/impl/MetadataGenerator.cpp \
 	handler/impl/RemotedHandler.cpp \
-	handler/impl/SAML2Consumer.cpp \
-	handler/impl/SAML2Logout.cpp \
-	handler/impl/SAML2LogoutInitiator.cpp \
-	handler/impl/SAML2SessionInitiator.cpp \
-	handler/impl/SAMLDSSessionInitiator.cpp \
 	handler/impl/SecuredHandler.cpp \
 	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \
@@ -135,7 +127,6 @@ libshibsp_la_SOURCES = \
 	session/impl/AbstractSessionCache.cpp \
 	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
-	util/DOMPropertySet.cpp \
 	util/IPRange.cpp \
 	util/PathResolver.cpp \
 	util/ReloadableXMLFile.cpp \

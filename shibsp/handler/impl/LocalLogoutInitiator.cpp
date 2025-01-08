@@ -1,25 +1,19 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * LocalLogoutInitiator.cpp
+ * handler/impl/LocalLogoutInitiator.cpp
  * 
  * Logs out a session locally.
  */
@@ -30,12 +24,13 @@
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutInitiator.h"
+#include "logging/Category.h"
 #include "session/SessionCache.h"
 
 #include <mutex>
 
 using namespace shibsp;
-using namespace xercesc;
+using namespace boost::property_tree;
 using namespace std;
 
 namespace shibsp {
@@ -48,50 +43,25 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL LocalLogoutInitiator : public AbstractHandler, public LogoutInitiator
     {
     public:
-        LocalLogoutInitiator(const DOMElement* e, const char* appId);
+        LocalLogoutInitiator(const ptree& pt);
         virtual ~LocalLogoutInitiator() {}
         
-        void setParent(const PropertySet* parent);
-        void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-
-    private:
-        pair<bool,long> doRequest(SPRequest& request, Session* session) const;
-
-        string m_appId;
     };
 
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL LocalLogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool)
+    Handler* SHIBSP_DLLLOCAL LocalLogoutInitiatorFactory(const pair<ptree&,const char*>& p, bool)
     {
-        return new LocalLogoutInitiator(p.first, p.second);
+        return new LocalLogoutInitiator(p.first);
     }
 };
 
-LocalLogoutInitiator::LocalLogoutInitiator(const DOMElement* e, const char* appId)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.Local")), m_appId(appId)
+LocalLogoutInitiator::LocalLogoutInitiator(const ptree& pt)
+    : AbstractHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.Local"))
 {
-    pair<bool,const char*> loc = getString("Location");
-    if (loc.first) {
-        string address = string(appId) + loc.second + "::run::LocalLI";
-        setAddress(address.c_str());
-    }
-}
-
-void LocalLogoutInitiator::setParent(const PropertySet* parent)
-{
-    DOMPropertySet::setParent(parent);
-    pair<bool,const char*> loc = getString("Location");
-    if (loc.first) {
-        string address = m_appId + loc.second + "::run::LocalLI";
-        setAddress(address.c_str());
-    }
-    else {
-        m_log.warn("no Location property in Local LogoutInitiator (or parent), can't register as remoted handler");
-    }
 }
 
 pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) const
@@ -101,71 +71,15 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
     if (ret.first)
         return ret;
 
-    if (false) {
-        // When out of process, we run natively.
-        Session* session = nullptr;
-        try {
-            session = request.getSession(false, true, false);  // don't cache it and ignore all checks
-        }
-        catch (const std::exception& ex) {
-            m_log.error("error accessing current session: %s", ex.what());
-        }
-        return doRequest(request, session);
-    }
-    else {
-        // When not out of process, we remote the request.
-        vector<string> headers(1,"Cookie");
-        headers.push_back("User-Agent");
-        DDF out,in = wrap(request,&headers);
-        DDFJanitor jin(in), jout(out);
-        out = send(request, in);
-        return unwrap(request, out);
-    }
-}
-
-void LocalLogoutInitiator::receive(DDF& in, ostream& out)
-{
-#ifndef SHIBSP_LITE
-    // Defer to base class for back channel notifications
-    if (in["notify"].integer() == 1)
-        return LogoutHandler::receive(in, out);
-
-    // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
-    if (!app) {
-        // Something's horribly wrong.
-        m_log.error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
-        throw ConfigurationException("Unable to locate application for logout, deleted?");
-    }
-
-    // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
-
-    // Set up a response shim.
-    DDF ret(nullptr);
-    DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
-
+    // When out of process, we run natively.
     Session* session = nullptr;
     try {
-         session = app->getServiceProvider().getSessionCache()->find(*app, *req, nullptr, nullptr);
+        session = request.getSession(false, true, false);  // don't cache it and ignore all checks
     }
     catch (const std::exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
     }
 
-    // This is the "last chance" handler so even without a session, we "complete" the logout.
-    doRequest(*app, *req, *resp, session);
-
-    out << ret;
-#else
-    throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
-#endif
-}
-
-pair<bool,long> LocalLogoutInitiator::doRequest(SPRequest& request, Session* session) const
-{
     if (session) {
         // Guard the session in case of exception.
         unique_lock<Session> locker(*session, adopt_lock);

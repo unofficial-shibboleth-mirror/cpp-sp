@@ -1,25 +1,19 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * SessionInitiator.cpp
+ * handler/impl/SessionInitiator.cpp
  * 
  * Pluggable runtime functionality that handles initiating sessions.
  */
@@ -28,27 +22,19 @@
 #include "exceptions.h"
 #include "SPRequest.h"
 #include "handler/SessionInitiator.h"
+#include "logging/Category.h"
+#include "util/Misc.h"
 
 using namespace shibsp;
-using namespace xercesc;
+using namespace boost::property_tree;
 using namespace std;
 
-SessionInitiator::SessionInitiator()
+SessionInitiator::SessionInitiator(const ptree& pt, Category& log) : AbstractHandler(pt, log)
 {
 }
 
 SessionInitiator::~SessionInitiator()
 {
-}
-
-const char* SessionInitiator::remap(const char* src, Category& log) const
-{
-    if (XMLString::equals(src, "defaultACSIndex")) {
-        return "acsIndex";
-    }
-    else {
-        return src;
-    }
 }
 
 const set<string>& SessionInitiator::getSupportedOptions() const
@@ -62,31 +48,25 @@ bool SessionInitiator::checkCompatibility(SPRequest& request, bool isHandler) co
     if (isHandler) {
         const char* flag = request.getParameter("isPassive");
         if (flag) {
-            isPassive = (*flag=='1' || *flag=='t');
+            string_to_bool_translator tr;
+            boost::optional<bool> b = tr.get_value(flag);
+            isPassive = b.has_value() ? b.get() : false;
         }
         else {
-            pair<bool,bool> flagprop = getBool("isPassive");
-            isPassive = (flagprop.first && flagprop.second);
+            isPassive = getBool("isPassive", false);
         }
     }
     else {
         // It doesn't really make sense to use isPassive with automated sessions, but...
-        pair<bool,bool> flagprop;
         if (request.getRequestSettings().first->hasProperty("isPassive")) {
-            flagprop.second = request.getRequestSettings().first->getBool("isPassive", false);
-            flagprop.first = true;
+            isPassive = request.getRequestSettings().first->getBool("isPassive", false);
+        } else {
+            isPassive = getBool("isPassive", false);
         }
-        if (!flagprop.first)
-            flagprop = getBool("isPassive");
-        isPassive = (flagprop.first && flagprop.second);
     }
 
     // Check for support of isPassive if it's used.
     if (isPassive && getSupportedOptions().count("isPassive") == 0) {
-        if (getParent()) {
-            log(Priority::SHIB_INFO, "handler does not support isPassive option");
-            return false;
-        }
         throw ConfigurationException("Unsupported option (isPassive) supplied to SessionInitiator.");
     }
 
@@ -95,6 +75,7 @@ bool SessionInitiator::checkCompatibility(SPRequest& request, bool isHandler) co
 
 pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 {
+    /*
     cleanRelayState(request);
 
     const char* entityID = nullptr;
@@ -144,8 +125,8 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 
             if (returnOnError) {
                 // Log it and attempt to recover relay state so we can get back.
-                log(Priority::SHIB_ERROR, ex.what());
-                log(Priority::SHIB_INFO, "trapping SessionInitiator error condition and returning to target location");
+                m_log.error(ex.what());
+                m_log.info("trapping SessionInitiator error condition and returning to target location");
                 flag = request.getParameter("target");
                 string target(flag ? flag : "");
                 recoverRelayState(request, target, false);
@@ -155,4 +136,5 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         }
         throw;
     }
+    */
 }

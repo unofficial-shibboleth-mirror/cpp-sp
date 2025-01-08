@@ -43,7 +43,7 @@ namespace shibsp {
      * names for attributes and element content and can therefore not be used
      * directly as a means of exposing the properties via this interface.</p>
      */
-    class SHIBSP_API BoostPropertySet : public virtual PropertySet2
+    class SHIBSP_API BoostPropertySet : public virtual PropertySet
     {
     public:
         BoostPropertySet();
@@ -69,17 +69,17 @@ namespace shibsp {
          * 
          * @return parent PropertySet
          */
-        const PropertySet2* getParent() const;
+        const PropertySet* getParent() const;
 
         /**
          * Installs a parent PropertySet to allow an inheritance relationship to a different instance.
          * 
          * @param parent the parent PropertySet to install
          */
-        void setParent(const PropertySet2* parent);
+        void setParent(const PropertySet* parent);
 
     private:
-        const PropertySet2* m_parent;
+        const PropertySet* m_parent;
         const boost::property_tree::ptree* m_pt;
 		std::set<std::string> m_unset;
     };

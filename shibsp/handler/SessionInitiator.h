@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -27,8 +21,7 @@
 #ifndef __shibsp_sesinitiator_h__
 #define __shibsp_sesinitiator_h__
 
-#include <shibsp/handler/Handler.h>
-#include <shibsp/util/DOMPropertySet.h>
+#include <shibsp/handler/AbstractHandler.h>
 
 #include <set>
 #include <string>
@@ -46,7 +39,7 @@ namespace shibsp {
      * <p>By default, SessionInitiators look for an entityID on the incoming request
      * and pass control to the specialized run method.
      */
-    class SHIBSP_API SessionInitiator : public virtual Handler, public DOMPropertySet::Remapper
+    class SHIBSP_API SessionInitiator : public virtual AbstractHandler
     {
         friend void SHIBSP_API registerSessionInitiators();
     protected:
@@ -54,7 +47,13 @@ namespace shibsp {
         /** Set of optional settings supported by handler. */
         std::set<std::string> m_supportedOptions;
 
-        SessionInitiator();
+        /**
+         * Constructor.
+         * 
+         * @param pt    root of handler configuration
+         * @param log   logging category
+         */
+        SessionInitiator(const boost::property_tree::ptree& pt, Category& log);
 
         /**
          * Examines the request and applicable settings to determine whether
@@ -92,8 +91,6 @@ namespace shibsp {
         virtual std::pair<bool,long> run(SPRequest& request, std::string& entityID, bool isHandler=true) const=0;
 
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-
-        const char* remap(const char* src, Category& log) const;
     };
     
 };

@@ -38,14 +38,6 @@ PropertySet::~PropertySet()
 {
 }
 
-PropertySet2::PropertySet2()
-{
-}
-
-PropertySet2::~PropertySet2()
-{
-}
-
 BoostPropertySet::BoostPropertySet() : m_parent(nullptr), m_pt(nullptr)
 {
 }
@@ -54,12 +46,12 @@ BoostPropertySet::~BoostPropertySet()
 {
 }
 
-const PropertySet2* BoostPropertySet::getParent() const
+const PropertySet* BoostPropertySet::getParent() const
 {
     return m_parent;
 }
 
-void BoostPropertySet::setParent(const PropertySet2* parent)
+void BoostPropertySet::setParent(const PropertySet* parent)
 {
     m_parent = parent;
 }

@@ -26,6 +26,7 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
+#include "handler/Handler.h"
 #include "io/HTTPResponse.h"
 #include "logging/LoggingService.h"
 #include "remoting/RemotingService.h"
@@ -218,14 +219,12 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
         XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
 
         registerAttributeFactories();
-        registerHandlers();
-        registerLogoutInitiators();
-        registerSessionInitiators();
         */
 
-        registerAgents();
+        registerHandlers();
         registerRemotingServices();
         registerSessionCaches();
+        registerAgents();
 
         /*
         // Yes, this isn't secure, will review where we do any random generation
@@ -290,8 +289,12 @@ void AgentInternalConfig::_term()
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".AgentConfig");
     log.info("%s agent shutting down", PACKAGE_STRING);
 
-    AccessControlManager.deregisterFactories();
+    AgentManager.deregisterFactories();
+    SessionCacheManager.deregisterFactories();
+    RemotingServiceManager.deregisterFactories();
+    HandlerManager.deregisterFactories();
     RequestMapperManager.deregisterFactories();
+    AccessControlManager.deregisterFactories();
     LoggingServiceManager.deregisterFactories();
 
     for (vector<void*>::reverse_iterator i=m_libhandles.rbegin(); i!=m_libhandles.rend(); i++) {
@@ -316,14 +319,8 @@ void AgentInternalConfig::_term()
     m_logging->term();
 
     /*
-    LogoutInitiatorManager.deregisterFactories();
-    SessionInitiatorManager.deregisterFactories();
-    HandlerManager.deregisterFactories();
     */
 
-    AgentManager.deregisterFactories();
-    RemotingServiceManager.deregisterFactories();
-    SessionCacheManager.deregisterFactories();
 
     /*
     Attribute::deregisterFactories();

@@ -39,50 +39,6 @@ namespace shibsp {
     protected:
         Handler();
 
-        /**
-         * Log using handler's specific logging object.
-         *
-         * @param level logging level
-         * @param msg   message to log
-         */
-        virtual void log(Priority::Value level, const std::string& msg) const;
-
-        /**
-         * Prevents unused relay state from building up by cleaning old state from the client.
-         *
-         * <p>Handlers that generate relay state should call this method as a house cleaning
-         * step.
-         *
-         * @param application   the associated Application
-         * @param request       SP request
-         */
-        virtual void cleanRelayState(SPRequest& request) const;
-
-        /**
-         * Implements various mechanisms to preserve RelayState,
-         * such as cookies or StorageService-backed keys.
-         *
-         * <p>If a supported mechanism can be identified, the input parameter will be
-         * replaced with a suitable state key.
-         *
-         * @param response      outgoing HTTP response
-         * @param relayState    RelayState token to supply with message
-         */
-        virtual void preserveRelayState(SPRequest& response, std::string& relayState) const;
-
-        /**
-         * Implements various mechanisms to recover RelayState,
-         * such as cookies or StorageService-backed keys.
-         *
-         * <p>If a supported mechanism can be identified, the input parameter will be
-         * replaced with the recovered state information.
-         *
-         * @param request       SP request
-         * @param relayState    RelayState token supplied with message
-         * @param clear         true iff the token state should be cleared
-         */
-        virtual void recoverRelayState(SPRequest& request, std::string& relayState, bool clear=true) const;
-
     public:
         virtual ~Handler();
 
@@ -126,9 +82,6 @@ namespace shibsp {
 
     /** Handler for hooking new sessions with attribute checking. */
     #define ATTR_CHECKER_HANDLER "AttributeChecker"
-
-    /** Handler for metadata generation. */
-    #define DISCOVERY_FEED_HANDLER "DiscoveryFeed"
 
     /** Handler for metadata generation. */
     #define METADATA_GENERATOR_HANDLER "MetadataGenerator"

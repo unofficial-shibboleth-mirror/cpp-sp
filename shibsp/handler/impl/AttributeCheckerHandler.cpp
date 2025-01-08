@@ -1,25 +1,19 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * AttributeCheckerHandler.cpp
+ * handler/impl/AttributeCheckerHandler.cpp
  *
  * Handler for checking a session for required attributes.
  */
@@ -32,23 +26,15 @@
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/AbstractHandler.h"
+#include "logging/Category.h"
 #include "session/SessionCache.h"
-#include "util/PathResolver.h"
 
 #include <memory>
 #include <mutex>
-#include <fstream>
-#include <sstream>
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-#include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
-#include <xercesc/util/XMLUniDefs.hpp>
-#include <xmltooling/util/XMLHelper.h>
 
 using namespace shibsp;
-using namespace xmltooling;
-using namespace boost;
-using namespace xercesc;
+using namespace boost::property_tree;
 using namespace std;
 
 namespace shibsp {
@@ -58,20 +44,10 @@ namespace shibsp {
     #pragma warning( disable : 4250 4251 )
 #endif
 
-    class SHIBSP_DLLLOCAL Blocker : public DOMNodeFilter
-    {
-    public:
-        FilterAction acceptNode(const DOMNode* node) const {
-            return FILTER_REJECT;
-        }
-    };
-
-    static SHIBSP_DLLLOCAL Blocker g_Blocker;
-
     class SHIBSP_API AttributeCheckerHandler : public AbstractHandler
     {
     public:
-        AttributeCheckerHandler(const DOMElement* e, const char* appId, bool deprecationSupport=true);
+        AttributeCheckerHandler(ptree& pt);
         virtual ~AttributeCheckerHandler() {}
 
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
@@ -85,7 +61,7 @@ namespace shibsp {
             }
         }
 
-        string m_template;
+        string m_redirectOnFailure;
         bool m_flushSession;
         vector<string> m_attributes;
         unique_ptr<AccessControl> m_acl;
@@ -95,38 +71,34 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL AttributeCheckerFactory(const pair<const DOMElement*,const char*>& p, bool deprecationSupport)
+    Handler* SHIBSP_DLLLOCAL AttributeCheckerFactory(const pair<ptree&,const char*>& p, bool deprecationSupport)
     {
-        return new AttributeCheckerHandler(p.first, p.second, deprecationSupport);
+        return new AttributeCheckerHandler(p.first);
     }
-
-    static const XMLCh attributes[] =   UNICODE_LITERAL_10(a,t,t,r,i,b,u,t,e,s);
-    static const XMLCh _flushSession[] = UNICODE_LITERAL_12(f,l,u,s,h,S,e,s,s,i,o,n);
-    static const XMLCh _template[] =    UNICODE_LITERAL_8(t,e,m,p,l,a,t,e);
 };
 
-AttributeCheckerHandler::AttributeCheckerHandler(const DOMElement* e, const char* appId, bool deprecationSupport)
-    : AbstractHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.AttributeChecker"), &g_Blocker)
+AttributeCheckerHandler::AttributeCheckerHandler(ptree& pt)
+    : AbstractHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.AttributeChecker"))
 {
-    m_template = XMLHelper::getAttrString(e, nullptr, _template);
-    if (m_template.empty())
-        throw ConfigurationException("AttributeChecker missing required template setting.");
-    AgentConfig::getConfig().getPathResolver().resolve(m_template, PathResolver::SHIBSP_CFG_FILE);
+    m_redirectOnFailure = getString("redirectOnFailure", "");
+    if (m_redirectOnFailure.empty())
+        throw ConfigurationException("AttributeChecker missing required redirectOnFailure setting.");
 
-    m_flushSession = XMLHelper::getAttrBool(e, false, _flushSession);
+    m_flushSession = getBool("flushSession", false);
 
-    string attrs(XMLHelper::getAttrString(e, nullptr, attributes));
+    string attrs(getString("attributes", ""));
     if (!attrs.empty()) {
-        trim(attrs);
-        split(m_attributes, attrs, is_space(), algorithm::token_compress_on);
+        boost::trim(attrs);
+        boost::split(m_attributes, attrs, boost::is_space(), boost::algorithm::token_compress_on);
         if (m_attributes.empty())
             throw ConfigurationException("AttributeChecker unable to parse attributes setting.");
     }
-    else if (nullptr == XMLHelper::getFirstChildElement(e)) {
-        throw ConfigurationException("AttributeChecker requires either the attributes setting or an ACL");
+    else if (hasProperty("path")) {
+        m_log.debug("attempting installation of external AccessControl rule");
+        m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, pt, false));
     }
     else {
-        //m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, e, deprecationSupport));
+        throw ConfigurationException("AttributeChecker requires either the attributes setting or path to ACL");
     }
 }
 
@@ -160,15 +132,15 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     bool checked = false;
     if (session) {
         if (!m_attributes.empty()) {
-            typedef multimap<string,const Attribute*> indexed_t;
-            static indexed_t::const_iterator (indexed_t::* fn)(const string&) const = &indexed_t::find;
-            const indexed_t& indexed = session->getIndexedAttributes();
+            const auto& indexed = session->getIndexedAttributes();
+            // Lambda returns true if the candidate attribute ID is NOT in the session.
+            auto absent = [&indexed](const string& id) {
+                return indexed.find(id) == indexed.end();
+            };
+
             // Look for an attribute in the list that is not in the session multimap.
             // If that fails, the check succeeds.
-            checked = (
-                find_if(m_attributes.begin(), m_attributes.end(),
-                    boost::bind(fn, boost::cref(indexed), _1) == indexed.end()) == m_attributes.end()
-                );
+            checked = find_if(m_attributes.begin(), m_attributes.end(), absent) == m_attributes.end();
         }
         else {
             checked = (m_acl && m_acl->authorized(request, session) == AccessControl::shib_acl_true);
@@ -181,37 +153,11 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         return make_pair(true, request.sendRedirect(loc.c_str()));
     }
 
-    request.setContentType("text/html; charset=UTF-8");
-    request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
-    request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
-
-    ifstream infile(m_template.c_str());
-    if (infile) {
-        /*
-        // If the externalParameters option isn't set, don't populate the request field.
-        pair<bool,bool> externalParameters =
-                props ? props->getBool("externalParameters") : pair<bool,bool>(false,false);
-        if (externalParameters.first && externalParameters.second) {
-            //tp.m_request = &request;
-        }
-        */
-
-        stringstream str;
-        //XMLToolingConfig::getConfig().getTemplateEngine()->run(infile, str, tp);
-        if (m_flushSession && session) {
-            time_t revocationExp = session->getExpiration();
-            sessionLocker.unlock(); // unlock the session
-            flushSession(request, revocationExp);
-        }
-        return make_pair(true, request.sendError(str));
-    }
-
     if (m_flushSession && session) {
         time_t revocationExp = session->getExpiration();
         sessionLocker.unlock(); // unlock the session
         flushSession(request, revocationExp);
     }
-    m_log.error("could not process error template (%s)", m_template.c_str());
-    istringstream msg("Internal Server Error. Please contact the site administrator.");
-    return make_pair(true, request.sendResponse(msg));
+
+    return make_pair(true, request.sendRedirect(m_redirectOnFailure.c_str()));
 }

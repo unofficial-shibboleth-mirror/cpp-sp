@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -32,7 +26,6 @@
 // of this stuff, it can be copied into here.
 
 #include <shibsp/base.h>
-#include <xercesc/util/XercesVersion.hpp>
 
 // ---------------------------------------------------------------------------
 // V E R S I O N   S P E C I F I C A T I O N
@@ -47,6 +40,44 @@
 #define SHIBSP_VERSION_REVISION 0
 
 /** DO NOT MODIFY BELOW THIS LINE */
+
+// ---------------------------------------------------------------------------
+// T W O   A R G U M E N T   C O N C A T E N A T I O N   M A C R O S
+
+// two argument concatenation routines
+#define CAT2_SEP_UNDERSCORE(a, b) #a "_" #b
+#define CAT2_SEP_PERIOD(a, b) #a "." #b
+#define CAT2_SEP_NIL(a, b) #a #b
+#define CAT2_RAW_NUMERIC(a, b) a ## b
+
+// two argument macro invokers
+#define INVK_CAT2_SEP_UNDERSCORE(a,b) CAT2_SEP_UNDERSCORE(a,b)
+#define INVK_CAT2_SEP_PERIOD(a,b)     CAT2_SEP_PERIOD(a,b)
+#define INVK_CAT2_STR_SEP_NIL(a,b)    CAT2_SEP_NIL(a,b)
+#define INVK_CAT2_RAW_NUMERIC(a,b)    CAT2_RAW_NUMERIC(a,b)
+
+// ---------------------------------------------------------------------------
+// T H R E E   A R G U M E N T   C O N C A T E N A T I O N   M A C R O S
+
+// three argument concatenation routines
+#define CAT3_SEP_UNDERSCORE(a, b, c) #a "_" #b "_" #c
+#define CAT3_SEP_PERIOD(a, b, c) #a "." #b "." #c
+#define CAT3_SEP_NIL(a, b, c) #a #b #c
+#define CAT3_RAW_NUMERIC(a, b, c) a ## b ## c
+#define CAT3_RAW_NUMERIC_SEP_UNDERSCORE(a, b, c) a ## _ ## b ## _ ## c
+
+// three argument macro invokers
+#define INVK_CAT3_SEP_UNDERSCORE(a,b,c) CAT3_SEP_UNDERSCORE(a,b,c)
+#define INVK_CAT3_SEP_PERIOD(a,b,c)     CAT3_SEP_PERIOD(a,b,c)
+#define INVK_CAT3_SEP_NIL(a,b,c)        CAT3_SEP_NIL(a,b,c)
+#define INVK_CAT3_RAW_NUMERIC(a,b,c)    CAT3_RAW_NUMERIC(a,b,c)
+#define INVK_CAT3_RAW_NUMERIC_SEP_UNDERSCORE(a,b,c)    CAT3_RAW_NUMERIC_SEP_UNDERSCORE(a,b,c)
+
+// ---------------------------------------------------------------------------
+// C A L C U L A T E   V E R S I O N   -   E X P A N D E D   F O R M
+
+#define MULTIPLY(factor,value) factor * value
+#define CALC_EXPANDED_FORM(a,b,c) ( MULTIPLY(10000,a) + MULTIPLY(100,b) + MULTIPLY(1,c) )
 
 /**
  * MAGIC THAT AUTOMATICALLY GENERATES THE FOLLOWING:

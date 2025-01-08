@@ -1016,7 +1016,7 @@ AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request,
     throw ConfigurationException("Save my walrus!");
 }
 
-class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet2
+class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet
 {
 public:
     ApacheRequestMapper(ptree& pt, bool deprecationSupport=true);
@@ -1037,7 +1037,7 @@ public:
 private:
     unique_ptr<RequestMapper> m_mapper;
     static thread_local const ShibTargetApache* m_sta;
-    static thread_local const PropertySet2* m_props;
+    static thread_local const PropertySet* m_props;
     mutable htAccessControl m_htaccess;
 };
 

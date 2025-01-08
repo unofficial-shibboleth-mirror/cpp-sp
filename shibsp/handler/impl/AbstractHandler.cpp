@@ -15,7 +15,7 @@
 /**
  * handler/impl/AbstractHandler.cpp
  *
- * Base class for handlers based on a DOMPropertySet.
+ * Base class for handlers based on a BoostPropertySet.
  */
 
 #include "internal.h"
@@ -26,22 +26,21 @@
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/LogoutHandler.h"
+#include "logging/Category.h"
 #include "remoting/RemotingService.h"
 #include "util/CGIParser.h"
+#include "util/Misc.h"
 #include "util/SPConstants.h"
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
 
 #include <vector>
 #include <fstream>
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
 using namespace shibsp;
-using namespace xercesc;
-using namespace boost;
+using namespace boost::property_tree;
 using namespace std;
 
 #ifndef HAVE_STRCASECMP
@@ -49,21 +48,19 @@ using namespace std;
 #endif
 
 namespace shibsp {
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2ConsumerFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2LogoutFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AssertionLookupFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AttributeCheckerFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory DiscoveryFeedFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory MetadataGeneratorFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory StatusHandlerFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SessionHandlerFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2ConsumerFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AttributeCheckerFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory MetadataGeneratorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory StatusHandlerFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionHandlerFactory;
 
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory AdminLogoutInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2LogoutInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory LocalLogoutInitiatorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AdminLogoutInitiatorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutInitiatorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LocalLogoutInitiatorFactory;
 
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAML2SessionInitiatorFactory;
-    SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<const DOMElement*,const char*> >::Factory SAMLDSSessionInitiatorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2SessionInitiatorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAMLDSSessionInitiatorFactory;
 
     void SHIBSP_DLLLOCAL generateRandomHex(std::string& buf, unsigned int len) {
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -86,13 +83,13 @@ void SHIBSP_API shibsp::registerHandlers()
 {
     AgentConfig& conf=AgentConfig::getConfig();
 
-    //conf.AssertionConsumerServiceManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
+    conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
+    conf.HandlerManager.registerFactory(METADATA_GENERATOR_HANDLER, MetadataGeneratorFactory);
+    conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
+
+    //conf.HandlerManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
  
-    //conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
-    //conf.HandlerManager.registerFactory(DISCOVERY_FEED_HANDLER, DiscoveryFeedFactory);
-    //conf.HandlerManager.registerFactory(METADATA_GENERATOR_HANDLER, MetadataGeneratorFactory);
     //conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
-    //conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
 
     //conf.HandlerManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
 
@@ -100,8 +97,8 @@ void SHIBSP_API shibsp::registerHandlers()
     //conf.HandlerManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
     //conf.HandlerManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
 
-    //conf.SessionInitiatorManager.registerFactory(SAML2_SESSION_INITIATOR, SAML2SessionInitiatorFactory);
-    //conf.SessionInitiatorManager.registerFactory(SAMLDS_SESSION_INITIATOR, SAMLDSSessionInitiatorFactory);
+    //conf.HandlerManager.registerFactory(SAML2_SESSION_INITIATOR, SAML2SessionInitiatorFactory);
+    //conf.HandlerManager.registerFactory(SAMLDS_SESSION_INITIATOR, SAMLDSSessionInitiatorFactory);
 } 
 
 Handler::Handler()
@@ -112,17 +109,21 @@ Handler::~Handler()
 {
 }
 
+AbstractHandler::AbstractHandler(const ptree& pt, Category& log) : m_log(log) {
+    load(pt);
+}
+
+AbstractHandler::~AbstractHandler()
+{
+}
+
+
 const char* Handler::getEventType() const
 {
     return nullptr;
 }
 
-void Handler::log(Priority::Value level, const string& msg) const
-{
-    Category::getInstance(SHIBSP_LOGCAT ".Handler").log(level, msg);
-}
-
-void Handler::cleanRelayState(SPRequest& request) const
+void AbstractHandler::cleanRelayState(SPRequest& request) const
 {
     const char* mech = request.getRequestSettings().first->getString("relayState");
 
@@ -142,7 +143,7 @@ void Handler::cleanRelayState(SPRequest& request) const
     // Walk the list of cookies backwards by name.
     const map<string,string>& cookies = request.getCookies();
     for (map<string,string>::const_reverse_iterator i = cookies.rbegin(); i != cookies.rend(); ++i) {
-        if (starts_with(i->first, "_shibstate_")) {
+        if (boost::starts_with(i->first, "_shibstate_")) {
             if (maxRSCookies > 0) {
                 // Keep it, but count it against the limit.
                 --maxRSCookies;
@@ -153,7 +154,7 @@ void Handler::cleanRelayState(SPRequest& request) const
                 ++purgedRSCookies;
             }
         }
-        else if (starts_with(i->first, "_opensaml_req_")) {
+        else if (boost::starts_with(i->first, "_opensaml_req_")) {
             if (maxOSCookies > 0) {
                 // Keep it, but count it against the limit.
                 --maxOSCookies;
@@ -167,17 +168,17 @@ void Handler::cleanRelayState(SPRequest& request) const
     }
 
     if (purgedRSCookies > 0)
-        log(Priority::SHIB_DEBUG, string("purged ") + lexical_cast<string>(purgedRSCookies) + " stale relay state cookie(s) from client");
+        m_log.debug(string("purged ") + boost::lexical_cast<string>(purgedRSCookies) + " stale relay state cookie(s) from client");
     if (purgedOSCookies > 0)
-        log(Priority::SHIB_DEBUG, string("purged ") + lexical_cast<string>(purgedOSCookies) + " stale request correlation cookie(s) from client");
+        m_log.debug(string("purged ") + boost::lexical_cast<string>(purgedOSCookies) + " stale request correlation cookie(s) from client");
 }
 
-void Handler::preserveRelayState(SPRequest& request, string& relayState) const
+void AbstractHandler::preserveRelayState(SPRequest& request, string& relayState) const
 {
     // The empty string implies no state to deal with but we need to generate a correlation handle.
     if (relayState.empty()) {
         generateRandomHex(relayState, 4);
-        relayState = "corr:" + lexical_cast<string>(time(nullptr)) + '_' + relayState;
+        relayState = "corr:" + boost::lexical_cast<string>(time(nullptr)) + '_' + relayState;
         return;
     }
 
@@ -194,7 +195,7 @@ void Handler::preserveRelayState(SPRequest& request, string& relayState) const
             // Generate a random key for the cookie name instead of the fixed name.
             string rsKey;
             generateRandomHex(rsKey, 4);
-            rsKey = lexical_cast<string>(time(nullptr)) + '_' + rsKey;
+            rsKey = boost::lexical_cast<string>(time(nullptr)) + '_' + rsKey;
             string shib_cookie_name = "_shibstate_" + rsKey;
             request.setCookie(shib_cookie_name.c_str(),
                 AgentConfig::getConfig().getURLEncoder().encode(relayState.c_str()).c_str(),
@@ -252,10 +253,10 @@ void Handler::preserveRelayState(SPRequest& request, string& relayState) const
     }
 }
 
-void Handler::recoverRelayState(SPRequest& request, string& relayState, bool clear) const
+void AbstractHandler::recoverRelayState(SPRequest& request, string& relayState, bool clear) const
 {
     // Sentry value that signifies it was only a correlation tool.
-    if (starts_with(relayState, "corr:")) {
+    if (boost::starts_with(relayState, "corr:")) {
         relayState.clear();
         return;
     }
@@ -306,7 +307,7 @@ void Handler::recoverRelayState(SPRequest& request, string& relayState, bool cle
                     DDFJanitor jin(in),jout(out);
                     out = request.getAgent().getRemotingService()->send(in);
                     if (!out.isstring()) {
-                        log(Priority::SHIB_ERROR, "StorageService-backed RelayState mechanism did not return a state value.");
+                        m_log.error("StorageService-backed RelayState mechanism did not return a state value.");
                         relayState.erase();
                     }
                     else {
@@ -351,166 +352,6 @@ void Handler::recoverRelayState(SPRequest& request, string& relayState, bool cle
 
     request.absolutize(relayState);
 }
-
-AbstractHandler::AbstractHandler(
-    const DOMElement* e, Category& log, DOMNodeFilter* filter, const Remapper* remapper
-    ) : m_log(log) {
-    load(e, nullptr, filter, remapper);
-}
-
-AbstractHandler::~AbstractHandler()
-{
-}
-
-void AbstractHandler::log(Priority::Value level, const string& msg) const
-{
-    m_log.log(level, msg);
-}
-
-#ifndef SHIBSP_LITE
-
-const char* Handler::getType() const
-{
-    return getString("type").second;
-}
-
-void AbstractHandler::checkError(const XMLObject* response, const saml2md::RoleDescriptor* role) const
-{
-    const saml2p::StatusResponseType* r2 = dynamic_cast<const saml2p::StatusResponseType*>(response);
-    if (r2) {
-        const saml2p::Status* status = r2->getStatus();
-        if (status) {
-            const saml2p::StatusCode* sc = status->getStatusCode();
-            const XMLCh* code = sc ? sc->getValue() : nullptr;
-            if (code && !XMLString::equals(code,saml2p::StatusCode::SUCCESS)) {
-                FatalProfileException ex("SAML response reported an IdP error.");
-                annotateException(&ex, role, status);   // throws it
-            }
-        }
-    }
-
-    const saml1p::Response* r1 = dynamic_cast<const saml1p::Response*>(response);
-    if (r1) {
-        const saml1p::Status* status = r1->getStatus();
-        if (status) {
-            const saml1p::StatusCode* sc = status->getStatusCode();
-            const xmltooling::QName* code = sc ? sc->getValue() : nullptr;
-            if (code && *code != saml1p::StatusCode::SUCCESS) {
-                FatalProfileException ex("SAML response reported an IdP error.");
-                annotateException(&ex, role, status);   // throws it
-            }
-        }
-    }
-}
-
-void AbstractHandler::fillStatus(saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode, const char* msg) const
-{
-    saml2p::Status* status = saml2p::StatusBuilder::buildStatus();
-    saml2p::StatusCode* scode = saml2p::StatusCodeBuilder::buildStatusCode();
-    status->setStatusCode(scode);
-    scode->setValue(code);
-    if (subcode) {
-        saml2p::StatusCode* ssubcode = saml2p::StatusCodeBuilder::buildStatusCode();
-        scode->setStatusCode(ssubcode);
-        ssubcode->setValue(subcode);
-    }
-    if (msg) {
-        pair<bool,bool> flag = getBool("detailedErrors", shibspconstants::ASCII_SHIBSPCONFIG_NS);
-        auto_ptr_XMLCh widemsg((flag.first && flag.second) ? msg : "Error processing request.");
-        saml2p::StatusMessage* sm = saml2p::StatusMessageBuilder::buildStatusMessage();
-        status->setStatusMessage(sm);
-        sm->setMessage(widemsg.get());
-    }
-    response.setStatus(status);
-}
-
-long AbstractHandler::sendMessage(
-    const MessageEncoder& encoder,
-    XMLObject* msg,
-    const char* relayState,
-    const char* destination,
-    const saml2md::RoleDescriptor* role,
-    const Application& application,
-    HTTPResponse& httpResponse,
-    const char* defaultSigningProperty
-    ) const
-{
-    const EntityDescriptor* entity = role ? dynamic_cast<const EntityDescriptor*>(role->getParent()) : nullptr;
-    const PropertySet* relyingParty = application.getRelyingParty(entity);
-    pair<bool, const char*> flag = getString("signing");
-    if (!flag.first)
-        flag = getString("signing", shibspconstants::ASCII_SHIBSPCONFIG_NS);
-    if (!flag.first)
-        flag = relyingParty->getString("signing");
-    if (SPConfig::shouldSignOrEncrypt(flag.first ? flag.second : defaultSigningProperty, destination, encoder.isUserAgentPresent())) {
-        CredentialResolver* credResolver = application.getCredentialResolver();
-        if (credResolver) {
-            Locker credLocker(credResolver);
-            const Credential* cred = nullptr;
-            pair<bool,const char*> keyName = relyingParty->getString("keyName");
-            pair<bool,const XMLCh*> sigalg = relyingParty->getXMLString("signingAlg");
-            if (role) {
-                MetadataCredentialCriteria mcc(*role);
-                mcc.setUsage(Credential::SIGNING_CREDENTIAL);
-                if (keyName.first)
-                    mcc.getKeyNames().insert(keyName.second);
-                if (sigalg.first) {
-                    // Using an explicit algorithm, so resolve a credential directly.
-                    mcc.setXMLAlgorithm(sigalg.second);
-                    cred = credResolver->resolve(&mcc);
-                }
-                else {
-                    // Prefer credential based on peer's requirements.
-                    pair<const SigningMethod*,const Credential*> p = role->getSigningMethod(*credResolver, mcc);
-                    if (p.first)
-                        sigalg = make_pair(true, p.first->getAlgorithm());
-                    if (p.second)
-                        cred = p.second;
-                }
-            }
-            else {
-                CredentialCriteria cc;
-                cc.setUsage(Credential::SIGNING_CREDENTIAL);
-                if (keyName.first)
-                    cc.getKeyNames().insert(keyName.second);
-                if (sigalg.first)
-                    cc.setXMLAlgorithm(sigalg.second);
-                cred = credResolver->resolve(&cc);
-            }
-            if (cred) {
-                // Signed request.
-                pair<bool,const XMLCh*> digalg = relyingParty->getXMLString("digestAlg");
-                if (!digalg.first && role) {
-                    const DigestMethod* dm = role->getDigestMethod();
-                    if (dm)
-                        digalg = make_pair(true, dm->getAlgorithm());
-                }
-                return encoder.encode(
-                    httpResponse,
-                    msg,
-                    destination,
-                    entity,
-                    relayState,
-                    &application,
-                    cred,
-                    sigalg.second,
-                    (digalg.first ? digalg.second : nullptr)
-                    );
-            }
-            else {
-                m_log.warn("no signing credential resolved, leaving message unsigned");
-            }
-        }
-        else {
-            m_log.warn("no credential resolver installed, leaving message unsigned");
-        }
-    }
-
-    // Unsigned request.
-    return encoder.encode(httpResponse, msg, destination, entity, relayState, &application);
-}
-
-#endif
 
 void AbstractHandler::preservePostData(SPRequest& request, const char* relayState) const
 {
@@ -579,7 +420,7 @@ void AbstractHandler::preservePostData(SPRequest& request, const char* relayStat
         const map<string,string>& cookies = request.getCookies();
         for (map<string,string>::const_reverse_iterator i = cookies.rbegin(); i != cookies.rend(); ++i) {
             // Process post data cookies only.
-            if (starts_with(i->first, "_shibpost_")) {
+            if (boost::starts_with(i->first, "_shibpost_")) {
                 if (maxCookies > 0) {
                     // Keep it, but count it against the limit.
                     --maxCookies;
@@ -593,7 +434,7 @@ void AbstractHandler::preservePostData(SPRequest& request, const char* relayStat
         }
 
         if (purgedCookies > 0)
-            log(Priority::SHIB_DEBUG, string("purged ") + lexical_cast<string>(purgedCookies) + " stale POST preservation cookie(s) from client");
+            m_log.debug(string("purged ") + boost::lexical_cast<string>(purgedCookies) + " stale POST preservation cookie(s) from client");
 
         // Set a cookie with key info.
         request.setCookie(shib_cookie.c_str(), postkey.c_str(), 0, HTTPResponse::SAMESITE_NONE);
@@ -751,99 +592,111 @@ DDF AbstractHandler::getPostData(const SPRequest& request) const
     return DDF();
 }
 
-pair<bool,bool> AbstractHandler::getBool(const char* name, const HTTPRequest& request, unsigned int type) const
+bool AbstractHandler::getBool(
+    const char* name, const SPRequest& request, bool defaultValue, unsigned int type
+    ) const
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
-        if (param && *param)
-            return make_pair(true, (*param=='t' || *param=='1'));
+        if (param && *param) {
+            string_to_bool_translator tr;
+            boost::optional<bool> ret = tr.get_value(param);
+            if (ret.has_value()) {
+                return ret.get();
+            }
+        }
     }
     
-    const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
-    if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
-        if (sprequest->getRequestSettings().first->hasProperty(name)) {
+    if (type & HANDLER_PROPERTY_MAP) {
+        if (request.getRequestSettings().first->hasProperty(name)) {
             // The default won't matter since we've already verified the property "exists".
-            return make_pair(true, sprequest->getRequestSettings().first->getBool(name, false));
+            return request.getRequestSettings().first->getBool(name, defaultValue);
         }
     }
 
     if (type & HANDLER_PROPERTY_FIXED) {
-        return getBool(name);
+        return getBool(name, defaultValue);
     }
 
-    return make_pair(false,false);
+    return defaultValue;
 }
 
-pair<bool,const char*> AbstractHandler::getString(const char* name, const HTTPRequest& request, unsigned int type) const
+const char* AbstractHandler::getString(
+    const char* name, const SPRequest& request, const char* defaultValue, unsigned int type
+    ) const
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
-        if (param && *param)
-            return make_pair(true, param);
+        if (param && *param) {
+            return param;
+        }
     }
     
-    const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
-    if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
-        const char* ret = sprequest->getRequestSettings().first->getString(name);
-        if (ret)
-            return make_pair(true, ret);
+    if (type & HANDLER_PROPERTY_MAP) {
+        if (request.getRequestSettings().first->hasProperty(name)) {
+            // The default won't matter since we've already verified the property "exists".
+            return request.getRequestSettings().first->getString(name, defaultValue);
+        }
     }
 
     if (type & HANDLER_PROPERTY_FIXED) {
-        return getString(name);
+        return getString(name, defaultValue);
     }
 
-    return pair<bool,const char*>(false,nullptr);
+    return defaultValue;
 }
 
-pair<bool,unsigned int> AbstractHandler::getUnsignedInt(const char* name, const HTTPRequest& request, unsigned int type) const
+unsigned int AbstractHandler::getUnsignedInt(
+    const char* name, const SPRequest& request, unsigned int defaultValue, unsigned int type) const
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
         if (param && *param) {
             try {
-                return pair<bool,unsigned int>(true, lexical_cast<unsigned int>(param));
+                return boost::lexical_cast<unsigned int>(param);
             }
-            catch (bad_lexical_cast&) {
-                return pair<bool,unsigned int>(false,0);
+            catch (const boost::bad_lexical_cast&) {
             }
         }
     }
     
-    const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
-    if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
-        if (sprequest->getRequestSettings().first->hasProperty(name)) {
+    if (type & HANDLER_PROPERTY_MAP) {
+        if (request.getRequestSettings().first->hasProperty(name)) {
             // The default won't matter since we've already verified the property "exists".
-            return make_pair(true, sprequest->getRequestSettings().first->getUnsignedInt(name, 0));
+            return request.getRequestSettings().first->getUnsignedInt(name, defaultValue);
         }
     }
 
     if (type & HANDLER_PROPERTY_FIXED) {
-        return getUnsignedInt(name);
+        return getUnsignedInt(name, defaultValue);
     }
 
-    return pair<bool,unsigned int>(false,0);
+    return defaultValue;
 }
 
-pair<bool,int> AbstractHandler::getInt(const char* name, const HTTPRequest& request, unsigned int type) const
+int AbstractHandler::getInt(const char* name, const SPRequest& request, int defaultValue, unsigned int type) const
 {
     if (type & HANDLER_PROPERTY_REQUEST) {
         const char* param = request.getParameter(name);
-        if (param && *param)
-            return pair<bool,int>(true, atoi(param));
+        if (param && *param) {
+            try {
+                return boost::lexical_cast<unsigned int>(param);
+            }
+            catch (const boost::bad_lexical_cast&) {
+            }
+        }
     }
     
-    const SPRequest* sprequest = dynamic_cast<const SPRequest*>(&request);
-    if (sprequest && (type & HANDLER_PROPERTY_MAP)) {
-        if (sprequest->getRequestSettings().first->hasProperty(name)) {
+    if (type & HANDLER_PROPERTY_MAP) {
+        if (request.getRequestSettings().first->hasProperty(name)) {
             // The default won't matter since we've already verified the property "exists".
-            return make_pair(true, sprequest->getRequestSettings().first->getInt(name, 0));
+            return request.getRequestSettings().first->getInt(name, defaultValue);
         }
     }
 
     if (type & HANDLER_PROPERTY_FIXED) {
-        return getInt(name);
+        return getInt(name, defaultValue);
     }
 
-    return pair<bool,int>(false,0);
+    return defaultValue;
 }

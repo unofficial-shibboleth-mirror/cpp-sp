@@ -13,7 +13,7 @@
  */
 
 /**
- * SAMLDSSessionInitiator.cpp
+ * handler/impl/SAMLDSSessionInitiator.cpp
  *
  * SAML Discovery Service support.
  */

@@ -1,25 +1,19 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * AdminLogoutInitiator.cpp
+ * handler/impl/AdminLogoutInitiator.cpp
  *
  * Triggers administrative logout of a session.
  */
@@ -30,6 +24,7 @@
 #include "AgentConfig.h"
 #include "handler/SecuredHandler.h"
 #include "handler/LogoutInitiator.h"
+#include "logging/Category.h"
 #include "session/SessionCache.h"
 
 #include <sstream>
@@ -38,9 +33,7 @@
 #endif
 
 using namespace shibsp;
-using namespace xmltooling;
-using namespace xercesc;
-using namespace boost;
+using namespace boost::property_tree;
 using namespace std;
 
 namespace shibsp {
@@ -53,71 +46,26 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AdminLogoutInitiator : public SecuredHandler, public LogoutInitiator
     {
     public:
-        AdminLogoutInitiator(const DOMElement* e, const char* appId);
+        AdminLogoutInitiator(const ptree& pt);
         virtual ~AdminLogoutInitiator() {}
 
-        void init(const char* location);    // encapsulates actions that need to run either in the c'tor or setParent
-
-        void setParent(const PropertySet* parent);
-        void receive(DDF& in, ostream& out);
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-
-    private:
-        pair<bool,long> doRequest(SPRequest& request) const;
-
-        string m_appId;
-#ifndef SHIBSP_LITE
-        auto_ptr_char m_protocol;
-        auto_ptr<LogoutRequest> buildRequest(
-            const Application& application,
-            const Session& session,
-            const RoleDescriptor& role,
-            const XMLCh* endpoint
-            ) const;
-#endif
     };
 
 #if defined (_MSC_VER)
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL AdminLogoutInitiatorFactory(const pair<const DOMElement*,const char*>& p, bool)
+    Handler* SHIBSP_DLLLOCAL AdminLogoutInitiatorFactory(const pair<ptree&,const char*> p, bool)
     {
-        return new AdminLogoutInitiator(p.first, p.second);
+        return new AdminLogoutInitiator(p.first);
     }
 };
 
-AdminLogoutInitiator::AdminLogoutInitiator(const DOMElement* e, const char* appId)
-    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.Admin")), m_appId(appId)
-#ifndef SHIBSP_LITE
-        ,m_protocol(samlconstants::SAML20P_NS)
-#endif
+AdminLogoutInitiator::AdminLogoutInitiator(const ptree& pt)
+    : SecuredHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.Admin"))
 {
-    // If Location isn't set, defer initialization until the setParent call.
-    pair<bool,const char*> loc = getString("Location");
-    if (loc.first) {
-        init(loc.second);
-    }
 }
-
-void AdminLogoutInitiator::setParent(const PropertySet* parent)
-{
-    DOMPropertySet::setParent(parent);
-    pair<bool,const char*> loc = getString("Location");
-    init(loc.second);
-}
-
-void AdminLogoutInitiator::init(const char* location)
-{
-    if (location) {
-        string address = m_appId + location + "::run::AdminLI";
-        setAddress(address.c_str());
-    }
-    else {
-        m_log.warn("no Location property in Admin LogoutInitiator (or parent), can't register as remoted handler");
-    }
-}
-
 
 pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) const
 {
@@ -128,53 +76,6 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
     if (ret.first)
         return ret;
 
-    if (false) {
-        // When out of process, we run natively.
-        return doRequest(request);
-    }
-    else {
-        // When not out of process, we remote the request.
-        vector<string> headers(1, "User-Agent");
-        DDF out, in = wrap(request, &headers);
-        DDFJanitor jin(in), jout(out);
-        out = send(request, in);
-        return unwrap(request, out);
-    }
-}
-
-void AdminLogoutInitiator::receive(DDF& in, ostream& out)
-{
-#ifndef SHIBSP_LITE
-    // Find application.
-    const char* aid=in["application_id"].string();
-    const Application* app=aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
-    if (!app) {
-        // Something's horribly wrong.
-        m_log.error("couldn't find application (%s) for logout", aid ? aid : "(missing)");
-        throw ConfigurationException("Unable to locate application for logout, deleted?");
-    }
-
-    // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
-
-    // Set up a response shim.
-    DDF ret(nullptr);
-    DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
-
-    // Since we're remoted, the result should either be a throw, which we pass on,
-    // a false/0 return, which we just return as an empty structure, or a response/redirect,
-    // which we capture in the facade and send back.
-    doRequest(*app, *req, *resp);
-
-    out << ret;
-#else
-    throw ConfigurationException("Cannot perform logout using lite version of shibsp library.");
-#endif
-}
-
-pair<bool,long> AdminLogoutInitiator::doRequest(SPRequest& request) const
-{
     const char* sessionId = request.getParameter("session");
     if (!sessionId || !*sessionId) {
         // Something's horribly wrong.

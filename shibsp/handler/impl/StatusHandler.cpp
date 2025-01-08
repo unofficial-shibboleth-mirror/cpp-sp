@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -30,25 +24,25 @@
 #include "SPRequest.h"
 #include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
+#include "logging/Category.h"
+#include "session/SessionCache.h"
 #include "util/CGIParser.h"
+#include "util/Date.h"
 #include "util/Misc.h"
 
 #include <sstream>
-
-#include <boost/iterator/indirect_iterator.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <xmltooling/version.h>
-#include <xercesc/util/XMLDateTime.hpp>
 
 #ifdef HAVE_SYS_UTSNAME_H
 # include <sys/utsname.h>
 #endif
 
 using namespace shibsp;
-using namespace xmltooling;
-using namespace xercesc;
+using namespace boost::property_tree;
 using namespace std;
 
+#ifndef HAVE_STRCASECMP
+# define strncasecmp _strnicmp
+#endif
 namespace shibsp {
 
 #if defined (_MSC_VER)
@@ -56,17 +50,15 @@ namespace shibsp {
     #pragma warning( disable : 4250 )
 #endif
 
-    class SHIBSP_API StatusHandler : public SecuredHandler, public RemotedHandler
+    class SHIBSP_API StatusHandler : public SecuredHandler
     {
     public:
-        StatusHandler(const DOMElement* e, const char* appId);
+        StatusHandler(const ptree& pt);
         virtual ~StatusHandler() {}
 
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-        void receive(DDF& in, ostream& out);
 
     private:
-        pair<bool,long> processMessage(SPRequest& request) const;
         ostream& systemInfo(ostream& os) const;
     };
 
@@ -74,16 +66,15 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL StatusHandlerFactory(const pair<const DOMElement*,const char*>& p, bool)
+    Handler* SHIBSP_DLLLOCAL StatusHandlerFactory(const pair<ptree&,const char*>& p, bool)
     {
-        return new StatusHandler(p.first, p.second);
+        return new StatusHandler(p.first);
     }
 
     class DummyRequest : public HTTPRequest
     {
     public:
         DummyRequest(const char* url) : m_parser(nullptr), m_url(url), m_scheme(nullptr), m_query(nullptr), m_port(0) {
-#ifdef HAVE_STRCASECMP
             if (url && !strncasecmp(url,"http://", 7)) {
                 m_scheme = "http";
                 m_port = 80;
@@ -94,21 +85,9 @@ namespace shibsp {
                 m_port = 443;
                 url += 8;
             }
-            else
-#else
-            if (url && !strnicmp(url,"http://", 7)) {
-                m_scheme = "http";
-                m_port = 80;
-                url += 7;
-            }
-            else if (url && !strnicmp(url,"https://", 8)) {
-                m_scheme="https";
-                m_port = 443;
-                url += 8;
-            }
-            else
-#endif
+            else {
                 throw invalid_argument("Target parameter was not an absolute URL.");
+            }
 
             m_query = strchr(url,'?');
             if (m_query)
@@ -210,7 +189,7 @@ namespace shibsp {
         }
 
     private:
-        mutable boost::scoped_ptr<CGIParser> m_parser;
+        mutable unique_ptr<CGIParser> m_parser;
         const char* m_url;
         const char* m_scheme;
         const char* m_query;
@@ -219,12 +198,9 @@ namespace shibsp {
     };
 };
 
-StatusHandler::StatusHandler(const DOMElement* e, const char* appId)
-    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.Status"))
+StatusHandler::StatusHandler(const ptree& pt)
+    : SecuredHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.Status"))
 {
-    string address(appId);
-    address += getString("Location").second;
-    setAddress(address.c_str());
 }
 
 pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
@@ -234,24 +210,21 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     if (ret.first)
         return ret;
 
+    auto now = chrono::system_clock::now();
+
+    ostringstream ts;
+    ts << date::format("%FT%TZ", date::floor<chrono::milliseconds>(now));
+    string timestamp(ts.str());
+
     const char* target = request.getParameter("target");
     if (target) {
         // RequestMap query, so handle it inproc.
         DummyRequest dummy(target);
         RequestMapper::Settings settings = request.getAgent().getRequestMapper()->getSettings(dummy);
-        XMLDateTime now(time(nullptr), false);
-        now.parseDateTime();
-        auto_ptr_char timestamp(now.getFormattedString());
         request.setContentType("text/xml");
         stringstream msg;
-        msg << "<StatusHandler time='" << timestamp.get() << "'>";
-            msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
-                << "' XML-Tooling-C='" << gXMLToolingDotVersionStr
-#ifndef SHIBSP_LITE
-                << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
-                << "' OpenSAML-C='" << gOpenSAMLDotVersionStr
-#endif
-                << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
+        msg << "<StatusHandler time='" << timestamp << "'>";
+            msg << "<Version Shibboleth='" << PACKAGE_VERSION << "'/>";
             const char* setting = request.getParameter("setting");
                 systemInfo(msg) << "<RequestSettings";
                 if (setting) {
@@ -266,199 +239,39 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
 
     try {
-        if (false) {
-            // When out of process, we run natively and directly process the message.
-            return processMessage(request);
+        m_log.debug("processing status request");
+
+        stringstream s;
+        s << "<StatusHandler time='" << timestamp << "'>"
+            << "<Version Shibboleth='" << PACKAGE_VERSION << "'/>";
+        const char* status = "<OK/>";
+
+        systemInfo(s);
+
+        // General configuration and status report.
+        SessionCache* sc = request.getAgent().getSessionCache(false);
+        if (sc) {
+            s << "<SessionCache><OK/></SessionCache>";
         }
         else {
-            // When not out of process, we remote all the message processing.
-            DDF out,in = wrap(request);
-            DDFJanitor jin(in), jout(out);
-            out = send(request, in);
-            return unwrap(request, out);
+            s << "<SessionCache><None/></SessionCache>";
         }
-    }
-    catch (exception& ex) {
-        m_log.error("error while processing request: %s", ex.what());
-        XMLDateTime now(time(nullptr), false);
-        now.parseDateTime();
-        auto_ptr_char timestamp(now.getFormattedString());
+
+        s << "<Status>" << status << "</Status></StatusHandler>";
+
         request.setContentType("text/xml");
-        stringstream msg;
-        msg << "<StatusHandler time='" << timestamp.get() << "'>";
-            msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
-                << "' XML-Tooling-C='" << gXMLToolingDotVersionStr
-#ifndef SHIBSP_LITE
-                << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
-                << "' OpenSAML-C='" << gOpenSAMLDotVersionStr
-#endif
-                << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
-            systemInfo(msg) << "<Status><Exception>" << ex.what() << "</Exception></Status>";
-        msg << "</StatusHandler>";
-        return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
+        return make_pair(true, request.sendResponse(s));
     }
     catch (std::exception& ex) {
         m_log.error("error while processing request: %s", ex.what());
-        XMLDateTime now(time(nullptr), false);
-        now.parseDateTime();
-        auto_ptr_char timestamp(now.getFormattedString());
         request.setContentType("text/xml");
         stringstream msg;
-        msg << "<StatusHandler time='" << timestamp.get() << "'>";
-            msg << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
-                << "' XML-Tooling-C='" << gXMLToolingDotVersionStr
-#ifndef SHIBSP_LITE
-                << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
-                << "' OpenSAML-C='" << gOpenSAMLDotVersionStr
-#endif
-                << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
-            systemInfo(msg) << "<Status><Exception type='std::exception'>" << ex.what() << "</Exception></Status>";
-        msg << "</StatusHandler>";
+        msg << "<StatusHandler time='" << timestamp << "'>"
+            << "<Version Shibboleth='" << PACKAGE_VERSION << "'/>";
+        systemInfo(msg) << "<Status><Exception type='std::exception'>" << ex.what() << "</Exception></Status>"
+            << "</StatusHandler>";
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
-}
-
-void StatusHandler::receive(DDF& in, ostream& out)
-{
-    /*
-    // Find application.
-    const char* aid = in["application_id"].string();
-    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
-    if (!app) {
-        // Something's horribly wrong.
-        m_log.error("couldn't find application (%s) for status request", aid ? aid : "(missing)");
-        throw ConfigurationException("Unable to locate application for status request, deleted?");
-    }
-
-    // Wrap a response shim.
-    DDF ret(nullptr);
-    DDFJanitor jout(ret);
-    boost::scoped_ptr<HTTPRequest> req(getRequest(*app, in));
-    boost::scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
-
-    // Since we're remoted, the result should either be a throw, a false/0 return,
-    // which we just return as an empty structure, or a response/redirect,
-    // which we capture in the facade and send back.
-    processMessage(*app, *req, *resp);
-    out << ret;
-    */
-}
-
-pair<bool,long> StatusHandler::processMessage(SPRequest& request) const
-{
-#ifndef SHIBSP_LITE
-    m_log.debug("processing status request");
-
-    XMLDateTime now(time(nullptr), false);
-    now.parseDateTime();
-    auto_ptr_char timestamp(now.getFormattedString());
-
-    stringstream s;
-    s << "<StatusHandler time='" << timestamp.get() << "'>";
-    const char* status = "<OK/>";
-
-    s << "<Version Xerces-C='" << XERCES_FULLVERSIONDOT
-        << "' XML-Tooling-C='" << gXMLToolingDotVersionStr
-        << "' XML-Security-C='" << XSEC_FULLVERSIONDOT
-        << "' OpenSAML-C='" << gOpenSAMLDotVersionStr
-        << "' Shibboleth='" << PACKAGE_VERSION << "'/>";
-
-    systemInfo(s);
-
-    const char* param = nullptr;
-    if (param) {
-    }
-    else {
-        // General configuration and status report.
-        try {
-            SessionCache* sc = application.getServiceProvider().getSessionCache(false);
-            if (sc) {
-                sc->test();
-                s << "<SessionCache><OK/></SessionCache>";
-            }
-            else {
-                s << "<SessionCache><None/></SessionCache>";
-            }
-        }
-        catch (XMLToolingException& ex) {
-            s << "<SessionCache><Exception type='" << ex.getClassName() << "'>" << ex.what() << "</Exception></SessionCache>";
-            status = "<Partial/>";
-        }
-        catch (std::exception& ex) {
-            s << "<SessionCache><Exception type='std::exception'>" << ex.what() << "</Exception></SessionCache>";
-            status = "<Partial/>";
-        }
-
-        MetadataProvider* m = application.getMetadataProvider(false);
-        Locker mlock(m);
-
-        const PropertySet* relyingParty = nullptr;
-        param=httpRequest.getParameter("entityID");
-        if (m && param)
-            relyingParty = application.getRelyingParty(m->getEntityDescriptor(MetadataProviderCriteria(application, param)).first);
-        else
-            relyingParty = &application;
-
-        s << "<Application id='" << application.getId() << "' entityID='" << relyingParty->getString("entityID").second << "'/>";
-
-        if (m)
-            m->outputStatus(s);
-
-        s << "<Handlers>";
-        vector<const Handler*> handlers;
-        application.getHandlers(handlers);
-        for (indirect_iterator<vector<const Handler*>::const_iterator> h = make_indirect_iterator(handlers.begin());
-                h != make_indirect_iterator(handlers.end()); ++h) {
-            s << "<Handler Location='" << h->getString("Location").second << "'";
-            if (h->getString("Binding").first)
-                s << " Binding='" << h->getString("Binding").second << "'";
-            s << "/>";
-        }
-        s << "</Handlers>";
-
-        CredentialResolver* credResolver = application.getCredentialResolver();
-        if (credResolver) {
-            Locker credLocker(credResolver);
-            CredentialCriteria cc;
-            cc.setUsage(Credential::SIGNING_CREDENTIAL);
-            pair<bool,const char*> keyName = relyingParty->getString("keyName");
-            if (keyName.first)
-                cc.getKeyNames().insert(keyName.second);
-            vector<const Credential*> creds;
-            credResolver->resolve(creds, &cc);
-            for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
-                KeyInfo* kinfo = (*c)->getKeyInfo();
-                if (kinfo) {
-                    scoped_ptr<KeyDescriptor> kd(KeyDescriptorBuilder::buildKeyDescriptor());
-                    kd->setUse(KeyDescriptor::KEYTYPE_SIGNING);
-                    kd->setKeyInfo(kinfo);
-                    s << *(kd.get());
-                }
-            }
-
-            cc.setUsage(Credential::ENCRYPTION_CREDENTIAL);
-            creds.clear();
-            cc.getKeyNames().clear();
-            credResolver->resolve(creds, &cc);
-            for (vector<const Credential*>::const_iterator c = creds.begin(); c != creds.end(); ++c) {
-                KeyInfo* kinfo = (*c)->getKeyInfo();
-                if (kinfo) {
-                    scoped_ptr<KeyDescriptor> kd(KeyDescriptorBuilder::buildKeyDescriptor());
-                    kd->setUse(KeyDescriptor::KEYTYPE_ENCRYPTION);
-                    kd->setKeyInfo(kinfo);
-                    s << *(kd.get());
-                }
-            }
-        }
-    }
-
-    s << "<Status>" << status << "</Status></StatusHandler>";
-
-    httpResponse.setContentType("text/xml");
-    return make_pair(true, httpResponse.sendResponse(s));
-#else
-    return make_pair(false, 0L);
-#endif
 }
 
 #ifdef WIN32

@@ -31,6 +31,7 @@ namespace shibsp {
     class SHIBSP_API AccessControl;
     class SHIBSP_API Agent;
     class SHIBSP_API Category;
+    class SHIBSP_API Handler;
     class SHIBSP_API LoggingService;
     class SHIBSP_API PathResolver;
     class SHIBSP_API RemotingService;
@@ -89,6 +90,11 @@ namespace shibsp {
          * Manages factories for Agent plugins.
          */
         PluginManager<Agent,std::string,boost::property_tree::ptree&> AgentManager;
+
+        /**
+         * Manages factories for Handler plugins.
+         */
+        PluginManager<Handler,std::string,std::pair<boost::property_tree::ptree&,const char*>> HandlerManager;
 
         /**
          * Manages factories for LoggingService plugins.

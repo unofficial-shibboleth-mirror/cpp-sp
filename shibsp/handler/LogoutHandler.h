@@ -1,21 +1,15 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
@@ -39,7 +33,7 @@ namespace shibsp {
     /**
      * Base class for logout-related handlers.
      */
-    class SHIBSP_API LogoutHandler : public RemotedHandler
+    class SHIBSP_API LogoutHandler
     {
     public:
         virtual ~LogoutHandler();
@@ -59,17 +53,6 @@ namespace shibsp {
          * @return  a pair containing a "request completed" indicator and a server-specific response code
          */
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-
-        /**
-         * A remoted procedure that will perform any necessary back-channel
-         * notifications. The input structure must contain an "application_id" member,
-         * and a "sessions" list containing the session keys, along with an integer
-         * member called "notify" with a value of 1.
-         * 
-         * @param in    incoming DDF message
-         * @param out   stream to write outgoing DDF message to
-         */
-        void receive(DDF& in, std::ostream& out);
 
     protected:
         LogoutHandler();

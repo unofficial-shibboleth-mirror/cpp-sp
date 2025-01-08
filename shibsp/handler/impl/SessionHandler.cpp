@@ -1,25 +1,19 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * SessionHandler.cpp
+ * handler/impl/SessionHandler.cpp
  *
  * Handler for dumping information about an active session.
  */
@@ -29,6 +23,7 @@
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "handler/SecuredHandler.h"
+#include "logging/Category.h"
 #include "session/SessionCache.h"
 #include "util/Date.h"
 
@@ -36,8 +31,7 @@
 #include <sstream>
 
 using namespace shibsp;
-using namespace xmltooling;
-using namespace xercesc;
+using namespace boost::property_tree;
 using namespace std;
 
 namespace shibsp {
@@ -50,7 +44,7 @@ namespace shibsp {
     class SHIBSP_API SessionHandler : public SecuredHandler
     {
     public:
-        SessionHandler(const DOMElement* e, const char* appId);
+        SessionHandler(const ptree& pt);
         virtual ~SessionHandler() {}
 
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
@@ -67,25 +61,21 @@ namespace shibsp {
     #pragma warning( pop )
 #endif
 
-    Handler* SHIBSP_DLLLOCAL SessionHandlerFactory(const pair<const DOMElement*,const char*>& p, bool)
+    Handler* SHIBSP_DLLLOCAL SessionHandlerFactory(const pair<ptree&,const char*>& p, bool)
     {
-        return new SessionHandler(p.first, p.second);
+        return new SessionHandler(p.first);
     }
 
 };
 
-SessionHandler::SessionHandler(const DOMElement* e, const char* appId)
-    : SecuredHandler(e, Category::getInstance(SHIBSP_LOGCAT ".Handler.Session")), m_values(false)
+SessionHandler::SessionHandler(const ptree& pt)
+    : SecuredHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.Session")), m_values(false)
 {
-    pair<bool,const char*> prop = getString("contentType");
-    if (prop.first)
-        m_contentType = prop.second;
+    m_contentType = getString("contentType", "");
     if (!m_contentType.empty() && m_contentType != "application/json" && m_contentType != "text/html")
         throw ConfigurationException("Unsupported contentType property in Session Handler configuration.");
 
-    pair<bool,bool> flag = getBool("showAttributeValues");
-    if (flag.first)
-        m_values = flag.second;
+    m_values = getBool("showAttributeValues", false);
 }
 
 namespace {
@@ -129,8 +119,10 @@ pair<bool,long> SessionHandler::run(SPRequest& request, bool isHandler) const
     pair<bool,long> ret = SecuredHandler::run(request, isHandler);
     if (ret.first)
         return ret;
+
     request.setResponseHeader("Expires","Wed, 01 Jan 1997 12:00:00 GMT");
     request.setResponseHeader("Cache-Control","private,no-store,no-cache,max-age=0");
+
     if (m_contentType == "application/json") {
         request.setContentType(m_contentType.c_str());
         return doJSON(request);
@@ -151,7 +143,7 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
             return make_pair(true, request.sendResponse(s));
         }
     }
-    catch (std::exception& ex) {
+    catch (exception& ex) {
         m_log.info("exception accessing user session: %s", ex.what());
         s << "{}" << endl;
         return make_pair(true, request.sendError(s));
@@ -268,7 +260,7 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
             return make_pair(true, request.sendResponse(s));
         }
     }
-    catch (std::exception& ex) {
+    catch (exception& ex) {
         s << "Exception while retrieving active session:" << endl
             << '\t' << ex.what() << "</pre></body></html>" << endl;
         return make_pair(true, request.sendResponse(s));

@@ -62,7 +62,7 @@ public:
     TestBoostPropertySet() {} 
     virtual ~TestBoostPropertySet() {}
 
-    void setParent(const PropertySet2* parent) {
+    void setParent(const PropertySet* parent) {
         BoostPropertySet::setParent(parent);
     }
 };

@@ -27,14 +27,13 @@
 #ifndef __shibsp_reqmap_h__
 #define __shibsp_reqmap_h__
 
-#include <shibsp/base.h>
 #include <shibsp/util/Lockable.h>
 
 namespace shibsp {
 
     class SHIBSP_API AccessControl;
     class SHIBSP_API HTTPRequest;
-    class SHIBSP_API PropertySet2;
+    class SHIBSP_API PropertySet;
 
     /**
      * Interface to a request mapping plugin
@@ -51,7 +50,7 @@ namespace shibsp {
         virtual ~RequestMapper();
 
         /** Combination of configuration settings and effective access control. */
-        typedef std::pair<const PropertySet2*,AccessControl*> Settings;
+        typedef std::pair<const PropertySet*,AccessControl*> Settings;
 
         /**
          * Map request to settings.

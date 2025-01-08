@@ -13,7 +13,7 @@
  */
 
 /**
- * RemotedHandler.cpp
+ * handler/impl/RemotedHandler.cpp
  * 
  * Base class for handlers that need SP request/response layer to be remoted. 
  */

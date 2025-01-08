@@ -1,25 +1,19 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * LogoutHandler.cpp
+ * handler/impl/LogoutHandler.cpp
  *
  * Base class for logout-related handlers.
  */
@@ -38,7 +32,6 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace shibsp;
-using namespace xercesc;
 using namespace std;
 
 LogoutHandler::LogoutHandler() : m_initiator(true)
@@ -51,10 +44,6 @@ LogoutHandler::~LogoutHandler()
 
 pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
 {
-    // If we're inside a chain, do nothing.
-    if (getParent())
-        return make_pair(false,0L);
-
     // If this isn't a LogoutInitiator, we only "continue" a notification loop, rather than starting one.
     if (!m_initiator && !request.getParameter("notifying"))
         return make_pair(false,0L);
@@ -63,6 +52,7 @@ pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
     return notifyFrontChannel(request);
 }
 
+/*
 void LogoutHandler::receive(DDF& in, ostream& out)
 {
     DDF ret(nullptr);
@@ -82,6 +72,7 @@ void LogoutHandler::receive(DDF& in, ostream& out)
 
     out << ret;
 }
+*/
 
 pair<bool,long> LogoutHandler::notifyFrontChannel(
     SPRequest& request,
@@ -217,6 +208,7 @@ bool LogoutHandler::notifyBackChannel(const SPRequest& request, const vector<str
 #endif
     }
 
+/*
     // When not out of process, we remote the back channel work.
     // TODO: remove anyway....
     DDF out,in(m_address.c_str());
@@ -233,4 +225,5 @@ bool LogoutHandler::notifyBackChannel(const SPRequest& request, const vector<str
     }
     //out = application.getServiceProvider().getListenerService()->send(in);
     return (out.integer() == 1);
+*/
 }

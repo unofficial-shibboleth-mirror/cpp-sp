@@ -1,25 +1,19 @@
 /**
- * Licensed to the University Corporation for Advanced Internet
- * Development, Inc. (UCAID) under one or more contributor license
- * agreements. See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * UCAID licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the
- * License at
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific
- * language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /**
- * AssertionConsumerService.cpp
+ * handler/impl/AssertionConsumerService.cpp
  *
  * Base class for handlers that create sessions by consuming SSO protocol responses.
  */
@@ -28,33 +22,18 @@
 #include "exceptions.h"
 #include "SPRequest.h"
 #include "handler/AssertionConsumerService.h"
+#include "logging/Category.h"
 #include "util/CGIParser.h"
-#include "util/SPConstants.h"
 
 #include <ctime>
 
-using namespace shibspconstants;
 using namespace shibsp;
-using namespace xmltooling;
-using namespace xercesc;
-using namespace boost;
+using namespace boost::property_tree;
 using namespace std;
 
-AssertionConsumerService::AssertionConsumerService(
-    const DOMElement* e, const char* appId, Category& log, DOMNodeFilter* filter, const Remapper* remapper, bool deprecationSupport
-    ) : AbstractHandler(e, log, filter, remapper)
+AssertionConsumerService::AssertionConsumerService(const ptree& pt, Category& log)
+    : AbstractHandler(pt, log)
 {
-    if (!e)
-        return;
-    string address(appId);
-    address += getString("Location").second;
-    setAddress(address.c_str());
-#ifndef SHIBSP_LITE
-    if (SPConfig::getConfig().isEnabled(SPConfig::OutOfProcess)) {
-        m_decoder.reset(SAMLConfig::getConfig().MessageDecoderManager.newPlugin(getString("Binding").second, e, deprecationSupport));
-        m_decoder->setArtifactResolver(SPConfig::getConfig().getArtifactResolver());
-    }
-#endif
 }
 
 AssertionConsumerService::~AssertionConsumerService()
@@ -77,54 +56,6 @@ pair<bool,long> AssertionConsumerService::run(SPRequest& request, bool isHandler
         }
     }
 
-    if (false) {
-        // When out of process, we run natively and directly process the message.
-        return processMessage(request);
-    }
-    else {
-        // When not out of process, we remote all the message processing.
-        vector<string> headers(1, "Cookie");
-        headers.push_back("User-Agent");
-        headers.push_back("Accept-Language");
-        DDF out,in = wrap(request, &headers);
-        DDFJanitor jin(in), jout(out);
-        out = send(request, in);
-        return unwrap(request, out);
-    }
-}
-
-void AssertionConsumerService::receive(DDF& in, ostream& out)
-{
-    /*
-
-    // Find application.
-    const char* aid = in["application_id"].string();
-    const Application* app = aid ? SPConfig::getConfig().getServiceProvider()->getApplication(aid) : nullptr;
-    if (!app) {
-        // Something's horribly wrong.
-        m_log.error("couldn't find application (%s) for new session", aid ? aid : "(missing)");
-        throw ConfigurationException("Unable to locate application for new session, deleted?");
-    }
-
-    // Unpack the request.
-    scoped_ptr<HTTPRequest> req(getRequest(*app, in));
-
-    // Wrap a response shim.
-    DDF ret(nullptr);
-    DDFJanitor jout(ret);
-    scoped_ptr<HTTPResponse> resp(getResponse(*app, ret));
-
-    // Since we're remoted, the result should either be a throw, a false/0 return,
-    // which we just return as an empty structure, or a response/redirect,
-    // which we capture in the facade and send back.
-    processMessage(*app, *req, *resp);
-    out << ret;
-
-    */
-}
-
-pair<bool,long> AssertionConsumerService::processMessage(const SPRequest& httpRequest) const
-{
 #ifndef SHIBSP_LITE
     // Locate policy key.
     pair<bool,const char*> prop = getString("policyId", shibspconstants::ASCII_SHIBSPCONFIG_NS);  // may be namespace-qualified if inside handler element

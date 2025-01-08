@@ -15,26 +15,23 @@
 /**
  * @file shibsp/handler/AbstractHandler.h
  * 
- * Base class for handlers based on a DOMPropertySet. 
+ * Base class for handlers based on a DOMPropertySet.
  */
 
 #ifndef __shibsp_abshandler_h__
 #define __shibsp_abshandler_h__
 
 #include <shibsp/handler/Handler.h>
-#include <shibsp/logging/Category.h>
 #include <shibsp/remoting/ddf.h>
-#include <shibsp/util/DOMPropertySet.h>
+#include <shibsp/util/BoostPropertySet.h>
 
-#include <map>
 #include <string>
-
-
-namespace xmltooling {
-    class XMLTOOL_API XMLObject;
-};
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
+
+    class SHIBSP_API Category;
+    class SHIBSP_API SPRequest;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -42,80 +39,56 @@ namespace shibsp {
 #endif
 
     /**
-     * Base class for handlers based on a DOMPropertySet.
+     * Base class for handlers based on a BoostPropertySet.
+     * 
+     * TODO: Most of this probably is replaced/removed with hub operations.
      */
-    class SHIBSP_API AbstractHandler : public virtual Handler, public DOMPropertySet
+    class SHIBSP_API AbstractHandler : public virtual Handler, public virtual BoostPropertySet
     {
     protected:
         /**
          * Constructor
          * 
-         * @param e         DOM element to load as property set.
-         * @param log       logging category to use
-         * @param filter    optional filter controls what child elements to include as nested PropertySets
-         * @param remapper  optional property rename mapper for legacy property support
+         * @param pt    root of handler configuration
+         * @param log   logging category to use
          */
-        AbstractHandler(
-            const xercesc::DOMElement* e,
-            Category& log,
-            xercesc::DOMNodeFilter* filter=nullptr,
-            const Remapper* remapper=nullptr
-            );
-
-        void log(Priority::Value level, const std::string& msg) const;
-
-#ifndef SHIBSP_LITE
-        /**
-         * Examines a protocol response message for errors and raises an annotated exception
-         * if an error is found.
-         * 
-         * <p>The base class version understands SAML 1.x and SAML 2.0 responses.
-         * 
-         * @param response  a response message of some known protocol
-         * @param role      issuer of message
-         */
-        virtual void checkError(
-            const xmltooling::XMLObject* response,
-            const opensaml::saml2md::RoleDescriptor* role=nullptr
-            ) const;
+        AbstractHandler(const boost::property_tree::ptree& pt, Category& log);
 
         /**
-         * Prepares Status information in a SAML 2.0 response.
-         * 
-         * @param response  SAML 2.0 response message
-         * @param code      SAML status code
-         * @param subcode   optional SAML substatus code
-         * @param msg       optional message to pass back
+         * Prevents unused relay state from building up by cleaning old state from the client.
+         *
+         * <p>Handlers that generate relay state should call this method as a house cleaning
+         * step.
+         *
+         * @param application   the associated Application
+         * @param request       SP request
          */
-        void fillStatus(
-            opensaml::saml2p::StatusResponseType& response, const XMLCh* code, const XMLCh* subcode=nullptr, const char* msg=nullptr
-            ) const;
+        virtual void cleanRelayState(SPRequest& request) const;
 
         /**
-        * Encodes and sends SAML 2.0 message, optionally signing it in the process.
-        * If the method returns, the message MUST NOT be freed by the caller.
-        *
-        * @param encoder                the MessageEncoder to use
-        * @param msg                    the message to send
-        * @param relayState             any RelayState to include with the message
-        * @param destination            location to send message, if not a backchannel response
-        * @param role                   recipient of message, if known
-        * @param application            the Application sending the message
-        * @param httpResponse           channel for sending message
-        * @param defaultSigningProperty the effective value of the "signing" property if unset
-        * @return  the result of sending the message using the encoder
-        */
-        long sendMessage(
-            const opensaml::MessageEncoder& encoder,
-            xmltooling::XMLObject* msg,
-            const char* relayState,
-            const char* destination,
-            const opensaml::saml2md::RoleDescriptor* role,
-            const Application& application,
-            xmltooling::HTTPResponse& httpResponse,
-            const char* defaultSigningProperty
-        ) const;
-#endif
+         * Implements various mechanisms to preserve RelayState,
+         * such as cookies or StorageService-backed keys.
+         *
+         * <p>If a supported mechanism can be identified, the input parameter will be
+         * replaced with a suitable state key.
+         *
+         * @param response      outgoing HTTP response
+         * @param relayState    RelayState token to supply with message
+         */
+        virtual void preserveRelayState(SPRequest& response, std::string& relayState) const;
+
+        /**
+         * Implements various mechanisms to recover RelayState,
+         * such as cookies or StorageService-backed keys.
+         *
+         * <p>If a supported mechanism can be identified, the input parameter will be
+         * replaced with the recovered state information.
+         *
+         * @param request       SP request
+         * @param relayState    RelayState token supplied with message
+         * @param clear         true iff the token state should be cleared
+         */
+        virtual void recoverRelayState(SPRequest& request, std::string& relayState, bool clear=true) const;
 
         /**
          * Implements a mechanism to preserve form post data.
@@ -148,7 +121,7 @@ namespace shibsp {
         virtual long sendPostResponse(HTTPResponse& response, const char* url, DDF& postData) const;
 
         /**
-         * Bitmask of property sources to read from
+         * Bitmask of property sources to read from:
          * (request query parameter, request mapper, fixed handler property).
          */
         enum PropertySourceTypes {
@@ -158,21 +131,22 @@ namespace shibsp {
             HANDLER_PROPERTY_ALL = 255
         };
 
-        using DOMPropertySet::getBool;
-        using DOMPropertySet::getString;
-        using DOMPropertySet::getUnsignedInt;
-        using DOMPropertySet::getInt;
+        using BoostPropertySet::getBool;
+        using BoostPropertySet::getString;
+        using BoostPropertySet::getUnsignedInt;
+        using BoostPropertySet::getInt;
 
         /**
          * Returns a boolean-valued property.
          * 
          * @param name          property name
          * @param request       reference to incoming request
+         * @param defaultValue  value to return if property is not set
          * @param type          bitmask of property sources to use
-         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
+         * @return property value (or the default)
          */
-        std::pair<bool,bool> getBool(
-            const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL
+        bool getBool(
+            const char* name, const SPRequest& request, bool defaultValue, unsigned int type=HANDLER_PROPERTY_ALL
             ) const;
 
         /**
@@ -180,30 +154,39 @@ namespace shibsp {
          * 
          * @param name          property name
          * @param request       reference to incoming request
+         * @param defaultValue  value to return if property is not set
          * @param type          bitmask of property sources to use
-         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
+         * @return property value (or the default)
          */
-        std::pair<bool,const char*> getString(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        const char* getString(
+            const char* name, const SPRequest& request, const char* defaultValue=nullptr, unsigned int type=HANDLER_PROPERTY_ALL
+            ) const;
 
         /**
          * Returns an unsigned integer-valued property.
          * 
          * @param name          property name
          * @param request       reference to incoming request
+         * @param defaultValue  value to return if property is not set
          * @param type          bitmask of property sources to use
-         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
+         * @return property value (or the default)
          */
-        std::pair<bool,unsigned int> getUnsignedInt(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        unsigned int getUnsignedInt(
+            const char* name, const SPRequest& request, unsigned int defaultValue, unsigned int type=HANDLER_PROPERTY_ALL
+            ) const;
 
         /**
          * Returns an integer-valued property.
          * 
          * @param name          property name
          * @param request       reference to incoming request
+         * @param defaultValue  value to return if property is not set
          * @param type          bitmask of property sources to use
-         * @return a pair consisting of a nullptr indicator and the property value iff the indicator is true
+         * @return property value (or the default)
          */
-        std::pair<bool,int> getInt(const char* name, const HTTPRequest& request, unsigned int type=HANDLER_PROPERTY_ALL) const;
+        int getInt(
+            const char* name, const SPRequest& request, int defaultValue, unsigned int type=HANDLER_PROPERTY_ALL
+            ) const;
 
         /** Logging object. */
         Category& m_log;

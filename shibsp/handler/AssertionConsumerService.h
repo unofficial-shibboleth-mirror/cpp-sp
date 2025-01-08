@@ -44,33 +44,21 @@ namespace shibsp {
     /**
      * Base class for handlers that create sessions by consuming SSO protocol responses.
      */
-    class SHIBSP_API AssertionConsumerService : public AbstractHandler, public RemotedHandler 
+    class SHIBSP_API AssertionConsumerService : public AbstractHandler
     {
     public:
         virtual ~AssertionConsumerService();
 
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-        void receive(DDF& in, std::ostream& out);
 
     protected:
         /**
          * Constructor
          * 
          * @param e         root of DOM configuration
-         * @param appId     ID of application that "owns" the handler
          * @param log       a logging object to use
-         * @param filter    optional filter controls what child elements to include as nested PropertySets
-         * @param remapper  optional property rename mapper for legacy property support
-         * @param deprecationSupport true iff deprecated settings and features should be supported
          */
-        AssertionConsumerService(
-            const xercesc::DOMElement* e,
-            const char* appId,
-            Category& log,
-            xercesc::DOMNodeFilter* filter=nullptr,
-            const Remapper* remapper=nullptr,
-            bool deprecationSupport=true
-            );
+        AssertionConsumerService(const boost::property_tree::ptree& pt, Category& log);
 
         /**
          * Enforce address checking requirements.
@@ -161,9 +149,7 @@ namespace shibsp {
             const std::vector<const opensaml::Assertion*>* tokens=nullptr
             ) const;
 #endif
-    private:
-        std::pair<bool,long> processMessage(const SPRequest& request) const;
-        
+    private:        
         std::pair<bool,long> sendRedirect(
             SPRequest& request,
             const char* entityID,

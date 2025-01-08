@@ -27,51 +27,27 @@
 #include "internal.h"
 #include "SPRequest.h"
 #include "handler/SecuredHandler.h"
+#include "logging/Category.h"
 
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-#include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <sstream>
 
 using namespace shibsp;
-using namespace boost;
-using namespace xercesc;
+using namespace boost::property_tree;
 using namespace std;
 
-namespace {
-    class SHIBSP_DLLLOCAL Blocker : public DOMNodeFilter
-    {
-    public:
-        FilterAction acceptNode(const DOMNode* node) const {
-            return FILTER_REJECT;
-        }
-    };
-
-    static Blocker g_Blocker;
-};
-
-SecuredHandler::SecuredHandler(
-    const DOMElement* e,
-    Category& log,
-    const char* aclProperty,
-    const char* defaultACL,
-    DOMNodeFilter* filter,
-    const Remapper* remapper
-    ) : AbstractHandler(e, log, filter ? filter : &g_Blocker, remapper)
+SecuredHandler::SecuredHandler(const ptree& pt, Category& log, const char* aclProperty, const char* defaultACL)
+    : AbstractHandler(pt, log)
 {
-    pair<bool,const char*> acl = getString(aclProperty);
-    if (!acl.first && defaultACL) {
-        m_log.info("installing default ACL (%s)", defaultACL);
-        acl.first = true;
-        acl.second = defaultACL;
-    }
-    if (acl.first) {
-        string aclbuf(acl.second);
-        trim(aclbuf);
+    const char* acl = getString(aclProperty, defaultACL);
+    if (acl) {
+        string aclbuf(acl);
+        boost::trim(aclbuf);
         vector<string> aclarray;
-        split(aclarray, aclbuf, is_space(), algorithm::token_compress_on);
-        for_each(aclarray.begin(), aclarray.end(), boost::bind(&SecuredHandler::parseACL, this, _1));
+        boost::split(aclarray, aclbuf, boost::is_space(), boost::algorithm::token_compress_on);
+        for_each(aclarray.begin(), aclarray.end(), [this](const string& s){parseACL(s);});
+
         if (m_acl.empty()) {
             m_log.warn("invalid CIDR range(s) in handler's acl property, allowing 127.0.0.1 and ::1 as a fall back");
             m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
@@ -89,7 +65,7 @@ void SecuredHandler::parseACL(const string& acl)
     try {
         m_acl.push_back(IPRange::parseCIDRBlock(acl.c_str()));
     }
-    catch (std::exception& ex) {
+    catch (exception& ex) {
         m_log.error("invalid CIDR block (%s): %s", acl.c_str(), ex.what());
     }
 }
@@ -97,8 +73,11 @@ void SecuredHandler::parseACL(const string& acl)
 pair<bool,long> SecuredHandler::run(SPRequest& request, bool isHandler) const
 {
     if (!m_acl.empty()) {
-        static bool (IPRange::* contains)(const char*) const = &IPRange::contains;
-        if (find_if(m_acl.begin(), m_acl.end(), boost::bind(contains, _1, request.getRemoteAddr().c_str())) == m_acl.end()) {
+        auto contains = [&request](const IPRange& range) {
+            return range.contains(request.getRemoteAddr().c_str());
+        };
+
+        if (find_if(m_acl.begin(), m_acl.end(), contains) == m_acl.end()) {
             request.log(Priority::SHIB_WARN, string("handler request blocked from invalid address (") + request.getRemoteAddr() + ')');
             istringstream msg("Access Denied");
             return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN));
