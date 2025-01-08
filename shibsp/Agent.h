@@ -24,6 +24,7 @@
 #include <shibsp/util/PropertySet.h>
 
 #include <set>
+#include <string>
 
 namespace shibsp {
 
