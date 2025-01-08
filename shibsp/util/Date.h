@@ -32,6 +32,15 @@
 // been invented (that would involve another several millennia of evolution).
 // We did not mean to shout.
 
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
+
 #ifndef HAS_STRING_VIEW
 #  if __cplusplus >= 201703 || (defined(_MSVC_LANG) && _MSVC_LANG >= 201703L)
 #    define HAS_STRING_VIEW 1
