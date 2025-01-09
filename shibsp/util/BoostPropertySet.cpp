@@ -25,9 +25,10 @@
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
-using namespace boost;
+using namespace boost::property_tree;
 using namespace std;
 
 PropertySet::PropertySet()
@@ -56,7 +57,7 @@ void BoostPropertySet::setParent(const PropertySet* parent)
     m_parent = parent;
 }
 
-void BoostPropertySet::load(const property_tree::ptree& pt, const char* unsetter)
+void BoostPropertySet::load(const ptree& pt, const char* unsetter)
 {
     m_pt = &pt;
 
@@ -64,7 +65,7 @@ void BoostPropertySet::load(const property_tree::ptree& pt, const char* unsetter
     if (unsetter) {
         const boost::optional<string> val = pt.get_optional<string>(unsetter);
         if (val) {
-            split(m_unset, val.get(), is_space(), algorithm::token_compress_on);
+            boost::split(m_unset, val.get(), boost::is_space(), boost::algorithm::token_compress_on);
         }
     }
 }
@@ -88,7 +89,7 @@ bool BoostPropertySet::getBool(const char* name, bool defaultValue) const
 {
     if (m_pt) {
         // Check for a child node with the target name and return its value as a bool.
-        const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
+        const boost::optional<const ptree&> child = m_pt->get_child_optional(name);
         if (child) {
             static string_to_bool_translator tr;
             return child.get().get_value(defaultValue, tr);
@@ -108,7 +109,7 @@ const char* BoostPropertySet::getString(const char* name, const char* defaultVal
 {
     if (m_pt) {
         // Check for a child node with the target name and return its value as a C string.
-        const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
+        const boost::optional<const ptree&> child = m_pt->get_child_optional(name);
         if (child) {
             return child->data().c_str();
         }
@@ -127,12 +128,12 @@ unsigned int BoostPropertySet::getUnsignedInt(const char* name, unsigned int def
 {
     if (m_pt) {
         // Check for a child node with the target name and return its value as a C string.
-        const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
+        const boost::optional<const ptree&> child = m_pt->get_child_optional(name);
         if (child) {
             try {
-                return lexical_cast<unsigned int>(child->data());
+                return boost::lexical_cast<unsigned int>(child->data());
             }
-            catch (const bad_lexical_cast&) {
+            catch (const boost::bad_lexical_cast&) {
             }
         }
     }
@@ -150,12 +151,12 @@ int BoostPropertySet::getInt(const char* name, int defaultValue) const
 {
     if (m_pt) {
         // Check for a child node with the target name and return its value as a C string.
-        const boost::optional<const property_tree::ptree&> child = m_pt->get_child_optional(name);
+        const boost::optional<const ptree&> child = m_pt->get_child_optional(name);
         if (child) {
             try {
-                return lexical_cast<int>(child->data());
+                return boost::lexical_cast<int>(child->data());
             }
-            catch (const bad_lexical_cast&) {
+            catch (const boost::bad_lexical_cast&) {
             }
         }
     }

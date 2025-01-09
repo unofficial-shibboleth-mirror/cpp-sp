@@ -24,7 +24,7 @@
 #include <shibsp/util/PropertySet.h>
 
 #include <set>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 #if defined (_MSC_VER)
 #    pragma warning( push )
