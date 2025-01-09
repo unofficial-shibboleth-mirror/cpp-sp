@@ -210,11 +210,8 @@ void Override::loadACL(ptree& pt, Category& log)
 Override::Override(bool unicodeAware, ptree& pt, Category& log, const Override* base)
     : m_unicodeAware(unicodeAware)
 {
-    // Load the <xmlattr> tree as a property set.
-    const boost::optional<ptree&> xmlattr = pt.get_child_optional("<xmlattr>");
-    if (xmlattr) {
-        load(xmlattr.get(), "unset");
-    }
+    // Load the property set and point it at our parent.
+    load(pt, "unset");
     setParent(base);
 
     // Load any AccessControl provider.
@@ -497,7 +494,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
     }
 
     // Load the property set.
-    load(pt.get_child("<xmlattr>"), "unset");
+    load(pt, "unset");
 
     // Load any AccessControl provider.
     loadACL(pt, log);

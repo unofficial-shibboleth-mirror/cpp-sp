@@ -59,11 +59,18 @@ void BoostPropertySet::setParent(const PropertySet* parent)
 
 void BoostPropertySet::load(const ptree& pt, const char* unsetter)
 {
-    m_pt = &pt;
+    // Check for <xmlattr> in case this was an XML-based tree.
+    const boost::optional<const ptree&> xmlattr = pt.get_child_optional("<xmlattr>");
+    if (xmlattr) {
+        m_pt = &xmlattr.get();
+    }
+    else {
+        m_pt = &pt;
+    }
 
     // Check for unsetter, pull out and split.
     if (unsetter) {
-        const boost::optional<string> val = pt.get_optional<string>(unsetter);
+        const boost::optional<string> val = m_pt->get_optional<string>(unsetter);
         if (val) {
             boost::split(m_unset, val.get(), boost::is_space(), boost::algorithm::token_compress_on);
         }
