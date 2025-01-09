@@ -129,38 +129,6 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(
     return make_pair(true, request.sendRedirect(loc.c_str()));
 }
 
-#ifndef SHIBSP_LITE
-#include "util/SPConstants.h"
-#include <xmltooling/impl/AnyElement.h>
-#include <xmltooling/soap/SOAP.h>
-#include <xmltooling/soap/SOAPClient.h>
-#include <xmltooling/soap/HTTPSOAPTransport.h>
-using namespace soap11;
-namespace {
-    static const XMLCh LogoutNotification[] =   UNICODE_LITERAL_18(L,o,g,o,u,t,N,o,t,i,f,i,c,a,t,i,o,n);
-    static const XMLCh SessionID[] =            UNICODE_LITERAL_9(S,e,s,s,i,o,n,I,D);
-    static const XMLCh _type[] =                UNICODE_LITERAL_4(t,y,p,e);
-    static const XMLCh _local[] =               UNICODE_LITERAL_5(l,o,c,a,l);
-    static const XMLCh _global[] =              UNICODE_LITERAL_6(g,l,o,b,a,l);
-
-    class SHIBSP_DLLLOCAL SOAPNotifier : public soap11::SOAPClient
-    {
-    public:
-        SOAPNotifier() {}
-        virtual ~SOAPNotifier() {}
-    private:
-        void prepareTransport(SOAPTransport& transport) {
-            transport.setVerifyHost(false);
-            HTTPSOAPTransport* http = dynamic_cast<HTTPSOAPTransport*>(&transport);
-            if (http) {
-                http->useChunkedEncoding(false);
-                http->setRequestHeader(PACKAGE_NAME, PACKAGE_VERSION);
-            }
-        }
-    };
-};
-#endif
-
 bool LogoutHandler::notifyBackChannel(const SPRequest& request, const vector<string>& sessions, bool local) const
 {
     if (sessions.empty()) {

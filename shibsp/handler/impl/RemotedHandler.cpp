@@ -29,47 +29,6 @@
 using namespace shibsp;
 using namespace std;
 
-#ifndef SHIBSP_LITE
-
-void RemotedResponse::setCookie(const char* name, const char* value, time_t expires, samesite_t sameSite)
-{
-    static const char* defProps="; path=/; HttpOnly";
-    static const char* sslProps="; path=/; secure; HttpOnly";
-
-    const char* cookieProps = defProps;
-    pair<bool,bool> sameSiteFallback = pair<bool,bool>(false, false);
-
-    const PropertySet* props = m_app ? m_app->getPropertySet("Sessions") : nullptr;
-    if (props) {
-        if (sameSite == SAMESITE_NONE) {
-            sameSiteFallback = props->getBool("sameSiteFallback");
-        }
-
-        pair<bool, const char*> p = props->getString("cookieProps");
-        if (p.first) {
-            if (!strcmp(p.second, "https"))
-                cookieProps = sslProps;
-            else if (strcmp(p.second, "http"))
-                cookieProps = p.second;
-        }
-    }
-
-    if (cookieProps) {
-        string decoratedValue(value ? value : "");
-        if (!value) {
-            decoratedValue += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-        }
-        decoratedValue += cookieProps;
-        HTTPResponse::setCookie(name, decoratedValue.c_str(), expires, sameSite,
-            sameSiteFallback.first && sameSiteFallback.second);
-    }
-    else {
-        HTTPResponse::setCookie(name, value, expires, sameSite,
-            sameSiteFallback.first && sameSiteFallback.second);
-    }
-}
-
-#endif
 
 set<string> RemotedHandler::m_remotedHeaders;
 

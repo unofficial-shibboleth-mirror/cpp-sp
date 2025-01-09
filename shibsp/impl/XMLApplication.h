@@ -69,14 +69,6 @@ namespace shibsp {
             return m_hash.c_str();
         }
 
-#ifndef SHIBSP_LITE
-        const PropertySet* getRelyingParty(const opensaml::saml2md::EntityDescriptor* provider) const;
-        const PropertySet* getRelyingParty(const XMLCh* entityID) const;
-
-        // PropertySet overrides.
-        std::pair<bool, const char*> getString(const char* name, const char* ns = nullptr) const;
-        std::pair<bool, const XMLCh*> getXMLString(const char* name, const char* ns = nullptr) const;
-#endif
         std::string getNotificationURL(const char* resource, bool front, unsigned int index) const;
 
         const std::vector<std::string>& getRemoteUserAttributeIds() const {
@@ -118,11 +110,7 @@ namespace shibsp {
         const XMLApplication* m_base;
         std::string m_hash;
         std::pair<std::string, std::string> m_attributePrefix;
-#ifndef SHIBSP_LITE
-        // RelyingParty properties
-        std::map< xmltooling::xstring, boost::shared_ptr<PropertySet> > m_partyMap;   // name-based matching
-        std::vector< std::pair< boost::shared_ptr<opensaml::saml2md::EntityMatcher>, boost::shared_ptr<PropertySet> > > m_partyVec;  // plugin-based matching
-#endif
+
         std::vector<std::string> m_remoteUsers, m_frontLogout, m_backLogout;
 
         // manage handler objects
