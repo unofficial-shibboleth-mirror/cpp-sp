@@ -25,6 +25,10 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
+#ifdef WIN32
+#include <Windows.h>
+#endif // WIN32
+
 using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
@@ -163,7 +167,11 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_inline_valid, ReloadableXMLFileFixtur
 
     // No-op since there's no locking internally.
     dummy.forceReload();
+#ifdef WIN32
+    Sleep(2);
+#else
     sleep(2);
+#endif // WIN32
 
     dummy.lock_shared();
     time_t ts2 = dummy.getLastModified();
@@ -183,7 +191,11 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_valid, ReloadableXMLFileFixt
     dummy.unlock_shared();
 
     dummy.forceReload();
+#ifdef WIN32
+    Sleep(2);
+#else
     sleep(2);
+#endif // WIN32
 
     dummy.lock_shared();
     time_t ts2 = dummy.getLastModified();
