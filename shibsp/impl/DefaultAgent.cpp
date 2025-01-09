@@ -31,8 +31,8 @@
 #include "session/SessionCache.h"
 #include "util/BoostPropertySet.h"
 #include "util/SPConstants.h"
+#include "util/Misc.h"
 
-#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
@@ -118,16 +118,12 @@ void DefaultAgent::init()
     const char* prop = getString("allowedSchemes", "https http");
     if (prop) {
         HTTPResponse::getAllowedSchemes().clear();
-        string schemes(prop);
-        boost::trim(schemes);
-        boost::split(HTTPResponse::getAllowedSchemes(), schemes, boost::is_space(), boost::algorithm::token_compress_on);
+        split_to_container(HTTPResponse::getAllowedSchemes(), prop);
     }
 
     prop = getString("extraAuthTypes");
     if (prop) {
-        string types(prop);
-        boost::trim(types);
-        boost::split(m_authTypes, types, boost::is_space(), boost::algorithm::token_compress_on);
+        split_to_container(m_authTypes, prop);
         m_authTypes.insert("shibboleth");
     }
 

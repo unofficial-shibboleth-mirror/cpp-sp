@@ -26,6 +26,7 @@
 #include "logging/Category.h"
 #include "session/SessionCache.h"
 #include "util/CGIParser.h"
+#include "util/Misc.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
@@ -302,7 +303,7 @@ string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) con
     // We have to process the underlying setting each call to this method unfortunately.
     const char* rawlocs = getRequestSettings().first->getString(front ? "frontNotifyURLs" : "backNotifyURLs");
     vector<string> locs;
-    boost::split(locs, rawlocs, boost::is_space(), boost::algorithm::token_compress_on);
+    split_to_container(locs, rawlocs);
 
     if (index >= locs.size())
         return string();
@@ -408,9 +409,7 @@ void AbstractSPRequest::limitRedirect(const char* url) const
         }
         prop = getRequestSettings().first->getString("redirectAllow");
         if (prop) {
-            string dup(prop);
-            boost::trim(dup);
-            boost::split(redirectAllow, dup, boost::is_space(), boost::algorithm::token_compress_on);
+            split_to_container(redirectAllow, prop);
         }
     }
 

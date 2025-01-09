@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <memory>
 #include <set>
-#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 #ifdef SHIBSP_USE_BOOST_REGEX
@@ -157,8 +156,7 @@ Rule::Rule(const ptree& pt) : m_alias(pt.get(REQUIRE_PROP_PATH, ""))
         return;
     }
 
-    boost::trim(vals);
-    split(m_vals, vals, boost::is_space(), boost::algorithm::token_compress_on);
+    split_to_container(m_vals, vals.c_str());
     if (m_vals.empty())
         throw ConfigurationException("Rule did not contain any usable values.");
 }

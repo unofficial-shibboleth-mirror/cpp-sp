@@ -110,7 +110,7 @@ libshibsp_la_SOURCES = \
 	impl/AgentConfig.cpp \
 	impl/DefaultAgent.cpp \
 	impl/ChainingAccessControl.cpp \
-        impl/XMLAccessControl.cpp \
+	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
 	io/impl/HTTPRequest.cpp \
 	io/impl/HTTPResponse.cpp \
@@ -126,6 +126,7 @@ libshibsp_la_SOURCES = \
 	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
 	util/IPRange.cpp \
+	util/Misc.cpp \
 	util/PathResolver.cpp \
 	util/ReloadableXMLFile.cpp \
 	util/SPConstants.cpp \

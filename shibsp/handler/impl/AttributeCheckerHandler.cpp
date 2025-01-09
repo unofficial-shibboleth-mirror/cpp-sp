@@ -28,10 +28,10 @@
 #include "handler/AbstractHandler.h"
 #include "logging/Category.h"
 #include "session/SessionCache.h"
+#include "util/Misc.h"
 
 #include <memory>
 #include <mutex>
-#include <boost/algorithm/string.hpp>
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -86,10 +86,9 @@ AttributeCheckerHandler::AttributeCheckerHandler(ptree& pt)
 
     m_flushSession = getBool("flushSession", false);
 
-    string attrs(getString("attributes", ""));
-    if (!attrs.empty()) {
-        boost::trim(attrs);
-        boost::split(m_attributes, attrs, boost::is_space(), boost::algorithm::token_compress_on);
+    const char* attrs = getString("attributes", "");
+    if (attrs) {
+        split_to_container(m_attributes, attrs);
         if (m_attributes.empty())
             throw ConfigurationException("AttributeChecker unable to parse attributes setting.");
     }

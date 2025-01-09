@@ -28,8 +28,7 @@
 #include "SPRequest.h"
 #include "handler/SecuredHandler.h"
 #include "logging/Category.h"
-
-#include <boost/algorithm/string.hpp>
+#include "util/Misc.h"
 
 #include <sstream>
 
@@ -42,10 +41,8 @@ SecuredHandler::SecuredHandler(const ptree& pt, Category& log, const char* aclPr
 {
     const char* acl = getString(aclProperty, defaultACL);
     if (acl) {
-        string aclbuf(acl);
-        boost::trim(aclbuf);
         vector<string> aclarray;
-        boost::split(aclarray, aclbuf, boost::is_space(), boost::algorithm::token_compress_on);
+        split_to_container(aclarray, acl);
         for_each(aclarray.begin(), aclarray.end(), [this](const string& s){parseACL(s);});
 
         if (m_acl.empty()) {

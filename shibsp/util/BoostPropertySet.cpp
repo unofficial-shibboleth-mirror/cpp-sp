@@ -24,7 +24,6 @@
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
@@ -72,7 +71,7 @@ void BoostPropertySet::load(const ptree& pt, const char* unsetter)
     if (unsetter) {
         const boost::optional<string> val = m_pt->get_optional<string>(unsetter);
         if (val) {
-            boost::split(m_unset, val.get(), boost::is_space(), boost::algorithm::token_compress_on);
+            split_to_container(m_unset, val.get().c_str());
         }
     }
 }

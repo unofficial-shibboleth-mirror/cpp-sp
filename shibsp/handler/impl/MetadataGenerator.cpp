@@ -23,11 +23,11 @@
 #include "SPRequest.h"
 #include "handler/SecuredHandler.h"
 #include "logging/Category.h"
+#include "util/Misc.h"
 
 #include <sstream>
 #include <string>
 #include <vector>
-#include <boost/algorithm/string.hpp>
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -66,9 +66,10 @@ namespace shibsp {
 MetadataGenerator::MetadataGenerator(const ptree& pt)
     : SecuredHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.Metadata"))
 {
-    string bases(getString("baseURLs", ""));
-    boost::trim(bases);
-    boost::split(m_bases, bases, boost::is_space(), boost::algorithm::token_compress_on);
+    const char* bases = getString("baseURLs");
+    if (bases) {
+        split_to_container(m_bases, bases);
+    }
 }
 
 pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
