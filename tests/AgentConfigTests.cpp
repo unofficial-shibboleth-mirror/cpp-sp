@@ -104,10 +104,15 @@ BOOST_FIXTURE_TEST_CASE(AgentConfig_init_syslog, AC_Fixture)
 BOOST_FIXTURE_TEST_CASE(AgentConfig_init_fatal_exts, AC_Fixture)
 {
     // TODO: this is probably going to vary by platform and require alternate validation.
+#ifdef WIN32
+    exceptionCheck checker_fatal("Unable to load extension library: \\path\\to\\extension.so");
+#else
     exceptionCheck checker_fatal("dlopen(/path/to/extension.so, 0x0001): tried: ");
+#endif // !WIN32
     BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().init(nullptr, (data_path + "fatal-exts-shibboleth.ini").c_str(), true),
         runtime_error, checker_fatal.check_message);
 }
+
 
 BOOST_FIXTURE_TEST_CASE(AgentConfig_init_nonfatal_exts, AC_Fixture)
 {
