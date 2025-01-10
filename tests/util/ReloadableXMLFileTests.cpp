@@ -189,10 +189,9 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_valid, ReloadableXMLFileFixt
     time_t ts1 = dummy.getLastModified();
     BOOST_CHECK_GT(ts1, 0);
     dummy.unlock_shared();
-
     dummy.forceReload();
 #ifdef WIN32
-    Sleep(2);
+    Sleep(2000);
 #else
     sleep(2);
 #endif // WIN32
