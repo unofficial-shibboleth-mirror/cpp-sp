@@ -61,6 +61,6 @@ namespace shibsp {
     /**
      * Splitter functions that trim the input and split on whitespace into a container.
      */
-    static std::vector<std::string>::size_type split_to_container(std::vector<std::string>& container, const char* s);
-    static std::set<std::string>::size_type split_to_container(std::set<std::string>& container, const char* s);
+    std::vector<std::string>::size_type split_to_container(std::vector<std::string>& container, const char* s);
+    std::set<std::string>::size_type split_to_container(std::set<std::string>& container, const char* s);
 };

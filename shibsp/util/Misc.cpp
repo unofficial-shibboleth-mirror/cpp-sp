@@ -28,7 +28,7 @@
 using namespace shibsp;
 using namespace std;
 
-vector<string>::size_type split_to_container(vector<string>& container, const char* s)
+vector<string>::size_type shibsp::split_to_container(vector<string>& container, const char* s)
 {
     if (s) {
         string dup(s);
@@ -38,7 +38,7 @@ vector<string>::size_type split_to_container(vector<string>& container, const ch
     return container.size();
 }
 
-set<string>::size_type split_to_container(set<string>& container, const char* s)
+set<string>::size_type shibsp::split_to_container(set<string>& container, const char* s)
 {
     if (s) {
         string dup(s);
