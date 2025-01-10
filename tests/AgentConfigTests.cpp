@@ -91,11 +91,15 @@ BOOST_FIXTURE_TEST_CASE(AgentConfig_init_console, AC_Fixture)
     AgentConfig::getConfig().term();
 }
 
+#ifdef WIN32
+// TODO Window log test
+#else
 BOOST_FIXTURE_TEST_CASE(AgentConfig_init_syslog, AC_Fixture)
 {
     BOOST_CHECK(AgentConfig::getConfig().init(nullptr, (data_path + "syslog-shibboleth.ini").c_str(), true));
     AgentConfig::getConfig().term();
 }
+#endif // !WIN32
 
 BOOST_FIXTURE_TEST_CASE(AgentConfig_init_fatal_exts, AC_Fixture)
 {
