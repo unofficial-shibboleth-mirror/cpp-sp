@@ -31,6 +31,7 @@
 #include "util/Misc.h"
 
 #include <sstream>
+#include <algorithm>
 
 using namespace shibsp;
 using namespace boost::property_tree;

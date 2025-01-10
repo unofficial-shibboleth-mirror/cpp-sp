@@ -23,6 +23,7 @@
 #include "io/HTTPRequest.h"
 
 #include <cstring>
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/bind.hpp>
