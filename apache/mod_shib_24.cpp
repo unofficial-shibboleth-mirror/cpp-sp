@@ -1036,8 +1036,8 @@ public:
 
 private:
     unique_ptr<RequestMapper> m_mapper;
-     thread_local const ShibTargetApache* m_sta;
-    thread_local const PropertySet* m_props;
+    static thread_local const ShibTargetApache* m_sta;
+    static thread_local const PropertySet* m_props;
     mutable htAccessControl m_htaccess;
 };
 
