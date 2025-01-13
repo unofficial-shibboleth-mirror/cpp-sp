@@ -1041,6 +1041,9 @@ private:
     mutable htAccessControl m_htaccess;
 };
 
+thread_local const ShibTargetApache* ApacheRequestMapper::m_sta = nullptr;
+thread_local const PropertySet* ApacheRequestMapper::m_props = nullptr;
+
 RequestMapper* ApacheRequestMapFactory(ptree& pt, bool deprecationSupport)
 {
     return new ApacheRequestMapper(pt, deprecationSupport);
