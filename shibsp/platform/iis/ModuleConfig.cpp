@@ -59,7 +59,7 @@ ModuleConfig::ModuleConfig() {}
 ModuleConfig::~ModuleConfig() {}
 
 ModuleConfigImpl::ModuleConfigImpl(unique_ptr<ptree> pt, bool xml)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT ".IIS")), m_root(move(pt))
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".IIS")), m_root(std::move(pt))
 {
     if (xml) {
         // Size was checked by caller as 1, so a single child exists.
@@ -124,7 +124,7 @@ void ModuleConfigImpl::doSites(ptree& parent)
                 child.second.add("<xmlattr>.aliases", aliases);
             }
 
-            m_sites[id] = move(propset);
+            m_sites[id] = std::move(propset);
             m_log.info("installed Site mapping for (%s)", id);
         }
         else if (child.first == "<xmlattr>" || child.first == "Roles") {
@@ -140,7 +140,7 @@ void ModuleConfigImpl::doSites(ptree& parent)
 
             unique_ptr<BoostPropertySet> propset(new BoostPropertySet());
             propset->load(child.second);
-            m_sites[child.first] = move(propset);
+            m_sites[child.first] = std::move(propset);
             m_log.info("installed Site mapping for (%s)", child.first.c_str());
         }
     }
@@ -178,5 +178,5 @@ unique_ptr<ModuleConfig> ModuleConfig::newModuleConfig()
         ini_parser::read_ini(path, *config_root);
     }
 
-    return unique_ptr<ModuleConfig>(new ModuleConfigImpl(move(config_root), xml));
+    return unique_ptr<ModuleConfig>(new ModuleConfigImpl(std::move(config_root), xml));
 }

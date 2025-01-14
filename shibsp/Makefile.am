@@ -12,6 +12,8 @@ ioincludedir = $(includedir)/shibsp/io
 
 logincludedir = $(includedir)/shibsp/logging
 
+iisincludedir = $(includedir)/shibsp/platform/iis
+
 remincludedir = $(includedir)/shibsp/remoting
 
 sessionincludedir = $(includedir)/shibsp/session
@@ -58,6 +60,9 @@ loginclude_HEADERS = \
 	logging/Category.h \
 	logging/LoggingService.h \
 	logging/Priority.h
+
+iisinclude_HEADERS = \
+	platform/iis/ModuleConfig.h
 
 reminclude_HEADERS = \
 	remoting/ddf.h \
@@ -120,6 +125,7 @@ libshibsp_la_SOURCES = \
 	logging/impl/Priority.cpp \
 	logging/impl/StringUtil.cpp \
 	logging/impl/SyslogLoggingService.cpp \
+	platform/iis/ModuleConfig.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/RemotingService.cpp \
 	session/impl/AbstractSessionCache.cpp \
