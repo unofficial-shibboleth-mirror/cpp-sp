@@ -60,6 +60,7 @@ const char ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME[] = "authenticatedRole";
 const char ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME[] = "roleAttributes";
 const char ModuleConfig::NORMALIZE_REQUEST_PROP_NAME[] = "normalizeRequest";
 const char ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME[] = "safeHeaderNames";
+const char ModuleConfig::HANDLER_PREFIX_PROP_NAME[] = "handlerPrefix";
 
 const char ModuleConfig::SITE_NAME_PROP_NAME[] = "name";
 const char ModuleConfig::SITE_SCHEME_PROP_NAME[] = "scheme";

@@ -30,6 +30,7 @@
 #include <winreg.h>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace Config;
 using namespace std;
@@ -40,19 +41,24 @@ ShibHttpModule::DoHandler(
     _In_ IHttpEventProvider *   pProvider
 )
 {
+    const PropertySet* site = g_ModuleConfig->getSiteConfig(
+        boost::lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()).c_str());
+    if (!site)
+        return RQ_NOTIFICATION_CONTINUE;
+
+    string prefix(site->getString(ModuleConfig::HANDLER_PREFIX_PROP_NAME, "/Shibboleth.sso"));
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    wstring handlerPrefix = converter.from_bytes(prefix);
+
     // Quickly check the URL.
     // Calling GetScriptName is safe here since we don't care about "visible to other filters" paths, just our path.
     // This saves us converting from 8 bit ascii up to 16 bit for the compare against something which was only in 16
     // bits to speed this path.  In V4 we can look at the local request
     const wstring url(pHttpContext->GetScriptName());
-    if (url.length() < g_handlerPrefix.length() || !starts_with(url, g_handlerPrefix))
+    if (url.length() < handlerPrefix.length() || !starts_with(url, handlerPrefix))
         return RQ_NOTIFICATION_CONTINUE;
 
-    map<string,site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()));
-    if (map_i == g_Sites.end())
-        return RQ_NOTIFICATION_CONTINUE;
-
-    IIS7Request handler(pHttpContext, pProvider, false, map_i->second);
+    IIS7Request handler(pHttpContext, pProvider, false, *site);
 
     pair<bool, long> res = handler.getServiceProvider().doHandler(handler);
 
@@ -64,17 +70,18 @@ ShibHttpModule::DoHandler(
 
 REQUEST_NOTIFICATION_STATUS
 ShibHttpModule::DoFilter(
-    _In_ IHttpContext *             pHttpContext,
+    _In_ IHttpContext * pHttpContext,
     _In_ IHttpEventProvider *  pProvider
 )
 {
     const IHttpRequest* req = pHttpContext->GetRequest();
 
-    map<string,site_t>::const_iterator map_i = g_Sites.find(lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()));
-    if (map_i == g_Sites.end())
+    const PropertySet* site = g_ModuleConfig->getSiteConfig(
+        boost::lexical_cast<string>(pHttpContext->GetSite()->GetSiteId()).c_str());
+    if (!site)
         return RQ_NOTIFICATION_CONTINUE;
 
-    IIS7Request filter(pHttpContext, pProvider, true, map_i->second);
+    IIS7Request filter(pHttpContext, pProvider, true, *site);
 
     pair<bool, long> res = filter.getServiceProvider().doAuthentication(filter, true);
     if (res.first) {

@@ -28,16 +28,19 @@ private:
     IHttpRequest* m_request;
     IHttpResponse* m_response;
     IHttpEventProvider* m_event;
+    const PropertySet& m_site;
     bool m_firsttime;
     int m_port;
     string m_hostname, m_scheme;
     bool m_useVariables;
     bool m_useHeaders;
+    bool m_safeHeaderNames;
     mutable string m_remoteUser;
     mutable vector<string> m_certs;
     mutable string m_body;
     mutable bool m_gotBody;
     string m_allhttp;
+    set<string> m_roleAttributeNames;
     set<wstring> m_roles;
 
 public:
@@ -45,7 +48,7 @@ public:
         _In_ IHttpContext *pHttpContext,
         _In_ IHttpEventProvider *pEventProvider,
         _In_ bool checkUser,
-        _In_ const Config::site_t& site
+        _In_ const PropertySet& site
         );
     string makeSafeHeader(const char* rawname) const;
     bool isUseHeaders() { return m_useHeaders; }

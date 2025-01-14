@@ -21,11 +21,11 @@
 #include "IIS7_shib.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
-#include <xercesc/util/Base64.hpp>
-
 #include <shibsp/exceptions.h>
+#include <shibsp/util/Misc.h>
 
 #include <codecvt> // 16 bit to 8 bit chars
 #include "IIS7Request.hpp"
@@ -33,11 +33,10 @@
 #include "ShibUser.hpp"
 
 using namespace Config;
-using xmltooling::logging::Priority;
 
-IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser, const site_t& site)
-    : AbstractSPRequest(SHIBSP_LOGCAT ".IISNative"),
-        m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()),
+IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser, const PropertySet& site)
+    : AbstractSPRequest(SHIBSP_LOGCAT ".IIS"),
+        m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()), m_site(site)
         m_firsttime(true), m_port(0), m_gotBody(false), m_event(pEventProvider)
 {
     DWORD len;
@@ -50,11 +49,11 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
     if (SUCCEEDED(hr)) {
         if (len) {
             try {
-                int secure = lexical_cast<int>(var);
+                int secure = boost::lexical_cast<int>(var);
                 bSSL = (0 != secure) ? true : false;
             }
-            catch (const bad_lexical_cast&) {
-                log(SPRequest::SPError, "exception converting SERVER_PORT_SECURE value to int");
+            catch (const boost::bad_lexical_cast&) {
+                log(Priority::SHIB_ERROR, "exception converting SERVER_PORT_SECURE value to int");
                 bSSL = (nullptr != m_request->GetRawHttpRequest()->pSslInfo);
             }
         }
@@ -66,17 +65,26 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
         throwError("Get Server Secure", hr);
     }
 
-    m_useHeaders = site.m_useHeaders;
-    m_useVariables = site.m_useVariables;
+    m_useHeaders = site.getBool(ModuleConfig::USE_HEADERS_PROP_NAME, false);
+    m_safeHeaderNames = site.getBool(ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME, m_useHeaders);
+    m_useVariables = site.getBool(ModuleConfig::USE_VARIABLES_PROP_NAME, true);
 
-    // Port may come from IIS or from site def.
-    if (!g_bNormalizeRequest || (bSSL && site.m_sslport.empty()) || (!bSSL && site.m_port.empty())) {
+    string prop(site.getString(ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME, "");
+    split_to_container(m_roleAttributeNames, prop);
+
+    bool normalizeRequest = site.getBool(ModuleConfig::NORMALIZE_REQUEST_PROP_NAME, true);
+    unsigned int site_port = site.getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0);
+    unsigned int site_sslport = site.getUnsignedInt(ModuleConfig::SITE_SSLPORT_PROP_NAME, 0);
+    const char* site_name = site.getString(ModuleConfig::SITE_NAME_PROP_NAME, "");
+
+    // Port may come from IIS or from site config.
+    if (!normalizeRequest || (bSSL && !site_sslport) || (!bSSL && !site_port)) {
         hr = m_ctx->GetServerVariable("SERVER_PORT", &var, &len);
         if (SUCCEEDED(hr)) {
             try {
-                m_port = lexical_cast<int>(var);
+                m_port = boost::lexical_cast<int>(var);
             }
-            catch (const bad_lexical_cast&) {
+            catch (const boost::bad_lexical_cast&) {
                 throwError("Get Port", hr);
             }
         }
@@ -84,42 +92,41 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
             throwError("Get Port", hr);
         }
     }
-    else if (bSSL) {
-        m_port = atoi(site.m_sslport.c_str());
-    }
     else {
-        m_port = atoi(site.m_port.c_str());
+        m_port = bSSL ? site_sslport : site_port;
     }
 
-    // Scheme may come from site def or be derived from IIS.
-    m_scheme=site.m_scheme;
-    if (m_scheme.empty() || !g_bNormalizeRequest)
+    // Scheme may come from site config or be derived from IIS.
+    m_scheme = site.getString(ModuleConfig::SITE_SCHEME_PROP_NAME, "");
+    if (m_scheme.empty() || !normalizeRequest) {
         m_scheme = bSSL ? "https" : "http";
+    }
 
     hr = m_ctx->GetServerVariable("SERVER_NAME", &var, &len);
     if (SUCCEEDED(hr)) {
         // Make sure SERVER_NAME is "authorized" for use on this site. If not, or empty, set to canonical name.
         if (!len) {
-            m_hostname = site.m_name;
+            m_hostname = site_name;
         }
         else {
             m_hostname = var;
-            if (site.m_name != m_hostname && site.m_aliases.find(m_hostname) == site.m_aliases.end())
-                m_hostname = site.m_name;
+            if (site_name != m_hostname && site.m_aliases.find(m_hostname) == site.m_aliases.end()) {
+                vector<string> aliases;
+                string s = site.getString(ModuleConfig::SITE_ALIASES_PROP_NAME, "");
+                split_to_container(aliases, s);
+                if (aliases.find(m_hostname) == aliases.end()) {
+                    m_hostname = site_name;
+                }
+            }
         }
     }
     else {
-        m_hostname = site.m_name;
+        m_hostname = site_name;
     }
 
     hr = m_ctx->GetServerVariable("REMOTE_USER", &var, &len);
     if (SUCCEEDED(hr)) {
-        if (len) {
-            m_remoteUser = var;
-        }
-        else {
-            m_remoteUser = "";
-        }
+        m_remoteUser = len ? var : "";
     }
     else {
         throwError("Get remote user", hr);
@@ -131,7 +138,7 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
             m_firsttime = false;
         }
         if (!m_firsttime) {
-            log(SPDebug, "IIS filter running more than once");
+            log(Priority::SHIB_DEBUG, "IIS filter running more than once");
         }
     }
 }
@@ -139,7 +146,7 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
 void IIS7Request::setHeader(const char* name, const char* value)
 {
     if (m_useHeaders) {
-        const HRESULT hr (m_request->SetHeader(g_bSafeHeaderNames ? makeSafeHeader(name).c_str() : name, value, static_cast<USHORT>(strlen(value)), TRUE));
+        const HRESULT hr (m_request->SetHeader(m_safeHeaderNames ? makeSafeHeader(name).c_str() : name, value, static_cast<USHORT>(strlen(value)), TRUE));
         if (FAILED(hr)) {
             throwError("setHeader (Header)", hr);
         }
@@ -152,13 +159,11 @@ void IIS7Request::setHeader(const char* name, const char* value)
             throwError("setHeader (Variable)", hr);
         }
 
-        for (vector<string>::iterator roleAttribute = g_RoleAttributeNames.begin(); roleAttribute != g_RoleAttributeNames.end(); ++roleAttribute) {
-            if (*roleAttribute == name) {
-                const string str(value);
-                tokenizer<escaped_list_separator<char>> tok(str, escaped_list_separator<char>('\\', ';', '"'));
-                for (tokenizer<escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
-                    m_roles.insert(converter.from_bytes(*it));
-                }
+        if (m_roleAttributeNames.find(name) != m_roleAttributeNames.end()) {
+            const string str(value);
+            boost::tokenizer<boost::escaped_list_separator<char>> tok(str, boost::escaped_list_separator<char>('\\', ';', '"'));
+            for (tokenizer<escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
+                m_roles.insert(converter.from_bytes(*it));
             }
         }
     }
@@ -170,17 +175,16 @@ void IIS7Request::setRemoteUser(const char* user)
 
     // Setting the variable REMOTE_USER fails, so set the Principal if we are called appropriately.
     // Getting REMOTE_USER goes via the Principal.
-    auto_ptr_XMLCh widen(user);
     IAuthenticationProvider *auth = dynamic_cast<IAuthenticationProvider*>(m_event);
 
     if (auth) {
-        if (!g_authNRole.empty()) {
-            m_roles.insert(g_authNRole);
-        }
+        string authnRole(m_site.getString(ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME, "ShibbolethAuthnN"));
+        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+        m_roles.insert(converter.from_bytes(authnRole));
         auth->SetUser(new ShibUser(user, m_roles));
     }
     else {
-        log(SPError, "attempt to set REMOTE_USER in an inappropriate context");
+        log(Priority::SHIB_ERROR, "attempt to set REMOTE_USER in an inappropriate context");
     }
 }
 
@@ -203,14 +207,15 @@ void IIS7Request::clearHeader(const char* rawname, const char* cginame)
                 m_allhttp =  (nullptr == val) ? "" : val;
             }
             if (!m_allhttp.empty()) {
-                string hdr = (g_bSafeHeaderNames ? ("HTTP_" + makeSafeHeader(cginame + 5)) : string(cginame)) + ':';
+                string hdr = (m_safeHeaderNames ? ("HTTP_" + makeSafeHeader(cginame + 5)) : string(cginame)) + ':';
                 if (strstr(m_allhttp.c_str(), hdr.c_str())) {
-                    throw opensaml::SecurityPolicyException("Attempt to spoof header ($1) was detected.", params(1, hdr.c_str()));
+                    throw SessionException(string("Attempt to spoof header (") + hdr + ") was detected.");
                 }
             }
         }
-        HRESULT hr = m_request->SetHeader(g_bSafeHeaderNames ? makeSafeHeader(rawname).c_str() : rawname,
-            g_unsetHeaderValue.c_str(), static_cast<USHORT>(g_unsetHeaderValue.length()), TRUE);
+        string unsetHeaderValue(g_Config->getAgent().getString("unsetHeaderValue", ""));
+        HRESULT hr = m_request->SetHeader(m_safeHeaderNames ? makeSafeHeader(rawname).c_str() : rawname,
+            unsetHeaderValue.c_str(), static_cast<USHORT>(unsetHeaderValue.length()), TRUE);
         if (FAILED(hr)) {
             throwError("clearHeader", hr);
         }
@@ -253,12 +258,10 @@ string IIS7Request::getSecureHeader(const char* name) const
         }
         return "";
     }
-    PCSTR p = m_request->GetHeader(g_bSafeHeaderNames ? makeSafeHeader(name).c_str() : name);
+    PCSTR p = m_request->GetHeader(m_safeHeaderNames ? makeSafeHeader(name).c_str() : name);
     return (nullptr == p) ? "" : p;
 }
-//
-// XMLTooling::GenericRequest
-//
+
 const char* IIS7Request::getScheme() const
 {
     return m_scheme.c_str();
@@ -438,7 +441,7 @@ string IIS7Request::makeSafeHeader(const char* rawname) const
 void IIS7Request::logFatal(const string& operation, HRESULT hr) const
 {
     string msg(operation + " failed: " + lexical_cast<string>(hr));
-    log(SPRequest::SPCrit, msg.c_str());
+    log(Priority::SHIB_CRIT, msg.c_str());
     if (m_response) {
         m_response->SetStatus(static_cast<USHORT>(SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
     }

@@ -54,6 +54,7 @@ namespace shibsp {
             static const char ROLE_ATTRIBUTES_PROP_NAME[];
             static const char NORMALIZE_REQUEST_PROP_NAME[];
             static const char SAFE_HEADER_NAMES_PROP_NAME[];
+            static const char HANDLER_PREFIX_PROP_NAME[];
 
             // Site
             static const char SITE_NAME_PROP_NAME[];
