@@ -13,7 +13,7 @@
  */
 
 /**
- * PropertyTreeTests.cpp
+ * util/PropertyTreeTests.cpp
  *
  * Unit tests for property tree usage.
  */

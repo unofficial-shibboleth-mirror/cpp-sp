@@ -46,6 +46,21 @@ namespace shibsp {
              * @param path optional path to config file to load
              */
             static std::unique_ptr<ModuleConfig> newModuleConfig(const char* path=nullptr);
+
+            // Global
+            static const char USE_VARIABLES_PROP_NAME[];
+            static const char USE_HEADERS_PROP_NAME[];
+            static const char AUTHENTICATED_ROLE_PROP_NAME[];
+            static const char ROLE_ATTRIBUTES_PROP_NAME[];
+            static const char NORMALIZE_REQUEST_PROP_NAME[];
+            static const char SAFE_HEADER_NAMES_PROP_NAME[];
+
+            // Site
+            static const char SITE_NAME_PROP_NAME[];
+            static const char SITE_SCHEME_PROP_NAME[];
+            static const char SITE_PORT_PROP_NAME[];
+            static const char SITE_SSLPORT_PROP_NAME[];
+            static const char SITE_ALIASES_PROP_NAME[];
         };
     };
 };

@@ -81,31 +81,31 @@ void validateSites(const ModuleConfig* config)
 
     const PropertySet* one = config->getSiteConfig("1");
     BOOST_CHECK(one);
-    BOOST_CHECK_EQUAL(one->getString("name"), "sp.example.org");
-    BOOST_CHECK_EQUAL(one->getString("scheme"), nullptr);
-    BOOST_CHECK_EQUAL(one->getUnsignedInt("port", 0), 0);
-    BOOST_CHECK_EQUAL(one->getString("aliases"), nullptr);
+    BOOST_CHECK_EQUAL(one->getString(ModuleConfig::SITE_NAME_PROP_NAME), "sp.example.org");
+    BOOST_CHECK_EQUAL(one->getString(ModuleConfig::SITE_SCHEME_PROP_NAME), nullptr);
+    BOOST_CHECK_EQUAL(one->getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0), 0);
+    BOOST_CHECK_EQUAL(one->getString(ModuleConfig::SITE_ALIASES_PROP_NAME), nullptr);
 
     const PropertySet* two = config->getSiteConfig("2");
     BOOST_CHECK(two);
-    BOOST_CHECK_EQUAL(two->getString("name"), "sp2.example.org");
-    BOOST_CHECK_EQUAL(two->getString("scheme"), "https");
-    BOOST_CHECK_EQUAL(two->getUnsignedInt("port", 0), 443);
-    BOOST_CHECK_EQUAL(two->getString("aliases"), nullptr);
+    BOOST_CHECK_EQUAL(two->getString(ModuleConfig::SITE_NAME_PROP_NAME), "sp2.example.org");
+    BOOST_CHECK_EQUAL(two->getString(ModuleConfig::SITE_SCHEME_PROP_NAME), "https");
+    BOOST_CHECK_EQUAL(two->getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0), 443);
+    BOOST_CHECK_EQUAL(two->getString(ModuleConfig::SITE_ALIASES_PROP_NAME), nullptr);
 
     const PropertySet* three = config->getSiteConfig("3");
     BOOST_CHECK(three);
-    BOOST_CHECK_EQUAL(three->getString("name"), "sp3.example.org");
-    BOOST_CHECK_EQUAL(three->getString("scheme"), nullptr);
-    BOOST_CHECK_EQUAL(three->getUnsignedInt("port", 0), 0);
-    BOOST_CHECK_EQUAL(three->getString("aliases"), "alt.example.org alt2.example.org");
+    BOOST_CHECK_EQUAL(three->getString(ModuleConfig::SITE_NAME_PROP_NAME), "sp3.example.org");
+    BOOST_CHECK_EQUAL(three->getString(ModuleConfig::SITE_SCHEME_PROP_NAME), nullptr);
+    BOOST_CHECK_EQUAL(three->getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0), 0);
+    BOOST_CHECK_EQUAL(three->getString(ModuleConfig::SITE_ALIASES_PROP_NAME), "alt.example.org alt2.example.org");
 }
 
 BOOST_FIXTURE_TEST_CASE(ModuleConfigTest_ini, ModuleConfigFixture)
 {
     unique_ptr<ModuleConfig> config(ModuleConfig::newModuleConfig(string(data_path + "iis.ini").c_str()));
     
-    BOOST_CHECK(config->getBool("useVariables", true));
+    BOOST_CHECK(config->getBool(ModuleConfig::USE_VARIABLES_PROP_NAME, true));
     
     validateSites(config.get());
 }
@@ -114,10 +114,10 @@ BOOST_FIXTURE_TEST_CASE(ModuleConfigTest_xml, ModuleConfigFixture)
 {
     unique_ptr<ModuleConfig> config(ModuleConfig::newModuleConfig(string(data_path + "iis.xml").c_str()));
     
-    BOOST_CHECK(!config->getBool("useVariables", true));
-    BOOST_CHECK(config->getBool("useHeaders", false));
-    BOOST_CHECK_EQUAL(config->getString("authenticatedRole"), nullptr);
-    BOOST_CHECK_EQUAL(config->getString("roleAttributes"), "foo bar");
+    BOOST_CHECK(!config->getBool(ModuleConfig::USE_VARIABLES_PROP_NAME, true));
+    BOOST_CHECK(config->getBool(ModuleConfig::USE_HEADERS_PROP_NAME, false));
+    BOOST_CHECK_EQUAL(config->getString(ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME), nullptr);
+    BOOST_CHECK_EQUAL(config->getString(ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME), "foo bar");
 
     validateSites(config.get());
 }

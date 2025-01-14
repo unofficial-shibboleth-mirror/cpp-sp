@@ -38,6 +38,8 @@ PropertySet::~PropertySet()
 {
 }
 
+const char BoostPropertySet::XMLATTR_NODE_NAME[] = "<xmlattr>";
+
 BoostPropertySet::BoostPropertySet() : m_parent(nullptr), m_pt(nullptr)
 {
 }
@@ -59,7 +61,7 @@ void BoostPropertySet::setParent(const PropertySet* parent)
 void BoostPropertySet::load(const ptree& pt, const char* unsetter)
 {
     // Check for <xmlattr> in case this was an XML-based tree.
-    const boost::optional<const ptree&> xmlattr = pt.get_child_optional("<xmlattr>");
+    const boost::optional<const ptree&> xmlattr = pt.get_child_optional(XMLATTR_NODE_NAME);
     if (xmlattr) {
         m_pt = &xmlattr.get();
     }

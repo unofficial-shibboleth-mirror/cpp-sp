@@ -54,6 +54,19 @@ namespace {
 
 };
 
+const char ModuleConfig::USE_VARIABLES_PROP_NAME[] = "useVariables";
+const char ModuleConfig::USE_HEADERS_PROP_NAME[] = "useHeaders";
+const char ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME[] = "authenticatedRole";
+const char ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME[] = "roleAttributes";
+const char ModuleConfig::NORMALIZE_REQUEST_PROP_NAME[] = "normalizeRequest";
+const char ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME[] = "safeHeaderNames";
+
+const char ModuleConfig::SITE_NAME_PROP_NAME[] = "name";
+const char ModuleConfig::SITE_SCHEME_PROP_NAME[] = "scheme";
+const char ModuleConfig::SITE_PORT_PROP_NAME[] = "port";
+const char ModuleConfig::SITE_SSLPORT_PROP_NAME[] = "sslport";
+const char ModuleConfig::SITE_ALIASES_PROP_NAME[] = "aliases";
+
 ModuleConfig::ModuleConfig() {}
 
 ModuleConfig::~ModuleConfig() {}
@@ -68,15 +81,19 @@ ModuleConfigImpl::ModuleConfigImpl(unique_ptr<ptree> pt, bool xml)
         // Migrate Roles element's attributes to this child for compatibility with INI format.
         const boost::optional<ptree&> roles = child.get_child_optional("Roles");
         if (roles) {
-            const boost::optional<ptree&> xmlattr = roles->get_child_optional("<xmlattr>");
+            const boost::optional<ptree&> xmlattr = roles->get_child_optional(XMLATTR_NODE_NAME);
             if (xmlattr) {
                 boost::optional<string> prop = xmlattr->get_optional<string>("authNRole");
                 if (prop) {
-                    child.add("<xmlattr>.authenticatedRole", *prop);
+                    string propname(XMLATTR_NODE_NAME);
+                    propname = propname + '.' + AUTHENTICATED_ROLE_PROP_NAME;
+                    child.add(propname, *prop);
                 }
-                prop = xmlattr->get_optional<string>("roleAttributes");
+                prop = xmlattr->get_optional<string>(ROLE_ATTRIBUTES_PROP_NAME);
                 if (prop) {
-                    child.add("<xmlattr>.roleAttributes", *prop);
+                    string propname(XMLATTR_NODE_NAME);
+                    propname = propname + '.' + ROLE_ATTRIBUTES_PROP_NAME;
+                    child.add(propname, *prop);
                 }
             }
         }
@@ -124,20 +141,22 @@ void ModuleConfigImpl::doSites(ptree& parent)
                 }
             }
             if (!aliases.empty()) {
-                child.second.add("<xmlattr>.aliases", aliases);
+                string propname(XMLATTR_NODE_NAME);
+                propname = propname + '.' + SITE_ALIASES_PROP_NAME;
+                child.second.add(propname, aliases);
             }
 
             m_sites[id] = std::move(propset);
             m_log.info("installed Site mapping for (%s)", id);
         }
-        else if (child.first == "<xmlattr>" || child.first == "Roles") {
+        else if (child.first == XMLATTR_NODE_NAME || child.first == "Roles") {
             continue;
         }
         else {
             // This is assumed to be an INI format site section. If not, so be it.
 
-            if (!child.second.get_child_optional("name").has_value()) {
-                m_log.warn("ignoring Site section (%s) with no 'name' property", child.first.c_str());
+            if (!child.second.get_child_optional(SITE_NAME_PROP_NAME).has_value()) {
+                m_log.warn("ignoring Site section (%s) with no '%s' property", child.first.c_str(), SITE_NAME_PROP_NAME);
                 continue;
             }
 

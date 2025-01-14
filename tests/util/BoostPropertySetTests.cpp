@@ -13,7 +13,7 @@
  */
 
 /**
- * BoostPropertySetTests.cpp
+ * util/BoostPropertySetTests.cpp
  *
  * Unit tests for BoostPropertySet usage.
  */
@@ -82,7 +82,7 @@ BOOST_FIXTURE_TEST_CASE(BoostPropertySet_tree, BPS_Fixture)
 
     const pt::ptree& root = tree.get_child("root");
     TestBoostPropertySet rootset;
-    const boost::optional<const pt::ptree&> xmlattr = root.get_child_optional("<xmlattr>");
+    const boost::optional<const pt::ptree&> xmlattr = root.get_child_optional(BoostPropertySet::XMLATTR_NODE_NAME);
     if (xmlattr) {
         rootset.load(xmlattr.get(), "unset");
     }
@@ -91,7 +91,7 @@ BOOST_FIXTURE_TEST_CASE(BoostPropertySet_tree, BPS_Fixture)
         if (child.first == "one") {
             ones.push_back(unique_ptr<TestBoostPropertySet>(new TestBoostPropertySet()));
             const auto& one = ones.back();
-            const boost::optional<const pt::ptree&> xmlattr = child.second.get_child_optional("<xmlattr>");
+            const boost::optional<const pt::ptree&> xmlattr = child.second.get_child_optional(BoostPropertySet::XMLATTR_NODE_NAME);
             if (xmlattr) {
                 one->load(xmlattr.get(), "unset");
             }
@@ -101,7 +101,7 @@ BOOST_FIXTURE_TEST_CASE(BoostPropertySet_tree, BPS_Fixture)
                 if (child2.first == "two") {
                     twos.push_back(unique_ptr<TestBoostPropertySet>(new TestBoostPropertySet()));
                     const auto& two = twos.back();
-                    const boost::optional<const pt::ptree&> xmlattr = child2.second.get_child_optional("<xmlattr>");
+                    const boost::optional<const pt::ptree&> xmlattr = child2.second.get_child_optional(BoostPropertySet::XMLATTR_NODE_NAME);
                     if (xmlattr) {
                         two->load(xmlattr.get(), "unset");
                     }
@@ -115,25 +115,25 @@ BOOST_FIXTURE_TEST_CASE(BoostPropertySet_tree, BPS_Fixture)
     BOOST_CHECK_EQUAL(twos.size(), 2);
     BOOST_CHECK_EQUAL(rootset.getString("foo"), "bar");
     BOOST_CHECK_EQUAL(rootset.getString("zork"), "frobnitz");
-    BOOST_CHECK_EQUAL(rootset.getString("<xmlattr>"), nullptr);
+    BOOST_CHECK_EQUAL(rootset.getString(BoostPropertySet::XMLATTR_NODE_NAME), nullptr);
     BOOST_CHECK_EQUAL(rootset.getString("one"), nullptr);
 
     BOOST_CHECK_EQUAL(ones[0]->getString("foo"), "baz");
     BOOST_CHECK_EQUAL(ones[0]->getString("zork"), "frobnitz");
-    BOOST_CHECK_EQUAL(ones[0]->getString("<xmlattr>"), nullptr);
+    BOOST_CHECK_EQUAL(ones[0]->getString(BoostPropertySet::XMLATTR_NODE_NAME), nullptr);
     BOOST_CHECK_EQUAL(ones[0]->getString("two"), nullptr);
 
     BOOST_CHECK_EQUAL(ones[1]->getString("foo", "zork"), "zork");
     BOOST_CHECK_EQUAL(ones[1]->getString("zork"), nullptr);
-    BOOST_CHECK_EQUAL(ones[1]->getString("<xmlattr>"), nullptr);
+    BOOST_CHECK_EQUAL(ones[1]->getString(BoostPropertySet::XMLATTR_NODE_NAME), nullptr);
     BOOST_CHECK_EQUAL(ones[1]->getString("two"), nullptr);
 
     BOOST_CHECK_EQUAL(twos[0]->getString("foo"), "baz");
     BOOST_CHECK_EQUAL(twos[0]->getString("zork"), "frobnitz");
-    BOOST_CHECK_EQUAL(twos[0]->getString("<xmlattr>"), nullptr);
+    BOOST_CHECK_EQUAL(twos[0]->getString(BoostPropertySet::XMLATTR_NODE_NAME), nullptr);
 
     BOOST_CHECK_EQUAL(twos[1]->getString("unset"), "foo zork");
     BOOST_CHECK_EQUAL(twos[1]->getString("foo"), nullptr);
     BOOST_CHECK_EQUAL(twos[1]->getString("zork"), "zorkmid");
-    BOOST_CHECK_EQUAL(twos[1]->getString("<xmlattr>"), nullptr);
+    BOOST_CHECK_EQUAL(twos[1]->getString(BoostPropertySet::XMLATTR_NODE_NAME), nullptr);
 }

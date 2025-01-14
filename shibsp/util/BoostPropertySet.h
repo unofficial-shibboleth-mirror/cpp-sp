@@ -63,6 +63,9 @@ namespace shibsp {
          */
         void load(const boost::property_tree::ptree& pt, const char* unsetter=nullptr);
 
+        /** XML-based property trees contain a sub-tree of attributes under this child node. */
+        static const char XMLATTR_NODE_NAME[];
+
     protected:
         /**
          * Returns the parent PropertySet.
