@@ -56,6 +56,12 @@ namespace shibsp {
             static const char SAFE_HEADER_NAMES_PROP_NAME[];
             static const char HANDLER_PREFIX_PROP_NAME[];
 
+            static bool USE_VARIABLES_PROP_DEFAULT;
+            static bool USE_HEADERS_PROP_DEFAULT;
+            static const char AUTHENTICATED_ROLE_PROP_DEFAULT[];
+            static bool NORMALIZE_REQUEST_PROP_DEFAULT;
+            static const char HANDLER_PREFIX_PROP_DEFAULT[];
+
             // Site
             static const char SITE_NAME_PROP_NAME[];
             static const char SITE_SCHEME_PROP_NAME[];

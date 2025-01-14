@@ -134,11 +134,15 @@ namespace shibsp {
          */
         virtual std::pair<bool,long> doHandler(SPRequest& request) const;
 
-        /** Property name constants. */
+        /** Property constants. */
+
         static const char UNSET_HEADER_VALUE_PROP_NAME[];
         static const char CHECK_SPOOFING_PROP_NAME[];
         static const char SPOOF_KEY_PROP_NAME[];
         static const char CATCH_ALL_PROP_NAME[];
+
+        static bool CHECK_SPOOFING_PROP_DEFAULT;
+        static bool CATCH_ALL_PROP_DEFAULT;
 
     protected:
         /** The AuthTypes to "recognize" (defaults to "shibboleth"). */

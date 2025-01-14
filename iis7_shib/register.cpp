@@ -103,8 +103,8 @@ RegisterModule(
         return E_FAIL;
     }
 
-    g_checkSpoofing = agent.getBool(Agent::CHECK_SPOOFING_PROP_NAME, true);
-    g_catchAll = agent.getBool(Agent::CATCH_ALL_PROP_NAME, true);
+    g_checkSpoofing = agent.getBool(Agent::CHECK_SPOOFING_PROP_NAME, Agent::CHECK_SPOOFING_PROP_DEFAULT);
+    g_catchAll = agent.getBool(Agent::CATCH_ALL_PROP_NAME, Agent::CATCH_ALL_PROP_DEFAULT);
 
     if (g_checkSpoofing) {
         g_spoofKey = agent.getString(Agent::SPOOF_KEY_PROP_NAME, "");

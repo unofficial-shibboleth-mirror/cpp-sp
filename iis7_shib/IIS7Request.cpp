@@ -65,9 +65,10 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
         throwError("Get Server Secure", hr);
     }
 
-    m_useHeaders = site.getBool(ModuleConfig::USE_HEADERS_PROP_NAME, false);
+    m_useHeaders = site.getBool(ModuleConfig::USE_HEADERS_PROP_NAME, ModuleConfig::USE_HEADERS_PROP_DEFAULT);
+    // This default matches the previous setting.
     m_safeHeaderNames = site.getBool(ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME, m_useHeaders);
-    m_useVariables = site.getBool(ModuleConfig::USE_VARIABLES_PROP_NAME, true);
+    m_useVariables = site.getBool(ModuleConfig::USE_VARIABLES_PROP_NAME, ModuleConfig::USE_VARIABLES_PROP_DEFAULT);
 
     string prop(site.getString(ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME, "");
     split_to_container(m_roleAttributeNames, prop);
@@ -178,7 +179,8 @@ void IIS7Request::setRemoteUser(const char* user)
     IAuthenticationProvider *auth = dynamic_cast<IAuthenticationProvider*>(m_event);
 
     if (auth) {
-        string authnRole(m_site.getString(ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME, "ShibbolethAuthnN"));
+        string authnRole(m_site.getString(ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME,
+            ModuleConfig::AUTHENTICATED_ROLE_PROP_DEFAULT));
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
         m_roles.insert(converter.from_bytes(authnRole));
         auth->SetUser(new ShibUser(user, m_roles));
@@ -213,7 +215,7 @@ void IIS7Request::clearHeader(const char* rawname, const char* cginame)
                 }
             }
         }
-        string unsetHeaderValue(g_Config->getAgent().getString("unsetHeaderValue", ""));
+        string unsetHeaderValue(g_Config->getAgent().getString(Agent::UNSET_HEADER_NAME_PROP_NAME, ""));
         HRESULT hr = m_request->SetHeader(m_safeHeaderNames ? makeSafeHeader(rawname).c_str() : rawname,
             unsetHeaderValue.c_str(), static_cast<USHORT>(unsetHeaderValue.length()), TRUE);
         if (FAILED(hr)) {

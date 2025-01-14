@@ -46,7 +46,7 @@ ShibHttpModule::DoHandler(
     if (!site)
         return RQ_NOTIFICATION_CONTINUE;
 
-    string prefix(site->getString(ModuleConfig::HANDLER_PREFIX_PROP_NAME, "/Shibboleth.sso"));
+    string prefix(site->getString(ModuleConfig::HANDLER_PREFIX_PROP_NAME, ModuleConfig::HANDLER_PREFIX_PROP_DEFAULT));
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     wstring handlerPrefix = converter.from_bytes(prefix);
 

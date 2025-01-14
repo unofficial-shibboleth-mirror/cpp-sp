@@ -62,6 +62,12 @@ const char ModuleConfig::NORMALIZE_REQUEST_PROP_NAME[] = "normalizeRequest";
 const char ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME[] = "safeHeaderNames";
 const char ModuleConfig::HANDLER_PREFIX_PROP_NAME[] = "handlerPrefix";
 
+bool ModuleConfig::USE_VARIABLES_PROP_DEFAULT = true;
+bool ModuleConfig::USE_HEADERS_PROP_DEFAULT = false;
+const char ModuleConfig::AUTHENTICATED_ROLE_PROP_DEFAULT[] = "ShibbolethAuthN";
+bool ModuleConfig::NORMALIZE_REQUEST_PROP_DEFAULT = true;
+const char ModuleConfig::HANDLER_PREFIX_PROP_DEFAULT[] = "/Shibboleth.sso";
+
 const char ModuleConfig::SITE_NAME_PROP_NAME[] = "name";
 const char ModuleConfig::SITE_SCHEME_PROP_NAME[] = "scheme";
 const char ModuleConfig::SITE_PORT_PROP_NAME[] = "port";
