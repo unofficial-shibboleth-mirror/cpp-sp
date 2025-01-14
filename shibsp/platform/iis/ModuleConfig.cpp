@@ -92,7 +92,7 @@ ModuleConfigImpl::ModuleConfigImpl(unique_ptr<ptree> pt, bool xml)
             load(global.get());
         }
         else {
-            m_log.warn("IIS configuration missing [global] section, using defaults");
+            m_log.info("IIS configuration missing [global] section, using defaults");
         }
         // Sites are in children of the root of the tree.
         doSites(*m_root);
@@ -117,7 +117,10 @@ void ModuleConfigImpl::doSites(ptree& parent)
             string aliases;
             for (const auto& alias : child.second) {
                 if (alias.first == "Alias" && !alias.second.get_value<string>().empty()) {
-                    aliases += alias.second.get_value<string>() + ' ';
+                    if (!aliases.empty()) {
+                        aliases += ' ';
+                    }
+                    aliases += alias.second.get_value<string>();
                 }
             }
             if (!aliases.empty()) {
@@ -157,12 +160,14 @@ const PropertySet* ModuleConfigImpl::getSiteConfig(const char* id) const
     return nullptr;
 }
 
-unique_ptr<ModuleConfig> ModuleConfig::newModuleConfig()
+unique_ptr<ModuleConfig> ModuleConfig::newModuleConfig(const char* path)
 {
-    static const char IIS_CONFIG_PATH_PROP_PATH[] = "IISConfigPath";
-
-    string path(AgentConfig::getConfig().getAgent().getString(IIS_CONFIG_PATH_PROP_PATH, "iis-config.ini"));
-    AgentConfig::getConfig().getPathResolver().resolve(path, PathResolver::SHIBSP_CFG_FILE);
+    string resolved_path(path ? path : "");
+    if (!path) {
+        static const char IIS_CONFIG_PATH_PROP_PATH[] = "IISConfigPath";
+        resolved_path = AgentConfig::getConfig().getAgent().getString(IIS_CONFIG_PATH_PROP_PATH, "iis-config.ini");
+    }
+    AgentConfig::getConfig().getPathResolver().resolve(resolved_path, PathResolver::SHIBSP_CFG_FILE);
 
     unique_ptr<ptree> config_root(new ptree());
 

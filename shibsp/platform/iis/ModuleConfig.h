@@ -34,14 +34,18 @@ namespace shibsp {
              * @param id site ID
              * @return site configuration expressed as a PropertySet
              */
-            const PropertySet* getSiteConfig(const char* id) const;
+            virtual const PropertySet* getSiteConfig(const char* id) const=0;
 
             /**
              * Create and return an instance of this class for use.
              * 
              * <p>The underlying agent library must be initialized before calling this method.</p>
+             * <p>The path will be derived from the IISConfigPath global agent property if not supplied.</p>
+             * <p>Paths must end in ".ini" or ".xml" and will be parsed accordingly.</p>
+             * 
+             * @param path optional path to config file to load
              */
-            static std::unique_ptr<ModuleConfig> newModuleConfig();
+            static std::unique_ptr<ModuleConfig> newModuleConfig(const char* path=nullptr);
         };
     };
 };

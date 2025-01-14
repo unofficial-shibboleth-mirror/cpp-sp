@@ -1,0 +1,17 @@
+<IIS useHeaders="true" useVariables="false">
+
+    <Site id="bad" />
+
+    <Site id="1" name="sp.example.org" />
+
+    <Site id="2" name="sp2.example.org" scheme="https" port="443" />
+
+    <Site id="3"  name="sp3.example.org">
+        <Alias>alt.example.org</Alias>
+        <Alias>alt2.example.org</Alias>
+    </Site>
+
+    <Roles roleAttributes="foo bar" />
+
+</IIS>
+
