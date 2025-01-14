@@ -122,6 +122,7 @@ void ModuleConfigImpl::doSites(ptree& parent)
         if (child.first == "Site") {
             unique_ptr<BoostPropertySet> propset(new BoostPropertySet());
             propset->load(child.second);
+            propset->setParent(this);
 
             const char* id = propset->getString("id");
 

@@ -2,7 +2,7 @@
 
     <Site id="bad" />
 
-    <Site id="1" name="sp.example.org" />
+    <Site id="1" name="sp.example.org" useHeaders="false" />
 
     <Site id="2" name="sp2.example.org" scheme="https" port="443" />
 

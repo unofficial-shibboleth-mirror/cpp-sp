@@ -66,7 +66,6 @@ namespace shibsp {
         /** XML-based property trees contain a sub-tree of attributes under this child node. */
         static const char XMLATTR_NODE_NAME[];
 
-    protected:
         /**
          * Returns the parent PropertySet.
          * 

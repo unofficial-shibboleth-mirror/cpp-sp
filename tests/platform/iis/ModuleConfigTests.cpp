@@ -85,6 +85,7 @@ void validateSites(const ModuleConfig* config)
     BOOST_CHECK_EQUAL(one->getString(ModuleConfig::SITE_SCHEME_PROP_NAME), nullptr);
     BOOST_CHECK_EQUAL(one->getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0), 0);
     BOOST_CHECK_EQUAL(one->getString(ModuleConfig::SITE_ALIASES_PROP_NAME), nullptr);
+    BOOST_CHECK(!one->getBool(ModuleConfig::USE_HEADERS_PROP_NAME, true));
 
     const PropertySet* two = config->getSiteConfig("2");
     BOOST_CHECK(two);
@@ -106,6 +107,7 @@ BOOST_FIXTURE_TEST_CASE(ModuleConfigTest_ini, ModuleConfigFixture)
     unique_ptr<ModuleConfig> config(ModuleConfig::newModuleConfig(string(data_path + "iis.ini").c_str()));
     
     BOOST_CHECK(config->getBool(ModuleConfig::USE_VARIABLES_PROP_NAME, true));
+    BOOST_CHECK(config->getBool(ModuleConfig::USE_HEADERS_PROP_NAME, false));
     
     validateSites(config.get());
 }
