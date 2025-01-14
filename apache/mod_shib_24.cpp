@@ -1450,14 +1450,14 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, 0, s, "child_init: shib_module initializing in pid (%d)", (int)getpid());
 
     const Agent& agent = g_Config->getAgent();
-    g_unsetHeaderValue = agent.getString("unsetHeaderValue");
-    g_checkSpoofing = agent.getBool("checkSpoofing", true);
+    g_unsetHeaderValue = agent.getString(Agent::UNSET_HEADER_VALUE_PROP_NAME);
+    g_checkSpoofing = agent.getBool(Agent::CHECK_SPOOFING_PROP_NAME, true);
     if (g_checkSpoofing) {
-        const char* altkey = agent.getString("spoofKey");
+        const char* altkey = agent.getString(Agent::SPOOF_KEY_PROP_NAME);
         if (altkey)
             g_spoofKey = altkey;
     }
-    g_catchAll = agent.getBool("catchAll", false);
+    g_catchAll = agent.getBool(Agent::CATCH_ALL_PROP_NAME, false);
 
     // Set the cleanup handler, passing in the server_rec for logging.
     apr_pool_cleanup_register(p, s, &shib_exit, apr_pool_cleanup_null);

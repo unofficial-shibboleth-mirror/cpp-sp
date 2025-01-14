@@ -47,6 +47,11 @@
 using namespace shibsp;
 using namespace std;
 
+const char Agent::UNSET_HEADER_VALUE_PROP_NAME[] = "unsetHeaderValue";
+const char Agent::CHECK_SPOOFING_PROP_NAME[] = "checkSpoofing";
+const char Agent::SPOOF_KEY_PROP_NAME[] = "spoofKey";
+const char Agent::CATCH_ALL_PROP_NAME[] = "catchAll";
+
 Agent::Agent()
 {
     m_authTypes.insert("shibboleth");

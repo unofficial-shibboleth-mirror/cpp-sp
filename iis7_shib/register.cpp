@@ -1,22 +1,16 @@
 /**
-* Licensed to the University Corporation for Advanced Internet
-* Development, Inc. (UCAID) under one or more contributor license
-* agreements. See the NOTICE file distributed with this work for
-* additional information regarding copyright ownership.
-*
-* UCAID licenses this file to you under the Apache License,
-* Version 2.0 (the "License"); you may not use this file except
-* in compliance with the License. You may obtain a copy of the
-* License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an
-* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-* either express or implied. See the License for the specific
-* language governing permissions and limitations under the License.
-*/
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #define _CRT_RAND_S
 // https://stackoverflow.com/questions/1301277/c-boost-whats-the-cause-of-this-warning
@@ -35,11 +29,9 @@ namespace Config {
     HINSTANCE g_hinstDLL;
     AgentConfig* g_Config = nullptr;
     unique_ptr<ModuleConfig> g_ModuleConfig;
-    bool g_bNormalizeRequest = true;
-    string g_unsetHeaderValue, g_spoofKey;
+    string g_spoofKey;
     bool g_checkSpoofing = true;
     bool g_catchAll = false;
-    wstring g_authNRole(L"ShibbolethAuthN");
 }
 
 using namespace Config;
@@ -71,7 +63,7 @@ public:
 
     virtual VOID Terminate()
     {
-        Category::getInstance(SHIBSP_LOGCAT ".IISNative").info("IIS module is terminating");
+        Category::getInstance(SHIBSP_LOGCAT ".IIS").info("IIS module is terminating");
         delete this;
     }
 };
@@ -111,11 +103,11 @@ RegisterModule(
         return E_FAIL;
     }
 
-    g_checkSpoofing = agent.getBool("checkSpoofing", true(;
-    g_catchAll = agent.getBool("catchAll", true);
+    g_checkSpoofing = agent.getBool(Agent::CHECK_SPOOFING_PROP_NAME, true);
+    g_catchAll = agent.getBool(Agent::CATCH_ALL_PROP_NAME, true);
 
     if (g_checkSpoofing) {
-        g_spoofKey = agent.getString("spoofKey", "");
+        g_spoofKey = agent.getString(Agent::SPOOF_KEY_PROP_NAME, "");
         if (g_spoofKey.empty()) {
             _invalid_parameter_handler old = _set_invalid_parameter_handler(_my_invalid_parameter_handler);
             unsigned int randkey=0, randkey2=0, randkey3=0, randkey4=0;
@@ -135,7 +127,6 @@ RegisterModule(
     }
 
     HRESULT hr = pModuleInfo->SetRequestNotifications(new ShibModuleFactory(), RQ_BEGIN_REQUEST | RQ_AUTHENTICATE_REQUEST, 0);
-
     if (SUCCEEDED(hr))
         log.info("IIS module initialized");
 

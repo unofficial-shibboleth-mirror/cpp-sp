@@ -42,10 +42,10 @@ namespace shibsp {
 #endif
 
     /**
-     * Interface to a Shibboleth ServiceProvider instance.
+     * Interface to a Shibboleth Agent instance.
      * 
-     * <p>A ServiceProvider exposes configuration and infrastructure services required
-     * by the SP implementation, allowing a flexible configuration format.
+     * <p>An agent exposes configuration and infrastructure services required
+     * by the agent implementation.</p>
      */
 	class SHIBSP_API Agent : public virtual PropertySet
     {
@@ -60,7 +60,7 @@ namespace shibsp {
          * 
          * <p>Implemented as a separate method so that services can rely on
          * other services while they initialize by accessing the Agent
-         * from the AgentConfig singleton.
+         * from the AgentConfig singleton.</p>
          */
         virtual void init()=0;
 
@@ -92,7 +92,7 @@ namespace shibsp {
          * Enforces requirements for an authenticated session.
          * 
          * <p>If the return value's first member is true, then request processing should terminate
-         * with the second member as a status value. If false, processing can continue. 
+         * with the second member as a status value. If false, processing can continue.</p>
          * 
          * @param request   SP request interface
          * @param handler   true iff a request to a registered Handler location can be directly executed
@@ -104,7 +104,7 @@ namespace shibsp {
          * Enforces authorization requirements based on the authenticated session.
          * 
          * <p>If the return value's first member is true, then request processing should terminate
-         * with the second member as a status value. If false, processing can continue. 
+         * with the second member as a status value. If false, processing can continue.</p>
          * 
          * @param request   SP request interface
          * @return a pair containing a "request completed" indicator and a server-specific response code
@@ -115,7 +115,7 @@ namespace shibsp {
          * Publishes session contents to the request in the form of headers or environment variables.
          * 
          * <p>If the return value's first member is true, then request processing should terminate
-         * with the second member as a status value. If false, processing can continue. 
+         * with the second member as a status value. If false, processing can continue.</p>
          * 
          * @param request   SP request interface
          * @param requireSession    set to true iff an error should result if no session exists 
@@ -127,12 +127,18 @@ namespace shibsp {
          * Services requests for registered Handler locations. 
          * 
          * <p>If the return value's first member is true, then request processing should terminate
-         * with the second member as a status value. If false, processing can continue. 
+         * with the second member as a status value. If false, processing can continue.</p>
          * 
          * @param request   SP request interface
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
         virtual std::pair<bool,long> doHandler(SPRequest& request) const;
+
+        /** Property name constants. */
+        static const char UNSET_HEADER_VALUE_PROP_NAME[];
+        static const char CHECK_SPOOFING_PROP_NAME[];
+        static const char SPOOF_KEY_PROP_NAME[];
+        static const char CATCH_ALL_PROP_NAME[];
 
     protected:
         /** The AuthTypes to "recognize" (defaults to "shibboleth"). */
