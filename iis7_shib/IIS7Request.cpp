@@ -111,10 +111,10 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
         }
         else {
             m_hostname = var;
-            if (site_name != m_hostname && site.m_aliases.find(m_hostname) == site.m_aliases.end()) {
+            if (site_name != m_hostname) {
                 vector<string> aliases;
-                string s = site.getString(ModuleConfig::SITE_ALIASES_PROP_NAME, "");
-                split_to_container(aliases, s.c_str());
+                const char* s = site.getString(ModuleConfig::SITE_ALIASES_PROP_NAME, "");
+                split_to_container(aliases, s);
                 if (find(aliases.begin(), aliases.end(), m_hostname) == aliases.end()) {
                     m_hostname = site_name;
                 }
