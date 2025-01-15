@@ -83,22 +83,22 @@ RegisterModule(
         return S_OK;
     }
 
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".IIS");
+
     g_Config = &AgentConfig::getConfig();
     if (!g_Config->init()) {
-        log.fatal("IIS module failed during library initialization, check log for detail");
+        log.crit("IIS module failed during library initialization, check log for detail");
         g_Config=nullptr;
         return E_FAIL;
     }
-
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".IIS");
 
     // Access implementation-specifics and create site mappings.
     const Agent& agent = g_Config->getAgent();
 
     try {
-        g_ModuleConfig.reset(iis::ModuleConfig::newNoduleConfig()));
+        g_ModuleConfig.reset(iis::ModuleConfig::newModuleConfig().get());
     } catch (const exception& ex) {
-        log.fatal("IIS module failed during module configuration installation: %s", ex.what());
+        log.crit("IIS module failed during module configuration installation: %s", ex.what());
         g_Config=nullptr;
         return E_FAIL;
     }
@@ -118,7 +118,7 @@ RegisterModule(
             }
             else {
                 _set_invalid_parameter_handler(old);
-                log.fatal("IIS module failed to generate a random anti-spoofing key");
+                log.crit("IIS module failed to generate a random anti-spoofing key");
                 g_Config->term();
                 g_Config = nullptr;
                 return E_FAIL;

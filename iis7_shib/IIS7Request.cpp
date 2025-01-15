@@ -36,7 +36,7 @@ using namespace Config;
 
 IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser, const PropertySet& site)
     : AbstractSPRequest(SHIBSP_LOGCAT ".IIS"),
-        m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()), m_site(site)
+        m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()), m_site(site),
         m_firsttime(true), m_port(0), m_gotBody(false), m_event(pEventProvider)
 {
     DWORD len;
@@ -70,8 +70,8 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
     m_safeHeaderNames = site.getBool(ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME, m_useHeaders);
     m_useVariables = site.getBool(ModuleConfig::USE_VARIABLES_PROP_NAME, ModuleConfig::USE_VARIABLES_PROP_DEFAULT);
 
-    string prop(site.getString(ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME, "");
-    split_to_container(m_roleAttributeNames, prop);
+    string prop(site.getString(ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME, ""));
+    split_to_container(m_roleAttributeNames, prop.c_str());
 
     bool normalizeRequest = site.getBool(ModuleConfig::NORMALIZE_REQUEST_PROP_NAME, true);
     unsigned int site_port = site.getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0);
@@ -114,8 +114,8 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
             if (site_name != m_hostname && site.m_aliases.find(m_hostname) == site.m_aliases.end()) {
                 vector<string> aliases;
                 string s = site.getString(ModuleConfig::SITE_ALIASES_PROP_NAME, "");
-                split_to_container(aliases, s);
-                if (aliases.find(m_hostname) == aliases.end()) {
+                split_to_container(aliases, s.c_str());
+                if (find(aliases.begin(), aliases.end(), m_hostname) == aliases.end()) {
                     m_hostname = site_name;
                 }
             }
@@ -163,7 +163,7 @@ void IIS7Request::setHeader(const char* name, const char* value)
         if (m_roleAttributeNames.find(name) != m_roleAttributeNames.end()) {
             const string str(value);
             boost::tokenizer<boost::escaped_list_separator<char>> tok(str, boost::escaped_list_separator<char>('\\', ';', '"'));
-            for (tokenizer<escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
+            for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
                 m_roles.insert(converter.from_bytes(*it));
             }
         }
@@ -215,7 +215,7 @@ void IIS7Request::clearHeader(const char* rawname, const char* cginame)
                 }
             }
         }
-        string unsetHeaderValue(g_Config->getAgent().getString(Agent::UNSET_HEADER_NAME_PROP_NAME, ""));
+        string unsetHeaderValue(g_Config->getAgent().getString(Agent::UNSET_HEADER_VALUE_PROP_NAME, ""));
         HRESULT hr = m_request->SetHeader(m_safeHeaderNames ? makeSafeHeader(rawname).c_str() : rawname,
             unsetHeaderValue.c_str(), static_cast<USHORT>(unsetHeaderValue.length()), TRUE);
         if (FAILED(hr)) {
@@ -296,7 +296,7 @@ long IIS7Request::getContentLength() const
     DWORD len;
     HRESULT hr = m_ctx->GetServerVariable("CONTENT_LENGTH", &length, &len);
     if (SUCCEEDED(hr)) {
-        return lexical_cast<int>(length);
+        return boost::lexical_cast<int>(length);
     }
     return 0;
 }
@@ -407,7 +407,7 @@ void IIS7Request::setResponseHeader(const char* name, const char* value, bool re
 
     size_t sz = value ? strlen(value) : 0;
     if (sz > USHRT_MAX) {
-        log(SPWarn, "Header value overflow");
+        log(Priority::SHIB_WARN, "Header value overflow");
         sz = USHRT_MAX;
     }
 
@@ -442,7 +442,7 @@ string IIS7Request::makeSafeHeader(const char* rawname) const
 
 void IIS7Request::logFatal(const string& operation, HRESULT hr) const
 {
-    string msg(operation + " failed: " + lexical_cast<string>(hr));
+    string msg(operation + " failed: " + boost::lexical_cast<string>(hr));
     log(Priority::SHIB_CRIT, msg.c_str());
     if (m_response) {
         m_response->SetStatus(static_cast<USHORT>(SHIBSP_HTTP_STATUS_ERROR), "Fatal Server Error", 0, hr);
@@ -452,6 +452,6 @@ void IIS7Request::logFatal(const string& operation, HRESULT hr) const
 void IIS7Request::throwError(const string& operation, HRESULT hr) const
 {
     logFatal(operation, hr);
-    string msg(operation + " failed: " + lexical_cast<string>(hr));
+    string msg(operation + " failed: " + boost::lexical_cast<string>(hr));
     throw IOException(msg.c_str());
 }

@@ -33,6 +33,7 @@
 #include <shibsp/logging/Priority.h>
 #include <shibsp/platform/iis/ModuleConfig.h>
 #include <shibsp/util/PropertySet.h>
+#include <shibsp/logging/Category.h>
 
 //
 // Miscelanea

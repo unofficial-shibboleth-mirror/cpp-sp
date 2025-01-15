@@ -20,17 +20,18 @@
 
 #include "IIS7_shib.hpp"
 
-#include "io/HTTPResponse.h"
+#include "shibsp/io/HTTPResponse.h"
 
 #include "ShibHttpModule.hpp"
 #include "IIS7Request.hpp"
-#include "IIS7_shib.hpp"
 
 #include <process.h>
 #include <winreg.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
+
+#include <codecvt>
 
 using namespace Config;
 using namespace std;
@@ -55,12 +56,12 @@ ShibHttpModule::DoHandler(
     // This saves us converting from 8 bit ascii up to 16 bit for the compare against something which was only in 16
     // bits to speed this path.  In V4 we can look at the local request
     const wstring url(pHttpContext->GetScriptName());
-    if (url.length() < handlerPrefix.length() || !starts_with(url, handlerPrefix))
+    if (url.length() < handlerPrefix.length() || !boost::starts_with(url, handlerPrefix))
         return RQ_NOTIFICATION_CONTINUE;
 
     IIS7Request handler(pHttpContext, pProvider, false, *site);
 
-    pair<bool, long> res = handler.getServiceProvider().doHandler(handler);
+    pair<bool, long> res = handler.getAgent().doHandler(handler);
 
     if (res.first) {
         return static_cast<REQUEST_NOTIFICATION_STATUS>(res.second);
@@ -83,7 +84,7 @@ ShibHttpModule::DoFilter(
 
     IIS7Request filter(pHttpContext, pProvider, true, *site);
 
-    pair<bool, long> res = filter.getServiceProvider().doAuthentication(filter, true);
+    pair<bool, long> res = filter.getAgent().doAuthentication(filter, true);
     if (res.first) {
         return static_cast<REQUEST_NOTIFICATION_STATUS>(res.second);
     }
@@ -95,12 +96,12 @@ ShibHttpModule::DoFilter(
             return RQ_NOTIFICATION_FINISH_REQUEST;
         }
     }
-    res = filter.getServiceProvider().doExport(filter);
+    res = filter.getAgent().doExport(filter);
     if (res.first) {
         return static_cast<REQUEST_NOTIFICATION_STATUS>(res.second);
     }
 
-    res = filter.getServiceProvider().doAuthorization(filter);
+    res = filter.getAgent().doAuthorization(filter);
     if (res.first) {
         return static_cast<REQUEST_NOTIFICATION_STATUS>(res.second);
     }

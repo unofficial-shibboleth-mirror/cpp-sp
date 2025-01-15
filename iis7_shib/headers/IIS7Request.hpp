@@ -75,6 +75,7 @@ protected:
     string getContentType() const;
     long getContentLength() const;
     string getRemoteUser() const;
+    string getAuthType() const;
     const char* getRequestBody() const;
     //
     // XMLTooing:: HTTPRequest
