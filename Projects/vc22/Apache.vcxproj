@@ -31,16 +31,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
-  </ItemGroup> 
+  </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\apache\mod_shib_24.rc">
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
+    <ResourceCompile Include="..\..\apache\mod_shib_24.rc" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -153,6 +146,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -174,6 +170,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -191,6 +190,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
@@ -208,6 +210,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -229,6 +234,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <ClCompile>
@@ -250,6 +258,9 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
