@@ -59,8 +59,12 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AgentInternalConfig : public AgentConfig
     {
     public:
-        AgentInternalConfig() : m_initCount(0) {}
+        AgentInternalConfig() : m_initCount(0), m_cli(false) {}
         ~AgentInternalConfig() {}
+
+        void setCommandLine(bool flag) {
+            m_cli = flag;
+        }
 
         bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
         void term();
@@ -87,6 +91,7 @@ namespace shibsp {
         unsigned int m_initCount;
         mutex m_lock;
         ptree m_config;
+        bool m_cli;
         PathResolver m_pathResolver;
         URLEncoder m_urlEncoder;
         vector<void*> m_libhandles;
@@ -255,13 +260,20 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
 bool AgentInternalConfig::initLogging()
 {
     // Config is loaded, look for logging section and type to instantiate.
-    string type = m_config.get(LoggingService::LOGGING_TYPE_PROP_PATH,
+    string type;
+    if (m_cli) {
+        type = CONSOLE_LOGGING_SERVICE;
+    }
+    else {
+        type = m_config.get(LoggingService::LOGGING_TYPE_PROP_PATH,
 #ifdef WIN32
-        WINDOWS_LOGGING_SERVICE
+            WINDOWS_LOGGING_SERVICE
 #else
-        SYSLOG_LOGGING_SERVICE
+            SYSLOG_LOGGING_SERVICE
 #endif
-        );
+            );
+    }
+    
     m_logging.reset(LoggingServiceManager.newPlugin(type, m_config, false));
     if (!m_logging->init()) {
         return false;

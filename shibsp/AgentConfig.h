@@ -62,6 +62,13 @@ namespace shibsp {
         static AgentConfig& getConfig();
 
         /**
+         * Sets a flag indicating a command line program is initializing the agent.
+         * 
+         * <p>This can be used to adjust/affect default settings and plugin types used.</p>
+         */
+        virtual void setCommandLine(bool flag)=0;
+
+        /**
          * Initializes agent/library.
          *
          * Each process using the library MUST call this function exactly once
