@@ -32,7 +32,6 @@
     <ClInclude Include="..\..\iis7_shib\headers\IIS7_shib.hpp" />
     <ClInclude Include="..\..\iis7_shib\headers\ShibHttpModule.hpp" />
     <ClInclude Include="..\..\iis7_shib\headers\ShibUser.hpp" />
-    <ClInclude Include="..\..\iis7_shib\resource.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -112,7 +111,8 @@
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
-      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\shibsp</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -133,7 +133,8 @@
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
-      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\shibsp</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -150,7 +151,8 @@
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
-      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\shibsp</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -171,7 +173,8 @@
       <AdditionalDependencies>$(SolutionDir)$(Platform)\$(Configuration)\shibsp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
-      <PreprocessorDefinitions>RC_FILE_VERSION=3,0,0;RC_PRODUCT_VERSION=3,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\shibsp</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

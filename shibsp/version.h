@@ -38,6 +38,10 @@
 #define SHIBSP_VERSION_MAJOR 4
 #define SHIBSP_VERSION_MINOR 0
 #define SHIBSP_VERSION_REVISION 0
+//
+// For Windows we define a patch version
+//
+#define SHIBSP_VERSION_PATCH 0
 
 /** DO NOT MODIFY BELOW THIS LINE */
 

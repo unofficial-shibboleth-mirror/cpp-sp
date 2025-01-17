@@ -34,9 +34,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\iis7_shib\resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\iis7_shib\headers\IIS7_shib.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
