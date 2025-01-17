@@ -34,6 +34,7 @@ namespace shibsp {
      */
     class SHIBSP_API RemotingService
     {
+        MAKE_NONCOPYABLE(RemotingService);
     protected:
         RemotingService();
     public:
@@ -45,7 +46,7 @@ namespace shibsp {
          * @param in    input message to send
          * @return      response from remote service
          */
-        virtual DDF send(const DDF& in)=0;
+        virtual DDF send(const DDF& in) const=0;
     };
 
     /**
@@ -53,8 +54,11 @@ namespace shibsp {
      */
     void SHIBSP_API registerRemotingServices();
 
-    /** RemotingService based on an HTTP transport layer */
-    #define HTTP_REMOTING_SERVICE "HTTP"
+    /** RemotingService based on HTTP using Curl library. */
+    #define CURL_HTTP_REMOTING_SERVICE "CurlHTTP"
+
+    /** RemotingService based on HTTP using WinHTTP library. */
+    #define WIN_HTTP_REMOTING_SERVICE "WinHTTP"
 };
 
 #endif /* __shibsp_remotingservice_h__ */

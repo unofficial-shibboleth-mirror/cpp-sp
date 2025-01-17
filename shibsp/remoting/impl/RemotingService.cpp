@@ -20,23 +20,27 @@
 
 #include "internal.h"
 
-#include "exceptions.h"
 #include "AgentConfig.h"
 #include "remoting/RemotingService.h"
-
-#include <boost/property_tree/ptree.hpp>
+#include "remoting/SecretSource.h"
 
 using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
 
 namespace shibsp {
-    //extern RemotingService* SHIBSP_DLLLOCAL HTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
+    extern RemotingService* SHIBSP_DLLLOCAL CurlHTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
+#ifdef WIN32
+    extern RemotingService* SHIBSP_DLLLOCAL WinHTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
+#endif
 };
 
 void SHIBSP_API shibsp::registerRemotingServices()
 {
-    //AgentConfig::getConfig().RemotingServiceManager.registerFactory(HTTP_REMOTING_SERVICE, HTTPRemotingServiceFactory);
+    //AgentConfig::getConfig().RemotingServiceManager.registerFactory(CURL_HTTP_REMOTING_SERVICE, CurlHTTPRemotingServiceFactory);
+#ifdef WIN32
+    //AgentConfig::getConfig().RemotingServiceManager.registerFactory(WIN_HTTP_REMOTING_SERVICE, WinHTTPRemotingServiceFactory);
+#endif
 }
 
 RemotingService::RemotingService() {}

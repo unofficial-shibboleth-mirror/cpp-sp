@@ -34,6 +34,10 @@ namespace shibsp {
      * with heap objects. When stack objects leave scope, only the handle is freed.
      * Copying and assigning handle objects is a constant time operation equivalent
      * to a single pointer assignment, handled by compiler-generated behavior.
+     * 
+     * This code long predates modern C++, and may eventually be updated but for the
+     * moment, it does not provide the automatic memory mamagement that would be
+     * expected from such a library.
      */
     class SHIBSP_API DDF
     {
@@ -46,7 +50,6 @@ namespace shibsp {
         DDF(const char* n, long val);
         DDF(const char* n, long long val);
         DDF(const char* n, double val);
-        DDF(const char* n, void* val);
     
         DDF& destroy();         // deep destructor
         DDF copy() const;       // deep copy routine
@@ -63,14 +66,12 @@ namespace shibsp {
         bool isfloat() const;
         bool isstruct() const;
         bool islist() const;
-        bool ispointer() const;
     
         // type conversion and value extraction
         const char* string() const;     // legal for str
         long        integer() const;    // legal for all types
         long long   longinteger() const;    // legal for all types
         double      floating() const;   // legal for float
-        void*       pointer() const;    // legal for pointer
     
         // string helper methods
         size_t strlen() const;
@@ -91,7 +92,6 @@ namespace shibsp {
         DDF& floating(const char* val);
         DDF& structure();
         DDF& list();
-        DDF& pointer(void* val);
     
         // list/struct methods
         DDF& add(DDF& child);

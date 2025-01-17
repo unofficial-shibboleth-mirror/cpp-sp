@@ -13,13 +13,12 @@
  */
 
 /**
- * ddf.cpp
+ * remoting/impl/ddf.cpp
  *
  * C++ DDF abstraction for interpretive RPC
  */
 
 #include "internal.h"
-#include "exceptions.h"
 #include "remoting/ddf.h"
 #include "util/Misc.h"
 
@@ -89,7 +88,6 @@ struct shibsp::ddf_body_t {
         DDF_FLOAT,
         DDF_STRUCT,
         DDF_LIST,
-        DDF_POINTER,
         DDF_STRING_UNSAFE,
         DDF_LONG
     } type;                         // data type of node
@@ -99,7 +97,6 @@ struct shibsp::ddf_body_t {
         long integer;
         long long longinteger;
         double floating;
-        void* pointer;
         struct {
             ddf_body_t* first;
             ddf_body_t* last;
@@ -149,13 +146,6 @@ DDF::DDF(const char* n, double val)
     floating(val);
 }
 
-DDF::DDF(const char* n, void* val)
-{
-    m_handle=new(nothrow) ddf_body_t;
-    name(n);
-    pointer(val);
-}
-
 DDF& DDF::destroy()
 {
     remove().empty().name(nullptr);
@@ -181,8 +171,6 @@ DDF DDF::copy() const
             return DDF(m_handle->name,m_handle->value.longinteger);
         case ddf_body_t::DDF_FLOAT:
             return DDF(m_handle->name,m_handle->value.floating);
-        case ddf_body_t::DDF_POINTER:
-            return DDF(m_handle->name,m_handle->value.pointer);
         case ddf_body_t::DDF_STRUCT:
         case ddf_body_t::DDF_LIST:
         {
@@ -273,11 +261,6 @@ bool DDF::islist() const
     return m_handle ? (m_handle->type==ddf_body_t::DDF_LIST) : false;
 }
 
-bool DDF::ispointer() const
-{
-    return m_handle ? (m_handle->type==ddf_body_t::DDF_POINTER) : false;
-}
-
 const char* DDF::string() const
 {
     return isstring() ? m_handle->value.string : nullptr;
@@ -350,11 +333,6 @@ double DDF::floating() const
         }
     }
     return 0;
-}
-
-void* DDF::pointer() const
-{
-    return ispointer() ? m_handle->value.pointer : nullptr;
 }
 
 size_t DDF::strlen() const
@@ -506,15 +484,6 @@ DDF& DDF::list()
         m_handle->value.children.last=nullptr;
         m_handle->value.children.current=nullptr;
         m_handle->value.children.count=0;
-    }
-    return *this;
-}
-
-DDF& DDF::pointer(void* val)
-{
-    if (empty().m_handle) {
-        m_handle->value.pointer=val;
-        m_handle->type=ddf_body_t::DDF_POINTER;
     }
     return *this;
 }
@@ -846,17 +815,6 @@ void DDF::dump(FILE* f, int indent) const
                 putc('}',f);
                 break;
 
-            case ddf_body_t::DDF_POINTER:
-                if (m_handle->name)
-                    fprintf(f,"void* %s = ",m_handle->name);
-                else
-                    fprintf(f,"void* = ");
-                if (m_handle->value.pointer)
-                    fprintf(f,"%p",m_handle->value.pointer);
-                else
-                    fprintf(f,"nullptr");
-                break;
-
             default:
                 fprintf(f,"UNKNOWN -- WARNING: ILLEGAL VALUE");
         }
@@ -874,7 +832,6 @@ void DDF::dump(FILE* f, int indent) const
     <typenum> := 0|1|2|3|4|5|7
 
     DDF_EMPTY:
-    DDF_POINTER:
         0
     DDF_STRING:
         1 URL-encoded string
@@ -887,11 +844,10 @@ void DDF::dump(FILE* f, int indent) const
     DDF_LIST:
         5 32-bit count of children
     DDF_STRING_UNSAFE:
-        7 URL-encoded string
+        6 URL-encoded string
     DDF_LONG:
-        8 64-bit integer
+        7 64-bit integer
 
-    Pointers are collapsed into empty, so the type value of 6 is unused.
     The distinction of unsafe strings allows for proper deserialization
     in languages that need to handle non-UTF8 strings differently.
 */
@@ -946,7 +902,6 @@ void serialize(ddf_body_t* p, ostream& os)
 
         switch (p->type) {
             case ddf_body_t::DDF_EMPTY:
-            case ddf_body_t::DDF_POINTER:
                 os << ddf_body_t::DDF_EMPTY << endl;
                 break;
 
@@ -962,13 +917,13 @@ void serialize(ddf_body_t* p, ostream& os)
 
             case ddf_body_t::DDF_INT:
                 if (!is32bitSafe(p->value.integer))
-                    throw IOException("Integer Overflow");
+                    throw range_error("Integer Overflow");
                 os << ddf_body_t::DDF_INT << ' ' << p->value.integer << endl;
                 break;
 
             case ddf_body_t::DDF_LONG:
                 if (!is64bitSafe(p->value.longinteger))
-                    throw IOException("Integer Overflow");
+                    throw range_error("Integer Overflow");
                 os << ddf_body_t::DDF_LONG << ' ' << p->value.longinteger << endl;
                 break;
 
@@ -1055,7 +1010,6 @@ DDF deserialize(istream& is)
     
     switch (type) {
         case ddf_body_t::DDF_EMPTY:
-        case ddf_body_t::DDF_POINTER:
             // Nothing to do, it's already empty.
             return obj;
 

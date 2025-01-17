@@ -57,7 +57,7 @@ namespace {
 
         // Agent services.
 
-        RemotingService* getRemotingService(bool required = true) const {
+        const RemotingService* getRemotingService(bool required = true) const {
             if (required && !m_remotingService)
                 throw ConfigurationException("No ListenerService available.");
             return m_remotingService.get();
@@ -140,7 +140,13 @@ void DefaultAgent::doRemotingService()
 {
     boost::optional<ptree&> child = m_pt.get_child_optional("remoting");
     if (child) {
-        string t(child->get("type", HTTP_REMOTING_SERVICE));
+        string t(child->get("type",
+#ifdef WIN32
+            WIN_HTTP_REMOTING_SERVICE
+#else
+            CURL_HTTP_REMOTING_SERVICE
+#endif
+        ));
         m_log.info("building RemotingService of type %s...", t.c_str());
         m_remotingService.reset(AgentConfig::getConfig().RemotingServiceManager.newPlugin(t.c_str(), *child, true));
     } else {

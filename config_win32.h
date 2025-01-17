@@ -45,11 +45,8 @@
 /* Define to 1 if you have the `dmallocxx' library (-ldmallocxx). */
 /* #undef HAVE_LIBDMALLOCXX */
 
-/* Define if log4shib library is used. */
-#define SHIBSP_LOG4SHIB 1
-
-/* Define if log4cpp library is used. */
-/* #undef SHIBSP_LOG4CPP */
+/* Define to 1 if libcurl library is available. */
+/* #undef HAVE_LIBCURL */
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1

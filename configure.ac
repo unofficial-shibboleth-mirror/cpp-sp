@@ -84,14 +84,9 @@ AX_CXX_COMPILE_STDCXX([17],,[optional])
 
 # Boost
 BOOST_REQUIRE
-BOOST_BIND
-BOOST_LAMBDA
-BOOST_POINTER_CONTAINER
 BOOST_PROPERTYTREE
-BOOST_SMART_PTR
 BOOST_STRING_ALGO
 BOOST_TEST
-BOOST_TUPLE
 
 ## Use Boost for regex?
 AC_ARG_ENABLE([boost-regex],
@@ -108,6 +103,9 @@ else
     BOOST_REGEX
     AC_DEFINE([SHIBSP_USE_BOOST_REGEX],[1],[Define if using Boost for regular expressions.])
 fi
+
+AX_PKG_CHECK_MODULES([libcurl],,[libcurl >= 7.4.2],
+    [AC_DEFINE([HAVE_LIBCURL],[1],[Define to 1 if libcurl library is available.])])
 
 # Thank you Solaris, really.
 AC_MSG_CHECKING(for ctime_r)

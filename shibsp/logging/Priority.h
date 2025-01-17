@@ -32,7 +32,7 @@ namespace shibsp {
      * Enumerates levels of logging we support.
      */
     class SHIBSP_API Priority {
-        public:
+    public:
 
         /**
          * Predefined Levels of Priorities.

@@ -78,7 +78,7 @@ namespace shibsp {
          * @param required  true iff an exception should be thrown if no RemotingService is available
          * @return  a RemotingService
          */
-        virtual RemotingService* getRemotingService(bool required=true) const=0;
+        virtual const RemotingService* getRemotingService(bool required=true) const=0;
         
         /**
          * Returns a RequestMapper instance.

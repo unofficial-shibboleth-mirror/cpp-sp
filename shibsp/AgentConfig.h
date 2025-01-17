@@ -36,6 +36,7 @@ namespace shibsp {
     class SHIBSP_API PathResolver;
     class SHIBSP_API RemotingService;
     class SHIBSP_API RequestMapper;
+    class SHIBSP_API SecretSource;
     class SHIBSP_API SessionCache;
     class SHIBSP_API URLEncoder;
 
@@ -117,6 +118,11 @@ namespace shibsp {
          * Manages factories for RequestMapper plugins.
          */
         PluginManager<RequestMapper,std::string,boost::property_tree::ptree&> RequestMapperManager;
+
+        /**
+         * Manages factories for SecretSource plugins.
+         */
+        PluginManager<SecretSource,std::string,boost::property_tree::ptree&> SecretSourceManager;
 
         /**
          * Manages factories for SessionCache plugins.

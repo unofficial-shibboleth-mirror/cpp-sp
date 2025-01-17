@@ -30,6 +30,7 @@
 #include "io/HTTPResponse.h"
 #include "logging/LoggingService.h"
 #include "remoting/RemotingService.h"
+#include "remoting/SecretSource.h"
 #include "session/SessionCache.h"
 #include "util/Misc.h"
 #include "util/PathResolver.h"
@@ -227,6 +228,7 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
         */
 
         registerHandlers();
+        registerSecretSources();
         registerRemotingServices();
         registerSessionCaches();
         registerAgents();
@@ -304,6 +306,7 @@ void AgentInternalConfig::_term()
     AgentManager.deregisterFactories();
     SessionCacheManager.deregisterFactories();
     RemotingServiceManager.deregisterFactories();
+    SecretSourceManager.deregisterFactories();
     HandlerManager.deregisterFactories();
     RequestMapperManager.deregisterFactories();
     AccessControlManager.deregisterFactories();

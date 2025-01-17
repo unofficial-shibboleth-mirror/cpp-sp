@@ -66,7 +66,8 @@ iisinclude_HEADERS = \
 
 reminclude_HEADERS = \
 	remoting/ddf.h \
-	remoting/RemotingService.h
+	remoting/RemotingService.h \
+	remoting/SecretSource.h
 
 sessioninclude_HEADERS = \
 	session/SessionCache.h
@@ -88,6 +89,8 @@ noinst_HEADERS = \
 	logging/impl/AbstractLoggingService.h \
 	logging/impl/LoggingServiceSPI.h \
 	logging/impl/StringUtil.h \
+	remoting/impl/AbstractRemotingService.h \
+	remoting/impl/AbstractHTTPRemotingService.h \
         util/Date.h \
 	util/Misc.h
 
@@ -128,6 +131,9 @@ libshibsp_la_SOURCES = \
 	platform/iis/ModuleConfig.cpp \
 	remoting/impl/ddf.cpp \
 	remoting/impl/RemotingService.cpp \
+	remoting/impl/AbstractRemotingService.cpp \
+	remoting/impl/AbstractHTTPRemotingService.cpp \
+	remoting/impl/SecretSource.cpp \
 	session/impl/AbstractSessionCache.cpp \
 	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
