@@ -1,13 +1,14 @@
 //Microsoft Developer Studio generated resource script.
 //
-#include "resource.h"
+#define __shibsp_base_h__ 
+#include "version.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include "winres.h"
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -29,8 +30,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define RC_IS_SP 1
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION RC_FILE_VERSION_SP ,0
- PRODUCTVERSION RC_PRODUCT_VERSION ,0
+ FILEVERSION SHIBSP_VERSION_MAJOR, SHIBSP_VERSION_MINOR, SHIBSP_VERSION_REVISION, SHIBSP_VERSION_PATCH
+ PRODUCTVERSION SHIBSP_VERSION_MAJOR, SHIBSP_VERSION_MINOR, SHIBSP_VERSION_REVISION, SHIBSP_VERSION_PATCH
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -49,20 +50,11 @@ BEGIN
             VALUE "FileDescription", "Shibboleth SP Library\0"
 #ifdef _DEBUG
             VALUE "InternalName", "shibsp4_0D\0"
-#else
-            VALUE "InternalName", "shibsp4_0\0"
-#endif
-            VALUE "LegalCopyright", "Copyright 2001-2024 Various\0"
-            VALUE "LegalTrademarks", "\0"
-#ifdef _DEBUG
             VALUE "OriginalFilename", "shibsp4_0D.dll\0"
 #else
+            VALUE "InternalName", "shibsp4_0\0"
             VALUE "OriginalFilename", "shibsp4_0.dll\0"
 #endif
-            VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 4.0.0\0"
-            VALUE "ProductVersion", "4, 0, 0, 0\0"
-            VALUE "SpecialBuild", "\0"
         END
     END
     BLOCK "VarFileInfo"

@@ -161,6 +161,9 @@
     <ClCompile Include="..\..\shibsp\util\URLEncoder.cpp" />
     <ClCompile Include="..\..\shibsp\version.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\shibsp\shibsp.rc" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
