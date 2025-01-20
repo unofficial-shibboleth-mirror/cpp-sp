@@ -249,7 +249,7 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
 
         log.info("%s agent initialization complete", PACKAGE_STRING);
     }
-    catch (const std::exception& e) {
+    catch (const std::exception&) {
         if (rethrow) {
             throw;
         }
