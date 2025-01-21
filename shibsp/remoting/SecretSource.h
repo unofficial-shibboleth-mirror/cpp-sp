@@ -48,7 +48,7 @@ namespace shibsp {
          * 
          * @return a secret
          */
-        virtual std::string getSecret(const char* key) const=0;
+        virtual std::string getSecret(const char* key=nullptr) const=0;
     };
 
     /**

@@ -38,7 +38,7 @@ namespace {
         FileSecretSource(const ptree& pt);
         virtual ~FileSecretSource() {}
 
-        string getSecret(const char* key) const;
+        string getSecret(const char* key=nullptr) const;
 
     private:
         string m_pathname;
@@ -49,7 +49,7 @@ namespace {
         EnvSecretSource(const ptree& pt);
         virtual ~EnvSecretSource() {}
 
-        string getSecret(const char* key) const;
+        string getSecret(const char* key=nullptr) const;
 
     private:
         string m_envname;
