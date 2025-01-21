@@ -62,7 +62,9 @@
     <ClInclude Include="..\..\shibsp\logging\Priority.h" />
     <ClInclude Include="..\..\shibsp\platform\iis\ModuleConfig.h" />
     <ClInclude Include="..\..\shibsp\remoting\ddf.h" />
+    <ClInclude Include="..\..\shibsp\remoting\impl\AbstractHTTPRemotingService.h" />
     <ClInclude Include="..\..\shibsp\remoting\RemotingService.h" />
+    <ClInclude Include="..\..\shibsp\remoting\SecretSource.h" />
     <ClInclude Include="..\..\shibsp\RequestMapper.h" />
     <ClInclude Include="..\..\shibsp\session\SessionCache.h" />
     <ClInclude Include="..\..\shibsp\SPRequest.h" />
@@ -141,6 +143,8 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\platform\iis\ModuleConfig.cpp" />
+    <ClCompile Include="..\..\shibsp\remoting\impl\AbstractHTTPRemotingService.cpp" />
+    <ClCompile Include="..\..\shibsp\remoting\impl\AbstractRemotingService.cpp" />
     <ClCompile Include="..\..\shibsp\remoting\impl\ddf.cpp">
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -150,6 +154,7 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\remoting\impl\RemotingService.cpp" />
+    <ClCompile Include="..\..\shibsp\remoting\impl\SecretSource.cpp" />
     <ClCompile Include="..\..\shibsp\session\impl\AbstractSessionCache.cpp" />
     <ClCompile Include="..\..\shibsp\util\BoostPropertySet.cpp" />
     <ClCompile Include="..\..\shibsp\util\CGIParser.cpp" />

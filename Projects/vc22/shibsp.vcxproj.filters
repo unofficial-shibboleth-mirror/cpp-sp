@@ -234,6 +234,12 @@
     <ClInclude Include="..\..\shibsp\session\SessionCache.h">
       <Filter>Header Files\Session</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shibsp\remoting\SecretSource.h">
+      <Filter>Header Files\Remoting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\remoting\impl\AbstractHTTPRemotingService.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\shibsp\attribute\Attribute.cpp">
@@ -367,6 +373,15 @@
     </ClCompile>
     <ClCompile Include="..\..\shibsp\session\impl\AbstractSessionCache.cpp">
       <Filter>Source Files\Session</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\remoting\impl\AbstractHTTPRemotingService.cpp">
+      <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\remoting\impl\AbstractRemotingService.cpp">
+      <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\remoting\impl\SecretSource.cpp">
+      <Filter>Source Files\Remoting</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
