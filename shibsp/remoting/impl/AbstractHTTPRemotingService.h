@@ -56,18 +56,18 @@ namespace shibsp {
         unsigned int getTimeout() const;
 
         // Property names and defaults.
-        SHIBSP_API static const char SECRET_SOURCE_TYPE_PROP_NAME[];
-        SHIBSP_API static const char BASE_URL_PROP_NAME[];
-        SHIBSP_API static const char AGENT_ID_PROP_NAME[];
-        SHIBSP_API static const char AUTH_METHOD_PROP_NAME[];
-        SHIBSP_API static const char CONNECT_TIMEOUT_PROP_NAME[];
-        SHIBSP_API static const char TIMEOUT_PROP_NAME[];
+        static const char SECRET_SOURCE_TYPE_PROP_NAME[];
+        static const char BASE_URL_PROP_NAME[];
+        static const char AGENT_ID_PROP_NAME[];
+        static const char AUTH_METHOD_PROP_NAME[];
+        static const char CONNECT_TIMEOUT_PROP_NAME[];
+        static const char TIMEOUT_PROP_NAME[];
 
-        SHIBSP_API static const char SECRET_SOURCE_TYPE_PROP_DEFAULT[];
-        SHIBSP_API static const char BASE_URL_PROP_DEFAULT[];
-        SHIBSP_API static const char AUTH_METHOD_PROP_DEFAULT[];
-        SHIBSP_API static unsigned int CONNECT_TIMEOUT_PROP_DEFAULT;
-        SHIBSP_API static unsigned int TIMEOUT_PROP_DEFAULT;
+        static const char SECRET_SOURCE_TYPE_PROP_DEFAULT[];
+        static const char BASE_URL_PROP_DEFAULT[];
+        static const char AUTH_METHOD_PROP_DEFAULT[];
+        static unsigned int CONNECT_TIMEOUT_PROP_DEFAULT;
+        static unsigned int TIMEOUT_PROP_DEFAULT;
 
     protected:
         AbstractHTTPRemotingService(boost::property_tree::ptree& pt);
