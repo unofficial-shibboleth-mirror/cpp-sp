@@ -142,6 +142,14 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
+    <ClCompile Include="..\..\shibsp\logging\impl\WindowsLoggingService.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(intdir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(intdir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(intdir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(intdir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(intdir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(intdir)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\..\shibsp\platform\iis\ModuleConfig.cpp" />
     <ClCompile Include="..\..\shibsp\remoting\impl\AbstractHTTPRemotingService.cpp" />
     <ClCompile Include="..\..\shibsp\remoting\impl\AbstractRemotingService.cpp" />
@@ -168,6 +176,41 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\shibsp\shibsp.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\shibsp\logging\impl\NativeEventLog.mc">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">if not exist $(IntDir) md $(IntDir)
+mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
+rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">if not exist $(IntDir) md $(IntDir)
+mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
+rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">if not exist $(IntDir) md $(IntDir)
+mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
+rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">if not exist $(IntDir) md $(IntDir)
+mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
+rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">if not exist $(IntDir) md $(IntDir)
+mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
+rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">if not exist $(IntDir) md $(IntDir)
+mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
+rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -284,7 +327,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -305,7 +348,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -322,7 +365,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -339,7 +382,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -360,7 +403,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -381,7 +424,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

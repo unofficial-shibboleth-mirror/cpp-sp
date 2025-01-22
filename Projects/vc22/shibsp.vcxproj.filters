@@ -383,10 +383,18 @@
     <ClCompile Include="..\..\shibsp\remoting\impl\SecretSource.cpp">
       <Filter>Source Files\Remoting</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\shibsp\logging\impl\WindowsLoggingService.cpp">
+      <Filter>Source Files\Logging</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\shibsp\shibsp.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\shibsp\logging\impl\NativeEventLog.mc">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>
