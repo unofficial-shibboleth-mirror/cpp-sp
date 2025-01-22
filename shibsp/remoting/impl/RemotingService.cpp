@@ -29,17 +29,19 @@ using namespace boost::property_tree;
 using namespace std;
 
 namespace shibsp {
-    extern RemotingService* SHIBSP_DLLLOCAL CurlHTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
 #ifdef WIN32
     extern RemotingService* SHIBSP_DLLLOCAL WinHTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
+#else
+    extern RemotingService* SHIBSP_DLLLOCAL CurlHTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
 #endif
 };
 
 void SHIBSP_API shibsp::registerRemotingServices()
 {
-    //AgentConfig::getConfig().RemotingServiceManager.registerFactory(CURL_HTTP_REMOTING_SERVICE, CurlHTTPRemotingServiceFactory);
 #ifdef WIN32
     //AgentConfig::getConfig().RemotingServiceManager.registerFactory(WIN_HTTP_REMOTING_SERVICE, WinHTTPRemotingServiceFactory);
+#else
+    AgentConfig::getConfig().RemotingServiceManager.registerFactory(CURL_HTTP_REMOTING_SERVICE, CurlHTTPRemotingServiceFactory);
 #endif
 }
 

@@ -45,7 +45,8 @@ const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "basic";
 unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;
 unsigned int AbstractHTTPRemotingService::TIMEOUT_PROP_DEFAULT = 10;
 
-AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt) : m_authMethod(agent_auth_none)
+AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
+    : AbstractRemotingService(pt), m_authMethod(agent_auth_none)
 {
     BoostPropertySet props;
     props.load(pt);

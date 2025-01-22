@@ -131,7 +131,7 @@ namespace shibsp {
     DECL_SHIBSP_EXCEPTION(AttributeException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
     DECL_SHIBSP_EXCEPTION(ConfigurationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
     DECL_SHIBSP_EXCEPTION(IOException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
-    DECL_SHIBSP_EXCEPTION(RemotintgException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+    DECL_SHIBSP_EXCEPTION(RemotingException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
     DECL_SHIBSP_EXCEPTION(SessionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
 
 #if defined (_MSC_VER)

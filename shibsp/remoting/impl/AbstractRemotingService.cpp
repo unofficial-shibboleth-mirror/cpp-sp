@@ -35,11 +35,13 @@ AbstractRemotingService::~AbstractRemotingService() {}
 
 DDF AbstractRemotingService::send(const DDF& in) const
 {
-    stringstream buf;
-    buf << in;
+    stringstream instream;
+    instream << in;
+
+    stringstream outstream;
+    send(in.name(), instream, outstream);
 
     DDF output;
-    send(buf) >> output;
-
+    outstream >> output;
     return output;
 }

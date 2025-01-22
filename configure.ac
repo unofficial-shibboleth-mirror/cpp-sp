@@ -107,6 +107,8 @@ fi
 AX_PKG_CHECK_MODULES([libcurl],,[libcurl >= 7.4.2],
     [AC_DEFINE([HAVE_LIBCURL],[1],[Define to 1 if libcurl library is available.])])
 
+AC_CHECK_DECLS([CURLOPT_ACCEPT_ENCODING],,,[[#include <curl/curl.h>]])
+
 # Thank you Solaris, really.
 AC_MSG_CHECKING(for ctime_r)
 if test -z "$ac_cv_ctime_args"; then
