@@ -24,6 +24,7 @@
 #include "remoting/SecretSource.h"
 #include "remoting/impl/AbstractHTTPRemotingService.h"
 #include "util/BoostPropertySet.h"
+#include "util/PathResolver.h"
 
 #include <stdexcept>
 #include <boost/property_tree/ptree.hpp>
@@ -34,16 +35,21 @@ using namespace std;
 
 const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_NAME[] = "secretSourceType";
 const char AbstractHTTPRemotingService::BASE_URL_PROP_NAME[] = "baseURL";
+const char AbstractHTTPRemotingService::USER_AGENT_PROP_NAME[] = "userAgent";
 const char AbstractHTTPRemotingService::AGENT_ID_PROP_NAME[] = "agentID";
 const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_NAME[] = "authMethod";
+const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_NAME[] = "authCachingCookie";
 const char AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_NAME[] = "connectTimeout";
 const char AbstractHTTPRemotingService::TIMEOUT_PROP_NAME[] = "timeout";
+const char AbstractHTTPRemotingService::CA_FILE_PROP_NAME[] = "tlsCAFile";
 
 const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_DEFAULT[] = "File";
 const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost/idp/profile";
 const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "basic";
+const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "JSESSIONID";
 unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;
 unsigned int AbstractHTTPRemotingService::TIMEOUT_PROP_DEFAULT = 10;
+const char AbstractHTTPRemotingService::CA_FILE_PROP_DEFAULT[] = "trustlist.pem";
 
 AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     : AbstractRemotingService(pt), m_authMethod(agent_auth_none)
@@ -60,10 +66,17 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
         props.getString(SECRET_SOURCE_TYPE_PROP_NAME, SECRET_SOURCE_TYPE_PROP_DEFAULT), pt, false)
         );
 
-    m_baseURL = props.getString(BASE_URL_PROP_NAME, BASE_URL_PROP_DEFAULT);
+    m_userAgent = props.getString(USER_AGENT_PROP_NAME, "");
+    m_baseURL = props.getString(BASE_URL_PROP_NAME, BASE_URL_PROP_DEFAULT);    
     m_authMethod = getAuthMethod(props.getString(AUTH_METHOD_PROP_NAME, AUTH_METHOD_PROP_DEFAULT));
+    m_authCachingCookie = props.getString(AUTH_CACHING_COOKIE_PROP_NAME, AUTH_CACHING_COOKIE_PROP_DEFAULT);
     m_connectTimeout = props.getUnsignedInt(CONNECT_TIMEOUT_PROP_NAME, CONNECT_TIMEOUT_PROP_DEFAULT);
     m_timeout = props.getUnsignedInt(TIMEOUT_PROP_NAME, TIMEOUT_PROP_DEFAULT);
+
+    m_caFile = props.getString(CA_FILE_PROP_NAME, CA_FILE_PROP_DEFAULT);
+    if (!m_caFile.empty()) {
+        AgentConfig::getConfig().getPathResolver().resolve(m_caFile, PathResolver::SHIBSP_CFG_FILE);
+    }
 }
 
 const SecretSource* AbstractHTTPRemotingService::getSecretSource(bool required) const
@@ -85,6 +98,21 @@ const char* AbstractHTTPRemotingService::getAgentID() const
     return m_agentID.c_str();
 }
 
+const char* AbstractHTTPRemotingService::getUserAgent() const
+{
+    return m_userAgent.c_str();
+}
+
+void AbstractHTTPRemotingService::setUserAgent(const char* ua)
+{
+    m_userAgent = ua ? ua : "";
+}
+
+const char* AbstractHTTPRemotingService::getAuthCachingCookie() const
+{
+    return m_authCachingCookie.c_str();
+}
+
 AbstractHTTPRemotingService::auth_t AbstractHTTPRemotingService::getAuthMethod() const
 {
     return m_authMethod;
@@ -98,6 +126,11 @@ unsigned int AbstractHTTPRemotingService::getConnectTimeout() const
 unsigned int AbstractHTTPRemotingService::getTimeout() const
 {
     return m_timeout;
+}
+
+const char* AbstractHTTPRemotingService::getCAFile() const
+{
+    return m_caFile.c_str();
 }
 
 AbstractHTTPRemotingService::auth_t AbstractHTTPRemotingService::getAuthMethod(const char* method)

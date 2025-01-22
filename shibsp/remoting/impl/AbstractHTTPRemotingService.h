@@ -51,23 +51,32 @@ namespace shibsp {
         const SecretSource* getSecretSource(bool required=true) const;
         const char* getBaseURL() const;
         const char* getAgentID() const;
+        const char* getUserAgent() const;
+        void setUserAgent(const char* ua);
         auth_t getAuthMethod() const;
+        const char* getAuthCachingCookie() const;
         unsigned int getConnectTimeout() const;
         unsigned int getTimeout() const;
+        const char* getCAFile() const;
 
         // Property names and defaults.
         static const char SECRET_SOURCE_TYPE_PROP_NAME[];
         static const char BASE_URL_PROP_NAME[];
         static const char AGENT_ID_PROP_NAME[];
+        static const char USER_AGENT_PROP_NAME[];
         static const char AUTH_METHOD_PROP_NAME[];
+        static const char AUTH_CACHING_COOKIE_PROP_NAME[];
         static const char CONNECT_TIMEOUT_PROP_NAME[];
         static const char TIMEOUT_PROP_NAME[];
+        static const char CA_FILE_PROP_NAME[];
 
         static const char SECRET_SOURCE_TYPE_PROP_DEFAULT[];
         static const char BASE_URL_PROP_DEFAULT[];
         static const char AUTH_METHOD_PROP_DEFAULT[];
+        static const char AUTH_CACHING_COOKIE_PROP_DEFAULT[];
         static unsigned int CONNECT_TIMEOUT_PROP_DEFAULT;
         static unsigned int TIMEOUT_PROP_DEFAULT;
+        static const char CA_FILE_PROP_DEFAULT[];
 
     protected:
         AbstractHTTPRemotingService(boost::property_tree::ptree& pt);
@@ -78,6 +87,9 @@ namespace shibsp {
         std::unique_ptr<SecretSource> m_secretSource;
         std::string m_baseURL;
         std::string m_agentID;
+        std::string m_userAgent;
+        std::string m_authCachingCookie;
+        std::string m_caFile;
         auth_t m_authMethod;
         unsigned int m_connectTimeout;
         unsigned int m_timeout;

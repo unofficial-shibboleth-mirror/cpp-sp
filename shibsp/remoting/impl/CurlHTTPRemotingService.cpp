@@ -21,12 +21,10 @@
 #include "internal.h"
 #include "exceptions.h"
 
-#include "AgentConfig.h"
 #include "logging/Category.h"
 #include "remoting/SecretSource.h"
 #include "remoting/impl/AbstractHTTPRemotingService.h"
 #include "util/BoostPropertySet.h"
-#include "util/PathResolver.h"
 
 #include <stdexcept>
 #include <boost/property_tree/ptree.hpp>
@@ -78,11 +76,8 @@ namespace {
         mutable list<CURL*> m_pool;
         mutable int m_poolsize;
         mutable mutex m_lock;
-        string m_useragent;
         string m_ciphers;
-        string m_cafile;
         bool m_chunked;
-        bool m_authCaching;
     };
 
     class SHIBSP_DLLLOCAL CurlOperation
@@ -179,33 +174,24 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
     : AbstractHTTPRemotingService(pt), AbstractRemotingService(pt),
         m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService.CurlHTTP")),
             m_curllog(Category::getInstance(SHIBSP_LOGCAT ".libcurl")),
-                m_poolsize(20), m_chunked(true), m_authCaching(true)
+                m_poolsize(20), m_chunked(true)
 {
-    static const char USER_AGENT_PROP_NAME[] = "userAgentString";
     static const char CIPHER_LIST_PROP_NAME[] = "tlsCipherList";
     static const char CHUNKED_PROP_NAME[] = "chunkedEncoding";
-    static const char ENABLE_AUTH_CACHING[] = "enableAuthCaching";
-    static const char CA_FILE_PROP_NAME[] = "tlsCAFile";
-    static const char CA_FILE_PROP_DEFAULT[] = "trustlist.pem";
 
     BoostPropertySet props;
     props.load(pt);
 
-    m_useragent = props.getString(USER_AGENT_PROP_NAME, "");
     m_chunked = props.getBool(CHUNKED_PROP_NAME, true);
-    m_authCaching = props.getBool(ENABLE_AUTH_CACHING, true);
     m_ciphers = props.getString(CIPHER_LIST_PROP_NAME, "");
-    m_cafile = props.getString(CA_FILE_PROP_NAME, CA_FILE_PROP_DEFAULT);
-    if (!m_cafile.empty()) {
-        AgentConfig::getConfig().getPathResolver().resolve(m_cafile, PathResolver::SHIBSP_CFG_FILE);
-    }
 
-    if (m_useragent.empty()) {
-        m_useragent = m_useragent + PACKAGE_NAME + '/' + PACKAGE_VERSION;
+    if (getUserAgent() == nullptr) {
+        string useragent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
         curl_version_info_data* curlver = curl_version_info(CURLVERSION_NOW);
         if (curlver) {
-            m_useragent = m_useragent + " libcurl/" + curlver->version + ' ' + curlver->ssl_version;
+            useragent = useragent + " libcurl/" + curlver->version + ' ' + curlver->ssl_version;
         }
+        setUserAgent(useragent.c_str());
     }
 }
 
@@ -258,7 +244,7 @@ CURL* CurlHTTPRemotingService::checkout() const
 #else
     SHIB_CURL_SET(CURLOPT_ENCODING, "");
 #endif
-    SHIB_CURL_SET(CURLOPT_USERAGENT, m_useragent.c_str());
+    SHIB_CURL_SET(CURLOPT_USERAGENT, getUserAgent());
 
     // This may (but probably won't) help with < 7.20 bug in DNS caching.
     SHIB_CURL_SET(CURLOPT_DNS_CACHE_TIMEOUT, 120);
@@ -268,8 +254,8 @@ CURL* CurlHTTPRemotingService::checkout() const
     if (!m_ciphers.empty()) {
         SHIB_CURL_SET(CURLOPT_SSL_CIPHER_LIST, m_ciphers.c_str());
     }
-    if (!m_cafile.empty()) {
-        SHIB_CURL_SET(CURLOPT_CAINFO, m_cafile.c_str());
+    if (getCAFile()) {
+        SHIB_CURL_SET(CURLOPT_CAINFO, getCAFile());
     }
 
     SHIB_CURL_SET(CURLOPT_CONNECTTIMEOUT, getConnectTimeout());
