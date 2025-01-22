@@ -171,9 +171,9 @@ namespace shibsp {
         time_t m_filestamp;
 
         /** Shared lock for guarding reloads. */
-#ifdef HAVE_CXX17
+#if defined(HAVE_CXX17)
         std::unique_ptr<std::shared_mutex> m_lock;
-#elif HAVE_CXX14
+#elif defined(HAVE_CXX14)
         std::unique_ptr<std::shared_timed_mutex> m_lock;
 #endif
     };

@@ -24,6 +24,9 @@
 #include "remoting/impl/AbstractRemotingService.h"
 
 #include <memory>
+#ifdef HAVE_CXX14
+# include <shared_mutex>
+#endif
 
 namespace shibsp {
 
@@ -36,6 +39,10 @@ namespace shibsp {
     {
     public:
         virtual ~AbstractHTTPRemotingService();
+
+#ifdef HAVE_CXX14
+        DDF send(const DDF& in) const;
+#endif
 
         /**
          * Common types of authentication that may be supported.
@@ -55,6 +62,7 @@ namespace shibsp {
         void setUserAgent(const char* ua);
         auth_t getAuthMethod() const;
         const char* getAuthCachingCookie() const;
+        std::string getAuthCachingCookieValue() const;
         unsigned int getConnectTimeout() const;
         unsigned int getTimeout() const;
         const char* getCAFile() const;
@@ -89,10 +97,17 @@ namespace shibsp {
         std::string m_agentID;
         std::string m_userAgent;
         std::string m_authCachingCookie;
+        mutable std::string m_authCachingValue;
         std::string m_caFile;
         auth_t m_authMethod;
         unsigned int m_connectTimeout;
         unsigned int m_timeout;
+        /** Shared lock for guarding auth cache value. */
+#if defined(HAVE_CXX17)
+        std::unique_ptr<std::shared_mutex> m_authcachelock;
+#elif defined(HAVE_CXX14)
+        std::unique_ptr<std::shared_timed_mutex> m_authcachelock;
+#endif
     };
 
 };

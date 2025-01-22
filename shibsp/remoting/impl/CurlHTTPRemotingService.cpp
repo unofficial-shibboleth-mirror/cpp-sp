@@ -69,6 +69,7 @@ namespace {
 
         CURL* checkout() const;
         void checkin(CURL* handle) const;
+        void attachCachedAuthentication(CURL* handle) const;
 
     private:
         Category& m_log;
@@ -217,12 +218,13 @@ CURL* CurlHTTPRemotingService::checkout() const
 
     // If a free connection exists, return it.
     if (!m_pool.empty()) {
-        CURL* handle = m_pool.back();
+        CURL* m_handle = m_pool.back();
         m_pool.pop_back();
         m_poolsize--;
         m_lock.unlock();
+        attachCachedAuthentication(m_handle);
         m_log.debug("returning existing connection handle from pool");
-        return handle;
+        return m_handle;
     }
 
     m_lock.unlock();
@@ -273,6 +275,8 @@ CURL* CurlHTTPRemotingService::checkout() const
     // Password will be acquired during call.
     SHIB_CURL_SET(CURLOPT_USERNAME, getAgentID());
 
+    attachCachedAuthentication(m_handle);
+
     SHIB_CURL_SET(CURLOPT_WRITEFUNCTION, &curl_write_hook);
     SHIB_CURL_SET(CURLOPT_DEBUGFUNCTION, &curl_debug_hook);
     SHIB_CURL_SET(CURLOPT_DEBUGDATA, &m_curllog);
@@ -297,6 +301,19 @@ void CurlHTTPRemotingService::checkin(CURL* handle) const
         curl_easy_cleanup(killit);
         m_log.info("conn_pool_max limit reached, dropping an old connection");
     }
+}
+
+void CurlHTTPRemotingService::attachCachedAuthentication(CURL* m_handle) const
+{
+    const char* name = getAuthCachingCookie();
+    if (name) {
+        string val(getAuthCachingCookieValue());
+        if (!val.empty()) {
+            val = name + '=' + val;
+            SHIB_CURL_SET(CURLOPT_COOKIE, val.c_str());
+        }
+    }
+
 }
 
 long CurlHTTPRemotingService::send(const char* path, istream& input, ostream& output) const

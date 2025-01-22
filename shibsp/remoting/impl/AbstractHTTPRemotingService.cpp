@@ -21,6 +21,7 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AgentConfig.h"
+#include "logging/Category.h"
 #include "remoting/SecretSource.h"
 #include "remoting/impl/AbstractHTTPRemotingService.h"
 #include "util/BoostPropertySet.h"
@@ -69,7 +70,6 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     m_userAgent = props.getString(USER_AGENT_PROP_NAME, "");
     m_baseURL = props.getString(BASE_URL_PROP_NAME, BASE_URL_PROP_DEFAULT);    
     m_authMethod = getAuthMethod(props.getString(AUTH_METHOD_PROP_NAME, AUTH_METHOD_PROP_DEFAULT));
-    m_authCachingCookie = props.getString(AUTH_CACHING_COOKIE_PROP_NAME, AUTH_CACHING_COOKIE_PROP_DEFAULT);
     m_connectTimeout = props.getUnsignedInt(CONNECT_TIMEOUT_PROP_NAME, CONNECT_TIMEOUT_PROP_DEFAULT);
     m_timeout = props.getUnsignedInt(TIMEOUT_PROP_NAME, TIMEOUT_PROP_DEFAULT);
 
@@ -77,7 +77,45 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     if (!m_caFile.empty()) {
         AgentConfig::getConfig().getPathResolver().resolve(m_caFile, PathResolver::SHIBSP_CFG_FILE);
     }
+
+    m_authCachingCookie = props.getString(AUTH_CACHING_COOKIE_PROP_NAME, AUTH_CACHING_COOKIE_PROP_DEFAULT);
+    if (!m_authCachingCookie.empty()) {
+#if defined(HAVE_CXX17)
+            m_authcachelock.reset(new shared_mutex());
+#elif defined(HAVE_CXX14)
+            m_lock.reset(new shared_timed_mutex());
+#else
+        Category::getInstance(SHIBSP_LOGCAT ".RemotingService.HTTP").warn(
+            "disabling agent authentication caching due to older C++ compiler");
+        m_authCachingCookie.clear();
+#endif
+    }
 }
+
+#ifdef HAVE_CXX14
+DDF AbstractHTTPRemotingService::send(const DDF& in) const
+{
+    DDF output = AbstractRemotingService::send(in);
+    if (!m_authCachingCookie.empty()) {
+        // TODO: Check for auth cache cookie value coming back and stash off using a write lock.
+        string latestValue;
+        if (!latestValue.empty()) {
+            m_authcachelock->lock_shared();
+            if (m_authCachingValue != latestValue) {
+                m_authcachelock->unlock_shared();
+#if defined(HAVE_CXX17)
+                lock_guard<shared_mutex> locker(*m_authcachelock);
+#elif defined(HAVE_CXX14)
+                lock_guard<shared_timed_mutex> locker(*m_authcachelock);
+#endif
+                m_authCachingValue = latestValue;
+            }
+        }
+    }
+
+    return output;
+}
+#endif
 
 const SecretSource* AbstractHTTPRemotingService::getSecretSource(bool required) const
 {
@@ -111,6 +149,17 @@ void AbstractHTTPRemotingService::setUserAgent(const char* ua)
 const char* AbstractHTTPRemotingService::getAuthCachingCookie() const
 {
     return m_authCachingCookie.c_str();
+}
+
+string AbstractHTTPRemotingService::getAuthCachingCookieValue() const
+{
+#if defined(HAVE_CXX14)
+    if (!m_authCachingCookie.empty()) {
+        shared_lock<shared_mutex> locker(*m_authcachelock);
+        return m_authCachingValue;
+    }
+#endif        
+    return "";
 }
 
 AbstractHTTPRemotingService::auth_t AbstractHTTPRemotingService::getAuthMethod() const

@@ -63,9 +63,9 @@ ReloadableXMLFile::ReloadableXMLFile(const string& rootElementName, ptree& pt, C
 #endif
         log.info("using path (%s), will %smonitor for changes", m_source.c_str(), reloadChanges ? "" : "not ");
         if (reloadChanges) {
-#ifdef HAVE_CXX17
+#if defined(HAVE_CXX17)
             m_lock.reset(new shared_mutex());
-#elif HAVE_CXX14
+#elif defined(HAVE_CXX14)
             m_lock.reset(new shared_timed_mutex());
 #endif
         }
