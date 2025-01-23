@@ -199,15 +199,15 @@ unique_ptr<ModuleConfig> ModuleConfig::newModuleConfig(const char* path)
     unique_ptr<ptree> config_root(new ptree());
 
     bool xml = false;
-    if (boost::ends_with(path, ".xml")) {
-        xml_parser::read_xml(path, *config_root, xml_parser::trim_whitespace | xml_parser::no_comments);
+    if (boost::ends_with(resolved_path, ".xml")) {
+        xml_parser::read_xml(resolved_path, *config_root, xml_parser::trim_whitespace | xml_parser::no_comments);
         xml = true;
         if (config_root->size() != 1) {
             throw xml_parser_error("XML-based IIS module config did not contain a root element?", path, 1);
         }
     }
     else {
-        ini_parser::read_ini(path, *config_root);
+        ini_parser::read_ini(resolved_path, *config_root);
     }
 
     return unique_ptr<ModuleConfig>(new ModuleConfigImpl(std::move(config_root), xml));

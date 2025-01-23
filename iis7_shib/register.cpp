@@ -71,6 +71,7 @@ public:
 
 extern "C"
 HRESULT
+__declspec(dllexport)
 __stdcall
 RegisterModule(
     DWORD                           dwServerVersion,
@@ -84,8 +85,6 @@ RegisterModule(
         return S_OK;
     }
 
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".IIS");
-
     g_Config = &AgentConfig::getConfig();
     if (!g_Config->init()) {
         //
@@ -93,11 +92,13 @@ RegisterModule(
         //
         HANDLE eventSource = ::RegisterEventSourceA(NULL, SHIB_EVENT_SOURCE_NAME);
         const char* msgs[2]{ "II7 Initialization" ,"IIS module failed during library initialization"};
-        ::ReportEventA(eventSource, EVENTLOG_ERROR_TYPE, (WORD)SHIBSP_CATEGORY_CRIT, SHIBSP_LOG_CRIT);
+        ::ReportEventA(eventSource, EVENTLOG_ERROR_TYPE, (WORD)SHIBSP_CATEGORY_CRIT, SHIBSP_LOG_CRIT, NULL, 2, 0, msgs, NULL);
         ::DeregisterEventSource(eventSource);
         g_Config=nullptr;
         return E_FAIL;
     }
+
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".IIS");
 
     // Access implementation-specifics and create site mappings.
     const Agent& agent = g_Config->getAgent();
