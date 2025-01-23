@@ -24,6 +24,7 @@
 #include <codecvt> // 16 bit to 8 bit and vice versa chars
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
+#include "NativeEventLog.h"
 
 namespace Config {
     HINSTANCE g_hinstDLL;
@@ -87,7 +88,13 @@ RegisterModule(
 
     g_Config = &AgentConfig::getConfig();
     if (!g_Config->init()) {
-        log.crit("IIS module failed during library initialization, check log for detail");
+        //
+        // There is a bootstrap issue so we will just log to the Event viewer
+        //
+        HANDLE eventSource = ::RegisterEventSourceA(NULL, SHIB_EVENT_SOURCE_NAME);
+        const char* msgs[2]{ "II7 Initialization" ,"IIS module failed during library initialization"};
+        ::ReportEventA(eventSource, EVENTLOG_ERROR_TYPE, (WORD)SHIBSP_CATEGORY_CRIT, SHIBSP_LOG_CRIT);
+        ::DeregisterEventSource(eventSource);
         g_Config=nullptr;
         return E_FAIL;
     }

@@ -31,7 +31,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\iis7_shib\IIS7Request.cpp" />
-    <ClCompile Include="..\..\iis7_shib\register.cpp" />
+    <ClCompile Include="..\..\iis7_shib\register.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)shibsp\$(configuration)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)shibsp\$(configuration)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(ProjectDir)shibsp\$(platform)\$(configuration)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(ProjectDir)shibsp\$(platform)\$(configuration)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)shibsp\$(platform)\$(configuration)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)shibsp\$(platform)\$(configuration)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\..\iis7_shib\ShibHttpModule.cpp" />
     <ClCompile Include="..\..\iis7_shib\ShibUser.cpp" />
   </ItemGroup>

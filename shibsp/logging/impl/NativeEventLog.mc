@@ -1,3 +1,5 @@
+;#define SHIB_EVENT_SOURCE_NAME "ShibbolethSPAgent"
+
 MessageId=0x1
 Severity=Error
 SymbolicName=SHIBSP_LOG_CRIT

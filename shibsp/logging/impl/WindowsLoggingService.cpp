@@ -58,10 +58,10 @@ WindowsLoggingService::WindowsLoggingService(const ptree& pt) : AbstractLoggingS
 {
     // No dedicated settings at the moment, might be worth supporting some kind of
     // message formatting.
-    m_EventSource = ::RegisterEventSourceA(NULL, "ShibbolethSPAgent");
+    m_EventSource = ::RegisterEventSourceA(NULL, SHIB_EVENT_SOURCE_NAME);
 
     if (m_EventSource == NULL) {
-        string error("Could not load event source check HKLM\\SYSTEM\\CurrentControlSet\\EventLog\\Application\\ShibbolethSPAgent.  GLE = ");
+        string error("Could not load event source check HKLM\\SYSTEM\\CurrentControlSet\\EventLog\\Application\\" SHIB_EVENT_SOURCE_NAME ".  GLE = ");
         error += to_string(GetLastError());
         throw new ConfigurationException(error.c_str());
     }
