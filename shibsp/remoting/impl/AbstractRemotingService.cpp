@@ -19,7 +19,7 @@
  */
 
 #include "internal.h"
-
+#include "exceptions.h"
 #include "remoting/impl/AbstractRemotingService.h"
 
 #include <sstream>
@@ -43,5 +43,11 @@ DDF AbstractRemotingService::send(const DDF& in) const
 
     DDF output;
     outstream >> output;
+
+    const char* event = output.getmember("event").string();
+    if (event && strcmp(event, "success")) {
+        DDFJanitor cleanup(output);
+        throw OperationException(event);
+    }
     return output;
 }

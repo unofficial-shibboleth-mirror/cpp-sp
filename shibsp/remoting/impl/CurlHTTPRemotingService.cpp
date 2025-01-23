@@ -173,7 +173,7 @@ namespace shibsp {
 
 CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
     : AbstractHTTPRemotingService(pt), AbstractRemotingService(pt),
-        m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService.CurlHTTP")),
+        m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService")),
             m_curllog(Category::getInstance(SHIBSP_LOGCAT ".libcurl")),
                 m_poolsize(20), m_chunked(true)
 {
@@ -194,6 +194,8 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
         }
         setUserAgent(useragent.c_str());
     }
+
+    m_log.info("CurlHTTP RemotingService installed for agent (%s), baseURL (%s)", getAgentID(), getBaseURL());
 }
 
 CurlHTTPRemotingService::~CurlHTTPRemotingService()

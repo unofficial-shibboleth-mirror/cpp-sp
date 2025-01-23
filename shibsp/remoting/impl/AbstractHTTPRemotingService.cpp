@@ -45,9 +45,9 @@ const char AbstractHTTPRemotingService::TIMEOUT_PROP_NAME[] = "timeout";
 const char AbstractHTTPRemotingService::CA_FILE_PROP_NAME[] = "tlsCAFile";
 
 const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_DEFAULT[] = "File";
-const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost/idp/profile";
+const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost/idp/profile/sp";
 const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "basic";
-const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "JSESSIONID";
+const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
 unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;
 unsigned int AbstractHTTPRemotingService::TIMEOUT_PROP_DEFAULT = 10;
 const char AbstractHTTPRemotingService::CA_FILE_PROP_DEFAULT[] = "trustlist.pem";
@@ -85,7 +85,7 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
 #elif defined(HAVE_CXX14)
             m_lock.reset(new shared_timed_mutex());
 #else
-        Category::getInstance(SHIBSP_LOGCAT ".RemotingService.HTTP").warn(
+        Category::getInstance(SHIBSP_LOGCAT ".RemotingService").warn(
             "disabling agent authentication caching due to older C++ compiler");
         m_authCachingCookie.clear();
 #endif
@@ -98,8 +98,8 @@ DDF AbstractHTTPRemotingService::send(const DDF& in) const
     DDF output = AbstractRemotingService::send(in);
     if (!m_authCachingCookie.empty()) {
         // TODO: Check for auth cache cookie value coming back and stash off using a write lock.
-        string latestValue;
-        if (!latestValue.empty()) {
+        const char* latestValue = output.getmember("cached_auth").string();
+        if (latestValue) {
             m_authcachelock->lock_shared();
             if (m_authCachingValue != latestValue) {
                 m_authcachelock->unlock_shared();
