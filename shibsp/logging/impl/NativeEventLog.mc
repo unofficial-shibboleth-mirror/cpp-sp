@@ -50,7 +50,7 @@ MessageId=+1
 Severity=Warning
 SymbolicName=SHIBSP_CATEGORY_WARN
 Language=English
-War Category
+Warn Category
 .
 
 MessageId=+1

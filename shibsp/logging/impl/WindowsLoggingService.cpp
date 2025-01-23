@@ -15,7 +15,7 @@
  /**
   * logging/impl/WindowsLoggingService.cpp
   *
-  * Logging service implementation using the Windows Even log.
+  * Logging service implementation using the Windows Event log.
   */
 
 #include "internal.h"
@@ -63,7 +63,7 @@ WindowsLoggingService::WindowsLoggingService(const ptree& pt) : AbstractLoggingS
     if (m_EventSource == NULL) {
         string error("Could not load event source check HKLM\\SYSTEM\\CurrentControlSet\\EventLog\\Application\\" SHIB_EVENT_SOURCE_NAME ".  GLE = ");
         error += to_string(GetLastError());
-        throw new ConfigurationException(error.c_str());
+        throw ConfigurationException(error.c_str());
     }
 }
 
@@ -127,3 +127,4 @@ void WindowsLoggingService::outputMessage(const Category& category, Priority::Va
     const char* msgs[2] {category.getName().c_str(),message};
     ::ReportEventA(m_EventSource, EventTypeFor(priority), EventCategoryFor(priority), EventIdFor(priority), NULL, 2, 0, msgs, NULL);
 }
+
