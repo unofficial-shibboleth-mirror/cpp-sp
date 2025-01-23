@@ -153,16 +153,10 @@ libshibsp_la_CXXFLAGS = -DSHIBSP_LITE \
     $(AM_CXXFLAGS) \
     $(BOOST_CPPFLAGS) \
     $(PTHREAD_CFLAGS) \
-    $(gss_CFLAGS) $(gnu_gss_CFLAGS) \
-    $(log4shib_CFLAGS) $(log4cpp_CFLAGS) \
-    $(xerces_CFLAGS) \
-    $(xmltooling_lite_CFLAGS)
+    $(libcurl_CFLAGS)
 libshibsp_la_LIBADD = \
     $(PTHREAD_LIBS) \
-    $(gss_LIBS) $(gnu_gss_LIBS) \
-    $(log4shib_LIBS) $(log4cpp_LIBS) \
-    $(xerces_LIBS) \
-    $(xmltooling_lite_LIBS)
+    $(libcurl_LIBS)
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@

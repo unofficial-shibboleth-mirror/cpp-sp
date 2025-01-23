@@ -27,6 +27,7 @@
 #include "util/BoostPropertySet.h"
 
 #include <stdexcept>
+#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
@@ -65,7 +66,7 @@ namespace {
             return m_chunked;
         }
 
-        long send(const char* path, istream& input, ostream& output) const;
+        void send(const char* path, istream& input, ostream& output) const;
 
         CURL* checkout() const;
         void checkin(CURL* handle) const;
@@ -74,6 +75,7 @@ namespace {
     private:
         Category& m_log;
         Category& m_curllog;
+        bool m_curlInit;
         mutable list<CURL*> m_pool;
         mutable int m_poolsize;
         mutable mutex m_lock;
@@ -108,15 +110,7 @@ namespace {
             curl_easy_getinfo(m_handle, CURLINFO_CONTENT_TYPE, &content_type);
             return content_type ? content_type : "";
         }
-
-        long getStatusCode() const {
-            long code = 200;
-            if (curl_easy_getinfo(m_handle, CURLINFO_RESPONSE_CODE, &code) != CURLE_OK)
-                code = 200;
-            return code;
-        }
-
-
+        
         bool setRequestHeader(const char* name, const char* val) {
             string temp(name);
             temp = temp + ": " + val;
@@ -124,7 +118,7 @@ namespace {
             return true;
         }
 
-        long send(const char* path, istream& in, ostream& out);
+        void send(const char* path, istream& in, ostream& out);
 
     private:
         // per-call state
@@ -175,8 +169,16 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
     : AbstractHTTPRemotingService(pt), AbstractRemotingService(pt),
         m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService")),
             m_curllog(Category::getInstance(SHIBSP_LOGCAT ".libcurl")),
-                m_poolsize(20), m_chunked(true)
+                m_curlInit(false), m_poolsize(20), m_chunked(true)
 {
+
+    CURLcode status = curl_global_init(CURL_GLOBAL_ALL);
+    if (status != CURLE_OK) {
+        m_log.crit("libcurl initialization failure: %d", status);
+        throw runtime_error("libcurl failed to initialize");
+    }
+    m_curlInit = true;
+
     static const char CIPHER_LIST_PROP_NAME[] = "tlsCipherList";
     static const char CHUNKED_PROP_NAME[] = "chunkedEncoding";
 
@@ -204,6 +206,10 @@ CurlHTTPRemotingService::~CurlHTTPRemotingService()
         curl_easy_cleanup(handle);
     }
     m_pool.clear();
+
+    if (m_curlInit) {
+        curl_global_cleanup();
+    }
 }
 
 #define SHIB_CURL_SET(opt, val) \
@@ -311,20 +317,25 @@ void CurlHTTPRemotingService::attachCachedAuthentication(CURL* m_handle) const
     if (name) {
         string val(getAuthCachingCookieValue());
         if (!val.empty()) {
-            val = name + '=' + val;
-            SHIB_CURL_SET(CURLOPT_COOKIE, val.c_str());
+            string cookie(name);
+            cookie += '=' + val;
+            SHIB_CURL_SET(CURLOPT_COOKIE, cookie.c_str());
         }
     }
 
 }
 
-long CurlHTTPRemotingService::send(const char* path, istream& input, ostream& output) const
+void CurlHTTPRemotingService::send(const char* path, istream& input, ostream& output) const
 {
     CurlOperation op(*this);
-    return op.send(path, input, output);
+    op.send(path, input, output);
+    string content_type(op.getContentType());
+    if (content_type != "text/plain" && !boost::starts_with(content_type, "text/plain;")) {
+        throw RemotingException("Response had unsupported content type.");
+    }
 }
 
-long CurlOperation::send(const char* path, istream& in, ostream& out)
+void CurlOperation::send(const char* path, istream& in, ostream& out)
 {
     // Append call path to base URL.
     string url(m_service.getBaseURL());
@@ -382,7 +393,5 @@ long CurlOperation::send(const char* path, istream& in, ostream& out)
 
     // This won't prevent every possible failed connection from being kept, but it's something.
     m_keepHandle = true;
-
-    return getStatusCode();
 }
 

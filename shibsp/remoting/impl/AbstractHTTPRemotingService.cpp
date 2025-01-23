@@ -27,6 +27,8 @@
 #include "util/BoostPropertySet.h"
 #include "util/PathResolver.h"
 
+#include <sys/stat.h>
+
 #include <stdexcept>
 #include <boost/property_tree/ptree.hpp>
 
@@ -76,6 +78,17 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     m_caFile = props.getString(CA_FILE_PROP_NAME, CA_FILE_PROP_DEFAULT);
     if (!m_caFile.empty()) {
         AgentConfig::getConfig().getPathResolver().resolve(m_caFile, PathResolver::SHIBSP_CFG_FILE);
+#ifdef WIN32
+        struct _stat stat_buf;
+        if (_stat(m_caFile.c_str(), &stat_buf) != 0) {
+#else
+        struct stat stat_buf;
+        if (stat(m_caFile.c_str(), &stat_buf) != 0) {
+#endif
+            throw ConfigurationException("Unable to access CA file.");
+        } else if (stat_buf.st_size == 0) {
+            throw ConfigurationException("CA file is empty.");
+        }
     }
 
     m_authCachingCookie = props.getString(AUTH_CACHING_COOKIE_PROP_NAME, AUTH_CACHING_COOKIE_PROP_DEFAULT);

@@ -26,15 +26,21 @@
 #include <memory>
 #include <string>
 #include <boost/test/unit_test.hpp>
-#include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
-using namespace boost::property_tree;
 using namespace std;
 
 #define DATA_PATH "./data/remoting/impl/"
 
 namespace {
+
+// Used as test decorator for any tests requiring testbed.
+struct testbedRunning {
+    boost::test_tools::assertion_result operator()(boost::unit_test::test_unit_id) {
+        const char* var = getenv("SHIBSP_TESTBED_RUNNING");
+        return var && *var == '1';
+    }
+};
 
 struct RemotingFixture
 {
@@ -52,9 +58,32 @@ struct RemotingFixture
 
 /////////////
 
-BOOST_FIXTURE_TEST_CASE(RemotingService_test, RemotingFixture)
+BOOST_FIXTURE_TEST_CASE(RemotingService_startup, RemotingFixture)
 {
     AgentConfig::getConfig().getAgent().getRemotingService();
+}
+
+BOOST_FIXTURE_TEST_CASE(RemotingService_wrong_path, RemotingFixture, * boost::unit_test::precondition(testbedRunning()))
+{
+    const RemotingService* service = AgentConfig::getConfig().getAgent().getRemotingService();
+    DDF input("/missing");
+    DDFJanitor injanitor(input);
+    BOOST_CHECK_THROW(service->send(input), RemotingException);
+}
+
+BOOST_FIXTURE_TEST_CASE(RemotingService_ping, RemotingFixture, * boost::unit_test::precondition(testbedRunning()))
+{
+    const RemotingService* service = AgentConfig::getConfig().getAgent().getRemotingService();
+    DDF input("/ping");
+    DDFJanitor injanitor(input);
+
+    DDF output = service->send(input);
+    DDFJanitor outjanitor(output);
+    BOOST_CHECK_LE(output.getmember("epoch").longinteger(), time(nullptr));
+
+    DDF output2 = service->send(input);
+    DDFJanitor outjanitor2(output2);
+    BOOST_CHECK_LE(output2.getmember("epoch").longinteger(), time(nullptr));
 }
 
 };

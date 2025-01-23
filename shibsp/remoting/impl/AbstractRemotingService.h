@@ -54,9 +54,8 @@ namespace shibsp {
          * @param path  URL path to append to base URL to construct request
          * @param input input data to stream to hub
          * @param output output stream to capture response
-         * @return HTTP status code
          */
-        virtual long send(const char* path, std::istream& input, std::ostream& output) const=0;
+        virtual void send(const char* path, std::istream& input, std::ostream& output) const=0;
     };
 
 };
