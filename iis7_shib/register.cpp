@@ -104,7 +104,8 @@ RegisterModule(
     const Agent& agent = g_Config->getAgent();
 
     try {
-        g_ModuleConfig.swap(iis::ModuleConfig::newModuleConfig().get());
+        unique_ptr<ModuleConfig> newModuleConfig(iis::ModuleConfig::newModuleConfig());
+        g_ModuleConfig.swap(newModuleConfig);
     } catch (const exception& ex) {
         log.crit("IIS module failed during module configuration installation: %s", ex.what());
         g_Config=nullptr;
