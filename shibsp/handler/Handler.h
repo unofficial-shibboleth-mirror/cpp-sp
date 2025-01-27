@@ -66,7 +66,7 @@ namespace shibsp {
     void SHIBSP_API registerHandlers();
 
     /** SessionInitiator that supports SAML 2.0 AuthnRequests. */
-    #define SESSION_INITIATOR "SessionInitiator"
+    #define SESSION_INITIATOR_HANDLER "SessionInitiator"
 
     /** Handler for SSO token handling (the inbound side of SSO). */
     #define TOKEN_CONSUMER_HANDLER "TokenConsumer"
@@ -78,7 +78,7 @@ namespace shibsp {
     #define LOGOUT_CONSUMER_HANDLER "LogoutConsumer"
 
     /** LogoutInitiator that supports administrative logout. */
-    #define ADMIN_LOGOUT "AdminLogout"
+    #define ADMIN_LOGOUT_HANDLER "AdminLogout"
 
     /** Handler for hooking new sessions with attribute checking. */
     #define ATTR_CHECKER_HANDLER "AttributeChecker"

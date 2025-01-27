@@ -30,6 +30,7 @@ namespace shibsp {
 
     class SHIBSP_API Category;
     class SHIBSP_API Handler;
+    class SHIBSP_API HandlerConfiguration;
     class SHIBSP_API RemotingService;
     class SHIBSP_API RequestMapper;
     class SHIBSP_API Session;
@@ -68,6 +69,7 @@ namespace shibsp {
          * Returns a SessionCache instance.
          * 
          * @param required  true iff an exception should be thrown if no SessionCache is available
+         * 
          * @return  a SessionCache
          */
         virtual SessionCache* getSessionCache(bool required=true) const=0;
@@ -76,6 +78,7 @@ namespace shibsp {
          * Returns a RemotingService instance.
          * 
          * @param required  true iff an exception should be thrown if no RemotingService is available
+         * 
          * @return  a RemotingService
          */
         virtual const RemotingService* getRemotingService(bool required=true) const=0;
@@ -84,10 +87,20 @@ namespace shibsp {
          * Returns a RequestMapper instance.
          * 
          * @param required  true iff an exception should be thrown if no RequestMapper is available
+         * 
          * @return  a RequestMapper
          */
         virtual RequestMapper* getRequestMapper(bool required=true) const=0;
         
+        /**
+         * Gets the identified HandlerConfiguration.
+         * 
+         * @param id identifier for configuration (null is assumed to be the default)
+         * 
+         * @return the matching configuration or null if absent
+         */
+        virtual HandlerConfiguration* getHandlerConfiguration(const char* id=nullptr) const=0;
+
         /**
          * Enforces requirements for an authenticated session.
          * 
@@ -96,6 +109,7 @@ namespace shibsp {
          * 
          * @param request   SP request interface
          * @param handler   true iff a request to a registered Handler location can be directly executed
+         * 
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
         virtual std::pair<bool,long> doAuthentication(SPRequest& request, bool handler=false) const;
@@ -107,6 +121,7 @@ namespace shibsp {
          * with the second member as a status value. If false, processing can continue.</p>
          * 
          * @param request   SP request interface
+         * 
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
         virtual std::pair<bool,long> doAuthorization(SPRequest& request) const;
@@ -118,7 +133,8 @@ namespace shibsp {
          * with the second member as a status value. If false, processing can continue.</p>
          * 
          * @param request   SP request interface
-         * @param requireSession    set to true iff an error should result if no session exists 
+         * @param requireSession    set to true iff an error should result if no session exists
+         * 
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
         virtual std::pair<bool,long> doExport(SPRequest& request, bool requireSession=true) const;
@@ -130,6 +146,7 @@ namespace shibsp {
          * with the second member as a status value. If false, processing can continue.</p>
          * 
          * @param request   SP request interface
+         * 
          * @return a pair containing a "request completed" indicator and a server-specific response code
          */
         virtual std::pair<bool,long> doHandler(SPRequest& request) const;

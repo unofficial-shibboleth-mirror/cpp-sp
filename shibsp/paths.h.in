@@ -21,9 +21,6 @@
 #ifndef __shibsp_paths_h__
 #define __shibsp_paths_h__
 
-/** Default schema catalogs. */
-#define SHIBSP_SCHEMAS  "@-XMLTOOLINGXMLDIR-@/catalog.xml:@-OPENSAMLXMLDIR-@/saml20-catalog.xml:@-OPENSAMLXMLDIR-@/saml11-catalog.xml:@-PKGXMLDIR-@/catalog.xml"
-
 /** Default prefix for installation (used to resolve relative paths). */
 #define SHIBSP_PREFIX   "@-PREFIX-@"
 

@@ -25,11 +25,13 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
+#include "handler/HandlerConfiguration.h"
 #include "io/HTTPResponse.h"
 #include "logging/Category.h"
 #include "remoting/RemotingService.h"
 #include "session/SessionCache.h"
 #include "util/BoostPropertySet.h"
+#include "util/PathResolver.h"
 #include "util/SPConstants.h"
 #include "util/Misc.h"
 
@@ -75,10 +77,19 @@ namespace {
             return m_requestMapper.get();
         }
 
+        HandlerConfiguration* getHandlerConfiguration(const char* id=nullptr) const {
+            const auto& config = m_handlerConfigurations.find(id ? id : "default");
+            if (config != m_handlerConfigurations.end()) {
+                return config->second.get();
+            }
+            throw ConfigurationException(string("No HandlerConfiguration matching ID of ") + (id ? id : "default"));
+        }
+
     private:
         void doRemotingService();
         void doSessionCache();
         void doRequestMapper();
+        void doHandlerConfigurations();
 
         ptree& m_pt;
         Category& m_log;
@@ -89,6 +100,7 @@ namespace {
         unique_ptr<RemotingService> m_remotingService;
         unique_ptr<SessionCache> m_sessionCache;
         unique_ptr<RequestMapper> m_requestMapper;
+        map<string,unique_ptr<HandlerConfiguration>> m_handlerConfigurations;
     };
 
 #if defined (_MSC_VER)
@@ -132,8 +144,7 @@ void DefaultAgent::init()
     doRemotingService();
     doSessionCache();
     doRequestMapper();
-
-    // TODO: the Application related material needs to be replaced with new approaches.
+    doHandlerConfigurations();
 }
 
 void DefaultAgent::doRemotingService()
@@ -175,5 +186,32 @@ void DefaultAgent::doRequestMapper()
         m_requestMapper.reset(AgentConfig::getConfig().RequestMapperManager.newPlugin(t.c_str(), *child, true));
     } else {
         m_log.debug("[request-mapper] section absent, skipping RequestMapper creation");
+    }
+}
+
+void DefaultAgent::doHandlerConfigurations()
+{
+    // Check for testing boolean to disable handlers.
+    if (getBool("skipHandlers", false)) {
+        return;
+    }
+
+    boost::optional<ptree&> child = m_pt.get_child_optional("handlers");
+    if (child) {
+        for (const auto& keys : *child) {
+            boost::optional<string> path = keys.second.get_value_optional<string>();
+            if (!path) {
+                m_log.warn("skipping property key with no value in [handlers] section");
+                continue;
+            }
+            AgentConfig::getConfig().getPathResolver().resolve(*path, PathResolver::SHIBSP_CFG_FILE);
+            m_handlerConfigurations[keys.first] = HandlerConfiguration::newHandlerConfiguration(path->c_str());
+            m_log.info("installed '%s' HandlerConfiguration from %s", keys.first.c_str(), path->c_str());
+        }
+    } else {
+        string path("handlers.ini");
+        AgentConfig::getConfig().getPathResolver().resolve(path, PathResolver::SHIBSP_CFG_FILE);
+        m_handlerConfigurations["default"] = HandlerConfiguration::newHandlerConfiguration(path.c_str());
+        m_log.info("installed 'default' HandlerConfiguration from %s", path.c_str());
     }
 }

@@ -177,19 +177,27 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
     // Set up PathResolver component.
     m_pathResolver.setDefaultPackageName(PACKAGE_NAME);
     m_pathResolver.setDefaultPrefix(inst_prefix2.c_str());
+
+    inst_prefix = getenv("SHIBSP_CFGDIR");
+    if (!inst_prefix || !*inst_prefix)
+        inst_prefix = SHIBSP_CFGDIR;
     m_pathResolver.setCfgDir(inst_prefix);
+
     inst_prefix = getenv("SHIBSP_LIBDIR");
     if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_LIBDIR;
     m_pathResolver.setLibDir(inst_prefix);
+
     inst_prefix = getenv("SHIBSP_LOGDIR");
     if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_LOGDIR;
     m_pathResolver.setLogDir(inst_prefix);
+
     inst_prefix = getenv("SHIBSP_RUNDIR");
     if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_RUNDIR;
     m_pathResolver.setRunDir(inst_prefix);
+    
     inst_prefix = getenv("SHIBSP_CACHEDIR");
     if (!inst_prefix || !*inst_prefix)
         inst_prefix = SHIBSP_CACHEDIR;
