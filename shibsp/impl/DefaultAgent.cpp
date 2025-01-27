@@ -158,8 +158,7 @@ void DefaultAgent::doSessionCache()
 {
     boost::optional<ptree&> child = m_pt.get_child_optional("session-cache");
     if (child) {
-        // TODO: change the expected default type
-        string t(child->get("type", STORAGESERVICE_SESSION_CACHE));
+        string t(child->get("type", FILESYSTEM_SESSION_CACHE));
         m_log.info("building SessionCache of type %s...", t.c_str());
         m_sessionCache.reset(AgentConfig::getConfig().SessionCacheManager.newPlugin(t.c_str(), *child, true));
     } else {

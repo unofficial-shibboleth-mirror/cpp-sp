@@ -20,6 +20,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "AgentConfig.h"
 #include "session/SessionCache.h"
 #include "logging/Category.h"
 
@@ -36,7 +37,7 @@ namespace shibsp {
 
 void SHIBSP_API shibsp::registerSessionCaches()
 {
-    //AgentConfig::getConfig().SessionCacheManager.registerFactory(FILESYSTEM_SESSION_CACHE, FilesystemSessionCacheFactory);
+    AgentConfig::getConfig().SessionCacheManager.registerFactory(FILESYSTEM_SESSION_CACHE, FilesystemSessionCacheFactory);
     //AgentConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceSessionCacheFactory);
 }
 

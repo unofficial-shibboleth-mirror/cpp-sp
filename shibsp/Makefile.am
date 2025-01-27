@@ -136,6 +136,7 @@ libshibsp_la_SOURCES = \
 	remoting/impl/SecretSource.cpp \
 	remoting/impl/CurlHTTPRemotingService.cpp \
 	session/impl/AbstractSessionCache.cpp \
+	session/impl/FilesystemSessionCache.cpp \
 	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
 	util/IPRange.cpp \
