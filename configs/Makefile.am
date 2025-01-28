@@ -11,30 +11,18 @@ pkgsysconf_DATA = \
 	apache24.config \
 	seckeygen.sh
 
-# The config files are installed "special".  Unlike the entries in
-# pkgsysconf_DATA, these files are installed as "foo.dist" and only
-# installed as "foo" if "foo" does not already exist.  In other words,
-# the config files will not overwrite existing versions.
-BUILTCONFIGFILES = \
-	native.logger
-
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
 CONFIGFILES = \
-	shibboleth2.xml \
-	attribute-map.xml \
-	example-shibboleth2.xml \
-	console.logger \
-	native.logger \
 	attrChecker.html \
-	sessionError.html \
-	metadataError.html \
 	discoveryTemplate.html \
 	postTemplate.html \
 	localLogout.html \
 	globalLogout.html \
 	partialLogout.html \
-	sslError.html
+	shiibboleth.ini \
+	handlers.ini \
+	request-map.xml
 
 #
 # Some of these need building
@@ -86,7 +74,4 @@ CLEANFILES = \
 EXTRA_DIST = \
 	apache24.config.in \
 	seckeygen.bat \
-	seckeygen.sh \
-	win-shibboleth2.xml \
-	win-native.logger \
 	$(CONFIGFILES)

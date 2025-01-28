@@ -162,11 +162,9 @@ libshibsp_la_LIBADD = \
     $(libcurl_LIBS)
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
-pkgxmldir = $(datadir)/xml/@PACKAGE_NAME@
 logdir = ${localstatedir}/log
 rundir = $(localstatedir)/run
 cachedir = $(localstatedir)/cache
-xmldir = $(datadir)/xml
 
 paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 	rm -f $@.tmp
@@ -177,11 +175,7 @@ paths.h: ${srcdir}/paths.h.in Makefile ${top_builddir}/config.status
 		-e 's:@-LOGDIR-@:${logdir}:g' \
 		-e 's:@-RUNDIR-@:${rundir}:g' \
 		-e 's:@-CACHEDIR-@:${cachedir}:g' \
-		-e 's:@-XMLDIR-@:${xmldir}:g' \
-		-e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
-		-e 's:@-PKGXMLDIR-@:${pkgxmldir}:g' \
-		-e 's:@-XMLTOOLINGXMLDIR-@:${XMLTOOLINGXMLDIR}:g' \
-		-e 's:@-OPENSAMLXMLDIR-@:${OPENSAMLXMLDIR}:g'
+		-e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g'
 	cmp -s $@ $@.tmp || mv $@.tmp $@
 	rm -f $@.tmp
 

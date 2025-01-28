@@ -132,9 +132,8 @@ else
 fi 
 
 # output the underlying makefiles
-WANT_SUBDIRS="doc schemas configs shibsp"
-AC_CONFIG_FILES([Makefile doc/Makefile schemas/Makefile \
-	configs/Makefile shibsp/Makefile])
+WANT_SUBDIRS="doc configs shibsp"
+AC_CONFIG_FILES([Makefile doc/Makefile configs/Makefile shibsp/Makefile])
 
 #
 # Build FastCGI support?

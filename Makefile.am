@@ -7,7 +7,6 @@ SUBDIRS = $(WANT_SUBDIRS)
 
 DIST_SUBDIRS = \
 	doc \
-	schemas \
 	configs \
 	shibsp \
 	apache \

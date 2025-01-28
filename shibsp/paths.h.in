@@ -39,7 +39,4 @@
 /** Cache directory for installation (used to resolve relative paths). */
 #define SHIBSP_CACHEDIR "@-CACHEDIR-@"
 
-/** XML directory for installation (used to resolve relative paths). */
-#define SHIBSP_XMLDIR   "@-XMLDIR-@"
-
 #endif /* __shibsp_paths_h__ */

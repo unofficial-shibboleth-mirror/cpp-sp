@@ -13,16 +13,15 @@
  */
 
 /**
- * StatusHandler.cpp
+ * handler/impl/StatusHandler.cpp
  *
- * Handler for exposing information about the internals of the SP.
+ * Handler for exposing information about the state of the agent.
  */
 
 #include "internal.h"
 #include "exceptions.h"
 #include "Agent.h"
 #include "SPRequest.h"
-#include "handler/RemotedHandler.h"
 #include "handler/SecuredHandler.h"
 #include "logging/Category.h"
 #include "session/SessionCache.h"
@@ -71,7 +70,7 @@ namespace shibsp {
         return new StatusHandler(p.first);
     }
 
-    class DummyRequest : public HTTPRequest
+    class DummyRequest : public virtual HTTPRequest
     {
     public:
         DummyRequest(const char* url) : m_parser(nullptr), m_url(url), m_scheme(nullptr), m_query(nullptr), m_port(0) {
@@ -207,8 +206,9 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
 {
     // Check ACL in base class.
     pair<bool,long> ret = SecuredHandler::run(request, isHandler);
-    if (ret.first)
+    if (ret.first) {
         return ret;
+    }
 
     auto now = chrono::system_clock::now();
 

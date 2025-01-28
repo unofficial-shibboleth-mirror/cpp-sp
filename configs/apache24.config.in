@@ -10,7 +10,7 @@
 #
 # Load the Shibboleth module.
 #
-LoadModule mod_shib @-PKGLIBDIR-@/mod_shib_24.so
+LoadModule shib_module @-PKGLIBDIR-@/mod_shib_24.so
 
 #
 # Turn this on to support "require valid-user" rules from other
