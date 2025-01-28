@@ -46,7 +46,7 @@ namespace shibsp {
     template <class T, class Key, typename Params> class PluginManager
     {
     public:
-        PluginManager() {}
+        PluginManager(const char* componentType) : m_componentType(componentType) {}
         ~PluginManager() {}
 
         /** Factory function for plugin. */
@@ -92,11 +92,12 @@ namespace shibsp {
         T* newPlugin(const Key& type, const Params& p, bool deprecationSupport) const {
             typename std::map<Key, typename PluginManager::Factory*>::const_iterator i=m_map.find(type);
             if (i==m_map.end())
-                throw std::invalid_argument("Unknown plugin type.");
+                throw std::invalid_argument("Unknown " + m_componentType + " plugin type.");
             return i->second(p, deprecationSupport);
         }
         
     private:
+        std::string m_componentType;
         std::map<Key, typename PluginManager::Factory*> m_map;
     };
 

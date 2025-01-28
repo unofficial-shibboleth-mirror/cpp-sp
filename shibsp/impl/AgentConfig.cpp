@@ -108,7 +108,15 @@ AgentConfig& AgentConfig::getConfig()
     return g_agentConfig;
 }
 
-AgentConfig::AgentConfig()
+AgentConfig::AgentConfig() :
+    AccessControlManager("AccessControl"),
+    AgentManager("Agent"),
+    HandlerManager("Handler"),
+    LoggingServiceManager("LoggingService"),
+    RemotingServiceManager("RemotingService"),
+    RequestMapperManager("RequestMapper"),
+    SecretSourceManager("SecretSource"),
+    SessionCacheManager("SessionCache")
 {
 }
 
@@ -228,13 +236,6 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
 
         registerAccessControls();
         registerRequestMappers();
-
-        /*
-        XMLToolingConfig::getConfig().user_agent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
-
-        registerAttributeFactories();
-        */
-
         registerHandlers();
         registerSecretSources();
         registerRemotingServices();
