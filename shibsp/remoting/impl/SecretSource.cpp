@@ -23,6 +23,7 @@
 
 #include "AgentConfig.h"
 #include "remoting/SecretSource.h"
+#include "util/PathResolver.h"
 
 #include <fstream>
 #include <boost/property_tree/ptree.hpp>
@@ -81,6 +82,8 @@ FileSecretSource::FileSecretSource(const ptree& pt)
     if (m_pathname.empty()) {
         throw ConfigurationException("Configuration is missing required secret filename setting.");
     }
+
+    AgentConfig::getConfig().getPathResolver().resolve(m_pathname, PathResolver::SHIBSP_CFG_FILE);
 
     // Test for early detection.
     getSecret(nullptr);
