@@ -28,17 +28,6 @@ ShibCompatValidUser Off
 </Location>
 
 #
-# Used for example style sheet in error templates.
-#
-<IfModule mod_alias.c>
-  <Location /shibboleth-sp>
-    AuthType None
-    Require all granted
-  </Location>
-  Alias /shibboleth-sp/main.css @-PKGWEBDIR-@/main.css
-</IfModule>
-
-#
 # Configure the module for content.
 #
 # You MUST enable AuthType shibboleth for the module to process

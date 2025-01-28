@@ -98,8 +98,7 @@ extern "C" module AP_MODULE_DECLARE_DATA shib_module;
 static int* const aplog_module_index = &(shib_module.module_index);
 
 namespace {
-    char* g_szSHIBConfig = nullptr;
-    char* g_szSchemaDir = nullptr;
+    char* g_szConfigFile = nullptr;
     char* g_szPrefix = nullptr;
     AgentConfig* g_Config = nullptr;
     string g_unsetHeaderValue,g_spoofKey;
@@ -1425,8 +1424,16 @@ apr_status_t shib_post_config(apr_pool_t* p, apr_pool_t*, apr_pool_t*, server_re
     AgentConfig::getConfig().RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
 
     g_Config = &AgentConfig::getConfig();
-    if (!g_Config->init(g_szSchemaDir, g_szPrefix)) {
-        ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, 0, s, "post_config: shib_module failed to initialize libraries");
+    try {
+        if (!g_Config->init(g_szPrefix, g_szConfigFile, true)) {
+            ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, 0, s, "post_config: shib_module failed to initialize libraries");
+            g_Config = nullptr;
+            return !OK;
+        }
+    }
+    catch (const exception& ex) {
+        ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, 0, s, "post_config: shib_module failed to initialize libraries: %s", ex.what());
+        g_Config = nullptr;
         return !OK;
     }
 
@@ -1572,10 +1579,8 @@ extern "C" {
 static command_rec shib_cmds[] = {
     AP_INIT_TAKE1("ShibPrefix", (config_fn_t)ap_set_global_string_slot, &g_szPrefix,
         RSRC_CONF, "Shibboleth installation directory"),
-    AP_INIT_TAKE1("ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szSHIBConfig,
-        RSRC_CONF, "Path to shibboleth2.xml config file"),
-    AP_INIT_TAKE1("ShibCatalogs", (config_fn_t)ap_set_global_string_slot, &g_szSchemaDir,
-        RSRC_CONF, "Paths of XML schema catalogs"),
+    AP_INIT_TAKE1("ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szConfigFile,
+        RSRC_CONF, "Path to shibboleth.ini config file"),
 
     AP_INIT_TAKE1("ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
         (void *) offsetof (shib_server_config, szScheme),
