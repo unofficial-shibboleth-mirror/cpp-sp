@@ -85,11 +85,11 @@ void SHIBSP_API shibsp::registerHandlers()
 
     //conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
     //conf.HandlerManager.registerFactory(METADATA_GENERATOR_HANDLER, MetadataGeneratorFactory);
-    conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
+    //conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
 
     //conf.HandlerManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
  
-    //conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
+    conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
 
     //conf.HandlerManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
 
