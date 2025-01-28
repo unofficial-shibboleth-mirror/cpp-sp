@@ -1,15 +1,18 @@
 Shibboleth is a federated web authentication and attribute exchange system
-based on SAML, originally developed by Internet2 and now a product of the
-Shibboleth Consortium.
+originally developed by Internet2 and now a product of the Shibboleth Consortium.
+
+It historically was based on SAML and influenced its development as a standard,
+but has been a multi-protocol implementation for a number of years.
 
 Please review the terms described in the LICENSE.txt file before using this
 code. It is the standard Apache 2.0 license.
 
 A wealth of information about Shibboleth can be found at
-http://shibboleth.net/
+https://shibboleth.atlassian.net/wiki
 
 Shibboleth is divided into identity and service provider components, with the
-IdP in Java and the SP (this software) in C++.
+IdP in Java and the SP (this software) consisting of a C++ agent component
+combined with an IdP plugin in Java.
 
 Source and binary distributions are available from
 http://shibboleth.net/downloads/
