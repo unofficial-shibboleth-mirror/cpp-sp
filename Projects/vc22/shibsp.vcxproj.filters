@@ -156,9 +156,6 @@
     <ClInclude Include="..\..\shibsp\util\CGIParser.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\shibsp\util\Date.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\shibsp\util\IPRange.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
@@ -238,6 +235,12 @@
       <Filter>Header Files\Remoting</Filter>
     </ClInclude>
     <ClInclude Include="..\..\shibsp\remoting\impl\AbstractHTTPRemotingService.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\remoting\impl\AbstractRemotingService.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\Date.h">
       <Filter>Header Files\Impl</Filter>
     </ClInclude>
   </ItemGroup>
@@ -385,6 +388,12 @@
     </ClCompile>
     <ClCompile Include="..\..\shibsp\logging\impl\WindowsLoggingService.cpp">
       <Filter>Source Files\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\DefaultHandlerConfiguration.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\session\impl\FilesystemSessionCache.cpp">
+      <Filter>Source Files\Session</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

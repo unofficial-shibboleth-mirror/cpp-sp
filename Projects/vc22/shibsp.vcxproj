@@ -63,6 +63,7 @@
     <ClInclude Include="..\..\shibsp\platform\iis\ModuleConfig.h" />
     <ClInclude Include="..\..\shibsp\remoting\ddf.h" />
     <ClInclude Include="..\..\shibsp\remoting\impl\AbstractHTTPRemotingService.h" />
+    <ClInclude Include="..\..\shibsp\remoting\impl\AbstractRemotingService.h" />
     <ClInclude Include="..\..\shibsp\remoting\RemotingService.h" />
     <ClInclude Include="..\..\shibsp\remoting\SecretSource.h" />
     <ClInclude Include="..\..\shibsp\RequestMapper.h" />
@@ -100,6 +101,7 @@
     <ClCompile Include="..\..\shibsp\handler\impl\AdminLogoutInitiator.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\AssertionConsumerService.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
+    <ClCompile Include="..\..\shibsp\handler\impl\DefaultHandlerConfiguration.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\LocalLogoutInitiator.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\LogoutHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\LogoutInitiator.cpp" />
@@ -164,6 +166,7 @@
     <ClCompile Include="..\..\shibsp\remoting\impl\RemotingService.cpp" />
     <ClCompile Include="..\..\shibsp\remoting\impl\SecretSource.cpp" />
     <ClCompile Include="..\..\shibsp\session\impl\AbstractSessionCache.cpp" />
+    <ClCompile Include="..\..\shibsp\session\impl\FilesystemSessionCache.cpp" />
     <ClCompile Include="..\..\shibsp\util\BoostPropertySet.cpp" />
     <ClCompile Include="..\..\shibsp\util\CGIParser.cpp" />
     <ClCompile Include="..\..\shibsp\util\IPRange.cpp" />
