@@ -31,7 +31,6 @@
 
 namespace shibsp {
 
-    class SHIBSP_API Application;
     class SHIBSP_API Attribute;
     class SHIBSP_API SPRequest;
 

@@ -234,9 +234,8 @@ void Agent::exportAttributes(SPRequest& request, const Session* session) const {
 
 pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
 
-    const Application* app = nullptr;
     string targetURL = request.getRequestURL();
 
     try {
@@ -263,46 +262,54 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
         }
 
         const char* handlerURL=request.getHandlerURL(targetURL.c_str());
-        if (!handlerURL)
+        if (!handlerURL) {
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
+        }
 
         // If the request URL contains the handler base URL for this application, either dispatch
         // directly or just pass back control based on parameter to this method.
         if (boost::contains(targetURL, handlerURL)) {
-            if (handler)
+            if (handler) {
                 return doHandler(request);
-            else
+            }
+            else {
                 return make_pair(true, request.returnOK());
+            }
         }
 
         // These settings dictate how to proceed.
         const char* authType = settings.first->getString("authType");
         bool requireSession = settings.first->getBool("requireSession", false);
-        const char* requireSessionWith = settings.first->getString("requireSessionWith");
         const char* requireLogoutWith = settings.first->getString("requireLogoutWith");
 
         // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
         // ShibBasicHijack is on, but that's up to it.
-        if (!requireSession && !requireSessionWith &&
-            (!authType || m_authTypes.find(boost::to_lower_copy(string(authType))) == m_authTypes.end()))
+        if (!requireSession &&
+                (!authType || m_authTypes.find(boost::to_lower_copy(string(authType))) == m_authTypes.end())) {
             return make_pair(true, request.returnDecline());
+        }
 
         // Fix for secadv 20050901
         clearHeaders(request);
 
-        Session* session = nullptr;
+        bool sessionExists = false;
         try {
-            session = request.getSession(true, false, false);   // don't cache it
+            Session* session = request.getSession(true, false, false);   // don't cache it
+            if (session) {
+                sessionExists = true;
+                session->unlock();
+            }
         }
         catch (const exception& e) {
             log.warn("error during session lookup: %s", e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
-            throw;
+            if (dynamic_cast<const SessionValidationException*>(&e) == nullptr) {
+                throw;
+            }
         }
 
-        lock_guard<Session> slocker(*session, adopt_lock); // pop existing lock on exit
-        if (session) {
+        if (sessionExists) {
             // Check for logout interception.
             if (requireLogoutWith) {
                 // Check for a completion parameter on the query string.
@@ -329,34 +336,21 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
         }
         else {
             // No session.  Maybe that's acceptable?
-            if (!requireSession && !requireSessionWith) {
+            if (!requireSession) {
                 request.setHeader("Shib-Handler", handlerURL);
                 return make_pair(true, request.returnOK());
             }
 
-            // No session, but we require one. Initiate a new session using the indicated method.
-
-            // TODO: replace with new handler infra
-
-            const SessionInitiator* initiator=nullptr;
-            if (requireSessionWith) {
-                AgentConfig::getConfig().deprecation().warn("requireSessionWith");
-                //initiator = app->getSessionInitiatorById(requireSessionWith);
-                if (!initiator) {
-                    throw ConfigurationException(string("No session initiator found with id: ") + requireSessionWith);
-                }
-            }
-            else {
-                //initiator = app->getDefaultSessionInitiator();
-                if (!initiator)
-                    throw ConfigurationException("No default session initiator found, check configuration.");
-            }
+            // No session, but we require one. Initiate a new session.
+            const HandlerConfiguration& handlerConfig = request.getAgent().getHandlerConfiguration(
+                request.getRequestSettings().first->getString("handlerConfigID"));
 
             // Dispatch to SessionInitiator. This MUST handle the request, or we want to fail here.
             // Used to fall through into doExport, but this is a cleaner exit path.
-            pair<bool, long> ret = initiator->run(request, false);
-            if (ret.first)
+            pair<bool,long> ret = handlerConfig.getSessionInitiator().run(request, false);
+            if (ret.first) {
                 return ret;
+            }
             throw ConfigurationException("Session initiator did not handle request for a new session, check configuration.");
         }
 
@@ -375,9 +369,8 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 
 pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
 
-    const Application* app = nullptr;
     Session* session = nullptr;
     unique_lock<Session> slocker;
     string targetURL = request.getRequestURL();
@@ -388,14 +381,14 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
         // Three settings dictate how to proceed.
         const char* authType = settings.first->getString("authType");
         bool requireSession = settings.first->getBool("requireSession", false);
-        const char* requireSessionWith = settings.first->getString("requireSessionWith");
 
         // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
         // ShibBasicHijack is on, but that's up to it.
-        if (!requireSession && !requireSessionWith &&
-                (!authType || m_authTypes.find(boost::to_lower_copy(string(authType))) == m_authTypes.end()))
+        if (!requireSession &&
+                (!authType || m_authTypes.find(boost::to_lower_copy(string(authType))) == m_authTypes.end())) {
             return make_pair(true, request.returnDecline());
+        }
 
         // Do we have an access control plugin?
         if (settings.second) {
@@ -423,7 +416,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
                     log.warn("access control provider denied access");
                     agent_exception ex("Access to resource denied.");
                     ex.setStatusCode(HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN);
-                    return make_pair(true, handleError(log, request, session, nullptr, false));
+                    return make_pair(true, handleError(log, request, session, &ex, false));
                 }
 
                 default:
@@ -443,9 +436,8 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 
 pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
 
-    const Application* app = nullptr;
     Session* session = nullptr;
     unique_lock<Session> slocker;
     string targetURL = request.getRequestURL();
@@ -463,29 +455,31 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
         catch (const exception& e) {
             log.warn("unable to obtain session to export to request: %s", e.what());
         	// If we have to have a session, then this is a fatal error.
-        	if (requireSession)
+        	if (requireSession) {
         		throw;
+            }
         }
 
 		// Still no data?
         if (!session) {
-        	if (requireSession)
+        	if (requireSession) {
                 throw SessionException("Unable to obtain session to export to request.");
-        	else
+            }
+        	else {
         		return make_pair(false, 0L);	// just bail silently
+            }
         }
 
-        request.setHeader("Shib-Application-ID", settings.first->getString("applicationId", "default"));
         request.setHeader("Shib-Session-ID", session->getID());
+        request.setHeader("Shib-Bucket-ID", session->getBucketID());
 
         // Check for export of "standard" variables.
-        // A 3.0 release would switch this default to false and rely solely on the
-        // Assertion extractor plugin and ship out of the box with the same defaults.
-        bool stdvars = settings.first->getBool("exportStdVars", true);
+        bool stdvars = settings.first->getBool("exportStdVars", false);
         if (stdvars) {
             const char* hval = session->getEntityID();
-            if (hval)
+            if (hval) {
                 request.setHeader("Shib-Identity-Provider", hval);
+            }
             time_t ts = session->getAuthnInstant();
             if (ts > 0) {
                 // TODO: Need to see what the output format of this really is.
@@ -526,9 +520,8 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 
 pair<bool,long> Agent::doHandler(SPRequest& request) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
+    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
 
-    const Application* app = nullptr;
     const char* targetURL = request.getRequestURL();
 
     try {
@@ -554,8 +547,9 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
         }
 
         const char* handlerURL = request.getHandlerURL(targetURL);
-        if (!handlerURL)
+        if (!handlerURL) {
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
+        }
 
         // Make sure we only process handler requests and advance into the URL to find the handler's path.
         if (!boost::contains(targetURL, handlerURL))
@@ -564,17 +558,19 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
 
-        const HandlerConfiguration* handlerConfig = request.getAgent().getHandlerConfiguration(
+        const HandlerConfiguration& handlerConfig = request.getAgent().getHandlerConfiguration(
             request.getRequestSettings().first->getString("handlerConfigID"));
-        const Handler* handler = handlerConfig ? handlerConfig->getHandler(targetURL + strlen(handlerURL)) : nullptr;
-        if (!handler)
+        const Handler* handler = handlerConfig.getHandler(targetURL + strlen(handlerURL));
+        if (!handler) {
             throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
+        }
 
         pair<bool,long> hret = handler->run(request);
 
         // Did the handler run successfully?
-        if (hret.first)
+        if (hret.first) {
             return hret;
+        }
         throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
     catch (const exception& e) {

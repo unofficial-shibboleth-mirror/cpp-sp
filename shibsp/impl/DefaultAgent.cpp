@@ -77,12 +77,15 @@ namespace {
             return m_requestMapper.get();
         }
 
-        HandlerConfiguration* getHandlerConfiguration(const char* id=nullptr) const {
-            const auto& config = m_handlerConfigurations.find(id ? id : "default");
-            if (config != m_handlerConfigurations.end()) {
-                return config->second.get();
+        HandlerConfiguration& getHandlerConfiguration(const char* id=nullptr) const {
+            if (!id) {
+                id = "default";
             }
-            throw ConfigurationException(string("No HandlerConfiguration matching ID of ") + (id ? id : "default"));
+            const auto& config = m_handlerConfigurations.find(id);
+            if (config != m_handlerConfigurations.end()) {
+                return *(config->second);
+            }
+            throw ConfigurationException(string("No HandlerConfiguration with ID of ") + id);
         }
 
     private:

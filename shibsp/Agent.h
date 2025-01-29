@@ -95,11 +95,13 @@ namespace shibsp {
         /**
          * Gets the identified HandlerConfiguration.
          * 
+         * <p>If no matching configurationn is found, an exception is raised.</p>
+         * 
          * @param id identifier for configuration (null is assumed to be the default)
          * 
-         * @return the matching configuration or null if absent
+         * @return the matching configuration
          */
-        virtual HandlerConfiguration* getHandlerConfiguration(const char* id=nullptr) const=0;
+        virtual HandlerConfiguration& getHandlerConfiguration(const char* id=nullptr) const=0;
 
         /**
          * Enforces requirements for an authenticated session.

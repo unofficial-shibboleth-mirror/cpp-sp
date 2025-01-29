@@ -134,6 +134,7 @@ namespace shibsp {
     DECL_SHIBSP_EXCEPTION(RemotingException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
     DECL_SHIBSP_EXCEPTION(OperationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::RemotingException);
     DECL_SHIBSP_EXCEPTION(SessionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+    DECL_SHIBSP_EXCEPTION(SessionValidationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::SessionException);
 
 #if defined (_MSC_VER)
     #pragma warning( pop )
