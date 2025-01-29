@@ -231,17 +231,14 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
         resource = stackresource.c_str();
     }
 
-#ifdef HAVE_STRCASECMP
-    if (!resource || (strncasecmp(resource,"http://",7) && strncasecmp(resource,"https://",8)))
-#else
-    if (!resource || (strnicmp(resource,"http://",7) && strnicmp(resource,"https://",8)))
-#endif
+    if (!resource || (strncasecmp(resource,"http://",7) && strncasecmp(resource,"https://",8))) {
         throw ConfigurationException("Target resource was not an absolute URL.");
+    }
 
     bool ssl_only = getRequestSettings().first->getBool("handlerSSL", true);
     const char* handler = getRequestSettings().first->getString("handlerURL", "/Shibboleth.sso");
 
-    if (*handler!='/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)) {
+    if (*handler != '/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)) {
         throw ConfigurationException(string("Invalid handlerURL property: ") + handler);
     }
 

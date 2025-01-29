@@ -25,6 +25,7 @@
 #include "AccessControl.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
+#include "handler/HandlerConfiguration.h"
 #include "handler/SessionInitiator.h"
 #include "logging/Category.h"
 #include "session/SessionCache.h"
@@ -266,7 +267,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
 
         // If the request URL contains the handler base URL for this application, either dispatch
-        // directly (mainly Apache 2.0) or just pass back control.
+        // directly or just pass back control based on parameter to this method.
         if (boost::contains(targetURL, handlerURL)) {
             if (handler)
                 return doHandler(request);
@@ -528,7 +529,7 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".ServiceProvider");
 
     const Application* app = nullptr;
-    string targetURL = request.getRequestURL();
+    const char* targetURL = request.getRequestURL();
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
@@ -552,23 +553,25 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
             }
         }
 
-        const char* handlerURL = request.getHandlerURL(targetURL.c_str());
+        const char* handlerURL = request.getHandlerURL(targetURL);
         if (!handlerURL)
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
 
-        // Make sure we only process handler requests.
+        // Make sure we only process handler requests and advance into the URL to find the handler's path.
         if (!boost::contains(targetURL, handlerURL))
             return make_pair(true, request.returnDecline());
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
 
-        // TODO: replace with new handler infra
-        const Handler* handler = nullptr; // app->getHandler(targetURL.c_str() + strlen(handlerURL));
+        const HandlerConfiguration* handlerConfig = request.getAgent().getHandlerConfiguration(
+            request.getRequestSettings().first->getString("handlerConfigID"));
+        const Handler* handler = handlerConfig ? handlerConfig->getHandler(targetURL + strlen(handlerURL)) : nullptr;
         if (!handler)
             throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
 
-        pair<bool, long> hret = handler->run(request);
+        pair<bool,long> hret = handler->run(request);
+
         // Did the handler run successfully?
         if (hret.first)
             return hret;
@@ -582,7 +585,11 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
         }
         catch (const exception&) {
         }
-        lock_guard<Session> slocker(*session, adopt_lock); // pop existing lock on exit
-        return make_pair(true, handleError(log, request, session, &e));
+        if (session) {
+            lock_guard<Session> slocker(*session, adopt_lock); // pop existing lock on exit
+            return make_pair(true, handleError(log, request, session, &e));
+        } else {
+            return make_pair(true, handleError(log, request, nullptr, &e));
+        }
     }
 }
