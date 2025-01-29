@@ -86,9 +86,6 @@ namespace regexp = std;
 #include <mod_auth.h>
 
 #include <cstddef>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>        // for getpid()
-#endif
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -628,7 +625,7 @@ extern "C" int shib_check_user(request_rec* r)
     if (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &shib_module))->bOff == 1)
         return DECLINED;
 
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_check_user entered in pid (%d)", (int)getpid());
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_check_user entered");
 
     try {
         shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &shib_module);
@@ -703,7 +700,7 @@ extern "C" int shib_handler(request_rec* r)
         return DECLINED;
     }
 
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_handler entered in pid (%d): %s", (int)getpid(), r->handler);
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_handler entered: %s", r->handler);
 
     try {
         shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &shib_module);
@@ -750,7 +747,7 @@ extern "C" int shib_auth_checker(request_rec* r)
         return DECLINED;
     }
 
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_auth_checker entered in pid (%d)", (int)getpid());
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_auth_checker entered");
 
     try {
         shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &shib_module);
@@ -792,7 +789,7 @@ extern "C" int shib_fixups(request_rec* r)
     if (dc->bOff==1 || dc->bUseEnvVars==0)
         return DECLINED;
 
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_fixups entered in pid (%d)", (int)getpid());
+    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_fixups entered");
 
     shib_request_config *rc = (shib_request_config*)ap_get_module_config(r->request_config, &shib_module);
     if (rc==nullptr || rc->env==nullptr || apr_is_empty_table(rc->env))
@@ -1402,7 +1399,7 @@ extern "C" apr_status_t shib_exit(void* data)
         g_Config = nullptr;
     }
     server_rec* s = reinterpret_cast<server_rec*>(data);
-    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, 0, s, "shib_exit: shib_module shutdown in pid (%d)", (int)getpid());
+    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, 0, s, "shib_exit: shib_module shutdown");
     return OK;
 }
 
@@ -1414,7 +1411,7 @@ extern "C" apr_status_t shib_exit(void* data)
 apr_status_t shib_post_config(apr_pool_t* p, apr_pool_t*, apr_pool_t*, server_rec* s)
 {
     // Initialize runtime components.
-    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, 0, s, "post_config: shib_module initializing in pid (%d)", (int)getpid());
+    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, 0, s, "post_config: shib_module initializing");
 
     if (g_Config) {
         ap_log_error(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, 0, s, "post_config: shib_module already initialized");
@@ -1454,7 +1451,7 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 {
     // Initialize runtime components.
 
-    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, 0, s, "child_init: shib_module initializing in pid (%d)", (int)getpid());
+    ap_log_error(APLOG_MARK, APLOG_INFO|APLOG_NOERRNO, 0, s, "child_init: shib_module initializing");
 
     const Agent& agent = g_Config->getAgent();
     g_unsetHeaderValue = agent.getString(Agent::UNSET_HEADER_VALUE_PROP_NAME, "");
