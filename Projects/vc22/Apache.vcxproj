@@ -106,26 +106,32 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <IncludePath>$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\include;$(SolutionDir)..\..\..\boost;$(SolutionDir)..\..\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <IncludePath>$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\include;$(SolutionDir)..\..\..\boost;$(SolutionDir)..\..\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\include;$(SolutionDir)..\..\..\boost;$(SolutionDir)..\..\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\include;$(SolutionDir)..\..\..\boost;$(SolutionDir)..\..\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\include;$(SolutionDir)..\..\..\boost;$(SolutionDir)..\..\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\include;$(SolutionDir)..\..\..\boost;$(SolutionDir)..\..\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(SolutionDir)..\..\..\apache\Apache24-$(Platform)\lib;$(LibraryPath)</LibraryPath>
+    <TargetExt>.so</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
