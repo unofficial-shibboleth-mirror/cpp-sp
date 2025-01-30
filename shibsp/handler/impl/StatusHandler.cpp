@@ -316,7 +316,7 @@ ostream& StatusHandler::systemInfo(ostream& os) const
         SYSTEM_INFO si;
         memset(&si, 0, sizeof(SYSTEM_INFO));
         GetNativeSystemInfo(&si);
-        switch (si.dwProcessorType) {
+        switch (si.wProcessorArchitecture) {
             case PROCESSOR_ARCHITECTURE_INTEL:
                 os << " arch='i386'";
                 break;
@@ -325,6 +325,12 @@ ostream& StatusHandler::systemInfo(ostream& os) const
                 break;
             case PROCESSOR_ARCHITECTURE_IA64:
                 os << " arch='IA64'";
+                break;
+            case PROCESSOR_ARCHITECTURE_ARM:
+                os << " arch='ARM'";
+                break;
+            case PROCESSOR_ARCHITECTURE_ARM64:
+                os << " arch='ARM64'";
                 break;
         }
         os << " cpucount='" << si.dwNumberOfProcessors << "'";
