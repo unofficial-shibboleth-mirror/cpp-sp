@@ -33,7 +33,7 @@ namespace shibsp {
     /**
      * Pluggable runtime functionality that implement protocols and services
      */
-    class SHIBSP_API Handler : public virtual PropertySet
+    class SHIBSP_API Handler
     {
         MAKE_NONCOPYABLE(Handler);
     protected:
