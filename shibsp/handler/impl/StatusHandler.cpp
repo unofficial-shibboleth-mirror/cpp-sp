@@ -295,7 +295,7 @@ ostream& StatusHandler::systemInfo(ostream& os) const
 #elif defined(WIN32)
     OSVERSIONINFOEXA osvi;
     memset(&osvi, 0, sizeof(OSVERSIONINFOEXA));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXA);
 
     if(GetVersionExA((LPOSVERSIONINFOA)&osvi)) {
         os << "<Windows"
@@ -339,7 +339,7 @@ ostream& StatusHandler::systemInfo(ostream& os) const
         os << "/>";
     }
     else {
-	os << "<Windows/>";
+        os << "<Windows/>";
     }
 #endif
     return os;
