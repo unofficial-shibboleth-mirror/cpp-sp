@@ -32,6 +32,11 @@ namespace shibsp {
 
     class SHIBSP_API SecretSource;
 
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
+
     /**
      * Base class for HTTP remoting services.
      */
@@ -109,6 +114,10 @@ namespace shibsp {
         std::unique_ptr<std::shared_timed_mutex> m_authcachelock;
 #endif
     };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
 
 };
 
