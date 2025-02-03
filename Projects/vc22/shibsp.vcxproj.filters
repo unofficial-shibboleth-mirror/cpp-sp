@@ -395,6 +395,9 @@
     <ClCompile Include="..\..\shibsp\session\impl\FilesystemSessionCache.cpp">
       <Filter>Source Files\Session</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\shibsp\remoting\impl\CurlHTTPRemotingService.cpp">
+      <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\shibsp\shibsp.rc">
