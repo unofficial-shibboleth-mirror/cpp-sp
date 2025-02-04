@@ -93,11 +93,20 @@ namespace shibsp {
         void setStatusCode(int code) noexcept;
 
         /**
-         * Gets the properties attacked to this exception.
+         * Gets the properties attached to this exception.
          * 
          * @return property map
          */
         const std::unordered_map<std::string,std::string>& getProperties() const noexcept;
+
+        /**
+         * Gets a specific property attached to this exception.
+         * 
+         * @param name property name
+         * 
+         * @return property value or null
+         */
+        const char* getProperty(const char* name) const noexcept;
 
         /**
          * Attach a set of named properties to the exception.

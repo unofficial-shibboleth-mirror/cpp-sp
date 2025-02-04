@@ -26,6 +26,7 @@
 #include <shibsp/util/BoostPropertySet.h>
 
 #include <string>
+#include <vector>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
@@ -47,12 +48,34 @@ namespace shibsp {
     {
     protected:
         /**
-         * Constructor
+         * Constructor.
          * 
          * @param pt    root of handler configuration
          * @param log   logging category to use
          */
         AbstractHandler(const boost::property_tree::ptree& pt, Category& log);
+
+        /**
+         * Wrap a request for remoting to hub.
+         * 
+         * @param request the request to remote
+         * @param headers names of request headers to remote
+         * 
+         * @return wrapped structure to add to remoted data
+         */
+        virtual DDF wrapRequest(
+            const SPRequest& request, const std::vector<std::string>& headers, bool sendBody=true
+            ) const;
+
+        /**
+         * Unwrap a response from the hub and play back to user agent.
+         * 
+         * @param request request to playback response into
+         * @param wrappedResponse wrapped response data
+         * 
+         * @return result of response playback to return from handler
+         */
+        virtual std::pair<bool,long> unwrapResponse(SPRequest& request, DDF& wrappedResponse) const;
 
         /**
          * Prevents unused relay state from building up by cleaning old state from the client.

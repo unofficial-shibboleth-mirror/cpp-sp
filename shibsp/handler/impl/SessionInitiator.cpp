@@ -15,127 +15,176 @@
 /**
  * handler/impl/SessionInitiator.cpp
  * 
- * Pluggable runtime functionality that handles initiating sessions.
+ * Handler for initiating sessions.
  */
 
 #include "internal.h"
 #include "exceptions.h"
+#include "Agent.h"
 #include "SPRequest.h"
-#include "handler/SessionInitiator.h"
+#include "handler/AbstractHandler.h"
+#include "handler/HandlerConfiguration.h"
 #include "logging/Category.h"
+#include "remoting/RemotingService.h"
 #include "util/Misc.h"
 
 using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
 
-SessionInitiator::SessionInitiator(const ptree& pt, Category& log) : AbstractHandler(pt, log)
-{
-}
+namespace {
+    class SHIBSP_DLLLOCAL SessionInitiator : public virtual AbstractHandler {
+    public:
+        SessionInitiator(const ptree& pt, const char* path);
+        virtual ~SessionInitiator() {}
 
-SessionInitiator::~SessionInitiator()
-{
-}
+        pair<bool,long> run(SPRequest& request, bool isHandler) const;
 
-const set<string>& SessionInitiator::getSupportedOptions() const
-{
-    return m_supportedOptions;
-}
+    private:
+        string m_path;
+        vector<string> m_remotedHeaders;
+        vector<string> m_requestMapperSettings;
+        vector<string> m_querySettings;
+    };
+};
 
-bool SessionInitiator::checkCompatibility(SPRequest& request, bool isHandler) const
+namespace shibsp {
+    Handler* SHIBSP_DLLLOCAL SessionInitiatorFactory(const pair<ptree&,const char*>& p, bool) {
+        return new SessionInitiator(p.first, p.second);
+    }
+};
+
+SessionInitiator::SessionInitiator(const ptree& pt, const char* path)
+    : AbstractHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.SessionInitiator")),
+        m_path(path), m_remotedHeaders({ "Cookie" })
 {
-    bool isPassive = false;
-    if (isHandler) {
-        const char* flag = request.getParameter("isPassive");
-        if (flag) {
-            string_to_bool_translator tr;
-            boost::optional<bool> b = tr.get_value(flag);
-            isPassive = b.has_value() ? b.get() : false;
-        }
-        else {
-            isPassive = getBool("isPassive", false);
-        }
+    const char* settings = getString("requestMapperSettings");
+    if (settings) {
+        split_to_container(m_requestMapperSettings, settings);
     }
     else {
-        // It doesn't really make sense to use isPassive with automated sessions, but...
-        if (request.getRequestSettings().first->hasProperty("isPassive")) {
-            isPassive = request.getRequestSettings().first->getBool("isPassive", false);
-        } else {
-            isPassive = getBool("isPassive", false);
-        }
+        // Legacy SAML defaults.
+        m_requestMapperSettings = {
+            "entityID",
+            "authority",
+            "forceAuthn",
+            "isPassive",
+            "authnContextClassRef",
+            "authnContextComparison",
+            "NameIDFormat",
+            "SPNameQualifier",
+            "attributeIndex"
+        };
     }
 
-    // Check for support of isPassive if it's used.
-    if (isPassive && getSupportedOptions().count("isPassive") == 0) {
-        throw ConfigurationException("Unsupported option (isPassive) supplied to SessionInitiator.");
+    settings = getString("querySettings");
+    if (settings) {
+        split_to_container(m_querySettings, settings);
     }
-
-    return true;
+    else {
+        // Same defaults for now.
+        m_querySettings = m_requestMapperSettings;
+    }
 }
 
 pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 {
-    /*
-    cleanRelayState(request);
-
-    const char* entityID = nullptr;
-    pair<bool,const char*> param = getString("entityIDParam");
-    if (isHandler) {
-        entityID = request.getParameter(param.first ? param.second : "entityID");
-        if (!param.first && (!entityID || !*entityID))
-            entityID=request.getParameter("providerId");
-    }
-    if (!entityID || !*entityID) {
-        param.second = request.getRequestSettings().first->getString("entityID");
-        if (param.second)
-            entityID = param.second;
-    }
-    if (!entityID || !*entityID)
-        entityID = getString("entityID").second;
-
-    string copy(entityID ? entityID : "");
-
     try {
-        return run(request, copy, isHandler);
+        string state, target, handler;
+
+        if (isHandler) {
+            // Check for a state parameter in the query string.
+            const char* param = request.getParameter("state");
+            if (param) {
+                // We'll pass state as is and target will be omitted.
+                state = param;
+                // handler can be derived from "this" URL since this is a re-entrant call to this handler,
+                // i.e., we know this is the right URL to use because "it already was" originally.
+                handler = request.getHandlerURL(request.getRequestURL()) + m_path;
+            }
+            else {
+                // target will come from query string, map, or handler or fall back to this request.
+                target = getString("target", request, request.getRequestURL());
+                // handler is derived from the target resource.
+                handler = request.getHandlerURL(target.c_str()) + m_path;
+            }
+        }
+        else {
+            // Check for a hardwired target value in the map or handler.
+            target = getString("target", request, request.getRequestURL(),
+                HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
+            // state is empty since this is a direct resource request.
+            // handler is derived from the target resource
+            handler = request.getHandlerURL(target.c_str()) + m_path;
+        }
+
+        const PropertySet* settings = request.getRequestSettings().first;
+
+        DDF input("session-initiator");
+        DDFJanitor inputJanitor(input);
+
+        input.structure();
+        input.addmember("application").string(settings->getString("applicationId", "default"));
+        input.addmember("handler").unsafe_string(handler.c_str());
+        if (state.empty()) {
+            input.addmember("target").unsafe_string(target.c_str());
+        }
+        else {
+            input.addmember("state").string(state.c_str());
+        }
+
+        const DDF& consumers = request.getAgent().getHandlerConfiguration(
+            settings->getString("handlerConfigID")).getTokenConsumerInfo();
+        DDF dup = consumers.copy();
+        input.add(dup);
+
+        DDF wrapped = wrapRequest(request, m_remotedHeaders,
+            !isHandler && getBool("preservePostData", request, false,
+                HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP));
+        input.add(wrapped);
+
+        for (const string& propname : m_requestMapperSettings) {
+            const char* prop = getString(propname.c_str(), request, nullptr,
+                HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
+            if (prop) {
+                input.addmember(propname.c_str()).string(prop);
+            }
+        }
+
+        // If there's an overlap with the previous set, this will overwrite.
+
+        for (const string& propname : m_querySettings) {
+            const char* prop = getString(propname.c_str(), request, nullptr,
+                HANDLER_PROPERTY_REQUEST);
+            if (prop) {
+                input.addmember(propname.c_str()).string(prop);
+            }
+        }
+
+        DDF output = request.getAgent().getRemotingService()->send(input);
+        DDFJanitor outputJanitor(output);
+
+        return unwrapResponse(request, output);
     }
     catch (exception& ex) {
         // If it's a handler operation, and isPassive is used or returnOnError is set, we trap the error.
         if (isHandler) {
-            bool returnOnError = false;
-            const char* flag = request.getParameter("isPassive");
-            if (flag && (*flag == 't' || *flag == '1')) {
-                returnOnError = true;
-            }
-            else {
-                pair<bool,bool> flagprop = getBool("isPassive");
-                if (flagprop.first && flagprop.second) {
-                    returnOnError = true;
-                }
-                else {
-                    flag = request.getParameter("returnOnError");
-                    if (flag) {
-                        returnOnError = (*flag=='1' || *flag=='t');
-                    }
-                    else {
-                        flagprop = getBool("returnOnError");
-                        returnOnError = (flagprop.first && flagprop.second);
-                    }
-                }
+            bool returnOnError = getBool("isPassive", request, false);
+            if (!returnOnError) {
+                returnOnError = getBool("returnOnError", request, false);
             }
 
             if (returnOnError) {
-                // Log it and attempt to recover relay state so we can get back.
-                m_log.error(ex.what());
-                m_log.info("trapping SessionInitiator error condition and returning to target location");
-                flag = request.getParameter("target");
-                string target(flag ? flag : "");
-                recoverRelayState(request, target, false);
-                request.limitRedirect(target.c_str());
-                return make_pair(true, request.sendRedirect(target.c_str()));
+                m_log.warn(ex.what());
+                const agent_exception* agent_ex = dynamic_cast<const agent_exception*>(&ex);
+                const char* target = agent_ex ? agent_ex->getProperty("target") : nullptr;
+                if (target) {
+                    m_log.info("trapping SessionInitiator failure and returning to target location");
+                    request.limitRedirect(target);
+                    return make_pair(true, request.sendRedirect(target));
+                }
             }
         }
         throw;
     }
-    */
-    return pair(true,0);
 }

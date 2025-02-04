@@ -56,6 +56,12 @@ void agent_exception::setStatusCode(int code) noexcept
     m_status = code;
 }
 
+const char* agent_exception::getProperty(const char* name) const noexcept
+{
+    const auto& prop = m_props.find(name);
+    return prop != m_props.end() ? prop->second.c_str() : nullptr;
+}
+
 const unordered_map<string,string>& agent_exception::getProperties() const noexcept
 {
     return m_props;

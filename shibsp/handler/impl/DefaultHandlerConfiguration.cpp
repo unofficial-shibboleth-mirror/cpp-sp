@@ -64,7 +64,7 @@ HandlerConfiguration::HandlerConfiguration() {}
 HandlerConfiguration::~HandlerConfiguration() {}
 
 DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
-    : m_sessionInitiator(nullptr), m_tokenConsumerConfig("token_consumers")
+    : m_sessionInitiator(nullptr), m_tokenConsumerConfig("response_url")
 {
     ini_parser::read_ini(pathname, m_pt);
 

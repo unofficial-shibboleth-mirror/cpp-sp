@@ -135,9 +135,6 @@
     <ClInclude Include="..\..\shibsp\handler\SecuredHandler.h">
       <Filter>Header Files\Handler</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\shibsp\handler\SessionInitiator.h">
-      <Filter>Header Files\Handler</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\shibsp\io\GenericRequest.h">
       <Filter>Header Files\IO</Filter>
     </ClInclude>

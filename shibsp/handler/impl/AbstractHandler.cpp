@@ -48,19 +48,18 @@ using namespace std;
 #endif
 
 namespace shibsp {
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2ConsumerFactory;
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutFactory;
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AttributeCheckerFactory;
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory MetadataGeneratorFactory;
+    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2ConsumerFactory;
+    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutFactory;
+    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AttributeCheckerFactory;
+    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory MetadataGeneratorFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory StatusHandlerFactory;
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionHandlerFactory;
+    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionHandlerFactory;
 
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AdminLogoutInitiatorFactory;
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutInitiatorFactory;
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LocalLogoutInitiatorFactory;
+    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AdminLogoutInitiatorFactory;
+    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutInitiatorFactory;
+    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LocalLogoutInitiatorFactory;
 
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2SessionInitiatorFactory;
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAMLDSSessionInitiatorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionInitiatorFactory;
 
     void SHIBSP_DLLLOCAL generateRandomHex(std::string& buf, unsigned int len) {
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -97,8 +96,7 @@ void SHIBSP_API shibsp::registerHandlers()
     //conf.HandlerManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
     //conf.HandlerManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
 
-    //conf.HandlerManager.registerFactory(SAML2_SESSION_INITIATOR, SAML2SessionInitiatorFactory);
-    //conf.HandlerManager.registerFactory(SAMLDS_SESSION_INITIATOR, SAMLDSSessionInitiatorFactory);
+    conf.HandlerManager.registerFactory(SESSION_INITIATOR_HANDLER, SessionInitiatorFactory);
 } 
 
 Handler::Handler()
@@ -122,6 +120,71 @@ const char* Handler::getEventType() const
 {
     return nullptr;
 }
+
+DDF AbstractHandler::wrapRequest(const SPRequest& request, const vector<string>& headers, bool sendBody) const
+{
+    DDF in = DDF("http").structure();
+    in.addmember("scheme").string(request.getScheme());
+    in.addmember("hostname").unsafe_string(request.getHostname());
+    in.addmember("port").integer(request.getPort());
+    in.addmember("content_type").string(request.getContentType().c_str());
+    if (sendBody) {
+        in.addmember("body").unsafe_string(request.getRequestBody());
+    }
+    in.addmember("content_length").longinteger(request.getContentLength());
+    in.addmember("remote_user").string(request.getRemoteUser().c_str());
+    in.addmember("remote_addr").string(request.getRemoteAddr().c_str());
+    in.addmember("method").string(request.getMethod());
+    in.addmember("uri").unsafe_string(request.getRequestURI());
+    in.addmember("url").unsafe_string(request.getRequestURL());
+    in.addmember("query").string(request.getQueryString());
+
+    if (!headers.empty()) {
+        string hdr;
+        DDF hin = in.addmember("headers").structure();
+        for (const string& h : headers) {
+            hdr = request.getHeader(h.c_str());
+            if (!hdr.empty())
+                hin.addmember(h.c_str()).unsafe_string(hdr.c_str());
+        }
+    }
+
+    return in;
+}
+
+pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrappedResponse) const
+{
+    DDF h = wrappedResponse["headers"];
+    DDF hdr = h.first();
+    while (hdr.isstring()) {
+        if (!strcasecmp(hdr.name(), "Content-Type")) {
+            request.setContentType(hdr.string());
+        }
+        else {
+            request.setResponseHeader(hdr.name(), hdr.string());
+        }
+        hdr = h.next();
+    }
+
+    h = wrappedResponse["redirect"];
+    if (h.isstring()) {
+        return make_pair(true, request.sendRedirect(h.string()));
+    }
+
+    h = wrappedResponse["response"];
+    if (h.isstruct()) {
+        const char* data = h["data"].string();
+        if (data) {
+            // TODO: we should be able to create a custom streambuf to wrap the existing
+            // buffer without copying it.
+            istringstream s(data);
+            return make_pair(true, request.sendResponse(s, h["status"].integer()));
+        }
+    }
+
+    return make_pair(false, 0L);
+}
+
 
 void AbstractHandler::cleanRelayState(SPRequest& request) const
 {

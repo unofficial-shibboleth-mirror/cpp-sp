@@ -42,12 +42,7 @@ using namespace std;
 #ifndef HAVE_STRCASECMP
 # define strncasecmp _strnicmp
 #endif
-namespace shibsp {
-
-#if defined (_MSC_VER)
-    #pragma warning( push )
-    #pragma warning( disable : 4250 )
-#endif
+namespace {
 
     class SHIBSP_API StatusHandler : public SecuredHandler
     {
@@ -60,15 +55,6 @@ namespace shibsp {
     private:
         ostream& systemInfo(ostream& os) const;
     };
-
-#if defined (_MSC_VER)
-    #pragma warning( pop )
-#endif
-
-    Handler* SHIBSP_DLLLOCAL StatusHandlerFactory(const pair<ptree&,const char*>& p, bool)
-    {
-        return new StatusHandler(p.first);
-    }
 
     class DummyRequest : public virtual HTTPRequest
     {
@@ -195,6 +181,12 @@ namespace shibsp {
         int m_port;
         string m_hostname,m_uri;
     };
+};
+
+namespace shibsp {
+    Handler* SHIBSP_DLLLOCAL StatusHandlerFactory(const pair<ptree&, const char*>& p, bool) {
+        return new StatusHandler(p.first);
+    }
 };
 
 StatusHandler::StatusHandler(const ptree& pt)
