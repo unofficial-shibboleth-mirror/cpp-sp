@@ -19,6 +19,45 @@
     <Filter Include="Source Files\impl">
       <UniqueIdentifier>{65368c35-c39d-4f73-8bd8-771497000c2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Remoting">
+      <UniqueIdentifier>{d27f888b-e50a-4bab-beb9-93d592b10c86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{0112ecfa-0202-4fd7-bc56-2aa0a318dc8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\impl">
+      <UniqueIdentifier>{837f4b28-5110-434b-9f84-65654cc27cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\platform">
+      <UniqueIdentifier>{1ddae3a9-1461-4217-ba8c-4e1106ae6b48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\remoting">
+      <UniqueIdentifier>{b0299c4d-8403-4dbe-8d1f-4e31b35528cf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\util">
+      <UniqueIdentifier>{ce3c10fd-4b7d-4c9b-906b-9b859678b68b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\impl\acl">
+      <UniqueIdentifier>{f99cb3b0-7c7a-46a8-8918-6fc391da26d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\impl\reqmap">
+      <UniqueIdentifier>{b16ba5d4-74ac-487a-aaf8-899342053453}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\platform\iis">
+      <UniqueIdentifier>{728a940d-7a79-4e10-9a40-1ee4f89ebe42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\remoting\impl">
+      <UniqueIdentifier>{4ce8e64a-ff82-468c-b3ba-5186e6a763dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\util\propertytree">
+      <UniqueIdentifier>{be7ca6f5-a126-4f2e-91b4-d8faff6a51bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\util\reloadablefile">
+      <UniqueIdentifier>{fc4884f6-9b91-4a1a-91c1-d22f9ab0eca8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\util\boospropset">
+      <UniqueIdentifier>{adcbf974-e0f1-4c75-8a52-f8c436bb799f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp">
@@ -42,5 +81,184 @@
     <ClCompile Include="..\..\tests\util\ReloadableXMLFileTests.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tests\remoting\impl\RemotingServiceTests.cpp">
+      <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\remoting\impl\SecretSourceTests.cpp">
+      <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\console-shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\dupproperty_shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\dupsection_shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\fatal-exts-shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\noequals_shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\nokey_shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\nonfatal-exts-shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\syslog-shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\unmatched_shibboleth.ini">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\console-shibboleth.ini">
+      <Filter>Data\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\acl-badxml.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\and-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\external-acl-badxml.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\external-and-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\external-not-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\external-or-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\inline-ac-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\inline-attr-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\inline-not-multiple-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\inline-user-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\inline-user-regex-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\inline-valid-user-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\internal-acl-invalid.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\internal-acl-invalid2.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\not-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\acl\or-acl.xml">
+      <Filter>Data\impl\acl</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\reqmap\acl.xml">
+      <Filter>Data\impl\reqmap</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\reqmap\badxml.xml">
+      <Filter>Data\impl\reqmap</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\reqmap\external-badxml.xml">
+      <Filter>Data\impl\reqmap</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\reqmap\external-with-acl.xml">
+      <Filter>Data\impl\reqmap</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\reqmap\inline-no-applicationId.xml">
+      <Filter>Data\impl\reqmap</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\reqmap\inline-with-applicationId.xml">
+      <Filter>Data\impl\reqmap</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\reqmap\internal-invalid.xml">
+      <Filter>Data\impl\reqmap</Filter>
+    </None>
+    <None Include="..\..\tests\data\impl\reqmap\internal-with-acl.xml">
+      <Filter>Data\impl\reqmap</Filter>
+    </None>
+    <None Include="..\..\tests\data\platform\iis\console-shibboleth.ini">
+      <Filter>Data\platform\iis</Filter>
+    </None>
+    <None Include="..\..\tests\data\platform\iis\iis.ini">
+      <Filter>Data\platform\iis</Filter>
+    </None>
+    <None Include="..\..\tests\data\platform\iis\iis-bad.ini">
+      <Filter>Data\platform\iis</Filter>
+    </None>
+    <None Include="..\..\tests\data\platform\iis\iis.xml">
+      <Filter>Data\platform\iis</Filter>
+    </None>
+    <None Include="..\..\tests\data\platform\iis\iis-bad.xml">
+      <Filter>Data\platform\iis</Filter>
+    </None>
+    <None Include="..\..\tests\data\remoting\impl\env.ini">
+      <Filter>Data\remoting\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\remoting\impl\file.ini">
+      <Filter>Data\remoting\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\remoting\impl\file-missing.ini">
+      <Filter>Data\remoting\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\remoting\impl\invalid.ini">
+      <Filter>Data\remoting\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\remoting\impl\shibboleth.ini">
+      <Filter>Data\remoting\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\remoting\impl\trustfile.pem">
+      <Filter>Data\remoting\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\remoting\impl\secret.txt">
+      <Filter>Data\remoting\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\boostpropset\attributes.ini">
+      <Filter>Data\util\boospropset</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\boostpropset\tree.xml">
+      <Filter>Data\util\boospropset</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\reloadablefile\console-shibboleth.ini">
+      <Filter>Data\util\reloadablefile</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\reloadablefile\external.xml">
+      <Filter>Data\util\reloadablefile</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\reloadablefile\external-invalid.xml">
+      <Filter>Data\util\reloadablefile</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\reloadablefile\inline.xml">
+      <Filter>Data\util\reloadablefile</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\reloadablefile\inline-invalid.xml">
+      <Filter>Data\util\reloadablefile</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\reloadablefile\invalid.xml">
+      <Filter>Data\util\reloadablefile</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\reloadablefile\requestmap.xml">
+      <Filter>Data\util\reloadablefile</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\propertytree\requestmap1.xml">
+      <Filter>Data\util\propertytree</Filter>
+    </None>
+    <None Include="..\..\tests\data\util\propertytree\requestmap2.xml">
+      <Filter>Data\util\propertytree</Filter>
+    </None>
   </ItemGroup>
 </Project>

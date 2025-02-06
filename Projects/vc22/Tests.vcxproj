@@ -31,9 +31,98 @@
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp" />
     <ClCompile Include="..\..\tests\impl\XMLAccessControlTests.cpp" />
     <ClCompile Include="..\..\tests\impl\XMLRequestMapperTests.cpp" />
+    <ClCompile Include="..\..\tests\remoting\impl\RemotingServiceTests.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\remoting\impl\SecretSourceTests.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <ClCompile Include="..\..\tests\util\BoostPropertySetTests.cpp" />
     <ClCompile Include="..\..\tests\util\PropertyTreeTests.cpp" />
     <ClCompile Include="..\..\tests\util\ReloadableXMLFileTests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\console-shibboleth.ini" />
+    <None Include="..\..\tests\data\dupproperty_shibboleth.ini" />
+    <None Include="..\..\tests\data\dupsection_shibboleth.ini" />
+    <None Include="..\..\tests\data\fatal-exts-shibboleth.ini" />
+    <None Include="..\..\tests\data\impl\console-shibboleth.ini" />
+    <None Include="..\..\tests\data\noequals_shibboleth.ini" />
+    <None Include="..\..\tests\data\nokey_shibboleth.ini" />
+    <None Include="..\..\tests\data\nonfatal-exts-shibboleth.ini" />
+    <None Include="..\..\tests\data\platform\iis\console-shibboleth.ini" />
+    <None Include="..\..\tests\data\platform\iis\iis-bad.ini" />
+    <None Include="..\..\tests\data\platform\iis\iis.ini" />
+    <None Include="..\..\tests\data\remoting\impl\env.ini" />
+    <None Include="..\..\tests\data\remoting\impl\file-missing.ini" />
+    <None Include="..\..\tests\data\remoting\impl\file.ini" />
+    <None Include="..\..\tests\data\remoting\impl\invalid.ini" />
+    <None Include="..\..\tests\data\remoting\impl\shibboleth.ini" />
+    <None Include="..\..\tests\data\remoting\impl\trustfile.pem" />
+    <None Include="..\..\tests\data\syslog-shibboleth.ini" />
+    <None Include="..\..\tests\data\unmatched_shibboleth.ini" />
+    <None Include="..\..\tests\data\util\boostpropset\attributes.ini" />
+    <None Include="..\..\tests\data\util\reloadablefile\console-shibboleth.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\impl\acl\acl-badxml.xml" />
+    <None Include="..\..\tests\data\impl\acl\and-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\external-acl-badxml.xml" />
+    <None Include="..\..\tests\data\impl\acl\external-and-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\external-not-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\external-or-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\inline-ac-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\inline-attr-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\inline-not-multiple-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\inline-user-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\inline-user-regex-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\inline-valid-user-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\internal-acl-invalid.xml" />
+    <None Include="..\..\tests\data\impl\acl\internal-acl-invalid2.xml" />
+    <None Include="..\..\tests\data\impl\acl\not-acl.xml" />
+    <None Include="..\..\tests\data\impl\acl\or-acl.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\impl\reqmap\acl.xml" />
+    <None Include="..\..\tests\data\impl\reqmap\badxml.xml" />
+    <None Include="..\..\tests\data\impl\reqmap\external-badxml.xml" />
+    <None Include="..\..\tests\data\impl\reqmap\external-with-acl.xml" />
+    <None Include="..\..\tests\data\impl\reqmap\inline-no-applicationId.xml" />
+    <None Include="..\..\tests\data\impl\reqmap\inline-with-applicationId.xml" />
+    <None Include="..\..\tests\data\impl\reqmap\internal-invalid.xml" />
+    <None Include="..\..\tests\data\impl\reqmap\internal-with-acl.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\platform\iis\iis-bad.xml" />
+    <None Include="..\..\tests\data\platform\iis\iis.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\remoting\impl\secret.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\util\boostpropset\tree.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\util\reloadablefile\external-invalid.xml" />
+    <None Include="..\..\tests\data\util\reloadablefile\external.xml" />
+    <None Include="..\..\tests\data\util\reloadablefile\inline-invalid.xml" />
+    <None Include="..\..\tests\data\util\reloadablefile\inline.xml" />
+    <None Include="..\..\tests\data\util\reloadablefile\invalid.xml" />
+    <None Include="..\..\tests\data\util\reloadablefile\requestmap.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tests\data\util\propertytree\requestmap1.xml" />
+    <None Include="..\..\tests\data\util\propertytree\requestmap2.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -116,7 +205,7 @@
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)..\..\..\boost_1_80_0;$(SolutionDir)..\..\;$(SolutionDir)..\..\shibsp;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\boost;$(SolutionDir)..\..\;$(SolutionDir)..\..\shibsp;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -124,7 +213,7 @@
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)..\..\..\boost_1_80_0;$(SolutionDir)..\..\;$(SolutionDir)..\..\shibsp;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\boost;$(SolutionDir)..\..\;$(SolutionDir)..\..\shibsp;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
