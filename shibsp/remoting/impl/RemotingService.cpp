@@ -31,6 +31,7 @@ using namespace std;
 namespace shibsp {
 #ifdef WIN32
     extern RemotingService* SHIBSP_DLLLOCAL WinHTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
+    extern RemotingService* SHIBSP_DLLLOCAL CurlHTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
 #else
     extern RemotingService* SHIBSP_DLLLOCAL CurlHTTPRemotingServiceFactory(ptree& pt, bool deprecationSupport);
 #endif
@@ -40,6 +41,7 @@ void SHIBSP_API shibsp::registerRemotingServices()
 {
 #ifdef WIN32
     //AgentConfig::getConfig().RemotingServiceManager.registerFactory(WIN_HTTP_REMOTING_SERVICE, WinHTTPRemotingServiceFactory);
+    AgentConfig::getConfig().RemotingServiceManager.registerFactory(CURL_HTTP_REMOTING_SERVICE, CurlHTTPRemotingServiceFactory);
 #else
     AgentConfig::getConfig().RemotingServiceManager.registerFactory(CURL_HTTP_REMOTING_SERVICE, CurlHTTPRemotingServiceFactory);
 #endif

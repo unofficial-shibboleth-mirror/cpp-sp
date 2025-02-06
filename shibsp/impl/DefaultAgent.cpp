@@ -156,7 +156,8 @@ void DefaultAgent::doRemotingService()
     if (child) {
         string t(child->get("type",
 #ifdef WIN32
-            WIN_HTTP_REMOTING_SERVICE
+            CURL_HTTP_REMOTING_SERVICE
+            //WIN_HTTP_REMOTING_SERVICE
 #else
             CURL_HTTP_REMOTING_SERVICE
 #endif

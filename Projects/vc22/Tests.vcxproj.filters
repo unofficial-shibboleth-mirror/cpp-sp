@@ -19,6 +19,9 @@
     <Filter Include="Source Files\impl">
       <UniqueIdentifier>{65368c35-c39d-4f73-8bd8-771497000c2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Remoting">
+      <UniqueIdentifier>{d27f888b-e50a-4bab-beb9-93d592b10c86}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp">
@@ -41,6 +44,12 @@
     </ClCompile>
     <ClCompile Include="..\..\tests\util\ReloadableXMLFileTests.cpp">
       <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\remoting\impl\RemotingServiceTests.cpp">
+      <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\remoting\impl\SecretSourceTests.cpp">
+      <Filter>Source Files\Remoting</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
