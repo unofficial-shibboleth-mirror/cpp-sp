@@ -27,8 +27,14 @@
 #include <string>
 #include <boost/test/unit_test.hpp>
 
+
 using namespace shibsp;
 using namespace std;
+
+#if defined (_MSC_VER)
+#define setenv(name, value, overwrite) _putenv_s(name, value)
+#define unsetenv(name) _putenv_s(name, "")
+#endif
 
 #define DATA_PATH "./data/remoting/impl/"
 

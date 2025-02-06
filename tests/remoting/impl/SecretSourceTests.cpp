@@ -33,6 +33,11 @@ using namespace std;
 
 #define DATA_PATH "./data/remoting/impl/"
 
+#if defined (_MSC_VER)
+#define setenv(name, value, overwrite) _putenv_s(name, value)
+#define unsetenv(name) _putenv_s(name, "")
+#endif
+
 namespace {
 
 struct SecretSourceFixture
