@@ -55,7 +55,8 @@ namespace shibsp {
         DDF copy() const;       // deep copy routine
     
         // property accessors
-        const char* name() const;           DDF& name(const char* n);
+        const char* name() const;
+        DDF& name(const char* n);
     
         // basic type checking
         bool isnull() const;

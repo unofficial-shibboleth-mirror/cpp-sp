@@ -48,8 +48,7 @@ handinclude_HEADERS = \
 	handler/LogoutHandler.h \
 	handler/LogoutInitiator.h \
 	handler/RemotedHandler.h \
-	handler/SecuredHandler.h \
-	handler/SessionInitiator.h
+	handler/SecuredHandler.h
 
 ioinclude_HEADERS = \
 	io/GenericRequest.h \
@@ -105,7 +104,6 @@ libshibsp_la_SOURCES = \
 	attribute/ScopedAttribute.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AdminLogoutInitiator.cpp \
-	handler/impl/AssertionConsumerService.cpp \
 	handler/impl/AttributeCheckerHandler.cpp \
 	handler/impl/LocalLogoutInitiator.cpp \
 	handler/impl/DefaultHandlerConfiguration.cpp \
@@ -117,6 +115,7 @@ libshibsp_la_SOURCES = \
 	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \
 	handler/impl/StatusHandler.cpp \
+	handler/impl/TokenConsumer.cpp \
 	impl/AgentConfig.cpp \
 	impl/DefaultAgent.cpp \
 	impl/ChainingAccessControl.cpp \

@@ -63,7 +63,9 @@ namespace shibsp {
         virtual const Handler& getSessionInitiator() const=0;
 
         /**
-         * Gets a DDF object suitable for copying into session initiator requests to the hub.
+         * Gets a DDF object suitable for adding into session initiator requests to the hub.
+         * 
+         * <p>This is a newly allocated list that must be freed by the caller.</p>
          * 
          * <p>This is required to support the communication of the possible response
          * paths for the agent to the hub when formulating SSO protocol requests, and encapsulates
@@ -76,9 +78,12 @@ namespace shibsp {
          * "meta-informatin" required to support this legacy practice will be embedded within
          * the structure returned.</p>
          * 
-         * @return DDF object encapsulating token consumer handler metadata
+         * @param handlerURL the handler base URL with which to prefix the token consumer
+         *  endpoint paths
+         * 
+         * @return new DDF object encapsulating token consumer handler metadata
          */
-        virtual const DDF& getTokenConsumerInfo() const=0;
+        virtual DDF getTokenConsumerInfo(const char* handlerURL=nullptr) const=0;
 
         /**
          * Create a new HandlerConfiguration based on the supplied configuration file.

@@ -91,6 +91,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 {
     try {
         string state, target, handler;
+        const char* handlerBaseURL = nullptr;
 
         if (isHandler) {
             // Check for a state parameter in the query string.
@@ -100,13 +101,15 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 state = param;
                 // handler can be derived from "this" URL since this is a re-entrant call to this handler,
                 // i.e., we know this is the right URL to use because "it already was" originally.
-                handler = request.getHandlerURL(request.getRequestURL()) + m_path;
+                handlerBaseURL = request.getHandlerURL(request.getRequestURL());
+                handler = handlerBaseURL + m_path;
             }
             else {
                 // target will come from query string, map, or handler or fall back to this request.
                 target = getString("target", request, request.getRequestURL());
                 // handler is derived from the target resource.
-                handler = request.getHandlerURL(target.c_str()) + m_path;
+                handlerBaseURL = request.getHandlerURL(target.c_str());
+                handler = handlerBaseURL + m_path;
             }
         }
         else {
@@ -115,7 +118,8 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
             // state is empty since this is a direct resource request.
             // handler is derived from the target resource
-            handler = request.getHandlerURL(target.c_str()) + m_path;
+            handlerBaseURL = request.getHandlerURL(target.c_str());
+            handler = handlerBaseURL + m_path;
         }
 
         const PropertySet* settings = request.getRequestSettings().first;
@@ -133,14 +137,14 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
             input.addmember("state").string(state.c_str());
         }
 
-        const DDF& consumers = request.getAgent().getHandlerConfiguration(
-            settings->getString("handlerConfigID")).getTokenConsumerInfo();
-        DDF dup = consumers.copy();
+        // Add copy of token consumer structure.
+        DDF dup = request.getAgent().getHandlerConfiguration(
+            settings->getString("handlerConfigID")).getTokenConsumerInfo(handlerBaseURL);
         input.add(dup);
 
         DDF wrapped = wrapRequest(request, m_remotedHeaders,
-            !isHandler && getBool("preservePostData", request, false,
-                HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP));
+            !isHandler &&
+                getBool("preservePostData", request, false, HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP));
         input.add(wrapped);
 
         for (const string& propname : m_requestMapperSettings) {

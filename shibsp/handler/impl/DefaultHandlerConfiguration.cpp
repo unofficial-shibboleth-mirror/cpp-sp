@@ -48,7 +48,7 @@ namespace {
 
         const Handler* getHandler(const char* path) const;
         const Handler& getSessionInitiator() const;
-        const DDF& getTokenConsumerInfo() const;
+        DDF getTokenConsumerInfo(const char* handlerURL=nullptr) const;
 
     private:
         ptree m_pt;
@@ -83,14 +83,19 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
             throw ConfigurationException("Multiple SessionInitiator handlers were configured, only one is permitted.");
         }
 
+        string handlerPath(child.first);
+        if (handlerPath.front() != '/') {
+            handlerPath = '/' + handlerPath;
+        }
+
         // Handlers have to know their own path in some cases, so that has to be injected into the
         // factory method, as ptrees don't know their own name unfortunately, thus the section header
         // value is lost when passing the section tree itself in.
         unique_ptr<Handler> handler(AgentConfig::getConfig().HandlerManager.newPlugin(
-            type.get(), pair<ptree&,const char*>(child.second, child.first.c_str()), false));
+            type.get(), pair<ptree&,const char*>(child.second, handlerPath.c_str()), false));
             
-        m_handlerMap[child.first] = std::move(handler);
-        log.info("config (%s) installed %s handler at %s", pathname, type.get().c_str(), child.first.c_str());
+        m_handlerMap[handlerPath] = std::move(handler);
+        log.info("config (%s) installed %s handler at %s", pathname, type.get().c_str(), handlerPath.c_str());
 
         // Save off a single SessionInitiator.
         if (*type == SESSION_INITIATOR_HANDLER) {
@@ -98,7 +103,7 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
         } else if (*type == TOKEN_CONSUMER_HANDLER) {
             DDF tokenConsumer(nullptr);
             // String value of DDF is the handler location.
-            tokenConsumer.string(child.first.c_str());
+            tokenConsumer.string(handlerPath.c_str());
             m_tokenConsumerConfig.add(tokenConsumer);
 
             // Check for legacy "binding" value to carry along with path as the name of the node.
@@ -107,6 +112,14 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
                 tokenConsumer.name(legacyBinding->c_str());
             }
         }
+    }
+
+    // If a single token consumer with no binding label is installed, convert list to unnamed string.
+    if (m_tokenConsumerConfig.integer() == 1 && !m_tokenConsumerConfig.first().name()) {
+        DDF singleEndpoint)nullptr);
+        singleEndpoint.string(m_tokenConsumerConfig.first().string());
+        m_tokenConsumerConfig.destroy();
+        m_tokenConsumerConfig = singleEndpoint;
     }
 }
 
@@ -129,9 +142,21 @@ const Handler& DefaultHandlerConfiguration::getSessionInitiator() const
     throw runtime_error("No SessionInitiator configured?");
 }
 
-const DDF& DefaultHandlerConfiguration::getTokenConsumerInfo() const
+DDF DefaultHandlerConfiguration::getTokenConsumerInfo(const char* handlerURL) const
 {
-    return m_tokenConsumerConfig;
+    DDF dup = m_tokenConsumerConfig.copy();
+
+    if (handlerURL) {
+        DDF endpoint = dup.first();
+        while (!endpoint.isnull()) {
+            string path(handlerURL);
+            path += endpoint.string();
+            endpoint.string(path.c_str());
+            endpoint = dup.next();
+        }
+    }
+
+    return dup;
 }
 
 unique_ptr<HandlerConfiguration> HandlerConfiguration::newHandlerConfiguration(const char* pathname)
