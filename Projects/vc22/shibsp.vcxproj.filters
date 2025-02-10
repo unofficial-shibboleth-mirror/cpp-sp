@@ -395,6 +395,9 @@
     <ClCompile Include="..\..\shibsp\remoting\impl\CurlHTTPRemotingService.cpp">
       <Filter>Source Files\Remoting</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\TokenConsumer.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\shibsp\shibsp.rc">

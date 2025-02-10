@@ -124,6 +124,7 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\TokenConsumer.cpp" />
     <ClCompile Include="..\..\shibsp\impl\AgentConfig.cpp" />
     <ClCompile Include="..\..\shibsp\impl\ChainingAccessControl.cpp" />
     <ClCompile Include="..\..\shibsp\impl\DefaultAgent.cpp" />

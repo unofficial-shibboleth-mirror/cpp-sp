@@ -116,7 +116,7 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
 
     // If a single token consumer with no binding label is installed, convert list to unnamed string.
     if (m_tokenConsumerConfig.integer() == 1 && !m_tokenConsumerConfig.first().name()) {
-        DDF singleEndpoint)nullptr);
+        DDF singleEndpoint(nullptr);
         singleEndpoint.string(m_tokenConsumerConfig.first().string());
         m_tokenConsumerConfig.destroy();
         m_tokenConsumerConfig = singleEndpoint;
