@@ -257,9 +257,6 @@
     <ClCompile Include="..\..\shibsp\handler\impl\AdminLogoutInitiator.cpp">
       <Filter>Source Files\Handler</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\shibsp\handler\impl\AssertionConsumerService.cpp">
-      <Filter>Source Files\Handler</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp">
       <Filter>Source Files\Handler</Filter>
     </ClCompile>

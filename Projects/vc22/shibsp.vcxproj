@@ -98,7 +98,6 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4296;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\handler\impl\AdminLogoutInitiator.cpp" />
-    <ClCompile Include="..\..\shibsp\handler\impl\AssertionConsumerService.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\DefaultHandlerConfiguration.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\LocalLogoutInitiator.cpp" />
