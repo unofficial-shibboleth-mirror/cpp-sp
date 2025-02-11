@@ -156,7 +156,8 @@ DDF AbstractHandler::wrapRequest(const SPRequest& request, const vector<string>&
 
 pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrappedResponse) const
 {
-    DDF h = wrappedResponse["headers"];
+    DDF http = wrappedResponse["http"];
+    DDF h = http["headers"];
     DDF hdr = h.first();
     while (hdr.isstring()) {
         if (!strcasecmp(hdr.name(), "Content-Type")) {
@@ -168,12 +169,12 @@ pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrapped
         hdr = h.next();
     }
 
-    h = wrappedResponse["redirect"];
+    h = http["redirect"];
     if (h.isstring()) {
         return make_pair(true, request.sendRedirect(h.string()));
     }
 
-    h = wrappedResponse["response"];
+    h = http["response"];
     if (h.isstruct()) {
         const char* data = h["data"].string();
         if (data) {

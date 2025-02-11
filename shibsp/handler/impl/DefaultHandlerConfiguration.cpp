@@ -118,9 +118,9 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
         }
     }
 
-    // If a single token consumer with no binding label is installed, convert list to unnamed string.
+    // If a single token consumer with no binding label is installed, convert list to a string node.
     if (m_tokenConsumerConfig.integer() == 1 && !m_tokenConsumerConfig.first().name()) {
-        DDF singleEndpoint(nullptr);
+        DDF singleEndpoint("response_url");
         singleEndpoint.string(m_tokenConsumerConfig.first().string());
         m_tokenConsumerConfig.destroy();
         m_tokenConsumerConfig = singleEndpoint;
@@ -130,7 +130,9 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
 const Handler* DefaultHandlerConfiguration::getHandler(const char* path) const
 {
     if (path) {
-        const auto& mapping = m_handlerMap.find(path);
+        string wrap(path);
+        wrap = wrap.substr(0, wrap.find(';'));
+        const auto& mapping = m_handlerMap.find(wrap.substr(0, wrap.find('?')));
         if (mapping != m_handlerMap.end()) {
             return mapping->second.get();
         }
@@ -151,12 +153,19 @@ DDF DefaultHandlerConfiguration::getTokenConsumerInfo(const char* handlerURL) co
     DDF dup = m_tokenConsumerConfig.copy();
 
     if (handlerURL) {
-        DDF endpoint = dup.first();
-        while (!endpoint.isnull()) {
+        if (dup.islist()) {
+            DDF endpoint = dup.first();
+            while (!endpoint.isnull()) {
+                string path(handlerURL);
+                path += endpoint.string();
+                endpoint.string(path.c_str());
+                endpoint = dup.next();
+            }
+        }
+        else if (dup.isstring()) {
             string path(handlerURL);
-            path += endpoint.string();
-            endpoint.string(path.c_str());
-            endpoint = dup.next();
+            path += dup.string();
+            dup.string(path.c_str());
         }
     }
 
