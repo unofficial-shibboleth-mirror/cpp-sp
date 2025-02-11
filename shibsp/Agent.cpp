@@ -67,13 +67,27 @@ Agent::~Agent()
 {
 }
 
-long Agent::handleError(Category& log, SPRequest& request, const Session* session, const exception* ex, bool mayRedirect) const
+long Agent::handleError(Category& log, SPRequest& request, const Session* session, exception* ex, bool mayRedirect) const
 {
     // The properties we need can be set in the RequestMap, or the Errors element.
     bool externalParameters = false;
     const char* redirectErrors = nullptr;
 
-    const agent_exception* richEx = dynamic_cast<const agent_exception*>(ex);
+    AgentException* richEx = dynamic_cast<AgentException*>(ex);
+
+    if (ex) {
+        // Populate target if needed.
+        if (!richEx->getProperty("target")) {
+            richEx->addProperty("target", request.getRequestURL());
+        }
+
+        if (richEx) {
+            richEx->log(request);
+        }
+        else {
+            request.log(Priority::SHIB_ERROR, ex->what());
+        }
+    }
 
     // Now look for settings in the request map.
     try {
@@ -82,24 +96,25 @@ long Agent::handleError(Category& log, SPRequest& request, const Session* sessio
         if (mayRedirect)
             redirectErrors = settings.first->getString("redirectErrors");
     }
-    catch (const exception& ex) {
-        log.error(ex.what());
+    catch (const exception& nested) {
+        request.log(Priority::SHIB_ERROR, nested.what());
     }
 
     // Check for redirection on errors.
     if (mayRedirect && redirectErrors) {
         string loc(redirectErrors);
         request.absolutize(loc);
-        const agent_exception* richEx = dynamic_cast<const agent_exception*>(ex);
         if (richEx) {
-            // TODO: probably alter how this works or what's included.
+            // TODO: alter how this works or what's included.
             loc = loc + '?' + richEx->toQueryString();
         }
         return request.sendRedirect(loc.c_str());
     }
 
-    // TODO: this probably changes significantly, but ultimately we're trying to pass
-    // back a status code.
+    // TODO: this probably changes significantly. The status code isn't all that material,
+    // but we could potentially use a custom code to facilitate custom error pages.
+    // The big addition would be exporting exception propertties into the request
+    // so Apache can surface them using its error redirection feature.
 
     istringstream msg("Internal Server Error. Please contact the site administrator.");
     return request.sendResponse(msg, richEx ? richEx->getStatusCode() : HTTPResponse::SHIBSP_HTTP_STATUS_ERROR);
@@ -255,7 +270,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
                     return make_pair(true, request.sendRedirect(redirectURL.c_str()));
                 }
                 else {
-                    agent_exception ex("Access via unencrypted HTTP was blocked.");
+                    AgentException ex("Access via unencrypted HTTP was blocked.");
                     return make_pair(true, handleError(log, request, nullptr, &ex, false));
                 }
             }
@@ -361,8 +376,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
         log.debug("doAuthentication succeeded");
         return make_pair(false,0L);
     }
-    catch (const exception& e) {
-        request.log(Priority::SHIB_ERROR, e.what());
+    catch (exception& e) {
         return make_pair(true, handleError(log, request, nullptr, &e));
     }
 }
@@ -414,7 +428,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
                 case AccessControl::shib_acl_false:
                 {
                     log.warn("access control provider denied access");
-                    agent_exception ex("Access to resource denied.");
+                    AgentException ex("Access to resource denied.");
                     ex.setStatusCode(HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN);
                     return make_pair(true, handleError(log, request, session, &ex, false));
                 }
@@ -428,8 +442,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
             return make_pair(true, request.returnDecline());
         }
     }
-    catch (const exception& e) {
-        request.log(Priority::SHIB_ERROR, e.what());
+    catch (exception& e) {
         return make_pair(true, handleError(log, request, nullptr, &e));
     }
 }
@@ -512,8 +525,7 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 
         return make_pair(false,0L);
     }
-    catch (const exception& e) {
-        request.log(Priority::SHIB_ERROR, e.what());
+    catch (exception& e) {
         return make_pair(true, handleError(log, request, session, &e));
     }
 }
@@ -573,8 +585,7 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
         }
         throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
-    catch (const exception& e) {
-        request.log(Priority::SHIB_ERROR, e.what());
+    catch (exception& e) {
         Session* session = nullptr;
         try {
             session = request.getSession(false, true, false);   // do not cache

@@ -19,69 +19,73 @@
  */
  
 #include "internal.h"
-#include "AgentConfig.h"
 #include "exceptions.h"
+#include "AgentConfig.h"
+#include "SPRequest.h"
 #include "io/HTTPResponse.h"
+#include "logging/Priority.h"
 #include "util/URLEncoder.h"
+
+#include <sstream>
 
 using namespace shibsp;
 using namespace std;
 
-agent_exception::agent_exception(const char* msg) : m_status(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR)
+AgentException::AgentException(const char* msg) : m_status(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR)
 {
     if (msg)
         m_msg = msg;
 }
 
-agent_exception::agent_exception(const string& msg) : m_status(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), m_msg(msg)
+AgentException::AgentException(const string& msg) : m_status(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), m_msg(msg)
 {
 }
 
-agent_exception::~agent_exception() noexcept
+AgentException::~AgentException() noexcept
 {
 }
 
-const char* agent_exception::what() const noexcept
+const char* AgentException::what() const noexcept
 {
     return m_msg.c_str();
 }
 
-int agent_exception::getStatusCode() const noexcept
+int AgentException::getStatusCode() const noexcept
 {
     return m_status;
 }
 
-void agent_exception::setStatusCode(int code) noexcept
+void AgentException::setStatusCode(int code) noexcept
 {
     m_status = code;
 }
 
-const char* agent_exception::getProperty(const char* name) const noexcept
+const char* AgentException::getProperty(const char* name) const noexcept
 {
     const auto& prop = m_props.find(name);
     return prop != m_props.end() ? prop->second.c_str() : nullptr;
 }
 
-const unordered_map<string,string>& agent_exception::getProperties() const noexcept
+const unordered_map<string,string>& AgentException::getProperties() const noexcept
 {
     return m_props;
 }
 
-void agent_exception::addProperties(const unordered_map<string,string>& props)
+void AgentException::addProperties(const unordered_map<string,string>& props)
 {
     for (const auto& p : props) {
         m_props.insert(p);
     }
 }
 
-void agent_exception::addProperty(const char* name, const char* value)
+void AgentException::addProperty(const char* name, const char* value)
 {
     if (name && value) {
         m_props[name] = value;
     }
 }
 
-string agent_exception::toQueryString() const
+string AgentException::toQueryString() const
 {
     string q;
     const URLEncoder& enc = AgentConfig::getConfig().getURLEncoder();
@@ -91,4 +95,21 @@ string agent_exception::toQueryString() const
         q = q + p.first + '=' + enc.encode(p.second.c_str());
     }
     return q;
+}
+
+void AgentException::log(const SPRequest& request) const
+{
+    ostringstream msg;
+    msg << what() << ": [";
+
+    // Dump properties and status code.
+    msg << "status=" << getStatusCode();
+
+    for (const auto& prop : m_props) {
+        msg << ", " << prop.first << '=' << prop.second;
+    }
+
+    msg << ']';
+
+    request.log(Priority::SHIB_ERROR, msg.str());
 }

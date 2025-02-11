@@ -89,10 +89,10 @@ SessionInitiator::SessionInitiator(const ptree& pt, const char* path)
 
 pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 {
-    try {
-        string state, target, handler;
-        const char* handlerBaseURL = nullptr;
+    string state, target, handler;
+    const char* handlerBaseURL = nullptr;
 
+    try {
         if (isHandler) {
             // Check for a state parameter in the query string.
             const char* param = request.getParameter("state");
@@ -171,6 +171,11 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         return unwrapResponse(request, output);
     }
     catch (exception& ex) {
+        AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
+        if (agent_ex) {
+            agent_ex->addProperty("handlerType", SESSION_INITIATOR_HANDLER);
+        }
+
         // If it's a handler operation, and isPassive is used or returnOnError is set, we trap the error.
         if (isHandler) {
             bool returnOnError = getBool("isPassive", request, false);
@@ -180,12 +185,12 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 
             if (returnOnError) {
                 m_log.warn(ex.what());
-                const agent_exception* agent_ex = dynamic_cast<const agent_exception*>(&ex);
-                const char* target = agent_ex ? agent_ex->getProperty("target") : nullptr;
-                if (target) {
+                const char* error_target = agent_ex ? agent_ex->getProperty("target") : nullptr;
+                // Make sure the target isn't the same as this handler, so avoid a loop.
+                if (error_target && strcmp(error_target, handler.c_str())) {
                     m_log.info("trapping SessionInitiator failure and returning to target location");
-                    request.limitRedirect(target);
-                    return make_pair(true, request.sendRedirect(target));
+                    request.limitRedirect(error_target);
+                    return make_pair(true, request.sendRedirect(error_target));
                 }
             }
         }

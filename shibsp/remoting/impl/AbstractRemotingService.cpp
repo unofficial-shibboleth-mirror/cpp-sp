@@ -46,8 +46,11 @@ DDF AbstractRemotingService::send(const DDF& in) const
 
     const char* event = output.getmember("event").string();
     if (event && strcmp(event, "success")) {
-        OperationException ex("A remote operation was unsuccessful.");
+        OperationException ex("Remote operation was unsuccessful.");
         ex.addProperty("event", event);
+        if (in.name()) {
+            ex.addProperty("operation", in.name());
+        }
         const char* target = output.getmember("target").string();
         if (target) {
             ex.addProperty("target", target);

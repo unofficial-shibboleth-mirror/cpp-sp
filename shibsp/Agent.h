@@ -172,7 +172,7 @@ namespace shibsp {
             Category& log,
             SPRequest& request,
             const Session* session=nullptr,
-            const std::exception* ex=nullptr,
+            std::exception* ex=nullptr,
             bool mayRedirect=true
         ) const;
         void clearHeaders(SPRequest& request) const;

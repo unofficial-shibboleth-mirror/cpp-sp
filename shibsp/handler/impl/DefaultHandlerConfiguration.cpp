@@ -73,13 +73,17 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".HandlerConfiguration");
 
     for (auto& child : m_pt) {
+        if (child.first.empty()) {
+            log.warn("config (%s) skipping handler with no path set", pathname);
+            continue;
+        }
+        
         boost::optional<string> type = child.second.get_optional<string>("type");
         if (!type) {
             log.warn("config (%s) skipping handler at %s with no type property", pathname, child.first.c_str());
             continue;
         }
-
-        if (*type == SESSION_INITIATOR_HANDLER && m_sessionInitiator) {
+        else if (*type == SESSION_INITIATOR_HANDLER && m_sessionInitiator) {
             throw ConfigurationException("Multiple SessionInitiator handlers were configured, only one is permitted.");
         }
 

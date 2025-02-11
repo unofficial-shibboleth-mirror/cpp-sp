@@ -453,7 +453,7 @@ void AbstractSPRequest::limitRedirect(const char* url) const
         }
 
         m_log.warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
-        throw agent_exception("Blocked unacceptable redirect location.");
+        throw AgentException("Blocked unacceptable redirect location.");
     }
 }
 

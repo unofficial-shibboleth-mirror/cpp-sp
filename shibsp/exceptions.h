@@ -49,27 +49,29 @@ namespace shibsp {
     #pragma warning( disable : 4250 4251 )
 #endif
 
+    class SHIBSP_API SPRequest;
+
     /**
      * Base exception class, supports attaching additional data for error handling.
      */
-    class SHIBSP_EXCEPTIONAPI(SHIBSP_API) agent_exception : public std::exception
+    class SHIBSP_EXCEPTIONAPI(SHIBSP_API) AgentException : public std::exception
     {
     public:
-        virtual ~agent_exception() noexcept;
+        virtual ~AgentException() noexcept;
 
         /**
          * Constructs an exception using a message.
          * 
          * @param msg   error message
          */
-        agent_exception(const char* msg=nullptr);
+        AgentException(const char* msg=nullptr);
 
         /**
          * Constructs an exception using a message.
          * 
          * @param msg   error message
          */
-        agent_exception(const std::string& msg);
+        AgentException(const std::string& msg);
 
         /**
          * Returns the error message, after processing any parameter references.
@@ -131,18 +133,25 @@ namespace shibsp {
          */
         std::string toQueryString() const;
 
+        /**
+         * Log an error through this request using the exception properties as input.
+         * 
+         * @param request SP request
+         */
+        void log(const SPRequest& request) const;        
+
     private:
         int m_status;
         std::string m_msg;
         std::unordered_map<std::string,std::string> m_props;
     };
 
-    DECL_SHIBSP_EXCEPTION(AttributeException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
-    DECL_SHIBSP_EXCEPTION(ConfigurationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
-    DECL_SHIBSP_EXCEPTION(IOException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
-    DECL_SHIBSP_EXCEPTION(RemotingException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+    DECL_SHIBSP_EXCEPTION(AttributeException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::AgentException);
+    DECL_SHIBSP_EXCEPTION(ConfigurationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::AgentException);
+    DECL_SHIBSP_EXCEPTION(IOException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::AgentException);
+    DECL_SHIBSP_EXCEPTION(RemotingException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::AgentException);
     DECL_SHIBSP_EXCEPTION(OperationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::RemotingException);
-    DECL_SHIBSP_EXCEPTION(SessionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::agent_exception);
+    DECL_SHIBSP_EXCEPTION(SessionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::AgentException);
     DECL_SHIBSP_EXCEPTION(SessionValidationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::SessionException);
 
 #if defined (_MSC_VER)
