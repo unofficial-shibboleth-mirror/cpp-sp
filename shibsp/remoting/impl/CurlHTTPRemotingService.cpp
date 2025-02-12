@@ -34,9 +34,6 @@ using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
 
-#include "internal.h"
-#include "exceptions.h"
-
 #include <list>
 #include <mutex>
 #include <sstream>
