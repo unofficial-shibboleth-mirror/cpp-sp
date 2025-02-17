@@ -184,6 +184,7 @@
     </ClCompile>
     <ClCompile Include="..\..\shibsp\remoting\impl\RemotingService.cpp" />
     <ClCompile Include="..\..\shibsp\remoting\impl\SecretSource.cpp" />
+    <ClCompile Include="..\..\shibsp\remoting\impl\WinHTTPRemotingService.cpp" />
     <ClCompile Include="..\..\shibsp\session\impl\AbstractSessionCache.cpp" />
     <ClCompile Include="..\..\shibsp\session\impl\FilesystemSessionCache.cpp" />
     <ClCompile Include="..\..\shibsp\util\BoostPropertySet.cpp" />
@@ -349,7 +350,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -370,7 +371,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -387,7 +388,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -404,7 +405,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -425,7 +426,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -446,7 +447,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

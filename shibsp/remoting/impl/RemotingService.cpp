@@ -39,7 +39,7 @@ namespace shibsp {
 void SHIBSP_API shibsp::registerRemotingServices()
 {
 #ifdef WIN32
-    //AgentConfig::getConfig().RemotingServiceManager.registerFactory(WIN_HTTP_REMOTING_SERVICE, WinHTTPRemotingServiceFactory);
+    AgentConfig::getConfig().RemotingServiceManager.registerFactory(WIN_HTTP_REMOTING_SERVICE, WinHTTPRemotingServiceFactory);
 #else
     AgentConfig::getConfig().RemotingServiceManager.registerFactory(CURL_HTTP_REMOTING_SERVICE, CurlHTTPRemotingServiceFactory);
 #endif
