@@ -45,6 +45,8 @@ using namespace std;
 # define strcasecmp _stricmp
 #endif
 
+constexpr bool defaultChunking(false);
+
 namespace {
 
     class SHIBSP_DLLLOCAL WinHTTPRemotingService : public virtual AbstractHTTPRemotingService {
@@ -124,7 +126,7 @@ wstring WinHTTPRemotingService::utf8ToUtf16(const char* input) const {
     return result;
 }
 
-void WinHTTPRemotingService::handleCert(HINTERNET Handle) const 
+void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
 {
     PCCERT_CONTEXT pCert = NULL;
     DWORD dwSize = sizeof(pCert);
@@ -145,7 +147,7 @@ void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
         m_log.debug("Checking certificate with subject %s", buffer);
         //
         // TODO check the certificate
-        // 
+        //
         cout << "Subject name " << buffer << endl;
         CertFreeCertificateContext(pCert);
     }
@@ -169,7 +171,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
     : AbstractHTTPRemotingService(pt), AbstractRemotingService(pt),
     m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService.WinHTTP")),
     m_winHTTPlog(Category::getInstance(SHIBSP_LOGCAT ".winHTTP")),
-    m_init(false), m_chunked(true)
+    m_init(false), m_chunked(defaultChunking)
 {
     if (getUserAgent() == nullptr) {
         string useragent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION + '/' + "WINHTTP";
@@ -182,7 +184,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
     BoostPropertySet props;
     props.load(pt);
 
-    m_chunked = props.getBool(CHUNKED_PROP_NAME, true);
+    m_chunked = props.getBool(CHUNKED_PROP_NAME, defaultChunking);
     m_ciphers = props.getString(CIPHER_LIST_PROP_NAME, "");
     m_username = utf8ToUtf16(getAgentID());
     switch (getAuthMethod()) {
@@ -300,40 +302,74 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
         }
     }
 
-    wstring headers(L"Content-Type: text/plain\nExpect:");
-    if (m_chunked) {
-        //
-        // TODO Add the chunking headers.  HttpRead (below) hides the chunking from us, HttpWrite, less so. See below
-        //
-        //headers += L"\nTransfer-Encoding: chunked";
-        //
-        // I think that in this case we send WinHttpSendRequest with length = WINHTTP_IGNORE_REQUEST_TOTAL_LENGTH
-        // and use WinHttpWriteData to write the buffer in the loop below.
-        //
-    }
-    if (!WinHttpAddRequestHeaders(request, headers.c_str(), -1, WINHTTP_ADDREQ_FLAG_ADD)) {
+    wchar_t headers[]= L"Content-Type: text/plain\r\nExpect:";
+    //
+    // Add the headers.
+    //
+    if (!WinHttpAddRequestHeaders(request, headers, -1, WINHTTP_ADDREQ_FLAG_ADD)) {
         m_log.crit("Send: Could not add request headers : %d", GetLastError());
         throw RemotingException("send failed");
     }
 
     if (m_chunked) {
         //
-        // I think that in this case we send WinHttpSendRequest with length = WINHTTP_IGNORE_REQUEST_TOTAL_LENGTH
-        // and use WinHttpWriteData to write the buffer in the loop below.
-        // We dont have to worry about the read since its all done for us regardless
+        // Send the request, then the chunked data
         //
-    }
+        m_log.debug("Sending chunked data to %s", path);
+        if (!WinHttpSendRequest(request, L"Transfer-Encoding: chunked", -1, WINHTTP_NO_REQUEST_DATA, 0, WINHTTP_IGNORE_REQUEST_TOTAL_LENGTH, 0)) {
+            m_log.crit("Send. Failed to send request to %s : %d", path, GetLastError());
+            throw RemotingException("send failed");
+        }
 
-    string msg;
-    while(input) {
-        char buf[1024];
-        input.read(buf, sizeof(buf));
-        msg.append(buf, input.gcount());
+        DWORD written;
+        while (input) {
+            //
+            // This is a pain - we have to do the chunking by hand so we send the chunky bit, then the data, end the end of chucky bit
+            //
+            char buf[1024];
+            char chunkString[128];
+            input.read(buf, sizeof(buf));
+            int transferSize = static_cast<int>(input.gcount());
+            sprintf_s(chunkString, sizeof(chunkString), "%X\r\n", transferSize);
+            DWORD chunkStringLen = static_cast<DWORD>(strnlen_s(chunkString, sizeof(chunkString)));
+
+            m_log.debug("Sending chunk with %d bytes to %s", transferSize, path);
+            if (!WinHttpWriteData(request, chunkString, chunkStringLen, &written)) {
+                m_log.crit("Send. Failed to send chunk header to %s : %d", path, GetLastError());
+                throw RemotingException("send failed");
+            }
+            if (!WinHttpWriteData(request, buf, transferSize, &written)) {
+                m_log.crit("Send. Failed to send chunk data to %s : %d", path, GetLastError());
+                throw RemotingException("send failed");
+            }
+            if (!WinHttpWriteData(request, "\r\n", 2, &written)) {
+                m_log.crit("Send. Failed to send chunk trailer to %s : %d", path, GetLastError());
+                throw RemotingException("send failed");
+            }
+        }
+        //
+        // And when all gthe data is gone we say that the last chunk is zero long
+        //
+        if (!WinHttpWriteData(request, "0\r\n", 3, &written)) {
+            m_log.crit("Send. Failed to send chunk header to %s : %d", path, GetLastError());
+            throw RemotingException("send failed");
+        }
     }
-    m_log.debug("Sending %d bytes to %s", msg.length(), path);
-    if (!WinHttpSendRequest(request, WINHTTP_NO_ADDITIONAL_HEADERS, 0, const_cast<char*>(msg.c_str()), static_cast<DWORD>(msg.length()), static_cast<DWORD>(msg.length()), 0)) {
-        m_log.crit("Send. Failed to send request to %s : %d", path, GetLastError());
-        throw RemotingException("send failed");
+    else {
+        //
+        // Just buffer up all the data and send it in a wunner
+        //
+        string msg;
+        while(input) {
+            char buf[1024];
+            input.read(buf, sizeof(buf));
+            msg.append(buf, input.gcount());
+        }
+        m_log.debug("Sending %d bytes to %s", msg.length(), path);
+        if (!WinHttpSendRequest(request, WINHTTP_NO_ADDITIONAL_HEADERS, 0, const_cast<char*>(msg.c_str()), static_cast<DWORD>(msg.length()), static_cast<DWORD>(msg.length()), 0)) {
+            m_log.crit("Send. Failed to send request to %s : %d", path, GetLastError());
+            throw RemotingException("send failed");
+        }
     }
 
     if (!WinHttpReceiveResponse(request, NULL)) {
