@@ -186,7 +186,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
             if (returnOnError) {
                 m_log.warn(ex.what());
                 const char* error_target = agent_ex ? agent_ex->getProperty("target") : nullptr;
-                // Make sure the target isn't the same as this handler, so avoid a loop.
+                // Make sure the target isn't the same as this handler, to avoid a loop.
                 if (error_target && strcmp(error_target, handler.c_str())) {
                     m_log.info("trapping SessionInitiator failure and returning to target location");
                     request.limitRedirect(error_target);

@@ -97,7 +97,7 @@ string AgentException::toQueryString() const
     return q;
 }
 
-void AgentException::log(const SPRequest& request) const
+void AgentException::log(const SPRequest& request, Priority::Value priority) const
 {
     ostringstream msg;
     msg << what() << ": [";
@@ -111,5 +111,5 @@ void AgentException::log(const SPRequest& request) const
 
     msg << ']';
 
-    request.log(Priority::SHIB_ERROR, msg.str());
+    request.log(priority, msg.str());
 }

@@ -22,6 +22,7 @@
 #define __shibsp_exceptions_h__
 
 #include <shibsp/base.h>
+#include <shibsp/logging/Priority.h>
 
 #include <exception>
 #include <string>
@@ -137,8 +138,9 @@ namespace shibsp {
          * Log an error through this request using the exception properties as input.
          * 
          * @param request SP request
+         * @param priority logging level
          */
-        void log(const SPRequest& request) const;        
+        void log(const SPRequest& request, Priority::Value priority=Priority::SHIB_ERROR) const;
 
     private:
         int m_status;

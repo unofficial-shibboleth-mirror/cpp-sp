@@ -55,6 +55,11 @@ DDF AbstractRemotingService::send(const DDF& in) const
         if (target) {
             ex.addProperty("target", target);
         }
+
+        if (output.getmember("passive").integer() == 1) {
+            ex.addProperty("passive", "1");
+        }
+
         output.destroy();
         throw ex;
     }
