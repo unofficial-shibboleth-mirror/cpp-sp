@@ -36,11 +36,6 @@ namespace shibsp {
 
     /**
      * Encapsulates access to a user's security session.
-     *
-     * <p>The SessionCache does not itself require locking to manage
-     * concurrency, but access to each Session is generally exclusive
-     * or at least controlled, and the caller must unlock a Session
-     * to dispose of it.</p>
      */
     class SHIBSP_API Session : public virtual BasicLockable
     {
@@ -57,12 +52,12 @@ namespace shibsp {
         virtual const char* getID() const=0;
 
         /**
-         * Returns the session's "bucket" ID, i.e., a value separating sessions into
+         * Returns the session's "application" ID, i.e., a value separating sessions into
          * specific buckets based on resources.
          *
-         * @return unique ID of session bucket
+         * @return unique ID of application/bucket
          */
-        virtual const char* getBucketID() const=0;
+        virtual const char* getApplicationID() const=0;
 
         /**
          * Returns the session expiration.
@@ -77,43 +72,6 @@ namespace shibsp {
          * @return  the session's last access time
          */
         virtual time_t getLastAccess() const=0;
-
-        /**
-         * Returns the address of the client associated with the session.
-         *
-         * @return  the client's network address
-         */
-        virtual const char* getClientAddress() const=0;
-
-        /**
-         * Returns the entityID of the IdP that initiated the session.
-         *
-         * @return the IdP's entityID
-         */
-        virtual const char* getEntityID() const=0;
-
-        /**
-         * Returns the protocol family used to initiate the session.
-         *
-         * @return the protocol constant that represents the general SSO protocol used
-         */
-        virtual const char* getProtocol() const=0;
-
-        /**
-         * Returns the timestamp of the authentication event at the IdP.
-         *
-         * @return  the authentication timestamp
-         */
-        virtual time_t getAuthnInstant() const=0;
-
-        /**
-         * Returns a URI containing an AuthnContextClassRef provided with the session.
-         *
-         * <p>SAML 1.x AuthenticationMethods will be returned as class references.</p>
-         *
-         * @return  a URI identifying the authentication context class
-         */
-        virtual const char* getAuthnContextClassRef() const=0;
 
         /**
          * Returns the resolved attributes associated with the session.
@@ -146,6 +104,14 @@ namespace shibsp {
         SessionCache();
     public:
         virtual ~SessionCache();
+
+        /**
+         * Signals the implementation it may start any background tasks or do any
+         * additional once-per-process work.
+         * 
+         * <p>This method is guaranteed to be called only once per process.</p>
+         */
+        virtual bool start()=0;
 
 #ifndef SHIBSP_LITE
         /**

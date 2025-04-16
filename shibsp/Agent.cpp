@@ -484,33 +484,13 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
         }
 
         request.setHeader("Shib-Session-ID", session->getID());
-        request.setHeader("Shib-Bucket-ID", session->getBucketID());
+        request.setHeader("Shib-Application-ID", session->getApplicationID());
 
         // Check for export of "standard" variables.
-        bool stdvars = settings.first->getBool("exportStdVars", false);
-        if (stdvars) {
-            const char* hval = session->getEntityID();
-            if (hval) {
-                request.setHeader("Shib-Identity-Provider", hval);
-            }
-            time_t ts = session->getAuthnInstant();
-            if (ts > 0) {
-                // TODO: Need to see what the output format of this really is.
-                ostringstream os;
-                os << date::format("%FT%TZ", chrono::system_clock::from_time_t(ts));
-                request.setHeader("Shib-Authentication-Instant", os.str().c_str());
-            }
-            hval = session->getAuthnContextClassRef();
-            if (hval) {
-                request.setHeader("Shib-Authentication-Method", hval);
-                request.setHeader("Shib-AuthnContext-Class", hval);
-            }
-
-            request.setHeader( "Shib-Session-Expires", boost::lexical_cast<string>(session->getExpiration()).c_str());
-            unsigned int timeout = settings.first->getUnsignedInt("timeout", 3600);
-            if (timeout > 0) {
-                request.setHeader( "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout).c_str());
-            }
+        request.setHeader( "Shib-Session-Expires", boost::lexical_cast<string>(session->getExpiration()).c_str());
+        unsigned int timeout = settings.first->getUnsignedInt("timeout", 3600);
+        if (timeout > 0) {
+            request.setHeader( "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout).c_str());
         }
 
         // Check for export of algorithmically-derived portion of cookie names.

@@ -106,6 +106,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
             }
             else {
                 // target will come from query string, map, or handler or fall back to this request.
+                // TODO: shouldm't this fall back to homeURL?
                 target = getString("target", request, request.getRequestURL());
                 // handler is derived from the target resource.
                 handlerBaseURL = request.getHandlerURL(target.c_str());

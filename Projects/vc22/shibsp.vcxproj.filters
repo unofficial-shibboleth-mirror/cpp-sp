@@ -228,6 +228,9 @@
     <ClInclude Include="..\..\shibsp\session\SessionCache.h">
       <Filter>Header Files\Session</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shibsp\session\AbstractSessionCache.h">
+      <Filter>Header Files\Session</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\shibsp\remoting\SecretSource.h">
       <Filter>Header Files\Remoting</Filter>
     </ClInclude>

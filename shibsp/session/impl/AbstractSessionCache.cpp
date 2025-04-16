@@ -21,7 +21,7 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AgentConfig.h"
-#include "session/SessionCache.h"
+#include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
 
 #include <boost/property_tree/ptree.hpp>
@@ -54,5 +54,17 @@ SessionCache::SessionCache()
 }
 
 SessionCache::~SessionCache()
+{
+}
+
+AbstractSessionCache::AbstractSessionCache()
+{
+}
+
+AbstractSessionCache::~AbstractSessionCache()
+{
+}
+
+bool AbstractSessionCache::start()
 {
 }

@@ -22,6 +22,7 @@
 #include "exceptions.h"
 
 #include "AccessControl.h"
+#include "Agent.h"
 #include "SPRequest.h"
 #include "attribute/Attribute.h"
 #include "logging/Category.h"
@@ -166,6 +167,8 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     // We can make this more complex later using pluggable comparison functions,
     // but for now, just a straight port to the new Attribute API.
 
+    string actual_alias(m_alias);
+
     // Map alias in rule to the attribute.
     if (!session) {
         request.log(Priority::SHIB_WARN, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
@@ -187,23 +190,18 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
         return shib_acl_false;
     }
     else if (m_alias == "authnContextClassRef") {
-        const char* ref = session->getAuthnContextClassRef();
-        if (ref && m_vals.find(ref) != m_vals.end()) {
-            request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting authnContextClassRef (") + ref + "), authz granted");
-            return shib_acl_true;
-        }
-        return shib_acl_false;
+        actual_alias = request.getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class");
     }
 
     // Find the attribute(s) matching the require rule.
     pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> attrs =
-        session->getIndexedAttributes().equal_range(m_alias);
+        session->getIndexedAttributes().equal_range(actual_alias);
     if (attrs.first == attrs.second) {
-        request.log(Priority::SHIB_WARN, string("AccessControl rule requires attribute (") + m_alias + "), not found in session");
+        request.log(Priority::SHIB_WARN, string("AccessControl rule requires attribute (") + actual_alias + "), not found in session");
         return shib_acl_false;
     }
     else if (m_vals.empty()) {
-        request.log(Priority::SHIB_DEBUG, string("AccessControl rule requires presence of attribute (") + m_alias + "), authz granted");
+        request.log(Priority::SHIB_DEBUG, string("AccessControl rule requires presence of attribute (") + actual_alias + "), authz granted");
         return shib_acl_true;
     }
 
@@ -251,6 +249,8 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
 
     static regexp::regex_constants::match_flag_type match_flags = regexp::regex_constants::match_any | regexp::regex_constants::match_not_null;
 
+    string actual_alias(m_alias);
+
     if (!session) {
         request.log(Priority::SHIB_WARN, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
         return shib_acl_false;
@@ -272,17 +272,13 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
         return shib_acl_false;
     }
     else if (m_alias == "authnContextClassRef") {
-        if (session->getAuthnContextClassRef() && regexp::regex_match(session->getAuthnContextClassRef(), m_re, match_flags)) {
-            request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting authnContextClassRef regex (") + m_exp + "), authz granted");
-            return shib_acl_true;
-        }
-        return shib_acl_false;
+        actual_alias = request.getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class");
     }
 
     // Find the attribute(s) matching the require rule.
-    auto attrs = session->getIndexedAttributes().equal_range(m_alias);
+    auto attrs = session->getIndexedAttributes().equal_range(actual_alias);
     if (attrs.first == attrs.second) {
-        request.log(Priority::SHIB_WARN, string("AccessControl rule requires attribute (") + m_alias + "), not found in session");
+        request.log(Priority::SHIB_WARN, string("AccessControl rule requires attribute (") + actual_alias + "), not found in session");
         return shib_acl_false;
     }
 

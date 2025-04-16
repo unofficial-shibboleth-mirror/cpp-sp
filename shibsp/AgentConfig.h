@@ -72,14 +72,23 @@ namespace shibsp {
         /**
          * Initializes agent/library.
          *
-         * Each process using the library MUST call this function exactly once
-         * before using any library classes.
+         * <p>Each process using the library MUST call this function exactly once
+         * before using any library classes.</p>
          *
          * @param catalog_path  delimited set of schema catalog files to load
          * @param inst_prefix   installation prefix for software
          * @return true iff initialization was successful
          */
         virtual bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false)=0;
+
+        /**
+         * Tells the agent it may start background threads or tasks.
+         * 
+         * <p>Should only be called once per child process but the implememntation will
+         * ensure that subsequent calls are ignored. Must be called only after init()
+         * is successful, failure to do so resulting in unspecified behavior.</p>
+         */
+        virtual bool start()=0;
 
         /**
          * Shuts down agent/library

@@ -156,38 +156,6 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
     else
         s << 0;
 
-    if (session->getClientAddress()) {
-        s << ", \"client_address\": ";
-        json_safe(s, session->getClientAddress());
-    }
-
-    if (session->getProtocol()) {
-        s << ", \"protocol\": ";
-        json_safe(s, session->getProtocol());
-    }
-
-    bool stdvars = request.getRequestSettings().first->getBool("exportStdVars", true);
-    if (stdvars) {
-        if (session->getEntityID()) {
-            s << ", \"identity_provider\": ";
-            json_safe(s, session->getEntityID());
-        }
-
-        if (session->getAuthnInstant()) {
-            s << ", \"authn_instant\": ";
-            time_t ts = session->getAuthnInstant();
-            // TODO: Need to see what the output format of this really is.
-            ostringstream os;
-            os << date::format("%FT%TZ", chrono::system_clock::from_time_t(ts));
-            json_safe(s, os.str().c_str());
-        }
-
-        if (session->getAuthnContextClassRef()) {
-            s << ", \"authncontext_class\": ";
-            json_safe(s, session->getAuthnContextClassRef());
-        }
-    }
-
     /*
         attributes: [ { "name": "foo", "values" : count } ]
 
@@ -273,22 +241,6 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
         s << ((session->getExpiration() - time(nullptr)) / 60) << " minute(s)" << endl;
     else
         s << "Infinite" << endl;
-
-    s << "<strong>Client Address:</strong> " << (session->getClientAddress() ? session->getClientAddress() : "(none)") << endl;
-    s << "<strong>SSO Protocol:</strong> " << (session->getProtocol() ? session->getProtocol() : "(none)") << endl;
-
-    bool stdvars = request.getRequestSettings().first->getBool("exportStdVars", true);
-    if (stdvars) {
-        s << "<strong>Identity Provider:</strong> " << (session->getEntityID() ? session->getEntityID() : "(none)") << endl;
-        time_t ts = session->getAuthnInstant();
-        if (ts > 0) {
-            // TODO: Need to see what the output format of this really is.
-            ostringstream os;
-            os << date::format("%FT%TZ", chrono::system_clock::from_time_t(ts));
-            s << "<strong>Authentication Time:</strong> " << os.str() << endl;
-        }
-        s << "<strong>Authentication Context Class:</strong> " << (session->getAuthnContextClassRef() ? session->getAuthnContextClassRef() : "(none)") << endl;
-    }
 
     s << endl << "<u>Attributes</u>" << endl;
 

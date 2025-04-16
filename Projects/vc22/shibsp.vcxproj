@@ -66,6 +66,7 @@
     <ClInclude Include="..\..\shibsp\remoting\RemotingService.h" />
     <ClInclude Include="..\..\shibsp\remoting\SecretSource.h" />
     <ClInclude Include="..\..\shibsp\RequestMapper.h" />
+    <ClInclude Include="..\..\shibsp\session\AbstractSessionCache.h" />
     <ClInclude Include="..\..\shibsp\session\SessionCache.h" />
     <ClInclude Include="..\..\shibsp\SPRequest.h" />
     <ClInclude Include="..\..\shibsp\util\BoostPropertySet.h" />

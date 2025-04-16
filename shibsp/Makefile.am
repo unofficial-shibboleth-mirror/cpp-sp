@@ -70,6 +70,7 @@ reminclude_HEADERS = \
 	remoting/SecretSource.h
 
 sessioninclude_HEADERS = \
+	session/AbstractSessionCache.h \
 	session/SessionCache.h
 	
 utilinclude_HEADERS = \

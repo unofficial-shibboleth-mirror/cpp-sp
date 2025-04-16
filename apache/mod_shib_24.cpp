@@ -1281,7 +1281,9 @@ extern "C" authz_status shib_acclass_check_authz(request_rec* r, const char* req
     try {
         Session* session = sta.first->getSession(false, true, false);
         lock_guard<Session> slocker(*session, adopt_lock);
-        if (session && hta.doAuthnContext(*sta.first, session->getAuthnContextClassRef(), require_line) == AccessControl::shib_acl_true)
+        if (session && hta.doShibAttr(*sta.first, session,
+                sta.first->getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class"),
+                require_line) == AccessControl::shib_acl_true)
             return AUTHZ_GRANTED;
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
@@ -1442,10 +1444,8 @@ apr_status_t shib_post_config(apr_pool_t* p, apr_pool_t*, apr_pool_t*, server_re
 
 /*
  * shib_child_init()
- *  Things to do when the child process is initialized.
- *  For now, we have no background threads, but if we introduce any, we'd have to switch
- *  back to deferring their creation until this step because only the forking thread shows
- *  up in the child, losing any internal threads spun up by plugins in the agent library.
+
+ * Things to do when the child process is initialized.
  */
 extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
 {
@@ -1466,7 +1466,13 @@ extern "C" void shib_child_init(apr_pool_t* p, server_rec* s)
     // Set the cleanup handler, passing in the server_rec for logging.
     apr_pool_cleanup_register(p, s, &shib_exit, apr_pool_cleanup_null);
 
-    ap_log_error(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, s, "child_init: shib_module config initialized");
+    if (g_Config->start()) {
+        ap_log_error(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, s, "child_init: shib_module config initialized");
+    }
+    else {
+        ap_log_error(APLOG_MARK, APLOG_ERR|APLOG_NOERRNO, 0, s, "child_init: shib_module start method failed");
+    }
+
 }
 
 // Output filters

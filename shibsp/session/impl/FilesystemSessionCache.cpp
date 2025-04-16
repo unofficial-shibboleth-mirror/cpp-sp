@@ -20,7 +20,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "session/SessionCache.h"
+#include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
 
 #include <boost/property_tree/ptree.hpp>
@@ -30,7 +30,7 @@ using namespace boost::property_tree;
 using namespace std;
 
 namespace {
-    class FilesystemSessionCache : public virtual SessionCache {
+    class FilesystemSessionCache : public virtual AbstractSessionCache {
     public:
         FilesystemSessionCache(const ptree& pt);
         ~FilesystemSessionCache();
