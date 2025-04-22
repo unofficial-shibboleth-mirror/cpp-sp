@@ -95,12 +95,12 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
     // With no session, we return a 404 after "revoking" the session just to be safe.
     if (!session) {
         AgentConfig::getConfig().getAgent().getSessionCache()->remove(
-            request.getRequestSettings().first->getString("sessionBucket", "default"), sessionId);
+            request.getRequestSettings().first->getString("applicationId", "default"), sessionId);
         istringstream msg("NOT FOUND");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_NOTFOUND));
     }
 
-    time_t revocationExp = session->getExpiration();
+    time_t revocationExp = session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
 
     unique_lock<Session> sessionLocker(*session, adopt_lock);
 
@@ -112,7 +112,7 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
         sessionLocker.unlock();
         session = nullptr;
         AgentConfig::getConfig().getAgent().getSessionCache()->remove(
-            request.getRequestSettings().first->getString("sessionBucket", "default"), sessionId, revocationExp);
+            request.getRequestSettings().first->getString("applicationId", "default"), sessionId, revocationExp);
         
         istringstream msg("PARTIAL");
         return make_pair(true, request.sendResponse(msg, 206)); // misuse of an HTTP code, but whatever
@@ -122,7 +122,7 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
         sessionLocker.unlock();
         session = nullptr;
         AgentConfig::getConfig().getAgent().getSessionCache()->remove(
-            request.getRequestSettings().first->getString("sessionBucket", "default"), sessionId, revocationExp);
+            request.getRequestSettings().first->getString("applicationId", "default"), sessionId, revocationExp);
 
         istringstream msg("OK");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_OK));

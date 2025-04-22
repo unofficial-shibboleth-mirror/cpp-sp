@@ -32,9 +32,7 @@
     <ClInclude Include="..\..\shibsp\AccessControl.h" />
     <ClInclude Include="..\..\shibsp\Agent.h" />
     <ClInclude Include="..\..\shibsp\AgentConfig.h" />
-    <ClInclude Include="..\..\shibsp\attribute\Attribute.h" />
-    <ClInclude Include="..\..\shibsp\attribute\ScopedAttribute.h" />
-    <ClInclude Include="..\..\shibsp\attribute\SimpleAttribute.h" />
+    <ClInclude Include="..\..\shibsp\attribute\AttributeConfiguration.h" />
     <ClInclude Include="..\..\shibsp\base.h" />
     <ClInclude Include="..\..\shibsp\config_pub_win32.h" />
     <ClInclude Include="..\..\shibsp\exceptions.h" />
@@ -86,9 +84,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\shibsp\AbstractSPRequest.cpp" />
     <ClCompile Include="..\..\shibsp\Agent.cpp" />
-    <ClCompile Include="..\..\shibsp\attribute\Attribute.cpp" />
-    <ClCompile Include="..\..\shibsp\attribute\ScopedAttribute.cpp" />
-    <ClCompile Include="..\..\shibsp\attribute\SimpleAttribute.cpp" />
+    <ClCompile Include="..\..\shibsp\attribute\impl\DefaultAttributeConfiguration.cpp" />
     <ClCompile Include="..\..\shibsp\exceptions.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\AbstractHandler.cpp">
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4296;%(DisableSpecificWarnings)</DisableSpecificWarnings>

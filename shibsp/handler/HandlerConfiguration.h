@@ -31,7 +31,7 @@ namespace shibsp {
     class SHIBSP_API DDF;
 
     /**
-     * Pluggable runtime functionality that implement protocols and services
+     * Interface to the set of handlers that are exposed by an agent at specific path(s).
      */
     class SHIBSP_API HandlerConfiguration
     {

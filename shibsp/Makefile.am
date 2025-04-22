@@ -36,9 +36,7 @@ libshibspinclude_HEADERS = \
 	version.h
 
 attrinclude_HEADERS = \
-	attribute/Attribute.h \
-	attribute/ScopedAttribute.h \
-	attribute/SimpleAttribute.h
+	attribute/AttributeConfiguration.h
 
 handinclude_HEADERS = \
 	handler/AbstractHandler.h \
@@ -100,9 +98,7 @@ libshibsp_la_SOURCES = \
 	Agent.cpp \
 	exceptions.cpp \
 	version.cpp \
-	attribute/Attribute.cpp \
-	attribute/SimpleAttribute.cpp \
-	attribute/ScopedAttribute.cpp \
+	attribute/impl/DefaultAttributeConfiguration.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AdminLogoutInitiator.cpp \
 	handler/impl/AttributeCheckerHandler.cpp \

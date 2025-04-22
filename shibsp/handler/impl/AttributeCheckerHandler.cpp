@@ -131,13 +131,13 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     bool checked = false;
     if (session) {
         if (!m_attributes.empty()) {
-            const auto& indexed = session->getIndexedAttributes();
+            const auto& indexed = session->getAttributes();
             // Lambda returns true if the candidate attribute ID is NOT in the session.
             auto absent = [&indexed](const string& id) {
                 return indexed.find(id) == indexed.end();
             };
 
-            // Look for an attribute in the list that is not in the session multimap.
+            // Look for an attribute in the list that is not in the session map.
             // If that fails, the check succeeds.
             checked = find_if(m_attributes.begin(), m_attributes.end(), absent) == m_attributes.end();
         }
@@ -153,7 +153,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     }
 
     if (m_flushSession && session) {
-        time_t revocationExp = session->getExpiration();
+        time_t revocationExp = session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
         sessionLocker.unlock(); // unlock the session
         flushSession(request, revocationExp);
     }

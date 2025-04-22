@@ -42,7 +42,7 @@
 #include <shibsp/Agent.h>
 #include <shibsp/AgentConfig.h>
 #include <shibsp/RequestMapper.h>
-#include <shibsp/attribute/Attribute.h>
+#include <shibsp/attribute/AttributeConfiguration.h>
 #include <shibsp/session/SessionCache.h>
 #include <shibsp/util/Lockable.h>
 
@@ -819,7 +819,14 @@ public:
     aclresult_t doShibAttr(const ShibTargetApache& sta, const Session* session, const char* rule, const char* params) const;
 
 private:
-    bool checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, bool isRegex=false) const;
+    bool checkAttribute(
+        const SPRequest& request,
+        const Session& session,
+        const AttributeConfiguration& attrConfig,
+        const char* attributeID,
+        const char* toMatch,
+        bool isRegex=false
+    ) const;
 };
 
 AccessControl* htAccessFactory(const ptree&, bool)
@@ -946,36 +953,42 @@ AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApach
     return shib_acl_false;
 }
 
-bool htAccessControl::checkAttribute(const SPRequest& request, const Attribute* attr, const char* toMatch, bool isRegex) const
+bool htAccessControl::checkAttribute(
+    const SPRequest& request,
+    const Session& session,
+    const AttributeConfiguration& attrConfig,
+    const char* attributeID,
+    const char* toMatch,
+    bool isRegex
+    ) const
 {
-    bool caseSensitive = attr->isCaseSensitive();
-    const vector<string>& vals = attr->getSerializedValues();
-    for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
-        if (isRegex) {
-            regexp::regex_constants::syntax_option_type flags = regexp::regex_constants::extended;
-            if (!caseSensitive) {
-                flags |= regexp::regex_constants::icase;
-            }
-            try {
-                regexp::regex exp(toMatch, flags);
-                if (regexp::regex_match(*v, exp, regexp::regex_constants::match_any | regexp::regex_constants::match_not_null)) {
-                    if (request.isPriorityEnabled(Priority::SHIB_DEBUG))
-                        request.log(Priority::SHIB_DEBUG, string("htaccess: expecting regexp ") + toMatch + ", got " + *v + ": accepted");
-                    return true;
+    bool caseSensitive = attrConfig.isCaseSensitive(attributeID);
+    if (isRegex) {
+        regexp::regex_constants::syntax_option_type flags = regexp::regex_constants::extended;
+        if (!caseSensitive) {
+            flags |= regexp::regex_constants::icase;
+        }
+        try {
+            regexp::regex exp(toMatch, flags);
+            if (attrConfig.hasMatchingValue(session, attributeID, exp)) {
+                if (request.isPriorityEnabled(Priority::SHIB_DEBUG)) {
+                    request.log(Priority::SHIB_DEBUG, string("htaccess: attribute (") + attributeID + ") matched regexp: " + toMatch);
                 }
-            } catch (const regexp::regex_error& e) {
-                request.log(Priority::SHIB_ERROR,
-                    string("htaccess plugin caught exception while parsing regular expression (") + toMatch + "): " + e.what());
+                return true;
             }
+        } catch (const regexp::regex_error& e) {
+            request.log(Priority::SHIB_ERROR,
+                string("htaccess plugin caught exception while parsing regular expression (") + toMatch + "): " + e.what());
         }
-        else if ((caseSensitive && *v == toMatch) || (!caseSensitive && !strcasecmp(v->c_str(), toMatch))) {
-            if (request.isPriorityEnabled(Priority::SHIB_DEBUG))
-                request.log(Priority::SHIB_DEBUG, string("htaccess: expecting ") + toMatch + ", got " + *v + ": accepted");
-            return true;
+    }
+    else if (attrConfig.hasMatchingValue(session, attributeID, toMatch)) {
+        if (request.isPriorityEnabled(Priority::SHIB_DEBUG)) {
+            request.log(Priority::SHIB_DEBUG, string("htaccess: attribute (") + attributeID + ") matched " + toMatch);
         }
-        else if (request.isPriorityEnabled(Priority::SHIB_DEBUG)) {
-            request.log(Priority::SHIB_DEBUG, string("htaccess: expecting ") + toMatch + ", got " + *v + ": rejected");
-        }
+        return true;
+    }
+    else if (request.isPriorityEnabled(Priority::SHIB_DEBUG)) {
+        request.log(Priority::SHIB_DEBUG, string("htaccess: attribute (") + attributeID + ") did not match " + toMatch);
     }
     return false;
 }
@@ -984,25 +997,27 @@ AccessControl::aclresult_t htAccessControl::doShibAttr(
     const ShibTargetApache& sta, const Session* session, const char* rule, const char* params
     ) const
 {
-    // Find the attribute(s) matching the require rule.
-    pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs =
-        session->getIndexedAttributes().equal_range(rule ? rule : "");
+    // "rule" is the attribute ID being eval'd
+    if (!rule || !session) {
+        return shib_acl_false;
+    }
+
+    const AttributeConfiguration& attrConfig =
+        sta.getAgent().getAttributeConfiguration(sta.getRequestSettings().first->getString("attributeConfigID"));
 
     bool regexp = false;
-    while (attrs.first != attrs.second && *params) {
+    while (*params) {
         const char* w = ap_getword_conf(sta.m_req->pool, &params);
         if (*w == '~') {
             regexp = true;
             continue;
         }
 
-        pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> attrs2(attrs);
-        for (; attrs2.first != attrs2.second; ++attrs2.first) {
-            if (checkAttribute(sta, attrs2.first->second, w, regexp)) {
-                return shib_acl_true;
-            }
+        if (checkAttribute(sta, *session, attrConfig, rule, w, regexp)) {
+            return shib_acl_true;
         }
     }
+
     return shib_acl_false;
 }
 

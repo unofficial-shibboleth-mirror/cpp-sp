@@ -78,13 +78,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\shibsp\attribute\Attribute.h">
-      <Filter>Header Files\Attribute</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\shibsp\attribute\ScopedAttribute.h">
-      <Filter>Header Files\Attribute</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\shibsp\attribute\SimpleAttribute.h">
+    <ClInclude Include="..\..\shibsp\attribute\AttributeConfiguration.h">
       <Filter>Header Files\Attribute</Filter>
     </ClInclude>
     <ClInclude Include="..\..\shibsp\config_pub_win32.h">
@@ -245,13 +239,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\shibsp\attribute\Attribute.cpp">
-      <Filter>Source Files\Attribute</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\shibsp\attribute\ScopedAttribute.cpp">
-      <Filter>Source Files\Attribute</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\shibsp\attribute\SimpleAttribute.cpp">
+    <ClCompile Include="..\..\shibsp\attribute\impl\DefaultAttributeConfiguraton.cpp">
       <Filter>Source Files\Attribute</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\handler\impl\AbstractHandler.cpp">

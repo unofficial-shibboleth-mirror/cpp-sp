@@ -24,7 +24,7 @@
 #include "AgentConfig.h"
 #include "AccessControl.h"
 #include "SPRequest.h"
-#include "attribute/Attribute.h"
+#include "attribute/AttributeConfiguration.h"
 #include "handler/Handler.h"
 #include "handler/HandlerConfiguration.h"
 #include "logging/Category.h"
@@ -60,7 +60,7 @@ bool Agent::CATCH_ALL_PROP_DEFAULT = false;
 
 Agent::Agent()
 {
-    m_authTypes.insert("shibboleth");
+    m_authTypes = {"shibboleth"};
 }
 
 Agent::~Agent()
@@ -118,133 +118,6 @@ long Agent::handleError(Category& log, SPRequest& request, const Session* sessio
 
     istringstream msg("Internal Server Error. Please contact the site administrator.");
     return request.sendResponse(msg, richEx ? richEx->getStatusCode() : HTTPResponse::SHIBSP_HTTP_STATUS_ERROR);
-}
-
-void Agent::clearHeaders(SPRequest& request) const {
-    request.clearHeader("Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
-    request.clearHeader("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
-    request.clearHeader("Shib-Session-Index", "HTTP_SHIB_SESSION_INDEX");
-    request.clearHeader("Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
-    request.clearHeader("Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
-    request.clearHeader("Shib-Identity-Provider", "HTTP_SHIB_IDENTITY_PROVIDER");
-    request.clearHeader("Shib-Authentication-Method", "HTTP_SHIB_AUTHENTICATION_METHOD");
-    request.clearHeader("Shib-Authentication-Instant", "HTTP_SHIB_AUTHENTICATION_INSTANT");
-    request.clearHeader("Shib-AuthnContext-Class", "HTTP_SHIB_AUTHNCONTEXT_CLASS");
-    request.clearHeader("Shib-AuthnContext-Decl", "HTTP_SHIB_AUTHNCONTEXT_DECL");
-    request.clearHeader("Shib-Assertion-Count", "HTTP_SHIB_ASSERTION_COUNT");
-    request.clearHeader("Shib-Handler", "HTTP_SHIB_HANDLER");
-    request.clearHeader("REMOTE_USER", "HTTP_REMOTE_USER");
-    // TODO: Redo the handling of attribute headers in the code, likely supplanting all of the above...
-    //request.clearAttributeHeaders();
-}
-
-void Agent::exportAttributes(SPRequest& request, const Session* session) const {
-
-    RequestMapper::Settings settings = request.getRequestSettings();
-
-    const char* enc = settings.first->getString("encoding");
-    if (enc && strcmp(enc, "URL"))
-        throw ConfigurationException(string("Unsupported value for 'encoding' content setting: ") + enc);
-
-    const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
-
-    // Default delimiter is semicolon but is now configurable.
-    const char* delim = settings.first->getString("attributeValueDelimiter", ";");
-    size_t delim_len = strlen(delim);
-
-    bool exportDups = settings.first->getBool("exportDuplicateValues", true);
-    const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
-
-    // Default export strategy will include duplicates.
-    if (exportDups) {
-        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
-            if (a->second->isInternal())
-                continue;
-            string header(request.getSecureHeader(a->first.c_str()));
-            const vector<string>& vals = a->second->getSerializedValues();
-            for (vector<string>::const_iterator v = vals.begin(); v != vals.end(); ++v) {
-                if (!header.empty())
-                    header += delim;
-                if (enc) {
-                    // If URL-encoding, any semicolons will get escaped anyway.
-                    header += encoder.encode(v->c_str());
-                }
-                else {
-                    string::size_type pos = v->find(delim, string::size_type(0));
-                    if (pos != string::npos) {
-                        string value(*v);
-                        for (; pos != string::npos; pos = value.find(delim, pos)) {
-                            value.insert(pos, "\\");
-                            pos += delim_len + 1;
-                        }
-                        header += value;
-                    }
-                    else {
-                        header += (*v);
-                    }
-                }
-            }
-            request.setHeader(a->first.c_str(), header.c_str());
-        }
-    }
-    else {
-        // Capture values in a map of sets to check for duplicates on the fly.
-        map< string,set<string> > valueMap;
-        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
-            if (a->second->isInternal())
-                continue;
-            const vector<string>& vals = a->second->getSerializedValues();
-            valueMap[a->first].insert(vals.begin(), vals.end());
-        }
-
-        // Export the mapped sets to the headers.
-        for (map< string,set<string> >::const_iterator deduped = valueMap.begin(); deduped != valueMap.end(); ++deduped) {
-            string header;
-            for (set<string>::const_iterator v = deduped->second.begin(); v != deduped->second.end(); ++v) {
-                if (!header.empty())
-                    header += delim;
-                if (enc) {
-                    // If URL-encoding, any semicolons will get escaped anyway.
-                    header += encoder.encode(v->c_str());
-                }
-                else {
-                    string::size_type pos = v->find(delim, string::size_type(0));
-                    if (pos != string::npos) {
-                        string value(*v);
-                        for (; pos != string::npos; pos = value.find(delim, pos)) {
-                            value.insert(pos, "\\");
-                            pos += delim_len + 1;
-                        }
-                        header += value;
-                    }
-                    else {
-                        header += (*v);
-                    }
-                }
-            }
-            request.setHeader(deduped->first.c_str(), header.c_str());
-        }
-    }
-
-    // Check for REMOTE_USER.
-    bool remoteUserSet = false;
-    vector<string> dummy;
-    const vector<string>& rmids = dummy; // app.getRemoteUserAttributeIds(); TODO: re implement this elsewhere
-    for (vector<string>::const_iterator rmid = rmids.begin(); !remoteUserSet && rmid != rmids.end(); ++rmid) {
-        pair<multimap<string,const Attribute*>::const_iterator,multimap<string,const Attribute*>::const_iterator> matches =
-            attributes.equal_range(*rmid);
-        for (; matches.first != matches.second; ++matches.first) {
-            const vector<string>& vals = matches.first->second->getSerializedValues();
-            if (!vals.empty()) {
-                if (enc)
-                    request.setRemoteUser(encoder.encode(vals.front().c_str()).c_str());
-                else
-                    request.setRemoteUser(vals.front().c_str());
-                remoteUserSet = true;
-                break;
-            }
-        }
-    }
 }
 
 pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
@@ -305,8 +178,9 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
             return make_pair(true, request.returnDecline());
         }
 
-        // Fix for secadv 20050901
-        clearHeaders(request);
+        request.getAgent().getAttributeConfiguration(
+            request.getRequestSettings().first->getString("attributeConfigID")
+            ).clearHeaders(request);
 
         bool sessionExists = false;
         try {
@@ -486,8 +360,8 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
         request.setHeader("Shib-Session-ID", session->getID());
         request.setHeader("Shib-Application-ID", session->getApplicationID());
 
-        // Check for export of "standard" variables.
-        request.setHeader( "Shib-Session-Expires", boost::lexical_cast<string>(session->getExpiration()).c_str());
+        unsigned int lifetime = settings.first->getUnsignedInt("lifetime", 28800);
+        request.setHeader( "Shib-Session-Expires", boost::lexical_cast<string>(session->getCreation() + lifetime).c_str());
         unsigned int timeout = settings.first->getUnsignedInt("timeout", 3600);
         if (timeout > 0) {
             request.setHeader( "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout).c_str());
@@ -501,7 +375,9 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
         }
 
         // Export the attributes.
-        exportAttributes(request, session);
+        request.getAgent().getAttributeConfiguration(
+            request.getRequestSettings().first->getString("attributeConfigID")
+            ).exportAttributes(request, *session);
 
         return make_pair(false,0L);
     }

@@ -31,11 +31,14 @@
 
 namespace shibsp {
 
-    class SHIBSP_API Attribute;
+    class SHIBSP_API DDF;
     class SHIBSP_API SPRequest;
 
     /**
-     * Encapsulates access to a user's security session.
+     * Encapsulates access to a session.
+     * 
+     * <p>Sessions are returned from APIs and generally will be returned in a
+     * locked state and should be unlocked by the caller when done using them.</p>
      */
     class SHIBSP_API Session : public virtual BasicLockable
     {
@@ -60,11 +63,11 @@ namespace shibsp {
         virtual const char* getApplicationID() const=0;
 
         /**
-         * Returns the session expiration.
+         * Returns the session creation time.
          *
-         * @return  the session's expiration time or 0 for none
+         * @return  the session's creation time
          */
-        virtual time_t getExpiration() const=0;
+        virtual time_t getCreation() const=0;
 
         /**
          * Returns the last access time of the session.
@@ -74,18 +77,13 @@ namespace shibsp {
         virtual time_t getLastAccess() const=0;
 
         /**
-         * Returns the resolved attributes associated with the session.
-         *
-         * @return an immutable array of attributes
-         */
-        virtual const std::vector<std::unique_ptr<Attribute>>& getAttributes() const=0;
-
-        /**
          * Returns the resolved attributes associated with the session, indexed by ID.
+         * 
+         * <p>Each "attribute" is a list containing the values (of various types).</p>
          *
-         * @return an immutable map of attributes keyed by attribute ID
+         * @return an immutable map of attribute data keyed by attribute ID
          */
-        virtual const std::multimap<std::string,const Attribute*>& getIndexedAttributes() const=0;
+        virtual const std::map<std::string,DDF>& getAttributes() const=0;
     };
 
     /**

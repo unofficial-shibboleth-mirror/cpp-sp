@@ -18,18 +18,69 @@
  * Base class for SessionCache implementations.
  */
 
+#ifndef __shibsp_abssessioncache_h__
+#define __shibsp_abssessioncache_h__
+
+#include <logging/Category.h>
+#include <remoting/ddf.h>
 #include <session/SessionCache.h>
+
+#include <mutex>
 
 namespace shibsp {
 
-    class SHIBSP_API AbstractSessionCache : public virtual SessionCache {
-    protected:
-        /** Constructor. */
-        AbstractSessionCache();
-        virtual ~AbstractSessionCache();
+    class SHIBSP_API AbstractSessionCache;
+    class SHIBSP_API Attribute;
 
+    class SHIBSP_API BasicSession : public virtual Session
+    {
     public:
-        bool start();
+        BasicSession(AbstractSessionCache& cache, DDF& obj);
+        virtual ~BasicSession();
+
+        void lock();
+        bool try_lock();
+        void unlock();
+
+        const char* getID() const;
+        const char* getApplicationID() const;
+        const char* getClientAddress(const char* family) const;
+        void setClientAddress(const char* client_addr);
+        const std::map<std::string,DDF>& getAttributes() const;
+        time_t getCreation() const;
+        time_t getLastAccess() const;
+
+        void validate(const char* applicationId, const char* client_addr, time_t* timeout);
+
+        // Allows the cache to bind sessions to multiple client address
+        // families based on whatever this function returns.
+        static const char* getAddressFamily(const char* addr);
+
+    private:
+        DDF m_obj;
+        std::map<std::string,DDF> m_attributes;
+
+        AbstractSessionCache& m_cache;
+        time_t m_creation,m_lastAccess;
+        // TODO: possibly convert to a shared lock where possible?
+        // I used exclusive because it avoided lock "upgrades"
+        // when mutating or deleting sessions.
+        std::mutex m_lock;
     };
 
+    class SHIBSP_API AbstractSessionCache : public virtual SessionCache {
+        protected:
+            /** Constructor. */
+            AbstractSessionCache();
+            virtual ~AbstractSessionCache();
+    
+            Category& m_log;
+    
+        public:
+            bool start();
+
+        friend class BasicSession;
+        };    
 };
+
+#endif /** __shibsp_abssessioncache_h__ */

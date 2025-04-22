@@ -20,8 +20,9 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "Agent.h"
 #include "SPRequest.h"
-#include "attribute/Attribute.h"
+#include "attribute/AttributeConfiguration.h"
 #include "handler/SecuredHandler.h"
 #include "logging/Category.h"
 #include "session/SessionCache.h"
@@ -151,10 +152,7 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
 
     s << "{ ";
     s << "\"expiration\": ";
-    if (session->getExpiration())
-        s << ((session->getExpiration() - time(nullptr)) / 60);
-    else
-        s << 0;
+    s << ((session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800) - time(nullptr)) / 60);
 
     /*
         attributes: [ { "name": "foo", "values" : count } ]
@@ -164,12 +162,12 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
         ]
     */
 
-    const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
+    const map<string,DDF>& attributes = session->getAttributes();
     if (!attributes.empty()) {
         s << ", \"attributes\": [ ";
         string key;
-        vector<string>::size_type count=0;
-        for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
+        int count=0;
+        for (map<string,DDF>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
             if (a->first != key) {
                 // We're starting a new attribute.
                 if (a != attributes.begin()) {
@@ -187,19 +185,23 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
             }
 
             if (m_values) {
-                const vector<string>& vals = a->second->getSerializedValues();
-                for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
-                    if (v != vals.begin() || a->first == key) {
+                bool first = true;
+                DDF val = const_cast<DDF&>(a->second).first();
+                while (!val.isnull()) {
+                    if (!first || a->first == key) {
                         s << ", ";
                     }
                     else {
                         s << ", \"values\": [ ";
                     }
-                    json_safe(s, v->c_str());
+                    json_safe(s, val.string());
+
+                    val = const_cast<DDF&>(a->second).next();
+                    first = false;
                 }
             }
             else {
-                count += a->second->getSerializedValues().size();
+                count += a->second.integer();
             }
             key = a->first;
         }
@@ -217,6 +219,12 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
 
 pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
 {
+    // Default delimiter is semicolon but is configurable.
+    const char* delim = request.getAgent().getAttributeConfiguration(
+        request.getRequestSettings().first->getString("attributeConfigID")
+        ).getString("attributeValueDelimiter", ";");
+    size_t delim_len = strlen(delim);
+
     stringstream s;
     s << "<html><head><title>Session Summary</title></head><body><pre>" << endl;
 
@@ -237,17 +245,13 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
     s << "<u>Miscellaneous</u>" << endl;
 
     s << "<strong>Session Expiration (barring inactivity):</strong> ";
-    if (session->getExpiration())
-        s << ((session->getExpiration() - time(nullptr)) / 60) << " minute(s)" << endl;
-    else
-        s << "Infinite" << endl;
-
+    s << ((session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800) - time(nullptr)) / 60) << " minute(s)" << endl;
     s << endl << "<u>Attributes</u>" << endl;
 
     string key;
-    vector<string>::size_type count=0;
-    const multimap<string,const Attribute*>& attributes = session->getIndexedAttributes();
-    for (multimap<string,const Attribute*>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
+    int count=0;
+    const map<string,DDF>& attributes = session->getAttributes();
+    for (map<string,DDF>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
         if (a->first != key) {
             if (a != attributes.begin()) {
                 if (m_values)
@@ -261,30 +265,31 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
         }
 
         if (m_values) {
-            // Default delimiter is semicolon but is now configurable.
-            const char* delim = request.getRequestSettings().first->getString("attributeValueDelimiter", ";");
-            size_t delim_len = strlen(delim);
-
-            const vector<string>& vals = a->second->getSerializedValues();
-            for (vector<string>::const_iterator v = vals.begin(); v!=vals.end(); ++v) {
-                if (v != vals.begin() || a->first == key)
+            bool first = true;
+            DDF val = const_cast<DDF&>(a->second).first();
+            while (!val.isnull()) {
+                if (!first || a->first == key) {
                     s << delim;
-                string::size_type pos = v->find(delim, string::size_type(0));
+                }
+                string serialized(val.string());
+                string::size_type pos = serialized.find(delim, string::size_type(0));
                 if (pos != string::npos) {
-                    string value(*v);
-                    for (; pos != string::npos; pos = value.find(delim, pos)) {
-                        value.insert(pos, "\\");
+                    for (; pos != string::npos; pos = serialized.find(delim, pos)) {
+                        serialized.insert(pos, "\\");
                         pos += delim_len + 1;
                     }
-                    s << value;
+                    s << serialized;
                 }
                 else {
-                    s << *v;
+                    s << val.string();
                 }
+
+                val = const_cast<DDF&>(a->second).next();
+                first = false;
             }
         }
         else {
-            count += a->second->getSerializedValues().size();
+            count += a->second.integer();
         }
         key = a->first;
     }

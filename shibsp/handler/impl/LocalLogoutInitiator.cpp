@@ -88,7 +88,7 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         bool result;
         vector<string> sessions(1, session->getID());
         result = notifyBackChannel(request, sessions, true);
-        time_t revocationExp = session->getExpiration();
+        time_t revocationExp = session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
         locker.unlock();    // unlock the session
         request.getAgent().getSessionCache()->remove(request, revocationExp);
         if (!result) {

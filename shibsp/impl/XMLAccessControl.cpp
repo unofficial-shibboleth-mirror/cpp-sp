@@ -24,8 +24,9 @@
 #include "AccessControl.h"
 #include "Agent.h"
 #include "SPRequest.h"
-#include "attribute/Attribute.h"
+#include "attribute/AttributeConfiguration.h"
 #include "logging/Category.h"
+#include "remoting/ddf.h"
 #include "session/SessionCache.h"
 #include "util/Lockable.h"
 #include "util/Misc.h"
@@ -193,31 +194,22 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
         actual_alias = request.getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class");
     }
 
-    // Find the attribute(s) matching the require rule.
-    pair<multimap<string,const Attribute*>::const_iterator, multimap<string,const Attribute*>::const_iterator> attrs =
-        session->getIndexedAttributes().equal_range(actual_alias);
-    if (attrs.first == attrs.second) {
-        request.log(Priority::SHIB_WARN, string("AccessControl rule requires attribute (") + actual_alias + "), not found in session");
+    // Empty case is historical and not terribly smart, but we'll brute force it.
+    if (m_vals.empty()) {
+        if (session->getAttributes().find(actual_alias.c_str()) != session->getAttributes().end()) {
+            request.log(Priority::SHIB_DEBUG, string("AccessControl rule requires presence of attribute (") + actual_alias + "), authz granted");
+            return shib_acl_true;
+        }
         return shib_acl_false;
     }
-    else if (m_vals.empty()) {
-        request.log(Priority::SHIB_DEBUG, string("AccessControl rule requires presence of attribute (") + actual_alias + "), authz granted");
+
+    // Otherwise call into the helper logic to handle matching process..
+    const AttributeConfiguration& attributeConfig = request.getAgent().getAttributeConfiguration(
+        request.getRequestSettings().first->getString("attributeConfigID")
+        );
+    if (attributeConfig.hasMatchingValue(*session, actual_alias.c_str(), m_vals)) {
+        request.log(Priority::SHIB_DEBUG, string("AccessControl rule satisfied for attribute (") + actual_alias + "), authz granted");
         return shib_acl_true;
-    }
-
-    for (; attrs.first != attrs.second; ++attrs.first) {
-        bool caseSensitive = attrs.first->second->isCaseSensitive();
-
-        // Now we have to intersect the attribute's values against the rule's list.
-        const vector<string>& vals = attrs.first->second->getSerializedValues();
-        for (set<string>::const_iterator i = m_vals.begin(); i != m_vals.end(); ++i) {
-            for (vector<string>::const_iterator j = vals.begin(); j != vals.end(); ++j) {
-                if ((caseSensitive && *i == *j) || (!caseSensitive && !strcasecmp(i->c_str(),j->c_str()))) {
-                    request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting (") + *j + "), authz granted");
-                    return shib_acl_true;
-                }
-            }
-        }
     }
 
     return shib_acl_false;
@@ -275,21 +267,14 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
         actual_alias = request.getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class");
     }
 
-    // Find the attribute(s) matching the require rule.
-    auto attrs = session->getIndexedAttributes().equal_range(actual_alias);
-    if (attrs.first == attrs.second) {
-        request.log(Priority::SHIB_WARN, string("AccessControl rule requires attribute (") + actual_alias + "), not found in session");
-        return shib_acl_false;
-    }
-
-    for (; attrs.first != attrs.second; ++attrs.first) {
-        // Now we have to intersect the attribute's values against the regular expression.
-        for (const string& v : attrs.first->second->getSerializedValues()) {
-            if (regexp::regex_match(v, m_re, match_flags)) {
-                request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting regex (") + m_exp + "), authz granted");
-                return shib_acl_true;
-            }
-        }
+    // Call into the helper logic to handle matching process..
+    const AttributeConfiguration& attributeConfig = request.getAgent().getAttributeConfiguration(
+        request.getRequestSettings().first->getString("attributeConfigID")
+        );
+    if (attributeConfig.hasMatchingValue(*session, actual_alias.c_str(), m_re)) {
+        request.log(Priority::SHIB_DEBUG,
+            string("AccessControl rule for attribute (") + actual_alias + ") expecting regex (" + m_exp  + ", authz granted");
+        return shib_acl_true;
     }
 
     return shib_acl_false;

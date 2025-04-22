@@ -25,6 +25,7 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
+#include "attribute/AttributeConfiguration.h"
 #include "handler/HandlerConfiguration.h"
 #include "io/HTTPResponse.h"
 #include "logging/Category.h"
@@ -77,7 +78,7 @@ namespace {
             return m_requestMapper.get();
         }
 
-        HandlerConfiguration& getHandlerConfiguration(const char* id=nullptr) const {
+        const HandlerConfiguration& getHandlerConfiguration(const char* id=nullptr) const {
             if (!id) {
                 id = "default";
             }
@@ -88,11 +89,23 @@ namespace {
             throw ConfigurationException(string("No HandlerConfiguration with ID of ") + id);
         }
 
+        const AttributeConfiguration& getAttributeConfiguration(const char* id=nullptr) const {
+            if (!id) {
+                id = "default";
+            }
+            const auto& config = m_attributeConfigurations.find(id);
+            if (config != m_attributeConfigurations.end()) {
+                return *(config->second);
+            }
+            throw ConfigurationException(string("No AttributeConfiguration with ID of ") + id);
+        }
+
     private:
         void doRemotingService();
         void doSessionCache();
         void doRequestMapper();
         void doHandlerConfigurations();
+        void doAttributeConfigurations();
 
         ptree& m_pt;
         Category& m_log;
@@ -104,6 +117,7 @@ namespace {
         unique_ptr<SessionCache> m_sessionCache;
         unique_ptr<RequestMapper> m_requestMapper;
         map<string,unique_ptr<HandlerConfiguration>> m_handlerConfigurations;
+        map<string,unique_ptr<AttributeConfiguration>> m_attributeConfigurations;
     };
 
 #if defined (_MSC_VER)
@@ -216,5 +230,32 @@ void DefaultAgent::doHandlerConfigurations()
         AgentConfig::getConfig().getPathResolver().resolve(path, PathResolver::SHIBSP_CFG_FILE);
         m_handlerConfigurations["default"] = HandlerConfiguration::newHandlerConfiguration(path.c_str());
         m_log.info("installed 'default' HandlerConfiguration from %s", path.c_str());
+    }
+}
+
+void DefaultAgent::doAttributeConfigurations()
+{
+    // Check for testing boolean to disable attribute config.
+    if (getBool("skipAttributes", false)) {
+        return;
+    }
+
+    boost::optional<ptree&> child = m_pt.get_child_optional("attributes");
+    if (child) {
+        for (const auto& keys : *child) {
+            boost::optional<string> path = keys.second.get_value_optional<string>();
+            if (!path) {
+                m_log.warn("skipping property key with no value in [attributes] section");
+                continue;
+            }
+            AgentConfig::getConfig().getPathResolver().resolve(*path, PathResolver::SHIBSP_CFG_FILE);
+            m_attributeConfigurations[keys.first] = AttributeConfiguration::newAttributeConfiguration(path->c_str());
+            m_log.info("installed '%s' AttributeConfiguration from %s", keys.first.c_str(), path->c_str());
+        }
+    } else {
+        string path("attributes.ini");
+        AgentConfig::getConfig().getPathResolver().resolve(path, PathResolver::SHIBSP_CFG_FILE);
+        m_attributeConfigurations["default"] = AttributeConfiguration::newAttributeConfiguration(path.c_str());
+        m_log.info("installed 'default' AttributeConfiguration from %s", path.c_str());
     }
 }

@@ -28,6 +28,7 @@
 
 namespace shibsp {
 
+    class SHIBSP_API AttributeConfiguration;
     class SHIBSP_API Category;
     class SHIBSP_API Handler;
     class SHIBSP_API HandlerConfiguration;
@@ -101,7 +102,18 @@ namespace shibsp {
          * 
          * @return the matching configuration
          */
-        virtual HandlerConfiguration& getHandlerConfiguration(const char* id=nullptr) const=0;
+        virtual const HandlerConfiguration& getHandlerConfiguration(const char* id=nullptr) const=0;
+
+        /**
+         * Gets the identified AttributeConfiguration.
+         * 
+         * <p>If no matching configurationn is found, an exception is raised.</p>
+         * 
+         * @param id identifier for configuration (null is assumed to be the default)
+         * 
+         * @return the matching configuration
+         */
+        virtual const AttributeConfiguration& getAttributeConfiguration(const char* id=nullptr) const=0;
 
         /**
          * Enforces requirements for an authenticated session.
@@ -175,9 +187,6 @@ namespace shibsp {
             std::exception* ex=nullptr,
             bool mayRedirect=true
         ) const;
-        void clearHeaders(SPRequest& request) const;
-        void exportAttributes(SPRequest& request, const Session* session) const;
-
     };
 
 #if defined (_MSC_VER)
