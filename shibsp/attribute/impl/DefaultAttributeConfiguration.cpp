@@ -24,7 +24,6 @@
 #include "AgentConfig.h"
 #include "RequestMapper.h"
 #include "SPRequest.h"
-#include "attribute/Attribute.h"
 #include "attribute/AttributeConfiguration.h"
 #include "logging/Category.h"
 #include "remoting/ddf.h"

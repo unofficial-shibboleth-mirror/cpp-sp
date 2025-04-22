@@ -21,7 +21,6 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AgentConfig.h"
-#include "attribute/Attribute.h"
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
 

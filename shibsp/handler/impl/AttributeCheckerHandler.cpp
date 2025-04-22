@@ -24,7 +24,6 @@
 #include "AgentConfig.h"
 #include "exceptions.h"
 #include "SPRequest.h"
-#include "attribute/Attribute.h"
 #include "handler/AbstractHandler.h"
 #include "logging/Category.h"
 #include "session/SessionCache.h"
