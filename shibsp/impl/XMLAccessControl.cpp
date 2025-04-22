@@ -183,15 +183,24 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
         }
         return shib_acl_false;
     }
-    if (m_alias == "user") {
+    else if (m_alias == "user") {
         if (m_vals.find(request.getRemoteUser()) != m_vals.end()) {
             request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting REMOTE_USER (") + request.getRemoteUser() + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
     }
-    else if (m_alias == "authnContextClassRef") {
-        actual_alias = request.getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class");
+    
+    // Last two rule types rely on AttributeConfiguration...
+    
+    const AttributeConfiguration& attributeConfig = request.getAgent().getAttributeConfiguration(
+        request.getRequestSettings().first->getString("attributeConfigID")
+        );
+
+    if (m_alias == "authnContextClassRef") {
+        actual_alias = attributeConfig.getString(
+            AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_PATH,
+            AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT);
     }
 
     // Empty case is historical and not terribly smart, but we'll brute force it.
@@ -204,9 +213,6 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     }
 
     // Otherwise call into the helper logic to handle matching process..
-    const AttributeConfiguration& attributeConfig = request.getAgent().getAttributeConfiguration(
-        request.getRequestSettings().first->getString("attributeConfigID")
-        );
     if (attributeConfig.hasMatchingValue(*session, actual_alias.c_str(), m_vals)) {
         request.log(Priority::SHIB_DEBUG, string("AccessControl rule satisfied for attribute (") + actual_alias + "), authz granted");
         return shib_acl_true;
@@ -255,22 +261,27 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
         }
         return shib_acl_false;
     }
-
-    if (m_alias == "user") {
+    else if (m_alias == "user") {
         if (regexp::regex_match(request.getRemoteUser(), m_re, match_flags)) {
             request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting REMOTE_USER regex (") + m_exp + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
     }
-    else if (m_alias == "authnContextClassRef") {
-        actual_alias = request.getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class");
-    }
 
-    // Call into the helper logic to handle matching process..
+    // Last two rule types rely on AttributeConfiguration...
+    
     const AttributeConfiguration& attributeConfig = request.getAgent().getAttributeConfiguration(
         request.getRequestSettings().first->getString("attributeConfigID")
         );
+
+    if (m_alias == "authnContextClassRef") {
+        actual_alias = attributeConfig.getString(
+            AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_PATH,
+            AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT);
+    }
+
+    // Call into the helper logic to handle matching process..
     if (attributeConfig.hasMatchingValue(*session, actual_alias.c_str(), m_re)) {
         request.log(Priority::SHIB_DEBUG,
             string("AccessControl rule for attribute (") + actual_alias + ") expecting regex (" + m_exp  + ", authz granted");
