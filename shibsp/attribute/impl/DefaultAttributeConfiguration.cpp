@@ -236,14 +236,18 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
     if (m_exportDuplicates) {
         for (const auto& a : session.getAttributes()) {
 
+            const string* headerNameToUse = &(a.first);
             const auto& headerMapping = m_mappings.find(a.first);
             if (headerMapping == m_mappings.end()) {
-                // TODO: Check for use of headers, then log this...no mapping for attribute...
-                // If headers not used, we'd export it as is.
-                continue;
+                if (request.isUseHeaders()) {
+                    // No mapping, so cannot be supplied as a header.
+                    continue;
+                }
+            } else {
+                headerNameToUse = &(headerMapping->second);
             }
 
-            string header(request.getSecureHeader(headerMapping->second.c_str()));
+            string header(request.getSecureHeader(headerNameToUse->c_str()));
 
             DDF vals = a.second; // cheap copy drops const qualifier
             DDF v = vals.first();
@@ -270,7 +274,7 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
 
                 v = vals.next();
             }
-            request.setHeader(headerMapping->second.c_str(), header.c_str());
+            request.setHeader(headerNameToUse->c_str(), header.c_str());
         }
     }
     else {
@@ -278,16 +282,20 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
         map<string,set<string>> valueMap;
         for (const auto& a : session.getAttributes()) {
 
+            const string* headerNameToUse = &(a.first);
             const auto& headerMapping = m_mappings.find(a.first);
             if (headerMapping == m_mappings.end()) {
-                // TODO: Check for use of headers, then log this...no mapping for attribute...
-                // If headers not used, we'd export it as is.
-                continue;
+                if (request.isUseHeaders()) {
+                    // No mapping, so cannot be supplied as a header.
+                    continue;
+                }
+            } else {
+                headerNameToUse = &(headerMapping->second);
             }
 
             DDF vals = a.second; // cheap copy drops const qualifier
             DDF v = vals.first();
-            set<string>& targetSet = valueMap[headerMapping->first];
+            set<string>& targetSet = valueMap[*headerNameToUse];
             while (vals.isnull()) {
                 targetSet.insert(v.string());
                 v = vals.next();
