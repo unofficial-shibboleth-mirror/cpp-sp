@@ -63,7 +63,7 @@ protected:
     void setRemoteUser(const char* user);
     const vector<string>& getClientCertificates() const;
     const char* getMethod() const;
-    void  clearHeader(const char* rawname, const char* cginame);
+    void  clearHeader(const char* name);
     long  returnDecline();
     long  returnOK();
     string getRemoteAddr() const;

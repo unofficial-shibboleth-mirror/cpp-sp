@@ -206,7 +206,7 @@ public:
 
     // Not used in the extension.
 
-    virtual void clearHeader(const char* rawname, const char* cginame) {
+    virtual void clearHeader(const char* name) {
         throw runtime_error("clearHeader not implemented by FastCGI responder.");
     }
 

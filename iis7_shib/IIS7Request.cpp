@@ -205,7 +205,7 @@ const char* IIS7Request::getMethod() const
     return m_request->GetHttpMethod();
 }
 
-void IIS7Request::clearHeader(const char* rawname, const char* cginame)
+void IIS7Request::clearHeader(const char* name)
 {
     if (isUseHeaders()) {
         if (g_checkSpoofing && m_firsttime) {
@@ -219,19 +219,29 @@ void IIS7Request::clearHeader(const char* rawname, const char* cginame)
                 m_allhttp =  (nullptr == val) ? "" : val;
             }
             if (!m_allhttp.empty()) {
-                string hdr = (m_safeHeaderNames ? ("HTTP_" + makeSafeHeader(cginame + 5)) : string(cginame)) + ':';
+                string hdr = (m_safeHeaderNames ? ("HTTP_" + makeSafeHeader(getCGINameForHeader(name).c_str() + 5)) : getCGINameForHeader(name)) + ':';
                 if (strstr(m_allhttp.c_str(), hdr.c_str())) {
                     throw SessionException(string("Attempt to spoof header (") + hdr + ") was detected.");
                 }
             }
         }
         string unsetHeaderValue(g_Config->getAgent().getString(Agent::UNSET_HEADER_VALUE_PROP_NAME, ""));
-        HRESULT hr = m_request->SetHeader(m_safeHeaderNames ? makeSafeHeader(rawname).c_str() : rawname,
+        HRESULT hr = m_request->SetHeader(m_safeHeaderNames ? makeSafeHeader(name).c_str() : name,
             unsetHeaderValue.c_str(), static_cast<USHORT>(unsetHeaderValue.length()), TRUE);
         if (FAILED(hr)) {
             throwError("clearHeader", hr);
         }
     }
+}
+
+string IIS7Request::makeSafeHeader(const char* rawname) const
+{
+    string hdr;
+    for (; *rawname; ++rawname) {
+        if (isalnum(*rawname))
+            hdr += *rawname;
+    }
+    return hdr;
 }
 
 long IIS7Request::returnDecline()
@@ -438,16 +448,6 @@ long IIS7Request::sendRedirect(const char* url)
     }
     m_ctx->SetRequestHandled();
     return RQ_NOTIFICATION_FINISH_REQUEST;
-}
-
-string IIS7Request::makeSafeHeader(const char* rawname) const
-{
-    string hdr;
-    for (; *rawname; ++rawname) {
-        if (isalnum(*rawname))
-            hdr += *rawname;
-    }
-    return hdr;
 }
 
 void IIS7Request::logFatal(const string& operation, HRESULT hr) const

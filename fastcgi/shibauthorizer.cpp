@@ -114,7 +114,7 @@ public:
         const char* s = FCGX_GetParam("REMOTE_ADDR", m_req->envp);
         return s ? s : "";
     }
-    void clearHeader(const char* rawname, const char* cginame) {
+    void clearHeader(const char* name) {
         // No need, since we use environment variables.
     }
     void setHeader(const char* name, const char* value) {

@@ -81,6 +81,15 @@ namespace shibsp {
         void log(Priority::Value level, const std::string& msg) const;
         bool isPriorityEnabled(Priority::Value level) const;
 
+    protected:
+        /**
+         * Gets the transformed header name constructed from a raw input name by transforming
+         * punctuation into underscores and prefixing with "HTTP_".
+         * 
+         * @return CGI name for input header name
+         */ 
+        std::string getCGINameForHeader(const char* name) const;
+
     private:
         Category& m_log;
         Agent& m_agent;

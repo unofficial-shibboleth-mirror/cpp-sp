@@ -459,32 +459,27 @@ public:
   vector<const char*>::size_type getParameters(const char* name, vector<const char*>& values) const {
       return AbstractSPRequest::getParameters(name, values);
   }
-  void clearHeader(const char* rawname, const char* cginame) {
+  void clearHeader(const char* name) {
     if (isUseHeaders()) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0, m_req, "shib_clear_header: hdr\n");
         if (g_checkSpoofing && m_firsttime) {
             if (m_allhttp.empty()) {
-                // First time, so populate set with "CGI" versions of client-supplied headers.
+                // First time, so populate cached guard set with "CGI" versions of client-supplied headers.
                 const apr_array_header_t *hdrs_arr = apr_table_elts(m_req->headers_in);
                 const apr_table_entry_t *hdrs = (const apr_table_entry_t *) hdrs_arr->elts;
                 for (int i = 0; i < hdrs_arr->nelts; ++i) {
-                    if (!hdrs[i].key)
-                        continue;
-                    string cgiversion("HTTP_");
-                    const char* pch = hdrs[i].key;
-                    while (*pch) {
-                        cgiversion += (isalnum(*pch) ? toupper(*pch) : '_');
-                        pch++;
+                    if (hdrs[i].key) {
+                        m_allhttp.insert(getCGINameForHeader(hdrs[i].key));
                     }
-                    m_allhttp.insert(cgiversion);
                 }
             }
 
-            if (m_allhttp.count(cginame) > 0)
-                throw SessionException(string("Attempt to spoof header ") + rawname + " was detected.");
+            if (m_allhttp.count(getCGINameForHeader(name)) > 0) {
+                throw SessionException(string("Attempt to spoof header ") + name + " was detected.");
+            }
         }
-        apr_table_unset(m_req->headers_in, rawname);
-        apr_table_set(m_req->headers_in, rawname, g_unsetHeaderValue.c_str());
+        apr_table_unset(m_req->headers_in, name);
+        apr_table_set(m_req->headers_in, name, g_unsetHeaderValue.c_str());
     }
   }
   void setHeader(const char* name, const char* value) {

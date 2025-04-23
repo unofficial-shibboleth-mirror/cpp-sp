@@ -74,8 +74,7 @@ namespace {
         Category& m_log;
         ptree m_pt;
         bool m_urlEncoding,m_exportDuplicates;
-        // headers are tracked as Raw name, CGI name
-        map<string,pair<string,string>> m_mappings;
+        map<string,string> m_mappings;
         set<string> m_caseSensitiveIds;
     };
 
@@ -95,13 +94,10 @@ AttributeConfiguration::~AttributeConfiguration() {}
 DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathname)
     : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration")), m_urlEncoding(false), m_exportDuplicates(true)
 {
-
-    m_mappings["Shib-Application-ID"] = pair<string,string>("Shib-Application-ID", "HTTP_SHIB_APPLICATION_ID");
-    m_mappings["Shib-Session-ID"] = pair<string,string>("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
-    m_mappings["Shib-Session-Expires"] = pair<string,string>("Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
-    m_mappings["Shib-Session-Inactivity"] = pair<string,string>("Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
-    m_mappings["Shib-Cookie-Name"] = pair<string,string>("Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
-    m_mappings["REMOTE_USER"] = pair<string,string>("REMOTE_USER", "HTTP_REMOTE_USER");
+    // Populate "built-in" mappings.
+    for (const string& name : {"Shib-Application-ID", "Shib-Session-ID", "Shib-Session-Expires", "Shib-Session-Inactivity", "Shib-Cookie-Name", "REMOTE_USER"}) {
+        m_mappings[name] = name;
+    }
 
     if (!pathname) {
         return;
@@ -127,14 +123,7 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
                 continue;
             }
 
-            string transformed("HTTP_");
-            const char* pch = alias.c_str();
-            while (*pch) {
-                transformed += (isalnum(*pch) ? toupper(*pch) : '_');
-                pch++;
-            }
-
-            m_mappings[child.first] = make_pair(alias, transformed);
+            m_mappings[child.first] = alias;
         }
     }
 }
@@ -230,7 +219,7 @@ void DefaultAttributeConfiguration::clearHeaders(SPRequest& request) const
 {
     if (request.isUseHeaders()) {
         for (const auto& names : m_mappings) {
-            request.clearHeader(names.second.first.c_str(), names.second.second.c_str());
+            request.clearHeader(names.second.c_str());
         }
     }
 }
@@ -254,7 +243,7 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
                 continue;
             }
 
-            string header(request.getSecureHeader(headerMapping->second.first.c_str()));
+            string header(request.getSecureHeader(headerMapping->second.c_str()));
 
             DDF vals = a.second; // cheap copy drops const qualifier
             DDF v = vals.first();
@@ -281,7 +270,7 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
 
                 v = vals.next();
             }
-            request.setHeader(headerMapping->second.first.c_str(), header.c_str());
+            request.setHeader(headerMapping->second.c_str(), header.c_str());
         }
     }
     else {

@@ -506,3 +506,14 @@ bool AbstractSPRequest::isPriorityEnabled(Priority::Value level) const
 {
     return m_log.isPriorityEnabled(level);
 }
+
+string AbstractSPRequest::getCGINameForHeader(const char* name) const
+{
+    string cgiversion("HTTP_");
+    const char* pch = name;
+    while (*pch) {
+        cgiversion += (isalnum(*pch) ? toupper(*pch) : '_');
+        pch++;
+    }
+    return cgiversion;
+}

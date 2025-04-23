@@ -148,12 +148,16 @@ namespace shibsp {
         virtual std::string getSecureHeader(const char* name) const=0;
 
         /**
-         * Ensures no value exists for a request header.
+         * Ensures no value exists for a request header by installing an empty or hardcoded
+         * value.
+         * 
+         * <p>The input parameter must be the undecorated/transformed version of the header rather
+         * than the one actually populated by a web server's CGI interface, i.e., this lacks the
+         * HTTP_ prefix and punctuation conversion.</p>
          *
-         * @param rawname  raw name of header to clear
-         * @param cginame  CGI-equivalent name of header
+         * @param name  raw name of header to clear
          */
-        virtual void clearHeader(const char* rawname, const char* cginame)=0;
+        virtual void clearHeader(const char* name)=0;
 
         /**
          * Sets a value for a request header.
