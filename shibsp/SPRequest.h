@@ -63,6 +63,26 @@ namespace shibsp {
         virtual RequestMapper::Settings getRequestSettings() const=0;
 
         /**
+         * Gets a server/vhost/site level determination as to the use of HTTP request headers
+         * for publication of attribute data.
+         * 
+         * <p>Headers should never be used now but remain supported for compatibbility and
+         * influence the behavior other system components. If any ambiguiity ever exists as
+         * to the answer, true should be returned.</p>
+         * 
+         * @return true iff headers are being used
+         */
+        virtual bool isUseHeaders() const=0;
+
+        /**
+         * Gets a server/vhost/site level determination as to the use of server variables
+         * for publication of attribute data.
+         * 
+         * @return true iff varables are being used
+         */
+        virtual bool isUseVariables() const=0;
+
+        /**
          * Returns a locked Session associated with the request.
          *
          * @param checkTimeout  true iff the last-used timestamp should be updated and any timeout policy enforced

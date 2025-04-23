@@ -144,15 +144,25 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
     }
 }
 
+bool IIS7Request::isUseHeaders() const
+{
+    return m_useHeaders;
+}
+
+bool IIS7Request::isUseVariables() const
+{
+    return m_useVariables;
+}
+
 void IIS7Request::setHeader(const char* name, const char* value)
 {
-    if (m_useHeaders) {
+    if (isUseHeaders()) {
         const HRESULT hr (m_request->SetHeader(m_safeHeaderNames ? makeSafeHeader(name).c_str() : name, value, static_cast<USHORT>(strlen(value)), TRUE));
         if (FAILED(hr)) {
             throwError("setHeader (Header)", hr);
         }
     }
-    if (m_useVariables) {
+    if (isUseVariables()) {
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
         const wstring wValue(converter.from_bytes(value));
         const HRESULT hr(m_ctx->SetServerVariable(const_cast<char*>(name), wValue.c_str()));
@@ -197,7 +207,7 @@ const char* IIS7Request::getMethod() const
 
 void IIS7Request::clearHeader(const char* rawname, const char* cginame)
 {
-    if (m_useHeaders) {
+    if (isUseHeaders()) {
         if (g_checkSpoofing && m_firsttime) {
             if (m_allhttp.empty()) {
                 PCSTR val = nullptr;
@@ -250,7 +260,7 @@ string IIS7Request::getRemoteAddr() const
 
 string IIS7Request::getSecureHeader(const char* name) const
 {
-    if (m_useVariables) {
+    if (isUseVariables()) {
         PCWSTR p;
         DWORD len;
         HRESULT hr = m_ctx->GetServerVariable(name, &p, &len);

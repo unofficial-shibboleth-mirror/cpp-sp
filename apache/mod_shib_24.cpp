@@ -346,7 +346,7 @@ public:
 
     setRequestURI(m_req->unparsed_uri);
 
-    if (check_user && m_dc->bUseHeaders == 1) {
+    if (check_user && isUseHeaders()) {
         // Try and see if this request was already processed, to skip spoof checking.
         if (!ap_is_initial_req(m_req)) {
             m_firsttime = false;
@@ -362,6 +362,14 @@ public:
     return true;
   }
 
+  bool isUseHeaders() const {
+    // Headers only used if turned on.
+    return m_dc->bUseHeaders == 1;
+  }
+  bool isUseVariables() const {
+    // Variables used if not turned off.
+    return m_dc->bUseEnvVars != 0;
+  }
   const char* getScheme() const {
     return m_sc->szScheme ? m_sc->szScheme : ap_http_scheme(m_req);
   }
@@ -452,7 +460,7 @@ public:
       return AbstractSPRequest::getParameters(name, values);
   }
   void clearHeader(const char* rawname, const char* cginame) {
-    if (m_dc->bUseHeaders == 1) {
+    if (isUseHeaders()) {
        // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0, m_req, "shib_clear_header: hdr\n");
         if (g_checkSpoofing && m_firsttime) {
             if (m_allhttp.empty()) {
@@ -480,26 +488,28 @@ public:
     }
   }
   void setHeader(const char* name, const char* value) {
-    if (m_dc->bUseEnvVars != 0) {
+    if (isUseVariables()) {
        if (!m_rc) {
           // this happens on subrequests
           // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0, m_req, "shib_setheader: no_m_rc\n");
           m_rc = get_request_config(m_req);
        }
-       if (!m_rc->env)
-           m_rc->env = apr_table_make(m_req->pool, 10);
-       // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0, m_req, "shib_set_env: %s=%s\n", name, value?value:"Null");
+       if (!m_rc->env) {
+          m_rc->env = apr_table_make(m_req->pool, 10);
+          // ap_log_rerror(APLOG_MARK,APLOG_DEBUG|APLOG_NOERRNO,0, m_req, "shib_set_env: %s=%s\n", name, value?value:"Null");
+       }
        apr_table_set(m_rc->env, name, value ? value : "");
     }
-    if (m_dc->bUseHeaders == 1)
+    if (isUseHeaders()) {
        apr_table_set(m_req->headers_in, name, value);
+    }
   }
   string getHeader(const char* name) const {
     const char* hdr = apr_table_get(m_req->headers_in, name);
     return string(hdr ? hdr : "");
   }
   string getSecureHeader(const char* name) const {
-    if (m_dc->bUseEnvVars != 0) {
+    if (isUseVariables()) {
        const char *hdr;
        if (m_rc && m_rc->env)
            hdr = apr_table_get(m_rc->env, name);
@@ -511,7 +521,7 @@ public:
   }
   void setRemoteUser(const char* user) {
       m_req->user = user ? apr_pstrdup(m_req->pool, user) : nullptr;
-      if (m_dc->bUseHeaders == 1) {
+      if (isUseHeaders()) {
           if (user) {
               apr_table_set(m_req->headers_in, "REMOTE_USER", user);
           }

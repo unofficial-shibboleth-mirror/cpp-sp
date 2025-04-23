@@ -81,6 +81,12 @@ public:
 
     ~ShibTargetFCGIAuth() { }
 
+    bool isUseHeaders() const {
+        return false;
+    }
+    bool isUseVariables() const {
+        return true;
+    }
     const char* getScheme() const {
         return m_scheme.c_str();
     }

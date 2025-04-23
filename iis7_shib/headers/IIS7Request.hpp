@@ -57,6 +57,8 @@ protected:
     //
     // AbstractSP
     //
+    bool isUseHeaders() const;
+    bool isUseVariables() const;
     void setHeader(const char* name, const char* value);
     void setRemoteUser(const char* user);
     const vector<string>& getClientCertificates() const;

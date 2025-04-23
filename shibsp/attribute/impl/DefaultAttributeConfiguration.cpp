@@ -228,8 +228,10 @@ bool DefaultAttributeConfiguration::isCaseSensitive(const char* attributeID) con
 
 void DefaultAttributeConfiguration::clearHeaders(SPRequest& request) const
 {
-    for (const auto& names : m_mappings) {
-        request.clearHeader(names.second.first.c_str(), names.second.second.c_str());
+    if (request.isUseHeaders()) {
+        for (const auto& names : m_mappings) {
+            request.clearHeader(names.second.first.c_str(), names.second.second.c_str());
+        }
     }
 }
 
