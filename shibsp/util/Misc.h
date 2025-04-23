@@ -58,6 +58,8 @@ namespace shibsp {
         }
     };
 
+    bool file_exists(const char* path);
+
     /**
      * Splitter functions that trim the input and split on whitespace into a container.
      */

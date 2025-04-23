@@ -161,6 +161,7 @@ void DefaultAgent::init()
     doRemotingService();
     doSessionCache();
     doRequestMapper();
+    doAttributeConfigurations();
     doHandlerConfigurations();
 }
 
@@ -255,7 +256,12 @@ void DefaultAgent::doAttributeConfigurations()
     } else {
         string path("attributes.ini");
         AgentConfig::getConfig().getPathResolver().resolve(path, PathResolver::SHIBSP_CFG_FILE);
-        m_attributeConfigurations["default"] = AttributeConfiguration::newAttributeConfiguration(path.c_str());
-        m_log.info("installed 'default' AttributeConfiguration from %s", path.c_str());
+        if (file_exists(path.c_str())) {
+            m_attributeConfigurations["default"] = AttributeConfiguration::newAttributeConfiguration(path.c_str());
+            m_log.info("installed 'default' AttributeConfiguration from %s", path.c_str());
+        } else {
+            m_attributeConfigurations["default"] = AttributeConfiguration::newAttributeConfiguration(nullptr);
+            m_log.info("installed empty 'default' AttributeConfiguration");
+        }
     }
 }

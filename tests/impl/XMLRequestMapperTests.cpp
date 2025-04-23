@@ -23,8 +23,8 @@
 #include "AccessControl.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
-#include "attribute/Attribute.h"
 #include "logging/Category.h"
+#include "remoting/ddf.h"
 #include "session/SessionCache.h"
 #include "util/PropertySet.h"
 
@@ -48,58 +48,29 @@ struct DummySession : public Session, public NoOpBasicLockable
 {
 public:
     DummySession() {}
-    ~DummySession() {}
+    ~DummySession() {
+        for (auto& a : m_attributes) {
+            a.second.destroy();
+        }
+    }
 
     const char* getID() const {
         return nullptr;
     }
-    const char* getBucketID() const {
+    const char* getApplicationID() const {
         return nullptr;
     }
-    time_t getExpiration() const {
+    time_t getCreation() const {
         return 0;
     }
     time_t getLastAccess() const {
         return 0;
     }
-    const char* getClientAddress() const {
-        return nullptr;
-    }
-    const char* getEntityID() const {
-        return nullptr;
-    }
-    const char* getProtocol() const {
-        return nullptr;
-    }
-    time_t getAuthnInstant() const {
-        return m_authInstant;
-    }
-    const char* getSessionIndex() const {
-        return nullptr;
-    }
-    const char* getAuthnContextClassRef() const {
-        return m_ac.c_str();
-    }
-    const vector<unique_ptr<Attribute>>& getAttributes() const {
+    const map<string,DDF>& getAttributes() const {
         return m_attributes;
     }
 
-    const multimap<string,const Attribute*>& getIndexedAttributes() const {
-        if (m_attributeIndex.empty()) {
-            for (const unique_ptr<Attribute>& a : m_attributes) {
-                const vector<string>& aliases = a->getAliases();
-                for (const string& alias : a->getAliases()) {
-                    m_attributeIndex.insert(multimap<string, const Attribute*>::value_type(alias, a.get()));
-                }
-            }
-        }
-        return m_attributeIndex;
-    }
-
-    time_t m_authInstant;
-    string m_ac;
-    vector<unique_ptr<Attribute>> m_attributes;
-    mutable multimap<string,const Attribute*> m_attributeIndex;
+    map<string,DDF> m_attributes;
 };
 
 class DummyRequest : public AbstractSPRequest {

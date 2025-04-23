@@ -25,6 +25,8 @@
 #include <vector>
 #include <boost/algorithm/string.hpp>
 
+#include <sys/stat.h>
+
 using namespace shibsp;
 using namespace std;
 
@@ -46,4 +48,20 @@ set<string>::size_type shibsp::split_to_container(set<string>& container, const 
         boost::split(container, dup, boost::is_space(), boost::token_compress_on);
     }
     return container.size();
+}
+
+bool shibsp::file_exists(const char* path)
+{
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(path, &stat_buf) == 0) {
+        return true;
+    }
+#else
+    struct stat stat_buf;
+    if (stat(path, &stat_buf) == 0) {
+        return true;
+    }
+#endif
+    return false;
 }

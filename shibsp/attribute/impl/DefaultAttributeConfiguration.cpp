@@ -93,8 +93,20 @@ AttributeConfiguration::AttributeConfiguration() {}
 AttributeConfiguration::~AttributeConfiguration() {}
 
 DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathname)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration")), m_urlEncoding(false)
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration")), m_urlEncoding(false), m_exportDuplicates(true)
 {
+
+    m_mappings["Shib-Application-ID"] = pair<string,string>("Shib-Application-ID", "HTTP_SHIB_APPLICATION_ID");
+    m_mappings["Shib-Session-ID"] = pair<string,string>("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
+    m_mappings["Shib-Session-Expires"] = pair<string,string>("Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
+    m_mappings["Shib-Session-Inactivity"] = pair<string,string>("Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
+    m_mappings["Shib-Cookie-Name"] = pair<string,string>("Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
+    m_mappings["REMOTE_USER"] = pair<string,string>("REMOTE_USER", "HTTP_REMOTE_USER");
+
+    if (!pathname) {
+        return;
+    }
+
     ini_parser::read_ini(pathname, m_pt);
     load(m_pt);
 
@@ -102,7 +114,7 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
 
     m_urlEncoding = !strcmp(getString("encoding", ""), "URL");
     m_exportDuplicates = getBool("exportDuplicateValues", true);
-    
+
     boost::optional<ptree&> mappings = m_pt.get_child_optional("mappings");
     if (!mappings) {
         return;
@@ -125,13 +137,6 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
             m_mappings[child.first] = make_pair(alias, transformed);
         }
     }
-
-    m_mappings["Shib-Application-ID"] = pair<string,string>("Shib-Application-ID", "HTTP_SHIB_APPLICATION_ID");
-    m_mappings["Shib-Session-ID"] = pair<string,string>("Shib-Session-ID", "HTTP_SHIB_SESSION_ID");
-    m_mappings["Shib-Session-Expires"] = pair<string,string>("Shib-Session-Expires", "HTTP_SHIB_SESSION_EXPIRES");
-    m_mappings["Shib-Session-Inactivity"] = pair<string,string>("Shib-Session-Inactivity", "HTTP_SHIB_SESSION_INACTIVITY");
-    m_mappings["Shib-Cookie-Name"] = pair<string,string>("Shib-Cookie-Name", "HTTP_SHIB_COOKIE_NAME");
-    m_mappings["REMOTE_USER"] = pair<string,string>("REMOTE_USER", "HTTP_REMOTE_USER");
 }
 
 unique_ptr<AttributeConfiguration> AttributeConfiguration::newAttributeConfiguration(const char* pathname)

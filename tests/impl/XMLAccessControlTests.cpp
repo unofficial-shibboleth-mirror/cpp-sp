@@ -22,10 +22,10 @@
 #include "AbstractSPRequest.h"
 #include "AccessControl.h"
 #include "AgentConfig.h"
-#include "attribute/Attribute.h"
-#include "attribute/SimpleAttribute.h"
 #include "logging/Category.h"
+#include "remoting/ddf.h"
 #include "session/SessionCache.h"
+#include "util/BoostPropertySet.h"
 
 #ifdef HAVE_CXX14
 # include <shared_mutex>
@@ -42,68 +42,42 @@ using namespace std;
 
 namespace {
 
+struct DummyRequestMap : public BoostPropertySet {
+};
+
 /** Open structure for testing manipulation. */
-struct DummySession : public Session, public NoOpBasicLockable
-{
+struct DummySession : public Session, public NoOpBasicLockable {
 public:
     DummySession() {}
-    ~DummySession() {}
+    ~DummySession() {
+        for (auto& a : m_attributes) {
+            a.second.destroy();
+        }
+    }
 
     const char* getID() const {
         return nullptr;
     }
-    const char* getBucketID() const {
+    const char* getApplicationID() const {
         return nullptr;
     }
-    time_t getExpiration() const {
+    time_t getCreation() const {
         return 0;
     }
     time_t getLastAccess() const {
         return 0;
     }
-    const char* getClientAddress() const {
-        return nullptr;
-    }
-    const char* getEntityID() const {
-        return nullptr;
-    }
-    const char* getProtocol() const {
-        return nullptr;
-    }
-    time_t getAuthnInstant() const {
-        return m_authInstant;
-    }
-    const char* getSessionIndex() const {
-        return nullptr;
-    }
-    const char* getAuthnContextClassRef() const {
-        return m_ac.c_str();
-    }
-    const vector<unique_ptr<Attribute>>& getAttributes() const {
+    const map<string,DDF>& getAttributes() const {
         return m_attributes;
     }
 
-    const multimap<string,const Attribute*>& getIndexedAttributes() const {
-        if (m_attributeIndex.empty()) {
-            for (const unique_ptr<Attribute>& a : m_attributes) {
-                const vector<string>& aliases = a->getAliases();
-                for (const string& alias : a->getAliases()) {
-                    m_attributeIndex.insert(multimap<string, const Attribute*>::value_type(alias, a.get()));
-                }
-            }
-        }
-        return m_attributeIndex;
-    }
-
-    time_t m_authInstant;
-    string m_ac;
-    vector<unique_ptr<Attribute>> m_attributes;
-    mutable multimap<string,const Attribute*> m_attributeIndex;
+    map<string,DDF> m_attributes;
 };
 
 class DummyRequest : public AbstractSPRequest {
 public:
     DummyRequest() : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest") {}
+    RequestMapper::Settings getRequestSettings() const { return make_pair(&m_map, nullptr); }
     const char* getMethod() const { return nullptr; }
     const char* getScheme() const { return nullptr; }
     const char* getHostname() const { return nullptr; }
@@ -123,6 +97,7 @@ public:
     long returnOK() { return 200; }
 
     string m_user;
+    DummyRequestMap m_map;
 };
 
 class exceptionCheck {
@@ -306,10 +281,14 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_ACRule, XMLAccessControlFixture)
     DummyRequest request;
     DummySession session;
 
-    session.m_ac = "Foo";
+    DDF ac("Shib-AuthnContext-Class");
+    ac.list();
+    ac.add(DDF(nullptr).string("Foo"));
+    session.m_attributes[ac.name()] = ac;
+
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 
-    session.m_ac = "urn:oasis:names:tc:SAML:2.0:ac:classes:TimeSyncToken";
+    ac.add(DDF(nullptr).string("urn:oasis:names:tc:SAML:2.0:ac:classes:TimeSyncToken"));
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 }
 
@@ -332,15 +311,16 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_AttrRule, XMLAccessControlFixtur
     DummyRequest request;
     DummySession session;
 
-    session.m_attributes.push_back(unique_ptr<Attribute>(new SimpleAttribute({"affiliation"})));
-    SimpleAttribute& attr = dynamic_cast<SimpleAttribute&>(*(session.m_attributes.back()));
+    DDF affiliation("affiliation");
+    affiliation.list();
+    session.m_attributes[affiliation.name()] = affiliation;
 
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 
-    attr.getValues().push_back("staff");
+    affiliation.add(DDF(nullptr).string("staff"));
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 
-    attr.getValues().push_back("student");
+    affiliation.add(DDF(nullptr).string("student"));
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 }
 
@@ -363,16 +343,17 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_OR, XMLAccessControlFixture)
     DummyRequest request;
     DummySession session;
 
-    session.m_attributes.push_back(unique_ptr<Attribute>(new SimpleAttribute({"affiliation"})));
-    SimpleAttribute& attr = dynamic_cast<SimpleAttribute&>(*(session.m_attributes.back()));
-
     request.m_user = "jdoe";
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 
     request.m_user = "smith";
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 
-    attr.getValues().push_back("student");
+    DDF affiliation("affiliation");
+    affiliation.list();
+    affiliation.add(DDF(nullptr).string("student"));
+    session.m_attributes[affiliation.name()] = affiliation;
+
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 }
 
@@ -395,13 +376,14 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_AND, XMLAccessControlFixture)
     DummyRequest request;
     DummySession session;
 
-    session.m_attributes.push_back(unique_ptr<Attribute>(new SimpleAttribute({"affiliation"})));
-    SimpleAttribute& attr = dynamic_cast<SimpleAttribute&>(*(session.m_attributes.back()));
-
     request.m_user = "jdoe";
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 
-    attr.getValues().push_back("student");
+    DDF affiliation("affiliation");
+    affiliation.list();
+    affiliation.add(DDF(nullptr).string("student"));
+    session.m_attributes[affiliation.name()] = affiliation;
+
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 }
 
@@ -424,12 +406,14 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_NOT, XMLAccessControlFixture)
     DummyRequest request;
     DummySession session;
 
-    session.m_attributes.push_back(unique_ptr<Attribute>(new SimpleAttribute({"affiliation"})));
-    SimpleAttribute& attr = dynamic_cast<SimpleAttribute&>(*(session.m_attributes.back()));
+    DDF affiliation("affiliation");
+    affiliation.list();
+    session.m_attributes[affiliation.name()] = affiliation;
 
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 
-    attr.getValues().push_back("student");
+    affiliation.add(DDF(nullptr).string("student"));
+
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 }
 
