@@ -67,6 +67,7 @@ AbstractSessionCache::~AbstractSessionCache()
 
 bool AbstractSessionCache::start()
 {
+    return false;
 }
 
 BasicSession::BasicSession(AbstractSessionCache& cache, DDF& obj)

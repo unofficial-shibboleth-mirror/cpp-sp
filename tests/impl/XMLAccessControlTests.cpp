@@ -77,6 +77,7 @@ public:
 class DummyRequest : public AbstractSPRequest {
 public:
     DummyRequest() : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest") {}
+    ~DummyRequest() {}
     RequestMapper::Settings getRequestSettings() const { return make_pair(&m_map, nullptr); }
     const char* getMethod() const { return nullptr; }
     const char* getScheme() const { return nullptr; }
@@ -95,6 +96,12 @@ public:
     void setRemoteUser(const char*) {}
     long returnDecline() { return 200; }
     long returnOK() { return 200; }
+
+    bool isUseHeaders() const { return true; }
+    bool isUseVariables() const { return false; }
+
+    void clearHeader(const char* name) {}
+
 
     string m_user;
     DummyRequestMap m_map;

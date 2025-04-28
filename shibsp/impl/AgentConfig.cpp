@@ -70,6 +70,7 @@ namespace shibsp {
         bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
         bool start() {
             call_once(m_startonce, &AgentInternalConfig::_start, this);
+            return true;
         }
         void term();
 
