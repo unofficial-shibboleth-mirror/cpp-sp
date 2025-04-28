@@ -153,7 +153,10 @@ void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
     }
 }
 
-static void StatusCallback(
+static
+void 
+_stdcall
+StatusCallback(
     HINTERNET hInternet,
     DWORD_PTR dwContext,
     DWORD dwInternetStatus,
