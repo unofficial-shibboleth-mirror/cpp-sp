@@ -44,7 +44,7 @@ namespace {
 struct testbedRunning {
     boost::test_tools::assertion_result operator()(boost::unit_test::test_unit_id) {
         const char* var = getenv("SHIBSP_TESTBED_RUNNING");
-        return var && *var == '1';
+        return true; //var && *var == '1';
     }
 };
 
