@@ -20,8 +20,6 @@
 // Project
 #include "IIS7_shib.hpp"
 #include "ShibHttpModule.hpp"
-#pragma warning(disable: 4996)
-#include <codecvt> // 16 bit to 8 bit and vice versa chars
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include "NativeEventLog.h"

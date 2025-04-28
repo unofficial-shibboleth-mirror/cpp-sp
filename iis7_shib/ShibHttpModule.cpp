@@ -31,8 +31,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <codecvt>
-
 using namespace Config;
 using namespace std;
 
@@ -47,9 +45,33 @@ ShibHttpModule::DoHandler(
     if (!site)
         return RQ_NOTIFICATION_CONTINUE;
 
+    //
+    // Standard Windows UTFS -> wstring convert with different error handling
+    //
     string prefix(site->getString(ModuleConfig::HANDLER_PREFIX_PROP_NAME, ModuleConfig::HANDLER_PREFIX_PROP_DEFAULT));
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-    wstring handlerPrefix = converter.from_bytes(prefix);
+    DWORD sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, prefix.c_str(), -1, nullptr, 0);
+
+    LPWSTR output = new WCHAR[sizeNeeded + 1];
+    if (output == nullptr) {
+        (void)pHttpContext->GetResponse()->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), 
+                                                     "Fatal Server Error: MultiByteToWideChar failed",
+                                                     0,
+                                                     HRESULT_FROM_WIN32(GetLastError()));
+        return RQ_NOTIFICATION_FINISH_REQUEST;
+    }
+    ZeroMemory(output, sizeof(WCHAR) * (sizeNeeded + 1));
+
+    if (MultiByteToWideChar(CP_UTF8, 0, prefix.c_str(), -1, output, sizeNeeded) == 0) {
+        (void)pHttpContext->GetResponse()->SetStatus(static_cast<USHORT>(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR),
+                                                     "Fatal Server Error: MultiByteToWideChar failed",
+                                                     0,
+                                                     HRESULT_FROM_WIN32(GetLastError()));
+        return RQ_NOTIFICATION_FINISH_REQUEST;
+    }
+
+    wstring handlerPrefix(output);
+    delete[] output;
+
 
     // Quickly check the URL.
     // Calling GetScriptName is safe here since we don't care about "visible to other filters" paths, just our path.

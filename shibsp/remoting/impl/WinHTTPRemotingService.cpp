@@ -29,7 +29,6 @@
 #include "util/BoostPropertySet.h"
 
 #include <stdexcept>
-#include <codecvt> // 16 bit to 8 bit chars
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -106,12 +105,11 @@ namespace shibsp {
 };
 
 wstring WinHTTPRemotingService::utf8ToUtf16(const char* input) const {
-    // IDK why this cannot be exbedded.
     DWORD sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, input, -1, nullptr, 0);
 
     LPWSTR output = new WCHAR[sizeNeeded + 1];
     if (output == nullptr) {
-        m_log.crit("Out of memrory allocating %d butes for conversion buffer", sizeNeeded + 1);
+        m_log.crit("Out of memory allocating %d bytes for conversion buffer", sizeNeeded + 1);
         throw runtime_error("Utf8toUtf16 conversion failed");
     }
     ZeroMemory(output, sizeof(WCHAR) * (sizeNeeded + 1));

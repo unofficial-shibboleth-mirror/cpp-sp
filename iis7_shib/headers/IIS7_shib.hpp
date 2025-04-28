@@ -63,3 +63,4 @@ BOOL LogEvent(
     DWORD  dwEventID,
     Priority::Value priority,
     LPCSTR  message);
+

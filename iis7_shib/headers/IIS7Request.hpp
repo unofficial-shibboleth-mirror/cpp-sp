@@ -93,5 +93,6 @@ protected:
 private:
     void logFatal(const string& operation, HRESULT hr) const;
     void throwError(const string& operation, HRESULT hr) const;
-
+    wstring utf8ToUtf16(const char* input) const;
+    string  utf16ToUtf8(const wstring input) const;
 };

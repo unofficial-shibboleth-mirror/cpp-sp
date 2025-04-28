@@ -27,7 +27,6 @@
 #include <shibsp/exceptions.h>
 #include <shibsp/util/Misc.h>
 
-#include <codecvt> // 16 bit to 8 bit chars
 #include "IIS7Request.hpp"
 #include "ShibHttpModule.hpp"
 #include "ShibUser.hpp"
@@ -162,9 +161,9 @@ void IIS7Request::setHeader(const char* name, const char* value)
             throwError("setHeader (Header)", hr);
         }
     }
+
     if (isUseVariables()) {
-        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        const wstring wValue(converter.from_bytes(value));
+        const wstring wValue(utf8ToUtf16(value));
         const HRESULT hr(m_ctx->SetServerVariable(const_cast<char*>(name), wValue.c_str()));
         if (FAILED(hr)) {
             throwError("setHeader (Variable)", hr);
@@ -174,7 +173,7 @@ void IIS7Request::setHeader(const char* name, const char* value)
             const string str(value);
             boost::tokenizer<boost::escaped_list_separator<char>> tok(str, boost::escaped_list_separator<char>('\\', ';', '"'));
             for (boost::tokenizer<boost::escaped_list_separator<char>>::iterator it = tok.begin(); it != tok.end(); ++it) {
-                m_roles.insert(converter.from_bytes(*it));
+                m_roles.insert(utf8ToUtf16(it->c_str()));
             }
         }
     }
@@ -191,9 +190,8 @@ void IIS7Request::setRemoteUser(const char* user)
     if (auth) {
         string authnRole(m_site.getString(ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME,
             ModuleConfig::AUTHENTICATED_ROLE_PROP_DEFAULT));
-        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        m_roles.insert(converter.from_bytes(authnRole));
-        auth->SetUser(new ShibUser(user, m_roles));
+        m_roles.insert(utf8ToUtf16(authnRole.c_str()));
+        auth->SetUser(new ShibUser(utf8ToUtf16(user), m_roles));
     }
     else {
         log(Priority::SHIB_ERROR, "attempt to set REMOTE_USER in an inappropriate context");
@@ -275,8 +273,7 @@ string IIS7Request::getSecureHeader(const char* name) const
         DWORD len;
         HRESULT hr = m_ctx->GetServerVariable(name, &p, &len);
         if (SUCCEEDED(hr) && p) {
-            std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-            return converter.to_bytes(p);
+            return utf16ToUtf8(p);
         }
         return "";
     }
@@ -448,6 +445,46 @@ long IIS7Request::sendRedirect(const char* url)
     }
     m_ctx->SetRequestHandled();
     return RQ_NOTIFICATION_FINISH_REQUEST;
+}
+
+wstring IIS7Request::utf8ToUtf16(const char* input) const {
+    DWORD sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, input, -1, nullptr, 0);
+
+    LPWSTR output = new WCHAR[sizeNeeded + 1];
+    if (output == nullptr) {
+        log(Priority::SHIB_CRIT, "Out of memory allocating conversion buffer");
+        throw runtime_error("Utf8toUtf16 conversion failed");
+    }
+    ZeroMemory(output, sizeof(WCHAR) * (sizeNeeded + 1));
+
+    if (MultiByteToWideChar(CP_UTF8, 0, input, -1, output, sizeNeeded) == 0) {
+        log(Priority::SHIB_CRIT, "MultiByteToWideChar failure");
+        throw runtime_error("Utf8toUtf16 conversion failed");
+    }
+
+    wstring result(output);
+    delete[] output;
+    return result;
+}
+
+string IIS7Request::utf16ToUtf8(const wstring input) const {
+    DWORD sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, nullptr, 0, nullptr, nullptr);
+
+    LPCH output = new CHAR[sizeNeeded + 1];
+    if (output == nullptr) {
+        log(Priority::SHIB_CRIT, "Out of memory allocating conversion buffer");
+        throw runtime_error("Utf16toUtf8 conversion failed");
+    }
+    ZeroMemory(output, sizeNeeded + 1);
+
+    if (WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, output, sizeNeeded, nullptr, nullptr) == 0) {
+        log(Priority::SHIB_CRIT, "WideCharToMultiByte failure");
+        throw runtime_error("Utf16toUtf8 conversion failed");
+    }
+
+    string result(output);
+    delete[] output;
+    return result;
 }
 
 void IIS7Request::logFatal(const string& operation, HRESULT hr) const
