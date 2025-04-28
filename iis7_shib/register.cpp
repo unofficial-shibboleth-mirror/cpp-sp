@@ -98,6 +98,21 @@ RegisterModule(
         return E_FAIL;
     }
 
+
+    try {
+        if (!g_Config->start())
+            throw runtime_error("unknown error");
+    }
+    catch (const std::exception& ex) {
+        HANDLE eventSource = ::RegisterEventSourceA(NULL, SHIB_EVENT_SOURCE_NAME);
+        const char* msgs[3]{ "II7 Initialization" ,"IIS module failed during library initialization", ex.what() };
+        ::ReportEventA(eventSource, EVENTLOG_ERROR_TYPE, (WORD)SHIBSP_CATEGORY_CRIT, SHIBSP_LOG_CRIT, NULL, 3, 0, msgs, NULL);
+        ::DeregisterEventSource(eventSource);
+        g_Config->term();
+        g_Config = nullptr;
+        return E_FAIL;
+    }
+
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".IIS");
 
     // Access implementation-specifics and create site mappings.
