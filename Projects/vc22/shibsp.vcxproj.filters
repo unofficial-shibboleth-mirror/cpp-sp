@@ -129,6 +129,9 @@
     <ClInclude Include="..\..\shibsp\handler\SecuredHandler.h">
       <Filter>Header Files\Handler</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shibsp\io\CookieManager.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\shibsp\io\GenericRequest.h">
       <Filter>Header Files\IO</Filter>
     </ClInclude>
@@ -328,6 +331,9 @@
     </ClCompile>
     <ClCompile Include="..\..\shibsp\util\URLEncoder.cpp">
       <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\io\impl\CookieManager.cpp">
+      <Filter>Source Files\Io</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\io\impl\HTTPRequest.cpp">
       <Filter>Source Files\Io</Filter>

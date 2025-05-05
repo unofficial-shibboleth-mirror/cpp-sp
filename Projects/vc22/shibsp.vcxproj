@@ -47,6 +47,7 @@
     <ClInclude Include="..\..\shibsp\impl\XMLApplication.h" />
     <ClInclude Include="..\..\shibsp\impl\XMLServiceProvider.h" />
     <ClInclude Include="..\..\shibsp\internal.h" />
+    <ClInclude Include="..\..\shibsp\io\CookieManager.h" />
     <ClInclude Include="..\..\shibsp\io\GenericRequest.h" />
     <ClInclude Include="..\..\shibsp\io\GenericResponse.h" />
     <ClInclude Include="..\..\shibsp\io\HTTPRequest.h" />
@@ -126,6 +127,7 @@
     <ClCompile Include="..\..\shibsp\impl\DefaultAgent.cpp" />
     <ClCompile Include="..\..\shibsp\impl\XMLAccessControl.cpp" />
     <ClCompile Include="..\..\shibsp\impl\XMLRequestMapper.cpp" />
+    <ClCompile Include="..\..\shibsp\io\impl\CookieManager.cpp" />
     <ClCompile Include="..\..\shibsp\io\impl\HTTPRequest.cpp" />
     <ClCompile Include="..\..\shibsp\io\impl\HTTPResponse.cpp" />
     <ClCompile Include="..\..\shibsp\logging\impl\AbstractLoggingService.cpp" />
