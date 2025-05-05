@@ -21,6 +21,8 @@
 #include "internal.h"
 #include "exceptions.h"
 
+#include "Agent.h"
+#include "AgentConfig.h"
 #include "logging/Category.h"
 #include "remoting/SecretSource.h"
 #include "remoting/impl/AbstractHTTPRemotingService.h"
@@ -194,7 +196,7 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
         setUserAgent(useragent.c_str());
     }
 
-    m_log.info("CurlHTTP RemotingService installed for agent (%s), baseURL (%s)", getAgentID(), getBaseURL());
+    m_log.info("CurlHTTP RemotingService installed for agent (%s), baseURL (%s)", AgentConfig::getConfig().getAgent().getID(), getBaseURL());
 }
 
 CurlHTTPRemotingService::~CurlHTTPRemotingService()
@@ -278,7 +280,7 @@ CURL* CurlHTTPRemotingService::checkout() const
     }
     SHIB_CURL_SET(CURLOPT_HTTPAUTH, flag);
     // Password will be acquired during call.
-    SHIB_CURL_SET(CURLOPT_USERNAME, getAgentID());
+    SHIB_CURL_SET(CURLOPT_USERNAME, AgentConfig::getConfig().getAgent().getID());
 
     attachCachedAuthentication(m_handle);
 

@@ -68,16 +68,13 @@ namespace shibsp {
         std::string getRemoteAddr() const;
         const char* getParameter(const char* name) const;
         std::vector<const char*>::size_type getParameters(const char* name, std::vector<const char*>& values) const;
-        std::string getCookieName(const char* prefix, time_t* lifetime) const;
-        std::pair<std::string,const char*> getCookieNameProps(const char* prefix, time_t* lifetime) const;
+        const std::map<std::string,std::string>& getCookies() const;
         const char* getHandlerURL(const char* resource=nullptr) const;
         std::string getNotificationURL(bool front, unsigned int index) const;
         void limitRedirect(const char* url) const;
 
         std::string getSecureHeader(const char* name) const;
-        const char* getCookie(const char* name) const;
         void setAuthType(const char* authtype);
-        void setCookie(const char* name, const char* value, time_t expires = 0, samesite_t sameSite = SAMESITE_ABSENT);
         void log(Priority::Value level, const std::string& msg) const;
         bool isPriorityEnabled(Priority::Value level) const;
 
@@ -101,6 +98,7 @@ namespace shibsp {
         mutable std::string m_url;
         mutable std::string m_handlerURL;
         mutable std::unique_ptr<CGIParser> m_parser;
+        mutable std::map<std::string,std::string> m_cookieMap;
     };
 
 #if defined (_MSC_VER)

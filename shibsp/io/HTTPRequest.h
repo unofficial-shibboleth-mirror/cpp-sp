@@ -89,35 +89,11 @@ namespace shibsp {
         virtual std::string getHeader(const char* name) const=0;
 
         /**
-        * Get a cookie value supplied by the client.
-        * 
-        * @param name  name of cookie
-        * @return  cookie value or nullptr
-        */
-        virtual const char* getCookie(const char* name) const;
-
-        /**
-         * Get a cookie value supplied by the client.
-         *
-         * The boolean flag enables the workaround for older clients with
-         * broken SameSite support by looking for a second cookie with
-         * a decorated name that would not carry the SameSite flag.
-         * 
-         * @param name  name of cookie
-         * @param sameSiteFallback enables lookaside to fallback cookie name
-         * @return  cookie value or nullptr
-         */
-        virtual const char* getCookie(const char* name, bool sameSiteFallback) const;
-
-        /**
          * Gets all the cookies supplied by the client.
          *
          * @return  a map of cookie name/value pairs
          */
-        virtual const std::map<std::string,std::string>& getCookies() const;
-
-    private:
-        mutable std::map<std::string,std::string> m_cookieMap;
+        virtual const std::map<std::string,std::string>& getCookies() const=0;
     };
 
 #if defined (_MSC_VER)

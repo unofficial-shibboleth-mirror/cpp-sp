@@ -49,6 +49,7 @@ handinclude_HEADERS = \
 	handler/SecuredHandler.h
 
 ioinclude_HEADERS = \
+	io/CookieManager.h \
 	io/GenericRequest.h \
 	io/GenericResponse.h \
 	io/HTTPRequest.h \
@@ -118,6 +119,7 @@ libshibsp_la_SOURCES = \
 	impl/ChainingAccessControl.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
+	io/impl/CookieManager.cpp \
 	io/impl/HTTPRequest.cpp \
 	io/impl/HTTPResponse.cpp \
 	logging/impl/AbstractLoggingService.cpp \

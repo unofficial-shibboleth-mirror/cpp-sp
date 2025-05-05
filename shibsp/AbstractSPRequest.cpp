@@ -28,8 +28,9 @@
 #include "util/CGIParser.h"
 #include "util/Misc.h"
 
-#include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/tokenizer.hpp>
 
 #ifndef HAVE_STRCASECMP
 # define strncasecmp _strnicmp
@@ -164,50 +165,30 @@ vector<const char*>::size_type AbstractSPRequest::getParameters(const char* name
     return values.size();
 }
 
-string AbstractSPRequest::getCookieName(const char* prefix, time_t* lifetime) const
+const std::map<std::string,std::string>& AbstractSPRequest::getCookies() const
 {
-    if (lifetime) {
-        *lifetime = getRequestSettings().first->getUnsignedInt("cookieLifetime", 0);
+    if (m_cookieMap.empty()) {
+        // Split cookie name/value pairs on semicolon using tokenizer for iteration.
+        string cookies = getHeader("Cookie");
+        if (!cookies.empty()) {
+            boost::tokenizer<boost::char_separator<char>> nvpairs(cookies, boost::char_separator<char>(";"));
+
+            // Holds each cookie name/value pair while splitting.
+            vector<string> nvpair;
+
+            for (const auto& cookie : nvpairs) {
+                // Split on '=' to separate name/value.
+                nvpair.clear();
+                boost::split(nvpair, cookie, boost::is_any_of("="));
+
+                if (nvpair.size() == 2) {
+                    boost::trim(nvpair[0]);
+                    m_cookieMap[nvpair[0]] = nvpair[1];
+                }
+            }
+        }
     }
-
-    if (!prefix)
-        prefix = "";
-
-    const char* p = getRequestSettings().first->getString("cookieName");
-    if (p) {
-        return string(prefix) + p;
-    }
-
-    return string(prefix); // + getHash(); TODO: uniqueify the cookie name
-}
-
-pair<string,const char*> AbstractSPRequest::getCookieNameProps(const char* prefix, time_t* lifetime) const
-{
-    static const char* defProps="; path=/; HttpOnly";
-    static const char* sslProps="; path=/; secure; HttpOnly";
-
-    if (lifetime) {
-        *lifetime = getRequestSettings().first->getUnsignedInt("cookieLifetime", 0);
-    }
-
-    if (!prefix)
-        prefix = "";
-
-    const char* cookieProps = getRequestSettings().first->getString("cookieProps");
-    if (!cookieProps || !strcasecmp(cookieProps, "http")) {
-        cookieProps = defProps;
-    }
-    else if (!strcasecmp(cookieProps, "https")) {
-        cookieProps = sslProps;
-    }
-
-    const char* cookieName = getRequestSettings().first->getString("cookieName");
-    if (cookieName) {
-        return make_pair(string(prefix) + cookieName, cookieProps);
-    }
-
-    // TODO: uniqueify the cookie name
-    return make_pair(string(prefix) /* + getHash() */, cookieProps);
+    return m_cookieMap;
 }
 
 const char* AbstractSPRequest::getHandlerURL(const char* resource) const
@@ -465,36 +446,6 @@ string AbstractSPRequest::getSecureHeader(const char* name) const
 void AbstractSPRequest::setAuthType(const char* authtype)
 {
 
-}
-
-const char* AbstractSPRequest::getCookie(const char* name) const
-{
-    bool sameSiteFallback = getRequestSettings().first->getBool("sameSiteFallback", false);
-    return HTTPRequest::getCookie(name, sameSiteFallback);
-}
-
-void AbstractSPRequest::setCookie(const char* name, const char* value, time_t expires, samesite_t sameSite)
-{
-    bool sameSiteFallback = false;
-    if (sameSite == SAMESITE_NONE) {
-        sameSiteFallback = getRequestSettings().first->getBool("sameSiteFallback", false);
-    }
-
-    static const char* defProps="; path=/; HttpOnly";
-    static const char* sslProps="; path=/; secure; HttpOnly";
-
-    const char* cookieProps = getRequestSettings().first->getString("cookieProps", defProps);
-    if (!strcmp(cookieProps, "https"))
-        cookieProps = sslProps;
-    else if (!strcmp(cookieProps, "http"))
-        cookieProps = defProps;
-
-    string decoratedValue(value ? value : "");
-    if (!value) {
-        decoratedValue += "; expires=Mon, 01 Jan 2001 00:00:00 GMT";
-    }
-    decoratedValue += cookieProps;
-    HTTPResponse::setCookie(name, decoratedValue.c_str(), expires, sameSite, sameSiteFallback);
 }
 
 void AbstractSPRequest::log(Priority::Value level, const std::string& msg) const

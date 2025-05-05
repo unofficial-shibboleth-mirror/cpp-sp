@@ -62,7 +62,6 @@ namespace shibsp {
 
         const SecretSource* getSecretSource(bool required=true) const;
         const char* getBaseURL() const;
-        const char* getAgentID() const;
         const char* getUserAgent() const;
         void setUserAgent(const char* ua);
         auth_t getAuthMethod() const;
@@ -75,7 +74,6 @@ namespace shibsp {
         // Property names and defaults.
         static const char SECRET_SOURCE_TYPE_PROP_NAME[];
         static const char BASE_URL_PROP_NAME[];
-        static const char AGENT_ID_PROP_NAME[];
         static const char USER_AGENT_PROP_NAME[];
         static const char AUTH_METHOD_PROP_NAME[];
         static const char AUTH_CACHING_COOKIE_PROP_NAME[];
@@ -99,7 +97,6 @@ namespace shibsp {
 
         std::unique_ptr<SecretSource> m_secretSource;
         std::string m_baseURL;
-        std::string m_agentID;
         std::string m_userAgent;
         std::string m_authCachingCookie;
         mutable std::string m_authCachingValue;

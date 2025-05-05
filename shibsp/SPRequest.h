@@ -93,24 +93,6 @@ namespace shibsp {
         virtual Session* getSession(bool checkTimeout=true, bool ignoreAddress=false, bool cache=true)=0;
 
         /**
-         * Returns the cookies name to use for this request.
-         *
-         * @param prefix    a value to prepend to the base cookie name
-         * @param lifetime  if non-null, will be populated with a suggested lifetime for the cookie, or 0 if session-bound
-         * @return  the assigned cookie name to use
-         */
-        virtual std::string getCookieName(const char* prefix, time_t* lifetime=nullptr) const=0;
-
-        /**
-         * Returns the name and cookie properties to use for this request.
-         *
-         * @param prefix    a value to prepend to the base cookie name
-         * @param lifetime  if non-null, will be populated with a suggested lifetime for the cookie, or 0 if session-bound
-         * @return  a pair containing the cookie name and the string to append to the cookie value
-         */
-        virtual std::pair<std::string,const char*> getCookieNameProps(const char* prefix, time_t* lifetime=nullptr) const=0;
-
-        /**
          * Returns the effective base Handler URL for a resource,
          * or the current request URL.
          *

@@ -172,6 +172,9 @@ namespace {
         string getHeader(const char* name) const {
             return "";
         }
+        const map<string,string>& getCookies() const {
+            return m_cookieMap;
+        }
 
     private:
         mutable unique_ptr<CGIParser> m_parser;
@@ -180,6 +183,7 @@ namespace {
         const char* m_query;
         int m_port;
         string m_hostname,m_uri;
+        map<string,string> m_cookieMap;
     };
 };
 

@@ -39,7 +39,6 @@ using namespace std;
 const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_NAME[] = "secretSourceType";
 const char AbstractHTTPRemotingService::BASE_URL_PROP_NAME[] = "baseURL";
 const char AbstractHTTPRemotingService::USER_AGENT_PROP_NAME[] = "userAgent";
-const char AbstractHTTPRemotingService::AGENT_ID_PROP_NAME[] = "agentID";
 const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_NAME[] = "authMethod";
 const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_NAME[] = "authCachingCookie";
 const char AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_NAME[] = "connectTimeout";
@@ -59,11 +58,6 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
 {
     BoostPropertySet props;
     props.load(pt);
-
-    m_agentID = props.getString(AGENT_ID_PROP_NAME, "");
-    if (m_agentID.empty()) {
-        throw ConfigurationException("Configuration is missing required agent ID.");
-    }
 
     m_secretSource.reset(AgentConfig::getConfig().SecretSourceManager.newPlugin(
         props.getString(SECRET_SOURCE_TYPE_PROP_NAME, SECRET_SOURCE_TYPE_PROP_DEFAULT), pt, false)
@@ -142,11 +136,6 @@ const SecretSource* AbstractHTTPRemotingService::getSecretSource(bool required) 
 const char* AbstractHTTPRemotingService::getBaseURL() const
 {
     return m_baseURL.c_str();
-}
-
-const char* AbstractHTTPRemotingService::getAgentID() const
-{
-    return m_agentID.c_str();
 }
 
 const char* AbstractHTTPRemotingService::getUserAgent() const

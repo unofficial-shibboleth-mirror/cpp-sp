@@ -188,7 +188,7 @@ pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrapped
     return make_pair(false, 0L);
 }
 
-
+/*
 void AbstractHandler::cleanRelayState(SPRequest& request) const
 {
     const char* mech = request.getRequestSettings().first->getString("relayState");
@@ -575,7 +575,6 @@ long AbstractHandler::sendPostResponse(HTTPResponse& httpResponse, const char* u
 
     // TODO: this will require handling by the hub.
 
-    /*
     const PropertySet* props=application.getPropertySet("Sessions");
     pair<bool,const char*> postTemplate = props ? props->getString("postTemplate") : pair<bool,const char*>(true,nullptr);
     if (!postTemplate.first)
@@ -608,7 +607,6 @@ long AbstractHandler::sendPostResponse(HTTPResponse& httpResponse, const char* u
         httpResponse.setResponseHeader("Pragma", "no-cache");
     }
     return httpResponse.sendResponse(str);
-    */
    return 0;
 }
 
@@ -657,6 +655,7 @@ DDF AbstractHandler::getPostData(const SPRequest& request) const
     }
     return DDF();
 }
+*/
 
 bool AbstractHandler::getBool(
     const char* name, const SPRequest& request, bool defaultValue, unsigned int type

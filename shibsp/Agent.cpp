@@ -367,13 +367,6 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
             request.setHeader( "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout).c_str());
         }
 
-        // Check for export of algorithmically-derived portion of cookie names.
-        bool exportCookie = settings.first->getBool("exportCookie", false);
-        if (exportCookie) {
-            pair<string,const char*> cookieprops = request.getCookieNameProps(nullptr);
-            request.setHeader("Shib-Cookie-Name", cookieprops.first.c_str());
-        }
-
         // Export the attributes.
         request.getAgent().getAttributeConfiguration(
             request.getRequestSettings().first->getString("attributeConfigID")

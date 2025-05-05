@@ -67,6 +67,16 @@ namespace shibsp {
         virtual void init()=0;
 
         /**
+         * Gets the unique ID for this agent.
+         * 
+         * <p>Agent IDs are essentially provisoned by the operator of the corresponding "hub"
+         * supporting them.</p>
+         * 
+         * @return agent ID
+         */
+        virtual const char* getID() const=0;
+
+        /**
          * Returns a SessionCache instance.
          * 
          * @param required  true iff an exception should be thrown if no SessionCache is available

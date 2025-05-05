@@ -95,7 +95,7 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
     : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration")), m_urlEncoding(false), m_exportDuplicates(true)
 {
     // Populate "built-in" mappings.
-    for (const string& name : {"Shib-Application-ID", "Shib-Session-ID", "Shib-Session-Expires", "Shib-Session-Inactivity", "Shib-Cookie-Name", "REMOTE_USER"}) {
+    for (const string& name : {"Shib-Application-ID", "Shib-Session-ID", "Shib-Session-Expires", "Shib-Session-Inactivity", "REMOTE_USER"}) {
         m_mappings[name] = name;
     }
 
