@@ -242,9 +242,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\shibsp\attribute\impl\DefaultAttributeConfiguraton.cpp">
-      <Filter>Source Files\Attribute</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\shibsp\handler\impl\AbstractHandler.cpp">
       <Filter>Source Files\Handler</Filter>
     </ClCompile>
@@ -394,6 +391,9 @@
     </ClCompile>
     <ClCompile Include="..\..\shibsp\remoting\impl\WinHTTPRemotingService.cpp">
       <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\attribute\impl\DefaultAttributeConfiguration.cpp">
+      <Filter>Source Files\Attribute</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
