@@ -51,7 +51,7 @@ namespace shibsp {
     }
 }
 
-FilesystemSessionCache::FilesystemSessionCache(const ptree& pt)
+FilesystemSessionCache::FilesystemSessionCache(const ptree& pt) : AbstractSessionCache(pt)
 {
 }
 

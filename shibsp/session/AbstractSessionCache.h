@@ -24,8 +24,15 @@
 #include <logging/Category.h>
 #include <remoting/ddf.h>
 #include <session/SessionCache.h>
+#include <util/BoostPropertySet.h>
 
+#include <condition_variable>
 #include <mutex>
+#ifdef HAVE_CXX14
+# include <shared_mutex>
+#endif
+#include <thread>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
 
@@ -68,17 +75,57 @@ namespace shibsp {
         std::mutex m_lock;
     };
 
-    class SHIBSP_API AbstractSessionCache : public virtual SessionCache {
-        protected:
-            /** Constructor. */
-            AbstractSessionCache();
-            virtual ~AbstractSessionCache();
-    
-            Category& m_log;
-    
+    class SHIBSP_API AbstractSessionCache : public virtual SessionCache, public virtual BoostPropertySet {
         public:
+            /**
+             * Starts background cleanup thread for in-memory hashtable of sessions.
+             * 
+             * @return true iff the thread was successfully started
+             */
             bool start();
 
+            static const char CLEANUP_INTERVAL_PROP_NAME[];
+            static const char INPROC_TIMEOUT_PROP_NAME[];
+
+            static unsigned int CLEANUP_INTERVAL_PROP_DEFAULT;
+            static unsigned int INPROC_TIMEOUT_PROP_DEFAULT;
+
+        protected:
+            /**
+             * Constructor.
+             * 
+             * @param pt root of property tree to load
+             */
+            AbstractSessionCache(const boost::property_tree::ptree& pt);
+
+            /** Destructor. */
+            virtual ~AbstractSessionCache();
+    
+            /**
+             * Get logging object.
+             * 
+             * @return logging object
+             */
+            Category& log() const;
+
+        private:
+            static void* cleanup_fn(void*);
+            void dormant(const std::string& key);
+
+            Category& m_log;
+#if defined(HAVE_CXX17)
+            std::shared_mutex m_lock;
+#elif defined(HAVE_CXX14)
+            std::shared_timed_mutex m_lock;
+#else
+            std::mutex m_lock;
+#endif
+            std::map<std::string,std::unique_ptr<BasicSession>> m_hashtable;
+
+            bool m_shutdown;
+            std::condition_variable m_shutdown_wait;
+            std::thread m_cleanup_thread;
+                
         friend class BasicSession;
         };    
 };

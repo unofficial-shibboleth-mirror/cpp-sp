@@ -24,7 +24,17 @@
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
 
+#include <chrono>
 #include <boost/property_tree/ptree.hpp>
+
+#ifndef WIN32
+# include <signal.h>
+# ifdef HAVE_PTHREAD
+#  include <pthread.h>
+# else
+#  error "This implementation is for POSIX platforms."
+# endif
+#endif
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -57,17 +67,145 @@ SessionCache::~SessionCache()
 {
 }
 
-AbstractSessionCache::AbstractSessionCache() : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache"))
+const char AbstractSessionCache::CLEANUP_INTERVAL_PROP_NAME[] = "cleanupInterval";
+const char AbstractSessionCache::INPROC_TIMEOUT_PROP_NAME[] = "inprocTimeout";
+
+unsigned int AbstractSessionCache::CLEANUP_INTERVAL_PROP_DEFAULT = 900;
+unsigned int AbstractSessionCache::INPROC_TIMEOUT_PROP_DEFAULT = 900;
+
+AbstractSessionCache::AbstractSessionCache(const ptree& pt) : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache"))
 {
+    load(pt);
 }
 
 AbstractSessionCache::~AbstractSessionCache()
 {
+    // Notify and join with the cleanup thread.
+    m_shutdown = true;
+    m_shutdown_wait.notify_all();
+    if (m_cleanup_thread.joinable()) {
+        m_cleanup_thread.join();
+    }
+}
+
+Category& AbstractSessionCache::log() const
+{
+    return m_log;
 }
 
 bool AbstractSessionCache::start()
 {
+    try {
+        m_cleanup_thread = thread(cleanup_fn, this);
+        return true;
+    }
+    catch (const system_error& e) {
+        m_log.error("error starting cleanup thread: %s", e.what());
+    }
     return false;
+}
+
+void AbstractSessionCache::dormant(const string& key)
+{
+    m_log.debug("deleting local copy of session (%s)", key.c_str());
+
+    // lock the cache for writing, which means we know nobody is sitting in a lookup.
+    m_lock.lock();
+
+    // grab the entry from the table
+    const auto& i = m_hashtable.find(key);
+    if (i == m_hashtable.end()) {
+        m_lock.unlock();
+        return;
+    }
+
+    // ok, swap ownership of the entry, remove from cache
+    unique_ptr<BasicSession> session;
+    session.swap(i->second);
+    m_hashtable.erase(key);
+
+    // lock the entry, ensuring nobody else has a copy
+    session->lock();
+
+    // unlock the cache
+    m_lock.unlock();
+
+    // we can release the cache entry lock because we know we're not in the cache anymore
+    session->unlock();
+}
+
+void* AbstractSessionCache::cleanup_fn(void* p)
+{
+    AbstractSessionCache* pcache = reinterpret_cast<AbstractSessionCache*>(p);
+
+#ifndef WIN32
+    // Bblock all signals.
+    sigset_t sigmask;
+    sigfillset(&sigmask);
+    pthread_sigmask(SIG_BLOCK, &sigmask, nullptr);
+#endif
+
+    mutex internal_mutex;
+
+    // Load our configuration details...
+    unsigned int cleanupInterval = pcache->getUnsignedInt(CLEANUP_INTERVAL_PROP_NAME, CLEANUP_INTERVAL_PROP_DEFAULT);
+    unsigned int inprocTimeout = pcache->getUnsignedInt(INPROC_TIMEOUT_PROP_NAME, INPROC_TIMEOUT_PROP_DEFAULT);
+
+    unique_lock lock(internal_mutex);
+
+    pcache->m_log.info("cleanup thread started...run every %u secs; timeout after %u secs", cleanupInterval, inprocTimeout);
+
+    while (!pcache->m_shutdown) {
+        pcache->m_shutdown_wait.wait_for(lock, chrono::seconds(cleanupInterval));
+        
+        if (pcache->m_shutdown) {
+            break;
+        }
+
+        // Ok, let's run through the cleanup process and clean out
+        // really old sessions.  This is a two-pass process.  The
+        // first pass is done holding a read-lock while we iterate over
+        // the cache.  The second pass doesn't need a lock because
+        // the 'deletes' will lock the cache.
+
+        // Pass 1: iterate over the map and find all entries that have not been
+        // used in the allotted timeout.
+        vector<string> stale_keys;
+        time_t stale = time(nullptr) - inprocTimeout;
+
+        pcache->m_log.debug("cleanup thread running");
+
+#ifdef HAVE_CXX14
+        pcache->m_lock.lock_shared();
+#else
+        pcache->m_lock.lock();
+#endif
+        for (const auto& session : pcache->m_hashtable) {
+            // If the last access was BEFORE the stale timeout...
+            session.second->lock();
+            time_t last = session.second->getLastAccess();
+            session.second->unlock();
+            if (last < stale)
+                stale_keys.push_back(session.first);
+        }
+
+        pcache->m_lock.unlock();
+
+        if (!stale_keys.empty()) {
+            pcache->m_log.info("purging %u old sessions", stale_keys.size());
+
+            // Pass 2: walk through the list of stale entries and remove them from the cache
+            for (const string& key : stale_keys) {
+                pcache->dormant(key.c_str());
+            }
+        }
+
+        pcache->m_log.debug("cleanup thread completed");
+    }
+
+    pcache->m_log.info("cleanup thread exiting");
+
+    return nullptr;
 }
 
 BasicSession::BasicSession(AbstractSessionCache& cache, DDF& obj)
