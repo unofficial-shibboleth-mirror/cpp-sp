@@ -26,7 +26,7 @@
 #include "io/CookieManager.h"
 #include "util/PropertySet.h"
 
-#include <boost/lexical_cast.hpp>>
+#include <boost/lexical_cast.hpp>
 
 using namespace shibsp;
 using namespace std;
@@ -146,6 +146,7 @@ void CookieManager::outputHeader(SPRequest& request, int maxAge) const
                 header += "; SameSite=Strict";
                 break;
             default:
+                break;
         }
     }
 

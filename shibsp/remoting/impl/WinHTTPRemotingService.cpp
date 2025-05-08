@@ -23,6 +23,8 @@
 #include <Windows.h>
 #include <winhttp.h>
 
+#include "Agent.h"
+#include "AgentConfig.h"
 #include "logging/Category.h"
 #include "remoting/SecretSource.h"
 #include "remoting/impl/AbstractHTTPRemotingService.h"
@@ -187,7 +189,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
 
     m_chunked = props.getBool(CHUNKED_PROP_NAME, defaultChunking);
     m_ciphers = props.getString(CIPHER_LIST_PROP_NAME, "");
-    m_username = utf8ToUtf16(getAgentID());
+    m_username = utf8ToUtf16(AgentConfig::getConfig().getAgent().getID());
     switch (getAuthMethod()) {
         case agent_auth_basic:  m_authScheme = WINHTTP_AUTH_SCHEME_BASIC; break;
         case agent_auth_digest: m_authScheme = WINHTTP_AUTH_SCHEME_DIGEST; break;
@@ -255,7 +257,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
         throw runtime_error("WinHHHTP failed to initialize: Could no");
     }
 
-    m_log.info("WinHTTP RemotingService installed for agent (%s), baseURL (%s)", getAgentID(), getBaseURL());
+    m_log.info("WinHTTP RemotingService installed for agent (%s), baseURL (%s)", AgentConfig::getConfig().getAgent().getID(), getBaseURL());
 }
 
 WinHTTPRemotingService::~WinHTTPRemotingService()
