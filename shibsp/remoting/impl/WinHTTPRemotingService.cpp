@@ -85,6 +85,9 @@ namespace {
         wstring m_baseURLPath;
         wstring m_username;
         DWORD m_authScheme;
+        HCERTCHAINENGINE m_caChainEngine;
+        HCERTSTORE m_caStore;
+        void setupCaChecking();
     };
 
     class HINTERNETJanitor
@@ -126,30 +129,112 @@ wstring WinHTTPRemotingService::utf8ToUtf16(const char* input) const {
     return result;
 }
 
+void WinHTTPRemotingService::setupCaChecking() {
+
+    if (!getCAFile())
+        return;
+    
+    wstring caFile(utf8ToUtf16(getCAFile()));
+    DWORD msgAndCertEncodingType, contentType, formatType;
+    PCERT_CONTEXT certContext = NULL;
+
+    m_caStore = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, NULL, CERT_STORE_CREATE_NEW_FLAG, NULL);
+
+    if (m_caStore == NULL) {
+
+        m_log.crit("Could not create caStore : 0x%x", GetLastError());
+        throw runtime_error("WinHHHTP failed to initialize tlsCa store");
+    }
+
+    if (!CryptQueryObject(CERT_QUERY_OBJECT_FILE,
+                          caFile.c_str(),
+                          CERT_QUERY_CONTENT_FLAG_CERT,
+                          CERT_QUERY_FORMAT_FLAG_BASE64_ENCODED,
+                          0,
+                          &msgAndCertEncodingType,
+                          &contentType,
+                          &formatType,
+                          NULL,
+                          NULL,
+                          (void const**)&certContext)) {
+        m_log.crit("CryptQueryObject failure: %d", GetLastError());
+        throw runtime_error("WinHHHTP failed to initialize: failed to open tlsCAFile");
+    }
+
+    if ((msgAndCertEncodingType != X509_ASN_ENCODING) ||
+        (contentType != CERT_QUERY_CONTENT_CERT) ||
+        (formatType != CERT_QUERY_FORMAT_BASE64_ENCODED)) {
+
+        m_log.crit("Unexpected tlsCaFile format: Encoding 0x%x type 0x%x format 0x%x", msgAndCertEncodingType, contentType, formatType);
+        CertFreeCertificateContext(certContext);
+        throw runtime_error("WinHHHTP failed to initialize: failed bad TtsCaFile format");
+    }
+
+    if (!CertAddCertificateContextToStore(m_caStore, certContext, CERT_STORE_ADD_ALWAYS, NULL)) {
+        m_log.crit("Could not add cert to store: 0x%x", GetLastError());
+        CertFreeCertificateContext(certContext);
+        throw runtime_error("WinHHHTP failed to initialize: could not add cert");
+    }
+    CertFreeCertificateContext(certContext);
+
+    CERT_CHAIN_ENGINE_CONFIG cfg = { 0 };
+    cfg.cbSize = sizeof(cfg);
+    cfg.hExclusiveRoot = m_caStore;
+
+    if (!CertCreateCertificateChainEngine(&cfg, &m_caChainEngine)) {
+        m_log.crit("Could not create chain engine: 0x%x", GetLastError());
+        throw runtime_error("WinHHHTP failed to initialize: could not create chain engine");
+    }
+
+}
+
 void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
 {
-    PCCERT_CONTEXT pCert = NULL;
-    DWORD dwSize = sizeof(pCert);
+    PCCERT_CONTEXT certCtx = NULL;
+    DWORD size = sizeof(certCtx);
 
-    if (!m_secure) {
-        m_log.debug("Skipping certificate check on insecure attach");
-    }
-    else if (!WinHttpQueryOption(Handle, WINHTTP_OPTION_SERVER_CERT_CONTEXT, &pCert, &dwSize)) {
+    if (!WinHttpQueryOption(Handle, WINHTTP_OPTION_SERVER_CERT_CONTEXT, &certCtx, &size)) {
         m_log.crit("Could not get the certificate on conect");
         throw RemotingException("Could not get certificate");
-    }
-    else {
+
+    } else {
+        CERT_CHAIN_PARA chainPara = { 0 };
+        PCCERT_CHAIN_CONTEXT chainContext;
+
+        chainPara.cbSize = sizeof(chainPara);
+
+        DWORD flags = CERT_CHAIN_CACHE_END_CERT;
+        //flags |= isCheckRecovation() ? CERT_CHAIN_REVOCATION_CHECK_CHAIN : 0;
+        // flags != getAdditionalGlags();
+
+        BOOL gotCertChain = CertGetCertificateChain(m_caChainEngine,
+                                                    certCtx,
+                                                    NULL,
+                                                    certCtx->hCertStore,
+                                                    &chainPara,
+                                                    flags,
+                                                    NULL,
+                                                    &chainContext);
+        CertFreeCertificateContext(certCtx);
+        if (!gotCertChain) {
+            m_log.error("Could not get the certificate chain on conect");
+            throw RemotingException("Could not get certificate chain");
+        }
         //
-        // We probably want to put some caching in here - this is called twice for each WinHttpSend...
+        // Why do we only look at chain zero?
         //
-        CHAR buffer[1024] = {0};
-        CertNameToStrA(X509_ASN_ENCODING, &pCert->pCertInfo->Subject, CERT_SIMPLE_NAME_STR, buffer, sizeof(buffer));
-        m_log.debug("Checking certificate with subject %s", buffer);
+        CERT_TRUST_STATUS status = chainContext->rgpChain[0]->TrustStatus;
+        CertFreeCertificateChain(chainContext);
+
+        m_log.debug("Connection Error %x Info %x", status.dwErrorStatus, status.dwInfoStatus);
         //
-        // TODO check the certificate
+        // per CURL strip out (undocumented) CERT_TRUST_IS_NOT_TIME_NESTED  
         //
-        cout << "Subject name " << buffer << endl;
-        CertFreeCertificateContext(pCert);
+        DWORD error = status.dwErrorStatus & (~CERT_TRUST_IS_NOT_TIME_NESTED);
+        if (error != CERT_TRUST_NO_ERROR) {
+            m_log.error("Certificate presented is not trusted.  Error : 0x%x", status.dwErrorStatus);
+            throw RemotingException("Could not get certificate chain");
+        }
     }
 }
 
@@ -174,6 +259,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
     : AbstractHTTPRemotingService(pt), AbstractRemotingService(pt),
     m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService.WinHTTP")),
     m_winHTTPlog(Category::getInstance(SHIBSP_LOGCAT ".winHTTP")),
+    m_secure(false), m_caChainEngine(nullptr), m_caStore(nullptr),
     m_init(false), m_chunked(defaultChunking)
 {
     if (getUserAgent() == nullptr) {
@@ -206,22 +292,12 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
         m_log.crit("WinHttpOpen failure: %d", GetLastError());
         throw runtime_error("WinHHHTP failed to initialize service");
     }
-    //
-    // Arrange to be called back so we can check certificates
-    //
-    DWORD_PTR context = reinterpret_cast<DWORD_PTR>(this);
 
-    // Set up this as the context
-    if (!WinHttpSetOption(m_session, WINHTTP_OPTION_CONTEXT_VALUE, &context, sizeof(context))) {
-        m_log.crit("WinHttpSetOption failure: %d", GetLastError());
-        throw runtime_error("WinHHHTP failed to initialize: Could not set callback option");
-    }
+    //
+    // Set up our CaPath environment
+    //
+    setupCaChecking();
 
-    // And register the callback
-    if (WinHttpSetStatusCallback(m_session, StatusCallback, WINHTTP_CALLBACK_STATUS_SENDING_REQUEST, NULL) == WINHTTP_INVALID_STATUS_CALLBACK) {
-        m_log.crit("WinHttpSetStatusCallback failure: %d", GetLastError());
-        throw runtime_error("WinHHHTP failed to initialize: Could not register callback");
-    }
 
     //
     // Pop the URL into a wstring which we can parse and then point
@@ -231,10 +307,11 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
     //
     // Split it into little bits
     //
-    URL_COMPONENTS components = {0};
+    URL_COMPONENTS components = { 0 };
     components.dwStructSize = sizeof(components);
     components.dwHostNameLength = -1;
     components.dwUrlPathLength = -1;
+
     if (!WinHttpCrackUrl(wURL.c_str(), 0, 0, &components)) {
         m_log.crit("WinHttpCrackUrl failure: %d", GetLastError());
         throw runtime_error("WinHHHTP failed to initialize: failed to parse baseURL");
@@ -242,14 +319,40 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
 
     if (components.dwHostNameLength == 0 || components.dwUrlPathLength == 0) {
         m_log.crit("Invalid baseUrl '%s' HostNameLength: %d, pathLength: %d",
-                   getBaseURL(), components.dwHostNameLength == 0, components.dwUrlPathLength);
+            getBaseURL(), components.dwHostNameLength == 0, components.dwUrlPathLength);
         throw runtime_error("WinHHHTP failed to initialize: Invalid baseUrl");
     }
-
-    m_secure = (components.nScheme == INTERNET_SCHEME_HTTPS);
     m_baseURLPath = wstring(components.lpszUrlPath, components.dwUrlPathLength);
-    wstring host(components.lpszHostName, components.dwHostNameLength);
 
+    if ((components.nScheme != INTERNET_SCHEME_HTTP) && (components.nScheme != INTERNET_SCHEME_HTTPS)) {
+        //
+        // FTP/ Socks?  Just say no
+        //
+        m_log.crit("Protocol Scheme not supported : %d", GetLastError());
+        throw runtime_error("WinHHHTP failed to initialize: Could not register callback");
+    }
+    m_secure = (components.nScheme == INTERNET_SCHEME_HTTPS);
+
+    if (m_secure && (m_caChainEngine != NULL)) {
+        //
+        // Arrange to be called back so we can check certificates
+        //
+        DWORD_PTR context = reinterpret_cast<DWORD_PTR>(this);
+
+        // Set up this as the context
+        if (!WinHttpSetOption(m_session, WINHTTP_OPTION_CONTEXT_VALUE, &context, sizeof(context))) {
+            m_log.crit("WinHttpSetOption failure: %d", GetLastError());
+            throw runtime_error("WinHHHTP failed to initialize: Could not set callback option");
+        }
+
+        // And register the callback
+        if (WinHttpSetStatusCallback(m_session, StatusCallback, WINHTTP_CALLBACK_STATUS_SENDING_REQUEST, NULL) == WINHTTP_INVALID_STATUS_CALLBACK) {
+            m_log.crit("WinHttpSetStatusCallback failure: %d", GetLastError());
+            throw runtime_error("WinHHHTP failed to initialize: Could not register callback");
+        }
+    }
+
+    wstring host(components.lpszHostName, components.dwHostNameLength);
     m_connection = WinHttpConnect(m_session, host.c_str(), components.nPort, 0);
     if (m_connection == nullptr) {
         // Note use of WINDOWS formatting
@@ -262,12 +365,17 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
 
 WinHTTPRemotingService::~WinHTTPRemotingService()
 {
-    if (m_session) {
+    if (m_session)
         WinHttpCloseHandle(m_session);
-    }
-    if (m_connection) {
+
+    if (m_connection)
         WinHttpCloseHandle(m_connection);
-    }
+
+    if (m_caChainEngine)
+        CertFreeCertificateChainEngine(m_caChainEngine);
+
+    if (m_caStore)
+        CertCloseStore(m_caStore, 0);
 }
 
 void WinHTTPRemotingService::send(const char* path, istream& input, ostream& output) const
