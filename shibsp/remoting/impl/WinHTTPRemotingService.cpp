@@ -73,6 +73,8 @@ namespace {
 
         void handleCert(HINTERNET Handle) const;
 
+        void logSecureFailure(DWORD status) const;
+
     private:
         Category& m_log;
         Category& m_winHTTPlog;
@@ -188,6 +190,28 @@ void WinHTTPRemotingService::setupCaChecking() {
 
 }
 
+void WinHTTPRemotingService::logSecureFailure(DWORD Status) const
+{
+    string details("");
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CERT)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CERT ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_REVOKED)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_REVOKED ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CA)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CA ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_CN_INVALID)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_CN_INVALID ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_DATE_INVALID)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_DATE_INVALID ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_WRONG_USAGE)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_WRONG_USAGE ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_SECURITY_CHANNEL_ERROR)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_SECURITY_CHANNEL_ERROR ";
+    m_log.crit("WinHttp Security Error 0x%x (%s)", Status, details.c_str());
+}
+
 void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
 {
     PCCERT_CONTEXT certCtx = NULL;
@@ -252,6 +276,8 @@ StatusCallback(
 
     if (dwInternetStatus == WINHTTP_CALLBACK_STATUS_SENDING_REQUEST) {
         service->handleCert(hInternet);
+    } else if (dwInternetStatus == WINHTTP_CALLBACK_STATUS_SECURE_FAILURE) {
+        service->logSecureFailure(*((DWORD*)lpvStatusInformation));
     }
 };
 
@@ -346,7 +372,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
         }
 
         // And register the callback
-        if (WinHttpSetStatusCallback(m_session, StatusCallback, WINHTTP_CALLBACK_STATUS_SENDING_REQUEST, NULL) == WINHTTP_INVALID_STATUS_CALLBACK) {
+        if (WinHttpSetStatusCallback(m_session, StatusCallback, WINHTTP_CALLBACK_STATUS_SENDING_REQUEST | WINHTTP_CALLBACK_STATUS_SECURE_FAILURE, NULL) == WINHTTP_INVALID_STATUS_CALLBACK) {
             m_log.crit("WinHttpSetStatusCallback failure: %d", GetLastError());
             throw runtime_error("WinHHHTP failed to initialize: Could not register callback");
         }
