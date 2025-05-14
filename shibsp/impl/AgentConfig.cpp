@@ -315,6 +315,10 @@ void AgentInternalConfig::term()
 
 bool AgentInternalConfig::_start()
 {
+    SessionCache* cache = getAgent().getSessionCache(false);
+    if (cache) {
+        return cache->start();
+    }
     return true;
 }
 
