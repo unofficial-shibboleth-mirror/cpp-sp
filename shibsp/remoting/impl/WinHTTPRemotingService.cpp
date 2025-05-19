@@ -135,6 +135,17 @@ void WinHTTPRemotingService::setupCaChecking() {
 
     if (!getCAFile())
         return;
+
+    //
+    // In order to do CA checking we need to read the pem file into a volatile (in memory) certificate
+    // store and then set up a cert engine.
+    //
+    // When we set up the request (in WinHTTPRemotingService::send) we tell winHttp not to check any root certificate validity
+    // but to check the CN.  We get a callback (to be finalized but before BASICAUTH) and getgiven the 
+    // certificate presented.  We pass this to WinHTTPRemotingService::handleCert which calls into the crypto
+    // library to check the chain.
+    //
+    //This method sets up the CA store and the cert engine (as part of object construction)
     
     wstring caFile(utf8ToUtf16(getCAFile()));
     DWORD msgAndCertEncodingType, contentType, formatType;
@@ -182,84 +193,14 @@ void WinHTTPRemotingService::setupCaChecking() {
     CERT_CHAIN_ENGINE_CONFIG cfg = { 0 };
     cfg.cbSize = sizeof(cfg);
     cfg.hExclusiveRoot = m_caStore;
+    // This is the flag which allows partial chains
+    cfg.dwExclusiveFlags = CERT_CHAIN_EXCLUSIVE_ENABLE_CA_FLAG;
 
     if (!CertCreateCertificateChainEngine(&cfg, &m_caChainEngine)) {
         m_log.crit("Could not create chain engine: 0x%x", GetLastError());
         throw runtime_error("WinHHHTP failed to initialize: could not create chain engine");
     }
 
-}
-
-void WinHTTPRemotingService::logSecureFailure(DWORD Status) const
-{
-    string details("");
-    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED)
-        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED ";
-    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CERT)
-        details += "WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CERT ";
-    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_REVOKED)
-        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_REVOKED ";
-    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CA)
-        details += "WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CA ";
-    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_CN_INVALID)
-        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_CN_INVALID ";
-    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_DATE_INVALID)
-        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_DATE_INVALID ";
-    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_WRONG_USAGE)
-        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_WRONG_USAGE ";
-    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_SECURITY_CHANNEL_ERROR)
-        details += "WINHTTP_CALLBACK_STATUS_FLAG_SECURITY_CHANNEL_ERROR ";
-    m_log.crit("WinHttp Security Error 0x%x (%s)", Status, details.c_str());
-}
-
-void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
-{
-    PCCERT_CONTEXT certCtx = NULL;
-    DWORD size = sizeof(certCtx);
-
-    if (!WinHttpQueryOption(Handle, WINHTTP_OPTION_SERVER_CERT_CONTEXT, &certCtx, &size)) {
-        m_log.crit("Could not get the certificate on conect");
-        throw RemotingException("Could not get certificate");
-
-    } else {
-        CERT_CHAIN_PARA chainPara = { 0 };
-        PCCERT_CHAIN_CONTEXT chainContext;
-
-        chainPara.cbSize = sizeof(chainPara);
-
-        DWORD flags = CERT_CHAIN_CACHE_END_CERT;
-        //flags |= isCheckRecovation() ? CERT_CHAIN_REVOCATION_CHECK_CHAIN : 0;
-        // flags != getAdditionalGlags();
-
-        BOOL gotCertChain = CertGetCertificateChain(m_caChainEngine,
-                                                    certCtx,
-                                                    NULL,
-                                                    certCtx->hCertStore,
-                                                    &chainPara,
-                                                    flags,
-                                                    NULL,
-                                                    &chainContext);
-        CertFreeCertificateContext(certCtx);
-        if (!gotCertChain) {
-            m_log.error("Could not get the certificate chain on conect");
-            throw RemotingException("Could not get certificate chain");
-        }
-        //
-        // Why do we only look at chain zero?
-        //
-        CERT_TRUST_STATUS status = chainContext->rgpChain[0]->TrustStatus;
-        CertFreeCertificateChain(chainContext);
-
-        m_log.debug("Connection Error %x Info %x", status.dwErrorStatus, status.dwInfoStatus);
-        //
-        // per CURL strip out (undocumented) CERT_TRUST_IS_NOT_TIME_NESTED  
-        //
-        DWORD error = status.dwErrorStatus & (~CERT_TRUST_IS_NOT_TIME_NESTED);
-        if (error != CERT_TRUST_NO_ERROR) {
-            m_log.error("Certificate presented is not trusted.  Error : 0x%x", status.dwErrorStatus);
-            throw RemotingException("Could not get certificate chain");
-        }
-    }
 }
 
 static
@@ -424,8 +365,26 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
     HINTERNETJanitor req(request);
 
     //
-    // TODO: somethimg magical with ciphers
+    //  The flags we set https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-httpspolicycallbackdata
+    //      SECURITY_FLAG_IGNORE_UNKNOWN_CA   Ignore errors associated with an unknown certification authority.
+    //                                        We check this in WinHTTPRemotingService::handleCert
+    //      SECURITY_FLAG_IGNORE_WRONG_USAGE  Ignore errors associated with the use of a certificate.
+    //      SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
+    //                                        Ignore errors associated with an expired certificate.
     //
+    // Critically we do NOT set
+    //      SECURITY_FLAG_IGNORE_CERT_CN_INVALID Ignore errors associated with a certificate that contains a common name that is not valid.
+    //      SECURITY_FLAG_IGNORE_REVOCATION      Ignore errors associated with a revoked certificate.
+    //                                           We need to add this (and in WinHTTPRemotingService::handleCert)
+    //
+    DWORD securityFlags = SECURITY_FLAG_IGNORE_UNKNOWN_CA |
+                          SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE |
+                          SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;
+    if (!WinHttpSetOption(request, WINHTTP_OPTION_SECURITY_FLAGS, &securityFlags, sizeof(securityFlags))) {
+        m_log.crit("Send.  Failed to set security flags : %d", GetLastError());
+        throw RemotingException("send failed");
+    }
+
     if (m_authScheme) {
         bool sendPass = (m_authScheme == WINHTTP_AUTH_SCHEME_BASIC || m_authScheme == WINHTTP_AUTH_SCHEME_DIGEST);
         if (!WinHttpSetCredentials(request,
@@ -568,5 +527,87 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
     }
     if (buffer) {
         delete[] buffer;
+    }
+}
+
+//
+// Called if the TLS handshake (called when we call WinHttpSendRequest as part of ::send) failed
+//
+void WinHTTPRemotingService::logSecureFailure(DWORD Status) const
+{
+    string details("");
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_REV_FAILED ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CERT)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CERT ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_REVOKED)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_REVOKED ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CA)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_INVALID_CA ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_CN_INVALID)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_CN_INVALID ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_DATE_INVALID)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_DATE_INVALID ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_CERT_WRONG_USAGE)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_CERT_WRONG_USAGE ";
+    if (Status & WINHTTP_CALLBACK_STATUS_FLAG_SECURITY_CHANNEL_ERROR)
+        details += "WINHTTP_CALLBACK_STATUS_FLAG_SECURITY_CHANNEL_ERROR ";
+    m_log.crit("WinHttp Security Error 0x%x (%s)", Status, details.c_str());
+}
+
+//
+// Called during WinHttpSendRequest to allow us to police the certificate.
+//
+void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
+{
+    PCCERT_CONTEXT certCtx = NULL;
+    DWORD size = sizeof(certCtx);
+
+    if (!WinHttpQueryOption(Handle, WINHTTP_OPTION_SERVER_CERT_CONTEXT, &certCtx, &size)) {
+        m_log.crit("Could not get the certificate on conect");
+        throw RemotingException("Could not get certificate");
+
+    }
+    else {
+        CERT_CHAIN_PARA chainPara = { 0 };
+        PCCERT_CHAIN_CONTEXT chainContext;
+
+        chainPara.cbSize = sizeof(chainPara);
+
+        DWORD flags = CERT_CHAIN_CACHE_END_CERT;
+        // REVOCATION!
+        //flags |= isCheckRecovation() ? CERT_CHAIN_REVOCATION_CHECK_CHAIN : 0;
+        // flags != getAdditionalGlags();
+
+        BOOL gotCertChain = CertGetCertificateChain(m_caChainEngine,
+            certCtx,
+            NULL,
+            certCtx->hCertStore,
+            &chainPara,
+            flags,
+            NULL,
+            &chainContext);
+        CertFreeCertificateContext(certCtx);
+        if (!gotCertChain) {
+            m_log.error("Could not get the certificate chain on connect");
+            throw RemotingException("Could not get certificate chain");
+        }
+        //
+        // Why do we only look at chain zero?
+        //
+        CERT_TRUST_STATUS status = chainContext->rgpChain[0]->TrustStatus;
+        CertFreeCertificateChain(chainContext);
+
+        m_log.debug("Connection Error %x Info %x", status.dwErrorStatus, status.dwInfoStatus);
+        //
+        // per CURL strip out (undocumented) CERT_TRUST_IS_NOT_TIME_NESTED
+        //
+        DWORD error = status.dwErrorStatus & (~CERT_TRUST_IS_NOT_TIME_NESTED);
+        if (error != CERT_TRUST_NO_ERROR) {
+            // We might want to expand the errors, wbut which ones?
+            // https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-cert_trust_status
+            m_log.error("Certificate presented is not trusted.  Error : 0x%x", status.dwErrorStatus);
+            throw RemotingException("Could not get certificate chain");
+        }
     }
 }
