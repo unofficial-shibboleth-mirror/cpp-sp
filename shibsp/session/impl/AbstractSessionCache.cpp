@@ -133,7 +133,7 @@ bool AbstractSessionCache::start()
     return false;
 }
 
-string AbstractSessionCache::create(SPRequest& request, DDF session)
+string AbstractSessionCache::create(SPRequest& request, DDF& session)
 {
     m_log.debug("creating new session");
 
@@ -189,16 +189,49 @@ string AbstractSessionCache::create(SPRequest& request, DDF session)
 
 unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTimeout, bool ignoreAddress)
 {
-    return unique_lock<Session>();
+    // Validation here depends on request content settings plus the input flags. The resulting policy
+    // is passed to the _find method for enforcement.
+
+    const char* key = m_cookieManager->getCookieValue(request);
+    if (!key) {
+        m_log.debug("no session cookie present, no session found");
+        return unique_lock<Session>();
+    }
+
+    const auto& settings = request.getRequestSettings().first;
+
+    const char* applicationId = settings->getString(RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_NAME);
+    unsigned int lifetime = settings->getUnsignedInt(RequestMapper::LIFETIME_PROP_NAME, RequestMapper::LIFETIME_PROP_DEFAULT);
+    unsigned int timeout = 0;
+    if (checkTimeout) {
+        timeout = settings->getUnsignedInt(RequestMapper::TIMEOUT_PROP_NAME, RequestMapper::TIMEOUT_PROP_DEFAULT);
+    }
+    const char* client_addr = nullptr;
+    if (!ignoreAddress && settings->getBool(RequestMapper::CONSISTENT_ADDRESS_PROP_NAME, RequestMapper::CONSISTENT_ADDRESS_PROP_DEFAULT)) {
+        client_addr = request.getRemoteAddr().c_str();
+    }
+
+    unique_lock<Session> session = _find(applicationId, key, lifetime, timeout, client_addr);
+    if (!session) {
+        // If no session, we need to clear the session cookie to prevent further use.
+        m_log.debug("clearing cookie for session (%s)", key);
+        m_cookieManager->unsetCookie(request);
+    }
+
+    // Update last access (if this was just loaded from storage, this is a no-op.
+    dynamic_cast<BasicSession*>(session.mutex())->setLastAccess(time(nullptr));
+    return session;
 }
 
 unique_lock<Session> AbstractSessionCache::find(const char* applicationId, const char* key)
 {
+    // This variant does no request-based validation so it returns the session best effort
+    // using the underlying _find method. It does ensure the applicationId matches if set.
     return _find(applicationId, key, 0, 0, nullptr);
 }
 
 unique_lock<Session> AbstractSessionCache::_find(
-    const char* applicationId, const char* key, time_t lifetime, time_t timeout, const char* client_addr
+    const char* applicationId, const char* key, unsigned int lifetime, unsigned int timeout, const char* client_addr
     )
 {
 
@@ -434,7 +467,7 @@ const std::map<std::string,DDF>& BasicSession::getAttributes() const
     return m_attributes;
 }
 
-bool BasicSession::isValid(const char* applicationId, time_t lifetime, time_t timeout, const char* client_addr)
+bool BasicSession::isValid(const char* applicationId, unsigned int lifetime, unsigned int timeout, const char* client_addr)
 {
     return false;
 }
@@ -447,6 +480,12 @@ time_t BasicSession::getCreation() const
 time_t BasicSession::getLastAccess() const
 {
     return m_lastAccess;
+}
+
+void BasicSession::setLastAccess(time_t ts)
+{
+    m_lastAccess = ts;
+    // TODO: interval-driven touch method call
 }
 
 void BasicSession::lock()

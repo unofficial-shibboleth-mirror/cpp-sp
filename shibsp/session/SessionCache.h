@@ -102,7 +102,7 @@ namespace shibsp {
         SessionCache();
     public:
         virtual ~SessionCache();
-
+        
         /**
          * Signals the implementation it may start any background tasks or do any
          * additional once-per-process work.
@@ -123,7 +123,7 @@ namespace shibsp {
          * 
          * @return the newly created session ID
          */
-        virtual std::string create(SPRequest& request, DDF session)=0;
+        virtual std::string create(SPRequest& request, DDF& session)=0;
 
         /**
          * Locates an existing session bound to a request.

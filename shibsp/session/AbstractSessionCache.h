@@ -57,8 +57,9 @@ namespace shibsp {
         const std::map<std::string,DDF>& getAttributes() const;
         time_t getCreation() const;
         time_t getLastAccess() const;
+        void setLastAccess(time_t ts);
 
-        bool isValid(const char* applicationId, time_t lifetime, time_t timeout, const char* client_addr);
+        bool isValid(const char* applicationId, unsigned int lifetime, unsigned int timeout, const char* client_addr);
 
     private:
         DDF m_obj;
@@ -82,7 +83,7 @@ namespace shibsp {
             bool start();
 
             // SessiomCache API
-            std::string create(SPRequest& request, DDF session);
+            std::string create(SPRequest& request, DDF& session);
             std::unique_lock<Session> find(SPRequest& request, bool checkTimeout, bool ignoreAddress);
             std::unique_lock<Session> find(const char* applicationId, const char* key);
             void remove(SPRequest& request, time_t revocationExp=0);
@@ -111,7 +112,7 @@ namespace shibsp {
             void dormant(const std::string& key);
             // Wrapper for finding sessions via varied inputs.
             std::unique_lock<Session> _find(
-                const char* applicationID, const char* key, time_t lifetime, time_t timeout, const char* client_addr
+                const char* applicationID, const char* key, unsigned int lifetime, unsigned int timeout, const char* client_addr
                 );
 
             Category& m_log;

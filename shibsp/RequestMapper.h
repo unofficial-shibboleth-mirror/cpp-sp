@@ -52,6 +52,16 @@ namespace shibsp {
         /** Combination of configuration settings and effective access control. */
         typedef std::pair<const PropertySet*,AccessControl*> Settings;
 
+        static const char APPLICATION_ID_PROP_NAME[];
+        static const char LIFETIME_PROP_NAME[];
+        static const char TIMEOUT_PROP_NAME[];
+        static const char CONSISTENT_ADDRESS_PROP_NAME[];
+
+        static const char APPLICATION_ID_PROP_DEFAULT[];
+        static unsigned int LIFETIME_PROP_DEFAULT;
+        static unsigned int TIMEOUT_PROP_DEFAULT;
+        static bool CONSISTENT_ADDRESS_PROP_DEFAULT;
+
         /**
          * Map request to settings.
          * 

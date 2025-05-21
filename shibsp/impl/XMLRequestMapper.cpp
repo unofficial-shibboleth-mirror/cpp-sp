@@ -155,6 +155,16 @@ void SHIBSP_API shibsp::registerRequestMappers()
     conf.RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, XMLRequestMapperFactory);
 }
 
+const char RequestMapper::APPLICATION_ID_PROP_NAME[] = "applicationId";
+const char RequestMapper::LIFETIME_PROP_NAME[] = "lifetime";
+const char RequestMapper::TIMEOUT_PROP_NAME[] = "timeout";
+const char RequestMapper::CONSISTENT_ADDRESS_PROP_NAME[] = "consistentAddress";
+
+const char RequestMapper::APPLICATION_ID_PROP_DEFAULT[] = "default";
+unsigned int RequestMapper::LIFETIME_PROP_DEFAULT = 3600 * 8;
+unsigned int RequestMapper::TIMEOUT_PROP_DEFAULT = 3600;
+bool RequestMapper::CONSISTENT_ADDRESS_PROP_DEFAULT = true;
+
 RequestMapper::RequestMapper()
 {
 }
@@ -490,7 +500,7 @@ XMLRequestMapperImpl::XMLRequestMapperImpl(ptree& pt, Category& log)
     // Inject "default" app ID if not explicit.
     const boost::optional<string> appId = pt.get_optional<string>(APPLICATION_ID_PROP_PATH);
     if (!appId) {
-        pt.put(APPLICATION_ID_PROP_PATH, "default");
+        pt.put(APPLICATION_ID_PROP_PATH, RequestMapper::APPLICATION_ID_PROP_DEFAULT);
     }
 
     // Load the property set.

@@ -51,10 +51,14 @@ namespace shibsp {
          * 
          * @return session key/ID created, this MUST be URL-safe
          */
-        virtual std::string create(DDF sessionData)=0;
+        virtual std::string create(DDF& sessionData)=0;
 
         /**
          * Read a session record from the underlying storage medium and return its data.
+         * 
+         * <p>The inputs direct the implementation to perform policy enforcement of various
+         * sorts on the session prior to returning it. An invalid session MUST NOT be returned
+         * to the caller.</p>
          * 
          * <p>To the extent possible, the implementation SHOULD ensure that the underlying
          * storage of the session (if returned) reflects its use as of the time of this call
@@ -69,11 +73,15 @@ namespace shibsp {
          * @param timeout       if positive, a timeout duration to enforce against the estimated time of last use
          * @param client_addr   if set, a client address to enforce for use of the session
          * 
-         * @return reconstituted session data or a null object if the session was absent, expired, or inactive
+         * @return reconstituted session data or a null object if the session was absent or invalid
          */
         virtual DDF read(
-            const char* applicationId, const char* key, time_t lifetime=0, time_t timeout=0, const char* client_addr=nullptr
-        ) const=0;
+            const char* applicationId,
+            const char* key,
+            unsigned int lifetime=0,
+            unsigned int timeout=0,
+            const char* client_addr=nullptr
+            ) const=0;
 
         /**
          * Informs the storage medium that a session was used at the current point in time.
