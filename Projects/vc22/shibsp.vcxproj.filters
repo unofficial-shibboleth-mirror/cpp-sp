@@ -174,15 +174,6 @@
     <ClInclude Include="..\..\shibsp\internal.h">
       <Filter>Header Files\Impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\shibsp\impl\StorageServiceSessionCache.h">
-      <Filter>Header Files\Impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\shibsp\impl\XMLApplication.h">
-      <Filter>Header Files\Impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\shibsp\impl\XMLServiceProvider.h">
-      <Filter>Header Files\Impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\shibsp\logging\impl\AbstractLoggingService.h">
       <Filter>Header Files\Impl</Filter>
     </ClInclude>

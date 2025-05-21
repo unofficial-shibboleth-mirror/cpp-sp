@@ -21,8 +21,10 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AgentConfig.h"
-#include "session/AbstractSessionCache.h"
+#include "SPRequest.h"
+#include "io/CookieManager.h"
 #include "logging/Category.h"
+#include "session/AbstractSessionCache.h"
 
 #include <chrono>
 #include <boost/property_tree/ptree.hpp>
@@ -44,6 +46,26 @@ namespace shibsp {
     extern SessionCache* SHIBSP_DLLLOCAL FilesystemSessionCacheFactory(ptree& pt, bool deprecationSupport);
     extern SessionCache* SHIBSP_DLLLOCAL StorageServiceSessionCacheFactory(ptree& pt, bool deprecationSupport);
 }
+
+static const char CLEANUP_INTERVAL_PROP_NAME[] = "cleanupInterval";
+static const char INPROC_TIMEOUT_PROP_NAME[] = "inprocTimeout";
+static const char ISSUER_ATTRIBUTE_PROP_NAME[] = "issuerAttribute";
+static const char COOKIE_NAME_PROP_NAME[] = "cookieName";
+static const char COOKIE_SECURE_PROP_NAME[] = "cookieSecure";
+static const char COOKIE_HTTPONLY_PROP_NAME[] = "cookieHttpOnly";
+static const char COOKIE_PATH_PROP_NAME[] = "cookiePath";
+static const char COOKIE_DOMAIN_PROP_NAME[] = "cookieDomain";
+static const char COOKIE_MAXAGE_PROP_NAME[] = "cookieMaxAge";
+static const char COOKIE_SAMESITE_PROP_NAME[] = "cookieSameSite";
+
+static unsigned int CLEANUP_INTERVAL_PROP_DEFAULT = 900;
+static unsigned int INPROC_TIMEOUT_PROP_DEFAULT = 900;
+static const char ISSUER_ATTRIBUTE_PROP_DEFAULT[] = "Shib-Identity-Provider";
+static const char COOKIE_NAME_PROP_DEFAULT[] = "__Host-shibsession";
+static bool COOKIE_SECURE_PROP_DEFAULT = true;
+static bool COOKIE_HTTPONLY_PROP_DEFAULT = true;
+static const char COOKIE_PATH_PROP_DEFAULT[] = "/";
+static int COOKIE_MAXAGE_PROP_DEFAULT = -1;
 
 void SHIBSP_API shibsp::registerSessionCaches()
 {
@@ -67,15 +89,21 @@ SessionCache::~SessionCache()
 {
 }
 
-const char AbstractSessionCache::CLEANUP_INTERVAL_PROP_NAME[] = "cleanupInterval";
-const char AbstractSessionCache::INPROC_TIMEOUT_PROP_NAME[] = "inprocTimeout";
-
-unsigned int AbstractSessionCache::CLEANUP_INTERVAL_PROP_DEFAULT = 900;
-unsigned int AbstractSessionCache::INPROC_TIMEOUT_PROP_DEFAULT = 900;
-
 AbstractSessionCache::AbstractSessionCache(const ptree& pt) : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache"))
 {
     load(pt);
+
+    m_issuerAttribute = getString(ISSUER_ATTRIBUTE_PROP_NAME, ISSUER_ATTRIBUTE_PROP_DEFAULT);
+
+    // Set up cookie manager.
+    m_cookieManager.reset(new CookieManager(getString(COOKIE_NAME_PROP_NAME, COOKIE_NAME_PROP_DEFAULT)));
+    m_cookieManager->setCookieNamePolicy("sessionCookieName", true);
+    m_cookieManager->setSecure(getBool(COOKIE_SECURE_PROP_NAME, COOKIE_SECURE_PROP_DEFAULT));
+    m_cookieManager->setHttpOnly(getBool(COOKIE_HTTPONLY_PROP_NAME, COOKIE_HTTPONLY_PROP_DEFAULT));
+    m_cookieManager->setPath(getString(COOKIE_PATH_PROP_NAME, COOKIE_PATH_PROP_DEFAULT));
+    m_cookieManager->setMaxAge(getInt(COOKIE_MAXAGE_PROP_NAME, COOKIE_MAXAGE_PROP_DEFAULT));
+    m_cookieManager->setDomain(getString(COOKIE_DOMAIN_PROP_NAME));
+    m_cookieManager->setSameSite(getString(COOKIE_SAMESITE_PROP_NAME));
 }
 
 AbstractSessionCache::~AbstractSessionCache()
@@ -103,6 +131,161 @@ bool AbstractSessionCache::start()
         m_log.error("error starting cleanup thread: %s", e.what());
     }
     return false;
+}
+
+string AbstractSessionCache::create(SPRequest& request, DDF session)
+{
+    m_log.debug("creating new session");
+
+    // Isolate from parent.
+    session.remove();
+
+    // Add additional fields managed by agent.
+    // attributes and data members should be present from hub.
+    session.addmember("creation").longinteger(time(nullptr));
+    session.addmember("app_id").string(request.getRequestSettings().first->getString("applicationId"));
+    session.addmember("addr").string(request.getRemoteAddr());
+
+    // Write the data to the back-end, obtaining a key.
+    string key;
+    try {
+        m_log.debug("writing new session to persistent store");
+        key = SessionCacheSPI::create(session);
+    }
+    catch (const IOException& ex) {
+        m_log.error("IOException writing new session to persistent store: %s", ex.what());
+        session.destroy();
+        return string();
+    }
+
+    unique_ptr<BasicSession> sessionObject(new BasicSession(*this, session));
+
+    const char* issuer = nullptr;
+    const auto& attr = sessionObject->getAttributes().find(m_issuerAttribute);
+    if (attr != sessionObject->getAttributes().end()) {
+        issuer = const_cast<DDF&>(attr->second).first().string();
+    }
+    m_log.info("new session created: ID (%s), Issuer (%s), Address (%s)",
+        key.c_str(), issuer ? issuer : "none", request.getRemoteAddr().c_str());
+
+    // Drop a cookie with the session ID.
+    m_cookieManager->setCookie(request, key.c_str());
+
+    // Lock the cache and insert the new session.
+
+    // Note, the C23 standard includes a typeof operator, but until then...
+#if defined(HAVE_CXX17)
+    lock_guard<shared_mutex> locker(m_lock);
+#elif defined(HAVE_CXX14)
+    lock_guard<shared_timed_mutex> locker(m_lock);
+#else
+    lock_guard<mutex> locker(m_lock);
+#endif
+
+    m_hashtable[key] = std::move_if_noexcept(sessionObject);
+
+    return key;
+}
+
+unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTimeout, bool ignoreAddress)
+{
+    return unique_lock<Session>();
+}
+
+unique_lock<Session> AbstractSessionCache::find(const char* applicationId, const char* key)
+{
+    return _find(applicationId, key, 0, 0, nullptr);
+}
+
+unique_lock<Session> AbstractSessionCache::_find(
+    const char* applicationId, const char* key, time_t lifetime, time_t timeout, const char* client_addr
+    )
+{
+
+    m_log.debug("searching local cache for session (%s)", key);
+#if defined(HAVE_CXX17)
+    shared_lock<shared_mutex> readlocker(m_lock);
+#elif defined(HAVE_CXX14)
+    shared_lock<shared_timed_mutex> readlocker(m_lock);
+#else
+    unique_lock<mutex> readlocker(m_lock);
+#endif
+    const auto& i = m_hashtable.find(key);
+    if (i != m_hashtable.end()) {
+        // Save off and lock the session.
+        unique_lock<Session> session(*(i->second));
+        readlocker.unlock();
+        m_log.debug("session found locally, validating it for use");
+        if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(applicationId, lifetime, timeout, client_addr)) {
+            session.unlock();
+            m_log.debug("session (%s) was found but was invalid, removing it", key);
+            remove(applicationId, key);
+        }
+        return session;
+    }
+    else {
+        readlocker.unlock();
+    }
+
+    DDF obj;
+    try {
+        // Note this performs the relevant enforcement for us.
+        obj = read(applicationId, key, lifetime, timeout, client_addr);
+    }
+    catch (const exception& ex) {
+        m_log.error("error reading session (%s) from persistent store: %s", key, ex.what());
+        return unique_lock<Session>();
+    }
+
+    if (obj.isnull()) {
+        m_log.info("session (%s) not found in persistent store", key);
+        return unique_lock<Session>();
+    }
+
+    m_log.info("valid session (%s) loaded from persistent store");
+
+    // Wrap the object in a local wraper to guard it before it's saved off.
+    unique_ptr<BasicSession> newSession(new BasicSession(*this, obj));
+
+    // Lock the cache and check for a race condition with another thread...
+
+    // Note, the C23 standard includes a typeof operator, but until then...
+#if defined(HAVE_CXX17)
+    lock_guard<shared_mutex> locker(m_lock);
+#elif defined(HAVE_CXX14)
+    lock_guard<shared_timed_mutex> locker(m_lock);
+#else
+    lock_guard<mutex> locker(m_lock);
+#endif
+
+    if (m_hashtable.count(key)) {
+        // There was an existing entry, but we want to swap the "newest" copy in place of it.
+        // Since we're holding the cache write lock, we know nobody can have a lock on the
+        // new copy yet, but the old copy might be locked by somebody. However, once we acquire
+        // a lock on the old Session, we know nobody else is waiting for that lock because they
+        // would have to be inside the cache critical section to get to it.
+        // This, this sequence transfers ownership out of the table, removes the entry, then
+        // locks, unlocks, and finally deletes the old session object.
+        m_log.debug("session (%s) already inserted by another thread, replacing with our copy", key);
+        unique_ptr<BasicSession> oldSession;
+        oldSession.swap(m_hashtable[key]);
+        m_hashtable.erase(key);
+        lock_guard<BasicSession> oldSessionLock(*oldSession.get());
+    }
+
+    // Finally, get an "empty" smart pointer out of the table to "insert" the new entry,
+    // swap over ownership from our copy, and finally return a locked wrapper around it.
+    unique_ptr<BasicSession>& ref = m_hashtable[key];
+    ref.swap(newSession);
+    return unique_lock<Session>(*ref);
+}
+
+void AbstractSessionCache::remove(SPRequest& request, time_t revocationExp)
+{
+}
+
+void AbstractSessionCache::remove(const char* applicationId, const char* key, time_t revocationExp)
+{
 }
 
 void AbstractSessionCache::dormant(const string& key)
@@ -209,12 +392,15 @@ void* AbstractSessionCache::cleanup_fn(void* p)
 }
 
 BasicSession::BasicSession(AbstractSessionCache& cache, DDF& obj)
-    : m_obj(obj), m_cache(cache), m_creation(0), m_lastAccess(time(nullptr))
+    : m_obj(obj), m_cache(cache), m_creation(0), m_lastAccess(time(nullptr)), m_lastAccessReported(m_lastAccess)
 {
     m_creation = m_obj["creation"].longinteger();
 
-    // We have to index and vector-up the values of the attributes.
-    // (Among other reasons, the DDF iteration API isn't threadsafe.)
+    // This is safe to directly expose for iteration of the attributes
+    // as long as we maintain the mutex-based lock approach for exclusive
+    // Session access. If we made that a shared lock, this all has to change.
+
+    // We do have to index the attributes.
     DDF attrs = m_obj["attributes"];
     DDF attr = attrs.first();
     while (!attr.isnull()) {
@@ -235,21 +421,12 @@ const char* BasicSession::getID() const
 
 const char* BasicSession::getApplicationID() const
 {
-    return m_obj["applicaton_id"].string();
+    return m_obj["app_id"].string();
 }
 
-const char* BasicSession::getClientAddress(const char* family) const
+const char* BasicSession::getClientAddress() const
 {
-    return m_obj["client_addr"][family].string();
-}
-
-void BasicSession::setClientAddress(const char* client_addr)
-{
-    DDF obj = m_obj["client_addr"];
-    if (!obj.isstruct()) {
-        obj = m_obj.addmember("client_addr").structure();
-    }
-    obj.addmember(getAddressFamily(client_addr)).string(client_addr);
+    return m_obj["addr"].string();
 }
 
 const std::map<std::string,DDF>& BasicSession::getAttributes() const
@@ -257,8 +434,9 @@ const std::map<std::string,DDF>& BasicSession::getAttributes() const
     return m_attributes;
 }
 
-void BasicSession::validate(const char* applicationId, const char* client_addr, time_t* timeout)
+bool BasicSession::isValid(const char* applicationId, time_t lifetime, time_t timeout, const char* client_addr)
 {
+    return false;
 }
 
 time_t BasicSession::getCreation() const
@@ -284,16 +462,6 @@ bool BasicSession::try_lock()
 void BasicSession::unlock()
 {
     m_lock.unlock();
-}
-
-// Allows the cache to bind sessions to multiple client address
-// families based on whatever this function returns.
-const char* BasicSession::getAddressFamily(const char* addr)
-{
-    if (strchr(addr, ':'))
-        return "6";
-    else
-        return "4";
 }
 
 /*

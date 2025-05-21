@@ -184,11 +184,9 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 
         bool sessionExists = false;
         try {
-            Session* session = request.getSession(true, false, false);   // don't cache it
-            if (session) {
-                sessionExists = true;
-                session->unlock();
-            }
+            unique_lock<Session> session = request.getSession();   // don't cache it but enforce policy
+            sessionExists = session.owns_lock();
+            // Lock will release here.
         }
         catch (const exception& e) {
             log.warn("error during session lookup: %s", e.what());
@@ -259,8 +257,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
 
-    Session* session = nullptr;
-    unique_lock<Session> slocker;
+    unique_lock<Session> session;
     string targetURL = request.getRequestURL();
 
     try {
@@ -281,11 +278,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
         // Do we have an access control plugin?
         if (settings.second) {
             try {
-                session = request.getSession(false, false, false);  // ignore timeout and do not cache
-                if (session) {
-                    unique_lock<Session> slocker2(*session, adopt_lock);
-                    slocker.swap(slocker2); // assign to lock popper
-                }
+                session = request.getSession(false, false);  // ignore timeout and do not cache
             }
             catch (const exception& e) {
                 log.warn("unable to obtain session to pass to access control provider: %s", e.what());
@@ -294,7 +287,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 #ifdef HAVE_CXX14
             shared_lock<AccessControl> acllock(*settings.second);
 #endif
-            switch (settings.second->authorized(request, session)) {
+            switch (settings.second->authorized(request, session.mutex())) {
                 case AccessControl::shib_acl_true:
                     log.debug("access control provider granted access");
                     return make_pair(true, request.returnOK());
@@ -304,7 +297,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
                     log.warn("access control provider denied access");
                     AgentException ex("Access to resource denied.");
                     ex.setStatusCode(HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN);
-                    return make_pair(true, handleError(log, request, session, &ex, false));
+                    return make_pair(true, handleError(log, request, session.mutex(), &ex, false));
                 }
 
                 default:
@@ -325,19 +318,14 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 {
     Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
 
-    Session* session = nullptr;
-    unique_lock<Session> slocker;
+    unique_lock<Session> session;
     string targetURL = request.getRequestURL();
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
 
         try {
-            session = request.getSession(false, false, false);  // ignore timeout and do not cache
-            if (session) {
-                unique_lock<Session> slocker2(*session, adopt_lock);
-                slocker.swap(slocker2); // assign to lock popper
-            }
+            session = request.getSession(false, false);  // ignore timeout and do not cache
         }
         catch (const exception& e) {
             log.warn("unable to obtain session to export to request: %s", e.what());
@@ -357,25 +345,25 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
             }
         }
 
-        request.setHeader("Shib-Session-ID", session->getID());
-        request.setHeader("Shib-Application-ID", session->getApplicationID());
+        request.setHeader("Shib-Session-ID", session.mutex()->getID());
+        request.setHeader("Shib-Application-ID", session.mutex()->getApplicationID());
 
         unsigned int lifetime = settings.first->getUnsignedInt("lifetime", 28800);
-        request.setHeader( "Shib-Session-Expires", boost::lexical_cast<string>(session->getCreation() + lifetime).c_str());
+        request.setHeader( "Shib-Session-Expires", boost::lexical_cast<string>(session.mutex()->getCreation() + lifetime).c_str());
         unsigned int timeout = settings.first->getUnsignedInt("timeout", 3600);
         if (timeout > 0) {
-            request.setHeader( "Shib-Session-Inactivity", boost::lexical_cast<string>(session->getLastAccess() + timeout).c_str());
+            request.setHeader( "Shib-Session-Inactivity", boost::lexical_cast<string>(session.mutex()->getLastAccess() + timeout).c_str());
         }
 
         // Export the attributes.
         request.getAgent().getAttributeConfiguration(
             request.getRequestSettings().first->getString("attributeConfigID")
-            ).exportAttributes(request, *session);
+            ).exportAttributes(request, *(session.mutex()));
 
         return make_pair(false,0L);
     }
     catch (exception& e) {
-        return make_pair(true, handleError(log, request, session, &e));
+        return make_pair(true, handleError(log, request, session.mutex(), &e));
     }
 }
 
@@ -435,17 +423,12 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
         throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
     catch (exception& e) {
-        Session* session = nullptr;
+        unique_lock<Session> session;
         try {
-            session = request.getSession(false, true, false);   // do not cache
+            session = request.getSession(false, true);   // do not cache
         }
         catch (const exception&) {
         }
-        if (session) {
-            lock_guard<Session> slocker(*session, adopt_lock); // pop existing lock on exit
-            return make_pair(true, handleError(log, request, session, &e));
-        } else {
-            return make_pair(true, handleError(log, request, nullptr, &e));
-        }
+        return make_pair(true, handleError(log, request, session.mutex(), &e));
     }
 }

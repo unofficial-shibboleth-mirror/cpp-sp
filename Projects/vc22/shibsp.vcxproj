@@ -43,9 +43,6 @@
     <ClInclude Include="..\..\shibsp\handler\LogoutInitiator.h" />
     <ClInclude Include="..\..\shibsp\handler\RemotedHandler.h" />
     <ClInclude Include="..\..\shibsp\handler\SecuredHandler.h" />
-    <ClInclude Include="..\..\shibsp\impl\StorageServiceSessionCache.h" />
-    <ClInclude Include="..\..\shibsp\impl\XMLApplication.h" />
-    <ClInclude Include="..\..\shibsp\impl\XMLServiceProvider.h" />
     <ClInclude Include="..\..\shibsp\internal.h" />
     <ClInclude Include="..\..\shibsp\io\CookieManager.h" />
     <ClInclude Include="..\..\shibsp\io\GenericRequest.h" />
@@ -67,6 +64,7 @@
     <ClInclude Include="..\..\shibsp\RequestMapper.h" />
     <ClInclude Include="..\..\shibsp\session\AbstractSessionCache.h" />
     <ClInclude Include="..\..\shibsp\session\SessionCache.h" />
+    <ClInclude Include="..\..\shibsp\session\SessionCacheSPI.h" />
     <ClInclude Include="..\..\shibsp\SPRequest.h" />
     <ClInclude Include="..\..\shibsp\util\BoostPropertySet.h" />
     <ClInclude Include="..\..\shibsp\util\CGIParser.h" />

@@ -104,7 +104,6 @@ DDF AbstractHTTPRemotingService::send(const DDF& in) const
 {
     DDF output = AbstractRemotingService::send(in);
     if (!m_authCachingCookie.empty()) {
-        // TODO: Check for auth cache cookie value coming back and stash off using a write lock.
         const char* latestValue = output.getmember("cached_auth").string();
         if (latestValue) {
             m_authcachelock->lock_shared();

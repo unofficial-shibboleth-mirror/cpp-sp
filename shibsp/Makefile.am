@@ -70,7 +70,8 @@ reminclude_HEADERS = \
 
 sessioninclude_HEADERS = \
 	session/AbstractSessionCache.h \
-	session/SessionCache.h
+	session/SessionCache.h \
+	session/SessionCacheSPI.h
 	
 utilinclude_HEADERS = \
 	util/BoostPropertySet.h \

@@ -24,6 +24,7 @@
 #include <logging/Category.h>
 #include <remoting/ddf.h>
 #include <session/SessionCache.h>
+#include <session/SessionCacheSPI.h>
 #include <util/BoostPropertySet.h>
 
 #include <condition_variable>
@@ -38,6 +39,7 @@ namespace shibsp {
 
     class SHIBSP_API AbstractSessionCache;
     class SHIBSP_API Attribute;
+    class SHIBSP_API CookieManager;
 
     class SHIBSP_API BasicSession : public virtual Session
     {
@@ -51,31 +53,26 @@ namespace shibsp {
 
         const char* getID() const;
         const char* getApplicationID() const;
-        const char* getClientAddress(const char* family) const;
-        void setClientAddress(const char* client_addr);
+        const char* getClientAddress() const;
         const std::map<std::string,DDF>& getAttributes() const;
         time_t getCreation() const;
         time_t getLastAccess() const;
 
-        void validate(const char* applicationId, const char* client_addr, time_t* timeout);
-
-        // Allows the cache to bind sessions to multiple client address
-        // families based on whatever this function returns.
-        static const char* getAddressFamily(const char* addr);
+        bool isValid(const char* applicationId, time_t lifetime, time_t timeout, const char* client_addr);
 
     private:
         DDF m_obj;
         std::map<std::string,DDF> m_attributes;
 
         AbstractSessionCache& m_cache;
-        time_t m_creation,m_lastAccess;
+        time_t m_creation,m_lastAccess,m_lastAccessReported;
         // TODO: possibly convert to a shared lock where possible?
         // I used exclusive because it avoided lock "upgrades"
         // when mutating or deleting sessions.
         std::mutex m_lock;
     };
 
-    class SHIBSP_API AbstractSessionCache : public virtual SessionCache, public virtual BoostPropertySet {
+    class SHIBSP_API AbstractSessionCache : public virtual SessionCache, public virtual SessionCacheSPI, public virtual BoostPropertySet {
         public:
             /**
              * Starts background cleanup thread for in-memory hashtable of sessions.
@@ -84,11 +81,12 @@ namespace shibsp {
              */
             bool start();
 
-            static const char CLEANUP_INTERVAL_PROP_NAME[];
-            static const char INPROC_TIMEOUT_PROP_NAME[];
-
-            static unsigned int CLEANUP_INTERVAL_PROP_DEFAULT;
-            static unsigned int INPROC_TIMEOUT_PROP_DEFAULT;
+            // SessiomCache API
+            std::string create(SPRequest& request, DDF session);
+            std::unique_lock<Session> find(SPRequest& request, bool checkTimeout, bool ignoreAddress);
+            std::unique_lock<Session> find(const char* applicationId, const char* key);
+            void remove(SPRequest& request, time_t revocationExp=0);
+            void remove(const char* applicationId, const char* key, time_t revocationExp=0);
 
         protected:
             /**
@@ -111,6 +109,10 @@ namespace shibsp {
         private:
             static void* cleanup_fn(void*);
             void dormant(const std::string& key);
+            // Wrapper for finding sessions via varied inputs.
+            std::unique_lock<Session> _find(
+                const char* applicationID, const char* key, time_t lifetime, time_t timeout, const char* client_addr
+                );
 
             Category& m_log;
 #if defined(HAVE_CXX17)
@@ -121,12 +123,11 @@ namespace shibsp {
             std::mutex m_lock;
 #endif
             std::map<std::string,std::unique_ptr<BasicSession>> m_hashtable;
-
-            bool m_shutdown;
+            std::unique_ptr<CookieManager> m_cookieManager;
             std::condition_variable m_shutdown_wait;
             std::thread m_cleanup_thread;
-                
-        friend class BasicSession;
+            std::string m_issuerAttribute;
+            bool m_shutdown;
         };    
 };
 

@@ -37,18 +37,21 @@ namespace {
 
         // For now this is just a dummy implementation to support further development.
 
-        string active(const SPRequest& request) {return "";}
-        Session* find(SPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr) {return nullptr;}
-        void remove(SPRequest& request, time_t revocationExp=0) {}
-        Session* find(const char* bucketID, const char* key) {return nullptr;}
-        void remove(const char* bucketID, const char* key, time_t revocationExp=0) {}
     };
 };
 
 namespace shibsp {
     SessionCache* SHIBSP_DLLLOCAL FilesystemSessionCacheFactory(ptree& pt, bool deprecationSupport) {
-        return new FilesystemSessionCache(pt);
+        //return new FilesystemSessionCache(pt);
     }
+}
+
+SessionCacheSPI::SessionCacheSPI()
+{
+}
+
+SessionCacheSPI::~SessionCacheSPI()
+{
 }
 
 FilesystemSessionCache::FilesystemSessionCache(const ptree& pt) : AbstractSessionCache(pt)

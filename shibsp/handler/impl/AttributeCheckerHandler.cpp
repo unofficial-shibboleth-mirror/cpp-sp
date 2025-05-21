@@ -115,9 +115,9 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         returnURL = request.getRequestSettings().first->getString("homeURL", "/");
     }
        
-    Session* session = nullptr;
+    unique_lock<Session> session;
     try {
-        session = request.getSession(true, false, false);
+        session = request.getSession();
         if (!session)
             request.log(Priority::SHIB_WARN, "AttributeChecker found session unavailable immediately after creation");
     }
@@ -125,12 +125,10 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         request.log(Priority::SHIB_WARN, string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
     }
 
-    unique_lock<Session> sessionLocker(*session, adopt_lock);
-
     bool checked = false;
     if (session) {
         if (!m_attributes.empty()) {
-            const auto& indexed = session->getAttributes();
+            const auto& indexed = session.mutex()->getAttributes();
             // Lambda returns true if the candidate attribute ID is NOT in the session.
             auto absent = [&indexed](const string& id) {
                 return indexed.find(id) == indexed.end();
@@ -141,7 +139,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
             checked = find_if(m_attributes.begin(), m_attributes.end(), absent) == m_attributes.end();
         }
         else {
-            checked = (m_acl && m_acl->authorized(request, session) == AccessControl::shib_acl_true);
+            checked = (m_acl && m_acl->authorized(request, session.mutex()) == AccessControl::shib_acl_true);
         }
     }
 
@@ -152,8 +150,8 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     }
 
     if (m_flushSession && session) {
-        time_t revocationExp = session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
-        sessionLocker.unlock(); // unlock the session
+        time_t revocationExp = session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
+        session.unlock();
         flushSession(request, revocationExp);
     }
 

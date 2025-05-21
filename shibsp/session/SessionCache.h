@@ -111,58 +111,67 @@ namespace shibsp {
          */
         virtual bool start()=0;
 
-#ifndef SHIBSP_LITE
         /**
-         * Inserts a new session into the cache and binds the session to the outgoing
-         * client response.
-         *
-         * <p>The newly created session ID is placed into the first parameter.</p>
-         *
-         * <p>The SSO tokens and Attributes remain owned by the caller and are copied by the cache.</p>
-         *
-         * @param sessionID         reference to string to capture newly inserted session ID
-         * @param request           request that initiated session
-         * @param expires           expiration time of session
-         * @param issuer            issuing metadata of assertion issuer, if known
-         * @param protocol          protocol family used to initiate the session
-         * @param nameid            principal identifier, normalized to SAML 2, if any
-         * @param authn_instant     UTC timestamp of authentication at IdP, if known
-         * @param session_index     index of session between principal and IdP, if any
-         * @param authncontext_class    method/category of authentication event, if known
-         * @param authncontext_decl specifics of authentication event, if known
-         * @param tokens            assertions to cache with session, if any
-         * @param attributes        optional array of resolved Attributes to cache with session
+         * Creates a new session and stores it persistently while binding the session
+         * to the input request object.
+         * 
+         * <p>The second parameter's ownership is assumed by this method regardless of the
+         * outcome.</p>
+         * 
+         * @param request request to bind the session to
+         * @param session session data obtained from the hub
+         * 
+         * @return the newly created session ID
          */
-        virtual void insert(
-            std::string& sessionID,
-            const SPRequest& request,
-            time_t expires,
-            const opensaml::saml2md::EntityDescriptor* issuer=nullptr,
-            const XMLCh* protocol=nullptr,
-            const opensaml::saml2::NameID* nameid=nullptr,
-            const XMLCh* authn_instant=nullptr,
-            const XMLCh* session_index=nullptr,
-            const XMLCh* authncontext_class=nullptr,
-            const XMLCh* authncontext_decl=nullptr,
-            const std::vector<const opensaml::Assertion*>* tokens=nullptr,
-            const std::vector<Attribute*>* attributes=nullptr
-            )=0;
+        virtual std::string create(SPRequest& request, DDF session)=0;
 
         /**
-         * Determines whether the Session bound to a client request matches a set of input criteria.
+         * Locates an existing session bound to a request.
          *
-         * @param request       request in which to locate Session
-         * @param issuer        required source of session(s)
-         * @param nameid        required name identifier
-         * @param indexes       session indexes
-         * @return  true iff the Session exists and matches the input criteria
+         * <p>If a bound session is found to have expired, be invalid, etc., and if the request
+         * can be used to "clear" the session from subsequent client requests, then it may be cleared.</p>
+         *
+         * @param request       request from client
+         * @param checkTimeout  true iff the timeout policy should be enforced before returning session
+         * @param ignoreAddress true iff address checking should be ignored, regardless of request's policy
+         * 
+         * @return locked Session (or an unbound wrapper)
          */
-        virtual bool matches(
-            const SPRequest& request,
-            const opensaml::saml2md::EntityDescriptor* issuer,
-            const opensaml::saml2::NameID& nameid,
-            const std::set<std::string>* indexes
-            )=0;
+        virtual std::unique_lock<Session> find(SPRequest& request, bool checkTimeout, bool ignoreAddress)=0;
+
+        /**
+         * Locates an existing session by its key/ID.
+         *
+         * @param applicationID current application ID
+         * @param key           session key to locate
+         * 
+         * @return locked Session (or an unbound wrapper)
+         */
+        virtual std::unique_lock<Session> find(const char* applicationId, const char* key)=0;
+
+        /**
+         * Removes an existing session bound to a request.
+         *
+         * <p>Revocation may be supported by some implementations.</p>
+         *
+         * @param request       request from client containing session
+         * @param revocationExp optional indicator for length of time to track revocation of this session
+         */
+        virtual void remove(SPRequest& request, time_t revocationExp=0)=0;
+
+       /**
+        * Removes an existing session identified by its application and ID.
+        *
+        * <p>Revocation may be supported by some implementations.</p>
+        *
+        * @param bucketID      application associated with session
+        * @param key           session key/ID
+        * @param revocationExp optional indicator for length of time to track revocation of this session
+        */
+        virtual void remove(const char* applicationId, const char* key, time_t revocationExp=0)=0;
+
+#ifndef SHIBSP_LITE
+        // TODO: legacy API to be removed, keeping for reference during rewrite...
 
         /**
         * Returns active sessions that match particular parameters and records the logout
@@ -194,7 +203,6 @@ namespace shibsp {
          * Executes a test of the cache's general health.
          */
         virtual void test()=0;
-#endif
 
         /**
          * Returns the ID of the session bound to the specified client request, if possible.
@@ -205,32 +213,6 @@ namespace shibsp {
         virtual std::string active(const SPRequest& request)=0;
 
         /**
-         * Locates an existing session bound to a request.
-         *
-         * <p>If the client address is supplied, then a check will be performed against
-         * the address recorded in the record.</p>
-         *
-         * <p>If a bound session is found to have expired, be invalid, etc., and if the request
-         * can be used to "clear" the session from subsequent client requests, then it may be cleared.</p>
-         *
-         * @param request       request from client bound to session
-         * @param client_addr   network address of client (if known)
-         * @param timeout       inactivity timeout to enforce (0 for none, nullptr to bypass check/update of last access)
-         * @return  pointer to locked Session, or nullptr
-         */
-        virtual Session* find(SPRequest& request, const char* client_addr=nullptr, time_t* timeout=nullptr)=0;
-
-        /**
-         * Deletes an existing session bound to a request.
-         *
-         * <p>Revocation may be supported by some implementations.</p>
-         *
-         * @param request       request from client containing session
-         * @param revocationExp optional indicator for length of time to track revocation of this session
-         */
-        virtual void remove(SPRequest& request, time_t revocationExp=0)=0;
-
-        /**
         * Locates an existing session by ID.
         *
         * @param bucketID      bucket for session
@@ -238,17 +220,7 @@ namespace shibsp {
         * @return  pointer to locked Session, or nullptr
         */
         virtual Session* find(const char* bucketID, const char* key)=0;
-
-        /**
-        * Deletes an existing session.
-        *
-        * <p>Revocation may be supported by some implementations.</p>
-        *
-        * @param bucketID      bucket for session
-        * @param key           session key
-        * @param revocationExp optional indicator for length of time to track revocation of this session
-        */
-        virtual void remove(const char* bucketID, const char* key, time_t revocationExp=0)=0;
+#endif
     };
 
     /** SessionCache implementation backed by the file system. */

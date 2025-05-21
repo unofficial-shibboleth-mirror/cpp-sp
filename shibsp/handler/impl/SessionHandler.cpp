@@ -136,15 +136,15 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
 {
     stringstream s;
 
-    Session* session = nullptr;
+    unique_lock<Session> session;
     try {
-        session = request.getSession(); // caches the locked session in the request so it's unlocked automatically
+        session = request.getSession();
         if (!session) {
             s << "{}" << endl;
             return make_pair(true, request.sendResponse(s));
         }
     }
-    catch (exception& ex) {
+    catch (const exception& ex) {
         m_log.info("exception accessing user session: %s", ex.what());
         s << "{}" << endl;
         return make_pair(true, request.sendError(s));
@@ -152,7 +152,7 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
 
     s << "{ ";
     s << "\"expiration\": ";
-    s << ((session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800) - time(nullptr)) / 60);
+    s << ((session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800) - time(nullptr)) / 60);
 
     /*
         attributes: [ { "name": "foo", "values" : count } ]
@@ -162,7 +162,7 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
         ]
     */
 
-    const map<string,DDF>& attributes = session->getAttributes();
+    const map<string,DDF>& attributes = session.mutex()->getAttributes();
     if (!attributes.empty()) {
         s << ", \"attributes\": [ ";
         string key;
@@ -228,9 +228,9 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
     stringstream s;
     s << "<html><head><title>Session Summary</title></head><body><pre>" << endl;
 
-    Session* session = nullptr;
+    unique_lock<Session> session;
     try {
-        session = request.getSession(); // caches the locked session in the request so it's unlocked automatically
+        session = request.getSession();
         if (!session) {
             s << "A valid session was not found.</pre></body></html>" << endl;
             return make_pair(true, request.sendResponse(s));
@@ -245,12 +245,12 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
     s << "<u>Miscellaneous</u>" << endl;
 
     s << "<strong>Session Expiration (barring inactivity):</strong> ";
-    s << ((session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800) - time(nullptr)) / 60) << " minute(s)" << endl;
+    s << ((session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800) - time(nullptr)) / 60) << " minute(s)" << endl;
     s << endl << "<u>Attributes</u>" << endl;
 
     string key;
     int count=0;
-    const map<string,DDF>& attributes = session->getAttributes();
+    const map<string,DDF>& attributes = session.mutex()->getAttributes();
     for (map<string,DDF>::const_iterator a = attributes.begin(); a != attributes.end(); ++a) {
         if (a->first != key) {
             if (a != attributes.begin()) {

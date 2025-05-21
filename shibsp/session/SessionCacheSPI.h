@@ -57,22 +57,26 @@ namespace shibsp {
          * Read a session record from the underlying storage medium and return its data.
          * 
          * <p>To the extent possible, the implementation SHOULD ensure that the underlying
-         * storage of the session reflects its use as of the time of this call such that
-         * subsequent calls to this method will be actioned based on a time of last use that
-         * is no older than the current time.</p>
+         * storage of the session (if returned) reflects its use as of the time of this call
+         * such that subsequent calls to this method will be actioned based on a time of last
+         * use that is no older than the current time.</p>
          * 
          * <p>The caller owns the resulting data object.</p>
          * 
-         * @param key session key/ID
-         * @param lifetime if positive, the time since its creation the session may be valid
-         * @param timeout if positive, a timeout duration to enforce against the estimated time of last use
+         * @param applicationId application ID
+         * @param key           session key/ID
+         * @param lifetime      if positive, the time since its creation the session may be valid
+         * @param timeout       if positive, a timeout duration to enforce against the estimated time of last use
+         * @param client_addr   if set, a client address to enforce for use of the session
          * 
          * @return reconstituted session data or a null object if the session was absent, expired, or inactive
          */
-        virtual DDF read(const char* key, time_t lifetime, time_t timeout) const=0;
+        virtual DDF read(
+            const char* applicationId, const char* key, time_t lifetime=0, time_t timeout=0, const char* client_addr=nullptr
+        ) const=0;
 
         /**
-         * Informs the storage medium that a session is active at the current point in time.
+         * Informs the storage medium that a session was used at the current point in time.
          * 
          * @param key session key/ID
          * 

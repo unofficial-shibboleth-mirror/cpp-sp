@@ -1202,8 +1202,7 @@ extern "C" authz_status shib_session_check_authz(request_rec* r, const char*, co
         return sta.second;
 
     try {
-        Session* session = sta.first->getSession(false, true, false);
-        lock_guard<Session> slocker(*session, adopt_lock);
+        unique_lock<Session> session = sta.first->getSession(false, true);
         if (session) {
             sta.first->log(Priority::SHIB_DEBUG, "htaccess: accepting shib-session/valid-user based on active session");
             return AUTHZ_GRANTED;
@@ -1299,9 +1298,8 @@ extern "C" authz_status shib_acclass_check_authz(request_rec* r, const char* req
     const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
 
     try {
-        Session* session = sta.first->getSession(false, true, false);
-        lock_guard<Session> slocker(*session, adopt_lock);
-        if (session && hta.doShibAttr(*sta.first, session,
+        unique_lock<Session> session = sta.first->getSession(false, true);
+        if (session && hta.doShibAttr(*sta.first, session.mutex(),
                 sta.first->getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class"),
                 require_line) == AccessControl::shib_acl_true)
             return AUTHZ_GRANTED;
@@ -1323,11 +1321,10 @@ extern "C" authz_status shib_attr_check_authz(request_rec* r, const char* requir
     const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
 
     try {
-        Session* session = sta.first->getSession(false, true, false);
-        lock_guard<Session> slocker(*session, adopt_lock);
+        unique_lock<Session> session = sta.first->getSession(false, true);
         if (session) {
             const char* rule = ap_getword_conf(r->pool, &require_line);
-            if (rule && hta.doShibAttr(*sta.first, session, rule, require_line) == AccessControl::shib_acl_true)
+            if (rule && hta.doShibAttr(*sta.first, session.mutex(), rule, require_line) == AccessControl::shib_acl_true)
                 return AUTHZ_GRANTED;
         }
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
@@ -1348,11 +1345,10 @@ extern "C" authz_status shib_plugin_check_authz(request_rec* r, const char* requ
     const htAccessControl& hta = dynamic_cast<const ApacheRequestMapper*>(sta.first->getRequestSettings().first)->getHTAccessControl();
 
     try {
-        Session* session = sta.first->getSession(false, true, false);
-        lock_guard<Session> slocker(*session, adopt_lock);
+        unique_lock<Session> session = sta.first->getSession(false, true);
         if (session) {
             const char* config = ap_getword_conf(r->pool, &require_line);
-            if (config && hta.doAccessControl(*sta.first, session, config) == AccessControl::shib_acl_true)
+            if (config && hta.doAccessControl(*sta.first, session.mutex(), config) == AccessControl::shib_acl_true)
                 return AUTHZ_GRANTED;
         }
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;

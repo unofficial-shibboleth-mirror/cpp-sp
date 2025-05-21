@@ -52,14 +52,13 @@ SPRequest::~SPRequest()
 AbstractSPRequest::AbstractSPRequest(const char* category)
     : m_log(Category::getInstance(category)),
         m_agent(AgentConfig::getConfig().getAgent()),
-        m_mapper(nullptr), m_sessionTried(false), m_session(nullptr)
+        m_mapper(nullptr)
 {
 }
 
 AbstractSPRequest::~AbstractSPRequest()
 {
-    if (m_session)
-        m_session->unlock();
+    // TODO: wrap this in a proper lock wrapper?
     if (m_mapper)
         m_mapper->unlock_shared();
 }
@@ -84,30 +83,9 @@ RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
     return m_settings;
 }
 
-Session* AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress, bool cache)
+unique_lock<Session> AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress)
 {
-    // Only attempt this once.
-    if (cache && m_sessionTried)
-        return m_session;
-    else if (cache)
-        m_sessionTried = true;
-
-    // Need address checking and timeout settings.
-    time_t timeout = 3600;
-    if (checkTimeout || !ignoreAddress) {
-        if (checkTimeout) {
-            timeout = getRequestSettings().first->getUnsignedInt("timeout", 3600);
-        }
-        ignoreAddress = !getRequestSettings().first->getBool("consistentAddress", true);
-    }
-
-    // The cache will either silently pass a session or nullptr back, or throw an exception out.
-    Session* session = getAgent().getSessionCache()->find(
-        *this, (ignoreAddress ? nullptr : getRemoteAddr().c_str()), (checkTimeout ? &timeout : nullptr)
-        );
-    if (cache)
-        m_session = session;
-    return session;
+    return getAgent().getSessionCache()->find(*this, checkTimeout, ignoreAddress);
 }
 
 void AbstractSPRequest::setRequestURI(const char* uri)

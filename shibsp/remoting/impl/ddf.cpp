@@ -393,6 +393,12 @@ DDF& DDF::string(const char* val)
     return string(const_cast<char*>(val), true);
 }
 
+DDF& DDF::string(const std::string& val)
+{
+    // Yes, this is horrendous, but we're copying the buffer so the cast shouldn't hurt anything.
+    return string(const_cast<char*>(val.c_str()), true);
+}
+
 DDF& DDF::unsafe_string(const char* val)
 {
     return string(const_cast<char*>(val), true, false);

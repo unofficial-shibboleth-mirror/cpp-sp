@@ -72,24 +72,21 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         return ret;
 
     // When out of process, we run natively.
-    Session* session = nullptr;
+    unique_lock<Session> session;
     try {
-        session = request.getSession(false, true, false);  // don't cache it and ignore all checks
+        session = request.getSession(false, true);  // don't cache it and ignore all checks
     }
     catch (const std::exception& ex) {
         m_log.error("error accessing current session: %s", ex.what());
     }
 
     if (session) {
-        // Guard the session in case of exception.
-        unique_lock<Session> locker(*session, adopt_lock);
-
         // Do back channel notification.
         bool result;
-        vector<string> sessions(1, session->getID());
+        vector<string> sessions(1, session.mutex()->getID());
         result = notifyBackChannel(request, sessions, true);
-        time_t revocationExp = session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
-        locker.unlock();    // unlock the session
+        time_t revocationExp = session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
+        session.unlock();
         request.getAgent().getSessionCache()->remove(request, revocationExp);
         if (!result) {
             //return sendLogoutPage(request, "partial");

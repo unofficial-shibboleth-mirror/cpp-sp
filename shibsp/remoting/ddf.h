@@ -25,6 +25,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <string>
 
 namespace shibsp {
 
@@ -82,6 +83,7 @@ namespace shibsp {
         DDF& empty();
         DDF& string(char* val, bool copyit=true, bool safe=true);
         DDF& string(const char* val);
+        DDF& string(const std::string& val);
         DDF& unsafe_string(const char* val);
         DDF& string(long val);
         DDF& string(double val);

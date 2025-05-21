@@ -84,13 +84,12 @@ namespace shibsp {
 
         /**
          * Returns a locked Session associated with the request.
-         *
+         * 
          * @param checkTimeout  true iff the last-used timestamp should be updated and any timeout policy enforced
          * @param ignoreAddress true iff all address checking should be ignored, regardless of policy
-         * @param cache         true iff the request should hold the Session lock itself and unlock during cleanup
-         * @return pointer to Session, or nullptr
+         * @return a locked mutex wrapper around the Session (or an empty wrapper if no Session exists)
          */
-        virtual Session* getSession(bool checkTimeout=true, bool ignoreAddress=false, bool cache=true)=0;
+        virtual std::unique_lock<Session> getSession(bool checkTimeout=true, bool ignoreAddress=false)=0;
 
         /**
          * Returns the effective base Handler URL for a resource,

@@ -84,9 +84,11 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_BADREQUEST));
     }
 
-    Session* session = nullptr;
+    const char* applicationId = request.getRequestSettings().first->getString("applicationId", "default");
+
+    unique_lock<Session> session;
     try {
-        session = AgentConfig::getConfig().getAgent().getSessionCache()->find(request, sessionId);
+        session = AgentConfig::getConfig().getAgent().getSessionCache()->find(applicationId, sessionId);
     }
     catch (const std::exception& ex) {
         m_log.error("error accessing designated session: %s", ex.what());
@@ -94,23 +96,19 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
 
     // With no session, we return a 404 after "revoking" the session just to be safe.
     if (!session) {
-        AgentConfig::getConfig().getAgent().getSessionCache()->remove(
-            request.getRequestSettings().first->getString("applicationId", "default"), sessionId);
+        AgentConfig::getConfig().getAgent().getSessionCache()->remove(applicationId, sessionId);
         istringstream msg("NOT FOUND");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_NOTFOUND));
     }
 
-    time_t revocationExp = session->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
-
-    unique_lock<Session> sessionLocker(*session, adopt_lock);
+    time_t revocationExp = session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
 
     bool doSAML = false;
 
     // Do back channel notification.
-    vector<string> sessions(1, session->getID());
+    vector<string> sessions(1, session.mutex()->getID());
     if (!notifyBackChannel(request, sessions, true)) {
-        sessionLocker.unlock();
-        session = nullptr;
+        session.unlock();
         AgentConfig::getConfig().getAgent().getSessionCache()->remove(
             request.getRequestSettings().first->getString("applicationId", "default"), sessionId, revocationExp);
         
@@ -119,10 +117,8 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
     }
 
     if (!doSAML) {
-        sessionLocker.unlock();
-        session = nullptr;
-        AgentConfig::getConfig().getAgent().getSessionCache()->remove(
-            request.getRequestSettings().first->getString("applicationId", "default"), sessionId, revocationExp);
+        session.unlock();
+        AgentConfig::getConfig().getAgent().getSessionCache()->remove(applicationId, sessionId, revocationExp);
 
         istringstream msg("OK");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_OK));

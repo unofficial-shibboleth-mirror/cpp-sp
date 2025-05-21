@@ -145,6 +145,15 @@ namespace shibsp {
         void setSameSite(samesite_t sameSiteValue);
 
         /**
+         * Sets default SameSite attribute for cookies created by this object.
+         * 
+         * <p>Defaults to absent.</p>
+         * 
+         * @param sameSiteValue attribute value
+         */
+        void setSameSite(const char* sameSiteValue);
+        
+        /**
          * Adds a cookie with the specified value to the outgoing response for the supplied request.
          * 
          * <p>The name is determined per the settings configured on this object and the settings

@@ -31,6 +31,10 @@
 using namespace shibsp;
 using namespace std;
 
+#ifndef HAVE_STRCASECMP
+# define _stricmp strcasecmp
+#endif
+
 CookieManager::CookieManager(const char* defaultName)
     : m_defaultName(defaultName),
         m_overrideProperty(nullptr),
@@ -76,6 +80,27 @@ void CookieManager::setSecure(bool secure)
 void CookieManager::setHttpOnly(bool httpOnly)
 {
     m_httpOnly = httpOnly;
+}
+
+void CookieManager::setSameSite(const char* value)
+{
+    if (value) {
+        if (!strcasecmp(value, "None")) {
+            setSameSite(SAMESITE_NONE);
+        }
+        else if (!strcasecmp(value, "Lax")) {
+            setSameSite(SAMESITE_LAX);
+        }
+        else if (!strcasecmp(value, "Strict")) {
+            setSameSite(SAMESITE_STRICT);
+        }
+        else {
+            setSameSite(SAMESITE_ABSENT);
+        }
+    }
+    else {
+        setSameSite(SAMESITE_ABSENT);
+    }
 }
 
 void CookieManager::setSameSite(samesite_t value)
