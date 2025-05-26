@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <ctime>
+#include <mutex>
 
 namespace shibsp {
 

@@ -26,6 +26,8 @@
 #include <shibsp/io/HTTPResponse.h>
 #include <shibsp/logging/Priority.h>
 
+#include <mutex>
+
 namespace shibsp {
 
     class SHIBSP_API Agent;

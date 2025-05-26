@@ -27,12 +27,14 @@
 #include "util/PropertySet.h"
 
 #include <boost/lexical_cast.hpp>
+#include <string.h>
 
 using namespace shibsp;
 using namespace std;
 
 #ifndef HAVE_STRCASECMP
-# define _stricmp strcasecmp
+# define strncasecmp _strnicmp
+# define strcasecmp _stricmp
 #endif
 
 CookieManager::CookieManager(const char* defaultName)
