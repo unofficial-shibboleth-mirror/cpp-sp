@@ -43,6 +43,7 @@ namespace {
 namespace shibsp {
     SessionCache* SHIBSP_DLLLOCAL FilesystemSessionCacheFactory(ptree& pt, bool deprecationSupport) {
         //return new FilesystemSessionCache(pt);
+        return nullptr;
     }
 }
 
@@ -53,6 +54,8 @@ SessionCacheSPI::SessionCacheSPI()
 SessionCacheSPI::~SessionCacheSPI()
 {
 }
+
+std::string SessionCacheSPI::create(DDF& sessionData) { return std::string(""); }
 
 FilesystemSessionCache::FilesystemSessionCache(const ptree& pt) : AbstractSessionCache(pt)
 {

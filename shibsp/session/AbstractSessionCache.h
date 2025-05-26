@@ -82,12 +82,15 @@ namespace shibsp {
              */
             bool start();
 
-            // SessiomCache API
+            // SessionCache API
             std::string create(SPRequest& request, DDF& session);
             std::unique_lock<Session> find(SPRequest& request, bool checkTimeout, bool ignoreAddress);
             std::unique_lock<Session> find(const char* applicationId, const char* key);
             void remove(SPRequest& request, time_t revocationExp=0);
             void remove(const char* applicationId, const char* key, time_t revocationExp=0);
+
+            // SessionCacheSPI API;
+            virtual std::string create(DDF& sessionData) = 0;
 
         protected:
             /**
