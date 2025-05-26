@@ -257,7 +257,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
                             WINHTTP_NO_PROXY_BYPASS, 0);
     if (m_session == nullptr) {
         m_log.crit("WinHttpOpen failure: %d", GetLastError());
-        throw runtime_error("WinHHHTP failed to initialize service");
+        throw runtime_error("WinHHHTP failed to initialize service (WinHttpOpen)");
     }
 
     //
@@ -281,13 +281,13 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
 
     if (!WinHttpCrackUrl(wURL.c_str(), 0, 0, &components)) {
         m_log.crit("WinHttpCrackUrl failure: %d", GetLastError());
-        throw runtime_error("WinHHHTP failed to initialize: failed to parse baseURL");
+        throw runtime_error("WinHHHTP failed to initialize: Invalid baseURL");
     }
 
     if (components.dwHostNameLength == 0 || components.dwUrlPathLength == 0) {
         m_log.crit("Invalid baseUrl '%s' HostNameLength: %d, pathLength: %d",
             getBaseURL(), components.dwHostNameLength == 0, components.dwUrlPathLength);
-        throw runtime_error("WinHHHTP failed to initialize: Invalid baseUrl");
+        throw runtime_error("WinHHHTP failed to initialize: Invalid baseURL");
     }
     m_baseURLPath = wstring(components.lpszUrlPath, components.dwUrlPathLength);
 
@@ -296,7 +296,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
         // FTP/ Socks?  Just say no
         //
         m_log.crit("Protocol Scheme not supported : %d", GetLastError());
-        throw runtime_error("WinHHHTP failed to initialize: Could not register callback");
+        throw runtime_error("WinHHHTP failed to initialize: Unsupported protocol");
     }
     m_secure = (components.nScheme == INTERNET_SCHEME_HTTPS);
 
@@ -324,7 +324,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
     if (m_connection == nullptr) {
         // Note use of WINDOWS formatting
         m_log.crit("WinHttpConnect failure.  Could not connect to host %S : %d", host.c_str(), GetLastError());
-        throw runtime_error("WinHHHTP failed to initialize: Could no");
+        throw runtime_error("WinHHHTP failed to initialize: Could not connect");
     }
 
     m_log.info("WinHTTP RemotingService installed for agent (%s), baseURL (%s)", AgentConfig::getConfig().getAgent().getID(), getBaseURL());
@@ -360,7 +360,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
 
     if (request == nullptr) {
         m_log.crit("Send.  Failed to open request to %s : %d", path, GetLastError());
-        throw RemotingException("send failed");
+        throw RemotingException("Send failed");
     }
     HINTERNETJanitor req(request);
 
@@ -382,7 +382,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
                           SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;
     if (!WinHttpSetOption(request, WINHTTP_OPTION_SECURITY_FLAGS, &securityFlags, sizeof(securityFlags))) {
         m_log.crit("Send.  Failed to set security flags : %d", GetLastError());
-        throw RemotingException("send failed");
+        throw RemotingException("Send failed");
     }
 
     if (m_authScheme) {
@@ -394,7 +394,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
                     sendPass ? utf8ToUtf16(getSecretSource()->getSecret().c_str()).c_str(): nullptr,
                     nullptr)) {
             m_log.crit("Send. Failed to setup AuthN to %s : %d", path, GetLastError());
-            throw RemotingException("send failed");
+            throw RemotingException("Send failed");
         }
     }
 
@@ -404,7 +404,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
     //
     if (!WinHttpAddRequestHeaders(request, headers, -1, WINHTTP_ADDREQ_FLAG_ADD)) {
         m_log.crit("Send: Could not add request headers : %d", GetLastError());
-        throw RemotingException("send failed");
+        throw RemotingException("Send failed");
     }
 
     if (m_chunked) {
@@ -414,7 +414,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
         m_log.debug("Sending chunked data to %s", path);
         if (!WinHttpSendRequest(request, L"Transfer-Encoding: chunked", -1, WINHTTP_NO_REQUEST_DATA, 0, WINHTTP_IGNORE_REQUEST_TOTAL_LENGTH, 0)) {
             m_log.crit("Send. Failed to send request to %s : %d", path, GetLastError());
-            throw RemotingException("send failed");
+            throw RemotingException("Send failed");
         }
 
         DWORD written;
@@ -432,15 +432,15 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
             m_log.debug("Sending chunk with %d bytes to %s", transferSize, path);
             if (!WinHttpWriteData(request, chunkString, chunkStringLen, &written)) {
                 m_log.crit("Send. Failed to send chunk header to %s : %d", path, GetLastError());
-                throw RemotingException("send failed");
+                throw RemotingException("Send failed");
             }
             if (!WinHttpWriteData(request, buf, transferSize, &written)) {
                 m_log.crit("Send. Failed to send chunk data to %s : %d", path, GetLastError());
-                throw RemotingException("send failed");
+                throw RemotingException("Send failed");
             }
             if (!WinHttpWriteData(request, "\r\n", 2, &written)) {
                 m_log.crit("Send. Failed to send chunk trailer to %s : %d", path, GetLastError());
-                throw RemotingException("send failed");
+                throw RemotingException("Send failed");
             }
         }
         //
@@ -448,7 +448,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
         //
         if (!WinHttpWriteData(request, "0\r\n", 3, &written)) {
             m_log.crit("Send. Failed to send chunk header to %s : %d", path, GetLastError());
-            throw RemotingException("send failed");
+            throw RemotingException("Send failed");
         }
     }
     else {
@@ -464,7 +464,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
         m_log.debug("Sending %d bytes to %s", msg.length(), path);
         if (!WinHttpSendRequest(request, WINHTTP_NO_ADDITIONAL_HEADERS, 0, const_cast<char*>(msg.c_str()), static_cast<DWORD>(msg.length()), static_cast<DWORD>(msg.length()), 0)) {
             m_log.crit("Send. Failed to send request to %s : %d", path, GetLastError());
-            throw RemotingException("send failed");
+            throw RemotingException("Send failed");
         }
     }
 
@@ -473,7 +473,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
         // TODO handle ERROR_WINHTTP_RESEND_REQUEST "The WinHTTP function failed. The desired function can be retried on the same request handle."
         //
         m_log.crit("Send. Failed to recieve response to %s : %d", path, GetLastError());
-        throw RemotingException("send failed");
+        throw RemotingException("Send failed");
     }
     DWORD statusCode;
     DWORD statusCodeSize = sizeof(statusCode);
@@ -482,14 +482,14 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
     //
     if (!WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, nullptr, &statusCode, &statusCodeSize, nullptr)) {
         m_log.crit("Send. Failed to Query response from %s : %d", path, GetLastError());
-        throw runtime_error("send failed");
+        throw runtime_error("Send failed");
     }
     if (statusCode != HTTP_STATUS_OK) {
         //
         // TODO - something meaningfull
         //
         m_log.crit("Send. Bad status from %s : %d", path, statusCode);
-        throw RemotingException("send failed");
+        throw RemotingException("Send failed");
     }
 
     DWORD bufferSize = 0;
@@ -499,7 +499,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
         DWORD bytesAvailable = 0;
         if (!WinHttpQueryDataAvailable(request, &bytesAvailable)) {
             m_log.crit("ReceiveData. WinHttpQueryDataAvailable on %s failed: %d", path, GetLastError());
-            throw RemotingException("send failed");
+            throw RemotingException("Send failed");
         }
         if (bytesAvailable == 0) {
             break;
@@ -512,7 +512,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
             buffer = new char[bytesAvailable + 1];
             if (buffer == nullptr) {
                 m_log.crit("ReceiveData. Out of Memory reading %d bytes from %s", bufferSize, path);
-                throw RemotingException("send failed");
+                throw RemotingException("Send failed");
             }
             ZeroMemory(buffer, bufferSize+1);
         }
@@ -520,7 +520,7 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
         DWORD bytesRead;
         if (!WinHttpReadData(request, buffer, bytesAvailable, &bytesRead)) {
             m_log.crit("ReceiveData. WinHttpReadData on %s failed: %d", path, GetLastError());
-            throw RemotingException("send failed");
+            throw RemotingException("Send failed");
         }
         m_log.debug("%d bytes read from %s", bytesRead, path);
         output.write(buffer, bytesRead);
@@ -564,7 +564,7 @@ void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
     DWORD size = sizeof(certCtx);
 
     if (!WinHttpQueryOption(Handle, WINHTTP_OPTION_SERVER_CERT_CONTEXT, &certCtx, &size)) {
-        m_log.crit("Could not get the certificate on conect");
+        m_log.crit("Could not get the certificate on connect");
         throw RemotingException("Could not get certificate");
 
     }
@@ -607,7 +607,7 @@ void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
             // We might want to expand the errors, wbut which ones?
             // https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-cert_trust_status
             m_log.error("Certificate presented is not trusted.  Error : 0x%x", status.dwErrorStatus);
-            throw RemotingException("Could not get certificate chain");
+            throw RemotingException("Certificate presented is not trusted");
         }
     }
 }
