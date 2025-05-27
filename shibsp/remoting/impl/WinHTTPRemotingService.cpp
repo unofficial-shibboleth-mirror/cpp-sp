@@ -71,7 +71,7 @@ namespace {
 
         void send(const char* path, istream& input, ostream& output) const;
 
-        void handleCert(HINTERNET Handle) const;
+        void handleCert(HINTERNET handle) const;
 
         void logSecureFailure(DWORD status) const;
 
@@ -90,6 +90,7 @@ namespace {
         HCERTCHAINENGINE m_caChainEngine;
         HCERTSTORE m_caStore;
         void setupCaChecking();
+        string getCertName(PCCERT_CONTEXT certContext) const;
     };
 
     class HINTERNETJanitor
@@ -181,6 +182,10 @@ void WinHTTPRemotingService::setupCaChecking() {
         m_log.crit("Unexpected tlsCaFile format: Encoding 0x%x type 0x%x format 0x%x", msgAndCertEncodingType, contentType, formatType);
         CertFreeCertificateContext(certContext);
         throw runtime_error("WinHHHTP failed to initialize: failed bad TtsCaFile format");
+    }
+
+    if (m_log.isDebugEnabled()) {
+        m_log.debug("Loaded certificate with name %s", getCertName(certContext).c_str());
     }
 
     if (!CertAddCertificateContextToStore(m_caStore, certContext, CERT_STORE_ADD_ALWAYS, NULL)) {
@@ -558,56 +563,67 @@ void WinHTTPRemotingService::logSecureFailure(DWORD Status) const
 //
 // Called during WinHttpSendRequest to allow us to police the certificate.
 //
-void WinHTTPRemotingService::handleCert(HINTERNET Handle) const
+void WinHTTPRemotingService::handleCert(HINTERNET handle) const
 {
     PCCERT_CONTEXT certCtx = NULL;
     DWORD size = sizeof(certCtx);
 
-    if (!WinHttpQueryOption(Handle, WINHTTP_OPTION_SERVER_CERT_CONTEXT, &certCtx, &size)) {
+    if (!WinHttpQueryOption(handle, WINHTTP_OPTION_SERVER_CERT_CONTEXT, &certCtx, &size)) {
         m_log.crit("Could not get the certificate on connect");
         throw RemotingException("Could not get certificate");
 
     }
-    else {
-        CERT_CHAIN_PARA chainPara = { 0 };
-        PCCERT_CHAIN_CONTEXT chainContext;
 
-        chainPara.cbSize = sizeof(chainPara);
-
-        DWORD flags = CERT_CHAIN_CACHE_END_CERT;
-        // REVOCATION!
-        //flags |= isCheckRecovation() ? CERT_CHAIN_REVOCATION_CHECK_CHAIN : 0;
-        // flags != getAdditionalGlags();
-
-        BOOL gotCertChain = CertGetCertificateChain(m_caChainEngine,
-            certCtx,
-            NULL,
-            certCtx->hCertStore,
-            &chainPara,
-            flags,
-            NULL,
-            &chainContext);
-        CertFreeCertificateContext(certCtx);
-        if (!gotCertChain) {
-            m_log.error("Could not get the certificate chain on connect");
-            throw RemotingException("Could not get certificate chain");
-        }
-        //
-        // Why do we only look at chain zero?
-        //
-        CERT_TRUST_STATUS status = chainContext->rgpChain[0]->TrustStatus;
-        CertFreeCertificateChain(chainContext);
-
-        m_log.debug("Connection Error %x Info %x", status.dwErrorStatus, status.dwInfoStatus);
-        //
-        // per CURL strip out (undocumented) CERT_TRUST_IS_NOT_TIME_NESTED
-        //
-        DWORD error = status.dwErrorStatus & (~CERT_TRUST_IS_NOT_TIME_NESTED);
-        if (error != CERT_TRUST_NO_ERROR) {
-            // We might want to expand the errors, wbut which ones?
-            // https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-cert_trust_status
-            m_log.error("Certificate presented is not trusted.  Error : 0x%x", status.dwErrorStatus);
-            throw RemotingException("Certificate presented is not trusted");
-        }
+    if (m_log.isDebugEnabled()) {
+        m_log.debug("Connection: got cert with name '%s'", getCertName(certCtx).c_str());
     }
+
+    CERT_CHAIN_PARA chainPara = { 0 };
+    PCCERT_CHAIN_CONTEXT chainContext;
+
+    chainPara.cbSize = sizeof(chainPara);
+
+    DWORD flags = CERT_CHAIN_CACHE_END_CERT;
+    // REVOCATION!
+    //flags |= isCheckRecovation() ? CERT_CHAIN_REVOCATION_CHECK_CHAIN : 0;
+    // flags != getAdditionalGlags();
+
+    BOOL gotCertChain = CertGetCertificateChain(m_caChainEngine,
+                                                certCtx,
+                                                NULL,
+                                                certCtx->hCertStore,
+                                                &chainPara,
+                                                flags,
+                                                NULL,
+                                                &chainContext);
+    CertFreeCertificateContext(certCtx);
+    if (!gotCertChain) {
+        m_log.error("Could not get the certificate chain on connect");
+        throw RemotingException("Could not get certificate chain");
+    }
+    //
+    // Why do we only look at chain zero?
+    //
+    CERT_TRUST_STATUS status = chainContext->rgpChain[0]->TrustStatus;
+    CertFreeCertificateChain(chainContext);
+
+    m_log.debug("Connection Error %x Info %x", status.dwErrorStatus, status.dwInfoStatus);
+    //
+    // per CURL strip out (undocumented) CERT_TRUST_IS_NOT_TIME_NESTED
+    //
+    DWORD error = status.dwErrorStatus & (~CERT_TRUST_IS_NOT_TIME_NESTED);
+    if (error != CERT_TRUST_NO_ERROR) {
+        // We might want to expand the errors, wbut which ones?
+        // https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-cert_trust_status
+        m_log.error("Certificate presented is not trusted.  Error : 0x%x", status.dwErrorStatus);
+        throw RemotingException("Certificate presented is not trusted");
+    }
+}
+
+string WinHTTPRemotingService::getCertName(PCCERT_CONTEXT certContext) const {
+
+    char buffer[1024] = {0};
+    CertNameToStrA(X509_ASN_ENCODING, &certContext->pCertInfo->Subject, CERT_SIMPLE_NAME_STR, buffer, sizeof(buffer));
+    return string(buffer);
+
 }
