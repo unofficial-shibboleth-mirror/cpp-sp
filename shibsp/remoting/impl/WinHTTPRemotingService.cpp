@@ -373,18 +373,21 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
     //  The flags we set https://learn.microsoft.com/en-us/windows/win32/api/wincrypt/ns-wincrypt-httpspolicycallbackdata
     //      SECURITY_FLAG_IGNORE_UNKNOWN_CA   Ignore errors associated with an unknown certification authority.
     //                                        We check this in WinHTTPRemotingService::handleCert
-    //      SECURITY_FLAG_IGNORE_WRONG_USAGE  Ignore errors associated with the use of a certificate.
-    //      SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
-    //                                        Ignore errors associated with an expired certificate.
     //
     // Critically we do NOT set
-    //      SECURITY_FLAG_IGNORE_CERT_CN_INVALID Ignore errors associated with a certificate that contains a common name that is not valid.
-    //      SECURITY_FLAG_IGNORE_REVOCATION      Ignore errors associated with a revoked certificate.
-    //                                           We need to add this (and in WinHTTPRemotingService::handleCert)
+    //      SECURITY_FLAG_IGNORE_WRONG_USAGE
+    //                   Ignore errors associated with the use of a certificate.
+    //      SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
+    //                   Ignore errors associated with an expired certificate.
+    //      SECURITY_FLAG_IGNORE_CERT_CN_INVALID
+    //                   Ignore errors associated with a certificate that contains a common name that is not valid.
     //
-    DWORD securityFlags = SECURITY_FLAG_IGNORE_UNKNOWN_CA |
-                          SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE |
-                          SECURITY_FLAG_IGNORE_CERT_DATE_INVALID;
+    // We (will) selectively set
+    //      SECURITY_FLAG_IGNORE_REVOCATION
+    //                    Ignore errors associated with a revoked certificate.
+    //
+    DWORD securityFlags = SECURITY_FLAG_IGNORE_UNKNOWN_CA;
+
     if (!WinHttpSetOption(request, WINHTTP_OPTION_SECURITY_FLAGS, &securityFlags, sizeof(securityFlags))) {
         m_log.crit("Send.  Failed to set security flags : %d", GetLastError());
         throw RemotingException("Send failed");
