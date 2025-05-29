@@ -51,7 +51,7 @@ namespace shibsp {
          * 
          * @return session key/ID created, this MUST be URL-safe
          */
-        virtual std::string create(DDF& sessionData)=0;
+        virtual std::string cache_create(DDF& sessionData)=0;
 
         /**
          * Read a session record from the underlying storage medium and return its data.
@@ -61,9 +61,9 @@ namespace shibsp {
          * to the caller.</p>
          * 
          * <p>To the extent possible, the implementation SHOULD ensure that the underlying
-         * storage of the session (if returned) reflects its use as of the time of this call
-         * such that subsequent calls to this method will be actioned based on a time of last
-         * use that is no older than the current time.</p>
+         * storage of the session (if returned) is updated such that subsequent calls to this
+         * method will be actioned based on a time of last use that is no older than the current
+         * time.</p>
          * 
          * <p>The caller owns the resulting data object.</p>
          * 
@@ -75,7 +75,7 @@ namespace shibsp {
          * 
          * @return reconstituted session data or a null object if the session was absent or invalid
          */
-        virtual DDF read(
+        virtual DDF cache_read(
             const char* applicationId,
             const char* key,
             unsigned int lifetime=0,
@@ -90,14 +90,14 @@ namespace shibsp {
          * 
          * @return true iff the storage medium believes the information has been updated
          */
-        virtual bool touch(const char* key) const=0;
+        virtual bool cache_touch(const char* key) const=0;
 
         /**
          * Delete a session record from the underlying storage medium.
          * 
          * @param key/ID of session to delete
          */
-        virtual void remove(const char* key)=0;
+        virtual void cache_remove(const char* key)=0;
     };
 };
 

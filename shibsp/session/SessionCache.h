@@ -153,75 +153,16 @@ namespace shibsp {
         /**
          * Removes an existing session bound to a request.
          *
-         * <p>Revocation may be supported by some implementations.</p>
-         *
-         * @param request       request from client containing session
-         * @param revocationExp optional indicator for length of time to track revocation of this session
+         * @param request   request from client containing session
          */
-        virtual void remove(SPRequest& request, time_t revocationExp=0)=0;
+        virtual void remove(SPRequest& request)=0;
 
        /**
         * Removes an existing session identified by its application and ID.
         *
-        * <p>Revocation may be supported by some implementations.</p>
-        *
-        * @param bucketID      application associated with session
-        * @param key           session key/ID
-        * @param revocationExp optional indicator for length of time to track revocation of this session
+        * @param key    session key/ID
         */
-        virtual void remove(const char* applicationId, const char* key, time_t revocationExp=0)=0;
-
-#ifndef SHIBSP_LITE
-        // TODO: legacy API to be removed, keeping for reference during rewrite...
-
-        /**
-        * Returns active sessions that match particular parameters and records the logout
-        * to prevent race conditions.
-        *
-        * <p>On exit, the mapping between these sessions and the associated information MAY be
-        * removed by the cache, so subsequent calls to this method may not return anything.
-        *
-        * <p>Until logout expiration, any attempt to create a session with the same parameters
-        * will be blocked by the cache.
-        *
-        * @param bucketID      bucket for session
-        * @param issuer        source of session(s)
-        * @param nameid        name identifier associated with the session(s) to terminate
-        * @param indexes       indexes of sessions, or nullptr for all sessions associated with other parameters
-        * @param expires       logout expiration
-        * @param sessions      on exit, contains the IDs of the matching sessions found
-        */
-        virtual std::vector<std::string>::size_type logout(
-            const char* bucketID,
-            const opensaml::saml2md::EntityDescriptor* issuer,
-            const opensaml::saml2::NameID& nameid,
-            const std::set<std::string>* indexes,
-            time_t expires,
-            std::vector<std::string>& sessions
-        )=0;
-
-        /**
-         * Executes a test of the cache's general health.
-         */
-        virtual void test()=0;
-
-        /**
-         * Returns the ID of the session bound to the specified client request, if possible.
-         *
-         * @param request   request from client containing session
-         * @return  ID of session, if any known, or an empty string
-         */
-        virtual std::string active(const SPRequest& request)=0;
-
-        /**
-        * Locates an existing session by ID.
-        *
-        * @param bucketID      bucket for session
-        * @param key           session key
-        * @return  pointer to locked Session, or nullptr
-        */
-        virtual Session* find(const char* bucketID, const char* key)=0;
-#endif
+        virtual void remove(const char* key)=0;
     };
 
     /** SessionCache implementation backed by the file system. */

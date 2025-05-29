@@ -150,7 +150,7 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
     string key;
     try {
         m_log.debug("writing new session to persistent store");
-        key = SessionCacheSPI::create(session);
+        key = cache_create(session);
     }
     catch (const IOException& ex) {
         m_log.error("IOException writing new session to persistent store: %s", ex.what());
@@ -263,7 +263,7 @@ unique_lock<Session> AbstractSessionCache::_find(
     DDF obj;
     try {
         // Note this performs the relevant enforcement for us.
-        obj = read(applicationId, key, lifetime, timeout, client_addr);
+        obj = cache_read(applicationId, key, lifetime, timeout, client_addr);
     }
     catch (const exception& ex) {
         m_log.error("error reading session (%s) from persistent store: %s", key, ex.what());
@@ -297,7 +297,7 @@ unique_lock<Session> AbstractSessionCache::_find(
         // new copy yet, but the old copy might be locked by somebody. However, once we acquire
         // a lock on the old Session, we know nobody else is waiting for that lock because they
         // would have to be inside the cache critical section to get to it.
-        // This, this sequence transfers ownership out of the table, removes the entry, then
+        // Thus, this sequence transfers ownership out of the table, removes the entry, then
         // locks, unlocks, and finally deletes the old session object.
         m_log.debug("session (%s) already inserted by another thread, replacing with our copy", key);
         unique_ptr<BasicSession> oldSession;

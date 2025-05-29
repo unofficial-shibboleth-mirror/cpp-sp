@@ -55,8 +55,6 @@ SessionCacheSPI::~SessionCacheSPI()
 {
 }
 
-std::string SessionCacheSPI::create(DDF& sessionData) { return std::string(""); }
-
 FilesystemSessionCache::FilesystemSessionCache(const ptree& pt) : AbstractSessionCache(pt)
 {
 }

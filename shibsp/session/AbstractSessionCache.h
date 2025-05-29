@@ -41,6 +41,11 @@ namespace shibsp {
     class SHIBSP_API Attribute;
     class SHIBSP_API CookieManager;
 
+#if defined (_MSC_VER)
+    #pragma warning( push )
+    #pragma warning( disable : 4251 )
+#endif
+
     class SHIBSP_API BasicSession : public virtual Session
     {
     public:
@@ -73,7 +78,7 @@ namespace shibsp {
         std::mutex m_lock;
     };
 
-    class SHIBSP_API AbstractSessionCache : public virtual SessionCache, public virtual SessionCacheSPI, public virtual BoostPropertySet {
+    class SHIBSP_API AbstractSessionCache : public virtual SessionCache, public SessionCacheSPI, public virtual BoostPropertySet {
         public:
             /**
              * Starts background cleanup thread for in-memory hashtable of sessions.
@@ -88,9 +93,6 @@ namespace shibsp {
             std::unique_lock<Session> find(const char* applicationId, const char* key);
             void remove(SPRequest& request, time_t revocationExp=0);
             void remove(const char* applicationId, const char* key, time_t revocationExp=0);
-
-            // SessionCacheSPI API;
-            virtual std::string create(DDF& sessionData) = 0;
 
         protected:
             /**
@@ -132,7 +134,12 @@ namespace shibsp {
             std::thread m_cleanup_thread;
             std::string m_issuerAttribute;
             bool m_shutdown;
-        };    
+        };
+
+#if defined (_MSC_VER)
+    #pragma warning( pop )
+#endif
+
 };
 
 #endif /** __shibsp_abssessioncache_h__ */

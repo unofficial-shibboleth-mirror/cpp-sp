@@ -85,9 +85,8 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         bool result;
         vector<string> sessions(1, session.mutex()->getID());
         result = notifyBackChannel(request, sessions, true);
-        time_t revocationExp = session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
         session.unlock();
-        request.getAgent().getSessionCache()->remove(request, revocationExp);
+        request.getAgent().getSessionCache()->remove(request);
         if (!result) {
             //return sendLogoutPage(request, "partial");
         }

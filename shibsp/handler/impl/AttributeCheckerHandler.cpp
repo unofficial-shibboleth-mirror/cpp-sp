@@ -52,9 +52,9 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        void flushSession(SPRequest& request, time_t exp) const {
+        void flushSession(SPRequest& request) const {
             try {
-                request.getAgent().getSessionCache()->remove(request, exp);
+                request.getAgent().getSessionCache()->remove(request);
             }
             catch (const std::exception&) {
             }
@@ -150,9 +150,8 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     }
 
     if (m_flushSession && session) {
-        time_t revocationExp = session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
         session.unlock();
-        flushSession(request, revocationExp);
+        flushSession(request);
     }
 
     return make_pair(true, request.sendRedirect(m_redirectOnFailure.c_str()));

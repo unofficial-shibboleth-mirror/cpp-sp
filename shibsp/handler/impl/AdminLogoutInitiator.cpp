@@ -96,12 +96,10 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
 
     // With no session, we return a 404 after "revoking" the session just to be safe.
     if (!session) {
-        AgentConfig::getConfig().getAgent().getSessionCache()->remove(applicationId, sessionId);
+        AgentConfig::getConfig().getAgent().getSessionCache()->remove(sessionId);
         istringstream msg("NOT FOUND");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_NOTFOUND));
     }
-
-    time_t revocationExp = session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800);
 
     bool doSAML = false;
 
@@ -109,8 +107,7 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
     vector<string> sessions(1, session.mutex()->getID());
     if (!notifyBackChannel(request, sessions, true)) {
         session.unlock();
-        AgentConfig::getConfig().getAgent().getSessionCache()->remove(
-            request.getRequestSettings().first->getString("applicationId", "default"), sessionId, revocationExp);
+        AgentConfig::getConfig().getAgent().getSessionCache()->remove(sessionId);
         
         istringstream msg("PARTIAL");
         return make_pair(true, request.sendResponse(msg, 206)); // misuse of an HTTP code, but whatever
@@ -118,7 +115,7 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
 
     if (!doSAML) {
         session.unlock();
-        AgentConfig::getConfig().getAgent().getSessionCache()->remove(applicationId, sessionId, revocationExp);
+        AgentConfig::getConfig().getAgent().getSessionCache()->remove(sessionId);
 
         istringstream msg("OK");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_OK));
