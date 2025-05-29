@@ -91,8 +91,8 @@ namespace shibsp {
             std::string create(SPRequest& request, DDF& session);
             std::unique_lock<Session> find(SPRequest& request, bool checkTimeout, bool ignoreAddress);
             std::unique_lock<Session> find(const char* applicationId, const char* key);
-            void remove(SPRequest& request, time_t revocationExp=0);
-            void remove(const char* applicationId, const char* key, time_t revocationExp=0);
+            void remove(SPRequest& request);
+            void remove(const char* key);
 
         protected:
             /**

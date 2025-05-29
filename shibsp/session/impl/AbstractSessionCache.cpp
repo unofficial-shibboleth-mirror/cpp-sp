@@ -234,7 +234,6 @@ unique_lock<Session> AbstractSessionCache::_find(
     const char* applicationId, const char* key, unsigned int lifetime, unsigned int timeout, const char* client_addr
     )
 {
-
     m_log.debug("searching local cache for session (%s)", key);
 #if defined(HAVE_CXX17)
     shared_lock<shared_mutex> readlocker(m_lock);
@@ -252,7 +251,7 @@ unique_lock<Session> AbstractSessionCache::_find(
         if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(applicationId, lifetime, timeout, client_addr)) {
             session.unlock();
             m_log.debug("session (%s) was found but was invalid, removing it", key);
-            remove(applicationId, key);
+            remove(key);
         }
         return session;
     }
@@ -313,12 +312,21 @@ unique_lock<Session> AbstractSessionCache::_find(
     return unique_lock<Session>(*ref);
 }
 
-void AbstractSessionCache::remove(SPRequest& request, time_t revocationExp)
+void AbstractSessionCache::remove(SPRequest& request)
 {
+    const char* key = m_cookieManager->getCookieValue(request);
+    if (!key) {
+        m_log.debug("no session cookie present, no session bound to request");
+        return;
+    }
+    remove(key);
+    m_cookieManager->unsetCookie(request);
 }
 
-void AbstractSessionCache::remove(const char* applicationId, const char* key, time_t revocationExp)
+void AbstractSessionCache::remove(const char* key)
 {
+    dormant(string(key));
+    cache_remove(key);
 }
 
 void AbstractSessionCache::dormant(const string& key)
