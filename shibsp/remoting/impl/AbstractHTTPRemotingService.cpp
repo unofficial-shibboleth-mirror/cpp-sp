@@ -44,6 +44,7 @@ const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_NAME[] = "authC
 const char AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_NAME[] = "connectTimeout";
 const char AbstractHTTPRemotingService::TIMEOUT_PROP_NAME[] = "timeout";
 const char AbstractHTTPRemotingService::CA_FILE_PROP_NAME[] = "tlsCAFile";
+const char AbstractHTTPRemotingService::REVOCATION_CHECK_PROP_NAME[] = "revocationCheck";
 
 const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_DEFAULT[] = "File";
 const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost/idp/profile/sp";
@@ -51,6 +52,7 @@ const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "basic";
 const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
 unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;
 unsigned int AbstractHTTPRemotingService::TIMEOUT_PROP_DEFAULT = 10;
+const bool AbstractHTTPRemotingService::REVOCATION_CHECK_DEFAULT = false;
 const char AbstractHTTPRemotingService::CA_FILE_PROP_DEFAULT[] = "trustlist.pem";
 
 AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
@@ -68,6 +70,7 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     m_authMethod = getAuthMethod(props.getString(AUTH_METHOD_PROP_NAME, AUTH_METHOD_PROP_DEFAULT));
     m_connectTimeout = props.getUnsignedInt(CONNECT_TIMEOUT_PROP_NAME, CONNECT_TIMEOUT_PROP_DEFAULT);
     m_timeout = props.getUnsignedInt(TIMEOUT_PROP_NAME, TIMEOUT_PROP_DEFAULT);
+    m_revocationCheck = props.getBool(REVOCATION_CHECK_PROP_NAME, REVOCATION_CHECK_DEFAULT);
 
     m_caFile = props.getString(CA_FILE_PROP_NAME, CA_FILE_PROP_DEFAULT);
     if (!m_caFile.empty()) {
@@ -176,6 +179,11 @@ unsigned int AbstractHTTPRemotingService::getConnectTimeout() const
 unsigned int AbstractHTTPRemotingService::getTimeout() const
 {
     return m_timeout;
+}
+
+bool AbstractHTTPRemotingService::isRevocationCheck() const
+{
+    return m_revocationCheck;
 }
 
 const char* AbstractHTTPRemotingService::getCAFile() const

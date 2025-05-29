@@ -171,7 +171,7 @@ void WinHTTPRemotingService::setupCaChecking() {
                           NULL,
                           NULL,
                           (void const**)&certContext)) {
-        m_log.crit("CryptQueryObject failure: %d", GetLastError());
+        m_log.crit("CryptQueryObject failure on file '%s': %d", caFile.c_str(), GetLastError());
         throw runtime_error("WinHHHTP failed to initialize: failed to open tlsCAFile");
     }
 
@@ -382,15 +382,19 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
     //      SECURITY_FLAG_IGNORE_CERT_CN_INVALID
     //                   Ignore errors associated with a certificate that contains a common name that is not valid.
     //
-    // We (will) selectively set
-    //      SECURITY_FLAG_IGNORE_REVOCATION
-    //                    Ignore errors associated with a revoked certificate.
-    //
     DWORD securityFlags = SECURITY_FLAG_IGNORE_UNKNOWN_CA;
 
     if (!WinHttpSetOption(request, WINHTTP_OPTION_SECURITY_FLAGS, &securityFlags, sizeof(securityFlags))) {
         m_log.crit("Send.  Failed to set security flags : %d", GetLastError());
         throw RemotingException("Send failed");
+    }
+
+    if (isRevocationCheck()) {
+        DWORD enableFeature = WINHTTP_ENABLE_SSL_REVOCATION;
+        if (!WinHttpSetOption(request, WINHTTP_OPTION_ENABLE_FEATURE, &enableFeature, sizeof(enableFeature))) {
+            m_log.crit("Send.  Failed to set feature : %d", GetLastError());
+            throw RemotingException("Send failed");
+        }
     }
 
     if (m_authScheme) {
@@ -587,9 +591,10 @@ void WinHTTPRemotingService::handleCert(HINTERNET handle) const
     chainPara.cbSize = sizeof(chainPara);
 
     DWORD flags = CERT_CHAIN_CACHE_END_CERT;
-    // REVOCATION!
-    //flags |= isCheckRecovation() ? CERT_CHAIN_REVOCATION_CHECK_CHAIN : 0;
-    // flags != getAdditionalGlags();
+
+    if (isRevocationCheck()) {
+        flags |= CERT_CHAIN_REVOCATION_CHECK_CHAIN;
+    }
 
     BOOL gotCertChain = CertGetCertificateChain(m_caChainEngine,
                                                 certCtx,
