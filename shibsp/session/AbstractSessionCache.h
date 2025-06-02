@@ -62,8 +62,8 @@ namespace shibsp {
         const std::map<std::string,DDF>& getAttributes() const;
         time_t getCreation() const;
         time_t getLastAccess() const;
-        void setLastAccess(time_t ts);
 
+        // Perform validation of a local session based on policy and checks for revocation.
         bool isValid(const char* applicationId, unsigned int lifetime, unsigned int timeout, const char* client_addr);
 
     private:
@@ -134,6 +134,9 @@ namespace shibsp {
             std::thread m_cleanup_thread;
             std::string m_issuerAttribute;
             bool m_shutdown;
+            unsigned int m_storageAccessInterval;
+            
+            friend class BasicSession;
         };
 
 #if defined (_MSC_VER)

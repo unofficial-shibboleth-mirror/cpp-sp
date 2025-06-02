@@ -86,11 +86,15 @@ namespace shibsp {
         /**
          * Informs the storage medium that a session was used at the current point in time.
          * 
-         * @param key session key/ID
+         * <p>This method should return false to indicate that a session has been revoked, removed,
+         * or is no longer valid.</p>
          * 
-         * @return true iff the storage medium believes the information has been updated
+         * @param key session key/ID
+         * @param timeout timeout to enforce if non-zero
+         * 
+         * @return true iff the session remains valid/available
          */
-        virtual bool cache_touch(const char* key) const=0;
+        virtual bool cache_touch(const char* key, unsigned int timeout=0) const=0;
 
         /**
          * Delete a session record from the underlying storage medium.

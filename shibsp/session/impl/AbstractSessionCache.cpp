@@ -25,8 +25,8 @@
 #include "io/CookieManager.h"
 #include "logging/Category.h"
 #include "session/AbstractSessionCache.h"
+#include "util/Date.h"
 
-#include <chrono>
 #include <boost/property_tree/ptree.hpp>
 
 #ifndef WIN32
@@ -45,9 +45,11 @@ using namespace std;
 namespace shibsp {
     extern SessionCache* SHIBSP_DLLLOCAL FilesystemSessionCacheFactory(ptree& pt, bool deprecationSupport);
     extern SessionCache* SHIBSP_DLLLOCAL StorageServiceSessionCacheFactory(ptree& pt, bool deprecationSupport);
+    extern SessionCache* SHIBSP_DLLLOCAL MemorySessionCacheFactory(ptree& pt, bool deprecationSupport);
 }
 
 static const char CLEANUP_INTERVAL_PROP_NAME[] = "cleanupInterval";
+static const char STORAGE_ACCESS_INTERVAL_PROP_NAME[] = "storageAccessInterval";
 static const char INPROC_TIMEOUT_PROP_NAME[] = "inprocTimeout";
 static const char ISSUER_ATTRIBUTE_PROP_NAME[] = "issuerAttribute";
 static const char COOKIE_NAME_PROP_NAME[] = "cookieName";
@@ -59,6 +61,7 @@ static const char COOKIE_MAXAGE_PROP_NAME[] = "cookieMaxAge";
 static const char COOKIE_SAMESITE_PROP_NAME[] = "cookieSameSite";
 
 static unsigned int CLEANUP_INTERVAL_PROP_DEFAULT = 900;
+static unsigned int STORAGE_ACCESS_INTERVAL_PROP_DEFAULT = 600;
 static unsigned int INPROC_TIMEOUT_PROP_DEFAULT = 900;
 static const char ISSUER_ATTRIBUTE_PROP_DEFAULT[] = "Shib-Identity-Provider";
 static const char COOKIE_NAME_PROP_DEFAULT[] = "__Host-shibsession";
@@ -70,6 +73,7 @@ static int COOKIE_MAXAGE_PROP_DEFAULT = -1;
 void SHIBSP_API shibsp::registerSessionCaches()
 {
     AgentConfig::getConfig().SessionCacheManager.registerFactory(FILESYSTEM_SESSION_CACHE, FilesystemSessionCacheFactory);
+    AgentConfig::getConfig().SessionCacheManager.registerFactory(MEMORY_SESSION_CACHE, MemorySessionCacheFactory);
     //AgentConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceSessionCacheFactory);
 }
 
@@ -89,11 +93,20 @@ SessionCache::~SessionCache()
 {
 }
 
+SessionCacheSPI::SessionCacheSPI()
+{
+}
+
+SessionCacheSPI::~SessionCacheSPI()
+{
+}
+
 AbstractSessionCache::AbstractSessionCache(const ptree& pt) : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache"))
 {
     load(pt);
 
     m_issuerAttribute = getString(ISSUER_ATTRIBUTE_PROP_NAME, ISSUER_ATTRIBUTE_PROP_DEFAULT);
+    m_storageAccessInterval = getUnsignedInt(STORAGE_ACCESS_INTERVAL_PROP_NAME, STORAGE_ACCESS_INTERVAL_PROP_DEFAULT);
 
     // Set up cookie manager.
     m_cookieManager.reset(new CookieManager(getString(COOKIE_NAME_PROP_NAME, COOKIE_NAME_PROP_DEFAULT)));
@@ -218,8 +231,6 @@ unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTi
         m_cookieManager->unsetCookie(request);
     }
 
-    // Update last access (if this was just loaded from storage, this is a no-op.
-    dynamic_cast<BasicSession*>(session.mutex())->setLastAccess(time(nullptr));
     return session;
 }
 
@@ -247,16 +258,29 @@ unique_lock<Session> AbstractSessionCache::_find(
         // Save off and lock the session.
         unique_lock<Session> session(*(i->second));
         readlocker.unlock();
-        m_log.debug("session found locally, validating it for use");
-        if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(applicationId, lifetime, timeout, client_addr)) {
+
+        m_log.debug("session (%s) found locally, validating for use", key);
+
+        // If timeout is being enforced, check if the session is "stale" from the local cache's perspective.
+        if (timeout && session.mutex()->getLastAccess() + timeout < time(nullptr)) {
+            // Unlock the local copy and drop into the reload logic.
             session.unlock();
-            m_log.debug("session (%s) was found but was invalid, removing it", key);
-            remove(key);
+            m_log.debug("session (%s) found locally but stale, attempting reload from persistent store", key);
         }
-        return session;
+        else if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(applicationId, lifetime, timeout, client_addr)) {
+            // Locally invalid on its face, so remove and return nothing.
+            session.unlock();
+            m_log.debug("session (%s) invalid, removing it", key);
+            remove(key);
+            return session;
+        } else {
+            // Just return the local copy.
+            return session;
+        }
     }
     else {
         readlocker.unlock();
+        m_log.debug("session (%s) not found locally, loading from persistent store", key);
     }
 
     DDF obj;
@@ -298,7 +322,7 @@ unique_lock<Session> AbstractSessionCache::_find(
         // would have to be inside the cache critical section to get to it.
         // Thus, this sequence transfers ownership out of the table, removes the entry, then
         // locks, unlocks, and finally deletes the old session object.
-        m_log.debug("session (%s) already inserted by another thread, replacing with our copy", key);
+        m_log.debug("replacing session (%s) with fresh copy", key);
         unique_ptr<BasicSession> oldSession;
         oldSession.swap(m_hashtable[key]);
         m_hashtable.erase(key);
@@ -477,7 +501,58 @@ const std::map<std::string,DDF>& BasicSession::getAttributes() const
 
 bool BasicSession::isValid(const char* applicationId, unsigned int lifetime, unsigned int timeout, const char* client_addr)
 {
-    return false;
+    // Check client address.
+    // TODO: Implement the fuzzy address matching.
+    if (client_addr && strcmp(client_addr, getClientAddress())) {
+        m_cache.log().warn("session (%s) invalid, bound to address (%s), accessed from (%s)", getID(), getClientAddress(), client_addr);
+        return false;
+    }
+
+    time_t now = time(nullptr);
+
+    // Enforce session lifetime.
+    if (lifetime) {
+        if (getCreation() + lifetime < now) {
+            if (m_cache.log().isWarnEnabled()) {
+                string created(date::format("%FT%TZ", chrono::system_clock::from_time_t(getCreation())));
+                string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(getCreation() + lifetime)));
+                m_cache.log().warn("session (%s) has expired, created (%s), expired (%s)", getID(), created.c_str(), expired.c_str());
+            }
+            return false;
+        }
+    }
+
+    if (!timeout || m_lastAccess + timeout > now) {
+
+        // Being locally valid, we want to update the activity timestamp remotely and in the persistent store.
+        // This check also notices a session having been revoked, so implements the concept of the cache being
+        // "eventually consistent" across agent processes.
+
+        if (m_lastAccess - m_lastAccessReported > m_cache.m_storageAccessInterval) {
+            // It's been X seconds since we last wrote through to storage...
+            if (!m_cache.cache_touch(getID(), timeout)) {
+                m_cache.log().warn("session (%) missing or invalid in persistent store, invalidating locally", getID());
+                return false;
+            }
+            // Update reporting timestamp.
+            m_lastAccessReported = now;
+        }
+    }
+    else {
+        // The session is locally invalid due to inactivity, but this isn't "truth" because other agent processes may
+        // actively be using it.
+        if (!m_cache.cache_touch(getID(), timeout)) {
+            m_cache.log().warn("session (%s) timed out due to inactivity", getID());
+            return false;
+        }
+        // Update reporting timestamp.
+        m_lastAccessReported = now;
+    }
+
+    // Update last access time locally.
+    m_lastAccess = now;
+
+    return true;
 }
 
 time_t BasicSession::getCreation() const
@@ -488,12 +563,6 @@ time_t BasicSession::getCreation() const
 time_t BasicSession::getLastAccess() const
 {
     return m_lastAccess;
-}
-
-void BasicSession::setLastAccess(time_t ts)
-{
-    m_lastAccess = ts;
-    // TODO: interval-driven touch method call
 }
 
 void BasicSession::lock()

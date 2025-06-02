@@ -171,6 +171,9 @@ namespace shibsp {
     /** SessionCache implementation backed by a hub-hosted StorageService. */
     #define STORAGESERVICE_SESSION_CACHE    "storage"
 
+    /** SessionCache implementation backed by single process memory, generally only for testing. */
+    #define MEMORY_SESSION_CACHE    "memory"
+
     /**
      * Registers SessionCache classes into the runtime.
      */

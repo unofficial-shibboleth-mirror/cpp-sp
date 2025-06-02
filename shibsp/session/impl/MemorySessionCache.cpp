@@ -13,9 +13,13 @@
  */
 
 /**
- * session/impl/FilesystemSessionCache.cpp
+ * session/impl/MemorySessionCache.cpp
  *
- * SessionCache implementation using the file system for storage.
+ * SessionCache implementation using non-shared memory.
+ * 
+ * <p>This is a more or less degenerate implementation of the SessionCacheSPI interface
+ * for testing and perhaps very constrained use cases in which only a single agent process
+ * can exist.</p>
  */
 
 #include "internal.h"
@@ -30,10 +34,10 @@ using namespace boost::property_tree;
 using namespace std;
 
 namespace {
-    class FilesystemSessionCache : public virtual AbstractSessionCache {
+    class MemorySessionCache : public virtual AbstractSessionCache {
     public:
-        FilesystemSessionCache(const ptree& pt);
-        ~FilesystemSessionCache();
+        MemorySessionCache(const ptree& pt);
+        ~MemorySessionCache();
 
         string cache_create(DDF& sessionData);
         DDF cache_read(
@@ -49,25 +53,25 @@ namespace {
 };
 
 namespace shibsp {
-    SessionCache* SHIBSP_DLLLOCAL FilesystemSessionCacheFactory(ptree& pt, bool deprecationSupport) {
-        return new FilesystemSessionCache(pt);
+    SessionCache* SHIBSP_DLLLOCAL MemorySessionCacheFactory(ptree& pt, bool deprecationSupport) {
+        return new MemorySessionCache(pt);
     }
 }
 
-FilesystemSessionCache::FilesystemSessionCache(const ptree& pt) : AbstractSessionCache(pt)
+MemorySessionCache::MemorySessionCache(const ptree& pt) : AbstractSessionCache(pt)
 {
 }
 
-FilesystemSessionCache::~FilesystemSessionCache()
+MemorySessionCache::~MemorySessionCache()
 {
 }
 
-string FilesystemSessionCache::cache_create(DDF& sessionData)
+string MemorySessionCache::cache_create(DDF& sessionData)
 {
     return string();
 }
 
-DDF FilesystemSessionCache::cache_read(
+DDF MemorySessionCache::cache_read(
     const char* applicationId,
     const char* key,
     unsigned int lifetime,
@@ -78,11 +82,11 @@ DDF FilesystemSessionCache::cache_read(
     return DDF();
 }
 
-bool FilesystemSessionCache::cache_touch(const char* key, unsigned int timeout) const
+bool MemorySessionCache::cache_touch(const char* key, unsigned int timeout) const
 {
     return false;
 }
 
-void FilesystemSessionCache::cache_remove(const char* key)
+void MemorySessionCache::cache_remove(const char* key)
 {
 }
