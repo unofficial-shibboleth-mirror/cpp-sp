@@ -82,9 +82,9 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
         struct stat stat_buf;
         if (stat(m_caFile.c_str(), &stat_buf) != 0) {
 #endif
-            throw ConfigurationException("Unable to access CA file.");
+            throw ConfigurationException(string("Unable to access CA file: ") + m_caFile);
         } else if (stat_buf.st_size == 0) {
-            throw ConfigurationException("CA file is empty.");
+            throw ConfigurationException(string("CA file is empty: ") + m_caFile);
         }
     }
 
