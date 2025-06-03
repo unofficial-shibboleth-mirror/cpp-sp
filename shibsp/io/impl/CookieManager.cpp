@@ -39,7 +39,6 @@ using namespace std;
 
 CookieManager::CookieManager(const char* defaultName)
     : m_defaultName(defaultName),
-        m_overrideProperty(nullptr),
         m_appSpecific(false),
         m_path("/"),
         m_maxAge(-1),
