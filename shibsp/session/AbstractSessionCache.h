@@ -64,7 +64,7 @@ namespace shibsp {
         time_t getLastAccess() const;
 
         // Perform validation of a local session based on policy and checks for revocation.
-        bool isValid(const char* applicationId, unsigned int lifetime, unsigned int timeout, const char* client_addr);
+        bool isValid(unsigned int lifetime, unsigned int timeout, const char* client_addr);
 
     private:
         DDF m_obj;

@@ -261,22 +261,21 @@ unique_lock<Session> AbstractSessionCache::_find(
 
         m_log.debug("session (%s) found locally, validating for use", key);
 
-        // If timeout is being enforced, check if the session is "stale" from the local cache's perspective.
-        if (timeout && session.mutex()->getLastAccess() + timeout < time(nullptr)) {
-            // Unlock the local copy and drop into the reload logic.
+        // Cross-check application.
+        if (strcmp(applicationId, session.mutex()->getApplicationID())) {
+            m_log.warn("session (%s) issued for application (%s), accessed via application (%s)",
+                key, applicationId, session.mutex()->getApplicationID());
             session.unlock();
-            m_log.debug("session (%s) found locally but stale, attempting reload from persistent store", key);
         }
-        else if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(applicationId, lifetime, timeout, client_addr)) {
+        else if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(lifetime, timeout, client_addr)) {
             // Locally invalid on its face, so remove and return nothing.
             session.unlock();
             m_log.debug("session (%s) invalid, removing it", key);
             remove(key);
-            return session;
-        } else {
-            // Just return the local copy.
-            return session;
         }
+
+        // Return locked session or empty wrapper.
+        return session;
     }
     else {
         readlocker.unlock();
@@ -499,7 +498,7 @@ const std::map<std::string,DDF>& BasicSession::getAttributes() const
     return m_attributes;
 }
 
-bool BasicSession::isValid(const char* applicationId, unsigned int lifetime, unsigned int timeout, const char* client_addr)
+bool BasicSession::isValid(unsigned int lifetime, unsigned int timeout, const char* client_addr)
 {
     // Check client address.
     // TODO: Implement the fuzzy address matching.
@@ -579,207 +578,3 @@ void BasicSession::unlock()
 {
     m_lock.unlock();
 }
-
-/*
-
-void BasicSession::validate(const char* applicationId, const char* client_addr, time_t* timeout)
-{
-    time_t now = time(nullptr);
-
-    // Basic expiration?
-    if (m_expires > 0) {
-        if (now > m_expires) {
-            m_cache.m_log.info("session expired (ID: %s)", getID());
-            throw SessionException("Your session has expired, and you must re-authenticate.");
-        }
-    }
-
-    // Address check?
-    if (client_addr) {
-        const char* saddr = getClientAddress(getAddressFamily(client_addr));
-        if (saddr && *saddr) {
-            if (!m_cache.compareAddresses(client_addr, saddr)) {
-                m_cache.m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, saddr);
-                throw SessionException(
-                    string("Your IP address (") + client_addr + ") does not match the address recorded at the time the session was established."
-                    );
-            }
-            client_addr = nullptr;  // clear out parameter as signal that session need not be updated below
-        }
-        else {
-            m_cache.m_log.info("session (%s) not yet bound to client address type, binding it to (%s)", getID(), client_addr);
-        }
-    }
-
-    if (!timeout && !client_addr)
-        return;
-
-    if (true) {
-        DDF in("touch::" STORAGESERVICE_SESSION_CACHE "::SessionCache"), out;
-        DDFJanitor jin(in);
-        in.structure();
-        in.addmember("key").string(getID());
-        in.addmember("version").integer(m_obj["version"].integer());
-        in.addmember("bucket_id").string(bucketID);
-        if (client_addr)    // signals we need to bind an additional address to the session
-            in.addmember("client_addr").string(client_addr);
-        if (timeout && *timeout) {
-            // On 64-bit Windows, time_t doesn't fit in a long, so I'm using ISO timestamps.
-#ifndef HAVE_GMTIME_R
-            struct tm* ptime = gmtime(timeout);
-#else
-            struct tm res;
-            struct tm* ptime = gmtime_r(timeout,&res);
-#endif
-            char timebuf[32];
-            strftime(timebuf,32,"%Y-%m-%dT%H:%M:%SZ",ptime);
-            in.addmember("timeout").string(timebuf);
-        }
-
-        //out = app.getServiceProvider().getListenerService()->send(in);
-        if (out.isstruct()) {
-            // We got an updated record back.
-            m_cache.m_log.debug("session updated, reconstituting it");
-            m_attributes.clear();
-            m_attributeIndex.clear();
-            m_obj.destroy();
-            m_obj = out;
-        }
-        else {
-            out.destroy();
-        }
-    }
-    else {
-#ifndef SHIBSP_LITE
-        if (!m_cache.m_storage)
-            throw ConfigurationException("Session touch requires a StorageService.");
-
-        // Versioned read, since we already have the data in hand if it's current.
-        string record;
-        time_t lastAccess = 0;
-        int curver = m_obj["version"].integer();
-        int ver = m_cache.m_storage->readText(getID(), "session", &record, &lastAccess, curver);
-        if (ver == 0) {
-            m_cache.m_log.info("session (ID: %s) no longer in storage", getID());
-            throw RetryableProfileException("Your session is not available in the session store, and you must re-authenticate.");
-        }
-
-        if (timeout) {
-            if (lastAccess == 0) {
-                m_cache.m_log.error("session (ID: %s) did not report time of last access", getID());
-                throw RetryableProfileException("Your session's last access time was missing, and you must re-authenticate.");
-            }
-            // Adjust for expiration to recover last access time and check timeout.
-            unsigned long cacheTimeout = m_cache.getCacheTimeout(app);
-            lastAccess -= cacheTimeout;
-            if (*timeout > 0 && now - lastAccess >= *timeout) {
-                m_cache.m_log.info("session timed out (ID: %s)", getID());
-                throw RetryableProfileException("Your session has timed out due to inactivity, and you must re-authenticate.");
-            }
-
-            // Update storage expiration, if possible.
-            try {
-                m_cache.m_storage->updateContext(getID(), now + cacheTimeout);
-            }
-            catch (std::exception& ex) {
-                m_cache.m_log.error("failed to update session expiration: %s", ex.what());
-            }
-        }
-
-        if (ver > curver) {
-            // We got an updated record back.
-            DDF newobj;
-            istringstream in(record);
-            in >> newobj;
-            m_ids.clear();
-            for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-            m_attributes.clear();
-            m_attributeIndex.clear();
-            m_obj.destroy();
-            m_obj = newobj;
-        }
-
-        // We may need to write back a new address into the session using a versioned update loop.
-        if (client_addr) {
-            short attempts = 0;
-            do {
-                const char* saddr = getClientAddress(getAddressFamily(client_addr));
-                if (saddr) {
-                    // Something snuck in and bound the session to this address type, so it better match what we have.
-                    if (!m_cache.compareAddresses(client_addr, saddr)) {
-                        m_cache.m_log.warn("client address mismatch, client (%s), session (%s)", client_addr, saddr);
-                        throw RetryableProfileException(
-                            "Your IP address ($1) does not match the address recorded at the time the session was established.",
-                            params(1, client_addr)
-                            );
-                    }
-                    break;  // No need to update.
-                }
-                else {
-                    // Bind it into the session.
-                    setClientAddress(client_addr);
-                }
-
-                // Tentatively increment the version.
-                m_obj["version"].integer(m_obj["version"].integer() + 1);
-
-                ostringstream str;
-                str << m_obj;
-                record = str.str();
-
-                try {
-                    ver = m_cache.m_storage->updateText(getID(), "session", record.c_str(), 0, m_obj["version"].integer() - 1);
-                }
-                catch (std::exception&) {
-                    m_obj["version"].integer(m_obj["version"].integer() - 1);
-                    throw;
-                }
-
-                if (ver <= 0) {
-                    m_obj["version"].integer(m_obj["version"].integer() - 1);
-                }
-
-                if (!ver) {
-                    // Fatal problem with update.
-                    m_cache.m_log.error("updateText failed on StorageService for session (%s)", getID());
-                    throw IOException("Unable to update stored session.");
-                }
-                else if (ver < 0) {
-                    // Out of sync.
-                    if (++attempts > 10) {
-                        m_cache.m_log.error("failed to bind client address, update attempts exceeded limit");
-                        throw IOException("Unable to update stored session, exceeded retry limit.");
-                    }
-                    m_cache.m_log.warn("storage service indicates the record is out of sync, updating with a fresh copy...");
-                    ver = m_cache.m_storage->readText(getID(), "session", &record);
-                    if (!ver) {
-                        m_cache.m_log.error("readText failed on StorageService for session (%s)", getID());
-                        throw IOException("Unable to read back stored session.");
-                    }
-
-                    // Reset object.
-                    DDF newobj;
-                    istringstream in(record);
-                    in >> newobj;
-
-                    m_ids.clear();
-                    for_each(m_attributes.begin(), m_attributes.end(), xmltooling::cleanup<Attribute>());
-                    m_attributes.clear();
-                    m_attributeIndex.clear();
-                    newobj["version"].integer(ver);
-                    m_obj.destroy();
-                    m_obj = newobj;
-
-                    ver = -1;
-                }
-            } while (ver < 0); // negative indicates a sync issue so we retry
-        }
-#else
-        throw ConfigurationException("Session touch requires a StorageService.");
-#endif
-    }
-
-    m_lastAccess = now;
-}
-
-*/
