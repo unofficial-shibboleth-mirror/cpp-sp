@@ -32,10 +32,13 @@
     <ClInclude Include="..\..\shibsp\AccessControl.h" />
     <ClInclude Include="..\..\shibsp\Agent.h" />
     <ClInclude Include="..\..\shibsp\AgentConfig.h" />
-    <ClInclude Include="..\..\shibsp\attribute\AttributeConfiguration.h" />
     <ClInclude Include="..\..\shibsp\base.h" />
     <ClInclude Include="..\..\shibsp\config_pub_win32.h" />
     <ClInclude Include="..\..\shibsp\exceptions.h" />
+    <ClInclude Include="..\..\shibsp\attribute\AttributeConfiguration.h" />
+    <ClInclude Include="..\..\shibsp\csprng\csprng.h" />
+    <ClInclude Include="..\..\shibsp\csprng\csprng.hpp" />
+    <ClInclude Include="..\..\shibsp\csprng\is_iterable.hpp" />
     <ClInclude Include="..\..\shibsp\handler\AbstractHandler.h" />
     <ClInclude Include="..\..\shibsp\handler\AssertionConsumerService.h" />
     <ClInclude Include="..\..\shibsp\handler\Handler.h" />
@@ -84,6 +87,7 @@
     <ClCompile Include="..\..\shibsp\AbstractSPRequest.cpp" />
     <ClCompile Include="..\..\shibsp\Agent.cpp" />
     <ClCompile Include="..\..\shibsp\attribute\impl\DefaultAttributeConfiguration.cpp" />
+    <ClCompile Include="..\..\shibsp\csprng\impl\csprng.cpp" />
     <ClCompile Include="..\..\shibsp\exceptions.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\AbstractHandler.cpp">
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4296;%(DisableSpecificWarnings)</DisableSpecificWarnings>

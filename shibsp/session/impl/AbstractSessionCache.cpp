@@ -171,6 +171,7 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
         return string();
     }
 
+    session.name(key.c_str());
     unique_ptr<BasicSession> sessionObject(new BasicSession(*this, session));
 
     const char* issuer = nullptr;

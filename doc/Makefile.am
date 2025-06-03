@@ -13,6 +13,7 @@ docfiles = \
 	NOTICE.txt \
 	README.txt \
 	RELEASE.txt \
+	CSPRNG.LICENSE \
 	FASTCGI.LICENSE
 
 pkgdoc_DATA = $(docfiles)

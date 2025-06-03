@@ -17,13 +17,14 @@
  *
  * SessionCache implementation using non-shared memory.
  * 
- * <p>This is a more or less degenerate implementation of the SessionCacheSPI interface
- * for testing and perhaps very constrained use cases in which only a single agent process
- * can exist.</p>
+ * <p>This is a degenerate implementation for testing and perhaps very constrained use cases
+ * in which only a single agent process can exist. It essentially no-ops all the operations
+ * such that the base class in-process cache is the only store.</p>
  */
 
 #include "internal.h"
 #include "exceptions.h"
+#include "csprng/csprng.hpp"
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
 
@@ -49,6 +50,9 @@ namespace {
             ) const;
         bool cache_touch(const char* key, unsigned int timeout=0) const;
         void cache_remove(const char* key);
+    
+    private:
+        duthomhas::csprng m_rng;
     };
 };
 
@@ -68,7 +72,7 @@ MemorySessionCache::~MemorySessionCache()
 
 string MemorySessionCache::cache_create(DDF& sessionData)
 {
-    return string();
+    return m_rng(string(16,0));
 }
 
 DDF MemorySessionCache::cache_read(
@@ -84,7 +88,7 @@ DDF MemorySessionCache::cache_read(
 
 bool MemorySessionCache::cache_touch(const char* key, unsigned int timeout) const
 {
-    return false;
+    return true;
 }
 
 void MemorySessionCache::cache_remove(const char* key)

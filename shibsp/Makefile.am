@@ -87,6 +87,9 @@ utilinclude_HEADERS = \
 
 noinst_HEADERS = \
 	internal.h \
+	csprng/csprng.h \
+	csprng/csprng.hpp \
+	csprng/is_iterable.hpp \
 	logging/impl/AbstractLoggingService.h \
 	logging/impl/LoggingServiceSPI.h \
 	logging/impl/StringUtil.h \
@@ -101,6 +104,7 @@ libshibsp_la_SOURCES = \
 	exceptions.cpp \
 	version.cpp \
 	attribute/impl/DefaultAttributeConfiguration.cpp \
+	csprng/impl/csprng.cpp \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AdminLogoutInitiator.cpp \
 	handler/impl/AttributeCheckerHandler.cpp \
