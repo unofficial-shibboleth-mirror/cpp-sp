@@ -111,7 +111,7 @@ AbstractSessionCache::AbstractSessionCache(const ptree& pt)
 
     // Set up cookie manager.
     m_cookieManager.reset(new CookieManager(getString(COOKIE_NAME_PROP_NAME, COOKIE_NAME_PROP_DEFAULT)));
-    m_cookieManager->setCookieNamePolicy("sessionCookieName", true);
+    m_cookieManager->setCookieNamePolicy(RequestMapper::SESSION_COOKIE_NAME_PROP_NAME, true);
     m_cookieManager->setSecure(getBool(COOKIE_SECURE_PROP_NAME, COOKIE_SECURE_PROP_DEFAULT));
     m_cookieManager->setHttpOnly(getBool(COOKIE_HTTPONLY_PROP_NAME, COOKIE_HTTPONLY_PROP_DEFAULT));
     m_cookieManager->setPath(getString(COOKIE_PATH_PROP_NAME, COOKIE_PATH_PROP_DEFAULT));

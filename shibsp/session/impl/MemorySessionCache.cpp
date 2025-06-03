@@ -61,9 +61,9 @@ namespace {
 
         string ret;
 
-        for (const char* ch = s.c_str(); *ch; ++ch) {
-            ret += (DIGITS[((unsigned char)(0xF0 & *ch)) >> 4 ]);
-            ret += (DIGITS[0x0F & *ch]);
+        for (string::value_type ch : s) {
+            ret += (DIGITS[((unsigned char)(0xF0 & ch)) >> 4 ]);
+            ret += (DIGITS[0x0F & ch]);
         }
 
         return ret;

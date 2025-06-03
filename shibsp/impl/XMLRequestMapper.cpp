@@ -159,6 +159,8 @@ const char RequestMapper::APPLICATION_ID_PROP_NAME[] = "applicationId";
 const char RequestMapper::LIFETIME_PROP_NAME[] = "lifetime";
 const char RequestMapper::TIMEOUT_PROP_NAME[] = "timeout";
 const char RequestMapper::CONSISTENT_ADDRESS_PROP_NAME[] = "consistentAddress";
+const char RequestMapper::COOKIE_MAXAGE_PROP_NAME[] = "cookieMaxAge";
+const char RequestMapper::SESSION_COOKIE_NAME_PROP_NAME[] = "sessionCookieName";
 
 const char RequestMapper::APPLICATION_ID_PROP_DEFAULT[] = "default";
 unsigned int RequestMapper::LIFETIME_PROP_DEFAULT = 3600 * 8;

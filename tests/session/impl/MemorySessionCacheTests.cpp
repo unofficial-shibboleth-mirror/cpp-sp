@@ -25,6 +25,7 @@
 #include "remoting/ddf.h"
 #include "session/SessionCache.h"
 
+#include <map>
 #include <memory>
 #include <string>
 #include <boost/test/unit_test.hpp>
@@ -40,7 +41,7 @@ namespace {
 
 class DummyRequest : public AbstractSPRequest {
 public:
-    DummyRequest(const char* uri=nullptr) : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest") {
+    DummyRequest(const char* uri=nullptr) : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest"), m_addr("192.168.0.1") {
         setRequestURI(uri);
     }
     const char* getMethod() const { return nullptr; }
@@ -51,12 +52,19 @@ public:
     long getContentLength() const { return -1; }
     const char* getQueryString() const { return m_query.c_str(); }
     const char* getRequestBody() const { return nullptr; }
-    string getHeader(const char*) const { return nullptr; }
+    string getHeader(const char* name) const {
+        return m_requestHeaders.find(name) == m_requestHeaders.end() ? "" : m_requestHeaders.find(name)->second;
+    }
     string getRemoteUser() const { return m_user.c_str(); }
+    string getRemoteAddr() const { return m_addr.c_str(); }
     string getAuthType() const { return nullptr; }
     long sendResponse(istream&, long status) { return status; }
     void clearHeader(const char* name) {}
     void setHeader(const char* name, const char* value) {}
+    void setResponseHeader(const char* name, const char* value, bool replace=false) {
+        HTTPResponse::setResponseHeader(name, value, replace);
+        m_responseHeaders[name] = value ? value : "";
+    }
     void setRemoteUser(const char*) {}
     long returnDecline() { return 200; }
     long returnOK() { return 200; }
@@ -69,7 +77,9 @@ public:
     int m_port;
     string m_query;
     string m_user;
-    map<string,string> m_headers;
+    string m_addr;
+    map<string,string> m_requestHeaders;
+    map<string,string> m_responseHeaders;
 };
 
 struct MemoryFixture
@@ -117,6 +127,18 @@ BOOST_FIXTURE_TEST_CASE(MemorySessionCache_tests, MemoryFixture)
 
     BOOST_CHECK(obj["session"].isnull());
     BOOST_CHECK_EQUAL(key.c_str(), child.name());
+    string cookieName("__Host-shibsession_73702e6578616d706c652e6f7267637573746f6d");
+    string header(cookieName);
+    header += '=' + key;
+    header += "; max-age=-1; path=/; secure=1; HttpOnly=1; SameSite=None";
+    BOOST_CHECK_EQUAL(request.m_responseHeaders["Set-Cookie"], header);
+
+    string cookie(cookieName);
+    cookie += '=' + key;
+    request.m_requestHeaders["Cookie"] = cookie;
+
+    unique_lock<Session> session = cache->find(request, true, false);
+    BOOST_CHECK(session);
 }
 
 }
