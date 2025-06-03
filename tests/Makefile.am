@@ -17,6 +17,7 @@ shibsptest_SOURCES = \
 	platform/iis/ModuleConfigTests.cpp \
 	remoting/impl/RemotingServiceTests.cpp \
 	remoting/impl/SecretSourceTests.cpp \
+        session/impl/MemorySessionCacheTests.cpp \
 	util/PropertyTreeTests.cpp \
 	util/BoostPropertySetTests.cpp \
 	util/ReloadableXMLFileTests.cpp

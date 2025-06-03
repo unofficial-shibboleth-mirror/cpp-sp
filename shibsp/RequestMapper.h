@@ -29,6 +29,8 @@
 
 #include <shibsp/util/Lockable.h>
 
+#include <tuple>
+
 namespace shibsp {
 
     class SHIBSP_API AccessControl;

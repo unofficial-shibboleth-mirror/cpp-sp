@@ -327,6 +327,11 @@ void AgentInternalConfig::_term()
     Category& log=Category::getInstance(SHIBSP_LOGCAT ".AgentConfig");
     log.info("%s agent shutting down", PACKAGE_STRING);
 
+    SessionCache* cache = getAgent().getSessionCache(false);
+    if (cache) {
+        cache->stop();
+    }
+
     AgentManager.deregisterFactories();
     SessionCacheManager.deregisterFactories();
     RemotingServiceManager.deregisterFactories();

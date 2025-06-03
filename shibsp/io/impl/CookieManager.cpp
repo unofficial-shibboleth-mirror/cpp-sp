@@ -136,9 +136,13 @@ string CookieManager::computeCookieName(const SPRequest& request) const
     return cookieName;
 }
 
-void CookieManager::outputHeader(SPRequest& request, int maxAge) const
+void CookieManager::outputHeader(SPRequest& request, const char* value, int maxAge) const
 {
     string header(computeCookieName(request));
+    header += '=';
+    if (value) {
+        header += value;
+    }
     header += "; max-age=";
     try {
         header += boost::lexical_cast<string>(maxAge);
@@ -188,10 +192,10 @@ const char* CookieManager::getCookieValue(const SPRequest& request) const
 
 void CookieManager::setCookie(SPRequest& request, const char* value) const
 {
-    outputHeader(request, request.getRequestSettings().first->getInt("cookieMaxAge", m_maxAge));
+    outputHeader(request, value, request.getRequestSettings().first->getInt("cookieMaxAge", m_maxAge));
 }
 
 void CookieManager::unsetCookie(SPRequest& request) const
 {
-    outputHeader(request, 0);
+    outputHeader(request, nullptr, 0);
 }

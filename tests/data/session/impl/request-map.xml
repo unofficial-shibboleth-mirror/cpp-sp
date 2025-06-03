@@ -1,0 +1,4 @@
+<RequestMap applicationId="custom">
+	<Host name="sp.example.org">
+	</Host>
+</RequestMap>

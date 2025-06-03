@@ -101,7 +101,8 @@ SessionCacheSPI::~SessionCacheSPI()
 {
 }
 
-AbstractSessionCache::AbstractSessionCache(const ptree& pt) : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache"))
+AbstractSessionCache::AbstractSessionCache(const ptree& pt)
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache")), m_shutdown(false)
 {
     load(pt);
 
@@ -121,12 +122,6 @@ AbstractSessionCache::AbstractSessionCache(const ptree& pt) : m_log(Category::ge
 
 AbstractSessionCache::~AbstractSessionCache()
 {
-    // Notify and join with the cleanup thread.
-    m_shutdown = true;
-    m_shutdown_wait.notify_all();
-    if (m_cleanup_thread.joinable()) {
-        m_cleanup_thread.join();
-    }
 }
 
 Category& AbstractSessionCache::log() const
@@ -144,6 +139,16 @@ bool AbstractSessionCache::start()
         m_log.error("error starting cleanup thread: %s", e.what());
     }
     return false;
+}
+
+void AbstractSessionCache::stop()
+{
+    // Notify and join with the cleanup thread.
+    m_shutdown = true;
+    m_shutdown_wait.notify_all();
+    if (m_cleanup_thread.joinable()) {
+        m_cleanup_thread.join();
+    }
 }
 
 string AbstractSessionCache::create(SPRequest& request, DDF& session)
@@ -179,8 +184,9 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
     if (attr != sessionObject->getAttributes().end()) {
         issuer = const_cast<DDF&>(attr->second).first().string();
     }
+
     m_log.info("new session created: ID (%s), Issuer (%s), Address (%s)",
-        key.c_str(), issuer ? issuer : "none", request.getRemoteAddr().c_str());
+        key.c_str(), issuer ? issuer : "unknown", request.getRemoteAddr().c_str());
 
     // Drop a cookie with the session ID.
     m_cookieManager->setCookie(request, key.c_str());
@@ -393,20 +399,20 @@ void* AbstractSessionCache::cleanup_fn(void* p)
     pthread_sigmask(SIG_BLOCK, &sigmask, nullptr);
 #endif
 
-    mutex internal_mutex;
-
     // Load our configuration details...
     unsigned int cleanupInterval = pcache->getUnsignedInt(CLEANUP_INTERVAL_PROP_NAME, CLEANUP_INTERVAL_PROP_DEFAULT);
     unsigned int inprocTimeout = pcache->getUnsignedInt(INPROC_TIMEOUT_PROP_NAME, INPROC_TIMEOUT_PROP_DEFAULT);
 
+    mutex internal_mutex;
     unique_lock lock(internal_mutex);
 
-    pcache->m_log.info("cleanup thread started...run every %u secs; timeout after %u secs", cleanupInterval, inprocTimeout);
+    pcache->m_log.info("cleanup thread started...run every %u secs, timeout after %u secs", cleanupInterval, inprocTimeout);
 
     while (!pcache->m_shutdown) {
         pcache->m_shutdown_wait.wait_for(lock, chrono::seconds(cleanupInterval));
         
         if (pcache->m_shutdown) {
+            pcache->m_log.debug("cleanup thread shutting down");
             break;
         }
 
@@ -448,7 +454,7 @@ void* AbstractSessionCache::cleanup_fn(void* p)
             }
         }
 
-        pcache->m_log.debug("cleanup thread completed");
+        pcache->m_log.debug("cleanup thread completed work");
     }
 
     pcache->m_log.info("cleanup thread exiting");
@@ -469,7 +475,9 @@ BasicSession::BasicSession(AbstractSessionCache& cache, DDF& obj)
     DDF attrs = m_obj["attributes"];
     DDF attr = attrs.first();
     while (!attr.isnull()) {
-        m_attributes[attr.name()] = attr;
+        if (attr.name()) {
+            m_attributes[attr.name()] = attr;
+        }
         attr = attrs.next();
     }
 }

@@ -191,7 +191,7 @@ namespace shibsp {
         
     private:
         std::string computeCookieName(const SPRequest& request) const;
-        void outputHeader(SPRequest& request, int maxAge) const;
+        void outputHeader(SPRequest& request, const char* value, int maxAge) const;
 
         std::string m_defaultName;
         std::string m_overrideProperty;

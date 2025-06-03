@@ -113,6 +113,13 @@ namespace shibsp {
         virtual bool start()=0;
 
         /**
+         * Signals the implementation it should stop any background tasks.
+         * 
+         * <p>This method is guaranteed to be called only once per process.</p>
+         */
+        virtual void stop()=0;
+
+        /**
          * Creates a new session and stores it persistently while binding the session
          * to the input request object.
          * 

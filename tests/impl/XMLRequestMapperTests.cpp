@@ -90,7 +90,7 @@ public:
     string getRemoteUser() const { return m_user.c_str(); }
     string getAuthType() const { return nullptr; }
     long sendResponse(istream&, long status) { return status; }
-    void clearHeader(const char*, const char*) {}
+    void clearHeader(const char*) {}
     void setHeader(const char*, const char*) {}
     void setRemoteUser(const char*) {}
     long returnDecline() { return 200; }
@@ -98,7 +98,6 @@ public:
 
     bool isUseHeaders() const {return true;}
     bool isUseVariables() const { return false; }
-    void clearHeader(const char* name) {}
 
     string m_scheme;
     string m_hostname;
