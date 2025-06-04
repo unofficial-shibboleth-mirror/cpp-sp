@@ -18,12 +18,13 @@
  * Unit tests for in-memory SessionCache back-end.
  */
 
-#include "AbstractSPRequest.h"
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "exceptions.h"
 #include "remoting/ddf.h"
 #include "session/SessionCache.h"
+
+#include "DummyRequest.h"
 
 #include <map>
 #include <memory>
@@ -38,49 +39,6 @@ using namespace std;
 #define DATA_PATH "./data/session/impl/"
 
 namespace {
-
-class DummyRequest : public AbstractSPRequest {
-public:
-    DummyRequest(const char* uri=nullptr) : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest"), m_addr("192.168.0.1") {
-        setRequestURI(uri);
-    }
-    const char* getMethod() const { return nullptr; }
-    const char* getScheme() const { return m_scheme.c_str(); }
-    const char* getHostname() const { return m_hostname.c_str(); }
-    int getPort() const { return m_port; }
-    string getContentType() const { return ""; }
-    long getContentLength() const { return -1; }
-    const char* getQueryString() const { return m_query.c_str(); }
-    const char* getRequestBody() const { return nullptr; }
-    string getHeader(const char* name) const {
-        return m_requestHeaders.find(name) == m_requestHeaders.end() ? "" : m_requestHeaders.find(name)->second;
-    }
-    string getRemoteUser() const { return m_user.c_str(); }
-    string getRemoteAddr() const { return m_addr.c_str(); }
-    string getAuthType() const { return nullptr; }
-    long sendResponse(istream&, long status) { return status; }
-    void clearHeader(const char* name) {}
-    void setHeader(const char* name, const char* value) {}
-    void setResponseHeader(const char* name, const char* value, bool replace=false) {
-        HTTPResponse::setResponseHeader(name, value, replace);
-        m_responseHeaders[name] = value ? value : "";
-    }
-    void setRemoteUser(const char*) {}
-    long returnDecline() { return 200; }
-    long returnOK() { return 200; }
-
-    bool isUseHeaders() const {return true;}
-    bool isUseVariables() const { return false; }
-    
-    string m_scheme;
-    string m_hostname;
-    int m_port;
-    string m_query;
-    string m_user;
-    string m_addr;
-    map<string,string> m_requestHeaders;
-    map<string,string> m_responseHeaders;
-};
 
 struct MemoryFixture
 {

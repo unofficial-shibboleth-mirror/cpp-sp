@@ -28,6 +28,8 @@
 #include "session/SessionCache.h"
 #include "util/PropertySet.h"
 
+#include "DummyRequest.h"
+
 #ifdef HAVE_CXX14
 # include <shared_mutex>
 #endif
@@ -71,39 +73,6 @@ public:
     }
 
     map<string,DDF> m_attributes;
-};
-
-class DummyRequest : public AbstractSPRequest {
-public:
-    DummyRequest(const char* uri=nullptr) : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest") {
-        setRequestURI(uri);
-    }
-    const char* getMethod() const { return nullptr; }
-    const char* getScheme() const { return m_scheme.c_str(); }
-    const char* getHostname() const { return m_hostname.c_str(); }
-    int getPort() const { return m_port; }
-    string getContentType() const { return ""; }
-    long getContentLength() const { return -1; }
-    const char* getQueryString() const { return m_query.c_str(); }
-    const char* getRequestBody() const { return nullptr; }
-    string getHeader(const char*) const { return nullptr; }
-    string getRemoteUser() const { return m_user.c_str(); }
-    string getAuthType() const { return nullptr; }
-    long sendResponse(istream&, long status) { return status; }
-    void clearHeader(const char*) {}
-    void setHeader(const char*, const char*) {}
-    void setRemoteUser(const char*) {}
-    long returnDecline() { return 200; }
-    long returnOK() { return 200; }
-
-    bool isUseHeaders() const {return true;}
-    bool isUseVariables() const { return false; }
-
-    string m_scheme;
-    string m_hostname;
-    int m_port;
-    string m_query;
-    string m_user;
 };
 
 class exceptionCheck {

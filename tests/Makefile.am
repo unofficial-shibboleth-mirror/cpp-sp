@@ -9,6 +9,9 @@ shibsptest_CPPFLAGS = \
 shibsptest_CXXFLAGS = \
 	$(AM_CXXFLAGS)
 
+noinst_HEADERS = \
+	DummyRequest.h
+
 shibsptest_SOURCES = \
 	AgentTestSuite.cpp \
 	AgentConfigTests.cpp \

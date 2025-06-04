@@ -27,6 +27,8 @@
 #include "session/SessionCache.h"
 #include "util/BoostPropertySet.h"
 
+#include "DummyRequest.h"
+
 #ifdef HAVE_CXX14
 # include <shared_mutex>
 #endif
@@ -41,9 +43,6 @@ using namespace std;
 #define DATA_PATH "./data/impl/acl/"
 
 namespace {
-
-struct DummyRequestMap : public BoostPropertySet {
-};
 
 /** Open structure for testing manipulation. */
 struct DummySession : public Session, public NoOpBasicLockable {
@@ -74,34 +73,13 @@ public:
     map<string,DDF> m_attributes;
 };
 
-class DummyRequest : public AbstractSPRequest {
+class MappableDummyRequest : public DummyRequest {
 public:
-    DummyRequest() : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest") {}
-    ~DummyRequest() {}
+    MappableDummyRequest() {}
+    ~MappableDummyRequest() {}
     RequestMapper::Settings getRequestSettings() const { return make_pair(&m_map, nullptr); }
-    const char* getMethod() const { return nullptr; }
-    const char* getScheme() const { return nullptr; }
-    const char* getHostname() const { return nullptr; }
-    int getPort() const { return 0; }
-    string getContentType() const { return ""; }
-    long getContentLength() const { return -1; }
-    const char* getQueryString() const { return nullptr; }
-    const char* getRequestBody() const { return nullptr; }
-    string getHeader(const char*) const { return nullptr; }
-    string getRemoteUser() const { return m_user; }
-    string getAuthType() const { return nullptr; }
-    long sendResponse(istream&, long status) { return status; }
-    void clearHeader(const char* name) {}
-    void setHeader(const char*, const char*) {}
-    void setRemoteUser(const char*) {}
-    long returnDecline() { return 200; }
-    long returnOK() { return 200; }
 
-    bool isUseHeaders() const { return true; }
-    bool isUseVariables() const { return false; }
-
-    string m_user;
-    DummyRequestMap m_map;
+    BoostPropertySet m_map;
 };
 
 class exceptionCheck {
@@ -207,7 +185,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_ValidUserRule, XMLAccessControlF
     shared_lock locker(*acl);
 #endif
 
-    DummyRequest request;
+    MappableDummyRequest request;
     DummySession session;
 
     BOOST_CHECK_EQUAL(acl->authorized(request, nullptr), AccessControl::shib_acl_false);
@@ -230,7 +208,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRule, XMLAccessControlFixtur
     shared_lock locker(*acl);
 #endif
 
-    DummyRequest request;
+    MappableDummyRequest request;
     DummySession session;
 
     request.m_user = "smith";
@@ -256,7 +234,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRegexRule, XMLAccessControlF
     shared_lock locker(*acl);
 #endif
 
-    DummyRequest request;
+    MappableDummyRequest request;
     DummySession session;
 
     request.m_user = "smith";
@@ -282,7 +260,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_ACRule, XMLAccessControlFixture)
     shared_lock locker(*acl);
 #endif
 
-    DummyRequest request;
+    MappableDummyRequest request;
     DummySession session;
 
     DDF ac("Shib-AuthnContext-Class");
@@ -312,7 +290,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_AttrRule, XMLAccessControlFixtur
     shared_lock locker(*acl);
 #endif
 
-    DummyRequest request;
+    MappableDummyRequest request;
     DummySession session;
 
     DDF affiliation("affiliation");
@@ -344,7 +322,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_OR, XMLAccessControlFixture)
     shared_lock locker(*acl);
 #endif
 
-    DummyRequest request;
+    MappableDummyRequest request;
     DummySession session;
 
     request.m_user = "jdoe";
@@ -377,7 +355,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_AND, XMLAccessControlFixture)
     shared_lock locker(*acl);
 #endif
 
-    DummyRequest request;
+    MappableDummyRequest request;
     DummySession session;
 
     request.m_user = "jdoe";
@@ -407,7 +385,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_NOT, XMLAccessControlFixture)
     shared_lock locker(*acl);
 #endif
 
-    DummyRequest request;
+    MappableDummyRequest request;
     DummySession session;
 
     DDF affiliation("affiliation");
