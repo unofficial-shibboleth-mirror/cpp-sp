@@ -139,6 +139,21 @@ BOOST_FIXTURE_TEST_CASE(MemorySessionCache_tests, MemoryFixture)
 
     unique_lock<Session> session = cache->find(request, true, false);
     BOOST_CHECK(session);
+    if (session) {
+        session.unlock();
+    }
+
+    // Clear old response headers.
+    request.m_responseHeaders.clear();
+
+    cache->remove(request);
+
+    header = cookieName;
+    header += "=; max-age=0; path=/; secure=1; HttpOnly=1; SameSite=None";
+    BOOST_CHECK_EQUAL(request.m_responseHeaders["Set-Cookie"], header);
+    
+    session = cache->find("custom", key.c_str());
+    BOOST_CHECK(!session);
 }
 
 }
