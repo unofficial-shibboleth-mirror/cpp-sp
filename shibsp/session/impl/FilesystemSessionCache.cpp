@@ -20,8 +20,15 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "AgentConfig.h"
+#include "csprng/csprng.hpp"
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
+#include "util/Misc.h"
+#include "util/PathResolver.h"
+
+#include <cstdio>
+#include <fstream>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -45,7 +52,14 @@ namespace {
             ) const;
         bool cache_touch(const char* key, unsigned int timeout=0) const;
         void cache_remove(const char* key);
+
+    private:
+        string m_dir;
+        duthomhas::csprng m_rng;
     };
+
+    static const char CACHE_DIRECTORY_PROP_NAME[] = "cacheDirectory";
+    static const char CACHE_DIRECTORY_PROP_DEFAULT[] = "sessions";
 };
 
 namespace shibsp {
@@ -56,6 +70,37 @@ namespace shibsp {
 
 FilesystemSessionCache::FilesystemSessionCache(const ptree& pt) : AbstractSessionCache(pt)
 {
+    m_dir = getString(CACHE_DIRECTORY_PROP_NAME, CACHE_DIRECTORY_PROP_DEFAULT);
+    AgentConfig::getConfig().getPathResolver().resolve(m_dir, PathResolver::SHIBSP_CACHE_FILE);
+
+    string testPath = m_dir + '/' + hex_encode(m_rng(string(16,0)));
+
+    bool failed = true;
+
+    DDF obj("test");
+    DDFJanitor objjanitor(obj);
+    ofstream os(testPath);
+    if (os) {
+        os << obj;
+        os.close();
+        ifstream is(testPath);
+        if (is) {
+            DDF obj2(nullptr);
+            DDFJanitor obj2janitor(obj2);
+            is >> obj2;
+            is.close();
+            if (obj2.name() && !strcmp(obj.name(), obj2.name())) {
+                failed = false;
+            }
+        }
+    }
+
+    std::remove(testPath.c_str());
+
+    if (failed) {
+        log().error("could not perform read/write in cache directory (%s), check permissions", m_dir.c_str());
+        throw ConfigurationException("Configured session cache directory was inaccessible to agent process.");
+    }
 }
 
 FilesystemSessionCache::~FilesystemSessionCache()
