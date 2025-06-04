@@ -24,6 +24,7 @@
 #include "SPRequest.h"
 #include "RequestMapper.h"
 #include "io/CookieManager.h"
+#include "util/Misc.h"
 #include "util/PropertySet.h"
 
 #include <boost/lexical_cast.hpp>
@@ -124,17 +125,11 @@ string CookieManager::computeCookieName(const SPRequest& request) const
     string cookieName(request.getRequestSettings().first->getString(m_overrideProperty.c_str(), m_defaultName.c_str()));
 
     // This is just a hex-encode to avoid a dependency on a hashing API.
-    static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     string encode(request.getAgent().getID());
     encode += request.getRequestSettings().first->getString(
         RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT);
-    cookieName += '_';
-    for (const char* ch = encode.c_str(); *ch; ++ch) {
-        cookieName += (DIGITS[((unsigned char)(0xF0 & *ch)) >> 4 ]);
-        cookieName += (DIGITS[0x0F & *ch]);
-    }
-    
-    return cookieName;
+
+    return cookieName + '_' + hex_encode(encode);
 }
 
 void CookieManager::outputHeader(SPRequest& request, const char* value, int maxAge) const

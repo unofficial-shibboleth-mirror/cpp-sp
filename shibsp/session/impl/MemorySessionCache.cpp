@@ -27,6 +27,7 @@
 #include "csprng/csprng.hpp"
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
+#include "util/Misc.h"
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -35,7 +36,6 @@ using namespace boost::property_tree;
 using namespace std;
 
 namespace {
-
     class MemorySessionCache : public virtual AbstractSessionCache {
     public:
         MemorySessionCache(const ptree& pt);
@@ -55,20 +55,6 @@ namespace {
     private:
         duthomhas::csprng m_rng;
     };
-
-    static inline string hexify(string& s) {
-        static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-        string ret;
-
-        for (string::value_type ch : s) {
-            ret += (DIGITS[((unsigned char)(0xF0 & ch)) >> 4 ]);
-            ret += (DIGITS[0x0F & ch]);
-        }
-
-        return ret;
-    }
-
 };
 
 namespace shibsp {
@@ -87,7 +73,7 @@ MemorySessionCache::~MemorySessionCache()
 
 string MemorySessionCache::cache_create(DDF& sessionData)
 {
-    return hexify(m_rng(string(16,0)));
+    return hex_encode(m_rng(string(16,0)));
 }
 
 DDF MemorySessionCache::cache_read(

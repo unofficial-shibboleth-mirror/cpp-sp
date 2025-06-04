@@ -29,14 +29,39 @@ namespace shibsp {
 
     /**
      * Internal utility used for decoding %XX escapes in various places.
+     * 
+     * @param what input escape sequence
+     * 
+     * @return decoded character point
      */
-    static char x2c(const char* what) {
+    static inline char x2c(const char* what) {
         char digit;
 
         digit = (what[0] >= 'A' ? ((what[0] & 0xdf) - 'A')+10 : (what[0] - '0'));
         digit *= 16;
         digit += (what[1] >= 'A' ? ((what[1] & 0xdf) - 'A')+10 : (what[1] - '0'));
-        return(digit);
+        return digit;
+    }
+
+    /**
+     * Translate each byte of a character string into a pair of hexidecimal characters and return
+     * the resulting string.
+     * 
+     * @param s input string
+     * 
+     * @return encoded string
+     */
+    static inline std::string hex_encode(std::string& s) {
+        static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+        std::string ret;
+
+        for (std::string::value_type ch : s) {
+            ret += (DIGITS[((unsigned char)(0xF0 & ch)) >> 4 ]);
+            ret += (DIGITS[0x0F & ch]);
+        }
+
+        return ret;
     }
 
     /**
