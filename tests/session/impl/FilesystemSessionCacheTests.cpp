@@ -75,6 +75,62 @@ struct FilesystemFixture
 
 BOOST_FIXTURE_TEST_CASE(FilesystemSessionCache_tests, FilesystemFixture)
 {
+    bool started = AgentConfig::getConfig().start();
+    BOOST_CHECK(started);
+
+    DDF obj(nullptr);
+    DDFJanitor janitor(obj);
+
+    obj.addmember("session.opaque").string("foo");
+    DDF attrs = obj.addmember("session.attributes").list();
+
+    DDF issuer("Shib-Identity-Provider");
+    issuer.list();
+    issuer.add(DDF(nullptr).string("https://idp.example.org"));
+    attrs.add(issuer);
+
+    DDF affiliation("affiliation");
+    affiliation.list();
+    affiliation.add(DDF(nullptr).string("member"));
+    affiliation.add(DDF(nullptr).string("student"));
+    attrs.add(affiliation);
+
+    DummyRequest request("https://sp.example.org/secure/index.html");
+    DDF child = obj["session"];
+
+    SessionCache* cache = AgentConfig::getConfig().getAgent().getSessionCache();
+
+    string key = cache->create(request, child);
+
+    BOOST_CHECK(obj["session"].isnull());
+    BOOST_CHECK_EQUAL(key.c_str(), child.name());
+    string cookieName("__Host-shibsession_73702e6578616d706c652e6f7267637573746f6d");
+    string header(cookieName);
+    header += '=' + key;
+    header += "; max-age=-1; path=/; secure=1; HttpOnly=1; SameSite=None";
+    BOOST_CHECK_EQUAL(request.m_responseHeaders["Set-Cookie"], header);
+
+    string cookie(cookieName);
+    cookie += '=' + key;
+    request.m_requestHeaders["Cookie"] = cookie;
+
+    unique_lock<Session> session = cache->find(request, true, false);
+    BOOST_CHECK(session);
+    if (session) {
+        session.unlock();
+    }
+
+    // Clear old response headers.
+    request.m_responseHeaders.clear();
+
+    cache->remove(request);
+
+    header = cookieName;
+    header += "=; max-age=0; path=/; secure=1; HttpOnly=1; SameSite=None";
+    BOOST_CHECK_EQUAL(request.m_responseHeaders["Set-Cookie"], header);
+    
+    session = cache->find("custom", key.c_str());
+    BOOST_CHECK(!session);
 }
 
 }

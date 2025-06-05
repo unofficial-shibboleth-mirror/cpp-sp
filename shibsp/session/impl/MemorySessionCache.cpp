@@ -49,8 +49,8 @@ namespace {
             unsigned int lifetime=0,
             unsigned int timeout=0,
             const char* client_addr=nullptr
-            ) const;
-        bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0) const;
+            );
+        bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0);
         void cache_remove(SPRequest* request, const char* key);
     
     private:
@@ -84,12 +84,12 @@ DDF MemorySessionCache::cache_read(
     unsigned int lifetime,
     unsigned int timeout,
     const char* client_addr
-    ) const
+    )
 {
     return DDF();
 }
 
-bool MemorySessionCache::cache_touch(SPRequest* request, const char* key, unsigned int timeout) const
+bool MemorySessionCache::cache_touch(SPRequest* request, const char* key, unsigned int timeout)
 {
     return true;
 }

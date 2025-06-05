@@ -270,7 +270,7 @@ void DefaultAgent::doAttributeConfigurations()
     } else {
         string path("attributes.ini");
         AgentConfig::getConfig().getPathResolver().resolve(path, PathResolver::SHIBSP_CFG_FILE);
-        if (file_exists(path.c_str())) {
+        if (FileSupport::exists(path.c_str())) {
             m_attributeConfigurations["default"] = AttributeConfiguration::newAttributeConfiguration(path.c_str());
             m_log.info("installed 'default' AttributeConfiguration from %s", path.c_str());
         } else {

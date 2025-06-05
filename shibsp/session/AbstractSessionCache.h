@@ -71,7 +71,7 @@ namespace shibsp {
         std::map<std::string,DDF> m_attributes;
 
         AbstractSessionCache& m_cache;
-        time_t m_creation,m_lastAccess,m_lastAccessReported;
+        time_t m_lastAccess,m_lastAccessReported;
         // TODO: possibly convert to a shared lock where possible?
         // I used exclusive because it avoided lock "upgrades"
         // when mutating or deleting sessions.

@@ -83,7 +83,23 @@ namespace shibsp {
         }
     };
 
-    bool file_exists(const char* path);
+    struct FileSupport {
+        /**
+         * Checks whether a file exists.
+         * 
+         * @param path path to check
+         */
+        static bool exists(const char* path);
+
+        /**
+         * Gets the last time the file was modified.
+         * 
+         * @param path path to check
+         * 
+         * @return modification time or 0 if unable
+         */
+        static time_t getModificationTime(const char* path);
+    };
 
     /**
      * Splitter functions that trim the input and split on whitespace into a container.

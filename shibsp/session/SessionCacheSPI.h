@@ -33,6 +33,10 @@ namespace shibsp {
     /**
      * Interface to the "back-end" persistence mechanism to allow sessions to exist
      * independently of a specific agent process.
+     * 
+     * <p>As a general rule, implementations should log errors internally and raise exceptions
+     * such that the caller need not log the resulting object to ensure adequate logging of the
+     * outcome.</p>
      */
     class SHIBSP_API SessionCacheSPI
     {
@@ -85,7 +89,7 @@ namespace shibsp {
             unsigned int lifetime=0,
             unsigned int timeout=0,
             const char* client_addr=nullptr
-            ) const=0;
+            )=0;
 
         /**
          * Informs the storage medium that a session was used at the current point in time.
@@ -99,7 +103,7 @@ namespace shibsp {
          * 
          * @return true iff the session remains valid/available
          */
-        virtual bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0) const=0;
+        virtual bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0)=0;
 
         /**
          * Delete a session record from the underlying storage medium.

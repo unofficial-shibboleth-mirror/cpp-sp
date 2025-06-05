@@ -160,8 +160,9 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
 
     // Add additional fields managed by agent.
     // attributes and data members should be present from hub.
-    session.addmember("creation").longinteger(time(nullptr));
-    session.addmember("app_id").string(request.getRequestSettings().first->getString("applicationId"));
+    session.addmember("ts").longinteger(time(nullptr));
+    session.addmember("app_id").string(request.getRequestSettings().first->getString(
+        RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
     session.addmember("addr").string(request.getRemoteAddr());
 
     // Write the data to the back-end, obtaining a key.
@@ -170,8 +171,8 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
         m_log.debug("writing new session to persistent store");
         key = cache_create(&request, session);
     }
-    catch (const IOException& ex) {
-        m_log.error("IOException writing new session to persistent store: %s", ex.what());
+    catch (const exception& ex) {
+        // Should be logged by the SPI.
         session.destroy();
         return string();
     }
@@ -276,14 +277,15 @@ unique_lock<Session> AbstractSessionCache::_find(
         // Cross-check application.
         if (strcmp(applicationId, session.mutex()->getApplicationID())) {
             m_log.warn("session (%s) issued for application (%s), accessed via application (%s)",
-                key, applicationId, session.mutex()->getApplicationID());
+                key, session.mutex()->getApplicationID(), applicationId);
             session.unlock();
         }
         else if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(request, lifetime, timeout, client_addr)) {
             // Locally invalid on its face, so remove and return nothing.
             session.unlock();
             m_log.debug("session (%s) invalid, removing it", key);
-            remove(key);
+            // The record should be gone from the back-end but we need to dump it locally.
+            dormant(string(key));
         }
 
         // Return locked session or empty wrapper.
@@ -300,7 +302,7 @@ unique_lock<Session> AbstractSessionCache::_find(
         obj = cache_read(request, applicationId, key, lifetime, timeout, client_addr);
     }
     catch (const exception& ex) {
-        m_log.error("error reading session (%s) from persistent store: %s", key, ex.what());
+        // Should be logged by the SPI.
         return unique_lock<Session>();
     }
 
@@ -355,7 +357,12 @@ void AbstractSessionCache::remove(SPRequest& request)
         return;
     }
     dormant(string(key));
-    cache_remove(&request, key);
+    try {
+        cache_remove(&request, key);
+    }
+    catch (const exception& ex) {
+        // Should be logged by the SPI.
+    }
     m_cookieManager->unsetCookie(request);
 }
 
@@ -454,7 +461,7 @@ void* AbstractSessionCache::cleanup_fn(void* p)
         if (!stale_keys.empty()) {
             pcache->m_log.info("purging %u old sessions", stale_keys.size());
 
-            // Pass 2: walk through the list of stale entries and remove them from the cache
+            // Pass 2: walk through the list of stale entries and remove them from the local cache.
             for (const string& key : stale_keys) {
                 pcache->dormant(key.c_str());
             }
@@ -469,10 +476,8 @@ void* AbstractSessionCache::cleanup_fn(void* p)
 }
 
 BasicSession::BasicSession(AbstractSessionCache& cache, DDF& obj)
-    : m_obj(obj), m_cache(cache), m_creation(0), m_lastAccess(time(nullptr)), m_lastAccessReported(m_lastAccess)
+    : m_obj(obj), m_cache(cache), m_lastAccess(time(nullptr)), m_lastAccessReported(m_lastAccess)
 {
-    m_creation = m_obj["creation"].longinteger();
-
     // This is safe to directly expose for iteration of the attributes
     // as long as we maintain the mutex-based lock approach for exclusive
     // Session access. If we made that a shared lock, this all has to change.
@@ -519,6 +524,7 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
     // TODO: Implement the fuzzy address matching.
     if (client_addr && strcmp(client_addr, getClientAddress())) {
         m_cache.log().warn("session (%s) invalid, bound to address (%s), accessed from (%s)", getID(), getClientAddress(), client_addr);
+        m_cache.cache_remove(request, getID());
         return false;
     }
 
@@ -532,6 +538,7 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
                 string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(getCreation() + lifetime)));
                 m_cache.log().warn("session (%s) has expired, created (%s), expired (%s)", getID(), created.c_str(), expired.c_str());
             }
+            m_cache.cache_remove(request, getID());
             return false;
         }
     }
@@ -544,8 +551,15 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
 
         if (m_lastAccess - m_lastAccessReported > m_cache.m_storageAccessInterval) {
             // It's been X seconds since we last wrote through to storage...
-            if (!m_cache.cache_touch(request, getID(), timeout)) {
-                m_cache.log().warn("session (%) missing or invalid in persistent store, invalidating locally", getID());
+            try {
+                // Pass a zero to bypass timeout enforcement as we know as well or better than the back-end...
+                if (!m_cache.cache_touch(request, getID(), 0)) {
+                    m_cache.log().warn("session (%) missing in persistent store, invalidating locally", getID());
+                    return false;
+                }
+            }
+            catch (const exception& ex) {
+                // Should be logged by the SPI.
                 return false;
             }
             // Update reporting timestamp.
@@ -553,10 +567,16 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
         }
     }
     else {
-        // The session is locally invalid due to inactivity, but this isn't "truth" because other agent processes may
-        // actively be using it.
-        if (!m_cache.cache_touch(request, getID(), timeout)) {
-            m_cache.log().warn("session (%s) timed out due to inactivity", getID());
+        try {
+            // The session is locally invalid due to inactivity, but this isn't "truth" because other agent processes may
+            // actively be using it.
+            if (!m_cache.cache_touch(request, getID(), timeout)) {
+                m_cache.log().warn("session (%s) timed out due to inactivity", getID());
+                return false;
+            }
+        }
+        catch (const exception& ex) {
+            // Should be logged by the SPI.
             return false;
         }
         // Update reporting timestamp.
@@ -571,7 +591,7 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
 
 time_t BasicSession::getCreation() const
 {
-    return m_creation;
+    return m_obj["ts"].longinteger();
 }
 
 time_t BasicSession::getLastAccess() const

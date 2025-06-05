@@ -50,7 +50,7 @@ set<string>::size_type shibsp::split_to_container(set<string>& container, const 
     return container.size();
 }
 
-bool shibsp::file_exists(const char* path)
+bool FileSupport::exists(const char* path)
 {
 #ifdef WIN32
     struct _stat stat_buf;
@@ -64,4 +64,20 @@ bool shibsp::file_exists(const char* path)
     }
 #endif
     return false;
+}
+
+time_t FileSupport::getModificationTime(const char* path)
+{
+#ifdef WIN32
+    struct _stat stat_buf;
+    if (_stat(path, &stat_buf) == 0) {
+        return stat_buf.st_mtime;
+    }
+#else
+    struct stat stat_buf;
+    if (stat(path, &stat_buf) == 0) {
+        return stat_buf.st_mtime;
+    }
+#endif
+    return 0;
 }
