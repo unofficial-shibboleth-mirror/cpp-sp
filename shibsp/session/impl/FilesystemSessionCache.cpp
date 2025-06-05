@@ -42,16 +42,17 @@ namespace {
         FilesystemSessionCache(const ptree& pt);
         ~FilesystemSessionCache();
 
-        string cache_create(DDF& sessionData);
+        string cache_create(SPRequest* request, DDF& sessionData);
         DDF cache_read(
+            SPRequest* request,
             const char* applicationId,
             const char* key,
             unsigned int lifetime=0,
             unsigned int timeout=0,
             const char* client_addr=nullptr
             ) const;
-        bool cache_touch(const char* key, unsigned int timeout=0) const;
-        void cache_remove(const char* key);
+        bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0) const;
+        void cache_remove(SPRequest* request, const char* key);
 
     private:
         string m_dir;
@@ -107,12 +108,13 @@ FilesystemSessionCache::~FilesystemSessionCache()
 {
 }
 
-string FilesystemSessionCache::cache_create(DDF& sessionData)
+string FilesystemSessionCache::cache_create(SPRequest* request, DDF& sessionData)
 {
     return string();
 }
 
 DDF FilesystemSessionCache::cache_read(
+    SPRequest* request,
     const char* applicationId,
     const char* key,
     unsigned int lifetime,
@@ -123,11 +125,11 @@ DDF FilesystemSessionCache::cache_read(
     return DDF();
 }
 
-bool FilesystemSessionCache::cache_touch(const char* key, unsigned int timeout) const
+bool FilesystemSessionCache::cache_touch(SPRequest* request, const char* key, unsigned int timeout) const
 {
     return false;
 }
 
-void FilesystemSessionCache::cache_remove(const char* key)
+void FilesystemSessionCache::cache_remove(SPRequest* request, const char* key)
 {
 }

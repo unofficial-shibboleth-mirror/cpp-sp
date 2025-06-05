@@ -64,7 +64,7 @@ namespace shibsp {
         time_t getLastAccess() const;
 
         // Perform validation of a local session based on policy and checks for revocation.
-        bool isValid(unsigned int lifetime, unsigned int timeout, const char* client_addr);
+        bool isValid(SPRequest* request, unsigned int lifetime, unsigned int timeout, const char* client_addr);
 
     private:
         DDF m_obj;
@@ -119,7 +119,12 @@ namespace shibsp {
             void dormant(const std::string& key);
             // Wrapper for finding sessions via varied inputs.
             std::unique_lock<Session> _find(
-                const char* applicationID, const char* key, unsigned int lifetime, unsigned int timeout, const char* client_addr
+                SPRequest* request,
+                const char* applicationID,
+                const char* key,
+                unsigned int lifetime,
+                unsigned int timeout,
+                const char* client_addr
                 );
 
             Category& m_log;

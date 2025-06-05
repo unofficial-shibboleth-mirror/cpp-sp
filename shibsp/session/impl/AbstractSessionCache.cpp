@@ -168,7 +168,7 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
     string key;
     try {
         m_log.debug("writing new session to persistent store");
-        key = cache_create(session);
+        key = cache_create(&request, session);
     }
     catch (const IOException& ex) {
         m_log.error("IOException writing new session to persistent store: %s", ex.what());
@@ -231,7 +231,7 @@ unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTi
         client_addr = request.getRemoteAddr().c_str();
     }
 
-    unique_lock<Session> session = _find(applicationId, key, lifetime, timeout, client_addr);
+    unique_lock<Session> session = _find(&request, applicationId, key, lifetime, timeout, client_addr);
     if (!session) {
         // If no session, we need to clear the session cookie to prevent further use.
         m_log.debug("clearing cookie for session (%s)", key);
@@ -245,11 +245,16 @@ unique_lock<Session> AbstractSessionCache::find(const char* applicationId, const
 {
     // This variant does no request-based validation so it returns the session best effort
     // using the underlying _find method. It does ensure the applicationId matches if set.
-    return _find(applicationId, key, 0, 0, nullptr);
+    return _find(nullptr, applicationId, key, 0, 0, nullptr);
 }
 
 unique_lock<Session> AbstractSessionCache::_find(
-    const char* applicationId, const char* key, unsigned int lifetime, unsigned int timeout, const char* client_addr
+    SPRequest* request,
+    const char* applicationId,
+    const char* key,
+    unsigned int lifetime,
+    unsigned int timeout,
+    const char* client_addr
     )
 {
     m_log.debug("searching local cache for session (%s)", key);
@@ -274,7 +279,7 @@ unique_lock<Session> AbstractSessionCache::_find(
                 key, applicationId, session.mutex()->getApplicationID());
             session.unlock();
         }
-        else if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(lifetime, timeout, client_addr)) {
+        else if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(request, lifetime, timeout, client_addr)) {
             // Locally invalid on its face, so remove and return nothing.
             session.unlock();
             m_log.debug("session (%s) invalid, removing it", key);
@@ -292,7 +297,7 @@ unique_lock<Session> AbstractSessionCache::_find(
     DDF obj;
     try {
         // Note this performs the relevant enforcement for us.
-        obj = cache_read(applicationId, key, lifetime, timeout, client_addr);
+        obj = cache_read(request, applicationId, key, lifetime, timeout, client_addr);
     }
     catch (const exception& ex) {
         m_log.error("error reading session (%s) from persistent store: %s", key, ex.what());
@@ -349,14 +354,15 @@ void AbstractSessionCache::remove(SPRequest& request)
         m_log.debug("no session cookie present, no session bound to request");
         return;
     }
-    remove(key);
+    dormant(string(key));
+    cache_remove(&request, key);
     m_cookieManager->unsetCookie(request);
 }
 
 void AbstractSessionCache::remove(const char* key)
 {
     dormant(string(key));
-    cache_remove(key);
+    cache_remove(nullptr, key);
 }
 
 void AbstractSessionCache::dormant(const string& key)
@@ -507,7 +513,7 @@ const std::map<std::string,DDF>& BasicSession::getAttributes() const
     return m_attributes;
 }
 
-bool BasicSession::isValid(unsigned int lifetime, unsigned int timeout, const char* client_addr)
+bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned int timeout, const char* client_addr)
 {
     // Check client address.
     // TODO: Implement the fuzzy address matching.
@@ -538,7 +544,7 @@ bool BasicSession::isValid(unsigned int lifetime, unsigned int timeout, const ch
 
         if (m_lastAccess - m_lastAccessReported > m_cache.m_storageAccessInterval) {
             // It's been X seconds since we last wrote through to storage...
-            if (!m_cache.cache_touch(getID(), timeout)) {
+            if (!m_cache.cache_touch(request, getID(), timeout)) {
                 m_cache.log().warn("session (%) missing or invalid in persistent store, invalidating locally", getID());
                 return false;
             }
@@ -549,7 +555,7 @@ bool BasicSession::isValid(unsigned int lifetime, unsigned int timeout, const ch
     else {
         // The session is locally invalid due to inactivity, but this isn't "truth" because other agent processes may
         // actively be using it.
-        if (!m_cache.cache_touch(getID(), timeout)) {
+        if (!m_cache.cache_touch(request, getID(), timeout)) {
             m_cache.log().warn("session (%s) timed out due to inactivity", getID());
             return false;
         }

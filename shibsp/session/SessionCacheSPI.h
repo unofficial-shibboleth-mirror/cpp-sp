@@ -28,6 +28,7 @@
 namespace shibsp {
 
     class SHIBSP_API DDF;
+    class SHIBSP_API SPRequest;
 
     /**
      * Interface to the "back-end" persistence mechanism to allow sessions to exist
@@ -47,11 +48,12 @@ namespace shibsp {
          * 
          * <p>The caller retains ownership of the input data.</p>
          * 
+         * @param request agent request, if available
          * @param sessionData data to store in record of session
          * 
          * @return session key/ID created, this MUST be URL-safe
          */
-        virtual std::string cache_create(DDF& sessionData)=0;
+        virtual std::string cache_create(SPRequest* request, DDF& sessionData)=0;
 
         /**
          * Read a session record from the underlying storage medium and return its data.
@@ -67,6 +69,7 @@ namespace shibsp {
          * 
          * <p>The caller owns the resulting data object.</p>
          * 
+         * @param request       agent request, if available
          * @param applicationId application ID
          * @param key           session key/ID
          * @param lifetime      if positive, the time since its creation the session may be valid
@@ -76,6 +79,7 @@ namespace shibsp {
          * @return reconstituted session data or a null object if the session was absent or invalid
          */
         virtual DDF cache_read(
+            SPRequest* request,
             const char* applicationId,
             const char* key,
             unsigned int lifetime=0,
@@ -89,19 +93,21 @@ namespace shibsp {
          * <p>This method should return false to indicate that a session has been revoked, removed,
          * or is no longer valid.</p>
          * 
-         * @param key session key/ID
-         * @param timeout timeout to enforce if non-zero
+         * @param request   agent request, if available
+         * @param key       session key/ID
+         * @param timeout   timeout to enforce if non-zero
          * 
          * @return true iff the session remains valid/available
          */
-        virtual bool cache_touch(const char* key, unsigned int timeout=0) const=0;
+        virtual bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0) const=0;
 
         /**
          * Delete a session record from the underlying storage medium.
          * 
-         * @param key/ID of session to delete
+         * @param request   agent request, if available
+         * @param key       key/ID of session to delete
          */
-        virtual void cache_remove(const char* key)=0;
+        virtual void cache_remove(SPRequest* request, const char* key)=0;
     };
 };
 

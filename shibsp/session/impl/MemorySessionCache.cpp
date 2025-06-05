@@ -41,16 +41,17 @@ namespace {
         MemorySessionCache(const ptree& pt);
         ~MemorySessionCache();
 
-        string cache_create(DDF& sessionData);
+        string cache_create(SPRequest* request, DDF& sessionData);
         DDF cache_read(
+            SPRequest* request,
             const char* applicationId,
             const char* key,
             unsigned int lifetime=0,
             unsigned int timeout=0,
             const char* client_addr=nullptr
             ) const;
-        bool cache_touch(const char* key, unsigned int timeout=0) const;
-        void cache_remove(const char* key);
+        bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0) const;
+        void cache_remove(SPRequest* request, const char* key);
     
     private:
         duthomhas::csprng m_rng;
@@ -71,12 +72,13 @@ MemorySessionCache::~MemorySessionCache()
 {
 }
 
-string MemorySessionCache::cache_create(DDF& sessionData)
+string MemorySessionCache::cache_create(SPRequest* request, DDF& sessionData)
 {
     return hex_encode(m_rng(string(16,0)));
 }
 
 DDF MemorySessionCache::cache_read(
+    SPRequest* request,
     const char* applicationId,
     const char* key,
     unsigned int lifetime,
@@ -87,11 +89,11 @@ DDF MemorySessionCache::cache_read(
     return DDF();
 }
 
-bool MemorySessionCache::cache_touch(const char* key, unsigned int timeout) const
+bool MemorySessionCache::cache_touch(SPRequest* request, const char* key, unsigned int timeout) const
 {
     return true;
 }
 
-void MemorySessionCache::cache_remove(const char* key)
+void MemorySessionCache::cache_remove(SPRequest* request, const char* key)
 {
 }
