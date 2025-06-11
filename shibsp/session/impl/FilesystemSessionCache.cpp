@@ -30,12 +30,22 @@
 
 #include <cstdio>
 #include <fstream>
+#ifdef HAVE_CXX17
+# include <filesystem>
+#endif
 
 #ifdef WIN32
 # define _utime utime
 # include <sys/utime.h>
 #else
+# include <fcntl.h>
 # include <utime.h>
+# include <signal.h>
+# ifdef HAVE_PTHREAD
+#  include <pthread.h>
+# else
+#  error "This implementation is for POSIX platforms."
+# endif
 #endif
 
 #include <boost/property_tree/ptree.hpp>
@@ -50,6 +60,9 @@ namespace {
         FilesystemSessionCache(const ptree& pt);
         ~FilesystemSessionCache();
 
+        bool start();
+        void stop();
+
         string cache_create(SPRequest* request, DDF& sessionData);
         DDF cache_read(
             SPRequest* request,
@@ -63,13 +76,27 @@ namespace {
         void cache_remove(SPRequest* request, const char* key);
 
     private:
+#ifdef HAVE_CXX17
+        static void* file_cleanup_fn(void*);
+        condition_variable m_file_cleanup_wait;
+        thread m_file_cleanup_thread;
+        string m_cleanupTracker;
+#endif
         Category& m_spilog;
         string m_dir;
         duthomhas::csprng m_rng;
+        time_t m_cleanupInterval;
     };
 
     static const char CACHE_DIRECTORY_PROP_NAME[] = "cacheDirectory";
+    static const char FILE_CLEANUP_TRACKING_FILE_PROP_NAME[] = "fileCleanupTrackingfile";
+    static const char FILE_CLEANUP_INTERVAL_PROP_NAME[] = "fileCleanupInterval";
+    static const char FILE_TIMEOUT_PROP_NAME[] = "fileTimeout";
+
     static const char CACHE_DIRECTORY_PROP_DEFAULT[] = "sessions";
+    static const char FILE_CLEANUP_TRACKING_FILE_PROP_DEFAULT[] = "shibsp_cache_cleanup";
+    static unsigned int FILE_CLEANUP_INTERVAL_PROP_DEFAULT = 1800;
+    static unsigned int FILE_TIMEOUT_PROP_DEFAULT = 3600 * 8;
 };
 
 namespace shibsp {
@@ -115,10 +142,79 @@ FilesystemSessionCache::FilesystemSessionCache(const ptree& pt)
         m_spilog.error("could not perform read/write in cache directory (%s), check permissions", m_dir.c_str());
         throw ConfigurationException("Configured session cache directory was inaccessible to agent process.");
     }
+
+    m_cleanupInterval = getUnsignedInt(FILE_CLEANUP_INTERVAL_PROP_NAME, FILE_CLEANUP_INTERVAL_PROP_DEFAULT);
+    if (m_cleanupInterval) {
+#ifndef HAVE_CXX17
+        m_spilog.warn("file cleanup thread disabled, C++17 build required");
+        m_cleanupInterval = 0;
+        return;
+#endif
+        m_cleanupTracker = m_dir + getString(FILE_CLEANUP_TRACKING_FILE_PROP_NAME, FILE_CLEANUP_TRACKING_FILE_PROP_DEFAULT);
+#ifdef WIN32
+        int f = _open(m_cleanupTracker.c_str(), _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
+#else
+        int f = open(m_cleanupTracker.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+#endif
+        if (f < 0) {
+            int e = errno;
+            if (e == EEXIST) {
+                m_spilog.debug("detected existing cleanup tracking file at %s", m_cleanupTracker.c_str());
+            } else {
+                m_spilog.error("error creating cleanup tracking file at %s, errno=%d",
+                    m_cleanupTracker.c_str(), e);
+            }
+        }
+        else {
+            m_spilog.debug("created initial cleanup tracking file at %s", m_cleanupTracker.c_str());
+#ifdef WIN32
+            _close(f);
+#else
+            close(f);
+#endif
+        }
+    }
+    else {
+        m_spilog.info("%s was zero, disabling file cleanup thread", FILE_CLEANUP_INTERVAL_PROP_NAME);
+    }
 }
 
 FilesystemSessionCache::~FilesystemSessionCache()
 {
+}
+
+bool FilesystemSessionCache::start()
+{
+    if (!AbstractSessionCache::start()) {
+        return false;
+    }
+
+#ifdef HAVE_CXX17
+    if (m_cleanupInterval) {
+        try {
+            m_file_cleanup_thread = thread(file_cleanup_fn, this);
+            return true;
+        }
+        catch (const system_error& e) {
+            m_spilog.error("error starting cleanup thread: %s", e.what());
+        }
+        return false;
+    }
+#endif
+    return true;
+}
+
+void FilesystemSessionCache::stop()
+{
+    AbstractSessionCache::stop();
+#ifdef HAVE_CXX17
+    if (m_cleanupInterval) {
+        m_file_cleanup_wait.notify_all();
+        if (m_file_cleanup_thread.joinable()) {
+            m_file_cleanup_thread.join();
+        }
+    }
+#endif
 }
 
 string FilesystemSessionCache::cache_create(SPRequest* request, DDF& sessionData)
@@ -286,3 +382,103 @@ void FilesystemSessionCache::cache_remove(SPRequest* request, const char* key)
         m_spilog.debug("removed session file for (%s)", key);
     }
 }
+
+#ifdef HAVE_CXX17
+
+void* FilesystemSessionCache::file_cleanup_fn(void* p)
+{
+    FilesystemSessionCache* pcache = reinterpret_cast<FilesystemSessionCache*>(p);
+
+#ifndef WIN32
+    // Bblock all signals.
+    sigset_t sigmask;
+    sigfillset(&sigmask);
+    pthread_sigmask(SIG_BLOCK, &sigmask, nullptr);
+#endif
+
+    // Load our configuration details...
+    unsigned int fileTimeout = pcache->getUnsignedInt(FILE_TIMEOUT_PROP_NAME, FILE_TIMEOUT_PROP_DEFAULT);
+
+    mutex internal_mutex;
+    unique_lock lock(internal_mutex);
+
+    pcache->m_spilog.info("file cleanup thread started...run every %u secs, purge after %u seconds of disuse",
+        pcache->m_cleanupInterval, fileTimeout);
+
+    while (!pcache->isShutdown()) {
+        pcache->m_file_cleanup_wait.wait_for(lock, chrono::seconds(pcache->m_cleanupInterval));
+        
+        if (pcache->isShutdown()) {
+            pcache->m_spilog.debug("file cleanup thread shutting down");
+            break;
+        }
+
+        time_t now = time(nullptr);
+
+        // When we wake up, we check the timestamp on the tracking file to determine if we need to do work.
+        // This should limit runs across all processes to roughly as much as we intend.
+        time_t lastCleanup = FileSupport::getModificationTime(pcache->m_cleanupTracker.c_str());
+        if (lastCleanup == 0) {
+            pcache->m_spilog.error("unable to get last modification to cleanup tracking file, errno=%d", errno);
+            continue;
+        }
+        else if (lastCleanup + pcache->m_cleanupInterval > now) {
+            pcache->m_spilog.debug("cleanup thread going back to sleep");
+            continue;
+        }
+
+        // We're ready to work, so update the tracking file to signal other agents to back off.
+        if (utime(pcache->m_cleanupTracker.c_str(), nullptr) != 0) {
+            pcache->m_spilog.error("error updating tracking file timestamp, errno=%d", errno);
+            continue;
+        }
+
+        // While there are warnings all over the place about the C++17 filesystem APIs,
+        // I am suspecting that for our purposes the issues won't matter much.
+        // Admittedly, sticking a symlink into the directory could fool this into
+        // blowing away lots of content the agent can write to. Maybe don't do that?
+
+        try {
+            for (auto& dir_entry : filesystem::directory_iterator{pcache->m_dir}) {
+                if (!dir_entry.is_regular_file()) {
+                    continue;
+                }
+
+                auto filename = dir_entry.path().filename();
+                if (filename == pcache->m_cleanupTracker) {
+                    continue;
+                } else if (filename.string().size() != 32) {
+                    pcache->m_spilog.warn("skipping unexpected filename (%s)", filename.c_str());
+                    continue;
+                }
+
+                // C++17 is indeed so messy that it didn't specify the filesystem epoch be
+                // the system clock, so it's non-portable to convert the last_write_time
+                // into a time_t. So we'll have to use our helper via stat to obtain the
+                // timestamp.
+
+                const char* pathname = dir_entry.path().c_str();
+                time_t modified = FileSupport::getModificationTime(pathname);
+                if (modified > 0 && now - modified > fileTimeout) {
+                    if (std::remove(pathname) == 0) {
+                        pcache->m_spilog.info("removed stale session file (%s)", pathname);
+                    }
+                    else {
+                        pcache->m_spilog.info("error removing stale session file (%s), errno=%d", pathname, errno);
+                    }
+                }
+            } 
+        }
+        catch (const exception& e) {
+            pcache->m_spilog.error("caught exception during cleanup: %s", e.what());
+        }
+
+        pcache->m_spilog.debug("cleanup thread completed work");
+    }
+
+    pcache->m_spilog.info("cleanup thread exiting");
+
+    return nullptr;
+}
+
+#endif

@@ -68,6 +68,8 @@ struct FilesystemFixture
     }
     ~FilesystemFixture() {
         AgentConfig::getConfig().term();
+        string trackingfile = data_path + "shibsp_cache_cleanup";
+        std::remove(trackingfile.c_str());
     }
 
     string data_path;

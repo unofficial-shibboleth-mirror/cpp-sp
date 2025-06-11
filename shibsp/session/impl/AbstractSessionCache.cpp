@@ -209,6 +209,11 @@ Category& AbstractSessionCache::log() const
     return m_log;
 }
 
+bool AbstractSessionCache::isShutdown() const
+{
+    return m_shutdown;
+}
+
 bool AbstractSessionCache::start()
 {
     try {

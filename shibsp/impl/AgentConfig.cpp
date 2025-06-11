@@ -361,14 +361,6 @@ void AgentInternalConfig::_term()
     log.info("%s agent shutdown complete", PACKAGE_STRING);
 
     m_logging->term();
-
-    /*
-    */
-
-
-    /*
-    Attribute::deregisterFactories();
-    */
 }
 
 void AgentInternalConfig::loadExtensions(Category& log)

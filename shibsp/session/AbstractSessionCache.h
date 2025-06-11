@@ -87,6 +87,9 @@ namespace shibsp {
              */
             bool start();
 
+            /**
+             * Triggers shutdown flag, signals background thread(s), and joins with ours.
+             */
             void stop();
 
             // SessionCache API
