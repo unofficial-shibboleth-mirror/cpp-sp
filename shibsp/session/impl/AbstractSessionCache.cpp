@@ -101,6 +101,86 @@ SessionCacheSPI::~SessionCacheSPI()
 {
 }
 
+bool AbstractSessionCache::isSessionDataValid(DDF& sessionData)
+{
+    // Must be a structure
+    // Must have a non-empty string "app_id" member
+    // Must have a positive longinteger "ts" member
+
+    const char* appId = sessionData["app_id"].string();
+    if (!appId || !*appId) {
+        return false;
+    }
+
+    if (sessionData["ts"].longinteger() < 0) {
+        return false;
+    }
+
+    // Must have a non-empty list "attributes" member with the session's
+    // data. Each attribute must have a non-null name and at least one
+    // non-null string value, and no other value types.
+
+    DDF attrs = sessionData["attributes"];
+    if (!attrs.islist() || attrs.integer() == 0) {
+        return false;
+    }
+
+    DDF attr = attrs.first();
+
+    // If the values aren't in a list, bail.
+    if (!attr.islist()) {
+        return false;
+    }
+
+    // Runs loop for each "value collection", i.e. each attribute.
+    do {
+        // No values?
+        if (attr.integer() == 0) {
+            return false;
+        }
+
+        // Empty/null name?
+        const char* name = attr.name();
+        if (!name || !*name) {
+            return false;
+        }
+
+        DDF val = attr.first();
+
+        // Value not a string?
+        if (!val.isstring()) {
+            return false;
+        }
+
+        // Run loop for each value.
+        do {
+            // Value empty/null?
+            const char* s = val.string();
+            if (!s || !*s) {
+                return false;
+            }
+            
+            // Get next value.
+            val = attr.next();
+        } while (val.isstring());
+
+        // A string would continue the loop, so if not null now, bail.
+        if (!val.isnull()) {
+            return false;
+        }
+
+        // Get next attribute.
+        attr = attrs.next();
+    } while (attr.islist());
+
+    // A list would continue the loop, so if not null now, bail.
+    if (!attr.isnull()) {
+        return false;
+    }
+
+    return true;
+}
+
 AbstractSessionCache::AbstractSessionCache(const ptree& pt)
     : m_log(Category::getInstance(SHIBSP_LOGCAT ".SessionCache")), m_shutdown(false)
 {
@@ -545,12 +625,11 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
 
     if (!timeout || m_lastAccess + timeout > now) {
 
-        // Being locally valid, we want to update the activity timestamp remotely and in the persistent store.
+        // Being locally valid, we want to update the activity timestamp in the persistent store.
         // This check also notices a session having been revoked, so implements the concept of the cache being
         // "eventually consistent" across agent processes.
 
         if (m_lastAccess - m_lastAccessReported > m_cache.m_storageAccessInterval) {
-            // It's been X seconds since we last wrote through to storage...
             try {
                 // Pass a zero to bypass timeout enforcement as we know as well or better than the back-end...
                 if (!m_cache.cache_touch(request, getID(), 0)) {

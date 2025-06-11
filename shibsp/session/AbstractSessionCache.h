@@ -114,6 +114,23 @@ namespace shibsp {
              */
             Category& log() const;
 
+            /**
+             * Access the shutdown state.
+             */
+            bool isShutdown() const;
+
+            /**
+             * Tests the validity of a session's data structures.
+             * 
+             * <p>Note that this is not a policy evaluation of the data in the session but only
+             * of the structure/content to fit the underlying assumptions built into the code.</p>
+             * 
+             * @param sessionData the data to examine
+             * 
+             * @return true iff the data is valid
+             */
+            static bool isSessionDataValid(DDF& sessionData);
+
         private:
             static void* cleanup_fn(void*);
             void dormant(const std::string& key);

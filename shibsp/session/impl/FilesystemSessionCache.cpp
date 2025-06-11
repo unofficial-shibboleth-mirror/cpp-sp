@@ -32,6 +32,7 @@
 #include <fstream>
 
 #ifdef WIN32
+# define _utime utime
 # include <sys/utime.h>
 #else
 # include <utime.h>
@@ -176,7 +177,7 @@ DDF FilesystemSessionCache::cache_read(
 
     if (timeout) {
         if (lastAccess == 0) {
-            m_spilog.error("timeout specified, but unable to obtain mod time for file (%s)", path.c_str());
+            m_spilog.error("timeout specified, unable to obtain access time for session file (%s)", path.c_str());
             return obj;
         }
         else if (lastAccess + timeout < now) {
@@ -191,10 +192,8 @@ DDF FilesystemSessionCache::cache_read(
 
     is >> obj;
     is.close();
-    if (obj.isnull()) {
-        m_spilog.error("error deserializing session from file (%s)", path.c_str());
-        return obj;
-    } else if (!obj.isstruct()) {
+
+    if (!isSessionDataValid(obj)) {
         obj.destroy();
         m_spilog.error("deserialized session from file (%s) was invalid", path.c_str());
         return obj;
@@ -202,8 +201,8 @@ DDF FilesystemSessionCache::cache_read(
 
     const char* appId = obj["appId"].string();
     if (strcmp(applicationId, appId)) {
-        m_spilog.warn("session (%s) issued for application (%s), accessed via application (%s)", key, appId, applicationId);
         obj.destroy();
+        m_spilog.warn("session (%s) issued for application (%s), accessed via application (%s)", key, appId, applicationId);
         return obj;
     }
 
@@ -211,8 +210,8 @@ DDF FilesystemSessionCache::cache_read(
     if (client_addr) {
         const char* addr = obj["addr"].string();
         if (addr && strcmp(client_addr, addr)) {
-            m_spilog.warn("session (%s) invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
             obj.destroy();
+            m_spilog.info("session (%s) invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
             cache_remove(request, key);
             return obj;
         }
@@ -222,7 +221,7 @@ DDF FilesystemSessionCache::cache_read(
         time_t start = obj["ts"].longinteger();
         if (start + lifetime < now) {
             obj.destroy();
-            if (m_spilog.isWarnEnabled()) {
+            if (m_spilog.isInfoEnabled()) {
                 string created(date::format("%FT%TZ", chrono::system_clock::from_time_t(start)));
                 string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(start + lifetime)));
                 m_spilog.info("session (%s) has expired, created (%s), expired (%s)", key, created.c_str(), expired.c_str());
@@ -230,6 +229,10 @@ DDF FilesystemSessionCache::cache_read(
             cache_remove(request, key);
             return obj;
         }
+    }
+
+    if (utime(path.c_str(), nullptr) != 0) {
+        m_spilog.error("unable to update access time for session (%s), errno=%d", path.c_str(), errno);
     }
 
     return obj;
@@ -241,8 +244,13 @@ bool FilesystemSessionCache::cache_touch(SPRequest* request, const char* key, un
     if (timeout) {
         time_t lastAccess = FileSupport::getModificationTime(path.c_str());
         if (lastAccess == 0) {
-            m_spilog.error("timeout specified, but unable to obtain mod time for file (%s)", path.c_str());
-            cache_remove(request, key);
+            int e = errno;
+            if (e == ENOENT) {
+                m_spilog.info("unable to update access time, session file (%s) did not exist", path.c_str());
+            }
+            else {
+                m_spilog.error("unable to obtain access time for session file (%s), errno=%d", path.c_str(), e);
+            }
             return false;
         }
         else if (lastAccess + timeout < time(nullptr)) {
@@ -255,20 +263,9 @@ bool FilesystemSessionCache::cache_touch(SPRequest* request, const char* key, un
         }
     }
 
-#ifdef WIN32
-    if (_utime(path.c_str(), nullptr) != 0) {
-#else
     if (utime(path.c_str(), nullptr) != 0) {
-#endif
-        int e = errno;
-        if (e == ENOENT) {
-            m_spilog.debug("unable to update access time, session file (%s) did not exist", path.c_str());
-            return false;
-        }
-        else {
-            m_spilog.error("unable to update access time for session (%s), errno=%d", path.c_str(), e);
-            // Debatable if we fall into returning true, but maybe we don't care?
-        }
+        m_spilog.error("unable to update access time for session (%s), errno=%d", path.c_str(), errno);
+        // Debatable if we fall into returning true, but maybe we don't care?
     }
     return true;
 }
@@ -286,6 +283,6 @@ void FilesystemSessionCache::cache_remove(SPRequest* request, const char* key)
         }
     }
     else {
-        m_spilog.debug("removed session (%s)", key);
+        m_spilog.debug("removed session file for (%s)", key);
     }
 }
