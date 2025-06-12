@@ -35,14 +35,6 @@
 #define SHIBSP_EXPORTS
 #endif
 
-#ifndef MAKE_NONCOPYABLE
-#define MAKE_NONCOPYABLE(type) \
-    private: \
-        type(const type&); \
-        type& operator=(const type&)
-
-#endif
-
 // eventually we might be able to support autoconf via cygwin...
 #if defined (_MSC_VER) || defined(__BORLANDC__)
 # include "config_win32.h"
