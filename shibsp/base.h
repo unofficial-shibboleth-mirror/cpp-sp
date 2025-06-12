@@ -69,7 +69,9 @@
 #define MAKE_NONCOPYABLE(type) \
     private: \
         type(const type&) = delete; \
-        type& operator=(const type&) = delete
+        type& operator=(const type&) = delete; \
+        type(const type&&) = delete; \
+        type& operator=(type&&) = delete
 
 /** Logging category for Service Provider functions. */
 #define SHIBSP_LOGCAT "Shibboleth"
