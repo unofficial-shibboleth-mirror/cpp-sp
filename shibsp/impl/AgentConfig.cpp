@@ -68,10 +68,7 @@ namespace shibsp {
         }
 
         bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
-        bool start() {
-            call_once(m_startonce, &AgentInternalConfig::_start, this);
-            return true;
-        }
+        bool start();
         void term();
 
         const PathResolver& getPathResolver() const {
@@ -87,7 +84,6 @@ namespace shibsp {
 
     private:
         bool _init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
-        bool _start();
         void _term();
 
         bool initLogging();
@@ -95,7 +91,6 @@ namespace shibsp {
         void loadExtensions(Category& log);
 
         unsigned int m_initCount;
-        once_flag m_startonce;
         mutex m_lock;
         ptree m_config;
         bool m_cli;
@@ -313,11 +308,14 @@ void AgentInternalConfig::term()
     _term();
 }
 
-bool AgentInternalConfig::_start()
+bool AgentInternalConfig::start()
 {
-    SessionCache* cache = getAgent().getSessionCache(false);
-    if (cache) {
-        return cache->start();
+    lock_guard<mutex> locker(m_lock);
+    if (m_initCount == 1) {
+        SessionCache* cache = getAgent().getSessionCache(false);
+        if (cache) {
+            return cache->start();
+        }
     }
     return true;
 }

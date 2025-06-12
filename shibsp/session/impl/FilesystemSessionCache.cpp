@@ -423,7 +423,7 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
             continue;
         }
         else if (lastCleanup + pcache->m_cleanupInterval > now) {
-            pcache->m_spilog.debug("cleanup thread going back to sleep");
+            pcache->m_spilog.debug("file cleanup thread going back to sleep");
             continue;
         }
 
@@ -473,10 +473,10 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
             pcache->m_spilog.error("caught exception during cleanup: %s", e.what());
         }
 
-        pcache->m_spilog.debug("cleanup thread completed work");
+        pcache->m_spilog.debug("file cleanup thread completed work");
     }
 
-    pcache->m_spilog.info("cleanup thread exiting");
+    pcache->m_spilog.info("file cleanup thread exiting");
 
     return nullptr;
 }
