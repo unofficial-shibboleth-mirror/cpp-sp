@@ -152,7 +152,9 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
 
     s << "{ ";
     s << "\"expiration\": ";
-    s << ((session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800) - time(nullptr)) / 60);
+    s << ((session.mutex()->getCreation() +
+        request.getRequestSettings().first->getUnsignedInt(RequestMapper::LIFETIME_PROP_NAME, RequestMapper::LIFETIME_PROP_DEFAULT) -
+            time(nullptr)) / 60);
 
     /*
         attributes: [ { "name": "foo", "values" : count } ]
@@ -221,8 +223,8 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
 {
     // Default delimiter is semicolon but is configurable.
     const char* delim = request.getAgent().getAttributeConfiguration(
-        request.getRequestSettings().first->getString("attributeConfigID")
-        ).getString("attributeValueDelimiter", ";");
+        request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME)
+        ).getString(AttributeConfiguration::VALUE_DELIMITER_PROP_NAME, AttributeConfiguration::VALUE_DELIMITER_PROP_DEFAULT);
     size_t delim_len = strlen(delim);
 
     stringstream s;
@@ -245,7 +247,9 @@ pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
     s << "<u>Miscellaneous</u>" << endl;
 
     s << "<strong>Session Expiration (barring inactivity):</strong> ";
-    s << ((session.mutex()->getCreation() + request.getRequestSettings().first->getUnsignedInt("lifetime", 28800) - time(nullptr)) / 60) << " minute(s)" << endl;
+    s << ((session.mutex()->getCreation() +
+        request.getRequestSettings().first->getUnsignedInt(RequestMapper::LIFETIME_PROP_NAME, RequestMapper::LIFETIME_PROP_DEFAULT) -
+            time(nullptr)) / 60) << " minute(s)" << endl;
     s << endl << "<u>Attributes</u>" << endl;
 
     string key;

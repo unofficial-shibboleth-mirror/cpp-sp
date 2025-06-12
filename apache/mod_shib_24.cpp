@@ -1008,7 +1008,7 @@ AccessControl::aclresult_t htAccessControl::doShibAttr(
     }
 
     const AttributeConfiguration& attrConfig =
-        sta.getAgent().getAttributeConfiguration(sta.getRequestSettings().first->getString("attributeConfigID"));
+        sta.getAgent().getAttributeConfiguration(sta.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME));
 
     bool regexp = false;
     while (*params) {

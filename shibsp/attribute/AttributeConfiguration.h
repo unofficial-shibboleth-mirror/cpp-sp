@@ -56,12 +56,16 @@ namespace shibsp {
         virtual ~AttributeConfiguration();
 
         /** Used in ACL implementations to enforce legacy authnContextClassRef rule. */
-        static const char LEGACY_CLASSREF_ATTRIBUTE_PROP_PATH[];
+        static const char LEGACY_CLASSREF_ATTRIBUTE_PROP_NAME[];
         static const char LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT[];
 
         /** Used in ACL implementation to enforce legacy time-since-authn rule. */
-        static const char LEGACY_AUTHTIME_ATTRIBUTE_PROP_PATH[];
+        static const char LEGACY_AUTHTIME_ATTRIBUTE_PROP_NAME[];
         static const char LEGACY_AUTHTIME_ATTRIBUTE_PROP_DEFAULT[];
+
+        /** Delimiter to separate multiple attribute values in exported variables. */
+        static const char VALUE_DELIMITER_PROP_NAME[];
+        static const char VALUE_DELIMITER_PROP_DEFAULT[];
 
         /**
          * Post-process a collection of attributes and values from the hub for use by agent code.

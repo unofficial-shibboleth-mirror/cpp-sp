@@ -194,12 +194,12 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     // Last two rule types rely on AttributeConfiguration...
     
     const AttributeConfiguration& attributeConfig = request.getAgent().getAttributeConfiguration(
-        request.getRequestSettings().first->getString("attributeConfigID")
+        request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME)
         );
 
     if (m_alias == "authnContextClassRef") {
         actual_alias = attributeConfig.getString(
-            AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_PATH,
+            AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_NAME,
             AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT);
     }
 
@@ -272,12 +272,12 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
     // Last two rule types rely on AttributeConfiguration...
     
     const AttributeConfiguration& attributeConfig = request.getAgent().getAttributeConfiguration(
-        request.getRequestSettings().first->getString("attributeConfigID")
+        request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME)
         );
 
     if (m_alias == "authnContextClassRef") {
         actual_alias = attributeConfig.getString(
-            AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_PATH,
+            AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_NAME,
             AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT);
     }
 

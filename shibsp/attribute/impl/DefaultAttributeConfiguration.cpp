@@ -80,11 +80,13 @@ namespace {
 
 };
 
-const char AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_PATH[] = "legacyClassRefAttribute";
-const char AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT[] = "Shib-AuthnContext-Class";
+const char AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_NAME[] = "legacyClassRefAttribute";
+const char AttributeConfiguration::LEGACY_AUTHTIME_ATTRIBUTE_PROP_NAME[] = "legacyAuthnTimeAttribute";
+const char AttributeConfiguration::VALUE_DELIMITER_PROP_NAME[] = "attributeValueDelimiter";
 
-const char AttributeConfiguration::LEGACY_AUTHTIME_ATTRIBUTE_PROP_PATH[] = "legacyAuthnTimeAttribute";
+const char AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT[] = "Shib-AuthnContext-Class";
 const char AttributeConfiguration::LEGACY_AUTHTIME_ATTRIBUTE_PROP_DEFAULT[] = "Shib-Authentication-Instant";
+const char AttributeConfiguration::VALUE_DELIMITER_PROP_DEFAULT[] = ";";
 
 
 AttributeConfiguration::AttributeConfiguration() {}
@@ -202,7 +204,6 @@ bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
 
     if (attributes.first().isnull()) {
         m_log.warn("no valid attributes remain in session after processing");
-        return false;
     }
     return true;
 }
@@ -229,7 +230,7 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
     RequestMapper::Settings settings = request.getRequestSettings();
     const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
 
-    const char* delim = getString("attributeValueDelimiter", ";");
+    const char* delim = getString(VALUE_DELIMITER_PROP_NAME, VALUE_DELIMITER_PROP_DEFAULT);
     size_t delim_len = strlen(delim);
 
     // Default export strategy will include duplicates.

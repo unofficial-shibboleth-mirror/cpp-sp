@@ -179,7 +179,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
         }
 
         request.getAgent().getAttributeConfiguration(
-            request.getRequestSettings().first->getString("attributeConfigID")
+            request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME)
             ).clearHeaders(request);
 
         bool sessionExists = false;
@@ -357,7 +357,7 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 
         // Export the attributes.
         request.getAgent().getAttributeConfiguration(
-            request.getRequestSettings().first->getString("attributeConfigID")
+            request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME)
             ).exportAttributes(request, *(session.mutex()));
 
         return make_pair(false,0L);
