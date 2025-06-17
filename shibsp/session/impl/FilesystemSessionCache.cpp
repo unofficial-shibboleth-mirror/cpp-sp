@@ -80,7 +80,6 @@ namespace {
         static void* file_cleanup_fn(void*);
         condition_variable m_file_cleanup_wait;
         thread m_file_cleanup_thread;
-        string m_cleanupTracker;
 #endif
         Category& m_spilog;
         string m_dir;
@@ -150,29 +149,6 @@ FilesystemSessionCache::FilesystemSessionCache(const ptree& pt)
         m_cleanupInterval = 0;
         return;
 #endif
-        m_cleanupTracker = m_dir + getString(FILE_CLEANUP_TRACKING_FILE_PROP_NAME, FILE_CLEANUP_TRACKING_FILE_PROP_DEFAULT);
-#ifdef WIN32
-        int f = _open(m_cleanupTracker.c_str(), _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
-#else
-        int f = open(m_cleanupTracker.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
-#endif
-        if (f < 0) {
-            int e = errno;
-            if (e == EEXIST) {
-                m_spilog.debug("detected existing cleanup tracking file at %s", m_cleanupTracker.c_str());
-            } else {
-                m_spilog.error("error creating cleanup tracking file at %s, errno=%d",
-                    m_cleanupTracker.c_str(), e);
-            }
-        }
-        else {
-            m_spilog.debug("created initial cleanup tracking file at %s", m_cleanupTracker.c_str());
-#ifdef WIN32
-            _close(f);
-#else
-            close(f);
-#endif
-        }
     }
     else {
         m_spilog.info("%s was zero, disabling file cleanup thread", FILE_CLEANUP_INTERVAL_PROP_NAME);
@@ -398,6 +374,33 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
 
     // Load our configuration details...
     unsigned int fileTimeout = pcache->getUnsignedInt(FILE_TIMEOUT_PROP_NAME, FILE_TIMEOUT_PROP_DEFAULT);
+    string cleanupTracker = pcache->m_dir + pcache->getString(
+        FILE_CLEANUP_TRACKING_FILE_PROP_NAME, FILE_CLEANUP_TRACKING_FILE_PROP_DEFAULT);
+
+    // Create cleanup tracking file if not already present.
+
+#ifdef WIN32
+        int f = _open(cleanupTracker.c_str(), _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
+#else
+        int f = open(cleanupTracker.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+#endif
+        if (f < 0) {
+            int e = errno;
+            if (e == EEXIST) {
+                pcache->m_spilog.debug("detected existing cleanup tracking file at %s", cleanupTracker.c_str());
+            } else {
+                pcache->m_spilog.error("error creating cleanup tracking file at %s, errno=%d",
+                    cleanupTracker.c_str(), e);
+            }
+        }
+        else {
+            pcache->m_spilog.debug("created initial cleanup tracking file at %s", cleanupTracker.c_str());
+#ifdef WIN32
+            _close(f);
+#else
+            close(f);
+#endif
+        }
 
     mutex internal_mutex;
     unique_lock lock(internal_mutex);
@@ -417,7 +420,7 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
 
         // When we wake up, we check the timestamp on the tracking file to determine if we need to do work.
         // This should limit runs across all processes to roughly as much as we intend.
-        time_t lastCleanup = FileSupport::getModificationTime(pcache->m_cleanupTracker.c_str());
+        time_t lastCleanup = FileSupport::getModificationTime(cleanupTracker.c_str());
         if (lastCleanup == 0) {
             pcache->m_spilog.error("unable to get last modification to cleanup tracking file, errno=%d", errno);
             continue;
@@ -428,7 +431,7 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
         }
 
         // We're ready to work, so update the tracking file to signal other agents to back off.
-        if (utime(pcache->m_cleanupTracker.c_str(), nullptr) != 0) {
+        if (utime(cleanupTracker.c_str(), nullptr) != 0) {
             pcache->m_spilog.error("error updating tracking file timestamp, errno=%d", errno);
             continue;
         }
@@ -445,7 +448,7 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
                 }
 
                 auto filename = dir_entry.path().filename();
-                if (filename == pcache->m_cleanupTracker) {
+                if (filename == cleanupTracker) {
                     continue;
                 } else if (filename.string().size() != 32) {
                     pcache->m_spilog.warn("skipping unexpected filename (%s)", filename.c_str());
