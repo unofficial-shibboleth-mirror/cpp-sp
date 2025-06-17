@@ -25,12 +25,14 @@
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "logging/Category.h"
+#include "session/SessionCache.h"
 #include "remoting/RemotingService.h"
 #include "util/URLEncoder.h"
 
 #include <ctime>
 #include <sstream>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/algorithm/string.hpp>>
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -64,12 +66,16 @@ TokenConsumer::TokenConsumer(const ptree& pt, const char* path)
 
 pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
 {
+    bool wasPassive;
+    string target;
+
     try {
         DDF input("token-consumer");
         DDFJanitor inputJanitor(input);    
         input.structure();
         input.addmember("application").string(
-            request.getRequestSettings().first->getString("applicationId", "default"));
+            request.getRequestSettings().first->getString(
+                RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
 
         DDF wrapped = wrapRequest(request, m_remotedHeaders);
         input.add(wrapped);
@@ -77,9 +83,19 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         DDF output = request.getAgent().getRemotingService()->send(input);
         DDFJanitor outputJanitor(output);
 
-        // TODO: process outbound session data
+        wasPassive = output["passive"].integer() == 1;
+        const char* s = output.getmember("http.redirect").string();
+        if (s) {
+            target = s;
+        }
+        
 
-        const char* sessionHook = request.getRequestSettings().first->getString("sessionHook");
+        SessionCache* cache = request.getAgent().getSessionCache();
+        DDF sessionData = output["session"];
+        // Ownership of sessionData transfers on input to create call.
+        cache->create(request, sessionData);
+        
+        const char* sessionHook = request.getRequestSettings().first->getString(RequestMapper::SESSION_HOOK_PROP_NAME);
         if (sessionHook) {
             string hook(sessionHook);
             request.absolutize(hook);
@@ -90,10 +106,9 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             string returnURL = request.getRequestURL();
             returnURL = returnURL.substr(0, returnURL.find('?')) + "?hook=1";
 
-            const char* target = output.getmember("http.redirect").string();
             string encodedTarget;
-            if (target) {
-                encodedTarget = encoder.encode(target);
+            if (!target.empty()) {
+                encodedTarget = encoder.encode(target.c_str());
                 returnURL += "&target=" + encodedTarget;
             }
             if (hook.find('?') == string::npos) {
@@ -115,12 +130,9 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             return unwrapResponse(request, output);
         }
 
-        // TODO: remove POC debugging code...
-        stringstream dump;
-        dump << output;
-        return make_pair(true,request.sendResponse(dump));
-        
-        //return unwrapResponse(request, output);
+        // TODO: POST restoration...
+
+        return unwrapResponse(request, output);
     }
     catch (exception& ex) {
         AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
@@ -128,18 +140,32 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             agent_ex->addProperty("handlerType", TOKEN_CONSUMER_HANDLER);
         }
         
+        // THis is a mess to allow for "ignoring" errors during passive SSO and routing back
+        // to the original resource.
+
+        // The passive and target values can come from the output message or the exception.
+        // When the cache throws, the error typically would not carry that information but the
+        // output would have.
+
         const char* passive = agent_ex ? agent_ex->getProperty("passive") : nullptr;
-        if (passive && !strcmp(passive, "1")) {
+        if (wasPassive || (passive && !strcmp(passive, "1"))) {
             agent_ex->log(request, Priority::SHIB_WARN);
-            const char* error_target = agent_ex->getProperty("target");
+            const char* error_target = target.empty() ? agent_ex->getProperty("target") : target.c_str();
 
             // TODO: either recover POST data or clean up recovery state?
 
-            // Make sure the target isn't the same as this handler, so avoid a loop.
-            request.log(Priority::SHIB_INFO,
-                "trapping TokenConsumer failure and returning to target location for passive request");
-            request.limitRedirect(error_target);
-            return make_pair(true, request.sendRedirect(error_target));
+            if (error_target) {
+                request.limitRedirect(error_target);
+                // Make sure the target isn't a prefix of this handler, to avoid a loop.
+                if (boost::starts_with(error_target, request.getRequestURL())) {
+                    request.log(Priority::SHIB_WARN,
+                        "TokenConsumer target location matched handler, not trapping passive request error");
+                } else {
+                    request.log(Priority::SHIB_INFO,
+                        "trapping TokenConsumer failure and returning to target location for passive request");
+                    return make_pair(true, request.sendRedirect(error_target));
+                }
+            }
         }
         throw;
     }

@@ -75,6 +75,25 @@ struct FilesystemFixture
     string data_path;
 };
 
+BOOST_FIXTURE_TEST_CASE(FilesystemSessionCache_invalid_attributes, FilesystemFixture)
+{
+    bool started = AgentConfig::getConfig().start();
+    BOOST_CHECK(started);
+
+    DDF obj(nullptr);
+    DDFJanitor janitor(obj);
+
+    obj.addmember("session.attributes");    // not a list
+
+    DummyRequest request("https://sp.example.org/secure/index.html");
+    DDF child = obj["session"];
+
+    SessionCache* cache = AgentConfig::getConfig().getAgent().getSessionCache();
+
+    exceptionCheck checker("Error while processing session attributes for storage.");
+    BOOST_CHECK_EXCEPTION(cache->create(request, child), SessionException, checker.check_message);
+}
+
 BOOST_FIXTURE_TEST_CASE(FilesystemSessionCache_tests, FilesystemFixture)
 {
     bool started = AgentConfig::getConfig().start();

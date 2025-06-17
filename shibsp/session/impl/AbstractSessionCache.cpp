@@ -20,8 +20,10 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "Agent.h"
 #include "AgentConfig.h"
 #include "SPRequest.h"
+#include "attribute/AttributeConfiguration.h"
 #include "io/CookieManager.h"
 #include "logging/Category.h"
 #include "session/AbstractSessionCache.h"
@@ -121,8 +123,12 @@ bool AbstractSessionCache::isSessionDataValid(DDF& sessionData)
     // non-null string value, and no other value types.
 
     DDF attrs = sessionData["attributes"];
-    if (!attrs.islist() || attrs.integer() == 0) {
+    if (!attrs.islist()) {
         return false;
+    }
+    else if (attrs.integer() == 0) {
+        // Empty list.
+        return true;
     }
 
     DDF attr = attrs.first();
@@ -244,11 +250,20 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
     session.remove();
 
     // Add additional fields managed by agent.
-    // attributes and data members should be present from hub.
+    // The attributes member should be present from hub.
     session.addmember("ts").longinteger(time(nullptr));
     session.addmember("app_id").string(request.getRequestSettings().first->getString(
         RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
     session.addmember("addr").string(request.getRemoteAddr());
+
+    const AttributeConfiguration& attrConfig = request.getAgent().getAttributeConfiguration(
+        request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME));
+    DDF attrs = session["attributes"];
+    if (!attrConfig.processAttributes(attrs)) {
+        m_log.warn("error processing session attributes for storage/use");
+        session.destroy();
+        throw SessionException("Error while processing session attributes for storage.");
+    }
 
     // Write the data to the back-end, obtaining a key.
     string key;
@@ -259,7 +274,7 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
     catch (const exception& ex) {
         // Should be logged by the SPI.
         session.destroy();
-        return string();
+        throw;
     }
 
     session.name(key.c_str());

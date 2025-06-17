@@ -126,6 +126,8 @@ namespace shibsp {
          * <p>The second parameter's ownership is assumed by this method regardless of the
          * outcome.</p>
          * 
+         * <p>An exception is raised in the event of an error.</p>
+         * 
          * @param request request to bind the session to
          * @param session session data obtained from the hub
          * 

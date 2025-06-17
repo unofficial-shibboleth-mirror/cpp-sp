@@ -194,9 +194,14 @@ bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
                     value.destroy();
                     m_log.warn("attribute '%s' value was not a supported type", attr.name());
                 }
+
+                value = attr.next();
             }
-                
-            value = attr.next();
+
+            if (attr.integer() == 0) {
+                m_log.info("no values remain in attribute (%s) after processing", attr.name());
+                attr.destroy();
+            }
         }
 
         attr = attributes.next();
