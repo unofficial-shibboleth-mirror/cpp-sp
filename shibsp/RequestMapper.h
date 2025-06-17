@@ -55,6 +55,7 @@ namespace shibsp {
         typedef std::pair<const PropertySet*,AccessControl*> Settings;
 
         static const char APPLICATION_ID_PROP_NAME[];
+        static const char HANDLER_CONFIG_ID_PROP_NAME[];
         static const char ATTRIBUTE_CONFIG_ID_PROP_NAME[];
         static const char SESSION_HOOK_PROP_NAME[];
         static const char LIFETIME_PROP_NAME[];

@@ -230,7 +230,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 
             // No session, but we require one. Initiate a new session.
             const HandlerConfiguration& handlerConfig = request.getAgent().getHandlerConfiguration(
-                request.getRequestSettings().first->getString("handlerConfigID"));
+                request.getRequestSettings().first->getString(RequestMapper::HANDLER_CONFIG_ID_PROP_NAME));
 
             // Dispatch to SessionInitiator. This MUST handle the request, or we want to fail here.
             // Used to fall through into doExport, but this is a cleaner exit path.

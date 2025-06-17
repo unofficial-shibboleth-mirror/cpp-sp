@@ -156,6 +156,7 @@ void SHIBSP_API shibsp::registerRequestMappers()
 }
 
 const char RequestMapper::APPLICATION_ID_PROP_NAME[] = "applicationId";
+const char RequestMapper::HANDLER_CONFIG_ID_PROP_NAME[] = "handlerConfigId";
 const char RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME[] = "attributeConfigId";
 const char RequestMapper::SESSION_HOOK_PROP_NAME[] = "sessionHook";
 const char RequestMapper::LIFETIME_PROP_NAME[] = "lifetime";

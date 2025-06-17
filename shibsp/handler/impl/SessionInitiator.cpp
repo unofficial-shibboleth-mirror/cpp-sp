@@ -129,7 +129,8 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         DDFJanitor inputJanitor(input);
 
         input.structure();
-        input.addmember("application").string(settings->getString("applicationId", "default"));
+        input.addmember("application").string(settings->getString(
+            RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
         input.addmember("handler").unsafe_string(handler.c_str());
         if (state.empty()) {
             input.addmember("target").unsafe_string(target.c_str());
@@ -140,7 +141,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 
         // Add copy of token consumer structure.
         DDF dup = request.getAgent().getHandlerConfiguration(
-            settings->getString("handlerConfigID")).getTokenConsumerInfo(handlerBaseURL);
+            settings->getString(RequestMapper::HANDLER_CONFIG_ID_PROP_NAME)).getTokenConsumerInfo(handlerBaseURL);
         input.add(dup);
 
         DDF wrapped = wrapRequest(request, m_remotedHeaders,
