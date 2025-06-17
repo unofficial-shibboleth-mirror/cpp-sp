@@ -315,7 +315,7 @@ unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTi
 
     const char* key = m_cookieManager->getCookieValue(request);
     if (!key) {
-        m_log.debug("no session cookie present, no session found");
+        m_log.debug("no session cookie present");
         return unique_lock<Session>();
     }
 

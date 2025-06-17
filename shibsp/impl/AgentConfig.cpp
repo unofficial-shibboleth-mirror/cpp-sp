@@ -60,11 +60,15 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL AgentInternalConfig : public AgentConfig
     {
     public:
-        AgentInternalConfig() : m_initCount(0), m_cli(false) {}
+        AgentInternalConfig() : m_initCount(0), m_cli(false), m_callback(nullptr), m_callback_arg(nullptr) {}
         ~AgentInternalConfig() {}
 
         void setCommandLine(bool flag) {
             m_cli = flag;
+        }
+
+        void setCallback(const AgentConfigCallback* callback, void* arg=nullptr) {
+            m_callback = callback;
         }
 
         bool init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
@@ -94,6 +98,8 @@ namespace shibsp {
         mutex m_lock;
         ptree m_config;
         bool m_cli;
+        const AgentConfigCallback* m_callback;
+        void* m_callback_arg;
         PathResolver m_pathResolver;
         URLEncoder m_urlEncoder;
         vector<void*> m_libhandles;
@@ -122,6 +128,14 @@ AgentConfig::AgentConfig() :
 }
 
 AgentConfig::~AgentConfig()
+{
+}
+
+AgentConfig::AgentConfigCallback::AgentConfigCallback()
+{
+}
+
+AgentConfig::AgentConfigCallback::~AgentConfigCallback()
 {
 }
 
@@ -243,13 +257,11 @@ bool AgentInternalConfig::_init(const char* inst_prefix, const char* config_file
         registerSessionCaches();
         registerAgents();
 
-        /*
-        // Yes, this isn't secure, will review where we do any random generation
-        // after full code cleanup is done.
-        srand(static_cast<unsigned int>(std::time(nullptr)));
-        */
-
         loadExtensions(log);
+
+        if (m_callback && !m_callback->callback(m_callback_arg)) {
+            return false;
+        }
 
         // Check for an overridden "agent-type" under the "global" subtree.
         static const char AGENT_TYPE_PROP_PATH[] = "global.agentType";

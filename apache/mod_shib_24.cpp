@@ -1436,9 +1436,21 @@ apr_status_t shib_post_config(apr_pool_t* p, apr_pool_t*, apr_pool_t*, server_re
         return !OK;
     }
 
-    AgentConfig::getConfig().RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
+    // Overrides built-in mapping of Native type into XML for non-Apache platforms.
+    class ApacheAgentCallback : public AgentConfig::AgentConfigCallback {
+    public:
+        ApacheAgentCallback() {}
+        virtual ~ApacheAgentCallback() {}
+
+        bool callback(void*) const {
+            AgentConfig::getConfig().RequestMapperManager.registerFactory(NATIVE_REQUEST_MAPPER, &ApacheRequestMapFactory);
+            return true;
+        }
+    };
 
     g_Config = &AgentConfig::getConfig();
+    ApacheAgentCallback callback;
+    g_Config->setCallback(&callback);
     try {
         if (!g_Config->init(g_szPrefix, g_szConfigFile, true)) {
             ap_log_error(APLOG_MARK, APLOG_CRIT|APLOG_NOERRNO, 0, s, "post_config: shib_module failed to initialize libraries");

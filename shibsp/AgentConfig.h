@@ -51,9 +51,36 @@ namespace shibsp {
     class SHIBSP_API AgentConfig
     {
         MAKE_NONCOPYABLE(AgentConfig);
-    public:
+
+    protected:
         AgentConfig();
+
+    public:
         virtual ~AgentConfig();
+
+        /**
+         * Callback interface for post-initialization work prior to Agent creation.
+         */
+        class SHIBSP_API AgentConfigCallback
+        {
+            MAKE_NONCOPYABLE(AgentConfigCallback);
+            
+        protected:
+            AgentConfigCallback();
+
+        public:
+            virtual ~AgentConfigCallback();
+
+            /**
+             * Method invoked by initialization routine prior to instantiating
+             * the Agent implementation.
+             * 
+             * @param arg callback argument if needed
+             * 
+             * @return true iff initialization should proceed
+             */
+            virtual bool callback(void* arg) const=0;
+        };
 
         /**
          * Returns the global configuration object for the agent.
@@ -68,6 +95,14 @@ namespace shibsp {
          * <p>This can be used to adjust/affect default settings and plugin types used.</p>
          */
         virtual void setCommandLine(bool flag)=0;
+
+        /**
+         * Installs a callback to invoke prior to Agent instantiation.
+         * 
+         * @param callback callback to invoke
+         * @param arg argument to callback if any
+         */
+        virtual void setCallback(const AgentConfigCallback* callback, void* arg=nullptr)=0;
 
         /**
          * Initializes agent/library.

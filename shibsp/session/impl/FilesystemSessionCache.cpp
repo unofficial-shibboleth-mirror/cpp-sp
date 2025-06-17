@@ -416,8 +416,10 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
             break;
         }
 
-        time_t now = time(nullptr);
+        pcache->m_spilog.debug("file cleanup thread running");
 
+        time_t now = time(nullptr);
+        
         // When we wake up, we check the timestamp on the tracking file to determine if we need to do work.
         // This should limit runs across all processes to roughly as much as we intend.
         time_t lastCleanup = FileSupport::getModificationTime(cleanupTracker.c_str());
@@ -443,14 +445,12 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
 
         try {
             for (auto& dir_entry : filesystem::directory_iterator{pcache->m_dir}) {
-                if (!dir_entry.is_regular_file()) {
+                if (!dir_entry.is_regular_file() || dir_entry.path() == cleanupTracker) {
                     continue;
                 }
-
+                
                 auto filename = dir_entry.path().filename();
-                if (filename == cleanupTracker) {
-                    continue;
-                } else if (filename.string().size() != 32) {
+                if (filename.string().size() != 32) {
                     pcache->m_spilog.warn("skipping unexpected filename (%s)", filename.c_str());
                     continue;
                 }
