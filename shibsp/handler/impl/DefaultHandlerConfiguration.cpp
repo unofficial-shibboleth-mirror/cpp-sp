@@ -103,8 +103,9 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
 
         // Save off a single SessionInitiator.
         if (*type == SESSION_INITIATOR_HANDLER) {
-            m_sessionInitiator = handler.get();
-        } else if (*type == TOKEN_CONSUMER_HANDLER) {
+            m_sessionInitiator = m_handlerMap[handlerPath].get();
+        }
+        else if (*type == TOKEN_CONSUMER_HANDLER) {
             DDF tokenConsumer(nullptr);
             // String value of DDF is the handler location.
             tokenConsumer.string(handlerPath.c_str());
@@ -145,7 +146,7 @@ const Handler& DefaultHandlerConfiguration::getSessionInitiator() const
     if (m_sessionInitiator) {
         return *m_sessionInitiator;
     }
-    throw runtime_error("No SessionInitiator configured?");
+    throw ConfigurationException("No SessionInitiator configured.");
 }
 
 DDF DefaultHandlerConfiguration::getTokenConsumerInfo(const char* handlerURL) const
