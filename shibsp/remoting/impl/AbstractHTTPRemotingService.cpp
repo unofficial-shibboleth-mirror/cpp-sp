@@ -91,12 +91,12 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     m_authCachingCookie = props.getString(AUTH_CACHING_COOKIE_PROP_NAME, AUTH_CACHING_COOKIE_PROP_DEFAULT);
     if (!m_authCachingCookie.empty()) {
 #if defined(HAVE_CXX17)
-            m_authcachelock.reset(new shared_mutex());
+        m_authcachelock.reset(new shared_mutex());
 #elif defined(HAVE_CXX14)
-            m_lock.reset(new shared_timed_mutex());
+        m_lock.reset(new shared_timed_mutex());
 #else
         Category::getInstance(SHIBSP_LOGCAT ".RemotingService").warn(
-            "disabling agent authentication caching due to older C++ compiler");
+            "disabling agent authentication caching due to age of C++ compiler used");
         m_authCachingCookie.clear();
 #endif
     }
@@ -118,6 +118,9 @@ DDF AbstractHTTPRemotingService::send(const DDF& in) const
                 lock_guard<shared_timed_mutex> locker(*m_authcachelock);
 #endif
                 m_authCachingValue = latestValue;
+            }
+            else {
+                m_authcachelock->unlock_shared();
             }
         }
     }

@@ -221,20 +221,20 @@ CURL* CurlHTTPRemotingService::checkout() const
 {
     m_log.debug("getting connection handle");
 
-    m_lock.lock();
+    unique_lock<mutex> locker(m_lock);
 
     // If a free connection exists, return it.
     if (!m_pool.empty()) {
         CURL* m_handle = m_pool.back();
         m_pool.pop_back();
         m_poolsize--;
-        m_lock.unlock();
+        locker.unlock();
         attachCachedAuthentication(m_handle);
         m_log.debug("returning existing connection handle from pool");
         return m_handle;
     }
 
-    m_lock.unlock();
+    locker.unlock();
     m_log.debug("nothing free in pool, returning new connection handle");
 
     // Create a new connection and set non-varying options.
@@ -292,7 +292,7 @@ CURL* CurlHTTPRemotingService::checkout() const
 
 void CurlHTTPRemotingService::checkin(CURL* handle) const
 {
-    m_lock.lock();
+    unique_lock<mutex> locker(m_lock);
     m_pool.push_back(handle);
 
     CURL* killit=nullptr;
@@ -302,7 +302,7 @@ void CurlHTTPRemotingService::checkin(CURL* handle) const
         m_pool.pop_front();
         m_poolsize--;
     }
-    m_lock.unlock();
+    locker.unlock();
 
     if (killit) {
         curl_easy_cleanup(killit);
