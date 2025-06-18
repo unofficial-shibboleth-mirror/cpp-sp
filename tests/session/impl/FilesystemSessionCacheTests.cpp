@@ -128,7 +128,7 @@ BOOST_FIXTURE_TEST_CASE(FilesystemSessionCache_tests, FilesystemFixture)
     string cookieName("__Host-shibsession_73702e6578616d706c652e6f7267637573746f6d");
     string header(cookieName);
     header += '=' + key;
-    header += "; max-age=-1; path=/; secure=1; HttpOnly=1; SameSite=None";
+    header += "; Path=/; Secure=1; HttpOnly=1; SameSite=None";
     BOOST_CHECK_EQUAL(request.m_responseHeaders["Set-Cookie"], header);
 
     string cookie(cookieName);
@@ -147,7 +147,7 @@ BOOST_FIXTURE_TEST_CASE(FilesystemSessionCache_tests, FilesystemFixture)
     cache->remove(request);
 
     header = cookieName;
-    header += "=; max-age=0; path=/; secure=1; HttpOnly=1; SameSite=None";
+    header += "=; Max-Age=0; Path=/; Secure=1; HttpOnly=1; SameSite=None";
     BOOST_CHECK_EQUAL(request.m_responseHeaders["Set-Cookie"], header);
     
     session = cache->find("custom", key.c_str());

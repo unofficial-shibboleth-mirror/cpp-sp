@@ -139,23 +139,24 @@ void CookieManager::outputHeader(SPRequest& request, const char* value, int maxA
     if (value) {
         header += value;
     }
-    header += "; max-age=";
-    try {
-        header += boost::lexical_cast<string>(maxAge);
-    }
-    catch (boost::bad_lexical_cast&) {
-        header += "-1";
+    if (maxAge >= 0) {
+        try {
+            string s = boost::lexical_cast<string>(maxAge);
+            header += "; Max-Age=" + s;
+        }
+        catch (boost::bad_lexical_cast&) {
+        }
     }
     if (!m_path.empty()) {
-        header += "; path=";
+        header += "; Path=";
         header += m_path;
     }
     if (!m_domain.empty()) {
-        header += "; domain=";
+        header += "; Domain=";
         header += m_domain;
     }
     if (m_secure) {
-        header += "; secure=1";
+        header += "; Secure=1";
     }
     if (m_httpOnly) {
         header += "; HttpOnly=1";

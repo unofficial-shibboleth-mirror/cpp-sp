@@ -109,7 +109,11 @@ namespace shibsp {
         void setDomain(const char* domain);
 
         /**
-         * Sets the default max-age for cookies created by this object.
+         * Sets the default max-age for cookies created by this object, or
+         * a -1 to inndicate a per-session cookie.
+         * 
+         * <p>The -1 convention matches Java's API but is not literally what
+         * the code does, it's a signal to omit max-age.</p>
          * 
          * <p>Defaults to -1.</p>
          * 
