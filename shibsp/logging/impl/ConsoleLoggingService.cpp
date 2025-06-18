@@ -35,6 +35,7 @@ namespace shibsp {
     class ConsoleLoggingService : public virtual AbstractLoggingService {
     public:
         ConsoleLoggingService(const ptree& pt);
+        virtual ~ConsoleLoggingService() {}
 
         void outputMessage(const Category& category, Priority::Value prio, const string& message) {
             outputMessage(category, prio, message.c_str());

@@ -135,6 +135,7 @@
     <ClCompile Include="..\..\shibsp\logging\impl\AbstractLoggingService.cpp" />
     <ClCompile Include="..\..\shibsp\logging\impl\Category.cpp" />
     <ClCompile Include="..\..\shibsp\logging\impl\ConsoleLoggingService.cpp" />
+    <ClCompile Include="..\..\shibsp\logging\impl\FileLoggingService.cpp" />
     <ClCompile Include="..\..\shibsp\logging\impl\Priority.cpp" />
     <ClCompile Include="..\..\shibsp\logging\impl\StringUtil.cpp">
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>

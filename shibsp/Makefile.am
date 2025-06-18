@@ -130,6 +130,7 @@ libshibsp_la_SOURCES = \
 	logging/impl/AbstractLoggingService.cpp \
 	logging/impl/Category.cpp \
 	logging/impl/ConsoleLoggingService.cpp \
+	logging/impl/FileLoggingService.cpp \
 	logging/impl/Priority.cpp \
 	logging/impl/StringUtil.cpp \
 	logging/impl/SyslogLoggingService.cpp \
@@ -188,7 +189,9 @@ EXTRA_DIST = \
 	config_pub_win32.h\
 	paths.h.in \
 	resource.h \
-	shibsp.rc
+	shibsp.rc \
+	logging/impl/WindowsLoggingService.cpp \
+	remoting/impl/WinHTTPRemotingService.cpp
 
 BUILT_SOURCES = paths.h
 

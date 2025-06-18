@@ -71,6 +71,9 @@ namespace shibsp {
     /** Logging to the console. */
     #define CONSOLE_LOGGING_SERVICE     "console"
 
+    /** Logging to a file. */
+    #define FILE_LOGGING_SERVICE     "file"
+
     /** Logging to the syslog API. */
     #define SYSLOG_LOGGING_SERVICE      "syslog"
 

@@ -40,6 +40,7 @@ namespace shibsp {
     };
 
     extern LoggingService* SHIBSP_DLLLOCAL ConsoleLoggingServiceFactory(ptree& pt, bool);
+    extern LoggingService* SHIBSP_DLLLOCAL FileLoggingServiceFactory(ptree& pt, bool);
 #ifdef WIN32
     extern LoggingService* SHIBSP_DLLLOCAL WindowsLoggingServiceFactory(ptree& pt, bool);
 #else
@@ -51,6 +52,7 @@ void SHIBSP_API shibsp::registerLoggingServices()
 {
     AgentConfig& conf=AgentConfig::getConfig();
     conf.LoggingServiceManager.registerFactory(CONSOLE_LOGGING_SERVICE, ConsoleLoggingServiceFactory);
+    conf.LoggingServiceManager.registerFactory(FILE_LOGGING_SERVICE, FileLoggingServiceFactory);
 #ifdef WIN32
     conf.LoggingServiceManager.registerFactory(WINDOWS_LOGGING_SERVICE, WindowsLoggingServiceFactory);
 #else

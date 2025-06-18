@@ -290,6 +290,9 @@
     <ClCompile Include="..\..\shibsp\logging\impl\ConsoleLoggingService.cpp">
       <Filter>Source Files\Logging</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\shibsp\logging\impl\FileLoggingService.cpp">
+      <Filter>Source Files\Logging</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\shibsp\logging\impl\Priority.cpp">
       <Filter>Source Files\Logging</Filter>
     </ClCompile>
