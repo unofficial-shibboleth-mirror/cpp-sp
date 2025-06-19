@@ -32,7 +32,7 @@
 #include <ctime>
 #include <sstream>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/algorithm/string.hpp>>
+#include <boost/algorithm/string.hpp>
 
 using namespace shibsp;
 using namespace boost::property_tree;
