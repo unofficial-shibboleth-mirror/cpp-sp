@@ -99,6 +99,9 @@ namespace shibsp {
          * @return modification time or 0 if unable
          */
         static time_t getModificationTime(const char* path);
+#if WIN32
+        static time_t getModificationTime(const wchar_t* path);
+#endif
     };
 
     /**

@@ -34,11 +34,12 @@
 # include <filesystem>
 #endif
 
+#include <fcntl.h>
+
 #ifdef WIN32
-# define _utime utime
 # include <sys/utime.h>
+# include <io.h>
 #else
-# include <fcntl.h>
 # include <utime.h>
 # include <signal.h>
 # ifdef HAVE_PTHREAD
@@ -460,15 +461,24 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
                 // into a time_t. So we'll have to use our helper via stat to obtain the
                 // timestamp.
 
-                const char* pathname = dir_entry.path().c_str();
+                auto* pathname = dir_entry.path().c_str();
                 time_t modified = FileSupport::getModificationTime(pathname);
                 if (modified > 0 && now - modified > fileTimeout) {
+#ifdef WIN32
+                    if (_wremove(pathname) == 0) {
+                        pcache->m_spilog.info("removed stale session file (%S)", pathname);
+                    }
+                    else {
+                        pcache->m_spilog.info("error removing stale session file (%S), errno=%d", pathname, errno);
+                    }
+#else
                     if (std::remove(pathname) == 0) {
                         pcache->m_spilog.info("removed stale session file (%s)", pathname);
                     }
                     else {
                         pcache->m_spilog.info("error removing stale session file (%s), errno=%d", pathname, errno);
                     }
+#endif
                 }
             } 
         }

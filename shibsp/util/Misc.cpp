@@ -81,3 +81,14 @@ time_t FileSupport::getModificationTime(const char* path)
 #endif
     return 0;
 }
+
+#ifdef WIN32
+time_t FileSupport::getModificationTime(const wchar_t* path)
+{
+    struct _stat stat_buf;
+    if (_wstat(path, &stat_buf) == 0) {
+        return stat_buf.st_mtime;
+    }
+    return 0;
+}
+#endif
