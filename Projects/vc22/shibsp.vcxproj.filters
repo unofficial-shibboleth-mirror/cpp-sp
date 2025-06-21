@@ -231,6 +231,18 @@
     <ClInclude Include="..\..\shibsp\util\Date.h">
       <Filter>Header Files\Impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shibsp\csprng\csprng.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\session\SessionCacheSPI.h">
+      <Filter>Header Files\Session</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\csprng\is_iterable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\csprng\csprng.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\shibsp\handler\impl\AbstractHandler.cpp">
@@ -391,6 +403,9 @@
     </ClCompile>
     <ClCompile Include="..\..\shibsp\attribute\impl\DefaultAttributeConfiguration.cpp">
       <Filter>Source Files\Attribute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\csprng\impl\csprng.cpp">
+      <Filter>Source Files\Impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
