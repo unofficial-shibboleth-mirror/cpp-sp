@@ -271,7 +271,7 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
         m_log.debug("writing new session to persistent store");
         key = cache_create(&request, session);
     }
-    catch (const exception& ex) {
+    catch (const exception&) {
         // Should be logged by the SPI.
         session.destroy();
         throw;
@@ -401,7 +401,7 @@ unique_lock<Session> AbstractSessionCache::_find(
         // Note this performs the relevant enforcement for us.
         obj = cache_read(request, applicationId, key, lifetime, timeout, client_addr);
     }
-    catch (const exception& ex) {
+    catch (const exception&) {
         // Should be logged by the SPI.
         return unique_lock<Session>();
     }
@@ -460,7 +460,7 @@ void AbstractSessionCache::remove(SPRequest& request)
     try {
         cache_remove(&request, key);
     }
-    catch (const exception& ex) {
+    catch (const exception&) {
         // Should be logged by the SPI.
     }
     m_cookieManager->unsetCookie(request);
@@ -657,7 +657,7 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
                     return false;
                 }
             }
-            catch (const exception& ex) {
+            catch (const exception&) {
                 // Should be logged by the SPI.
                 return false;
             }
@@ -674,7 +674,7 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
                 return false;
             }
         }
-        catch (const exception& ex) {
+        catch (const exception&) {
             // Should be logged by the SPI.
             return false;
         }
