@@ -149,7 +149,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;crypt32.lib;Winhttp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\shibsp</AdditionalIncludeDirectories>
@@ -176,7 +176,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;crypt32.lib;Winhttp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
       <PreprocessorDefinitions>
@@ -200,7 +200,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;crypt32.lib;Winhttp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
       <PreprocessorDefinitions>
@@ -224,7 +224,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;crypt32.lib;Winhttp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\shibsp</AdditionalIncludeDirectories>
@@ -251,7 +251,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;crypt32.lib;Winhttp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
       <PreprocessorDefinitions>
@@ -279,7 +279,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shibsp.lib;libhttpd.lib;libapr-1.lib;libaprutil-1.lib;crypt32.lib;Winhttp.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\shibsp</AdditionalIncludeDirectories>
