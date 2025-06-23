@@ -76,7 +76,6 @@ sessioninclude_HEADERS = \
 utilinclude_HEADERS = \
 	util/BoostPropertySet.h \
 	util/CGIParser.h \
-	util/IPRange.h \
 	util/Lockable.h \
 	util/PathResolver.h \
 	util/PluginManager.h \
@@ -96,6 +95,8 @@ noinst_HEADERS = \
 	remoting/impl/AbstractRemotingService.h \
 	remoting/impl/AbstractHTTPRemotingService.h \
         util/Date.h \
+	util/DirectoryWalker.h \
+	util/IPRange.h \
 	util/Misc.h
 
 libshibsp_la_SOURCES = \
@@ -146,6 +147,7 @@ libshibsp_la_SOURCES = \
 	session/impl/MemorySessionCache.cpp \
 	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
+	util/DirectoryWalker.cpp \
 	util/IPRange.cpp \
 	util/Misc.cpp \
 	util/PathResolver.cpp \

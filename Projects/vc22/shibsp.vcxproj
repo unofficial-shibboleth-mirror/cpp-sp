@@ -72,6 +72,7 @@
     <ClInclude Include="..\..\shibsp\util\BoostPropertySet.h" />
     <ClInclude Include="..\..\shibsp\util\CGIParser.h" />
     <ClInclude Include="..\..\shibsp\util\Date.h" />
+    <ClInclude Include="..\..\shibsp\util\DirectoryWalker.h" />
     <ClInclude Include="..\..\shibsp\util\IPRange.h" />
     <ClInclude Include="..\..\shibsp\util\Lockable.h" />
     <ClInclude Include="..\..\shibsp\util\Misc.h" />
@@ -192,6 +193,7 @@
     <ClCompile Include="..\..\shibsp\session\impl\MemorySessionCache.cpp" />
     <ClCompile Include="..\..\shibsp\util\BoostPropertySet.cpp" />
     <ClCompile Include="..\..\shibsp\util\CGIParser.cpp" />
+    <ClCompile Include="..\..\shibsp\util\DirectoryWalker.cpp" />
     <ClCompile Include="..\..\shibsp\util\IPRange.cpp" />
     <ClCompile Include="..\..\shibsp\util\Misc.cpp" />
     <ClCompile Include="..\..\shibsp\util\PathResolver.cpp" />

@@ -150,9 +150,6 @@
     <ClInclude Include="..\..\shibsp\util\CGIParser.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\shibsp\util\IPRange.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\shibsp\util\Lockable.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
@@ -230,6 +227,12 @@
     </ClInclude>
     <ClInclude Include="..\..\shibsp\util\Date.h">
       <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\DirectoryWalker.h">
+      <Filter>Header Files\Impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\util\IPRange.h">
+      <Filter>Header Files\Util</Filter>
     </ClInclude>
     <ClInclude Include="..\..\shibsp\csprng\csprng.h">
       <Filter>Header Files</Filter>
@@ -318,6 +321,9 @@
       <Filter>Source Files\Util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\util\CGIParser.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\util\DirectoryWalker.cpp">
       <Filter>Source Files\Util</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\util\IPRange.cpp">
