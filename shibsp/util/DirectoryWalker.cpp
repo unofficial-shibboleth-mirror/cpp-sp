@@ -59,8 +59,8 @@ void DirectoryWalker::_walk(
         searchpath += endsWith;
     m_log.debug("searching path (%s)", searchpath.c_str());
 
-    WIN32_FIND_DATA f;
-    HANDLE h = FindFirstFile(searchpath.c_str(), &f);
+    WIN32_FIND_DATAA f;
+    HANDLE h = FindFirstFileA(searchpath.c_str(), &f);
     if (h == INVALID_HANDLE_VALUE) {
         if (GetLastError() != ERROR_FILE_NOT_FOUND)
             m_log.warn("Unable to open directory (%s)", path);
@@ -92,7 +92,7 @@ void DirectoryWalker::_walk(
                 m_log.warn("unable to access (%s)", fullname.c_str());
             }
         }
-    } while (FindNextFile(h, &f));
+    } while (FindNextFileA(h, &f));
     FindClose(h);
 #else
     DIR* d = opendir(path);
