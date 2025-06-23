@@ -349,7 +349,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -368,7 +368,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -387,7 +387,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -404,7 +404,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -423,7 +423,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -444,7 +444,7 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <DisableSpecificWarnings>4275</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
