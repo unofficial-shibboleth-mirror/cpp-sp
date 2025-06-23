@@ -321,7 +321,7 @@ unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTi
 
     const auto& settings = request.getRequestSettings().first;
 
-    const char* applicationId = settings->getString(RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_NAME);
+    const char* applicationId = settings->getString(RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT);
     unsigned int lifetime = settings->getUnsignedInt(RequestMapper::LIFETIME_PROP_NAME, RequestMapper::LIFETIME_PROP_DEFAULT);
     unsigned int timeout = 0;
     if (checkTimeout) {
