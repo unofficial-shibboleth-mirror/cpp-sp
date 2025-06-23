@@ -351,12 +351,6 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
     <Lib>
       <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
     </Lib>
@@ -373,14 +367,6 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
     <Lib>
       <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
     </Lib>
@@ -395,12 +381,6 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
     <Lib>
       <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
     </Lib>
@@ -415,12 +395,6 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
     <Lib>
       <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
     </Lib>
@@ -437,14 +411,6 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
     <Lib>
       <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
     </Lib>
@@ -461,14 +427,6 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <LanguageStandard>stdcpp17</LanguageStandard>
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
     <Lib>
       <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
     </Lib>
