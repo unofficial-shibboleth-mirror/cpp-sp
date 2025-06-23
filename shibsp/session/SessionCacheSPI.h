@@ -13,9 +13,9 @@
  */
 
 /**
- * @file shibsp/SessionCache.h
+ * @file shibsp/SessionCacheSPI.h
  *
- * Caches and manages user sessions.
+ * Interface to Back end implementation of session caches.
  */
 
 #ifndef __shibsp_sessioncache_spi_h__
