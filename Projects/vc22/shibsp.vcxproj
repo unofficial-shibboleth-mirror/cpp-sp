@@ -249,39 +249,39 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -357,6 +357,9 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -378,6 +381,9 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -395,6 +401,9 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
@@ -412,6 +421,9 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -433,6 +445,9 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <ClCompile>
@@ -454,6 +469,9 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>crypt32.lib;Winhttp.lib;Ws2_32.lib;$(IntDir)\NativeEventLog.res;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

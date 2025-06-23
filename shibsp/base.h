@@ -30,8 +30,8 @@
 
 // Windows and GCC4 Symbol Visibility Macros
 #ifdef WIN32
-  #define SHIBSP_IMPORT __declspec(dllimport)
-  #define SHIBSP_EXPORT __declspec(dllexport)
+  #define SHIBSP_IMPORT
+  #define SHIBSP_EXPORT
   #define SHIBSP_DLLLOCAL
   #define SHIBSP_DLLPUBLIC
 #else
