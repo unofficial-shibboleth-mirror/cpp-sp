@@ -89,4 +89,5 @@ void FileLoggingService::outputMessage(const Category& category, Priority::Value
         << endl;
     
     m_out << sink.str();
+    m_out.flush();
 }
