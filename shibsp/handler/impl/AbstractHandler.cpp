@@ -48,18 +48,17 @@ using namespace std;
 #endif
 
 namespace shibsp {
-    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2ConsumerFactory;
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutFactory;
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AttributeCheckerFactory;
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory MetadataGeneratorFactory;
-    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionHandlerFactory;
 
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AdminLogoutInitiatorFactory;
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutInitiatorFactory;
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LocalLogoutInitiatorFactory;
 
-    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionInitiatorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionHandlerFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory StatusHandlerFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionInitiatorFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory TokenConsumerFactory;
 
 
@@ -86,9 +85,6 @@ void SHIBSP_API shibsp::registerHandlers()
 
     //conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
     //conf.HandlerManager.registerFactory(METADATA_GENERATOR_HANDLER, MetadataGeneratorFactory);
-    //conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
-
-    //conf.HandlerManager.registerFactory(SAML20_ASSERTION_CONSUMER_SERVICE, SAML2ConsumerFactory);
  
     //conf.HandlerManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
 
@@ -96,8 +92,9 @@ void SHIBSP_API shibsp::registerHandlers()
     //conf.HandlerManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
     //conf.HandlerManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
 
-    conf.HandlerManager.registerFactory(SESSION_INITIATOR_HANDLER, SessionInitiatorFactory);
     conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
+    conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
+    conf.HandlerManager.registerFactory(SESSION_INITIATOR_HANDLER, SessionInitiatorFactory);
     conf.HandlerManager.registerFactory(TOKEN_CONSUMER_HANDLER, TokenConsumerFactory);
 } 
 
