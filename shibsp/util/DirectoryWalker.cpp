@@ -115,7 +115,7 @@ void DirectoryWalker::_walk(
             }
         }
 
-        string fullname = string(path) + '/' + entptr->d_name;
+        string fullname = string(path) + entptr->d_name;
         struct stat stat_buf;
         if (stat(fullname.c_str(), &stat_buf) != 0) {
             m_log.warn("unable to access (%s)", fullname.c_str());
