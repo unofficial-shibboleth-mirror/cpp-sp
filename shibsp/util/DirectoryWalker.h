@@ -53,8 +53,8 @@ namespace shibsp {
 
         virtual ~DirectoryWalker();
 
-        /** Callback function, passed the file pathname, stat buffer, and optional callback data. */
-        typedef void (*DirectoryWalkerCallback)(const char* pathname, struct stat& stat_buf, void* data);
+        /** Callback function, passed the path and file names, stat buffer, and optional callback data. */
+        typedef void (*DirectoryWalkerCallback)(const char* pathname, const char* filename, struct stat& stat_buf, void* data);
 
         /**
          * Perform a depth-first traversal of the directory.

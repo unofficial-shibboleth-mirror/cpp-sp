@@ -63,7 +63,7 @@ void DirectoryWalker::_walk(
     HANDLE h = FindFirstFileA(searchpath.c_str(), &f);
     if (h == INVALID_HANDLE_VALUE) {
         if (GetLastError() != ERROR_FILE_NOT_FOUND)
-            m_log.warn("Unable to open directory (%s)", path);
+            m_log.warn("unable to open directory (%s)", path);
         else
             m_log.debug("no matching entries in directory (%s)", path);
         return;
@@ -86,7 +86,7 @@ void DirectoryWalker::_walk(
             struct stat stat_buf;
             if (stat(fullname.c_str(), &stat_buf) == 0) {
                 m_log.debug("invoking callback for file (%s)", fullname.c_str());
-                callback_fn(fullname.c_str(), stat_buf, callback_data);
+                callback_fn(fullname.c_str(), f.cFileName, stat_buf, callback_data);
             }
             else {
                 m_log.warn("unable to access (%s)", fullname.c_str());
@@ -97,15 +97,16 @@ void DirectoryWalker::_walk(
 #else
     DIR* d = opendir(path);
     if (!d) {
-        m_log.warn("Unable to open directory (%s)", path);
+        m_log.warn("unable to open directory (%s)", path);
         return;
     }
     char dir_buf[sizeof(struct dirent) + PATH_MAX];
     struct dirent* ent = (struct dirent*)dir_buf;
     struct dirent* entptr = nullptr;
     while (readdir_r(d, ent, &entptr) == 0 && entptr) {
-        if (!strcmp(entptr->d_name, ".") || !strcmp(entptr->d_name, ".."))
+        if (!strcmp(entptr->d_name, ".") || !strcmp(entptr->d_name, "..")) {
             continue;
+        }
         else if (startsWith || endsWith) {
             string fname(entptr->d_name);
             if ((startsWith && !boost::algorithm::starts_with(fname, startsWith)) ||
@@ -130,7 +131,7 @@ void DirectoryWalker::_walk(
         }
         else {
             m_log.debug("invoking callback for file (%s)", fullname.c_str());
-            callback_fn(fullname.c_str(), stat_buf, callback_data);
+            callback_fn(fullname.c_str(), entptr->d_name, stat_buf, callback_data);
         }
     }
     closedir(d);

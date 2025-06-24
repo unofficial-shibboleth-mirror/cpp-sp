@@ -25,14 +25,11 @@
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
 #include "util/Date.h"
+#include "util/DirectoryWalker.h"
 #include "util/Misc.h"
 #include "util/PathResolver.h"
 
-#include <cstdio>
 #include <fstream>
-#ifdef HAVE_CXX17
-# include <filesystem>
-#endif
 
 #include <fcntl.h>
 
@@ -77,15 +74,16 @@ namespace {
         void cache_remove(SPRequest* request, const char* key);
 
     private:
-#ifdef HAVE_CXX17
         static void* file_cleanup_fn(void*);
-        condition_variable m_file_cleanup_wait;
-        thread m_file_cleanup_thread;
-#endif
+        static void file_cleanup_callback(const char* pathname, const char* filename, struct stat& stat_buf, void* data);
+        
         Category& m_spilog;
         string m_dir;
         duthomhas::csprng m_rng;
         time_t m_cleanupInterval;
+        unsigned int m_fileTimeout;
+        condition_variable m_file_cleanup_wait;
+        thread m_file_cleanup_thread;
     };
 
     static const char CACHE_DIRECTORY_PROP_NAME[] = "cacheDirectory";
@@ -145,11 +143,7 @@ FilesystemSessionCache::FilesystemSessionCache(const ptree& pt)
 
     m_cleanupInterval = getUnsignedInt(FILE_CLEANUP_INTERVAL_PROP_NAME, FILE_CLEANUP_INTERVAL_PROP_DEFAULT);
     if (m_cleanupInterval) {
-#ifndef HAVE_CXX17
-        m_spilog.warn("file cleanup thread disabled, C++17 build required");
-        m_cleanupInterval = 0;
-        return;
-#endif
+        m_fileTimeout = getUnsignedInt(FILE_TIMEOUT_PROP_NAME, FILE_TIMEOUT_PROP_DEFAULT);
     }
     else {
         m_spilog.info("%s was zero, disabling file cleanup thread", FILE_CLEANUP_INTERVAL_PROP_NAME);
@@ -360,8 +354,6 @@ void FilesystemSessionCache::cache_remove(SPRequest* request, const char* key)
     }
 }
 
-#ifdef HAVE_CXX17
-
 void* FilesystemSessionCache::file_cleanup_fn(void* p)
 {
     FilesystemSessionCache* pcache = reinterpret_cast<FilesystemSessionCache*>(p);
@@ -374,7 +366,6 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
 #endif
 
     // Load our configuration details...
-    unsigned int fileTimeout = pcache->getUnsignedInt(FILE_TIMEOUT_PROP_NAME, FILE_TIMEOUT_PROP_DEFAULT);
     string cleanupTracker = pcache->m_dir + pcache->getString(
         FILE_CLEANUP_TRACKING_FILE_PROP_NAME, FILE_CLEANUP_TRACKING_FILE_PROP_DEFAULT);
 
@@ -407,7 +398,7 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
     unique_lock lock(internal_mutex);
 
     pcache->m_spilog.info("file cleanup thread started...run every %u secs, purge after %u seconds of disuse",
-        pcache->m_cleanupInterval, fileTimeout);
+        pcache->m_cleanupInterval, pcache->m_fileTimeout);
 
     while (!pcache->isShutdown()) {
         pcache->m_file_cleanup_wait.wait_for(lock, chrono::seconds(pcache->m_cleanupInterval));
@@ -439,48 +430,9 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
             continue;
         }
 
-        // While there are warnings all over the place about the C++17 filesystem APIs,
-        // I am suspecting that for our purposes the issues won't matter much.
-        // Admittedly, sticking a symlink into the directory could fool this into
-        // blowing away lots of content the agent can write to. Maybe don't do that?
-
         try {
-            for (auto& dir_entry : filesystem::directory_iterator{pcache->m_dir}) {
-                if (!dir_entry.is_regular_file() || dir_entry.path() == cleanupTracker) {
-                    continue;
-                }
-                
-                auto filename = dir_entry.path().filename();
-                if (filename.string().size() != 32) {
-                    pcache->m_spilog.warn("skipping unexpected filename (%s)", filename.c_str());
-                    continue;
-                }
-
-                // C++17 is indeed so messy that it didn't specify the filesystem epoch be
-                // the system clock, so it's non-portable to convert the last_write_time
-                // into a time_t. So we'll have to use our helper via stat to obtain the
-                // timestamp.
-
-                auto* pathname = dir_entry.path().c_str();
-                time_t modified = FileSupport::getModificationTime(pathname);
-                if (modified > 0 && now - modified > fileTimeout) {
-#ifdef WIN32
-                    if (_wremove(pathname) == 0) {
-                        pcache->m_spilog.info("removed stale session file (%S)", pathname);
-                    }
-                    else {
-                        pcache->m_spilog.info("error removing stale session file (%S), errno=%d", pathname, errno);
-                    }
-#else
-                    if (std::remove(pathname) == 0) {
-                        pcache->m_spilog.info("removed stale session file (%s)", pathname);
-                    }
-                    else {
-                        pcache->m_spilog.info("error removing stale session file (%s), errno=%d", pathname, errno);
-                    }
-#endif
-                }
-            } 
+            DirectoryWalker dirWalker(pcache->m_spilog, pcache->m_dir.c_str());
+            dirWalker.walk(&file_cleanup_callback, p);
         }
         catch (const exception& e) {
             pcache->m_spilog.error("caught exception during cleanup: %s", e.what());
@@ -494,4 +446,24 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
     return nullptr;
 }
 
-#endif
+void FilesystemSessionCache::file_cleanup_callback(
+    const char* pathname, const char* filename, struct stat& stat_buf, void* data
+    )
+{
+    FilesystemSessionCache* pcache = reinterpret_cast<FilesystemSessionCache*>(data);
+
+    if (strlen(filename) != 32) {
+        pcache->m_spilog.warn("skipping unexpected filename (%s)", filename);
+        return;
+    }
+
+    if (stat_buf.st_mtime > 0 && time(nullptr) - stat_buf.st_mtime > pcache->m_fileTimeout) {
+        if (std::remove(pathname) == 0) {
+            pcache->m_spilog.info("removed stale session file (%s)", filename);
+        }
+        else {
+            pcache->m_spilog.info("error removing stale session file (%s), errno=%d", filename, errno);
+        }
+    }
+
+}
