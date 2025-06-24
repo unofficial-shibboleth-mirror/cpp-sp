@@ -251,8 +251,8 @@ DDF FilesystemSessionCache::cache_read(
             if (m_spilog.isInfoEnabled()) {
                 string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(lastAccess)));
                 m_spilog.info("session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
-                cache_remove(request, key);
             }
+            cache_remove(request, key);
             return obj;
         }
     }
@@ -266,10 +266,10 @@ DDF FilesystemSessionCache::cache_read(
         return obj;
     }
 
-    const char* appId = obj["appId"].string();
+    const char* appId = obj["app_id"].string();
     if (strcmp(applicationId, appId)) {
-        obj.destroy();
         m_spilog.warn("session (%s) issued for application (%s), accessed via application (%s)", key, appId, applicationId);
+        obj.destroy();
         return obj;
     }
 
@@ -277,8 +277,8 @@ DDF FilesystemSessionCache::cache_read(
     if (client_addr) {
         const char* addr = obj["addr"].string();
         if (addr && strcmp(client_addr, addr)) {
-            obj.destroy();
             m_spilog.info("session (%s) invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
+            obj.destroy();
             cache_remove(request, key);
             return obj;
         }
