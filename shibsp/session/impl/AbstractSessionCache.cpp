@@ -114,7 +114,7 @@ bool AbstractSessionCache::isSessionDataValid(DDF& sessionData)
         return false;
     }
 
-    if (sessionData["ts"].longinteger() < 0) {
+    if (sessionData["ts"].longinteger() <= 0) {
         return false;
     }
 
