@@ -59,8 +59,7 @@ namespace shibsp {
     }
 };
 
-LocalLogoutInitiator::LocalLogoutInitiator(const ptree& pt)
-    : AbstractHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.Local"))
+LocalLogoutInitiator::LocalLogoutInitiator(const ptree& pt) : AbstractHandler(pt)
 {
 }
 
@@ -77,7 +76,7 @@ pair<bool,long> LocalLogoutInitiator::run(SPRequest& request, bool isHandler) co
         session = request.getSession(false, true);  // don't cache it and ignore all checks
     }
     catch (const std::exception& ex) {
-        m_log.error("error accessing current session: %s", ex.what());
+        request.error(string("error accessing current session: ") + ex.what());
     }
 
     if (session) {

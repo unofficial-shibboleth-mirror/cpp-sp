@@ -31,8 +31,8 @@ using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
 
-SecuredHandler::SecuredHandler(const ptree& pt, Category& log, const char* aclProperty, const char* defaultACL)
-    : AbstractHandler(pt, log)
+SecuredHandler::SecuredHandler(const ptree& pt, const char* aclProperty, const char* defaultACL)
+    : AbstractHandler(pt)
 {
     const char* acl = getString(aclProperty, defaultACL);
     if (acl) {
@@ -41,7 +41,7 @@ SecuredHandler::SecuredHandler(const ptree& pt, Category& log, const char* aclPr
         for_each(aclarray.begin(), aclarray.end(), [this](const string& s){parseACL(s);});
 
         if (m_acl.empty()) {
-            m_log.warn("invalid CIDR range(s) in handler's acl property, allowing 127.0.0.1 and ::1 as a fall back");
+            Category::getInstance(SHIBSP_LOGCAT "Handler").warn("invalid CIDR range(s) in handler's acl property, allowing 127.0.0.1 and ::1 as a fall back");
             m_acl.push_back(IPRange::parseCIDRBlock("127.0.0.1"));
             m_acl.push_back(IPRange::parseCIDRBlock("::1"));
         }
@@ -57,8 +57,8 @@ void SecuredHandler::parseACL(const string& acl)
     try {
         m_acl.push_back(IPRange::parseCIDRBlock(acl.c_str()));
     }
-    catch (exception& ex) {
-        m_log.error("invalid CIDR block (%s): %s", acl.c_str(), ex.what());
+    catch (const exception& ex) {
+        Category::getInstance(SHIBSP_LOGCAT "Handler").error("invalid CIDR block (%s): %s", + acl.c_str(), ex.what());
     }
 }
 

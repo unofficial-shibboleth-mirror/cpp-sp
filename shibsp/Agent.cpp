@@ -85,7 +85,7 @@ long Agent::handleError(Category& log, SPRequest& request, const Session* sessio
             richEx->log(request);
         }
         else {
-            request.log(Priority::SHIB_ERROR, ex->what());
+            request.error(ex->what());
         }
     }
 
@@ -97,7 +97,7 @@ long Agent::handleError(Category& log, SPRequest& request, const Session* sessio
             redirectErrors = settings.first->getString("redirectErrors");
     }
     catch (const exception& nested) {
-        request.log(Priority::SHIB_ERROR, nested.what());
+        request.error(nested.what());
     }
 
     // Check for redirection on errors.

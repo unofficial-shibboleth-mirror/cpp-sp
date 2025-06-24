@@ -69,8 +69,7 @@ namespace shibsp {
 
 };
 
-SessionHandler::SessionHandler(const ptree& pt)
-    : SecuredHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.Session")), m_values(false)
+SessionHandler::SessionHandler(const ptree& pt) : SecuredHandler(pt), m_values(false)
 {
     m_contentType = getString("contentType", "");
     if (!m_contentType.empty() && m_contentType != "application/json" && m_contentType != "text/html")
@@ -145,7 +144,7 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
         }
     }
     catch (const exception& ex) {
-        m_log.info("exception accessing user session: %s", ex.what());
+        request.info(string("exception accessing user session: ") + ex.what());
         s << "{}" << endl;
         return make_pair(true, request.sendError(s));
     }

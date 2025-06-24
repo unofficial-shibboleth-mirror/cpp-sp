@@ -172,6 +172,12 @@ namespace shibsp {
          */
         virtual void log(Priority::Value level, const std::string& msg) const=0;
 
+        void debug(const std::string& msg) const;
+        void info(const std::string& msg) const;
+        void warn(const std::string& msg) const;
+        void error(const std::string& msg) const;
+        void crit(const std::string& msg) const;
+
         /**
          * Test logging level.
          *

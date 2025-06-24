@@ -43,13 +43,11 @@ namespace shibsp {
          * Constructor
          * 
          * @param e             DOM element to load as property set
-         * @param log           logging category to use
          * @param aclProperty   name of IP/CIDR ACL property
          * @param defaultACL    IP/CIDR ACL to apply if no acl property is set
          */
         SecuredHandler(
             const boost::property_tree::ptree& pt,
-            Category& log,
             const char* aclProperty="acl",
             const char* defaultACL=nullptr
             );

@@ -62,8 +62,7 @@ namespace shibsp {
     }
 };
 
-AdminLogoutInitiator::AdminLogoutInitiator(const ptree& pt)
-    : SecuredHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".LogoutInitiator.Admin"))
+AdminLogoutInitiator::AdminLogoutInitiator(const ptree& pt) : SecuredHandler(pt)
 {
 }
 
@@ -79,7 +78,7 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
     const char* sessionId = request.getParameter("session");
     if (!sessionId || !*sessionId) {
         // Something's horribly wrong.
-        m_log.error("no session parameter supplied for request");
+        request.error("no session parameter supplied for request");
         istringstream msg("NO SESSION PARAMETER");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_BADREQUEST));
     }
@@ -91,7 +90,7 @@ pair<bool,long> AdminLogoutInitiator::run(SPRequest& request, bool isHandler) co
         session = AgentConfig::getConfig().getAgent().getSessionCache()->find(applicationId, sessionId);
     }
     catch (const std::exception& ex) {
-        m_log.error("error accessing designated session: %s", ex.what());
+        request.error(string("error accessing designated session: ") + ex.what());
     }
 
     // With no session, we return a 404 after "revoking" the session just to be safe.

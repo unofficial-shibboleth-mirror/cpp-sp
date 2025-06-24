@@ -436,6 +436,31 @@ bool AbstractSPRequest::isPriorityEnabled(Priority::Value level) const
     return m_log.isPriorityEnabled(level);
 }
 
+void SPRequest::debug(const string& msg) const
+{
+    log(Priority::SHIB_DEBUG, msg);
+}
+
+void SPRequest::info(const string& msg) const
+{
+    log(Priority::SHIB_INFO, msg);
+}
+
+void SPRequest::warn(const string& msg) const
+{
+    log(Priority::SHIB_WARN, msg);
+}
+
+void SPRequest::error(const string& msg) const
+{
+    log(Priority::SHIB_ERROR, msg);
+}
+
+void SPRequest::crit(const string& msg) const
+{
+    log(Priority::SHIB_CRIT, msg);
+}
+
 string AbstractSPRequest::getCGINameForHeader(const char* name) const
 {
     string cgiversion("HTTP_");

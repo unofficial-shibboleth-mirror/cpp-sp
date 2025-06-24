@@ -23,7 +23,6 @@
 #include "Agent.h"
 #include "SPRequest.h"
 #include "handler/SecuredHandler.h"
-#include "logging/Category.h"
 #include "session/SessionCache.h"
 #include "util/CGIParser.h"
 #include "util/Date.h"
@@ -193,8 +192,7 @@ namespace shibsp {
     }
 };
 
-StatusHandler::StatusHandler(const ptree& pt)
-    : SecuredHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.Status"))
+StatusHandler::StatusHandler(const ptree& pt) : SecuredHandler(pt)
 {
 }
 
@@ -235,7 +233,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     }
 
     try {
-        m_log.debug("processing status request");
+        request.debug("processing status request");
 
         stringstream s;
         s << "<StatusHandler time='" << timestamp << "'>"
@@ -259,7 +257,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         return make_pair(true, request.sendResponse(s));
     }
     catch (std::exception& ex) {
-        m_log.error("error while processing request: %s", ex.what());
+        request.error(string("error while processing request: ") + ex.what());
         request.setContentType("text/xml");
         stringstream msg;
         msg << "<StatusHandler time='" << timestamp << "'>"

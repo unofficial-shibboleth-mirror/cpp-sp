@@ -31,7 +31,6 @@
 
 namespace shibsp {
 
-    class SHIBSP_API Category;
     class SHIBSP_API SPRequest;
 
 #if defined (_MSC_VER)
@@ -51,9 +50,8 @@ namespace shibsp {
          * Constructor.
          * 
          * @param pt    root of handler configuration
-         * @param log   logging category to use
          */
-        AbstractHandler(const boost::property_tree::ptree& pt, Category& log);
+        AbstractHandler(const boost::property_tree::ptree& pt);
 
         /**
          * Wrap a request for remoting to hub.
@@ -144,9 +142,6 @@ namespace shibsp {
         int getInt(
             const char* name, const SPRequest& request, int defaultValue, unsigned int type=HANDLER_PROPERTY_ALL
             ) const;
-
-        /** Logging object. */
-        Category& m_log;
 
     public:
         virtual ~AbstractHandler();

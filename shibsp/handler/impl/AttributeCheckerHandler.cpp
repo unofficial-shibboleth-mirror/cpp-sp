@@ -76,8 +76,7 @@ namespace shibsp {
     }
 };
 
-AttributeCheckerHandler::AttributeCheckerHandler(ptree& pt)
-    : AbstractHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.AttributeChecker"))
+AttributeCheckerHandler::AttributeCheckerHandler(ptree& pt) : AbstractHandler(pt)
 {
     m_redirectOnFailure = getString("redirectOnFailure", "");
     if (m_redirectOnFailure.empty())
@@ -92,7 +91,7 @@ AttributeCheckerHandler::AttributeCheckerHandler(ptree& pt)
             throw ConfigurationException("AttributeChecker unable to parse attributes setting.");
     }
     else if (hasProperty("path")) {
-        m_log.debug("attempting installation of external AccessControl rule");
+        Category::getInstance(SHIBSP_LOGCAT ".Handler.AttributeChecker").debug("attempting installation of external AccessControl rule");
         m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, pt, false));
     }
     else {
@@ -119,10 +118,10 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     try {
         session = request.getSession();
         if (!session)
-            request.log(Priority::SHIB_WARN, "AttributeChecker found session unavailable immediately after creation");
+            request.warn("AttributeChecker found session unavailable immediately after creation");
     }
     catch (const std::exception& ex) {
-        request.log(Priority::SHIB_WARN, string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
+        request.warn(string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
     }
 
     bool checked = false;

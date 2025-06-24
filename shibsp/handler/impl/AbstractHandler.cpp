@@ -106,7 +106,7 @@ Handler::~Handler()
 {
 }
 
-AbstractHandler::AbstractHandler(const ptree& pt, Category& log) : m_log(log) {
+AbstractHandler::AbstractHandler(const ptree& pt) {
     load(pt);
 }
 

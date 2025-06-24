@@ -59,8 +59,7 @@ namespace shibsp {
 };
 
 TokenConsumer::TokenConsumer(const ptree& pt, const char* path)
-    : AbstractHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.TokenConsumer")),
-        m_path(path), m_remotedHeaders({ "Cookie" })
+    : AbstractHandler(pt), m_path(path), m_remotedHeaders({ "Cookie" })
 {
 }
 
@@ -158,11 +157,9 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
                 request.limitRedirect(error_target);
                 // Make sure the target isn't a prefix of this handler, to avoid a loop.
                 if (boost::starts_with(error_target, request.getRequestURL())) {
-                    request.log(Priority::SHIB_WARN,
-                        "TokenConsumer target location matched handler, not trapping passive request error");
+                    request.warn("TokenConsumer target location matched handler, not trapping passive request error");
                 } else {
-                    request.log(Priority::SHIB_INFO,
-                        "trapping TokenConsumer failure and returning to target location for passive request");
+                    request.info("trapping TokenConsumer failure and returning to target location for passive request");
                     return make_pair(true, request.sendRedirect(error_target));
                 }
             }

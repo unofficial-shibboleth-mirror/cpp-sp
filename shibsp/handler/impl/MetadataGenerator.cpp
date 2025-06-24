@@ -63,8 +63,7 @@ namespace shibsp {
 
 };
 
-MetadataGenerator::MetadataGenerator(const ptree& pt)
-    : SecuredHandler(pt, Category::getInstance(SHIBSP_LOGCAT ".Handler.Metadata"))
+MetadataGenerator::MetadataGenerator(const ptree& pt) : SecuredHandler(pt)
 {
     const char* bases = getString("baseURLs");
     if (bases) {
@@ -82,8 +81,8 @@ pair<bool,long> MetadataGenerator::run(SPRequest& request, bool isHandler) const
     try {
         // TODO
     }
-    catch (exception& ex) {
-        m_log.error("error while processing request: %s", ex.what());
+    catch (const exception& ex) {
+        request.error(string("error while processing request: ") + ex.what());
         istringstream msg("Metadata Request Failed");
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
