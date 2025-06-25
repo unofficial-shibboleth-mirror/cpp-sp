@@ -27,6 +27,7 @@
 #include "remoting/SecretSource.h"
 #include "remoting/impl/AbstractHTTPRemotingService.h"
 #include "util/BoostPropertySet.h"
+#include "util/PathResolver.h"
 
 #include <stdexcept>
 #include <boost/algorithm/string.hpp>
@@ -38,6 +39,7 @@ using namespace std;
 
 #include <list>
 #include <mutex>
+#include <fstream>
 #include <sstream>
 #include <curl/curl.h>
 
@@ -57,8 +59,8 @@ namespace {
             return m_log;
         }
 
-        Category& curl_logger() const {
-            return m_curllog;
+        bool isTraceEnabled() const {
+            return m_traceFile.is_open();
         }
 
         bool isChunked() const {
@@ -73,7 +75,7 @@ namespace {
 
     private:
         Category& m_log;
-        Category& m_curllog;
+        ofstream m_traceFile;
         bool m_curlInit;
         mutable list<CURL*> m_pool;
         mutable int m_poolsize;
@@ -146,12 +148,13 @@ namespace {
     // callback for curl debug data
     int curl_debug_hook(CURL* handle, curl_infotype type, char* data, size_t len, void* ptr) {
         if (ptr) {
-            // *ptr is actually a logging object
+            // Strip non-printables...
             string buf;
             for (unsigned char* ch = (unsigned char*)data; len && (isprint(*ch) || isspace(*ch)); len--) {
                 buf += *ch++;
             }
-            reinterpret_cast<Category*>(ptr)->debug(buf);
+            // *ptr is actually an ofstream that should be open
+            *(reinterpret_cast<ofstream*>(ptr)) << buf;
         }
         return 0;
     }
@@ -167,8 +170,7 @@ namespace shibsp {
 CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
     : AbstractHTTPRemotingService(pt), AbstractRemotingService(pt),
         m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService")),
-            m_curllog(Category::getInstance(SHIBSP_LOGCAT ".libcurl")),
-                m_curlInit(false), m_poolsize(20), m_chunked(true)
+            m_curlInit(false), m_poolsize(20), m_chunked(true)
 {
 
     CURLcode status = curl_global_init(CURL_GLOBAL_ALL);
@@ -180,6 +182,7 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
 
     static const char CIPHER_LIST_PROP_NAME[] = "tlsCipherList";
     static const char CHUNKED_PROP_NAME[] = "chunkedEncoding";
+    static const char TRACE_FILE_PROP_NAME[] = "traceFile";
 
     BoostPropertySet props;
     props.load(pt);
@@ -197,10 +200,25 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
     }
 
     m_log.info("CurlHTTP RemotingService installed for agent (%s), baseURL (%s)", AgentConfig::getConfig().getAgent().getID(), getBaseURL());
+
+    string tracefile = props.getString(TRACE_FILE_PROP_NAME, "");
+    if (!tracefile.empty()) {
+        AgentConfig::getConfig().getPathResolver().resolve(tracefile, PathResolver::SHIBSP_LOG_FILE);
+        m_traceFile.open(tracefile, ios_base::out | ios_base::app);
+        if (m_traceFile) {
+            m_log.warn("tracing enabled to (%s), sensitive information *will* be logged; do not share and protect appropriately",
+                tracefile.c_str());
+        }
+        else {
+            m_log.error("tracing enabled but unable to open trace file (%s), errno=%d", tracefile.c_str(), errno);
+        }
+    }
 }
 
 CurlHTTPRemotingService::~CurlHTTPRemotingService()
 {
+    m_traceFile.close();
+
     for (CURL* handle : m_pool) {
         curl_easy_cleanup(handle);
     }
@@ -285,8 +303,11 @@ CURL* CurlHTTPRemotingService::checkout() const
     attachCachedAuthentication(m_handle);
 
     SHIB_CURL_SET(CURLOPT_WRITEFUNCTION, &curl_write_hook);
-    SHIB_CURL_SET(CURLOPT_DEBUGFUNCTION, &curl_debug_hook);
-    SHIB_CURL_SET(CURLOPT_DEBUGDATA, &m_curllog);
+
+    if (m_traceFile.is_open()) {
+        SHIB_CURL_SET(CURLOPT_DEBUGFUNCTION, &curl_debug_hook);
+        SHIB_CURL_SET(CURLOPT_DEBUGDATA, &m_traceFile);
+    }
     return m_handle;
 }
 
@@ -351,7 +372,7 @@ void CurlOperation::send(const char* path, istream& in, ostream& out)
     string msg;
 
     // Setup standard per-call curl properties.
-    if (m_service.curl_logger().isDebugEnabled()) {
+    if (m_service.isTraceEnabled()) {
         curl_easy_setopt(m_handle, CURLOPT_VERBOSE, 1);
     }
 
