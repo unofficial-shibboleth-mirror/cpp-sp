@@ -109,6 +109,23 @@ struct XMLAccessControlFixture
     string data_path;
 };
 
+struct PartialRegexXMLAccessControlFixture
+{
+    PartialRegexXMLAccessControlFixture() : data_path(DATA_PATH) {
+        AgentConfig::getConfig().init(nullptr, (data_path + "../partial-regex-shibboleth.ini").c_str(), true);
+    }
+    ~PartialRegexXMLAccessControlFixture() {
+        AgentConfig::getConfig().term();
+    }
+
+    void parse(const string& filename) {
+        xml_parser::read_xml(data_path + filename, tree, xml_parser::no_comments|xml_parser::trim_whitespace);
+    }
+
+    ptree tree;
+    string data_path;
+};
+
 /////////////
 // File pointing to external ACL file that's invalid XML.
 /////////////
@@ -239,6 +256,38 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRegexRule, XMLAccessControlF
 
     request.m_user = "smith";
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    request.m_user = "extrajdoe";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    request.m_user = "jdoe";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+}
+
+/////////////
+// Inline ACL test for user regex rule with partial matching
+/////////////
+
+BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRegexRule_partial, PartialRegexXMLAccessControlFixture)
+{
+    parse("inline-user-regex-acl.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    MappableDummyRequest request;
+    DummySession session;
+
+    request.m_user = "smith";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    request.m_user = "extrajdoe";
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 
     request.m_user = "jdoe";
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
