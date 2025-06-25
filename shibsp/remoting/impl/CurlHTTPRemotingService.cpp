@@ -31,6 +31,7 @@
 
 #include <stdexcept>
 #include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
@@ -41,6 +42,7 @@ using namespace std;
 #include <mutex>
 #include <fstream>
 #include <sstream>
+
 #include <curl/curl.h>
 
 #ifndef HAVE_STRCASECMP
@@ -59,8 +61,8 @@ namespace {
             return m_log;
         }
 
-        bool isTraceEnabled() const {
-            return m_traceFile.is_open();
+        const string& getTraceFileBase() const {
+            return m_traceFileBase;
         }
 
         bool isChunked() const {
@@ -75,7 +77,7 @@ namespace {
 
     private:
         Category& m_log;
-        ofstream m_traceFile;
+        string m_traceFileBase;
         bool m_curlInit;
         mutable list<CURL*> m_pool;
         mutable int m_poolsize;
@@ -98,7 +100,8 @@ namespace {
             if (m_keepHandle) {
                 if (curl_easy_setopt(m_handle, CURLOPT_URL, 0) == CURLE_OK &&
                     curl_easy_setopt(m_handle, CURLOPT_ERRORBUFFER, 0) == CURLE_OK &&
-                    curl_easy_setopt(m_handle, CURLOPT_PASSWORD, 0) == CURLE_OK) {
+                    curl_easy_setopt(m_handle, CURLOPT_PASSWORD, 0) == CURLE_OK &&
+                    curl_easy_setopt(m_handle, CURLOPT_DEBUGDATA, nullptr) == CURLE_OK) {
                     m_service.checkin(m_handle);
                     return;
                 }
@@ -182,7 +185,7 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
 
     static const char CIPHER_LIST_PROP_NAME[] = "tlsCipherList";
     static const char CHUNKED_PROP_NAME[] = "chunkedEncoding";
-    static const char TRACE_FILE_PROP_NAME[] = "traceFile";
+    static const char TRACE_FILE_PROP_NAME[] = "traceFileBase";
 
     BoostPropertySet props;
     props.load(pt);
@@ -201,24 +204,16 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
 
     m_log.info("CurlHTTP RemotingService installed for agent (%s), baseURL (%s)", AgentConfig::getConfig().getAgent().getID(), getBaseURL());
 
-    string tracefile = props.getString(TRACE_FILE_PROP_NAME, "");
-    if (!tracefile.empty()) {
-        AgentConfig::getConfig().getPathResolver().resolve(tracefile, PathResolver::SHIBSP_LOG_FILE);
-        m_traceFile.open(tracefile, ios_base::out | ios_base::app);
-        if (m_traceFile) {
-            m_log.warn("tracing enabled to (%s), sensitive information *will* be logged; do not share and protect appropriately",
-                tracefile.c_str());
-        }
-        else {
-            m_log.error("tracing enabled but unable to open trace file (%s), errno=%d", tracefile.c_str(), errno);
-        }
+    m_traceFileBase = props.getString(TRACE_FILE_PROP_NAME, "");
+    if (!m_traceFileBase.empty()) {
+        AgentConfig::getConfig().getPathResolver().resolve(m_traceFileBase, PathResolver::SHIBSP_LOG_FILE);
+        m_log.warn("tracing enabled (%s), sensitive information *will* be logged; do not share and protect appropriately",
+            m_traceFileBase.c_str());
     }
 }
 
 CurlHTTPRemotingService::~CurlHTTPRemotingService()
 {
-    m_traceFile.close();
-
     for (CURL* handle : m_pool) {
         curl_easy_cleanup(handle);
     }
@@ -304,10 +299,6 @@ CURL* CurlHTTPRemotingService::checkout() const
 
     SHIB_CURL_SET(CURLOPT_WRITEFUNCTION, &curl_write_hook);
 
-    if (m_traceFile.is_open()) {
-        SHIB_CURL_SET(CURLOPT_DEBUGFUNCTION, &curl_debug_hook);
-        SHIB_CURL_SET(CURLOPT_DEBUGDATA, &m_traceFile);
-    }
     return m_handle;
 }
 
@@ -372,8 +363,28 @@ void CurlOperation::send(const char* path, istream& in, ostream& out)
     string msg;
 
     // Setup standard per-call curl properties.
-    if (m_service.isTraceEnabled()) {
+
+    bool tracing = false;
+
+    ofstream debugStream;
+    if (!m_service.getTraceFileBase().empty()) {
         curl_easy_setopt(m_handle, CURLOPT_VERBOSE, 1);
+        try {
+            string tracename = m_service.getTraceFileBase() + boost::lexical_cast<string>(m_handle) + ".log";
+            debugStream.open(tracename, ios_base::out | ios_base::app);
+            if (debugStream) {
+                SHIB_CURL_SET(CURLOPT_DEBUGFUNCTION, &curl_debug_hook);
+                SHIB_CURL_SET(CURLOPT_DEBUGDATA, &debugStream);
+                tracing = true;
+            }
+            else {
+                m_service.logger().error("error opening trace file (%s) for remoting service handle, errno=%d",
+                    tracename.c_str(), errno);
+            }
+        }
+        catch (const boost::bad_lexical_cast& ex) {
+            m_service.logger().error("unable to generate trace file name: %s", ex.what());
+        }
     }
 
     SHIB_CURL_SET(CURLOPT_WRITEDATA, &out);
@@ -404,7 +415,13 @@ void CurlOperation::send(const char* path, istream& in, ostream& out)
 
     // Make the call.
     m_service.logger().debug("sending request to %s", url.c_str());
+    if (tracing) {
+        debugStream << "----- AGENT CALL START -----" << endl;
+    }
     CURLcode code = curl_easy_perform(m_handle);
+    if (tracing) {
+        debugStream << "----- AGENT CALL END -----" << endl;
+    }
 
     if (code != CURLE_OK) {
         throw RemotingException("Remote request failed at " + url + ": " +
