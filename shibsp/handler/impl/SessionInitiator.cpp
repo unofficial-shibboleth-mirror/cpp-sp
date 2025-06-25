@@ -93,29 +93,42 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 
     try {
         if (isHandler) {
+            // Check for a DS parameter in the query string. This is a loop-breaking indicator
+            // that this is a request in resoonse to a discovery round trip and will impact how
+            // the request to the hub is made, to ensure a loop back to a DS is avoided.
+            const char* param = request.getParameter("DS");
+            bool discovery = param && !strcmp(param, "1");
+
             // Check for a state parameter in the query string.
-            const char* param = request.getParameter("state");
+            param = request.getParameter("state");
             if (param) {
                 // We'll pass state as is and target will be omitted.
                 state = param;
+                
                 // handler can be derived from "this" URL since this is a re-entrant call to this handler,
                 // i.e., we know this is the right URL to use because "it already was" originally.
                 handlerBaseURL = request.getHandlerURL(request.getRequestURL());
-                handler = handlerBaseURL + m_path;
+                if (!discovery) {
+                    handler = handlerBaseURL + m_path;
+                }
             }
             else {
                 // target will come from query string, map, or handler or fall back to this request.
                 // TODO: shouldm't this fall back to homeURL?
                 target = getString("target", request, request.getRequestURL());
+
                 // handler is derived from the target resource.
                 handlerBaseURL = request.getHandlerURL(target.c_str());
-                handler = handlerBaseURL + m_path;
+                if (!discovery) {
+                    handler = handlerBaseURL + m_path;
+                }
             }
         }
         else {
             // Check for a hardwired target value in the map or handler.
             target = getString("target", request, request.getRequestURL(),
                 HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
+                
             // state is empty since this is a direct resource request.
             // handler is derived from the target resource
             handlerBaseURL = request.getHandlerURL(target.c_str());
@@ -130,7 +143,12 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         input.structure();
         input.addmember("application").string(settings->getString(
             RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
-        input.addmember("handler").unsafe_string(handler.c_str());
+        
+        // Will be set unless discovery was already attempted.
+        if (!handler.empty()) {
+            input.addmember("handler").unsafe_string(handler.c_str());
+        }
+
         if (state.empty()) {
             input.addmember("target").unsafe_string(target.c_str());
         }
