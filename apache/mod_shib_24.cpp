@@ -814,13 +814,18 @@ extern "C" int shib_fixups(request_rec* r)
 class htAccessControl : virtual public AccessControl, public NoOpSharedLockable
 {
 public:
-    htAccessControl() {}
+    htAccessControl() {
+        m_partialRegexMatching = AgentConfig::getConfig().getAgent().getBool(
+            Agent::PARTIAL_REGEX_MATCHING_PROP_NAME, Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT);
+    }
     ~htAccessControl() {}
-    aclresult_t authorized(const SPRequest& request, const Session* session) const;
+    aclresult_t authorized(const SPRequest& request, const Session* session) const {
+        // We should never be invoked in Apache 2.4+ as an SP plugin.
+        throw ConfigurationException("Save my walrus!");
+    }
 
     aclresult_t doAccessControl(const ShibTargetApache& sta, const Session* session, const char* plugin) const;
     aclresult_t doUser(const ShibTargetApache& sta, const char* params) const;
-    aclresult_t doAuthnContext(const ShibTargetApache& sta, const char* acRef, const char* params) const;
     aclresult_t doShibAttr(const ShibTargetApache& sta, const Session* session, const char* rule, const char* params) const;
 
 private:
@@ -832,6 +837,8 @@ private:
         const char* toMatch,
         bool isRegex=false
     ) const;
+
+    bool m_partialRegexMatching;
 };
 
 AccessControl* htAccessFactory(const ptree&, bool)
@@ -881,17 +888,19 @@ AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, 
             continue;
         }
 
+        static regexp::match_flag_type match_flags = regexp::regex_constants::match_any | regexp::regex_constants::match_not_null;
+
         // Figure out if there's a match.
         bool match = false;
         if (regexp) {
             try {
-                // TODO: support regex options?
                 regexp::regex re(w, regexp::regex_constants::extended);
-                match = regexp::regex_match(sta.getRemoteUser(), re, regexp::regex_constants::match_any | regexp::regex_constants::match_not_null);
+                match = m_partialRegexMatching ?
+                    regexp::regex_search(sta.getRemoteUser(), re, match_flags) :
+                    regexp::regex_match(sta.getRemoteUser(), re, match_flags);
             }
             catch (const regexp::regex_error& e) {
-                sta.log(Priority::SHIB_ERROR,
-                    string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
+                sta.error(string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
             }
         }
         else if (sta.getRemoteUser() == w) {
@@ -899,63 +908,13 @@ AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, 
         }
 
         if (match) {
-            if (sta.isPriorityEnabled(Priority::SHIB_DEBUG))
-                sta.log(Priority::SHIB_DEBUG,
-                    string("htaccess: require user ") + (negated ? "rejecting (" : "accepting (") + sta.getRemoteUser() + ")");
+            if (sta.isPriorityEnabled(Priority::SHIB_DEBUG)) {
+                sta.debug(string("htaccess: require user ") + (negated ? "rejecting (" : "accepting (") + sta.getRemoteUser() + ")");
+            }
             return (negated ? shib_acl_false : shib_acl_true);
         }
     }
     return (negated ? shib_acl_true : shib_acl_false);
-}
-
-AccessControl::aclresult_t htAccessControl::doAuthnContext(const ShibTargetApache& sta, const char* ref, const char* params) const
-{
-    if (ref && *ref) {
-        bool regexp = false;
-        bool negated = false;
-        while (ref && *params) {
-            const char* w = ap_getword_conf(sta.m_req->pool, &params);
-            if (*w == '~') {
-                regexp = true;
-                continue;
-            }
-            else if (*w == '!') {
-                // A negated rule presumes success unless a match is found.
-                negated = true;
-                if (*(w+1) == '~')
-                    regexp = true;
-                continue;
-            }
-
-            // Figure out if there's a match.
-            bool match = false;
-            if (regexp) {
-                try {
-                    regexp::regex re(w, regexp::regex_constants::extended);
-                    match = regexp::regex_match(ref, re, regexp::regex_constants::match_any | regexp::regex_constants::match_not_null);
-                }
-                catch (const regexp::regex_error& e) {
-                    sta.log(Priority::SHIB_ERROR,
-                        string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
-                }
-            }
-            else if (!strcmp(w, ref)) {
-                match = true;
-            }
-
-            if (match) {
-                if (sta.isPriorityEnabled(Priority::SHIB_DEBUG))
-                    sta.log(Priority::SHIB_DEBUG,
-                        string("htaccess: require authnContext ") + (negated ? "rejecting (" : "accepting (") + ref + ")");
-                return (negated ? shib_acl_false : shib_acl_true);
-            }
-        }
-        return (negated ? shib_acl_true : shib_acl_false);
-    }
-
-    if (sta.isPriorityEnabled(Priority::SHIB_DEBUG))
-        sta.debug("htaccess: require authnContext rejecting session with no context associated");
-    return shib_acl_false;
 }
 
 bool htAccessControl::checkAttribute(
@@ -982,8 +941,7 @@ bool htAccessControl::checkAttribute(
                 return true;
             }
         } catch (const regexp::regex_error& e) {
-            request.log(Priority::SHIB_ERROR,
-                string("htaccess plugin caught exception while parsing regular expression (") + toMatch + "): " + e.what());
+            request.error(string("htaccess plugin caught exception while parsing regular expression (") + toMatch + "): " + e.what());
         }
     }
     else if (attrConfig.hasMatchingValue(session, attributeID, toMatch)) {
@@ -1024,12 +982,6 @@ AccessControl::aclresult_t htAccessControl::doShibAttr(
     }
 
     return shib_acl_false;
-}
-
-AccessControl::aclresult_t htAccessControl::authorized(const SPRequest& request, const Session* session) const
-{
-    // We should never be invoked in 2.4+ as an SP plugin.
-    throw ConfigurationException("Save my walrus!");
 }
 
 class ApacheRequestMapper : public virtual RequestMapper, public virtual PropertySet
@@ -1300,7 +1252,9 @@ extern "C" authz_status shib_acclass_check_authz(request_rec* r, const char* req
     try {
         unique_lock<Session> session = sta.first->getSession(false, true);
         if (session && hta.doShibAttr(*sta.first, session.mutex(),
-                sta.first->getAgent().getString("legacy-classref-attribute", "Shib-AuthnContext-Class"),
+                sta.first->getAgent().getString(
+                    AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_NAME,
+                    AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT),
                 require_line) == AccessControl::shib_acl_true)
             return AUTHZ_GRANTED;
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;

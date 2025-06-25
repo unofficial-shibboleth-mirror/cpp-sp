@@ -49,14 +49,14 @@ using namespace shibsp;
 using namespace std;
 
 const char Agent::UNSET_HEADER_VALUE_PROP_NAME[] = "unsetHeaderValue";
-
 const char Agent::CHECK_SPOOFING_PROP_NAME[] = "checkSpoofing";
-bool Agent::CHECK_SPOOFING_PROP_DEFAULT = true;
-
 const char Agent::SPOOF_KEY_PROP_NAME[] = "spoofKey";
-
 const char Agent::CATCH_ALL_PROP_NAME[] = "catchAll";
+const char Agent::PARTIAL_REGEX_MATCHING_PROP_NAME[] = "partialRegexMatching";
+
+bool Agent::CHECK_SPOOFING_PROP_DEFAULT = true;
 bool Agent::CATCH_ALL_PROP_DEFAULT = false;
+bool Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT = false;
 
 Agent::Agent()
 {

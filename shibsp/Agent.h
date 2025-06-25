@@ -181,9 +181,11 @@ namespace shibsp {
         static const char CHECK_SPOOFING_PROP_NAME[];
         static const char SPOOF_KEY_PROP_NAME[];
         static const char CATCH_ALL_PROP_NAME[];
+        static const char PARTIAL_REGEX_MATCHING_PROP_NAME[];
 
         static bool CHECK_SPOOFING_PROP_DEFAULT;
         static bool CATCH_ALL_PROP_DEFAULT;
+        static bool PARTIAL_REGEX_MATCHING_PROP_DEFAULT;
 
     protected:
         /** The AuthTypes to "recognize" (defaults to "shibboleth"). */

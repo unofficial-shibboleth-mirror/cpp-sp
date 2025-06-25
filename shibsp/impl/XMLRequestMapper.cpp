@@ -20,6 +20,7 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "AccessControl.h"
+#include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
 #include "SPRequest.h"
@@ -144,8 +145,19 @@ namespace {
         return new XMLRequestMapper(pt);
     }
 
-    static regexp::regex_constants::match_flag_type match_flags =
-        regexp::regex_constants::match_any | regexp::regex_constants::match_not_null;
+    static bool doRegex(const regexp::regex& exp, const char* input) {
+        static regexp::regex_constants::match_flag_type match_flags =
+            regexp::regex_constants::match_any | regexp::regex_constants::match_not_null;
+
+        bool partial = AgentConfig::getConfig().getAgent().getBool(
+            Agent::PARTIAL_REGEX_MATCHING_PROP_NAME, Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT);
+        if (partial) {
+            return regexp::regex_search(input, exp, match_flags);
+        }
+        else {
+            return regexp::regex_match(input, exp, match_flags);
+        }
+    }
 }
 
 void SHIBSP_API shibsp::registerRequestMappers()
@@ -453,7 +465,7 @@ const Override* Override::locate(const HTTPRequest& request) const
     // If there's anything left, we try for a regex match on the rest of the path minus the query string.
     if (*path) {
         for (const auto& re : m_regexps) {
-            if (regex_match(path, re.first, match_flags)) {
+            if (doRegex(re.first, path)) {
                 o = re.second.get();
                 break;
             }
@@ -473,7 +485,7 @@ const Override* Override::locate(const HTTPRequest& request) const
                     if (get<1>(*q)) {
                         // We have to match one of the values.
                         while (vals.first != vals.second) {
-                            if (regexp::regex_match(vals.first->second, get<1>(*q).get(), match_flags)) {
+                            if (doRegex(get<1>(*q).get(), vals.first->second)) {
                                 o = get<2>(*q).get();
                                 descended = true;
                                 break;
@@ -654,7 +666,7 @@ const Override* XMLRequestMapperImpl::findOverride(const char* vhost, const HTTP
     }
     else {
         for (const auto& re : m_regexps) {
-            if (regexp::regex_match(vhost, re.first, match_flags)) {
+            if (doRegex(re.first, vhost)) {
                 o = re.second.get();
             }
         }

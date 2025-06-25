@@ -172,20 +172,20 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
 
     // Map alias in rule to the attribute.
     if (!session) {
-        request.log(Priority::SHIB_WARN, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
+        request.warn("AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
         return shib_acl_false;
     }
 
     if (m_alias == "valid-user") {
         if (session) {
-            request.log(Priority::SHIB_DEBUG," AccessControl rule accepting valid-user based on active session");
+            request.debug("AccessControl rule accepting valid-user based on active session");
             return shib_acl_true;
         }
         return shib_acl_false;
     }
     else if (m_alias == "user") {
         if (m_vals.find(request.getRemoteUser()) != m_vals.end()) {
-            request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting REMOTE_USER (") + request.getRemoteUser() + "), authz granted");
+            request.debug(string("AccessControl rule expecting REMOTE_USER (") + request.getRemoteUser() + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
@@ -206,7 +206,7 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
     // Empty case is historical and not terribly smart, but we'll brute force it.
     if (m_vals.empty()) {
         if (session->getAttributes().find(actual_alias.c_str()) != session->getAttributes().end()) {
-            request.log(Priority::SHIB_DEBUG, string("AccessControl rule requires presence of attribute (") + actual_alias + "), authz granted");
+            request.debug(string("AccessControl rule requires presence of attribute (") + actual_alias + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
@@ -214,7 +214,7 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
 
     // Otherwise call into the helper logic to handle matching process..
     if (attributeConfig.hasMatchingValue(*session, actual_alias.c_str(), m_vals)) {
-        request.log(Priority::SHIB_DEBUG, string("AccessControl rule satisfied for attribute (") + actual_alias + "), authz granted");
+        request.debug(string("AccessControl rule satisfied for attribute (") + actual_alias + "), authz granted");
         return shib_acl_true;
     }
 
@@ -244,26 +244,31 @@ RuleRegex::RuleRegex(const ptree& pt)
 
 AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const Session* session) const
 {
-
     static regexp::regex_constants::match_flag_type match_flags = regexp::regex_constants::match_any | regexp::regex_constants::match_not_null;
 
     string actual_alias(m_alias);
 
     if (!session) {
-        request.log(Priority::SHIB_WARN, "AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
+        request.warn("AccessControl plugin not given a valid session to evaluate, are you using lazy sessions?");
         return shib_acl_false;
     }
 
     if (m_alias == "valid-user") {
         if (session) {
-            request.log(Priority::SHIB_DEBUG,"AccessControl rule accepting valid-user based on active session");
+            request.debug("AccessControl rule accepting valid-user based on active session");
             return shib_acl_true;
         }
         return shib_acl_false;
     }
     else if (m_alias == "user") {
-        if (regexp::regex_match(request.getRemoteUser(), m_re, match_flags)) {
-            request.log(Priority::SHIB_DEBUG, string("AccessControl rule expecting REMOTE_USER regex (") + m_exp + "), authz granted");
+
+        bool partial = request.getAgent().getBool(
+            Agent::PARTIAL_REGEX_MATCHING_PROP_NAME, Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT);
+
+        bool result = partial ? regexp::regex_search(request.getRemoteUser(), m_re, match_flags) :
+                regexp::regex_match(request.getRemoteUser(), m_re, match_flags);
+        if (result) {
+            request.debug(string("AccessControl rule expecting REMOTE_USER regex (") + m_exp + "), authz granted");
             return shib_acl_true;
         }
         return shib_acl_false;
@@ -283,7 +288,7 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
 
     // Call into the helper logic to handle matching process..
     if (attributeConfig.hasMatchingValue(*session, actual_alias.c_str(), m_re)) {
-        request.log(Priority::SHIB_DEBUG,
+        request.debug(
             string("AccessControl rule for attribute (") + actual_alias + ") expecting regex (" + m_exp  + ", authz granted");
         return shib_acl_true;
     }
@@ -356,7 +361,7 @@ AccessControl::aclresult_t Operator::authorized(const SPRequest& request, const 
             return shib_acl_false;
         }
     }
-    request.log(Priority::SHIB_WARN,"unknown operation in access control policy, denying access");
+    request.warn("unknown operation in access control policy, denying access");
     return shib_acl_false;
 }
 

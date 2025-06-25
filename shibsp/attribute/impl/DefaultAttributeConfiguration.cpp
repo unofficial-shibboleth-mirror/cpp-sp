@@ -21,6 +21,7 @@
 #include "internal.h"
 
 #include "exceptions.h"
+#include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
 #include "SPRequest.h"
@@ -73,7 +74,7 @@ namespace {
 
         Category& m_log;
         ptree m_pt;
-        bool m_urlEncoding,m_exportDuplicates;
+        bool m_urlEncoding,m_exportDuplicates,m_partialRegexMatching;
         map<string,string> m_mappings;
         set<string> m_caseSensitiveIds;
     };
@@ -112,6 +113,9 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
 
     m_urlEncoding = !strcmp(getString("encoding", ""), "URL");
     m_exportDuplicates = getBool("exportDuplicateValues", true);
+
+    m_partialRegexMatching = AgentConfig::getConfig().getAgent().getBool(
+        Agent::PARTIAL_REGEX_MATCHING_PROP_NAME, Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT);
 
     boost::optional<ptree&> mappings = m_pt.get_child_optional("mappings");
     if (!mappings) {
@@ -385,7 +389,9 @@ bool DefaultAttributeConfiguration::hasMatchingValue(
     return false;
 }
 
-bool DefaultAttributeConfiguration::hasMatchingValue(const Session& session, const char* attributeId, const char* value) const
+bool DefaultAttributeConfiguration::hasMatchingValue(
+    const Session& session, const char* attributeId, const char* value
+    ) const
 {
     const auto& attr = session.getAttributes().find(attributeId);
     if (attr == session.getAttributes().end()) {
@@ -420,7 +426,8 @@ bool DefaultAttributeConfiguration::hasMatchingValue(
 
     DDF val = const_cast<DDF&>(attr->second).first();
     while (!val.isnull()) {
-        if (regexp::regex_match(val.string(), expression, match_flags)) {
+        if (m_partialRegexMatching ? regexp::regex_search(val.string(), expression, match_flags) :
+                regexp::regex_match(val.string(), expression, match_flags)) {
             return true;
         }
         val = const_cast<DDF&>(attr->second).next();
