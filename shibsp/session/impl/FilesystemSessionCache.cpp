@@ -372,27 +372,27 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
     // Create cleanup tracking file if not already present.
 
 #ifdef WIN32
-        int f = _open(cleanupTracker.c_str(), _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
+    int f = _open(cleanupTracker.c_str(), _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
 #else
-        int f = open(cleanupTracker.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+    int f = open(cleanupTracker.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
 #endif
-        if (f < 0) {
-            int e = errno;
-            if (e == EEXIST) {
-                pcache->m_spilog.debug("detected existing cleanup tracking file at %s", cleanupTracker.c_str());
-            } else {
-                pcache->m_spilog.error("error creating cleanup tracking file at %s, errno=%d",
-                    cleanupTracker.c_str(), e);
-            }
+    if (f < 0) {
+        int e = errno;
+        if (e == EEXIST) {
+            pcache->m_spilog.debug("detected existing cleanup tracking file at %s", cleanupTracker.c_str());
+        } else {
+            pcache->m_spilog.error("error creating cleanup tracking file at %s, errno=%d",
+                cleanupTracker.c_str(), e);
         }
-        else {
-            pcache->m_spilog.debug("created initial cleanup tracking file at %s", cleanupTracker.c_str());
+    }
+    else {
+        pcache->m_spilog.debug("created initial cleanup tracking file at %s", cleanupTracker.c_str());
 #ifdef WIN32
-            _close(f);
+        _close(f);
 #else
-            close(f);
+        close(f);
 #endif
-        }
+    }
 
     mutex internal_mutex;
     unique_lock lock(internal_mutex);
