@@ -21,12 +21,14 @@
 #include "internal.h"
 #include "exceptions.h"
 #include "Agent.h"
+#include "AgentConfig.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
 #include "handler/HandlerConfiguration.h"
 #include "logging/Category.h"
 #include "remoting/RemotingService.h"
 #include "util/Misc.h"
+#include "util/URLEncoder.h"
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -97,7 +99,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
             // that this is a request in resoonse to a discovery round trip and will impact how
             // the request to the hub is made, to ensure a loop back to a DS is avoided.
             const char* param = request.getParameter("DS");
-            bool discovery = param && !strcmp(param, "1");
+            bool discoveryDone = param && !strcmp(param, "1");
 
             // Check for a state parameter in the query string.
             param = request.getParameter("state");
@@ -108,7 +110,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 // handler can be derived from "this" URL since this is a re-entrant call to this handler,
                 // i.e., we know this is the right URL to use because "it already was" originally.
                 handlerBaseURL = request.getHandlerURL(request.getRequestURL());
-                if (!discovery) {
+                if (!discoveryDone) {
                     handler = handlerBaseURL + m_path;
                 }
             }
@@ -119,7 +121,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 
                 // handler is derived from the target resource.
                 handlerBaseURL = request.getHandlerURL(target.c_str());
-                if (!discovery) {
+                if (!discoveryDone) {
                     handler = handlerBaseURL + m_path;
                 }
             }
@@ -146,7 +148,10 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         
         // Will be set unless discovery was already attempted.
         if (!handler.empty()) {
-            input.addmember("handler").unsafe_string(handler.c_str());
+            // Decorate the handler URL with the signal parameter and then any recognized/allowed custom parameters.
+            handler += "?DS=1";
+            // TODO: the other parameters
+            input.addmember("disco_return_url").string(AgentConfig::getConfig().getURLEncoder().encode(handler.c_str()));
         }
 
         if (state.empty()) {
