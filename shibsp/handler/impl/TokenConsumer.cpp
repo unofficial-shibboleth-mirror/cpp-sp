@@ -136,7 +136,7 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
     catch (exception& ex) {
         AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
         if (agent_ex) {
-            agent_ex->addProperty("handlerType", TOKEN_CONSUMER_HANDLER);
+            agent_ex->addProperty(AgentException::HANDLER_TYPE_PROP_NAME, TOKEN_CONSUMER_HANDLER);
         }
         
         // THis is a mess to allow for "ignoring" errors during passive SSO and routing back
@@ -146,10 +146,10 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         // When the cache throws, the error typically would not carry that information but the
         // output would have.
 
-        const char* passive = agent_ex ? agent_ex->getProperty("passive") : nullptr;
+        const char* passive = agent_ex ? agent_ex->getProperty(AgentException::PASSIVE_PROP_NAME) : nullptr;
         if (wasPassive || (passive && !strcmp(passive, "1"))) {
             agent_ex->log(request, Priority::SHIB_WARN);
-            const char* error_target = target.empty() ? agent_ex->getProperty("target") : target.c_str();
+            const char* error_target = target.empty() ? agent_ex->getProperty(AgentException::TARGET_PROP_NAME) : target.c_str();
 
             // TODO: either recover POST data or clean up recovery state?
 

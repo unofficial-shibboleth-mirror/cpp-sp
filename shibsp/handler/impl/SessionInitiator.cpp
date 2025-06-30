@@ -43,7 +43,11 @@ namespace {
         pair<bool,long> run(SPRequest& request, bool isHandler) const;
 
     private:
+        // This sets up the proper query string for discovery to work properly.
+        void populateDiscoveryReturnURL(SPRequest& request, bool isHandler, string& returnURL) const;
+
         string m_path;
+        bool m_discoveryEnabled;
         vector<string> m_remotedHeaders;
         vector<string> m_requestMapperSettings;
         vector<string> m_querySettings;
@@ -57,9 +61,17 @@ namespace shibsp {
 };
 
 SessionInitiator::SessionInitiator(const ptree& pt, const char* path)
-    : AbstractHandler(pt), m_path(path), m_remotedHeaders({ "Cookie" })
+    : AbstractHandler(pt), m_path(path), m_discoveryEnabled(true), m_remotedHeaders({ "Cookie" })
 {
-    const char* settings = getString("requestMapperSettings");
+    static const char DISCOVERY_ENABLED_PROP_NAME[] = "discoveryEnabled";
+    static const char REQUEST_MAPPER_SETTINGS_PROP_NAME[] = "requestMapperSettings";
+    static const char QUERY_SETTINGS_PROP_NAME[] = "querySettings";
+
+    static bool DISCOVERY_ENABLED_PROP_DEFAULT = true;
+
+    m_discoveryEnabled = getBool(DISCOVERY_ENABLED_PROP_NAME, DISCOVERY_ENABLED_PROP_DEFAULT);
+
+    const char* settings = getString(REQUEST_MAPPER_SETTINGS_PROP_NAME);
     if (settings) {
         split_to_container(m_requestMapperSettings, settings);
     }
@@ -78,7 +90,7 @@ SessionInitiator::SessionInitiator(const ptree& pt, const char* path)
         };
     }
 
-    settings = getString("querySettings");
+    settings = getString(QUERY_SETTINGS_PROP_NAME);
     if (settings) {
         split_to_container(m_querySettings, settings);
     }
@@ -115,9 +127,8 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 }
             }
             else {
-                // target will come from query string, map, or handler or fall back to this request.
-                // TODO: shouldm't this fall back to homeURL?
-                target = getString("target", request, request.getRequestURL());
+                // target will come from query string, map, or handler or fall back to homeURL.
+                target = getString("target", request, request.getRequestSettings().first->getString("homeURL", "/"));
 
                 // handler is derived from the target resource.
                 handlerBaseURL = request.getHandlerURL(target.c_str());
@@ -147,10 +158,9 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
             RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
         
         // Will be set unless discovery was already attempted.
-        if (!handler.empty()) {
+        if (m_discoveryEnabled && !handler.empty()) {
             // Decorate the handler URL with the signal parameter and then any recognized/allowed custom parameters.
-            handler += "?DS=1";
-            // TODO: the other parameters
+            populateDiscoveryReturnURL(request, isHandler, handler);
             input.addmember("disco_return_url").string(AgentConfig::getConfig().getURLEncoder().encode(handler.c_str()));
         }
 
@@ -197,7 +207,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
     catch (exception& ex) {
         AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
         if (agent_ex) {
-            agent_ex->addProperty("handlerType", SESSION_INITIATOR_HANDLER);
+            agent_ex->addProperty(AgentException::HANDLER_TYPE_PROP_NAME, SESSION_INITIATOR_HANDLER);
         }
 
         // If it's a handler operation, and isPassive is used or returnOnError is set, we trap the error.
@@ -211,7 +221,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 request.warn(ex.what());
                 const char* error_target = agent_ex ? agent_ex->getProperty("target") : nullptr;
                 // Make sure the target isn't the same as this handler, to avoid a loop.
-                if (error_target && strcmp(error_target, handler.c_str())) {
+                if (error_target && strstr(error_target, handlerBaseURL) != error_target) {
                     request.info("trapping SessionInitiator failure and returning to target location");
                     request.limitRedirect(error_target);
                     return make_pair(true, request.sendRedirect(error_target));
@@ -220,4 +230,41 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         }
         throw;
     }
+}
+
+void SessionInitiator::populateDiscoveryReturnURL(SPRequest& request, bool isHandler, string& returnURL) const
+{
+    returnURL += "?DS=1";
+
+    const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
+
+    // In the old SP, we did this by conducting surgery on the query string to elide the target parameter.
+    // This is not only nasty, but not even correct since the name of the parameter could be encoded inside
+    // the query string to defeat that check, so the new code is going to build up a new query string by
+    // hand and re-encode all the parrameters it decides to allow.
+
+    // We have parameter name sets defined for both the query parameter case (isHandler is true) and the
+    // RequestMap case (isHandler is false). That case is necessary so that settings applicable to the
+    // original target parameter get preserved even though the handler is the subsequently "active" URL
+    // mapped into the configuration.
+
+    if (isHandler) {
+        for (const string& opt : m_querySettings) {
+             const char* optval = request.getParameter(opt.c_str());
+             if (optval) {
+                 returnURL = returnURL + '&' + opt + '=' + encoder.encode(optval);
+             }
+         }
+    }
+    else {
+         // Preserve designated request settings on the URL.
+        const PropertySet* props = request.getRequestSettings().first;
+        for (const string& opt : m_requestMapperSettings) {
+             const char* optval = props->getString(opt.c_str());
+             if (optval) {
+                 returnURL = returnURL + '&' + opt + '=' + encoder.encode(optval);
+             }
+         }
+    }
+    
 }

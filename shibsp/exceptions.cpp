@@ -31,6 +31,10 @@
 using namespace shibsp;
 using namespace std;
 
+const char AgentException::HANDLER_TYPE_PROP_NAME[] = "handlerType";
+const char AgentException::PASSIVE_PROP_NAME[] = "passive";
+const char AgentException::TARGET_PROP_NAME[] = "target";
+
 AgentException::AgentException(const char* msg) : m_status(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR)
 {
     if (msg)

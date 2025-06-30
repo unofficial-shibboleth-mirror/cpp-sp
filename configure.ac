@@ -1,4 +1,4 @@
-AC_PREREQ([2.50])
+AC_PREREQ([2.72])
 AC_INIT([shibboleth],[4.0.0],[https://shibboleth.atlassian.net/jira],[shibboleth-sp])
 AC_CONFIG_SRCDIR(shibsp)
 AC_CONFIG_AUX_DIR(build-aux)
@@ -49,20 +49,6 @@ LIBS=""
 AC_SEARCH_LIBS([dlopen],[dl],,[AC_MSG_ERROR([cannot find dlopen() function])])
 AC_SUBST([dlopen_LIBS],[$LIBS])
 AX_RESTORE_FLAGS
-
-
-AC_CACHE_CHECK([for SOCK_CLOEXEC support], [shib_cv_sock_cloexec],
-[AC_TRY_RUN([
-#include <sys/types.h>
-#include <sys/socket.h>
-int main()
-{
-return socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC, 0) == -1;
-}], [shib_cv_sock_cloexec=yes], [shib_cv_sock_cloexec=no], [shib_cv_sock_cloexec=no])])
-
-if test "$shib_cv_sock_cloexec" = "yes"; then
-	AC_DEFINE([HAVE_SOCK_CLOEXEC], 1, [Define if the SOCK_CLOEXEC flag is supported])
-fi
 
 AX_PTHREAD(,[AC_MSG_ERROR([unable to find pthreads, currently this is required])])
 

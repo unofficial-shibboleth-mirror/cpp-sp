@@ -142,6 +142,11 @@ namespace shibsp {
          */
         void log(const SPRequest& request, Priority::Value priority=Priority::SHIB_ERROR) const;
 
+        // Defined properties.
+        static const char HANDLER_TYPE_PROP_NAME[];
+        static const char PASSIVE_PROP_NAME[];
+        static const char TARGET_PROP_NAME[];
+
     private:
         int m_status;
         std::string m_msg;
