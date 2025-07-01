@@ -162,7 +162,6 @@ struct shib_dir_config
     int bOff;               // flat-out disable all Shib processing
     int bBasicHijack;       // activate for AuthType Basic?
     int bRequireSession;    // require a session?
-    int bExportAssertion;   // export SAML assertion to the environment?
     int bUseEnvVars;        // use environment?
     int bUseHeaders;        // use headers?
     int bExpireRedirects;   // expire redirects?
@@ -181,7 +180,6 @@ extern "C" void* create_shib_dir_config (apr_pool_t* p, char*)
     dc->bOff = -1;
     dc->bBasicHijack = -1;
     dc->bRequireSession = -1;
-    dc->bExportAssertion = -1;
     dc->bUseEnvVars = -1;
     dc->bUseHeaders = -1;
     dc->bExpireRedirects = -1;
@@ -268,13 +266,6 @@ extern "C" void* merge_shib_dir_config (apr_pool_t* p, void* base, void* sub)
         dc->bRequireSession = parent->bRequireSession;
     else
         dc->bRequireSession = -1;
-
-    if (child->bExportAssertion != -1)
-        dc->bExportAssertion = child->bExportAssertion;
-    else if (parent->bExportAssertion != -1 && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "exportAssertion")))
-        dc->bExportAssertion = parent->bExportAssertion;
-    else
-        dc->bExportAssertion = -1;
 
     dc->bOff = ((child->bOff == -1) ? parent->bOff : child->bOff);
     dc->bBasicHijack = ((child->bBasicHijack == -1) ? parent->bBasicHijack : child->bBasicHijack);
@@ -1046,8 +1037,6 @@ bool ApacheRequestMapper::getBool(const char* name, bool defaultValue) const
         // Override Apache-settable boolean properties.
         if (name && !strcmp(name,"requireSession") && m_sta->m_dc->bRequireSession != -1)
             return m_sta->m_dc->bRequireSession == 1;
-        else if (name && !strcmp(name,"exportAssertion") && m_sta->m_dc->bExportAssertion != -1)
-            return m_sta->m_dc->bExportAssertion == 1;
         else if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
             if (prop)
@@ -1591,9 +1580,6 @@ static command_rec shib_cmds[] = {
     AP_INIT_TAKE1("ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szRequireWith),
         OR_AUTHCFG, "(DEPRECATED) Initiates a new session if one does not exist using a specific SessionInitiator"),
-    AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
-        (void *) offsetof (shib_dir_config, bExportAssertion),
-        OR_AUTHCFG, "(DEPRECATED) Export SAML attribute assertion(s) to Shib-Attributes header"),
     AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szRedirectToSSL),
         OR_AUTHCFG, "(DEPRECATED) Redirect non-SSL requests to designated port"),
