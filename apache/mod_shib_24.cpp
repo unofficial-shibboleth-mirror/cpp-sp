@@ -1023,8 +1023,20 @@ RequestMapper::Settings ApacheRequestMapper::getSettings(const HTTPRequest& requ
 
 bool ApacheRequestMapper::hasProperty(const char* name) const
 {
-    if (m_sta) {
-        // TODO, will need to enumerate all the built-in properties I imagine.
+    if (m_sta && name) {
+        // Override Apache-settable string properties.
+        if (!strcmp(name,"authType")) {
+            return ap_auth_type(m_sta->m_req) != nullptr;
+        }
+        else if (!strcmp(name,"applicationId"))
+            return m_sta->m_dc->szApplicationId != nullptr;
+        else if (!strcmp(name,"requireSessionWith"))
+            return m_sta->m_dc->szRequireWith != nullptr;
+        else if (!strcmp(name,"redirectToSSL"))
+            return m_sta->m_dc->szRedirectToSSL != nullptr;
+        else if (m_sta->m_dc->tSettings) {
+            return apr_table_get(m_sta->m_dc->tSettings, name) != nullptr;
+        }
     }
 
     return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
@@ -1033,9 +1045,9 @@ bool ApacheRequestMapper::hasProperty(const char* name) const
 
 bool ApacheRequestMapper::getBool(const char* name, bool defaultValue) const
 {
-    if (m_sta) {
+    if (m_sta && name) {
         // Override Apache-settable boolean properties.
-        if (name && !strcmp(name,"requireSession") && m_sta->m_dc->bRequireSession != -1)
+        if (!strcmp(name,"requireSession") && m_sta->m_dc->bRequireSession != -1)
             return m_sta->m_dc->bRequireSession == 1;
         else if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
