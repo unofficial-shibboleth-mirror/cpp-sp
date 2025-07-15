@@ -76,7 +76,7 @@ namespace {
         ptree m_pt;
         bool m_urlEncoding,m_exportDuplicates,m_partialRegexMatching;
         map<string,string> m_mappings;
-        set<string> m_caseSensitiveIds;
+        set<string> m_caseInsensitiveIds;
     };
 
 };
@@ -97,6 +97,17 @@ AttributeConfiguration::~AttributeConfiguration() {}
 DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathname)
     : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration")), m_urlEncoding(false), m_exportDuplicates(true)
 {
+    static const char EXPORT_DUP_VALUES_PROP_NAME[] = "exportDuplicateValues";
+    static bool EXPORT_DUP_VALUES_PROP_DEFAULT = true;
+
+    static const char CASE_INSENSITIVE_ATTRS_PROP_NAME[] = "caseInsensitiveAttributes";
+
+    static const char ENCODING_PROP_NAME[] = "encoding";
+    // Not the default, but the only defined option.
+    static const char URL_ENCODING_PROP_VALUE[] = "URL";
+
+    static const char MAPPINGS_PROP_SECTION_NAME[] = "mappings";
+
     // Populate "built-in" mappings.
     for (const string& name : {"Shib-Application-ID", "Shib-Session-ID", "Shib-Session-Expires", "Shib-Session-Inactivity", "REMOTE_USER"}) {
         m_mappings[name] = name;
@@ -109,15 +120,15 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
     ini_parser::read_ini(pathname, m_pt);
     load(m_pt);
 
-    split_to_container(m_caseSensitiveIds, getString("caseSensitiveAttributes", ""));
+    split_to_container(m_caseInsensitiveIds, getString(CASE_INSENSITIVE_ATTRS_PROP_NAME, ""));
 
-    m_urlEncoding = !strcmp(getString("encoding", ""), "URL");
-    m_exportDuplicates = getBool("exportDuplicateValues", true);
+    m_urlEncoding = !strcmp(getString(ENCODING_PROP_NAME, ""), URL_ENCODING_PROP_VALUE);
+    m_exportDuplicates = getBool(EXPORT_DUP_VALUES_PROP_NAME, EXPORT_DUP_VALUES_PROP_DEFAULT);
 
     m_partialRegexMatching = AgentConfig::getConfig().getAgent().getBool(
         Agent::PARTIAL_REGEX_MATCHING_PROP_NAME, Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT);
 
-    boost::optional<ptree&> mappings = m_pt.get_child_optional("mappings");
+    boost::optional<ptree&> mappings = m_pt.get_child_optional(MAPPINGS_PROP_SECTION_NAME);
     if (!mappings) {
         return;
     }
@@ -141,6 +152,11 @@ unique_ptr<AttributeConfiguration> AttributeConfiguration::newAttributeConfigura
 
 bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
 {
+    const char SCOPE_DELIMITER_PROP_NAME[] = "scopeDelimiter";
+    const char SCOPE_DELIMITER_PROP_DEFAULT[] = "@";
+
+    const char* scopeDelimiter = getString(SCOPE_DELIMITER_PROP_NAME, SCOPE_DELIMITER_PROP_DEFAULT);
+
     if (!attributes.islist()) {
         m_log.warn("invalid data supplied for session attributes");
         return false;
@@ -169,7 +185,7 @@ bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
                     const char* lhs = value.getmember("value").string();
                     const char* scope = value.getmember("scope").string();
                     if (lhs && scope && *lhs && *scope) {
-                        string s = string(lhs) + getString("scopeDelimiter", "@") + scope;
+                        string s = string(lhs) + scopeDelimiter + scope;
                         value.string(s.c_str());
                     } else {
                         value.destroy();
@@ -220,9 +236,9 @@ bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
 bool DefaultAttributeConfiguration::isCaseSensitive(const char* attributeID) const
 {
     if (!attributeID) {
-        return false;
+        return true;
     }
-    return m_caseSensitiveIds.count(attributeID) > 0;
+    return m_caseInsensitiveIds.count(attributeID) == 0;
 }
 
 void DefaultAttributeConfiguration::clearHeaders(SPRequest& request) const
@@ -365,7 +381,7 @@ bool DefaultAttributeConfiguration::hasMatchingValue(
         return false;
     }
 
-    bool caseSensitive = m_caseSensitiveIds.count(attributeId) > 0;
+    bool caseSensitive = isCaseSensitive(attributeId);
 
     DDF val = const_cast<DDF&>(attr->second).first();
     while (!val.isnull()) {
@@ -398,7 +414,7 @@ bool DefaultAttributeConfiguration::hasMatchingValue(
         return false;
     }
 
-    bool caseSensitive = m_caseSensitiveIds.count(attributeId) > 0;
+    bool caseSensitive = isCaseSensitive(attributeId);
 
     DDF val = const_cast<DDF&>(attr->second).first();
     while (!val.isnull()) {

@@ -59,10 +59,6 @@ namespace {
             return m_log;
         }
 
-        Category& winHTTP_logger() const {
-            return m_winHTTPlog;
-        }
-
         bool isChunked() const {
             return m_chunked;
         }
@@ -77,7 +73,6 @@ namespace {
 
     private:
         Category& m_log;
-        Category& m_winHTTPlog;
         bool m_init;
         HINTERNET m_session;
         HINTERNET m_connection;
@@ -229,8 +224,7 @@ StatusCallback(
 
 WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
     : AbstractHTTPRemotingService(pt), AbstractRemotingService(pt),
-    m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService.WinHTTP")),
-    m_winHTTPlog(Category::getInstance(SHIBSP_LOGCAT ".winHTTP")),
+    m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService")),
     m_secure(false), m_caChainEngine(nullptr), m_caStore(nullptr),
     m_init(false), m_chunked(defaultChunking)
 {
@@ -239,14 +233,14 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
         setUserAgent(useragent.c_str());
     }
 
-    static const char CIPHER_LIST_PROP_NAME[] = "tlsCipherList";
+    //static const char CIPHER_LIST_PROP_NAME[] = "tlsCipherList";
     static const char CHUNKED_PROP_NAME[] = "chunkedEncoding";
     
     BoostPropertySet props;
     props.load(pt);
 
     m_chunked = props.getBool(CHUNKED_PROP_NAME, defaultChunking);
-    m_ciphers = props.getString(CIPHER_LIST_PROP_NAME, "");
+    //m_ciphers = props.getString(CIPHER_LIST_PROP_NAME, "");
     m_username = utf8ToUtf16(AgentConfig::getConfig().getAgent().getID());
     switch (getAuthMethod()) {
         case agent_auth_basic:  m_authScheme = WINHTTP_AUTH_SCHEME_BASIC; break;

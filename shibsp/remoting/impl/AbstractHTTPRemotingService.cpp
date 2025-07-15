@@ -46,14 +46,14 @@ const char AbstractHTTPRemotingService::TIMEOUT_PROP_NAME[] = "timeout";
 const char AbstractHTTPRemotingService::CA_FILE_PROP_NAME[] = "tlsCAFile";
 const char AbstractHTTPRemotingService::REVOCATION_CHECK_PROP_NAME[] = "revocationCheck";
 
-const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_DEFAULT[] = "File";
+const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_DEFAULT[] = FILE_SECRET_SOURCE;
 const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost/idp/profile/sp";
 const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "basic";
 const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
 unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;
 unsigned int AbstractHTTPRemotingService::TIMEOUT_PROP_DEFAULT = 10;
-const bool AbstractHTTPRemotingService::REVOCATION_CHECK_DEFAULT = false;
 const char AbstractHTTPRemotingService::CA_FILE_PROP_DEFAULT[] = "trustlist.pem";
+const bool AbstractHTTPRemotingService::REVOCATION_CHECK_DEFAULT = false;
 
 AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     : AbstractRemotingService(pt), m_authMethod(agent_auth_none)

@@ -514,7 +514,13 @@ void* AbstractSessionCache::cleanup_fn(void* p)
 
     // Load our configuration details...
     unsigned int cleanupInterval = pcache->getUnsignedInt(CLEANUP_INTERVAL_PROP_NAME, CLEANUP_INTERVAL_PROP_DEFAULT);
+    if (cleanupInterval == 0) {
+        cleanupInterval = CLEANUP_INTERVAL_PROP_DEFAULT;
+    }
     unsigned int inprocTimeout = pcache->getUnsignedInt(INPROC_TIMEOUT_PROP_NAME, INPROC_TIMEOUT_PROP_DEFAULT);
+    if (inprocTimeout == 0) {
+        inprocTimeout = INPROC_TIMEOUT_PROP_DEFAULT;
+    }
 
     mutex internal_mutex;
     unique_lock lock(internal_mutex);
