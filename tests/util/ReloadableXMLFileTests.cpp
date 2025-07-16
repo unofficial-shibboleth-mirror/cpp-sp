@@ -116,7 +116,7 @@ private:
 struct ReloadableXMLFileFixture
 {
     ReloadableXMLFileFixture() : data_path(DATA_PATH) {
-        AgentConfig::getConfig().init(nullptr, (data_path + "console-shibboleth.ini").c_str(), true);
+        AgentConfig::getConfig().init(nullptr, (data_path + "console-agent.ini").c_str(), true);
     }
     ~ReloadableXMLFileFixture() {
         AgentConfig::getConfig().term();

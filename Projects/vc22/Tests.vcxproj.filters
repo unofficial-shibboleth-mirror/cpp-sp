@@ -89,34 +89,34 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\tests\data\console-shibboleth.ini">
+    <None Include="..\..\tests\data\console-agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\dupproperty_shibboleth.ini">
+    <None Include="..\..\tests\data\dupproperty_agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\dupsection_shibboleth.ini">
+    <None Include="..\..\tests\data\dupsection_agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\fatal-exts-shibboleth.ini">
+    <None Include="..\..\tests\data\fatal-exts-agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\noequals_shibboleth.ini">
+    <None Include="..\..\tests\data\noequals_agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\nokey_shibboleth.ini">
+    <None Include="..\..\tests\data\nokey_agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\nonfatal-exts-shibboleth.ini">
+    <None Include="..\..\tests\data\nonfatal-exts-agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\syslog-shibboleth.ini">
+    <None Include="..\..\tests\data\syslog-agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\unmatched_shibboleth.ini">
+    <None Include="..\..\tests\data\unmatched_agent.ini">
       <Filter>Data</Filter>
     </None>
-    <None Include="..\..\tests\data\impl\console-shibboleth.ini">
+    <None Include="..\..\tests\data\impl\console-agent.ini">
       <Filter>Data\impl</Filter>
     </None>
     <None Include="..\..\tests\data\impl\acl\acl-badxml.xml">
@@ -191,7 +191,7 @@
     <None Include="..\..\tests\data\impl\reqmap\internal-with-acl.xml">
       <Filter>Data\impl\reqmap</Filter>
     </None>
-    <None Include="..\..\tests\data\platform\iis\console-shibboleth.ini">
+    <None Include="..\..\tests\data\platform\iis\console-agent.ini">
       <Filter>Data\platform\iis</Filter>
     </None>
     <None Include="..\..\tests\data\platform\iis\iis.ini">
@@ -218,7 +218,7 @@
     <None Include="..\..\tests\data\remoting\impl\invalid.ini">
       <Filter>Data\remoting\impl</Filter>
     </None>
-    <None Include="..\..\tests\data\remoting\impl\shibboleth.ini">
+    <None Include="..\..\tests\data\remoting\impl\agent.ini">
       <Filter>Data\remoting\impl</Filter>
     </None>
     <None Include="..\..\tests\data\remoting\impl\trustfile.pem">
@@ -233,7 +233,7 @@
     <None Include="..\..\tests\data\util\boostpropset\tree.xml">
       <Filter>Data\util\boospropset</Filter>
     </None>
-    <None Include="..\..\tests\data\util\reloadablefile\console-shibboleth.ini">
+    <None Include="..\..\tests\data\util\reloadablefile\console-agent.ini">
       <Filter>Data\util\reloadablefile</Filter>
     </None>
     <None Include="..\..\tests\data\util\reloadablefile\external.xml">

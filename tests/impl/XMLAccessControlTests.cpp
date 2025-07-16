@@ -95,7 +95,7 @@ private:
 struct XMLAccessControlFixture
 {
     XMLAccessControlFixture() : data_path(DATA_PATH) {
-        AgentConfig::getConfig().init(nullptr, (data_path + "../console-shibboleth.ini").c_str(), true);
+        AgentConfig::getConfig().init(nullptr, (data_path + "../console-agent.ini").c_str(), true);
     }
     ~XMLAccessControlFixture() {
         AgentConfig::getConfig().term();
@@ -112,7 +112,7 @@ struct XMLAccessControlFixture
 struct PartialRegexXMLAccessControlFixture
 {
     PartialRegexXMLAccessControlFixture() : data_path(DATA_PATH) {
-        AgentConfig::getConfig().init(nullptr, (data_path + "../partial-regex-shibboleth.ini").c_str(), true);
+        AgentConfig::getConfig().init(nullptr, (data_path + "../partial-regex-agent.ini").c_str(), true);
     }
     ~PartialRegexXMLAccessControlFixture() {
         AgentConfig::getConfig().term();

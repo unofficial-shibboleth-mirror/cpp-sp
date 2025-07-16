@@ -18,7 +18,7 @@ CONFIGFILES = \
 	localLogout.html \
 	globalLogout.html \
 	partialLogout.html \
-	shibboleth.ini \
+	agent.ini \
 	attributes.ini \
 	handlers.ini \
 	request-map.xml

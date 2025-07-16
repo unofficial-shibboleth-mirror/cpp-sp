@@ -80,7 +80,7 @@
 #define SHIBSP_TX_LOGCAT "Shibboleth-TRANSACTION"
 
 /** Default name of configuration file. */
-# define SHIBSP_CONFIG  "shibboleth.ini"
+# define SHIBSP_CONFIG  "agent.ini"
 
 #ifdef WIN32
 

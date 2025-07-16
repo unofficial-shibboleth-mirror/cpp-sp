@@ -52,27 +52,27 @@
     <ClCompile Include="..\..\tests\util\ReloadableXMLFileTests.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\tests\data\console-shibboleth.ini" />
-    <None Include="..\..\tests\data\dupproperty_shibboleth.ini" />
-    <None Include="..\..\tests\data\dupsection_shibboleth.ini" />
-    <None Include="..\..\tests\data\fatal-exts-shibboleth.ini" />
-    <None Include="..\..\tests\data\impl\console-shibboleth.ini" />
-    <None Include="..\..\tests\data\noequals_shibboleth.ini" />
-    <None Include="..\..\tests\data\nokey_shibboleth.ini" />
-    <None Include="..\..\tests\data\nonfatal-exts-shibboleth.ini" />
-    <None Include="..\..\tests\data\platform\iis\console-shibboleth.ini" />
+    <None Include="..\..\tests\data\console-agent.ini" />
+    <None Include="..\..\tests\data\dupproperty_agent.ini" />
+    <None Include="..\..\tests\data\dupsection_agent.ini" />
+    <None Include="..\..\tests\data\fatal-exts-agent.ini" />
+    <None Include="..\..\tests\data\impl\console-agent.ini" />
+    <None Include="..\..\tests\data\noequals_agent.ini" />
+    <None Include="..\..\tests\data\nokey_agent.ini" />
+    <None Include="..\..\tests\data\nonfatal-exts-agent.ini" />
+    <None Include="..\..\tests\data\platform\iis\console-agent.ini" />
     <None Include="..\..\tests\data\platform\iis\iis-bad.ini" />
     <None Include="..\..\tests\data\platform\iis\iis.ini" />
     <None Include="..\..\tests\data\remoting\impl\env.ini" />
     <None Include="..\..\tests\data\remoting\impl\file-missing.ini" />
     <None Include="..\..\tests\data\remoting\impl\file.ini" />
     <None Include="..\..\tests\data\remoting\impl\invalid.ini" />
-    <None Include="..\..\tests\data\remoting\impl\shibboleth.ini" />
+    <None Include="..\..\tests\data\remoting\impl\agent.ini" />
     <None Include="..\..\tests\data\remoting\impl\trustfile.pem" />
-    <None Include="..\..\tests\data\syslog-shibboleth.ini" />
-    <None Include="..\..\tests\data\unmatched_shibboleth.ini" />
+    <None Include="..\..\tests\data\syslog-agent.ini" />
+    <None Include="..\..\tests\data\unmatched_agent.ini" />
     <None Include="..\..\tests\data\util\boostpropset\attributes.ini" />
-    <None Include="..\..\tests\data\util\reloadablefile\console-shibboleth.ini" />
+    <None Include="..\..\tests\data\util\reloadablefile\console-agent.ini" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\tests\data\impl\acl\acl-badxml.xml" />

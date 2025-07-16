@@ -37,6 +37,8 @@ using namespace std;
 const char ReloadableXMLFile::PATH_PROP_NAME[] = "path";
 const char ReloadableXMLFile::RELOAD_CHANGES_PROP_NAME[] = "reloadChanges";
 
+static bool RELOAD_CHANGES_PROP_DEFAULT = false;
+
 ReloadableXMLFile::ReloadableXMLFile(const string& rootElementName, ptree& pt, Category& log)
     : m_root(pt), m_log(log), m_rootElementName(rootElementName), m_filestamp(0)
 #ifdef HAVE_CXX17
@@ -54,7 +56,7 @@ ReloadableXMLFile::ReloadableXMLFile(const string& rootElementName, ptree& pt, C
         AgentConfig::getConfig().getPathResolver().resolve(m_source, PathResolver::SHIBSP_CFG_FILE);
 
         string_to_bool_translator tr;
-        bool reloadChanges = property_root.get(RELOAD_CHANGES_PROP_NAME, false, tr);
+        bool reloadChanges = property_root.get(RELOAD_CHANGES_PROP_NAME, RELOAD_CHANGES_PROP_DEFAULT, tr);
 #ifndef HAVE_CXX14
         if (reloadChanges) {
             log.warn("C++ compiler level does not allow for reloadChanges, ignoring");

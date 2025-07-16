@@ -43,7 +43,7 @@ namespace {
 struct MemoryFixture
 {
     MemoryFixture() : data_path(DATA_PATH) {
-        AgentConfig::getConfig().init(nullptr, (data_path + "memory-shibboleth.ini").c_str(), true);
+        AgentConfig::getConfig().init(nullptr, (data_path + "memory-agent.ini").c_str(), true);
     }
     ~MemoryFixture() {
         AgentConfig::getConfig().term();

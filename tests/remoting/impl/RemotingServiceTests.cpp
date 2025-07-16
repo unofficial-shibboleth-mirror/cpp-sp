@@ -52,7 +52,7 @@ struct RemotingFixture
 {
     RemotingFixture() : data_path(DATA_PATH) {
         setenv("SHIBSP_AGENT_SECRET", "foo", true);
-        AgentConfig::getConfig().init(nullptr, (data_path + "./shibboleth.ini").c_str(), true);
+        AgentConfig::getConfig().init(nullptr, (data_path + "./agent.ini").c_str(), true);
     }
     ~RemotingFixture() {
         AgentConfig::getConfig().term();

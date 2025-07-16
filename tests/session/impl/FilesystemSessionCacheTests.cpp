@@ -55,7 +55,7 @@ private:
 BOOST_AUTO_TEST_CASE(BogusFilesystemSessionCache)
 {
     exceptionCheck checker("Configured session cache directory was inaccessible to agent process.");
-    BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().init(nullptr, (string(DATA_PATH) + "bogus-filesystem-shibboleth.ini").c_str(), true),
+    BOOST_CHECK_EXCEPTION(AgentConfig::getConfig().init(nullptr, (string(DATA_PATH) + "bogus-filesystem-agent.ini").c_str(), true),
             ConfigurationException, checker.check_message);
 }
 
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(BogusFilesystemSessionCache)
 struct FilesystemFixture
 {
     FilesystemFixture() : data_path(DATA_PATH) {
-        AgentConfig::getConfig().init(nullptr, (data_path + "filesystem-shibboleth.ini").c_str(), true);
+        AgentConfig::getConfig().init(nullptr, (data_path + "filesystem-agent.ini").c_str(), true);
     }
     ~FilesystemFixture() {
         AgentConfig::getConfig().term();

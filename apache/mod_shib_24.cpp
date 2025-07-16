@@ -1566,7 +1566,7 @@ static command_rec shib_cmds[] = {
     AP_INIT_TAKE1("ShibPrefix", (config_fn_t)ap_set_global_string_slot, &g_szPrefix,
         RSRC_CONF, "Shibboleth installation directory"),
     AP_INIT_TAKE1("ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szConfigFile,
-        RSRC_CONF, "Path to shibboleth.ini config file"),
+        RSRC_CONF, "Path to agent.ini config file"),
 
     AP_INIT_TAKE1("ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
         (void *) offsetof (shib_server_config, szScheme),
