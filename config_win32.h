@@ -109,16 +109,16 @@
 #define HAVE_STRUCT_SOCKADDR_STORAGE 1
 
 /* Name of package */
-#define PACKAGE "shibboleth"
+#define PACKAGE "shibboleth-sp"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "https://issues.shibboleth.net/"
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "shibboleth"
+#define PACKAGE_NAME "shibboleth-sp"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "shibboleth 4.0.0"
+#define PACKAGE_STRING "shibboleth-sp 4.0.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "shibboleth-sp"
@@ -137,7 +137,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "3.5.0"
+#define VERSION "4.0.0"
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */
