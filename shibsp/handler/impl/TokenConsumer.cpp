@@ -27,6 +27,7 @@
 #include "logging/Category.h"
 #include "session/SessionCache.h"
 #include "remoting/RemotingService.h"
+#include "util/Misc.h"
 #include "util/URLEncoder.h"
 
 #include <ctime>
@@ -48,7 +49,7 @@ namespace {
 
     private:
         string m_path;
-        vector<string> m_remotedHeaders;
+        set<string> m_remotedHeaders;
     };
 };
 
@@ -61,6 +62,13 @@ namespace shibsp {
 TokenConsumer::TokenConsumer(const ptree& pt, const char* path)
     : AbstractHandler(pt), m_path(path), m_remotedHeaders({ "Cookie" })
 {
+    static const char REMOTED_HEADERS_PROP_NAME[] = "remotedHeaders";
+
+    const char* headers = getString(REMOTED_HEADERS_PROP_NAME);
+    if (headers) {
+        split_to_container(m_remotedHeaders, headers);
+        m_remotedHeaders.insert("Cookie");
+    }
 }
 
 pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const

@@ -57,6 +57,8 @@ namespace {
         DDF m_tokenConsumerConfig;
     };
 
+    static const char TYPE_PROP_NAME[] = "type";
+    static const char LEGACY_BINDING_PROP_NAME[] = "legacyBinding";
 };
 
 HandlerConfiguration::HandlerConfiguration() {}
@@ -78,7 +80,7 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
             continue;
         }
         
-        boost::optional<string> type = child.second.get_optional<string>("type");
+        boost::optional<string> type = child.second.get_optional<string>(TYPE_PROP_NAME);
         if (!type) {
             log.warn("config (%s) skipping handler at %s with no type property", pathname, child.first.c_str());
             continue;
@@ -112,7 +114,7 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
             m_tokenConsumerConfig.add(tokenConsumer);
 
             // Check for legacy "binding" value to carry along with path as the name of the node.
-            boost::optional<string> legacyBinding = child.second.get_optional<string>("legacyBinding");
+            boost::optional<string> legacyBinding = child.second.get_optional<string>(LEGACY_BINDING_PROP_NAME);
             if (legacyBinding) {
                 tokenConsumer.name(legacyBinding->c_str());
             }

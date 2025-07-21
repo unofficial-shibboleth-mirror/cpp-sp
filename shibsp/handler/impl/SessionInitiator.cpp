@@ -48,7 +48,7 @@ namespace {
 
         string m_path;
         bool m_discoveryEnabled;
-        vector<string> m_remotedHeaders;
+        set<string> m_remotedHeaders;
         vector<string> m_requestMapperSettings;
         vector<string> m_querySettings;
     };

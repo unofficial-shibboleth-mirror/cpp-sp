@@ -26,7 +26,7 @@
 #include <shibsp/util/BoostPropertySet.h>
 
 #include <string>
-#include <vector>
+#include <set>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
@@ -62,7 +62,7 @@ namespace shibsp {
          * @return wrapped structure to add to remoted data
          */
         virtual DDF wrapRequest(
-            const SPRequest& request, const std::vector<std::string>& headers, bool sendBody=true
+            const SPRequest& request, const std::set<std::string>& headers, bool sendBody=true
             ) const;
 
         /**

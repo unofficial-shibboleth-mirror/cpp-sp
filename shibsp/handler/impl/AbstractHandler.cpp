@@ -120,7 +120,7 @@ const char* Handler::getEventType() const
     return nullptr;
 }
 
-DDF AbstractHandler::wrapRequest(const SPRequest& request, const vector<string>& headers, bool sendBody) const
+DDF AbstractHandler::wrapRequest(const SPRequest& request, const set<string>& headers, bool sendBody) const
 {
     DDF in = DDF("http").structure();
     in.addmember("scheme").string(request.getScheme());
