@@ -157,7 +157,6 @@ struct shib_dir_config
 
     // Content Configuration
     char* szApplicationId;  // Shib applicationId value
-    char* szRequireWith;    // require a session using a specific initiator?
     char* szRedirectToSSL;  // redirect non-SSL requests to SSL port
     int bOff;               // flat-out disable all Shib processing
     int bBasicHijack;       // activate for AuthType Basic?
@@ -175,7 +174,6 @@ extern "C" void* create_shib_dir_config (apr_pool_t* p, char*)
     dc->tUnsettings = nullptr;
     dc->bRequestMapperAuthz = -1;
     dc->szApplicationId = nullptr;
-    dc->szRequireWith = nullptr;
     dc->szRedirectToSSL = nullptr;
     dc->bOff = -1;
     dc->bBasicHijack = -1;
@@ -245,13 +243,6 @@ extern "C" void* merge_shib_dir_config (apr_pool_t* p, void* base, void* sub)
         dc->szApplicationId=apr_pstrdup(p,parent->szApplicationId);
     else
         dc->szApplicationId=nullptr;
-
-    if (child->szRequireWith)
-        dc->szRequireWith=apr_pstrdup(p,child->szRequireWith);
-    else if (parent->szRequireWith && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "requireSessionWith")))
-        dc->szRequireWith=apr_pstrdup(p,parent->szRequireWith);
-    else
-        dc->szRequireWith=nullptr;
 
     if (child->szRedirectToSSL)
         dc->szRedirectToSSL=apr_pstrdup(p,child->szRedirectToSSL);
@@ -1030,8 +1021,6 @@ bool ApacheRequestMapper::hasProperty(const char* name) const
         }
         else if (!strcmp(name,"applicationId"))
             return m_sta->m_dc->szApplicationId != nullptr;
-        else if (!strcmp(name,"requireSessionWith"))
-            return m_sta->m_dc->szRequireWith != nullptr;
         else if (!strcmp(name,"redirectToSSL"))
             return m_sta->m_dc->szRedirectToSSL != nullptr;
         else if (m_sta->m_dc->tSettings) {
@@ -1074,8 +1063,6 @@ const char* ApacheRequestMapper::getString(const char* name, const char* default
         }
         else if (name && !strcmp(name,"applicationId") && m_sta->m_dc->szApplicationId)
             return m_sta->m_dc->szApplicationId;
-        else if (name && !strcmp(name,"requireSessionWith") && m_sta->m_dc->szRequireWith)
-            return m_sta->m_dc->szRequireWith;
         else if (name && !strcmp(name,"redirectToSSL") && m_sta->m_dc->szRedirectToSSL)
             return m_sta->m_dc->szRedirectToSSL;
         else if (m_sta->m_dc->tSettings) {
@@ -1589,9 +1576,6 @@ static command_rec shib_cmds[] = {
     AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireSession),
         OR_AUTHCFG, "(DEPRECATED) Initiates a new session if one does not exist"),
-    AP_INIT_TAKE1("ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
-        (void *) offsetof (shib_dir_config, szRequireWith),
-        OR_AUTHCFG, "(DEPRECATED) Initiates a new session if one does not exist using a specific SessionInitiator"),
     AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
         (void *) offsetof (shib_dir_config, szRedirectToSSL),
         OR_AUTHCFG, "(DEPRECATED) Redirect non-SSL requests to designated port"),
