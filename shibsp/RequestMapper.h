@@ -55,6 +55,11 @@ namespace shibsp {
         typedef std::pair<const PropertySet*,AccessControl*> Settings;
 
         static const char APPLICATION_ID_PROP_NAME[];
+        static const char AUTH_TYPE_PROP_NAME[];
+        static const char REDIRECT_ERRORS_PROP_NAME[];
+        static const char REDIRECT_TO_SSL_PROP_NAME[];
+        static const char REQUIRE_SESSION_PROP_NAME[];
+        static const char REQUIRE_LOGOUT_WITH_PROP_NAME[];
         static const char HANDLER_CONFIG_ID_PROP_NAME[];
         static const char ATTRIBUTE_CONFIG_ID_PROP_NAME[];
         static const char SESSION_HOOK_PROP_NAME[];
@@ -65,6 +70,7 @@ namespace shibsp {
         static const char SESSION_COOKIE_NAME_PROP_NAME[];
 
         static const char APPLICATION_ID_PROP_DEFAULT[];
+        static bool REQUIRE_SESSION_PROP_DEFAULT;
         static unsigned int LIFETIME_PROP_DEFAULT;
         static unsigned int TIMEOUT_PROP_DEFAULT;
         static bool CONSISTENT_ADDRESS_PROP_DEFAULT;

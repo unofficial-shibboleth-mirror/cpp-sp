@@ -168,6 +168,11 @@ void SHIBSP_API shibsp::registerRequestMappers()
 }
 
 const char RequestMapper::APPLICATION_ID_PROP_NAME[] = "applicationId";
+const char RequestMapper::AUTH_TYPE_PROP_NAME[] = "authType";
+const char RequestMapper::REDIRECT_ERRORS_PROP_NAME[] = "redirectErrors";
+const char RequestMapper::REDIRECT_TO_SSL_PROP_NAME[] = "redirectToSSL";
+const char RequestMapper::REQUIRE_SESSION_PROP_NAME[] = "requireSession";
+const char RequestMapper::REQUIRE_LOGOUT_WITH_PROP_NAME[] = "requireLogoutWith";
 const char RequestMapper::HANDLER_CONFIG_ID_PROP_NAME[] = "handlerConfigId";
 const char RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME[] = "attributeConfigId";
 const char RequestMapper::SESSION_HOOK_PROP_NAME[] = "sessionHook";
@@ -178,6 +183,7 @@ const char RequestMapper::COOKIE_MAXAGE_PROP_NAME[] = "cookieMaxAge";
 const char RequestMapper::SESSION_COOKIE_NAME_PROP_NAME[] = "sessionCookieName";
 
 const char RequestMapper::APPLICATION_ID_PROP_DEFAULT[] = "default";
+bool RequestMapper::REQUIRE_SESSION_PROP_DEFAULT = false;
 unsigned int RequestMapper::LIFETIME_PROP_DEFAULT = 3600 * 8;
 unsigned int RequestMapper::TIMEOUT_PROP_DEFAULT = 3600;
 bool RequestMapper::CONSISTENT_ADDRESS_PROP_DEFAULT = true;

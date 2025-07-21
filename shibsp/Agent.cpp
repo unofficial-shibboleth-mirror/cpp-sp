@@ -69,7 +69,6 @@ Agent::~Agent()
 
 long Agent::handleError(Category& log, SPRequest& request, const Session* session, exception* ex, bool mayRedirect) const
 {
-    // The properties we need can be set in the RequestMap, or the Errors element.
     bool externalParameters = false;
     const char* redirectErrors = nullptr;
 
@@ -92,9 +91,10 @@ long Agent::handleError(Category& log, SPRequest& request, const Session* sessio
     // Now look for settings in the request map.
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
+        // Not using this yet, probably TBD.
         externalParameters = settings.first->getBool("externalParameters", false);
         if (mayRedirect)
-            redirectErrors = settings.first->getString("redirectErrors");
+            redirectErrors = settings.first->getString(RequestMapper::REDIRECT_ERRORS_PROP_NAME);
     }
     catch (const exception& nested) {
         request.error(nested.what());
@@ -131,7 +131,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 
         // If not SSL, check to see if we should block or redirect it.
         if (!request.isSecure()) {
-            const char* redirectToSSL = settings.first->getString("redirectToSSL");
+            const char* redirectToSSL = settings.first->getString(RequestMapper::REDIRECT_TO_SSL_PROP_NAME);
             if (redirectToSSL) {
                 if (!strcasecmp("GET",request.getMethod()) || !strcasecmp("HEAD",request.getMethod())) {
                     // Compute the new target URL
@@ -166,9 +166,10 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
         }
 
         // These settings dictate how to proceed.
-        const char* authType = settings.first->getString("authType");
-        bool requireSession = settings.first->getBool("requireSession", false);
-        const char* requireLogoutWith = settings.first->getString("requireLogoutWith");
+        const char* authType = settings.first->getString(RequestMapper::AUTH_TYPE_PROP_NAME);
+        bool requireSession = settings.first->getBool(
+            RequestMapper::REQUIRE_SESSION_PROP_NAME, RequestMapper::REQUIRE_SESSION_PROP_DEFAULT);
+        const char* requireLogoutWith = settings.first->getString(RequestMapper::REQUIRE_LOGOUT_WITH_PROP_NAME);
 
         // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
@@ -264,8 +265,9 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
         RequestMapper::Settings settings = request.getRequestSettings();
 
         // Three settings dictate how to proceed.
-        const char* authType = settings.first->getString("authType");
-        bool requireSession = settings.first->getBool("requireSession", false);
+        const char* authType = settings.first->getString(RequestMapper::AUTH_TYPE_PROP_NAME);
+        bool requireSession = settings.first->getBool(
+            RequestMapper::REQUIRE_SESSION_PROP_NAME, RequestMapper::REQUIRE_SESSION_PROP_DEFAULT);
 
         // If no session is required AND the AuthType (an Apache-derived concept) isn't recognized,
         // then we ignore this request and consider it unprotected. Apache might lie to us if
@@ -348,9 +350,9 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
         request.setHeader("Shib-Session-ID", session.mutex()->getID());
         request.setHeader("Shib-Application-ID", session.mutex()->getApplicationID());
 
-        unsigned int lifetime = settings.first->getUnsignedInt("lifetime", 28800);
+        unsigned int lifetime = settings.first->getUnsignedInt(RequestMapper::LIFETIME_PROP_NAME, RequestMapper::LIFETIME_PROP_DEFAULT);
         request.setHeader( "Shib-Session-Expires", boost::lexical_cast<string>(session.mutex()->getCreation() + lifetime).c_str());
-        unsigned int timeout = settings.first->getUnsignedInt("timeout", 3600);
+        unsigned int timeout = settings.first->getUnsignedInt(RequestMapper::TIMEOUT_PROP_NAME, RequestMapper::TIMEOUT_PROP_DEFAULT);
         if (timeout > 0) {
             request.setHeader( "Shib-Session-Inactivity", boost::lexical_cast<string>(session.mutex()->getLastAccess() + timeout).c_str());
         }
@@ -378,7 +380,7 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
 
         // If not SSL, check to see if we should block or redirect it.
         if (!request.isSecure()) {
-            const char* redirectToSSL = settings.first->getString("redirectToSSL");
+            const char* redirectToSSL = settings.first->getString(RequestMapper::REDIRECT_TO_SSL_PROP_NAME);
             if (redirectToSSL) {
                 if (!strcasecmp("GET",request.getMethod()) || !strcasecmp("HEAD",request.getMethod())) {
                     // Compute the new target URL
@@ -408,7 +410,7 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
         // so the path info is the next character (or null).
 
         const HandlerConfiguration& handlerConfig = request.getAgent().getHandlerConfiguration(
-            request.getRequestSettings().first->getString("handlerConfigID"));
+            request.getRequestSettings().first->getString(RequestMapper::HANDLER_CONFIG_ID_PROP_NAME));
         const Handler* handler = handlerConfig.getHandler(targetURL + strlen(handlerURL));
         if (!handler) {
             throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
