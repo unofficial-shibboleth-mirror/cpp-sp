@@ -210,7 +210,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
     ts << date::format("%FT%TZ", date::floor<chrono::milliseconds>(now));
     string timestamp(ts.str());
 
-    const char* target = request.getParameter("target");
+    const char* target = request.getParameter(RequestMapper::TARGET_PROP_NAME);
     if (target) {
         // RequestMap query, so handle it inproc.
         DummyRequest dummy(target);

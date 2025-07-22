@@ -68,12 +68,15 @@ namespace shibsp {
         static const char CONSISTENT_ADDRESS_PROP_NAME[];
         static const char COOKIE_MAXAGE_PROP_NAME[];
         static const char SESSION_COOKIE_NAME_PROP_NAME[];
+        static const char TARGET_PROP_NAME[];
+        static const char PRESERVE_POST_DATA_PROP_NAME[];
 
         static const char APPLICATION_ID_PROP_DEFAULT[];
         static bool REQUIRE_SESSION_PROP_DEFAULT;
         static unsigned int LIFETIME_PROP_DEFAULT;
         static unsigned int TIMEOUT_PROP_DEFAULT;
         static bool CONSISTENT_ADDRESS_PROP_DEFAULT;
+        static bool PRESERVE_POST_DATA_PROP_DEFAULT;
 
         /**
          * Map request to settings.

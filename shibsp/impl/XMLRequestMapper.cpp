@@ -181,6 +181,8 @@ const char RequestMapper::TIMEOUT_PROP_NAME[] = "timeout";
 const char RequestMapper::CONSISTENT_ADDRESS_PROP_NAME[] = "consistentAddress";
 const char RequestMapper::COOKIE_MAXAGE_PROP_NAME[] = "cookieMaxAge";
 const char RequestMapper::SESSION_COOKIE_NAME_PROP_NAME[] = "sessionCookieName";
+const char RequestMapper::TARGET_PROP_NAME[] = "target";
+const char RequestMapper::PRESERVE_POST_DATA_PROP_NAME[] = "preservePostData";
 
 const char RequestMapper::APPLICATION_ID_PROP_DEFAULT[] = "default";
 bool RequestMapper::REQUIRE_SESSION_PROP_DEFAULT = false;

@@ -71,11 +71,16 @@ namespace shibsp {
 
 SessionHandler::SessionHandler(const ptree& pt) : SecuredHandler(pt), m_values(false)
 {
-    m_contentType = getString("contentType", "");
+    static const char CONTENT_TYPE_PROP_NAME[] = "contentType";
+    static const char SHOW_ATTRIBUTE_VALUES_PROP_NAME[] = "showAttributeValues";
+
+    static bool SHOW_ATTRIBUTE_VALUES_PROP_DEFAULT = false;
+
+    m_contentType = getString(CONTENT_TYPE_PROP_NAME, "");
     if (!m_contentType.empty() && m_contentType != "application/json" && m_contentType != "text/html")
         throw ConfigurationException("Unsupported contentType property in Session Handler configuration.");
 
-    m_values = getBool("showAttributeValues", false);
+    m_values = getBool(SHOW_ATTRIBUTE_VALUES_PROP_NAME, SHOW_ATTRIBUTE_VALUES_PROP_DEFAULT);
 }
 
 namespace {

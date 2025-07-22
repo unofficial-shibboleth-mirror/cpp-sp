@@ -1016,12 +1016,12 @@ bool ApacheRequestMapper::hasProperty(const char* name) const
 {
     if (m_sta && name) {
         // Override Apache-settable string properties.
-        if (!strcmp(name,"authType")) {
+        if (!strcmp(name, RequestMapper::AUTH_TYPE_PROP_NAME)) {
             return ap_auth_type(m_sta->m_req) != nullptr;
         }
-        else if (!strcmp(name,"applicationId"))
+        else if (!strcmp(name, RequestMapper::APPLICATION_ID_PROP_NAME))
             return m_sta->m_dc->szApplicationId != nullptr;
-        else if (!strcmp(name,"redirectToSSL"))
+        else if (!strcmp(name, RequestMapper::REDIRECT_TO_SSL_PROP_NAME))
             return m_sta->m_dc->szRedirectToSSL != nullptr;
         else if (m_sta->m_dc->tSettings) {
             return apr_table_get(m_sta->m_dc->tSettings, name) != nullptr;
@@ -1036,7 +1036,7 @@ bool ApacheRequestMapper::getBool(const char* name, bool defaultValue) const
 {
     if (m_sta && name) {
         // Override Apache-settable boolean properties.
-        if (!strcmp(name,"requireSession") && m_sta->m_dc->bRequireSession != -1)
+        if (!strcmp(name, RequestMapper::REQUIRE_SESSION_PROP_NAME) && m_sta->m_dc->bRequireSession != -1)
             return m_sta->m_dc->bRequireSession == 1;
         else if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
@@ -1052,7 +1052,7 @@ const char* ApacheRequestMapper::getString(const char* name, const char* default
 {
     if (m_sta) {
         // Override Apache-settable string properties.
-        if (name && !strcmp(name,"authType")) {
+        if (name && !strcmp(name, RequestMapper::AUTH_TYPE_PROP_NAME)) {
             const char* auth_type = ap_auth_type(m_sta->m_req);
             if (auth_type) {
                 // Check for Basic Hijack
@@ -1061,9 +1061,9 @@ const char* ApacheRequestMapper::getString(const char* name, const char* default
                 return auth_type;
             }
         }
-        else if (name && !strcmp(name,"applicationId") && m_sta->m_dc->szApplicationId)
+        else if (name && !strcmp(name, RequestMapper::APPLICATION_ID_PROP_NAME) && m_sta->m_dc->szApplicationId)
             return m_sta->m_dc->szApplicationId;
-        else if (name && !strcmp(name,"redirectToSSL") && m_sta->m_dc->szRedirectToSSL)
+        else if (name && !strcmp(name, RequestMapper::REDIRECT_TO_SSL_PROP_NAME) && m_sta->m_dc->szRedirectToSSL)
             return m_sta->m_dc->szRedirectToSSL;
         else if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
@@ -1079,7 +1079,7 @@ unsigned int ApacheRequestMapper::getUnsignedInt(const char* name, unsigned int 
 {
     if (m_sta) {
         // Override Apache-settable int properties.
-        if (name && !strcmp(name,"redirectToSSL") && m_sta->m_dc->szRedirectToSSL)
+        if (name && !strcmp(name, RequestMapper::REDIRECT_TO_SSL_PROP_NAME) && m_sta->m_dc->szRedirectToSSL)
             return atoi(m_sta->m_dc->szRedirectToSSL);
         else if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
@@ -1095,7 +1095,7 @@ int ApacheRequestMapper::getInt(const char* name, int defaultValue) const
 {
     if (m_sta) {
         // Override Apache-settable int properties.
-        if (name && !strcmp(name,"redirectToSSL") && m_sta->m_dc->szRedirectToSSL)
+        if (name && !strcmp(name, RequestMapper::REDIRECT_TO_SSL_PROP_NAME) && m_sta->m_dc->szRedirectToSSL)
             return atoi(m_sta->m_dc->szRedirectToSSL);
         else if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
