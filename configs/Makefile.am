@@ -13,7 +13,6 @@ pkgsysconf_DATA = \
 # them from SRCDIR.
 CONFIGFILES = \
 	attrChecker.html \
-	discoveryTemplate.html \
 	postTemplate.html \
 	localLogout.html \
 	globalLogout.html \
