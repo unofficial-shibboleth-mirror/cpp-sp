@@ -87,7 +87,7 @@ namespace {
     };
 
     static const char CACHE_DIRECTORY_PROP_NAME[] = "cacheDirectory";
-    static const char FILE_CLEANUP_TRACKING_FILE_PROP_NAME[] = "fileCleanupTrackingfile";
+    static const char FILE_CLEANUP_TRACKING_FILE_PROP_NAME[] = "fileCleanupTrackingFile";
     static const char FILE_CLEANUP_INTERVAL_PROP_NAME[] = "fileCleanupInterval";
     static const char FILE_TIMEOUT_PROP_NAME[] = "fileTimeout";
 
