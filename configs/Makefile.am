@@ -6,8 +6,7 @@ pkgrundir = $(localstatedir)/run/@PACKAGE_NAME@
 pkgcachedir = $(localstatedir)/cache/@PACKAGE_NAME@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgsysconf_DATA = \
-	apache24.config \
-	seckeygen.sh
+	apache24.config
 
 # While BUILTCONFIGFILES are processed, these are not; so we should pull
 # them from SRCDIR.
@@ -59,13 +58,10 @@ install-data-local:	all-data-local
 		$(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)${pkgsysconfdir}/$$f.dist; \
 	done
 
-install-data-hook:
-	chmod +x $(DESTDIR)$(pkgsysconfdir)/seckeygen.sh
-
 CLEANFILES = \
 	apache24.config
 
 EXTRA_DIST = \
 	apache24.config.in \
-	seckeygen.bat \
+	iis-config.ini \
 	$(CONFIGFILES)
