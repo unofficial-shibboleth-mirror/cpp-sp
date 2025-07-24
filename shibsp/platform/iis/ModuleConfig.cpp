@@ -12,14 +12,14 @@
  * limitations under the License.
  */
 
+#include "internal.h"
 
+#include "Agent.h"
+#include "AgentConfig.h"
 #include "ModuleConfig.h"
-
-#include <shibsp/Agent.h>
-#include <shibsp/AgentConfig.h>
-#include <shibsp/logging/Category.h>
-#include <shibsp/util/BoostPropertySet.h>
-#include <shibsp/util/PathResolver.h>
+#include "logging/Category.h"
+#include "util/BoostPropertySet.h"
+#include "util/PathResolver.h"
 
 #include <map>
 #include <memory>
@@ -54,16 +54,12 @@ namespace {
 
 };
 
-const char ModuleConfig::USE_VARIABLES_PROP_NAME[] = "useVariables";
-const char ModuleConfig::USE_HEADERS_PROP_NAME[] = "useHeaders";
 const char ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME[] = "authenticatedRole";
 const char ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME[] = "roleAttributes";
 const char ModuleConfig::NORMALIZE_REQUEST_PROP_NAME[] = "normalizeRequest";
 const char ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME[] = "safeHeaderNames";
 const char ModuleConfig::HANDLER_PREFIX_PROP_NAME[] = "handlerPrefix";
 
-bool ModuleConfig::USE_VARIABLES_PROP_DEFAULT = true;
-bool ModuleConfig::USE_HEADERS_PROP_DEFAULT = false;
 const char ModuleConfig::AUTHENTICATED_ROLE_PROP_DEFAULT[] = "ShibbolethAuthN";
 bool ModuleConfig::NORMALIZE_REQUEST_PROP_DEFAULT = true;
 const char ModuleConfig::HANDLER_PREFIX_PROP_DEFAULT[] = "/Shibboleth.sso";

@@ -65,7 +65,7 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
             RequestMapper::USE_HEADERS_PROP_NAME, RequestMapper::USE_HEADERS_PROP_DEFAULT);
     }
     else {
-        m_useHeaders = site.getBool(ModuleConfig::USE_HEADERS_PROP_NAME, ModuleConfig::USE_HEADERS_PROP_DEFAULT);
+        m_useHeaders = site.getBool(RequestMapper::USE_HEADERS_PROP_NAME, RequestMapper::USE_HEADERS_PROP_DEFAULT);
     }
 
     if (mappedProperties->hasProperty(RequestMapper::USE_VARIABLES_PROP_NAME)) {
@@ -73,7 +73,7 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
             RequestMapper::USE_VARIABLES_PROP_NAME, RequestMapper::USE_VARIABLES_PROP_DEFAULT);
     }
     else {
-        m_useVariables = site.getBool(ModuleConfig::USE_VARIABLES_PROP_NAME, ModuleConfig::USE_VARIABLES_PROP_DEFAULT);
+        m_useVariables = site.getBool(RequestMapper::USE_VARIABLES_PROP_NAME, RequestMapper::USE_VARIABLES_PROP_DEFAULT);
     }
 
     // This default matches the previous setting.

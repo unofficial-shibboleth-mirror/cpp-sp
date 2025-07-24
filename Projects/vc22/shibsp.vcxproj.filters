@@ -168,9 +168,6 @@
     <ClInclude Include="..\..\shibsp\util\URLEncoder.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\shibsp\internal.h">
-      <Filter>Header Files\Impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\shibsp\logging\impl\AbstractLoggingService.h">
       <Filter>Header Files\Impl</Filter>
     </ClInclude>
@@ -244,6 +241,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\shibsp\csprng\csprng.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
