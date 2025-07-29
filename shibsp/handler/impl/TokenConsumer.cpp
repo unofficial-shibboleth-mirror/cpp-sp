@@ -73,6 +73,8 @@ TokenConsumer::TokenConsumer(const ptree& pt, const char* path)
 
 pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
 {
+    // TODO: check for sessio hook return to break loop.
+
     bool wasPassive;
     string target;
 

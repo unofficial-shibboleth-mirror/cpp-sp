@@ -83,6 +83,15 @@ RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
     return m_settings;
 }
 
+bool AbstractSPRequest::isUseHeaders() const {
+    return getRequestSettings().first->getBool(
+        RequestMapper::USE_HEADERS_PROP_NAME, RequestMapper::USE_HEADERS_PROP_DEFAULT);
+}
+bool AbstractSPRequest::isUseVariables() const {
+    return getRequestSettings().first->getBool(
+        RequestMapper::USE_VARIABLES_PROP_NAME, RequestMapper::USE_VARIABLES_PROP_DEFAULT);
+}
+
 unique_lock<Session> AbstractSPRequest::getSession(bool checkTimeout, bool ignoreAddress)
 {
     return getAgent().getSessionCache()->find(*this, checkTimeout, ignoreAddress);

@@ -149,14 +149,9 @@ struct shib_dir_config
     // RM Configuration
     int bRequestMapperAuthz;// support RequestMapper AccessControl plugins
 
-    // Content Configuration
-    char* szApplicationId;  // Shib applicationId value
-    char* szRedirectToSSL;  // redirect non-SSL requests to SSL port
+    // Dedicated content Configuration
     int bOff;               // flat-out disable all Shib processing
     int bBasicHijack;       // activate for AuthType Basic?
-    int bRequireSession;    // require a session?
-    int bUseEnvVars;        // use environment?
-    int bUseHeaders;        // use headers?
     int bExpireRedirects;   // expire redirects?
 };
 
@@ -167,13 +162,8 @@ extern "C" void* create_shib_dir_config (apr_pool_t* p, char*)
     dc->tSettings = nullptr;
     dc->tUnsettings = nullptr;
     dc->bRequestMapperAuthz = -1;
-    dc->szApplicationId = nullptr;
-    dc->szRedirectToSSL = nullptr;
     dc->bOff = -1;
     dc->bBasicHijack = -1;
-    dc->bRequireSession = -1;
-    dc->bUseEnvVars = -1;
-    dc->bUseHeaders = -1;
     dc->bExpireRedirects = -1;
     return dc;
 }
@@ -231,31 +221,8 @@ extern "C" void* merge_shib_dir_config (apr_pool_t* p, void* base, void* sub)
 
     dc->bRequestMapperAuthz = ((child->bRequestMapperAuthz==-1) ? parent->bRequestMapperAuthz : child->bRequestMapperAuthz);
 
-    if (child->szApplicationId)
-        dc->szApplicationId=apr_pstrdup(p,child->szApplicationId);
-    else if (parent->szApplicationId && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "applicationId")))
-        dc->szApplicationId=apr_pstrdup(p,parent->szApplicationId);
-    else
-        dc->szApplicationId=nullptr;
-
-    if (child->szRedirectToSSL)
-        dc->szRedirectToSSL=apr_pstrdup(p,child->szRedirectToSSL);
-    else if (parent->szRedirectToSSL && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "redirectToSSL")))
-        dc->szRedirectToSSL=apr_pstrdup(p,parent->szRedirectToSSL);
-    else
-        dc->szRedirectToSSL=nullptr;
-
-    if (child->bRequireSession != -1)
-        dc->bRequireSession = child->bRequireSession;
-    else if (parent->bRequireSession != -1 && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "requireSession")))
-        dc->bRequireSession = parent->bRequireSession;
-    else
-        dc->bRequireSession = -1;
-
     dc->bOff = ((child->bOff == -1) ? parent->bOff : child->bOff);
     dc->bBasicHijack = ((child->bBasicHijack == -1) ? parent->bBasicHijack : child->bBasicHijack);
-    dc->bUseEnvVars = ((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
-    dc->bUseHeaders = ((child->bUseHeaders==-1) ? parent->bUseHeaders : child->bUseHeaders);
     dc->bExpireRedirects = ((child->bExpireRedirects==-1) ? parent->bExpireRedirects : child->bExpireRedirects);
     return dc;
 }
@@ -336,15 +303,6 @@ public:
             debug("shib_check_user running more than once");
     }
     return true;
-  }
-
-  bool isUseHeaders() const {
-    // Headers only used if turned on.
-    return m_dc->bUseHeaders == 1;
-  }
-  bool isUseVariables() const {
-    // Variables used if not turned off.
-    return m_dc->bUseEnvVars != 0;
   }
   const char* getScheme() const {
     return m_sc->szScheme ? m_sc->szScheme : ap_http_scheme(m_req);
@@ -626,7 +584,7 @@ extern "C" int shib_check_user(request_rec* r)
         pair<bool,long> res = psta->getAgent().doAuthentication(*psta, true);
         apr_pool_userdata_setn((const void*)42,g_UserDataKey,nullptr,r->pool);
         // If directed, install a spoof key to recognize when we've already cleared headers.
-        if (!g_spoofKey.empty() && (((shib_dir_config*)ap_get_module_config(r->per_dir_config, &shib_module))->bUseHeaders == 1))
+        if (!g_spoofKey.empty() && psta->isUseHeaders())
             apr_table_set(r->headers_in, "Shib-Spoof-Check", g_spoofKey.c_str());
         if (res.first) {
             // This is insane, but Apache's internal request.c logic insists that an auth module
@@ -766,15 +724,15 @@ extern "C" int shib_auth_checker(request_rec* r)
 // Overlays environment variables on top of subprocess table.
 extern "C" int shib_fixups(request_rec* r)
 {
+    shib_request_config* rc = (shib_request_config*)ap_get_module_config(r->request_config, &shib_module);
+    if (!rc || !rc->env || apr_is_empty_table(rc->env) ||  !rc->sta) {
+        return DECLINED;
+    }
+
     shib_dir_config *dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &shib_module);
-    if (dc->bOff==1 || dc->bUseEnvVars==0)
+    if (dc->bOff==1 || !rc->sta->isUseVariables()) {
         return DECLINED;
-
-    ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_fixups entered");
-
-    shib_request_config *rc = (shib_request_config*)ap_get_module_config(r->request_config, &shib_module);
-    if (rc==nullptr || rc->env==nullptr || apr_is_empty_table(rc->env))
-        return DECLINED;
+    }
 
     ap_log_rerror(APLOG_MARK, APLOG_DEBUG|APLOG_NOERRNO, 0, r, "shib_fixups adding %d vars", apr_table_elts(rc->env)->nelts);
     r->subprocess_env = apr_table_overlay(r->pool, r->subprocess_env, rc->env);
@@ -1010,15 +968,11 @@ bool ApacheRequestMapper::hasProperty(const char* name) const
 {
     if (m_sta && name) {
         // Override Apache-settable string properties.
-        if (!strcmp(name, RequestMapper::AUTH_TYPE_PROP_NAME)) {
-            return ap_auth_type(m_sta->m_req) != nullptr;
+        if (!strcmp(name, RequestMapper::AUTH_TYPE_PROP_NAME) && ap_auth_type(m_sta->m_req) != nullptr) {
+            return true;
         }
-        else if (!strcmp(name, RequestMapper::APPLICATION_ID_PROP_NAME))
-            return m_sta->m_dc->szApplicationId != nullptr;
-        else if (!strcmp(name, RequestMapper::REDIRECT_TO_SSL_PROP_NAME))
-            return m_sta->m_dc->szRedirectToSSL != nullptr;
-        else if (m_sta->m_dc->tSettings) {
-            return apr_table_get(m_sta->m_dc->tSettings, name) != nullptr;
+        else if (m_sta->m_dc->tSettings && apr_table_get(m_sta->m_dc->tSettings, name) != nullptr) {
+            return true;
         }
     }
 
@@ -1030,12 +984,11 @@ bool ApacheRequestMapper::getBool(const char* name, bool defaultValue) const
 {
     if (m_sta && name) {
         // Override Apache-settable boolean properties.
-        if (!strcmp(name, RequestMapper::REQUIRE_SESSION_PROP_NAME) && m_sta->m_dc->bRequireSession != -1)
-            return m_sta->m_dc->bRequireSession == 1;
-        else if (m_sta->m_dc->tSettings) {
+        if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
-            if (prop)
-                return !strcmp(prop, "true") || !strcmp(prop, "1") || !strcmp(prop, "On");
+            if (prop) {
+                return !strcasecmp(prop, "true") || !strcasecmp(prop, "1") || !strcasecmp(prop, "On");
+            }
         }
     }
     return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
@@ -1055,14 +1008,11 @@ const char* ApacheRequestMapper::getString(const char* name, const char* default
                 return auth_type;
             }
         }
-        else if (name && !strcmp(name, RequestMapper::APPLICATION_ID_PROP_NAME) && m_sta->m_dc->szApplicationId)
-            return m_sta->m_dc->szApplicationId;
-        else if (name && !strcmp(name, RequestMapper::REDIRECT_TO_SSL_PROP_NAME) && m_sta->m_dc->szRedirectToSSL)
-            return m_sta->m_dc->szRedirectToSSL;
         else if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
-            if (prop)
+            if (prop) {
                 return prop;
+            }
         }
     }
     return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
@@ -1073,12 +1023,11 @@ unsigned int ApacheRequestMapper::getUnsignedInt(const char* name, unsigned int 
 {
     if (m_sta) {
         // Override Apache-settable int properties.
-        if (name && !strcmp(name, RequestMapper::REDIRECT_TO_SSL_PROP_NAME) && m_sta->m_dc->szRedirectToSSL)
-            return atoi(m_sta->m_dc->szRedirectToSSL);
-        else if (m_sta->m_dc->tSettings) {
+        if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
-            if (prop)
+            if (prop) {
                 return atoi(prop);
+            }
         }
     }
     return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
@@ -1089,12 +1038,11 @@ int ApacheRequestMapper::getInt(const char* name, int defaultValue) const
 {
     if (m_sta) {
         // Override Apache-settable int properties.
-        if (name && !strcmp(name, RequestMapper::REDIRECT_TO_SSL_PROP_NAME) && m_sta->m_dc->szRedirectToSSL)
-            return atoi(m_sta->m_dc->szRedirectToSSL);
-        else if (m_sta->m_dc->tSettings) {
+        if (m_sta->m_dc->tSettings) {
             const char* prop = apr_table_get(m_sta->m_dc->tSettings, name);
-            if (prop)
+            if (prop) {
                 return atoi(prop);
+            }
         }
     }
     return m_props && (!m_sta->m_dc->tUnsettings || !apr_table_get(m_sta->m_dc->tUnsettings, name))
@@ -1322,25 +1270,63 @@ extern "C" const char* shib_set_server_flag_slot(cmd_parms* parms, void*, int ar
 
 extern "C" const char* shib_ap_set_file_slot(cmd_parms* parms, void* arg1, const char* arg2)
 {
-  ap_set_file_slot(parms, arg1, arg2);
-  return DECLINE_CMD;
+    ap_set_file_slot(parms, arg1, arg2);
+    return DECLINE_CMD;
 }
 
-extern "C" const char* shib_table_set(cmd_parms* parms, shib_dir_config* dc, const char* arg1, const char* arg2)
+extern "C" const char* shib_table_set(cmd_parms* cmd, shib_dir_config* dc, const char* arg1, const char* arg2)
 {
-    if (!dc->tSettings)
-        dc->tSettings = apr_table_make(parms->pool, 4);
-    apr_table_set(dc->tSettings, arg1, arg2);
+    if (!dc->tSettings) {
+        dc->tSettings = apr_table_make(cmd->pool, 4);
+    }    
+
+    if (!strcasecmp(arg1, "ShibUseHeaders")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting useHeaders 1|0'", arg1);
+        apr_table_set(dc->tSettings, RequestMapper::USE_HEADERS_PROP_NAME, arg2);
+    }
+    else if (!strcasecmp(arg1, "ShibUseEnvironment")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting useVariables 1|0'", arg1);
+        apr_table_set(dc->tSettings, RequestMapper::USE_VARIABLES_PROP_NAME, arg2);
+    }
+    else {
+        apr_table_set(dc->tSettings, arg1, arg2);
+    }
+
     return nullptr;
 }
 
 extern "C" const char* shib_table_unset(cmd_parms* parms, shib_dir_config* dc, const char* arg1)
 {
-    if (!dc->tUnsettings)
+    if (!dc->tUnsettings) {
         dc->tUnsettings = apr_table_make(parms->pool, 4);
+    }
     apr_table_set(dc->tUnsettings, arg1, "");
     return nullptr;
 }
+
+extern "C" const char* shib_deprecated_table_set(cmd_parms* cmd, shib_dir_config* dc, const char* arg1)
+{
+
+    if (!strcasecmp(arg1, "ShibUseHeaders")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting useHeaders 1|0'", arg1);
+        return shib_table_set(cmd, dc, (RequestMapper::USE_HEADERS_PROP_NAME, arg1);
+    }
+    else if (!strcasecmp(arg1, "ShibUseEnvironment")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting useVariables 1|0'", arg1);
+        return shib_table_set(cmd, dc, (RequestMapper::USE_VARIABLES_PROP_NAME, arg1);
+    }
+}
+
+extern"C" const char* deprecated_set_flag_slot(cmd_parms *cmd, void *struct_ptr, int arg)
+{
+    return ap_set_flag_slot(cmd, struct_ptr, arg);
+}
+
+//const char* deprecated_set_string_slot(cmd_parms *cmd, void *struct_ptr, const char* arg);
 
 /*
  * shib_exit()
@@ -1561,34 +1547,22 @@ static command_rec shib_cmds[] = {
     AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bOff),
         OR_AUTHCFG, "Disable all Shib module activity here to save processing effort"),
-    AP_INIT_TAKE1("ShibApplicationId", (config_fn_t)ap_set_string_slot,
-        (void *) offsetof (shib_dir_config, szApplicationId),
-        OR_AUTHCFG, "(DEPRECATED) Set Shibboleth applicationId property for content"),
     AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bBasicHijack),
-        OR_AUTHCFG, "(DEPRECATED) Respond to AuthType Basic and convert to shibboleth"),
-    AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
-        (void *) offsetof (shib_dir_config, bRequireSession),
-        OR_AUTHCFG, "(DEPRECATED) Initiates a new session if one does not exist"),
-    AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
-        (void *) offsetof (shib_dir_config, szRedirectToSSL),
-        OR_AUTHCFG, "(DEPRECATED) Redirect non-SSL requests to designated port"),
+        OR_AUTHCFG, "Respond to AuthType Basic and convert to shibboleth"),
     AP_INIT_FLAG("ShibRequestMapperAuthz", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequestMapperAuthz),
         OR_AUTHCFG, "Support access control via shibboleth2.xml / RequestMapper"),
     AP_INIT_FLAG("ShibCompatValidUser", (config_fn_t)shib_set_server_flag_slot,
         (void *) offsetof (shib_server_config, bCompatValidUser),
         RSRC_CONF, "Handle 'require valid-user' in mod_authz_user-compatible fashion (requiring username)"),
-    AP_INIT_FLAG("ShibUseEnvironment", (config_fn_t)ap_set_flag_slot,
-        (void *) offsetof (shib_dir_config, bUseEnvVars),
-        OR_AUTHCFG, "Export attributes using environment variables (default)"),
-    AP_INIT_FLAG("ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
-        (void *) offsetof (shib_dir_config, bUseHeaders),
-        OR_AUTHCFG, "Export attributes using custom HTTP headers"),
+    AP_INIT_TAKE1("ShibUseEnvironment", (config_fn_t)shib_deprecated_table_set, nullptr,
+        OR_AUTHCFG, "DEPRECATED: Export attributes using environment variables"),
+    AP_INIT_TAKE1("ShibUseHeaders", (config_fn_t)shib_deprecated_table_set, nullptr,
+        OR_AUTHCFG, "DEPRECATED: Export attributes using custom HTTP headers"),
     AP_INIT_FLAG("ShibExpireRedirects", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bExpireRedirects),
         OR_AUTHCFG, "Expire SP-generated redirects"),
-
     {nullptr}
 };
 

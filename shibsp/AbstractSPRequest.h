@@ -62,6 +62,8 @@ namespace shibsp {
         // Virtual function overrides.
         const Agent& getAgent() const;
         RequestMapper::Settings getRequestSettings() const;
+        bool isUseHeaders() const;
+        bool isUseVariables() const;
         std::unique_lock<Session> getSession(bool checkTimeout=true, bool ignoreAddress=false);
         Session* getCachedSession(bool checkTimeout=true, bool ignoreAddress=false);
         const char* getRequestURI() const;
