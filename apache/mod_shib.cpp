@@ -2262,6 +2262,39 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
 #endif
 }
 
+// Deprecation wrapers for commands
+
+extern "C" const char* deprecated_set_flag_slot(cmd_parms *cmd, void *struct_ptr, int arg)
+{
+    if (!strcasecmp(cmd->cmd->name, "ShibRequireSession")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting requireSession 1|0'", cmd->cmd->name);
+    }
+    else if (!strcasecmp(cmd->cmd->name, "ShibExportAssertion")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s' will be removed in a future version", cmd->cmd->name);
+    }
+    return ap_set_flag_slot(cmd, struct_ptr, arg);
+}
+
+extern "C" const char* deprecated_set_string_slot(cmd_parms *cmd, void *struct_ptr, const char* arg)
+{
+    if (!strcasecmp(cmd->cmd->name, "ShibApplicationId")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s` replaced with 'ShibRequestSetting applicationId'", cmd->cmd->name);
+    }
+    else if (!strcasecmp(cmd->cmd->name, "ShibRedirectToSSL")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s` replaced with 'ShibRequestSetting redirectToSSL'", cmd->cmd->name);
+    }
+    else if (!strcasecmp(cmd->cmd->name, "ShibRequireSessionWith")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s' will be removed in a future version", cmd->cmd->name);
+    }
+    return ap_set_string_slot(cmd, struct_ptr, arg);
+}
+
+
 // SHIB Module commands
 
 extern "C" {
@@ -2287,22 +2320,22 @@ static command_rec shib_cmds[] = {
     AP_INIT_FLAG("ShibDisable", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bOff),
         OR_AUTHCFG, "Disable all Shib module activity here to save processing effort"),
-    AP_INIT_TAKE1("ShibApplicationId", (config_fn_t)ap_set_string_slot,
+    AP_INIT_TAKE1("ShibApplicationId", (config_fn_t)deprecated_set_string_slot,
         (void *) offsetof (shib_dir_config, szApplicationId),
         OR_AUTHCFG, "(DEPRECATED) Set Shibboleth applicationId property for content"),
     AP_INIT_FLAG("ShibBasicHijack", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bBasicHijack),
-        OR_AUTHCFG, "(DEPRECATED) Respond to AuthType Basic and convert to shibboleth"),
-    AP_INIT_FLAG("ShibRequireSession", (config_fn_t)ap_set_flag_slot,
+        OR_AUTHCFG, "Respond to AuthType Basic and convert to shibboleth"),
+    AP_INIT_FLAG("ShibRequireSession", (config_fn_t)deprecated_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequireSession),
         OR_AUTHCFG, "(DEPRECATED) Initiates a new session if one does not exist"),
-    AP_INIT_TAKE1("ShibRequireSessionWith", (config_fn_t)ap_set_string_slot,
+    AP_INIT_TAKE1("ShibRequireSessionWith", (config_fn_t)deprecated_set_string_slot,
         (void *) offsetof (shib_dir_config, szRequireWith),
         OR_AUTHCFG, "(DEPRECATED) Initiates a new session if one does not exist using a specific SessionInitiator"),
-    AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_FLAG("ShibExportAssertion", (config_fn_t)deprecated_set_flag_slot,
         (void *) offsetof (shib_dir_config, bExportAssertion),
         OR_AUTHCFG, "(DEPRECATED) Export SAML attribute assertion(s) to Shib-Attributes header"),
-    AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)ap_set_string_slot,
+    AP_INIT_TAKE1("ShibRedirectToSSL", (config_fn_t)deprecated_set_string_slot,
         (void *) offsetof (shib_dir_config, szRedirectToSSL),
         OR_AUTHCFG, "(DEPRECATED) Redirect non-SSL requests to designated port"),
 #ifdef SHIB_APACHE_24
