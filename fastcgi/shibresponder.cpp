@@ -123,9 +123,9 @@ public:
         const char* s = FCGX_GetParam("REMOTE_ADDR", m_req->envp);
         return s ? s : "";
     }
-    void log(SPLogLevel level, const string& msg) const {
+    void log(Priority::PriorityLevel level, const string& msg) const {
         AbstractSPRequest::log(level,msg);
-        if (level >= SPError)
+        if (level <= Priority::SHIB_ERROR)
             cerr << "shib: " << msg;
     }
 
@@ -318,14 +318,14 @@ int main(void)
         // the connection deadlocks until a timeout expires!).
         char* content = nullptr;
         gstdin(&request, &content);
-        auto_arrayptr<char> wrapper(content);
+        unique_ptr<char[]> wrapper(content);
 
         try {
             ShibTargetFCGI stf(&request, content, g_ServerScheme.c_str(), g_ServerName.c_str(), g_ServerPort);
 
             pair<bool,long> res = stf.getAgent().doHandler(stf);
             if (res.first) {
-                stf.log(Priority::SHIB_DEBUG, "shib: doHandler handled the request");
+                stf.debug("shib: doHandler handled the request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok();

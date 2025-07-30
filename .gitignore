@@ -55,6 +55,8 @@ x64
 /build-aux
 /build
 /Build
+/fastcgi/shibauthorizer
+/fastcgi/shibresponder
 /Projects/VC??/apache/mod_shib_24-Debug/
 /Projects/VC??/apache/mod_shib_24-Release/
 /Projects/VC??/fastcgi/shibauthorizer-Debug/

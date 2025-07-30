@@ -307,7 +307,7 @@ int main(void)
 
             pair<bool,long> res = sta.getAgent().doAuthentication(sta);
             if (res.first) {
-                sta.debug(Priority::SHIB_DEBUG, "shib: doAuthentication handled the request");
+                sta.debug("shib: doAuthentication handled the request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
@@ -329,7 +329,7 @@ int main(void)
 
             res = sta.getAgent().doExport(sta);
             if (res.first) {
-                sta.log(Priority::SHIB_DEBUG, "shib: doExport handled request");
+                sta.debug("shib: doExport handled request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
@@ -351,7 +351,7 @@ int main(void)
 
             res = sta.getAgent().doAuthorization(sta);
             if (res.first) {
-                sta.log(Priority::SHIB_DEBUG, "shib: doAuthorization handled request");
+                sta.debug("shib: doAuthorization handled request");
                 switch(res.second) {
                     case SHIB_RETURN_OK:
                         print_ok(sta.m_request_headers);
