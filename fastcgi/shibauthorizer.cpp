@@ -240,9 +240,12 @@ public:
         HTTPResponse::sendRedirect(url);
         string hdr=string("Status: 302 Please Wait\r\nLocation: ") + url + "\r\n"
           "Content-Type: text/html\r\n"
-          "Content-Length: 40\r\n"
-          "Expires: Wed, 01 Jan 1997 12:00:00 GMT\r\n"
-          "Cache-Control: private,no-store,no-cache,max-age=0\r\n";
+          "Content-Length: 40\r\n";
+        pair <bool,bool> flag = getRequestSettings().first->getBool("expireRedirects");
+        if (!flag.first || flag.second) {
+          hdr += "Expires: Wed, 01 Jan 1997 12:00:00 GMT\r\n"
+            "Cache-Control: private,no-store,no-cache,max-age=0\r\n";
+        }
         for (multimap<string,string>::const_iterator i=m_response_headers.begin(); i!=m_response_headers.end(); ++i)
             hdr += i->first + ": " + i->second + "\r\n";
         hdr += "\r\n";

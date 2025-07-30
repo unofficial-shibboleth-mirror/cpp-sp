@@ -331,6 +331,13 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
     else
         dc->bExportAssertion = -1;
 
+    if (child->bExpireRedirects != -1)
+        dc->bExpireRedirects = child->bExpireRedirects;
+    else if (parent->bExpireRedirects != -1 && (!child->tUnsettings || !apr_table_get(child->tUnsettings, "expireRedirects")))
+        dc->bExpireRedirects = parent->bExpireRedirects;
+    else
+        dc->bExpireRedirects = -1;
+
     dc->bOff = ((child->bOff == -1) ? parent->bOff : child->bOff);
     dc->bBasicHijack = ((child->bBasicHijack == -1) ? parent->bBasicHijack : child->bBasicHijack);
 #ifndef SHIB_APACHE_24
@@ -340,7 +347,6 @@ extern "C" void* merge_shib_dir_config (SH_AP_POOL* p, void* base, void* sub)
 #endif
     dc->bUseEnvVars = ((child->bUseEnvVars==-1) ? parent->bUseEnvVars : child->bUseEnvVars);
     dc->bUseHeaders = ((child->bUseHeaders==-1) ? parent->bUseHeaders : child->bUseHeaders);
-    dc->bExpireRedirects = ((child->bExpireRedirects==-1) ? parent->bExpireRedirects : child->bExpireRedirects);
     return dc;
 }
 
@@ -699,7 +705,8 @@ public:
   long sendRedirect(const char* url) {
     HTTPResponse::sendRedirect(url);
     ap_table_set(m_req->headers_out, "Location", url);
-    if (m_dc->bExpireRedirects != 0) {
+    pair <bool,bool> flag = getRequestSettings().first->getBool("expireRedirects");
+    if (!flag.first || flag.second) {
         ap_table_set(m_req->err_headers_out, "Expires", "Wed, 01 Jan 1997 12:00:00 GMT");
         ap_table_set(m_req->err_headers_out, "Cache-Control", "private,no-store,no-cache,max-age=0");
     }
@@ -1503,6 +1510,8 @@ pair<bool,bool> ApacheRequestMapper::getBool(const char* name, const char* ns) c
             return make_pair(true, sta->m_dc->bRequireSession==1);
         else if (name && !strcmp(name,"exportAssertion") && sta->m_dc->bExportAssertion != -1)
             return make_pair(true, sta->m_dc->bExportAssertion==1);
+        else if (name && !strcmp(name,"expireRedirects") && sta->m_dc->bExpireRedirects != -1)
+            return make_pair(true, sta->m_dc->bExpireRedirects==1);
         else if (sta->m_dc->tSettings) {
             const char* prop = ap_table_get(sta->m_dc->tSettings, name);
             if (prop)
@@ -1824,6 +1833,12 @@ extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const 
 
 extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
 {
+#ifdef SHIB_APACHE_24
+    if (!strcmp(parms->cmd->name, "ShibURLScheme")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, SH_AP_R(parms->server), "DEPRECATED: '%s' is deprecated, use ServerName",
+            parms->cmd->name);
+    }
+#endif
     char* base=(char*)ap_get_module_config(parms->server->module_config,&mod_shib);
     size_t offset=(size_t)parms->info;
     *((char**)(base + offset))=ap_pstrdup(parms->pool,arg);
@@ -2117,7 +2132,7 @@ static command_rec shire_cmds[] = {
 
   {"ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
    (void *) XtOffsetOf (shib_server_config, szScheme),
-   RSRC_CONF, TAKE1, "URL scheme to force into generated URLs for a vhost"},
+   RSRC_CONF, TAKE1, "DEPRECATED: URL scheme to force into generated URLs for a vhost"},
 
   {"ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
    OR_AUTHCFG, TAKE2, "Set arbitrary Shibboleth request property for content"},
@@ -2274,6 +2289,10 @@ extern "C" const char* deprecated_set_flag_slot(cmd_parms *cmd, void *struct_ptr
         ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
             "DEPRECATED: '%s' will be removed in a future version", cmd->cmd->name);
     }
+    else if (!strcasecmp(cmd->cmd->name, "ShibExpireRedirects")) {
+        ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
+            "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting expireRedirects 1|0'", cmd->cmd->name);
+    }
     return ap_set_flag_slot(cmd, struct_ptr, arg);
 }
 
@@ -2367,9 +2386,9 @@ static command_rec shib_cmds[] = {
     AP_INIT_FLAG("ShibUseHeaders", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bUseHeaders),
         OR_AUTHCFG, "Export attributes using custom HTTP headers"),
-    AP_INIT_FLAG("ShibExpireRedirects", (config_fn_t)ap_set_flag_slot,
+    AP_INIT_FLAG("ShibExpireRedirects", (config_fn_t)deprecated_set_flag_slot,
         (void *) offsetof (shib_dir_config, bExpireRedirects),
-        OR_AUTHCFG, "Expire SP-generated redirects"),
+        OR_AUTHCFG, "(DEPRECATED) Expire SP-generated redirects"),
 
     {nullptr}
 };
