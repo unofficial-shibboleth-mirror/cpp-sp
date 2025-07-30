@@ -49,30 +49,32 @@ namespace shibsp {
         typedef std::pair<const PropertySet*,AccessControl*> Settings;
 
         static const char APPLICATION_ID_PROP_NAME[];
+        static const char ATTRIBUTE_CONFIG_ID_PROP_NAME[];
         static const char AUTH_TYPE_PROP_NAME[];
+        static const char CONSISTENT_ADDRESS_PROP_NAME[];
+        static const char COOKIE_MAXAGE_PROP_NAME[];
+        static const char EXPIRE_REDIRECTS_PROP_NAME[];
+        static const char HANDLER_CONFIG_ID_PROP_NAME[];
+        static const char LIFETIME_PROP_NAME[];
+        static const char PRESERVE_POST_DATA_PROP_NAME[];
         static const char REDIRECT_ERRORS_PROP_NAME[];
         static const char REDIRECT_TO_SSL_PROP_NAME[];
         static const char REQUIRE_SESSION_PROP_NAME[];
         static const char REQUIRE_LOGOUT_WITH_PROP_NAME[];
-        static const char HANDLER_CONFIG_ID_PROP_NAME[];
-        static const char ATTRIBUTE_CONFIG_ID_PROP_NAME[];
-        static const char SESSION_HOOK_PROP_NAME[];
-        static const char LIFETIME_PROP_NAME[];
-        static const char TIMEOUT_PROP_NAME[];
-        static const char CONSISTENT_ADDRESS_PROP_NAME[];
-        static const char COOKIE_MAXAGE_PROP_NAME[];
         static const char SESSION_COOKIE_NAME_PROP_NAME[];
+        static const char SESSION_HOOK_PROP_NAME[];
         static const char TARGET_PROP_NAME[];
-        static const char PRESERVE_POST_DATA_PROP_NAME[];
+        static const char TIMEOUT_PROP_NAME[];
         static const char USE_HEADERS_PROP_NAME[];
         static const char USE_VARIABLES_PROP_NAME[];
 
         static const char APPLICATION_ID_PROP_DEFAULT[];
-        static bool REQUIRE_SESSION_PROP_DEFAULT;
-        static unsigned int LIFETIME_PROP_DEFAULT;
-        static unsigned int TIMEOUT_PROP_DEFAULT;
         static bool CONSISTENT_ADDRESS_PROP_DEFAULT;
+        static bool EXPIRE_REDIRECTS_PROP_DEFAULT;
+        static unsigned int LIFETIME_PROP_DEFAULT;
         static bool PRESERVE_POST_DATA_PROP_DEFAULT;
+        static bool REQUIRE_SESSION_PROP_DEFAULT;
+        static unsigned int TIMEOUT_PROP_DEFAULT;
         static bool USE_HEADERS_PROP_DEFAULT;
         static bool USE_VARIABLES_PROP_DEFAULT;
 

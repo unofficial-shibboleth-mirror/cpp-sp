@@ -173,6 +173,7 @@ const char RequestMapper::AUTH_TYPE_PROP_NAME[] =           "authType";
 const char RequestMapper::CONSISTENT_ADDRESS_PROP_NAME[] =  "consistentAddress";
 const char RequestMapper::COOKIE_MAXAGE_PROP_NAME[] =       "cookieMaxAge";
 const char RequestMapper::HANDLER_CONFIG_ID_PROP_NAME[] =   "handlerConfigId";
+const char RequestMapper::EXPIRE_REDIRECTS_PROP_NAME[] =    "expireRedirects";
 const char RequestMapper::LIFETIME_PROP_NAME[] =            "lifetime";
 const char RequestMapper::PRESERVE_POST_DATA_PROP_NAME[] =  "preservePostData";
 const char RequestMapper::REDIRECT_ERRORS_PROP_NAME[] =     "redirectErrors";
@@ -188,6 +189,7 @@ const char RequestMapper::USE_VARIABLES_PROP_NAME[] =       "useVariables";
 
 const char RequestMapper::APPLICATION_ID_PROP_DEFAULT[] =   "default";
 bool RequestMapper::CONSISTENT_ADDRESS_PROP_DEFAULT =       true;
+bool RequestMapper::EXPIRE_REDIRECTS_PROP_DEFAULT =         true;
 unsigned int RequestMapper::LIFETIME_PROP_DEFAULT =         3600 * 8;
 bool RequestMapper::REQUIRE_SESSION_PROP_DEFAULT =          false;
 unsigned int RequestMapper::TIMEOUT_PROP_DEFAULT =          3600;

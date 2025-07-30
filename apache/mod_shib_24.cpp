@@ -152,7 +152,6 @@ struct shib_dir_config
     // Dedicated content Configuration
     int bOff;               // flat-out disable all Shib processing
     int bBasicHijack;       // activate for AuthType Basic?
-    int bExpireRedirects;   // expire redirects?
 };
 
 // creates per-directory config structure
@@ -164,7 +163,6 @@ extern "C" void* create_shib_dir_config (apr_pool_t* p, char*)
     dc->bRequestMapperAuthz = -1;
     dc->bOff = -1;
     dc->bBasicHijack = -1;
-    dc->bExpireRedirects = -1;
     return dc;
 }
 
@@ -223,7 +221,6 @@ extern "C" void* merge_shib_dir_config (apr_pool_t* p, void* base, void* sub)
 
     dc->bOff = ((child->bOff == -1) ? parent->bOff : child->bOff);
     dc->bBasicHijack = ((child->bBasicHijack == -1) ? parent->bBasicHijack : child->bBasicHijack);
-    dc->bExpireRedirects = ((child->bExpireRedirects==-1) ? parent->bExpireRedirects : child->bExpireRedirects);
     return dc;
 }
 
@@ -518,12 +515,15 @@ public:
     return DONE;
   }
   long sendRedirect(const char* url) {
-    HTTPResponse::sendRedirect(url);
+    HTTPResponse::sendRedirect(url);    
     apr_table_set(m_req->headers_out, "Location", url);
-    if (m_dc->bExpireRedirects != 0) {
+
+    if (getRequestSettings().first->getBool(
+            RequestMapper::EXPIRE_REDIRECTS_PROP_NAME, RequestMapper::EXPIRE_REDIRECTS_PROP_DEFAULT)) {
         apr_table_set(m_req->err_headers_out, "Expires", "Wed, 01 Jan 1997 12:00:00 GMT");
         apr_table_set(m_req->err_headers_out, "Cache-Control", "private,no-store,no-cache,max-age=0");
     }
+
     return HTTP_MOVED_TEMPORARILY;
   }
   long returnDecline(void) { return DECLINED; }
@@ -1559,9 +1559,6 @@ static command_rec shib_cmds[] = {
         OR_AUTHCFG, "DEPRECATED: Export attributes using environment variables"),
     AP_INIT_TAKE1("ShibUseHeaders", (config_fn_t)shib_deprecated_table_set, nullptr,
         OR_AUTHCFG, "DEPRECATED: Export attributes using custom HTTP headers"),
-    AP_INIT_FLAG("ShibExpireRedirects", (config_fn_t)ap_set_flag_slot,
-        (void *) offsetof (shib_dir_config, bExpireRedirects),
-        OR_AUTHCFG, "Expire SP-generated redirects"),
     {nullptr}
 };
 
