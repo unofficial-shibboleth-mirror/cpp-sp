@@ -108,7 +108,6 @@ namespace {
 // per-server module configuration structure
 struct shib_server_config
 {
-    char* szScheme;
     int bCompatValidUser;
 };
 
@@ -116,7 +115,6 @@ struct shib_server_config
 extern "C" void* create_shib_server_config(apr_pool_t* p, server_rec*)
 {
     shib_server_config* sc=(shib_server_config*)apr_pcalloc(p,sizeof(shib_server_config));
-    sc->szScheme = nullptr;
     sc->bCompatValidUser = -1;
     return sc;
 }
@@ -127,13 +125,6 @@ extern "C" void* merge_shib_server_config (apr_pool_t* p, void* base, void* sub)
     shib_server_config* sc=(shib_server_config*)apr_pcalloc(p,sizeof(shib_server_config));
     shib_server_config* parent=(shib_server_config*)base;
     shib_server_config* child=(shib_server_config*)sub;
-
-    if (child->szScheme)
-        sc->szScheme=apr_pstrdup(p,child->szScheme);
-    else if (parent->szScheme)
-        sc->szScheme=apr_pstrdup(p,parent->szScheme);
-    else
-        sc->szScheme=nullptr;
 
     sc->bCompatValidUser = ((child->bCompatValidUser==-1) ? parent->bCompatValidUser : child->bCompatValidUser);
 
@@ -302,7 +293,7 @@ public:
     return true;
   }
   const char* getScheme() const {
-    return m_sc->szScheme ? m_sc->szScheme : ap_http_scheme(m_req);
+    return ap_http_scheme(m_req);
   }
   bool isSecure() const {
       return HTTPRequest::isSecure();
@@ -674,15 +665,13 @@ extern "C" int shib_handler(request_rec* r)
 }
 
 // This performs authorization functions to limit access.
-// On all versions, this runs any RequestMap-attached plugins.
-// On 2.4+, we also let Apache run callbacks for each Require rule we handle.
+// This runs any RequestMap-attached plugins (if not disabled), but with 2,4+ Apache will run
+// callbacks for each Require rule we handle separately, so this is strictly for the portable authz layer.
 extern "C" int shib_auth_checker(request_rec* r)
 {
     // Short-circuit entirely?
     shib_dir_config* dc = (shib_dir_config*)ap_get_module_config(r->per_dir_config, &shib_module);
-    if (dc->bOff == 1
-        || dc->bRequestMapperAuthz == 0     // this allows for bypass of the full auth_checker hook if only htaccess is used
-        ) {
+    if (dc->bOff == 1 || dc->bRequestMapperAuthz == 0) {
         return DECLINED;
     }
 
@@ -1105,8 +1094,7 @@ extern "C" authz_status shib_validuser_check_authz(request_rec* r, const char* r
     // use valid-user for non-Shibboleth cases and shib-session for the Shibboleth semantic.
 
     // In future, we may want to expose the AuthType set to honor down at this level so we can differentiate
-    // based on AuthType. Unfortunately we allow overriding the AuthType to honor and we don't have access to
-    // that setting from the ServiceProvider class..
+    // based on AuthType.
 
     shib_server_config* sc = (shib_server_config*)ap_get_module_config(r->server->module_config, &shib_module);
     if (sc->bCompatValidUser != 1) {
@@ -1252,14 +1240,6 @@ extern "C" const char* ap_set_global_string_slot(cmd_parms* parms, void*, const 
     return nullptr;
 }
 
-extern "C" const char* shib_set_server_string_slot(cmd_parms* parms, void*, const char* arg)
-{
-    char* base=(char*)ap_get_module_config(parms->server->module_config,&shib_module);
-    size_t offset=(size_t)parms->info;
-    *((char**)(base + offset))=apr_pstrdup(parms->pool,arg);
-    return nullptr;
-}
-
 extern "C" const char* shib_set_server_flag_slot(cmd_parms* parms, void*, int arg)
 {
     char* base=(char*)ap_get_module_config(parms->server->module_config,&shib_module);
@@ -1318,6 +1298,8 @@ extern "C" const char* shib_deprecated_table_set(cmd_parms* cmd, shib_dir_config
             "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting useVariables 1|0'", cmd->cmd->name);
         return shib_table_set(cmd, dc, RequestMapper::USE_VARIABLES_PROP_NAME, arg1);
     }
+
+    return nullptr;
 }
 
 extern"C" const char* deprecated_set_flag_slot(cmd_parms *cmd, void *struct_ptr, int arg)
@@ -1529,15 +1511,18 @@ extern "C" void shib_register_hooks (apr_pool_t *p)
 
 extern "C" {
 static command_rec shib_cmds[] = {
+    // Global commands.
     AP_INIT_TAKE1("ShibPrefix", (config_fn_t)ap_set_global_string_slot, &g_szPrefix,
         RSRC_CONF, "Shibboleth installation directory"),
     AP_INIT_TAKE1("ShibConfig", (config_fn_t)ap_set_global_string_slot, &g_szConfigFile,
         RSRC_CONF, "Path to agent.ini config file"),
 
-    AP_INIT_TAKE1("ShibURLScheme", (config_fn_t)shib_set_server_string_slot,
-        (void *) offsetof (shib_server_config, szScheme),
-        RSRC_CONF, "URL scheme to force into generated URLs for a vhost"),
+    // Setver level commands.
+    AP_INIT_FLAG("ShibCompatValidUser", (config_fn_t)shib_set_server_flag_slot,
+        (void *) offsetof (shib_server_config, bCompatValidUser),
+        RSRC_CONF, "Handle 'require valid-user' in mod_authz_user-compatible fashion (requiring username)"),
 
+    // Directory level commands.
     AP_INIT_TAKE2("ShibRequestSetting", (config_fn_t)shib_table_set, nullptr,
         OR_AUTHCFG, "Set arbitrary Shibboleth request property for content"),
     AP_INIT_TAKE1("ShibRequestUnset", (config_fn_t)shib_table_unset, nullptr,
@@ -1551,10 +1536,9 @@ static command_rec shib_cmds[] = {
         OR_AUTHCFG, "Respond to AuthType Basic and convert to shibboleth"),
     AP_INIT_FLAG("ShibRequestMapperAuthz", (config_fn_t)ap_set_flag_slot,
         (void *) offsetof (shib_dir_config, bRequestMapperAuthz),
-        OR_AUTHCFG, "Support access control via shibboleth2.xml / RequestMapper"),
-    AP_INIT_FLAG("ShibCompatValidUser", (config_fn_t)shib_set_server_flag_slot,
-        (void *) offsetof (shib_server_config, bCompatValidUser),
-        RSRC_CONF, "Handle 'require valid-user' in mod_authz_user-compatible fashion (requiring username)"),
+        OR_AUTHCFG, "Support access control via RequestMapper"),
+
+    // Deprecated commands we will pull in a 4.1 in favor of the content settings.
     AP_INIT_TAKE1("ShibUseEnvironment", (config_fn_t)shib_deprecated_table_set, nullptr,
         OR_AUTHCFG, "DEPRECATED: Export attributes using environment variables"),
     AP_INIT_TAKE1("ShibUseHeaders", (config_fn_t)shib_deprecated_table_set, nullptr,
