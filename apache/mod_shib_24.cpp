@@ -1311,12 +1311,12 @@ extern "C" const char* shib_deprecated_table_set(cmd_parms* cmd, shib_dir_config
     if (!strcasecmp(cmd->cmd->name, "ShibUseHeaders")) {
         ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
             "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting useHeaders 1|0'", cmd->cmd->name);
-        return shib_table_set(cmd, dc, (RequestMapper::USE_HEADERS_PROP_NAME, arg1);
+        return shib_table_set(cmd, dc, RequestMapper::USE_HEADERS_PROP_NAME, arg1);
     }
     else if (!strcasecmp(cmd->cmd->name, "ShibUseEnvironment")) {
         ap_log_error(APLOG_MARK, APLOG_WARNING|APLOG_NOERRNO, 0, cmd->server,
             "DEPRECATED: '%s On|Off' replaced with 'ShibRequestSetting useVariables 1|0'", cmd->cmd->name);
-        return shib_table_set(cmd, dc, (RequestMapper::USE_VARIABLES_PROP_NAME, arg1);
+        return shib_table_set(cmd, dc, RequestMapper::USE_VARIABLES_PROP_NAME, arg1);
     }
 }
 
