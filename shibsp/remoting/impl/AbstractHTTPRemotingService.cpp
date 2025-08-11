@@ -61,16 +61,19 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     BoostPropertySet props;
     props.load(pt);
 
-    m_secretSource.reset(AgentConfig::getConfig().SecretSourceManager.newPlugin(
-        props.getString(SECRET_SOURCE_TYPE_PROP_NAME, SECRET_SOURCE_TYPE_PROP_DEFAULT), pt, false)
-        );
-
     m_userAgent = props.getString(USER_AGENT_PROP_NAME, "");
     m_baseURL = props.getString(BASE_URL_PROP_NAME, BASE_URL_PROP_DEFAULT);    
     m_authMethod = getAuthMethod(props.getString(AUTH_METHOD_PROP_NAME, AUTH_METHOD_PROP_DEFAULT));
     m_connectTimeout = props.getUnsignedInt(CONNECT_TIMEOUT_PROP_NAME, CONNECT_TIMEOUT_PROP_DEFAULT);
     m_timeout = props.getUnsignedInt(TIMEOUT_PROP_NAME, TIMEOUT_PROP_DEFAULT);
     m_revocationCheck = props.getBool(REVOCATION_CHECK_PROP_NAME, REVOCATION_CHECK_DEFAULT);
+
+    if (m_authMethod != agent_auth_none) {
+        m_secretSource.reset(AgentConfig::getConfig().SecretSourceManager.newPlugin(
+            props.getString(SECRET_SOURCE_TYPE_PROP_NAME, SECRET_SOURCE_TYPE_PROP_DEFAULT), pt, false)
+            );
+    }
+
 
     m_caFile = props.getString(CA_FILE_PROP_NAME, CA_FILE_PROP_DEFAULT);
     if (!m_caFile.empty()) {
