@@ -58,8 +58,6 @@ namespace {
 
         void init();
 
-        static const char AGENT_ID_PROP_NAME[];
-
         const char* getID() const {
             return m_id.c_str();
         }
@@ -143,28 +141,31 @@ namespace shibsp {
     }
 };
 
-const char DefaultAgent::AGENT_ID_PROP_NAME[] = "agentID";
-
 void DefaultAgent::init()
 {
-    // First load "global" property tree as this PropertySet.
+    static const char AGENT_ID_PROP_NAME[] = "agentID";
+    static const char ALLOWED_SCHEMES_PROP_NAME[] = "allowedSchemes";
+    static const char EXTRA_AUTH_TYPES_PROP_NAME[] = "extraAuthTypes";
+
+    static const char AGENT_ID_PROP_DEFAULT[] = "localhost";
+    static const char ALLOWED_SCHEMES_PROP_DEFAULT[] = "https http";
+
+        // First load "global" property tree as this PropertySet.
     const boost::optional<ptree&> global = m_pt.get_child_optional("global");
     if (global) {
         load(global.get());
-        m_id = getString(AGENT_ID_PROP_NAME, "");
+        m_id = getString(AGENT_ID_PROP_NAME, AGENT_ID_PROP_DEFAULT);
     }
 
     if (m_id.empty()) {
         throw ConfigurationException(string("No ") + AGENT_ID_PROP_NAME + " property in [global] section of configuration.");
     }
 
-    const char* prop = getString("allowedSchemes", "https http");
-    if (prop) {
-        HTTPResponse::getAllowedSchemes().clear();
-        split_to_container(HTTPResponse::getAllowedSchemes(), prop);
-    }
+    const char* prop = getString(ALLOWED_SCHEMES_PROP_NAME, ALLOWED_SCHEMES_PROP_DEFAULT);
+    HTTPResponse::getAllowedSchemes().clear();
+    split_to_container(HTTPResponse::getAllowedSchemes(), prop);
 
-    prop = getString("extraAuthTypes");
+    prop = getString(EXTRA_AUTH_TYPES_PROP_NAME);
     if (prop) {
         split_to_container(m_authTypes, prop);
         m_authTypes.insert("shibboleth");
