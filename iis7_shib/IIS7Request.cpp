@@ -430,7 +430,7 @@ long IIS7Request::sendRedirect(const char* url)
 {
     HTTPResponse::sendRedirect(url);
 
-    pair <bool.bool> flag = getRequestSettings().first->getBool("expireRedirects");
+    pair <bool,bool> flag = getRequestSettings().first->getBool("expireRedirects");
     if (!flag.first || flag.second) {
         setResponseHeader("Expires", "Wed, 01 Jan 1997 12:00:00 GMT", true);
         setResponseHeader("Cache-Control", "private,no-store,no-cache,max-age=0", true);
