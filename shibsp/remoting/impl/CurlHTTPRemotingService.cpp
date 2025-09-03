@@ -285,10 +285,10 @@ CURL* CurlHTTPRemotingService::checkout() const
 
     long flag=0;
     switch (getAuthMethod()) {
+        case agent_auth_none:
         case agent_auth_basic:  flag = CURLAUTH_BASIC; break;
         case agent_auth_digest: flag = CURLAUTH_DIGEST; break;
         case agent_auth_gss:    flag = CURLAUTH_NEGOTIATE; break;
-        case agent_auth_none:
         default:                flag = 0; break;
     }
     SHIB_CURL_SET(CURLOPT_HTTPAUTH, flag);
@@ -355,7 +355,10 @@ void CurlOperation::send(const char* path, istream& in, ostream& out)
     }
     SHIB_CURL_SET(CURLOPT_URL, url.c_str());
 
-    if (m_service.getAuthMethod() == CurlHTTPRemotingService::agent_auth_basic ||
+    if (m_service.getAuthMethod() == CurlHTTPRemotingService::agent_auth_none) {
+        SHIB_CURL_SET(CURLOPT_PASSWORD, "none");
+    }
+    else if (m_service.getAuthMethod() == CurlHTTPRemotingService::agent_auth_basic ||
         m_service.getAuthMethod() == CurlHTTPRemotingService::agent_auth_digest) {
         SHIB_CURL_SET(CURLOPT_PASSWORD, m_service.getSecretSource()->getSecret().c_str());
     }

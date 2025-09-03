@@ -403,6 +403,16 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
             throw RemotingException("Send failed");
         }
     }
+    else {
+        if (!WinHttpSetCredentials(request,
+                    WINHTTP_AUTH_TARGET_SERVER,
+                    WINHTTP_AUTH_SCHEME_BASIC,
+                    m_username.c_str(),
+                    utf8ToUtf16("none").c_str(),
+                    nullptr)) {
+            m_log.crit("Send. Failed to setup dummy AuthN to %s : %d", path, GetLastError());
+            throw RemotingException("Send failed");
+    }
 
     wchar_t headers[]= L"Content-Type: text/plain\r\nExpect:";
     //
