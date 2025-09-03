@@ -255,9 +255,10 @@ namespace {
         string m_copy;
     public:
         SQLString(const char* src) : m_src(src) {
-            if (strchr(src, '\'')) {
+            if (strchr(src, '\\') || strchr(src, '\'')) {
                 m_copy = src;
-                replace_all(m_copy, "'", "''");
+                replace_all(m_copy, "\\", "\\\\");
+                replace_all(m_copy, "'", "\\'");
             }
         }
 
