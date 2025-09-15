@@ -66,17 +66,19 @@ namespace {
             SPRequest* request,
             const char* applicationId,
             const char* key,
+            unsigned int version=1,
             unsigned int lifetime=0,
             unsigned int timeout=0,
             const char* client_addr=nullptr
             );
-        bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0);
+        bool cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data);
+        bool cache_touch(SPRequest* request, const char* key, unsigned int version=1, unsigned int timeout=0);
         void cache_remove(SPRequest* request, const char* key);
 
     private:
         static void* file_cleanup_fn(void*);
         static void file_cleanup_callback(const char* pathname, const char* filename, struct stat& stat_buf, void* data);
-        
+
         Category& m_spilog;
         string m_dir;
         duthomhas::csprng m_rng;
@@ -196,19 +198,33 @@ string FilesystemSessionCache::cache_create(SPRequest* request, DDF& sessionData
     do {
         key = hex_encode(m_rng(string(16,0)));
         path = m_dir + key;
-        if (!FileSupport::exists(path.c_str())) {
-            ofstream os (path);
-            if (os) {
-                os << sessionData;
-                if (os) {
-                    m_spilog.debug("stored new session (%s)", key.c_str());
-                    return key;
-                }
+        computeVersionedFilename(path, 1);
+        // We attempt an exclusive open to "reserve" the new session file name.
+#ifdef WIN32
+        int f = _open(path.c_str(), _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
+#else
+        int f = open(path.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+#endif
+        if (f > 0) {
+            // Worked, so close the "reserved" file so we can overwrite it.
+#ifdef WIN32
+            _close(f);
+#else
+            close(f);
+#endif
+            ofstream os(path);
+            if (!os) {
+                m_spilog.error("error writing new session to file (%s), errno=%d", path.c_str(), errno);
+                throw IOException("Error writing new session to file.");
             }
 
-            m_spilog.error("error writing new session to file (%s), errno=%d", path.c_str(), errno);
-            throw IOException("Error writing new session to file.");
+            os << sessionData;
+            if (os) {
+                m_spilog.debug("stored new session (%s)", key.c_str());
+                return key;
+            }
         }
+        // If we get here, we're attempting a retry until we exhaust.
     } while (++attempts < 3);
 
     m_spilog.error("failed to write new session after 3 attempts to generate a unique key");
@@ -219,37 +235,62 @@ DDF FilesystemSessionCache::cache_read(
     SPRequest* request,
     const char* applicationId,
     const char* key,
+    unsigned int version,
     unsigned int lifetime,
     unsigned int timeout,
     const char* client_addr
     )
 {
     DDF obj;
+    time_t effective_access = 0;
+    string effective_path;
+    string base_path = m_dir + key;
 
-    string path = m_dir + key;
-    time_t lastAccess = FileSupport::getModificationTime(path.c_str());
-    ifstream is(path);
+    // Figure out what the latest version on disk is and its last modification time.
+    unsigned int effective_version = version;
+    while (true) {
+        string path(base_path);
+        computeVersionedFilename(path, effective_version);
+        time_t lastAccess = FileSupport::getModificationTime(path.c_str());
+        if (lastAccess == 0) {
+            int e = errno;
+            if (e != ENOENT) {
+                m_spilog.error("unable to obtain access time for session file (%s), errno=%d", path.c_str(), e);
+            }
+            // If this is the first loop iteration, we fail outright, assuming the session was removed.
+            if (version == effective_version) {
+                m_spilog.info("session file (%s) does not exist", path.c_str());
+                return obj;
+            }
+            // Need to decrement back to the last known good value.
+            effective_version--;
+            break;
+        }
+        effective_access = lastAccess;
+        effective_path = path;
+        effective_version++;
+    }
+
+    // If we get here, we have the effective variables are set correctly.
+
+    ifstream is(effective_path);
     if (!is) {
         int e = errno;
         if (e == ENOENT) {
-            m_spilog.debug("session file (%s) does not exist", path.c_str());
+            m_spilog.debug("session file (%s) does not exist", effective_path.c_str());
         }
         else {
-            m_spilog.error("error opening session file (%s) for reading, errno=%d", path.c_str(), e);
+            m_spilog.error("error opening session file (%s) for reading, errno=%d", effective_path.c_str(), e);
         }
         return obj;
     }
 
     time_t now = time(nullptr);
 
-    if (timeout) {
-        if (lastAccess == 0) {
-            m_spilog.error("timeout specified, unable to obtain access time for session file (%s)", path.c_str());
-            return obj;
-        }
-        else if (lastAccess + timeout < now) {
+    if (timeout ) {
+        if (effective_access + timeout < now) {
             if (m_spilog.isInfoEnabled()) {
-                string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(lastAccess)));
+                string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(effective_access)));
                 m_spilog.info("session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
             }
             cache_remove(request, key);
@@ -261,27 +302,14 @@ DDF FilesystemSessionCache::cache_read(
     is.close();
 
     if (!isSessionDataValid(obj)) {
-        obj.destroy();
-        m_spilog.error("deserialized session from file (%s) was invalid", path.c_str());
-        return obj;
+        m_spilog.error("deserialized session from file (%s) was invalid", effective_path.c_str());
+        return obj.destroy();
     }
 
     const char* appId = obj["app_id"].string();
     if (strcmp(applicationId, appId)) {
         m_spilog.warn("session (%s) issued for application (%s), accessed via application (%s)", key, appId, applicationId);
-        obj.destroy();
-        return obj;
-    }
-
-    // TODO: Implement the fuzzy address matching.
-    if (client_addr) {
-        const char* addr = obj["addr"].string();
-        if (addr && strcmp(client_addr, addr)) {
-            m_spilog.info("session (%s) invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
-            obj.destroy();
-            cache_remove(request, key);
-            return obj;
-        }
+        return obj.destroy();
     }
 
     if (lifetime) {
@@ -298,40 +326,163 @@ DDF FilesystemSessionCache::cache_read(
         }
     }
 
-    if (utime(path.c_str(), nullptr) != 0) {
-        m_spilog.error("unable to update access time for session (%s), errno=%d", path.c_str(), errno);
+    bool updateTimestamp = true;
+
+    // TODO: Implement the fuzzy address matching.
+    if (client_addr) {
+        const char* family = getAddressFamily(client_addr);
+        const char* addr = obj[family].string();
+        if (addr) {
+            if (strcmp(client_addr, addr)) {
+                m_spilog.info("session (%s) invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
+                return obj.destroy();
+            }
+        }
+        else {
+            // We have to rebind the session to a new address family, requiring an update to the session.
+            m_spilog.info("attempting update of session (%s) to rebind to new address (%s)", key, client_addr);
+
+            // Flag the subsequent code to skip updating the timestamp as it will have been done for us in
+            // the act of creating a new file version.
+            updateTimestamp = false;
+
+            // Fill in the new address and attempt the update.
+            obj.addmember(family).string(client_addr);
+            try {
+                if (!cache_update(request, key, version, obj)) {
+                    obj.destroy();
+                    // This signals a version mismatch in which the original session we were asked to read
+                    // has already been updated by another thread or process. In this case, we recurse the
+                    // read attempt. This has to terminate eventually...right?
+
+                    // We bump the version once, under the assunption it shouldn't be likely that it's been
+                    // updated behind us more than once...
+                    return cache_read(request, applicationId, key, version + 1, lifetime, timeout, client_addr);
+                }
+            }
+            catch (const exception& ex) {
+                // This is an outright error attempting the update, so we just fail hard.
+                m_spilog.error("exception attempting to update session (%s): %s", key, ex.what());
+                return obj.destroy();
+            }
+        }
+    }
+
+    // We update the last modified timestamp here since we are returning this version of the session.
+    if (updateTimestamp && utime(effective_path.c_str(), nullptr) != 0) {
+        m_spilog.error("unable to update access time for session (%s), errno=%d", effective_path.c_str(), errno);
+        // Failure here is just ignored.
     }
 
     return obj;
 }
 
-bool FilesystemSessionCache::cache_touch(SPRequest* request, const char* key, unsigned int timeout)
+bool FilesystemSessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data)
 {
+    // The essence of this operation is to grab the "next" version by reserving a new session file under the
+    // correct name for the new version.
+
+    // The workking theory is that any other thread that comes in after us will fail to reserve that filename,
+    // where as *we* know (if we can do so) that we're the only ones authorised to write to that newly created
+    // file.
+
+    version++;
     string path = m_dir + key;
-    if (timeout) {
-        time_t lastAccess = FileSupport::getModificationTime(path.c_str());
-        if (lastAccess == 0) {
-            int e = errno;
-            if (e == ENOENT) {
-                m_spilog.info("unable to update access time, session file (%s) did not exist", path.c_str());
-            }
-            else {
-                m_spilog.error("unable to obtain access time for session file (%s), errno=%d", path.c_str(), e);
-            }
+    computeVersionedFilename(path, version);
+
+    // We attempt an exclusive open to "reserve" the new version's file name.
+#ifdef WIN32
+    int f = _open(path.c_str(), _O_CREAT | _O_EXCL, _S_IREAD | _S_IWRITE);
+#else
+    int f = open(path.c_str(), O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+#endif
+    if (f < 0) {
+        int e = errno;
+        if (e == EEXIST) {
+            // This should indicate a version race condition with somebody else having created
+            // this version, so this update attempt is a version mismatch.
+            m_spilog.info("collision trying to create file for update of session (%s) to version (%u)",
+                path.c_str(), version);
             return false;
         }
-        else if (lastAccess + timeout < time(nullptr)) {
-            if (m_spilog.isInfoEnabled()) {
-                string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(lastAccess)));
-                m_spilog.info("session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
-            }
-            cache_remove(request, key);
-            return false;
+        else {
+            m_spilog.warn("error trying to create file for update of session (%s) to version (%u), errno=%d",
+                path.c_str(), version, e);
+            throw IOException("Error attempting to create file for updated session.");
         }
     }
 
-    if (utime(path.c_str(), nullptr) != 0) {
-        m_spilog.error("unable to update access time for session (%s), errno=%d", path.c_str(), errno);
+    // Having reserved the new filename, we should have a clear runway to populate the new file
+    // and signal back success unless something blows up.
+#ifdef WIN32
+    _close(f);
+#else
+    close(f);
+#endif
+
+    ofstream os(path);
+    if (!os) {
+        m_spilog.error("error writing new version of session to file (%s), errno=%d", path.c_str(), errno);
+        throw IOException("Error attempting to open file for writing of updated session.");
+    }
+
+    // Ensure the new version is set accurately.
+    data.addmember("ver").integer(version);
+    os << data;
+    if (os) {
+        m_spilog.debug("stored new version of session to file (%s)", path.c_str());
+        return true;
+    }
+
+    m_spilog.error("error writing new version of session to file (%s), errno=%d", path.c_str(), errno);
+    throw IOException("Error attempting to write to file holding updated session version.");
+}
+
+bool FilesystemSessionCache::cache_touch(SPRequest* request, const char* key, unsigned int version, unsigned int timeout)
+{
+    time_t effective_access = 0;
+    string effective_path;
+    string base_path = m_dir + key;
+
+    // Figure out what the latest version on disk is and its last modification time.
+    unsigned int effective_version = version;
+    while (true) {
+        string path(base_path);
+        computeVersionedFilename(path, effective_version);
+        time_t lastAccess = FileSupport::getModificationTime(path.c_str());
+        if (lastAccess == 0) {
+            int e = errno;
+            if (e != ENOENT) {
+                m_spilog.error("unable to obtain access time for session file (%s), errno=%d", path.c_str(), e);
+            }
+            // If this is the first loop iteration, we fail outright, assuming the session was removed.
+            if (version == effective_version) {
+                m_spilog.info("unable to update access time, session file (%s) did not exist", path.c_str());
+                return false;
+            }
+            // Need to decrement back to the last known good value.
+            effective_version--;
+            break;
+        }
+        effective_access = lastAccess;
+        effective_path = path;
+        effective_version++;
+    }
+
+    // If we get here, we have the effective variables are set correctly.
+
+    if (timeout && effective_access + timeout < time(nullptr)) {
+        if (m_spilog.isInfoEnabled()) {
+            string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(effective_access)));
+            m_spilog.info("session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
+        }
+        cache_remove(request, key);
+        return false;
+    }
+
+    if (utime(effective_path.c_str(), nullptr) != 0) {
+        m_spilog.error("unable to update access time for session (%s), version (%d), errno=%d",
+            effective_path.c_str(), effective_version, errno);
         // Debatable if we fall into returning true, but maybe we don't care?
     }
     return true;
@@ -339,18 +490,21 @@ bool FilesystemSessionCache::cache_touch(SPRequest* request, const char* key, un
 
 void FilesystemSessionCache::cache_remove(SPRequest* request, const char* key)
 {
-    string path = m_dir + key;
-    if (std::remove(path.c_str()) != 0) {
-        int e = errno;
-        if (e == ENOENT) {
-            m_spilog.debug("session file (%s) did not exist", path.c_str());
+    string base_path = m_dir + key;
+
+    for (unsigned int version = 1; true; ++version) {
+        string path(base_path);
+        computeVersionedFilename(path, version);
+        if (std::remove(path.c_str()) != 0) {
+            int e = errno;
+            if (e != ENOENT) {
+                m_spilog.error("error removing file for session (%s), version (%u), errno=%d", key, version, e);
+            }
+            break;
         }
         else {
-            m_spilog.error("error removing file for session (%s), errno=%d", key, e);
+            m_spilog.debug("removed session file for (%s), version (%u)", key, version);
         }
-    }
-    else {
-        m_spilog.debug("removed session file for (%s)", key);
     }
 }
 
@@ -451,11 +605,6 @@ void FilesystemSessionCache::file_cleanup_callback(
     )
 {
     FilesystemSessionCache* pcache = reinterpret_cast<FilesystemSessionCache*>(data);
-
-    if (strlen(filename) != 32) {
-        pcache->m_spilog.warn("skipping unexpected filename (%s)", filename);
-        return;
-    }
 
     if (stat_buf.st_mtime > 0 && time(nullptr) - stat_buf.st_mtime > pcache->m_fileTimeout) {
         if (std::remove(pathname) == 0) {

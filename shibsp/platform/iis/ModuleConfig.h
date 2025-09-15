@@ -48,16 +48,12 @@ namespace shibsp {
             SHIBSP_API static std::unique_ptr<ModuleConfig> newModuleConfig(const char* path=nullptr);
 
             // Global
-            SHIBSP_API static const char USE_VARIABLES_PROP_NAME[];
-            SHIBSP_API static const char USE_HEADERS_PROP_NAME[];
             SHIBSP_API static const char AUTHENTICATED_ROLE_PROP_NAME[];
             SHIBSP_API static const char ROLE_ATTRIBUTES_PROP_NAME[];
             SHIBSP_API static const char NORMALIZE_REQUEST_PROP_NAME[];
             SHIBSP_API static const char SAFE_HEADER_NAMES_PROP_NAME[];
             SHIBSP_API static const char HANDLER_PREFIX_PROP_NAME[];
 
-            SHIBSP_API static bool USE_VARIABLES_PROP_DEFAULT;
-            SHIBSP_API static bool USE_HEADERS_PROP_DEFAULT;
             SHIBSP_API static const char AUTHENTICATED_ROLE_PROP_DEFAULT[];
             SHIBSP_API static bool NORMALIZE_REQUEST_PROP_DEFAULT;
             SHIBSP_API static const char HANDLER_PREFIX_PROP_DEFAULT[];

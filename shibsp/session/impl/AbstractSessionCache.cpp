@@ -29,6 +29,7 @@
 #include "session/AbstractSessionCache.h"
 #include "util/Date.h"
 
+#include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 #ifndef WIN32
@@ -242,6 +243,41 @@ void AbstractSessionCache::stop()
     }
 }
 
+const char* AbstractSessionCache::getAddressFamily(const std::string& addr)
+{
+    if (strchr(addr.c_str(), ':'))
+        return "6";
+    else
+        return "4";
+}
+
+void AbstractSessionCache::computeVersionedFilename(string& path, unsigned int version)
+{
+    try {
+        path = path + '.' + boost::lexical_cast<string>(version);
+    }
+    catch (const boost::bad_lexical_cast& e) {
+        // Should never happen. In principle the path will effectively not exist when this happens.
+        Category::getInstance(SHIBSP_LOGCAT ".SessionCache").error(
+            "error converting version (%u) into string to cpmpute filename: %s", version, e.what());
+    }
+}
+
+pair<string,unsigned int> AbstractSessionCache::parseCookieValue(const char* value)
+{
+    const char* sep = strrchr(value, '.');
+    if (!sep) {
+        // Shouldn't happen, but we can handle it.
+        return make_pair(string(value), 1);
+    }
+    else if (!isnumber(*(sep + 1))) {
+        // Check for negative
+        return make_pair(string(value, sep), 1);
+    }
+
+    return make_pair(string(value, sep), atoi(sep +1));
+}
+
 string AbstractSessionCache::create(SPRequest& request, DDF& session)
 {
     m_log.debug("creating new session");
@@ -250,11 +286,12 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
     session.remove();
 
     // Add additional fields managed by agent.
+    // The version is absent, implying 1, as the common case.
     // The attributes member should be present from hub.
     session.addmember("ts").longinteger(time(nullptr));
     session.addmember("app_id").string(request.getRequestSettings().first->getString(
         RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
-    session.addmember("addr").string(request.getRemoteAddr());
+    session.addmember(getAddressFamily(request.getRemoteAddr())).string(request.getRemoteAddr());
 
     const AttributeConfiguration& attrConfig = request.getAgent().getAttributeConfiguration(
         request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME));
@@ -289,8 +326,9 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
     m_log.info("new session created: ID (%s), Issuer (%s), Address (%s)",
         key.c_str(), issuer ? issuer : "unknown", request.getRemoteAddr().c_str());
 
-    // Drop a cookie with the session ID.
-    m_cookieManager->setCookie(request, key.c_str());
+    // Drop a cookie with the session ID (the initial version suffix is 1).
+    string cookieval = key + ".1";
+    m_cookieManager->setCookie(request, cookieval.c_str());
 
     // Lock the cache and insert the new session.
 
@@ -313,8 +351,8 @@ unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTi
     // Validation here depends on request content settings plus the input flags. The resulting policy
     // is passed to the _find method for enforcement.
 
-    const char* key = m_cookieManager->getCookieValue(request);
-    if (!key) {
+    const char* cookieval = m_cookieManager->getCookieValue(request);
+    if (!cookieval) {
         m_log.debug("no session cookie present");
         return unique_lock<Session>();
     }
@@ -327,32 +365,49 @@ unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTi
     if (checkTimeout) {
         timeout = settings->getUnsignedInt(RequestMapper::TIMEOUT_PROP_NAME, RequestMapper::TIMEOUT_PROP_DEFAULT);
     }
-    const char* client_addr = nullptr;
+    string client_addr;
     if (!ignoreAddress && settings->getBool(RequestMapper::CONSISTENT_ADDRESS_PROP_NAME, RequestMapper::CONSISTENT_ADDRESS_PROP_DEFAULT)) {
-        client_addr = request.getRemoteAddr().c_str();
+        client_addr = request.getRemoteAddr();
     }
 
-    unique_lock<Session> session = _find(&request, applicationId, key, lifetime, timeout, client_addr);
+    pair<string,unsigned int> keyver = parseCookieValue(cookieval);
+
+    unique_lock<Session> session = _find(
+        &request,
+        applicationId,
+        keyver.first.c_str(),
+        keyver.second,
+        lifetime,
+        timeout,
+        client_addr.empty() ? nullptr : client_addr.c_str());
     if (!session) {
         // If no session, we need to clear the session cookie to prevent further use.
-        m_log.debug("clearing cookie for session (%s)", key);
+        m_log.debug("clearing cookie for session (%s)", keyver.first.c_str());
         m_cookieManager->unsetCookie(request);
+    }
+
+    // If the returned session's version is newrer than our cookie value, we need to update our cookie.
+    if (session.mutex()->getVersion() > keyver.second) {
+        string new_cookieval(keyver.first);
+        computeVersionedFilename(new_cookieval, session.mutex()->getVersion());
+        m_cookieManager->setCookie(request, new_cookieval.c_str());
     }
 
     return session;
 }
 
-unique_lock<Session> AbstractSessionCache::find(const char* applicationId, const char* key)
+unique_lock<Session> AbstractSessionCache::find(const char* applicationId, const char* key, unsigned int version)
 {
     // This variant does no request-based validation so it returns the session best effort
     // using the underlying _find method. It does ensure the applicationId matches if set.
-    return _find(nullptr, applicationId, key, 0, 0, nullptr);
+    return _find(nullptr, applicationId, key, version, 0, 0, nullptr);
 }
 
 unique_lock<Session> AbstractSessionCache::_find(
     SPRequest* request,
     const char* applicationId,
     const char* key,
+    unsigned int version,
     unsigned int lifetime,
     unsigned int timeout,
     const char* client_addr
@@ -374,24 +429,59 @@ unique_lock<Session> AbstractSessionCache::_find(
 
         m_log.debug("session (%s) found locally, validating for use", key);
 
-        // Cross-check application.
+        // Cross-check application and check version for currency.
         if (strcmp(applicationId, session.mutex()->getApplicationID())) {
             m_log.warn("session (%s) issued for application (%s), accessed via application (%s)",
                 key, session.mutex()->getApplicationID(), applicationId);
             session.unlock();
+            return session;
         }
-        else if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(request, lifetime, timeout, client_addr)) {
+        else if (version > session.mutex()->getVersion()) {
+            // The version we want is newer than the one we have cached.
+            m_log.debug("session (%s) has stale version, removing it to reload", key);
+            // We need to dump the local copy so we can recurse back in to load in the "later" version.
+            session.unlock();   // need to unlock for dormant() to work
+            dormant(key);
+            // We want to fall into the cache_read step below to reload the latest version.
+        }
+        else if (!dynamic_cast<BasicSession*>(session.mutex())->isValid(request, lifetime, timeout)) {
             // Locally invalid on its face, so remove and return nothing.
             session.unlock();
             m_log.debug("session (%s) invalid, removing it", key);
             // The record should be gone from the back-end but we need to dump it locally.
-            dormant(string(key));
+            dormant(key);
+            return session;
         }
-
-        // Return locked session or empty wrapper.
-        return session;
+        else if (client_addr) {
+            // Check client address.
+            const char* family = AbstractSessionCache::getAddressFamily(client_addr);
+            const char* bound_addr = dynamic_cast<BasicSession*>(session.mutex())->getClientAddress(family);
+            if (bound_addr) {
+                // TODO: Implement the fuzzy address matching
+                if (strcmp(client_addr, bound_addr)) {
+                    m_log.warn("session (%s) access invalid, bound to (%s), accessed from (%s)", key, bound_addr, client_addr);
+                    session.unlock();
+                }
+                // Return locked session or empty wrapper depending on the check result.
+                return session;
+            }
+            else {
+                // We need to rebind the session and the cleanest way to do so is to leverage the
+                // back-end's cache_read operation from scratch to refresh the session.
+                m_log.debug("session (%s) is unbound to address family (%s), removing session for update/reload", key, family);
+                // We need to dump the local copy so we can recurse back in to load in the "later" version.
+                session.unlock();   // need to unlock for dormant() to work
+                dormant(key);
+                // We want to fall into the cache_read step below to reload the latest version.
+            }
+        }
+        else {
+            // Return the locked and valid session.
+            return session;
+        }
     }
     else {
+        // No copy locally at all, so just fall into cache_read step below.
         readlocker.unlock();
         m_log.debug("session (%s) not found locally, loading from persistent store", key);
     }
@@ -399,15 +489,14 @@ unique_lock<Session> AbstractSessionCache::_find(
     DDF obj;
     try {
         // Note this performs the relevant enforcement for us.
-        obj = cache_read(request, applicationId, key, lifetime, timeout, client_addr);
+        obj = cache_read(request, applicationId, key, version, lifetime, timeout, client_addr);
+        if (obj.isnull()) {
+            m_log.info("session (%s) not available in persistent store", key);
+            return unique_lock<Session>();
+        }
     }
     catch (const exception&) {
         // Should be logged by the SPI.
-        return unique_lock<Session>();
-    }
-
-    if (obj.isnull()) {
-        m_log.info("session (%s) not found in persistent store", key);
         return unique_lock<Session>();
     }
 
@@ -428,11 +517,11 @@ unique_lock<Session> AbstractSessionCache::_find(
 #endif
 
     if (m_hashtable.count(key)) {
-        // There was an existing entry, but we want to swap the "newest" copy in place of it.
+        // There was an existing entry, but we want to swap in the "newest" copy in it's place.
         // Since we're holding the cache write lock, we know nobody can have a lock on the
-        // new copy yet, but the old copy might be locked by somebody. However, once we acquire
-        // a lock on the old Session, we know nobody else is waiting for that lock because they
-        // would have to be inside the cache critical section to get to it.
+        // new object yet, but the old object might be locked by somebody. However, once we
+        // acquire a lock on the old Session, we know nobody else is waiting for that lock because
+        // they would have to be inside the cache's critical section to get to it.
         // Thus, this sequence transfers ownership out of the table, removes the entry, then
         // locks, unlocks, and finally deletes the old session object.
         m_log.debug("replacing session (%s) with fresh copy", key);
@@ -451,14 +540,17 @@ unique_lock<Session> AbstractSessionCache::_find(
 
 void AbstractSessionCache::remove(SPRequest& request)
 {
-    const char* key = m_cookieManager->getCookieValue(request);
-    if (!key) {
+    const char* cookieval = m_cookieManager->getCookieValue(request);
+    if (!cookieval) {
         m_log.debug("no session cookie present, no session bound to request");
         return;
     }
-    dormant(string(key));
+
+    pair<string,unsigned int> keyver = parseCookieValue(cookieval);
+
+    dormant(keyver.first);
     try {
-        cache_remove(&request, key);
+        cache_remove(&request, keyver.first.c_str());
     }
     catch (const exception&) {
         // Should be logged by the SPI.
@@ -468,7 +560,7 @@ void AbstractSessionCache::remove(SPRequest& request)
 
 void AbstractSessionCache::remove(const char* key)
 {
-    dormant(string(key));
+    dormant(key);
     cache_remove(nullptr, key);
 }
 
@@ -609,14 +701,20 @@ const char* BasicSession::getID() const
     return m_obj.name();
 }
 
+unsigned int BasicSession::getVersion() const
+{
+    unsigned int ver = m_obj["ver"].integer();
+    return ver > 0 ? ver : 1;
+}
+
 const char* BasicSession::getApplicationID() const
 {
     return m_obj["app_id"].string();
 }
 
-const char* BasicSession::getClientAddress() const
+const char* BasicSession::getClientAddress(const char* family) const
 {
-    return m_obj["addr"].string();
+    return m_obj[family].string();
 }
 
 const std::map<std::string,DDF>& BasicSession::getAttributes() const
@@ -624,20 +722,12 @@ const std::map<std::string,DDF>& BasicSession::getAttributes() const
     return m_attributes;
 }
 
-bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned int timeout, const char* client_addr)
+bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned int timeout)
 {
-    // Check client address.
-    // TODO: Implement the fuzzy address matching.
-    if (client_addr && strcmp(client_addr, getClientAddress())) {
-        m_cache.log().warn("session (%s) invalid, bound to address (%s), accessed from (%s)", getID(), getClientAddress(), client_addr);
-        m_cache.cache_remove(request, getID());
-        return false;
-    }
-
     time_t now = time(nullptr);
 
-    // Enforce session lifetime.
     if (lifetime) {
+        // Enforce session lifetime.
         if (getCreation() + lifetime < now) {
             if (m_cache.log().isWarnEnabled()) {
                 string created(date::format("%FT%TZ", chrono::system_clock::from_time_t(getCreation())));
@@ -658,7 +748,7 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
         if (m_lastAccess - m_lastAccessReported > m_cache.m_storageAccessInterval) {
             try {
                 // Pass a zero to bypass timeout enforcement as we know as well or better than the back-end...
-                if (!m_cache.cache_touch(request, getID(), 0)) {
+                if (!m_cache.cache_touch(request, getID(), getVersion(), 0)) {
                     m_cache.log().warn("session (%) missing in persistent store, invalidating locally", getID());
                     return false;
                 }
@@ -675,7 +765,7 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
         try {
             // The session is locally invalid due to inactivity, but this isn't "truth" because other agent processes may
             // actively be using it.
-            if (!m_cache.cache_touch(request, getID(), timeout)) {
+            if (!m_cache.cache_touch(request, getID(), getVersion(), timeout)) {
                 m_cache.log().warn("session (%s) timed out due to inactivity", getID());
                 return false;
             }

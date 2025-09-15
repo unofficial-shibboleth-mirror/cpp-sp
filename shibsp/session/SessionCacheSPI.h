@@ -50,6 +50,8 @@ namespace shibsp {
          * Create a new "record" in the underlying storage medium and return a key/ID uniquely identifying
          * the session within the storage medium.
          * 
+         * <p>The version of the session should initially be 1.</p>
+         * 
          * <p>The caller retains ownership of the input data.</p>
          * 
          * @param request agent request, if available
@@ -71,11 +73,14 @@ namespace shibsp {
          * method will be actioned based on a time of last use that is no older than the current
          * time.</p>
          * 
+         * <p>The returned session MAY be of a newer version than requested but will not be older.</p>
+         * 
          * <p>The caller owns the resulting data object.</p>
          * 
          * @param request       agent request, if available
          * @param applicationId application ID
          * @param key           session key/ID
+         * @param version       session version
          * @param lifetime      if positive, the time since its creation the session may be valid
          * @param timeout       if positive, a timeout duration to enforce against the estimated time of last use
          * @param client_addr   if set, a client address to enforce for use of the session
@@ -86,10 +91,31 @@ namespace shibsp {
             SPRequest* request,
             const char* applicationId,
             const char* key,
+            unsigned int version=1,
             unsigned int lifetime=0,
             unsigned int timeout=0,
             const char* client_addr=nullptr
             )=0;
+
+        /**
+         * Issue a new version of the specified session, updating the data as directed.
+         * 
+         * <p>The specified version MUST be the current version or the update should be aborted.</p>
+         * 
+         * <p>The caller retains ownership of the session data object.</p>
+         * 
+         * <p>The return value signals success or a version mismatch/collision, while any other
+         * more systemic error will result in an IOException.
+         * 
+         * @param agent request, if available
+         * @param key session key/ID
+         * @param version old session version
+         * @param data updated session data
+         * 
+         * @return true iff the session was updated to a version one greater than the input version,
+         *      false to signal a version collision such that a newer version was added behind us
+         */
+        virtual bool cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data)=0;
 
         /**
          * Informs the storage medium that a session was used at the current point in time.
@@ -99,14 +125,19 @@ namespace shibsp {
          * 
          * @param request   agent request, if available
          * @param key       session key/ID
+         * @param version   session version
          * @param timeout   timeout to enforce if non-zero
          * 
          * @return true iff the session remains valid/available
          */
-        virtual bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0)=0;
+        virtual bool cache_touch(
+            SPRequest* request, const char* key, unsigned int version=1, unsigned int timeout=0
+            )=0;
 
         /**
          * Delete a session record from the underlying storage medium.
+         * 
+         * <p>All versions of the session will be removed.</p>
          * 
          * @param request   agent request, if available
          * @param key       key/ID of session to delete

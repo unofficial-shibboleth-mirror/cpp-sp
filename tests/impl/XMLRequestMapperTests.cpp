@@ -59,6 +59,9 @@ public:
     const char* getID() const {
         return nullptr;
     }
+    unsigned int getVersion() const {
+        return 1;
+    }
     const char* getApplicationID() const {
         return nullptr;
     }

@@ -43,9 +43,9 @@ namespace shibsp {
         std::string getHeader(const char* name) const {
             return m_requestHeaders.find(name) == m_requestHeaders.end() ? "" : m_requestHeaders.find(name)->second;
         }
-        std::string getRemoteUser() const { return m_user.c_str(); }
-        std::string getRemoteAddr() const { return m_addr.c_str(); }
-        std::string getAuthType() const { return nullptr; }
+        std::string getRemoteUser() const { return m_user; }
+        std::string getRemoteAddr() const { return m_addr; }
+        std::string getAuthType() const { return ""; }
         long sendResponse(std::istream&, long status) { return status; }
         void clearHeader(const char* name) {}
         void setHeader(const char* name, const char* value) {}

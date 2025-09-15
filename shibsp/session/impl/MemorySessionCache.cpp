@@ -46,11 +46,13 @@ namespace {
             SPRequest* request,
             const char* applicationId,
             const char* key,
+            unsigned int version=1,
             unsigned int lifetime=0,
             unsigned int timeout=0,
             const char* client_addr=nullptr
             );
-        bool cache_touch(SPRequest* request, const char* key, unsigned int timeout=0);
+        bool cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data);
+        bool cache_touch(SPRequest* request, const char* key, unsigned int version=1, unsigned int timeout=0);
         void cache_remove(SPRequest* request, const char* key);
     
     private:
@@ -77,10 +79,17 @@ string MemorySessionCache::cache_create(SPRequest* request, DDF& sessionData)
     return hex_encode(m_rng(string(16,0)));
 }
 
+bool MemorySessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data)
+{
+    // We can't update a session because there's no cross-process copy of it.
+    return false;
+}
+
 DDF MemorySessionCache::cache_read(
     SPRequest* request,
     const char* applicationId,
     const char* key,
+    unsigned int version,
     unsigned int lifetime,
     unsigned int timeout,
     const char* client_addr
@@ -89,7 +98,7 @@ DDF MemorySessionCache::cache_read(
     return DDF();
 }
 
-bool MemorySessionCache::cache_touch(SPRequest* request, const char* key, unsigned int timeout)
+bool MemorySessionCache::cache_touch(SPRequest* request, const char* key, unsigned int version, unsigned int timeout)
 {
     return true;
 }

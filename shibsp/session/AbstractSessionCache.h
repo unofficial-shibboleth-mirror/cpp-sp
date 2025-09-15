@@ -57,14 +57,16 @@ namespace shibsp {
         void unlock();
 
         const char* getID() const;
+        unsigned int getVersion() const;
         const char* getApplicationID() const;
-        const char* getClientAddress() const;
+        const char* getClientAddress(const char* fanily) const;
         const std::map<std::string,DDF>& getAttributes() const;
         time_t getCreation() const;
         time_t getLastAccess() const;
 
         // Perform validation of a local session based on policy and checks for revocation.
-        bool isValid(SPRequest* request, unsigned int lifetime, unsigned int timeout, const char* client_addr);
+        // Address checking is notably handled elsewhere.
+        bool isValid(SPRequest* request, unsigned int lifetime, unsigned int timeout);
 
     private:
         DDF m_obj;
@@ -95,7 +97,7 @@ namespace shibsp {
             // SessionCache API
             std::string create(SPRequest& request, DDF& session);
             std::unique_lock<Session> find(SPRequest& request, bool checkTimeout, bool ignoreAddress);
-            std::unique_lock<Session> find(const char* applicationId, const char* key);
+            std::unique_lock<Session> find(const char* applicationId, const char* key, unsigned int version=1);
             void remove(SPRequest& request);
             void remove(const char* key);
 
@@ -134,7 +136,15 @@ namespace shibsp {
              */
             static bool isSessionDataValid(DDF& sessionData);
 
+        protected:
+            // Classifies addresses for unique binding to each family.
+            static const char* getAddressFamily(const std::string& addr);
+            static void computeVersionedFilename(std::string& path, unsigned int version);
+
         private:
+            // Split session key and version from cookie values.
+            static std::pair<std::string,unsigned int> parseCookieValue(const char* value);
+
             static void* cleanup_fn(void*);
             void dormant(const std::string& key);
             // Wrapper for finding sessions via varied inputs.
@@ -142,6 +152,7 @@ namespace shibsp {
                 SPRequest* request,
                 const char* applicationID,
                 const char* key,
+                unsigned int version,
                 unsigned int lifetime,
                 unsigned int timeout,
                 const char* client_addr

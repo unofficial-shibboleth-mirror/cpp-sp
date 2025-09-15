@@ -56,6 +56,15 @@ namespace shibsp {
         virtual const char* getID() const=0;
 
         /**
+         * Returns the session version.
+         * 
+         * <p>Session data is versioned by monotomically increasing integers, starting with 1.</p>
+         * 
+         * @return version of the data
+         */
+        virtual unsigned int getVersion() const=0;
+
+        /**
          * Returns the session's "application" ID, i.e., a value separating sessions into
          * specific buckets based on resources.
          *
@@ -128,6 +137,9 @@ namespace shibsp {
          * 
          * <p>An exception is raised in the event of an error.</p>
          * 
+         * <p>The new session's version is implicitly 1 (the first) as it is assumed the
+         * session is brand new.</p>
+         * 
          * @param request request to bind the session to
          * @param session session data obtained from the hub
          * 
@@ -150,17 +162,23 @@ namespace shibsp {
         virtual std::unique_lock<Session> find(SPRequest& request, bool checkTimeout, bool ignoreAddress)=0;
 
         /**
-         * Locates an existing session by its key/ID.
+         * Locates an existing session by its key/ID and version.
          *
+         * <p>The version parameter signals the oldest version of the data that should be returned. The version
+         * MAY be newer but will not be older.</p>
+         * 
          * @param applicationID current application ID
          * @param key           session key to locate
+         * @param version       oldest version to locate
          * 
          * @return locked Session (or an unbound wrapper)
          */
-        virtual std::unique_lock<Session> find(const char* applicationId, const char* key)=0;
+        virtual std::unique_lock<Session> find(const char* applicationId, const char* key, unsigned int version=1)=0;
 
         /**
          * Removes an existing session bound to a request.
+         * 
+         * <p>All versions of the session will be removed.</p>
          *
          * @param request   request from client containing session
          */
@@ -169,6 +187,8 @@ namespace shibsp {
        /**
         * Removes an existing session identified by its application and ID.
         *
+        * <p>All versions of the session will be removed.</p>
+        * 
         * @param key    session key/ID
         */
         virtual void remove(const char* key)=0;
