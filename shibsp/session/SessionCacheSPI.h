@@ -105,7 +105,8 @@ namespace shibsp {
          * 
          * <p>The specified version MUST be the current version or the update should be aborted.</p>
          * 
-         * <p>The caller retains ownership of the session data object.</p>
+         * <p>The caller retains ownership of the session data object, though it will be modified to
+         * reflect the updated version.</p>
          * 
          * <p>The return value signals success or a version mismatch/collision.</p>
          * 
