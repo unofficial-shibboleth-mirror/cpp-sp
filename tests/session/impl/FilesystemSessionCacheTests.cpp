@@ -144,6 +144,19 @@ BOOST_FIXTURE_TEST_CASE(FilesystemSessionCache_tests, FilesystemFixture)
     // Clear old response headers.
     request.m_responseHeaders.clear();
 
+    // Force an address re-bind, which should revise the session version.
+    request.m_addr = "::1";
+
+    session = cache->find(request, true, false);
+    BOOST_CHECK(session);
+    if (session) {
+        BOOST_CHECK_EQUAL(session.mutex()->getVersion(), 2);
+        header = cookieName + '=' + key + ".2"; 
+        header += "; Path=/; Secure=1; HttpOnly=1; SameSite=None";
+        BOOST_CHECK_EQUAL(request.m_responseHeaders["Set-Cookie"], header);
+        session.unlock();
+    }
+
     cache->remove(request);
 
     header = cookieName;
