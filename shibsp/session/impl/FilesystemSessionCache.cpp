@@ -328,13 +328,12 @@ DDF FilesystemSessionCache::cache_read(
 
     bool updateTimestamp = true;
 
-    // TODO: Implement the fuzzy address matching.
     if (client_addr) {
         const char* family = getAddressFamily(client_addr);
         const char* addr = obj[family].string();
         if (addr) {
-            if (strcmp(client_addr, addr)) {
-                m_spilog.info("session (%s) invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
+            if (!isAddressMatch(client_addr, addr)) {
+                m_spilog.info("session (%s) use invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
                 return obj.destroy();
             }
         }

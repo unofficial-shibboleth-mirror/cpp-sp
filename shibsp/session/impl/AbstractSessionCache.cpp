@@ -28,6 +28,8 @@
 #include "logging/Category.h"
 #include "session/AbstractSessionCache.h"
 #include "util/Date.h"
+#include "util/IPRange.h"
+#include "util/Misc.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -55,6 +57,7 @@ static const char CLEANUP_INTERVAL_PROP_NAME[] = "cleanupInterval";
 static const char STORAGE_ACCESS_INTERVAL_PROP_NAME[] = "storageAccessInterval";
 static const char INPROC_TIMEOUT_PROP_NAME[] = "inprocTimeout";
 static const char ISSUER_ATTRIBUTE_PROP_NAME[] = "issuerAttribute";
+static const char UNRELIABLE_NETWORKS_PROP_NAME[] = "unreliableNetworks";
 static const char COOKIE_NAME_PROP_NAME[] = "cookieName";
 static const char COOKIE_SECURE_PROP_NAME[] = "cookieSecure";
 static const char COOKIE_HTTPONLY_PROP_NAME[] = "cookieHttpOnly";
@@ -205,6 +208,20 @@ AbstractSessionCache::AbstractSessionCache(const ptree& pt)
     m_cookieManager->setMaxAge(getInt(COOKIE_MAXAGE_PROP_NAME, COOKIE_MAXAGE_PROP_DEFAULT));
     m_cookieManager->setDomain(getString(COOKIE_DOMAIN_PROP_NAME));
     m_cookieManager->setSameSite(getString(COOKIE_SAMESITE_PROP_NAME));
+
+    const char* unreliableNetworks = getString(UNRELIABLE_NETWORKS_PROP_NAME);
+    if (unreliableNetworks) {
+        vector<string> tokenized;
+        split_to_container(tokenized, unreliableNetworks);
+        for (const string& s : tokenized) {
+            try {
+                m_unreliableNetworks.push_back(IPRange::parseCIDRBlock(s.c_str()));
+            }
+            catch (const ConfigurationException& e) {
+                m_log.error("error parsing CIDR expressioon (%s): %s", s.c_str(), e.what());
+            }
+        }
+    }
 }
 
 AbstractSessionCache::~AbstractSessionCache()
@@ -249,6 +266,25 @@ const char* AbstractSessionCache::getAddressFamily(const std::string& addr)
         return "6";
     else
         return "4";
+}
+
+bool AbstractSessionCache::isAddressMatch(const char* one, const char* two) const
+{
+    if (!one || !two) {
+        return false;
+    }
+
+    if (!strcmp(one, two)) {
+        return true;
+    }
+
+    for (const IPRange& cidr : m_unreliableNetworks) {
+        if (cidr.contains(one) && cidr.contains(two)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void AbstractSessionCache::computeVersionedFilename(string& path, unsigned int version)
@@ -457,8 +493,7 @@ unique_lock<Session> AbstractSessionCache::_find(
             const char* family = AbstractSessionCache::getAddressFamily(client_addr);
             const char* bound_addr = dynamic_cast<BasicSession*>(session.mutex())->getClientAddress(family);
             if (bound_addr) {
-                // TODO: Implement the fuzzy address matching
-                if (strcmp(client_addr, bound_addr)) {
+                if (!isAddressMatch(client_addr, bound_addr)) {
                     m_log.warn("session (%s) access invalid, bound to (%s), accessed from (%s)", key, bound_addr, client_addr);
                     session.unlock();
                 }

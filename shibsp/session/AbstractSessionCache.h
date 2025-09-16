@@ -28,11 +28,14 @@
 #include <util/BoostPropertySet.h>
 
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #ifdef HAVE_CXX14
 # include <shared_mutex>
 #endif
 #include <thread>
+#include <vector>
+
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
@@ -40,6 +43,7 @@ namespace shibsp {
     class SHIBSP_API AbstractSessionCache;
     class SHIBSP_API Attribute;
     class SHIBSP_API CookieManager;
+    class SHIBSP_API IPRange;
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -137,8 +141,31 @@ namespace shibsp {
             static bool isSessionDataValid(DDF& sessionData);
 
         protected:
-            // Classifies addresses for unique binding to each family.
+            /**
+             * Compares two addresses, allowing for the unreliableNetworks fuzzy match option.
+             * 
+             * @param one   first address
+             * @param two   second address
+             * 
+             * @return true iff the addresses are "equivalent" for session purposes
+             */
+            bool isAddressMatch(const char* one, const char* two) const;
+
+            /**
+             * Returns a string signifying the network address family of the input address.
+             * 
+             * @param addr address to evaluate
+             * 
+             * @return the address family (or a default value, so null is never returned)
+             */
             static const char* getAddressFamily(const std::string& addr);
+
+            /**
+             * Generates version-specific filenames and cookie values by modifying a string in place.
+             * 
+             * @param path base string to append version to
+             * @param version version to append
+             */
             static void computeVersionedFilename(std::string& path, unsigned int version);
 
         private:
@@ -168,6 +195,7 @@ namespace shibsp {
 #endif
             std::map<std::string,std::unique_ptr<BasicSession>> m_hashtable;
             std::unique_ptr<CookieManager> m_cookieManager;
+            std::vector<IPRange> m_unreliableNetworks;
             std::condition_variable m_shutdown_wait;
             std::thread m_cleanup_thread;
             std::string m_issuerAttribute;
