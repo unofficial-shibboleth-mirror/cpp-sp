@@ -37,6 +37,9 @@ namespace shibsp {
      * <p>As a general rule, implementations should log errors internally and raise exceptions
      * such that the caller need not log the resulting object to ensure adequate logging of the
      * outcome.</p>
+     * 
+     * <p>Errors that reflect unexpected or impossible-to-anticipate issues should be thrown as
+     * an IOException, with return values used for more expected/controlled issues.</p>
      */
     class SHIBSP_API SessionCacheSPI
     {
@@ -104,8 +107,7 @@ namespace shibsp {
          * 
          * <p>The caller retains ownership of the session data object.</p>
          * 
-         * <p>The return value signals success or a version mismatch/collision, while any other
-         * more systemic error will result in an IOException.
+         * <p>The return value signals success or a version mismatch/collision.</p>
          * 
          * @param agent request, if available
          * @param key session key/ID

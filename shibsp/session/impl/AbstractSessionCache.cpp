@@ -561,7 +561,12 @@ void AbstractSessionCache::remove(SPRequest& request)
 void AbstractSessionCache::remove(const char* key)
 {
     dormant(key);
-    cache_remove(nullptr, key);
+    try {
+        cache_remove(nullptr, key);
+    }
+    catch (const exception&) {
+        // Should be logged by the SPI.
+    }
 }
 
 void AbstractSessionCache::dormant(const string& key)
@@ -734,7 +739,12 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
                 string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(getCreation() + lifetime)));
                 m_cache.log().warn("session (%s) has expired, created (%s), expired (%s)", getID(), created.c_str(), expired.c_str());
             }
-            m_cache.cache_remove(request, getID());
+            try {
+                m_cache.cache_remove(request, getID());
+            }
+            catch (const exception&) {
+                // Should be logged by SPI.
+            }
             return false;
         }
     }

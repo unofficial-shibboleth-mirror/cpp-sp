@@ -277,12 +277,12 @@ DDF FilesystemSessionCache::cache_read(
     if (!is) {
         int e = errno;
         if (e == ENOENT) {
-            m_spilog.debug("session file (%s) does not exist", effective_path.c_str());
+            m_spilog.info("session file (%s) does not exist, deleted behind us?", effective_path.c_str());
         }
         else {
             m_spilog.error("error opening session file (%s) for reading, errno=%d", effective_path.c_str(), e);
         }
-        return obj;
+        throw IOException("Session file could not be found or read after acquisition of modification time.");
     }
 
     time_t now = time(nullptr);
@@ -303,7 +303,7 @@ DDF FilesystemSessionCache::cache_read(
 
     if (!isSessionDataValid(obj)) {
         m_spilog.error("deserialized session from file (%s) was invalid", effective_path.c_str());
-        return obj.destroy();
+        throw IOException("Session data was invalid.");
     }
 
     const char* appId = obj["app_id"].string();
@@ -363,7 +363,7 @@ DDF FilesystemSessionCache::cache_read(
             catch (const exception& ex) {
                 // This is an outright error attempting the update, so we just fail hard.
                 m_spilog.error("exception attempting to update session (%s): %s", key, ex.what());
-                return obj.destroy();
+                throw;
             }
         }
     }
@@ -500,7 +500,9 @@ void FilesystemSessionCache::cache_remove(SPRequest* request, const char* key)
             if (e != ENOENT) {
                 m_spilog.error("error removing file for session (%s), version (%u), errno=%d", key, version, e);
             }
-            break;
+            else {
+                break;
+            }
         }
         else {
             m_spilog.debug("removed session file for (%s), version (%u)", key, version);
