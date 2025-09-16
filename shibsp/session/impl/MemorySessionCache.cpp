@@ -224,7 +224,7 @@ DDF MemorySessionCache::cache_read(
             // Fill in the new address and attempt the update.
             entry->second.first.addmember(family).string(client_addr);
             unsigned int oldver = entry->second.first.getmember("ver").integer();
-            entry->second.first.getmember("ver").integer(oldver == 0 ? 2 : oldver + 1);
+            entry->second.first.addmember("ver").integer(oldver == 0 ? 2 : oldver + 1);
         }
     }
 
