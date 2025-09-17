@@ -200,7 +200,10 @@ const char* AbstractHTTPRemotingService::getCAFile() const
 AbstractHTTPRemotingService::auth_t AbstractHTTPRemotingService::getAuthMethod(const char* method)
 {
     if (method) {
-        if (!strcmp(method, "basic")) {
+        if (!strcmp(method, "none")) {
+            return agent_auth_none;
+        }
+        else if (!strcmp(method, "basic")) {
             return agent_auth_basic;
         }
         else if (!strcmp(method, "digest")) {
