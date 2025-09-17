@@ -417,13 +417,11 @@ unique_lock<Session> AbstractSessionCache::find(SPRequest& request, bool checkTi
         timeout,
         client_addr.empty() ? nullptr : client_addr.c_str());
     if (!session) {
-        // If no session, we need to clear the session cookie to prevent further use.
+        // No session, we need to clear the session cookie to prevent further use.
         m_log.debug("clearing cookie for session (%s)", keyver.first.c_str());
         m_cookieManager->unsetCookie(request);
-    }
-
-    // If the returned session's version is newrer than our cookie value, we need to update our cookie.
-    if (session.mutex()->getVersion() > keyver.second) {
+    } else if (session.mutex()->getVersion() > keyver.second) {
+        // The returned session's version is newer than our cookie value, we need to update our cookie.
         string new_cookieval(keyver.first);
         computeVersionedFilename(new_cookieval, session.mutex()->getVersion());
         m_cookieManager->setCookie(request, new_cookieval.c_str());
