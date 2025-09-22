@@ -314,27 +314,27 @@ pair<string,unsigned int> AbstractSessionCache::parseCookieValue(const char* val
     return make_pair(string(value, sep), atoi(sep +1));
 }
 
-string AbstractSessionCache::create(SPRequest& request, DDF& session)
+string AbstractSessionCache::create(SPRequest& request, DDF& data)
 {
     m_log.debug("creating new session");
 
     // Isolate from parent.
-    session.remove();
+    data.remove();
 
     // Add additional fields managed by agent.
     // The version is absent, implying 1, as the common case.
     // The attributes member should be present from hub.
-    session.addmember("ts").longinteger(time(nullptr));
-    session.addmember("app_id").string(request.getRequestSettings().first->getString(
+    data.addmember("ts").longinteger(time(nullptr));
+    data.addmember("app_id").string(request.getRequestSettings().first->getString(
         RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
-    session.addmember(getAddressFamily(request.getRemoteAddr())).string(request.getRemoteAddr());
+    data.addmember(getAddressFamily(request.getRemoteAddr())).string(request.getRemoteAddr());
 
     const AttributeConfiguration& attrConfig = request.getAgent().getAttributeConfiguration(
         request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME));
-    DDF attrs = session["attributes"];
+    DDF attrs = data["attributes"];
     if (!attrConfig.processAttributes(attrs)) {
         m_log.warn("error processing session attributes for storage/use");
-        session.destroy();
+        data.destroy();
         throw SessionException("Error while processing session attributes for storage.");
     }
 
@@ -342,16 +342,16 @@ string AbstractSessionCache::create(SPRequest& request, DDF& session)
     string key;
     try {
         m_log.debug("writing new session to persistent store");
-        key = cache_create(&request, session);
+        key = cache_create(&request, data);
     }
     catch (const exception&) {
         // Should be logged by the SPI.
-        session.destroy();
+        data.destroy();
         throw;
     }
 
-    session.name(key.c_str());
-    unique_ptr<BasicSession> sessionObject(new BasicSession(*this, session));
+    data.name(key.c_str());
+    unique_ptr<BasicSession> sessionObject(new BasicSession(*this, data));
 
     const char* issuer = nullptr;
     const auto& attr = sessionObject->getAttributes().find(m_issuerAttribute);
@@ -571,6 +571,63 @@ unique_lock<Session> AbstractSessionCache::_find(
     return unique_lock<Session>(*ref);
 }
 
+bool AbstractSessionCache::update(SPRequest& request, unique_lock<Session>& session, DDF& data, const char* reason)
+{
+    // On input we hold an exclusive lock on the relevant session.
+
+    DDF newData;
+
+    try {
+        // Validate and reformat attribute data.
+        const AttributeConfiguration& attrConfig = request.getAgent().getAttributeConfiguration(
+            request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME));
+        DDF attrs = data["attributes"];
+        if (!attrConfig.processAttributes(attrs)) {
+            m_log.warn("error processing updated session attributes for storage/use");
+            data.destroy();
+            throw SessionException("Error while processing updated session attributes for storage.");
+        }
+
+        m_log.info("updating session (%s), version (%u), reason (%s)",
+            session.mutex()->getID(), session.mutex()->getVersion(), reason ? reason : "(unspecified)");
+
+        // The update requires that we copy the existing DDF from the original session and then
+        // replace members with "like" names.
+        newData = dynamic_cast<BasicSession*>(session.mutex())->cloneData();
+        DDFJanitor janitor(newData);
+        DDF child = data.first();
+        while (!child.isnull()) {
+            // This call defends against an empty name, and handles cleanup of an existing member by the same name.
+            newData.add(child);
+            child = data.next();
+        }
+        // Free whatever's left of the input.
+        data.destroy();
+
+        // Attempt to update the back-end.
+        if (cache_update(&request, session.mutex()->getID(), session.mutex()->getVersion(), newData)) {
+            // On success, the version field will have been updated and we need to overwrite the local copy of
+            // this session's data.
+            dynamic_cast<BasicSession*>(session.mutex())->updateData(newData);
+            janitor.release();
+
+            // We need to update our cookie since by definition we incremented the version.
+            string new_cookieval(session.mutex()->getID());
+            computeVersionedFilename(new_cookieval, session.mutex()->getVersion());
+            m_cookieManager->setCookie(request, new_cookieval.c_str());
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    catch (const exception& e) {
+        // Should be logged by the SPI.
+        data.destroy();
+        throw;
+    }
+}
+
 void AbstractSessionCache::remove(SPRequest& request)
 {
     const char* cookieval = m_cookieManager->getCookieValue(request);
@@ -758,6 +815,22 @@ const char* BasicSession::getClientAddress(const char* family) const
 const std::map<std::string,DDF>& BasicSession::getAttributes() const
 {
     return m_attributes;
+}
+
+DDF BasicSession::getOpaqueData() const
+{
+    return m_obj["opaque"];
+}
+
+DDF BasicSession::cloneData() const
+{
+    return m_obj.copy();
+}
+
+void BasicSession::updateData(DDF& data)
+{
+    m_obj.destroy();
+    m_obj = data;
 }
 
 bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned int timeout)

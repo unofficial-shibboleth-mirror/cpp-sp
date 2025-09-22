@@ -74,6 +74,9 @@ public:
     const map<string,DDF>& getAttributes() const {
         return m_attributes;
     }
+    DDF getOpaqueData() const {
+        return DDF();
+    }
 
     map<string,DDF> m_attributes;
 };

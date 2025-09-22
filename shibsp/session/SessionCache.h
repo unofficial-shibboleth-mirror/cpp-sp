@@ -94,6 +94,15 @@ namespace shibsp {
          * @return an immutable map of attribute data keyed by attribute ID
          */
         virtual const std::map<std::string,DDF>& getAttributes() const=0;
+
+        /**
+         * Returns the opaque hub-supplied data for the session.
+         * 
+         * <p>The data remains owned by the session.</p>
+         * 
+         * @return opaque data
+         */
+        virtual DDF getOpaqueData() const=0;
     };
 
     /**
@@ -132,8 +141,10 @@ namespace shibsp {
          * Creates a new session and stores it persistently while binding the session
          * to the input request object.
          * 
-         * <p>The second parameter's ownership is assumed by this method regardless of the
-         * outcome.</p>
+         * <p>The input DDF must be a structure containing at least one member named
+         * "attributes" which must be a list, but may be empty. It may contain other
+         * members, which will be stored but not examined. The ownership of the DDF
+         * will be assumed by this method regardless of the outcome.</p>
          * 
          * <p>An exception is raised in the event of an error.</p>
          * 
@@ -141,11 +152,11 @@ namespace shibsp {
          * session is brand new.</p>
          * 
          * @param request request to bind the session to
-         * @param session session data obtained from the hub
+         * @param data session data obtained from the hub
          * 
          * @return the newly created session ID
          */
-        virtual std::string create(SPRequest& request, DDF& session)=0;
+        virtual std::string create(SPRequest& request, DDF& data)=0;
 
         /**
          * Locates an existing session bound to a request.
@@ -174,6 +185,29 @@ namespace shibsp {
          * @return locked Session (or an unbound wrapper)
          */
         virtual std::unique_lock<Session> find(const char* applicationId, const char* key, unsigned int version=1)=0;
+
+        /**
+         * Updates an existing session bound to a request with new data.
+         * 
+         * <p>The input DDF must be a structure containing at least one member named
+         * "attributes" which must be a list, but may be empty. It may contain other
+         * members, which will be stored but not examined. The ownership of the DDF
+         * will be assumed by this method regardless of the outcome.</p>
+         * 
+         * <p>This operation will succeed only if the existing session's version remains the current one,
+         * and will increment its version.</p>
+         * 
+         * <p>The return value is false in the event that a version mismatch occurs, indicating the session
+         * was updated independently. Any other error will raise an exception.</p>
+         * 
+         * @param request request from client containing session
+         * @param session session to update
+         * @param data updated session data to store in place of (not in addition to) the existing data
+         * @param reason indication of purpose for update for logging
+         * 
+         * @return true iff the session was updated successfully, false if the session was updated independently
+         */
+        virtual bool update(SPRequest& request, std::unique_lock<Session>& session, DDF& data, const char* reason=nullptr)=0;
 
         /**
          * Removes an existing session bound to a request.

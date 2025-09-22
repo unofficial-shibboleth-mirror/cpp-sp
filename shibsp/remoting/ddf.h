@@ -153,8 +153,25 @@ namespace shibsp {
     class SHIBSP_API DDFJanitor
     {
     public:
+        /**
+         * Assume ownership of the supplied object.
+         * 
+         * @param obj object to take ownership of
+         */
         DDFJanitor(DDF& obj) : m_obj(obj) {}
+
+        /**
+         * Free the owned object unless previously released.
+         */
         ~DDFJanitor() { m_obj.destroy(); }
+
+        /**
+         * Release ownership of the stored object and return it.
+         * 
+         * @return the stored object, now owned by caller
+         */
+        DDF release() { DDF ret = m_obj; m_obj = DDF(); return ret; }
+        
     private:
         DDF& m_obj;
         DDFJanitor(const DDFJanitor&);

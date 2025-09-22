@@ -65,11 +65,37 @@ namespace shibsp {
         const char* getApplicationID() const;
         const char* getClientAddress(const char* fanily) const;
         const std::map<std::string,DDF>& getAttributes() const;
+        DDF getOpaqueData() const;
         time_t getCreation() const;
         time_t getLastAccess() const;
 
-        // Perform validation of a local session based on policy and checks for revocation.
-        // Address checking is notably handled elsewhere.
+        /**
+         * Returns a clone of the underlying data in the session.
+         * 
+         * @return a clone of the session's data, owned by caller
+         */
+        DDF cloneData() const;
+
+        /**
+         * Replace the session's data with an updated version.
+         * 
+         * <p>This must be called while holding the exclusive lock on the object.
+         * Ownership of the input object is transferred to this object and the
+         * original data will be freed.</p>
+         * 
+         * @param data new data
+         */
+        void updateData(DDF& data);
+
+        /**
+         * Perform validation of a local session based on policy and checks for revocation.
+         * 
+         * @param request optional session carrying request if available
+         * @param lifetime session lifetime policy, 0 if none
+         * @param timeout session timeout policy, 0 if none
+         * 
+         * @return true iff the session remains valid
+         */
         bool isValid(SPRequest* request, unsigned int lifetime, unsigned int timeout);
 
     private:
@@ -99,9 +125,10 @@ namespace shibsp {
             void stop();
 
             // SessionCache API
-            std::string create(SPRequest& request, DDF& session);
+            std::string create(SPRequest& request, DDF& data);
             std::unique_lock<Session> find(SPRequest& request, bool checkTimeout, bool ignoreAddress);
             std::unique_lock<Session> find(const char* applicationId, const char* key, unsigned int version=1);
+            bool update(SPRequest& request, std::unique_lock<Session>& session, DDF& data, const char* reason=nullptr);
             void remove(SPRequest& request);
             void remove(const char* key);
 
