@@ -144,7 +144,7 @@ namespace shibsp {
 
         // Defined properties.
         static const char HANDLER_TYPE_PROP_NAME[];
-        static const char PASSIVE_PROP_NAME[];
+        static const char EVENT_PROP_NAME[];
         static const char TARGET_PROP_NAME[];
 
     private:

@@ -73,9 +73,8 @@ TokenConsumer::TokenConsumer(const ptree& pt, const char* path)
 
 pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
 {
-    // TODO: check for sessio hook return to break loop.
+    // TODO: check for session hook return to break loop.
 
-    bool wasPassive;
     string target;
 
     try {
@@ -92,7 +91,6 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         DDF output = request.getAgent().getRemotingService()->send(input);
         DDFJanitor outputJanitor(output);
 
-        wasPassive = output["passive"].integer() == 1;
         const char* s = output.getmember("http.redirect").string();
         if (s) {
             target = s;
@@ -149,21 +147,17 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             agent_ex->addProperty(AgentException::HANDLER_TYPE_PROP_NAME, TOKEN_CONSUMER_HANDLER);
         }
         
-        // THis is a mess to allow for "ignoring" errors during passive SSO and routing back
+        // This is a mess to allow for "ignoring" errors during passive SSO and routing back
         // to the original resource.
 
-        // The passive and target values can come from the output message or the exception.
-        // When the cache throws, the error typically would not carry that information but the
-        // output would have.
-
-        const char* passive = agent_ex ? agent_ex->getProperty(AgentException::PASSIVE_PROP_NAME) : nullptr;
-        if (wasPassive || (passive && !strcmp(passive, "1"))) {
-            agent_ex->log(request, Priority::SHIB_WARN);
+        const char* event = agent_ex ? agent_ex->getProperty(AgentException::EVENT_PROP_NAME) : nullptr;
+        if (event && !strcmp(event, "NoPassive")) {
             const char* error_target = target.empty() ? agent_ex->getProperty(AgentException::TARGET_PROP_NAME) : target.c_str();
 
             // TODO: either recover POST data or clean up recovery state?
 
             if (error_target) {
+                agent_ex->log(request, Priority::SHIB_WARN);
                 request.limitRedirect(error_target);
                 // Make sure the target isn't a prefix of this handler, to avoid a loop.
                 if (boost::starts_with(error_target, request.getRequestURL())) {
@@ -172,6 +166,9 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
                     request.info("trapping TokenConsumer failure and returning to target location for passive request");
                     return make_pair(true, request.sendRedirect(error_target));
                 }
+            }
+            else {
+                request.warn("TokenConsumer caught NoPassive error but had no target to redirect to");
             }
         }
         throw;
