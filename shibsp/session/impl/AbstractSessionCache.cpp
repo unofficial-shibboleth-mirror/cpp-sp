@@ -306,7 +306,7 @@ pair<string,unsigned int> AbstractSessionCache::parseCookieValue(const char* val
         // Shouldn't happen, but we can handle it.
         return make_pair(string(value), 1);
     }
-    else if (!isnumber(*(sep + 1))) {
+    else if (!isdigit(*(sep + 1))) {
         // Check for negative
         return make_pair(string(value, sep), 1);
     }
