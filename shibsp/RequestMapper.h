@@ -57,6 +57,7 @@ namespace shibsp {
         static const char HANDLER_CONFIG_ID_PROP_NAME[];
         static const char LIFETIME_PROP_NAME[];
         static const char PRESERVE_POST_DATA_PROP_NAME[];
+        static const char POST_LIMIT_PROP_NAME[];
         static const char REDIRECT_ERRORS_PROP_NAME[];
         static const char REDIRECT_TO_SSL_PROP_NAME[];
         static const char REQUIRE_SESSION_PROP_NAME[];
@@ -73,6 +74,7 @@ namespace shibsp {
         static bool EXPIRE_REDIRECTS_PROP_DEFAULT;
         static unsigned int LIFETIME_PROP_DEFAULT;
         static bool PRESERVE_POST_DATA_PROP_DEFAULT;
+        static unsigned int POST_LIMIT_PROP_DEFAULT;
         static bool REQUIRE_SESSION_PROP_DEFAULT;
         static unsigned int TIMEOUT_PROP_DEFAULT;
         static bool USE_HEADERS_PROP_DEFAULT;

@@ -177,8 +177,10 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
         input.add(dup);
 
         DDF wrapped = wrapRequest(request, m_remotedHeaders,
-            !isHandler &&
-                getBool("preservePostData", request, false, HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP));
+            !isHandler && getBool(RequestMapper::PRESERVE_POST_DATA_PROP_NAME,
+                                    request,
+                                    RequestMapper::PRESERVE_POST_DATA_PROP_DEFAULT,
+                                    HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP));
         input.add(wrapped);
 
         for (const string& propname : m_requestMapperSettings) {
