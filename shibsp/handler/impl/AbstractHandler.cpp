@@ -128,7 +128,19 @@ DDF AbstractHandler::wrapRequest(const SPRequest& request, const set<string>& he
     in.addmember("port").integer(request.getPort());
     in.addmember("content_type").string(request.getContentType().c_str());
     if (sendBody) {
-        in.addmember("body").unsafe_string(request.getRequestBody());
+        if (request.getContentType().find("application/x-www-form-urlencoded") != string::npos) {
+            unsigned int postLimit =
+                getUnsignedInt("postLimit", request, 1024 * 1024, HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
+            if (postLimit == 0 || request.getContentLength() <= postLimit) {
+                in.addmember("body").unsafe_string(request.getRequestBody());
+            }
+            else {
+                request.warn("POST limit exceeded, ignoring posted data");
+            }
+        }
+        else {
+            request.warn("Content type not supported, ignoring posted data");
+        }
     }
     in.addmember("content_length").longinteger(request.getContentLength());
     in.addmember("remote_user").string(request.getRemoteUser().c_str());

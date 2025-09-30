@@ -23,6 +23,7 @@
 
 #include <shibsp/base.h>
 #include <shibsp/logging/Priority.h>
+#include <shibsp/remoting/ddf.h>
 
 #include <exception>
 #include <string>
@@ -160,6 +161,31 @@ namespace shibsp {
     DECL_SHIBSP_EXCEPTION(OperationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::RemotingException);
     DECL_SHIBSP_EXCEPTION(SessionException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::AgentException);
     DECL_SHIBSP_EXCEPTION(SessionValidationException,SHIBSP_EXCEPTIONAPI(SHIBSP_API),shibsp::SessionException);
+
+    /**
+     * Specialized OperationException that propagates back a managed copy of the wrapped
+     * HTTP response from the hub for POST preservation on passive SSO.
+     */
+    class SHIBSP_EXCEPTIONAPI(SHIBSP_API) NoPassiveException : public OperationException {
+    public:
+        NoPassiveException(DDF http) : OperationException(nullptr), m_http(http.remove()) {}
+        virtual ~NoPassiveException() noexcept {
+            m_http.destroy();
+        }
+
+        /**
+         * Return wrapped HTTP response object.
+         * 
+         * @return wrapped HTTP response
+         */
+        DDF getHTTPObject() const {
+            return m_http;
+        }
+
+    private:
+        DDF m_http;
+    };
+
 
 #if defined (_MSC_VER)
     #pragma warning( pop )

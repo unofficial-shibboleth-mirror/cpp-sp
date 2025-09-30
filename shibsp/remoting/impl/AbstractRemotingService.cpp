@@ -46,18 +46,34 @@ DDF AbstractRemotingService::send(const DDF& in) const
 
     const char* event = output.getmember("event").string();
     if (event && strcmp(event, "success")) {
-        OperationException ex("Remote operation was unsuccessful.");
-        ex.addProperty(AgentException::EVENT_PROP_NAME, event);
-        if (in.name()) {
-            ex.addProperty("operation", in.name());
+        if (!strcmp(event, "NoPassive")) {
+            NoPassiveException ex(output.getmember("http"));
+            ex.addProperty(AgentException::EVENT_PROP_NAME, event);
+            if (in.name()) {
+                ex.addProperty("operation", in.name());
+            }
+            const char* target = output.getmember("target").string();
+            if (target) {
+                ex.addProperty(AgentException::TARGET_PROP_NAME, target);
+            }
+            
+            output.destroy();
+            throw ex;
         }
-        const char* target = output.getmember("target").string();
-        if (target) {
-            ex.addProperty(AgentException::TARGET_PROP_NAME, target);
-        }
+        else {
+            OperationException ex("Remote operation was unsuccessful.");
+            ex.addProperty(AgentException::EVENT_PROP_NAME, event);
+            if (in.name()) {
+                ex.addProperty("operation", in.name());
+            }
+            const char* target = output.getmember("target").string();
+            if (target) {
+                ex.addProperty(AgentException::TARGET_PROP_NAME, target);
+            }
 
-        output.destroy();
-        throw ex;
+            output.destroy();
+            throw ex;
+        }
     }
     return output;
 }

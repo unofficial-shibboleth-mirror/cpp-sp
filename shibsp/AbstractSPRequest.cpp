@@ -132,8 +132,9 @@ string AbstractSPRequest::getRemoteAddr() const
 
 const char* AbstractSPRequest::getParameter(const char* name) const
 {
-    if (!m_parser.get())
+    if (!m_parser) {
         m_parser.reset(new CGIParser(*this));
+    }
 
     pair<CGIParser::walker,CGIParser::walker> bounds = m_parser->getParameters(name);
     return (bounds.first==bounds.second) ? nullptr : bounds.first->second;
@@ -141,8 +142,9 @@ const char* AbstractSPRequest::getParameter(const char* name) const
 
 vector<const char*>::size_type AbstractSPRequest::getParameters(const char* name, vector<const char*>& values) const
 {
-    if (!m_parser.get())
+    if (!m_parser) {
         m_parser.reset(new CGIParser(*this));
+    }
 
     pair<CGIParser::walker,CGIParser::walker> bounds = m_parser->getParameters(name);
     while (bounds.first != bounds.second) {
