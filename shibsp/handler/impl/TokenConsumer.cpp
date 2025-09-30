@@ -27,7 +27,6 @@
 #include "logging/Category.h"
 #include "session/SessionCache.h"
 #include "remoting/RemotingService.h"
-#include "util/CGIParser.h"
 #include "util/Misc.h"
 #include "util/URLEncoder.h"
 
@@ -74,30 +73,9 @@ TokenConsumer::TokenConsumer(const ptree& pt, const char* path)
 
 pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
 {
+    // TODO: check for session hook return to break loop.
+
     string target;
-
-    // Check for a message back to the handler from a session hook.
-    if (request.getQueryString() && strstr(request.getQueryString(), "shibsp_hook=1")) {
-        // Parse the query string only, to preserve any POST data in case this is
-        // *not* a hook roundtrip but an actual token response that has that parameter
-        // for whatever odd reason.
-        CGIParser cgi(request, true);
-        pair<CGIParser::walker,CGIParser::walker> param = cgi.getParameters("shibsp_hook");
-        if (param.first != param.second && param.first->second && !strcmp(param.first->second, "1")) {
-            // This is a hook return, so we extract the target parameter and redirect to it.
-            param = cgi.getParameters("target");
-            if (param.first != param.second && param.first->second) {
-                target = param.first->second;
-            }
-            else {
-                target = getString("homeURL", request, "/", HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
-            }
-            request.limitRedirect(target.c_str());
-            return make_pair(true, request.sendRedirect(target.c_str()));
-        }
-    }
-
-    // Not a hook response, so process as a token-consumer operation.
 
     try {
         DDF input("token-consumer");
@@ -117,27 +95,14 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         if (s) {
             target = s;
         }
-        else if (!output.getmember("http.response.data").string()) {
-            // Shouldn't happen, but we can route ourselves to homeURL or /
-            target = getString("homeURL", request, "/", HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
-            output.addmember("http.redirect").unsafe_string(target.c_str());
-        }
-
-        // If target is still empty, then this is a POST recovery attempt with the reesource
-        // buried in the form action.
+        
 
         SessionCache* cache = request.getAgent().getSessionCache();
         DDF sessionData = output["session"];
-        // Ownership of sessionData transfers on input to create call (will be detached from output).
+        // Ownership of sessionData transfers on input to create call.
         cache->create(request, sessionData);
         
         const char* sessionHook = request.getRequestSettings().first->getString(RequestMapper::SESSION_HOOK_PROP_NAME);
-
-        if (target.empty() && sessionHook) {
-            request.warn("response contained recovered POST data, ignoring configured sessionHook");
-            sessionHook = nullptr;
-        }
-        
         if (sessionHook) {
             string hook(sessionHook);
             request.absolutize(hook);
@@ -146,7 +111,7 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             // The target also must be included.
             const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
             string returnURL = request.getRequestURL();
-            returnURL = returnURL.substr(0, returnURL.find('?')) + "?shibsp_hook=1";
+            returnURL = returnURL.substr(0, returnURL.find('?')) + "?hook=1";
 
             string encodedTarget;
             if (!target.empty()) {
@@ -169,46 +134,43 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             // Overrwrite the original redirection target and issue.
             // This is necessary to ensure any Set-Cookie headers placed by the hub will reach the client.
             output.addmember("http.redirect").unsafe_string(hook.c_str());
+            return unwrapResponse(request, output);
         }
-        
+
+        // TODO: POST restoration...
+
         return unwrapResponse(request, output);
-    }
-    catch (NoPassiveException& ex) {
-        ex.addProperty(AgentException::HANDLER_TYPE_PROP_NAME, TOKEN_CONSUMER_HANDLER);
-
-        // Check for a wrapped POST recovery.
-        if (ex.getHTTPObject()["response.data"].string()) {
-            ex.log(request, Priority::SHIB_WARN);
-            DDF http = ex.getHTTPObject();
-            return unwrapResponse(request, http);
-        }
-
-        // We do more probing in a GET recovery to prevent loops.
-
-        const char* error_target = ex.getHTTPObject()["redirect"].string();
-        if (!error_target) {
-            error_target = target.empty() ? ex.getProperty(AgentException::TARGET_PROP_NAME) : target.c_str();
-        }
-
-        if (error_target) {
-            request.limitRedirect(error_target);
-            // Make sure the target isn't a prefix of this handler, to avoid a loop.
-            if (boost::starts_with(error_target, request.getRequestURL())) {
-                request.warn("TokenConsumer target location matched handler, not trapping passive request error");
-            } else {
-                ex.log(request, Priority::SHIB_WARN);
-                request.info("trapping TokenConsumer failure and returning to target location for passive request");
-                return make_pair(true, request.sendRedirect(error_target));
-            }
-        }
-
-        throw;
     }
     catch (exception& ex) {
         AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
         if (agent_ex) {
             agent_ex->addProperty(AgentException::HANDLER_TYPE_PROP_NAME, TOKEN_CONSUMER_HANDLER);
-        }        
+        }
+        
+        // This is a mess to allow for "ignoring" errors during passive SSO and routing back
+        // to the original resource.
+
+        const char* event = agent_ex ? agent_ex->getProperty(AgentException::EVENT_PROP_NAME) : nullptr;
+        if (event && !strcmp(event, "NoPassive")) {
+            const char* error_target = target.empty() ? agent_ex->getProperty(AgentException::TARGET_PROP_NAME) : target.c_str();
+
+            // TODO: either recover POST data or clean up recovery state?
+
+            if (error_target) {
+                agent_ex->log(request, Priority::SHIB_WARN);
+                request.limitRedirect(error_target);
+                // Make sure the target isn't a prefix of this handler, to avoid a loop.
+                if (boost::starts_with(error_target, request.getRequestURL())) {
+                    request.warn("TokenConsumer target location matched handler, not trapping passive request error");
+                } else {
+                    request.info("trapping TokenConsumer failure and returning to target location for passive request");
+                    return make_pair(true, request.sendRedirect(error_target));
+                }
+            }
+            else {
+                request.warn("TokenConsumer caught NoPassive error but had no target to redirect to");
+            }
+        }
         throw;
     }
 }
