@@ -58,30 +58,6 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
         throwError("Get Server Secure", hr);
     }
 
-    // Check for header/variable settings in RequestMap and only if absent fall back to Site info.
-    const PropertySet* mappedProperties = getRequestSettings().first;
-    if (mappedProperties->hasProperty(RequestMapper::USE_HEADERS_PROP_NAME)) {
-        m_useHeaders = mappedProperties->getBool(
-            RequestMapper::USE_HEADERS_PROP_NAME, RequestMapper::USE_HEADERS_PROP_DEFAULT);
-    }
-    else {
-        m_useHeaders = site.getBool(RequestMapper::USE_HEADERS_PROP_NAME, RequestMapper::USE_HEADERS_PROP_DEFAULT);
-    }
-
-    if (mappedProperties->hasProperty(RequestMapper::USE_VARIABLES_PROP_NAME)) {
-        m_useVariables = mappedProperties->getBool(
-            RequestMapper::USE_VARIABLES_PROP_NAME, RequestMapper::USE_VARIABLES_PROP_DEFAULT);
-    }
-    else {
-        m_useVariables = site.getBool(RequestMapper::USE_VARIABLES_PROP_NAME, RequestMapper::USE_VARIABLES_PROP_DEFAULT);
-    }
-
-    // This default matches the previous setting.
-    m_safeHeaderNames = site.getBool(ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME, m_useHeaders);
-
-    string prop(site.getString(ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME, ""));
-    split_to_container(m_roleAttributeNames, prop.c_str());
-
     bool normalizeRequest = site.getBool(
         ModuleConfig::NORMALIZE_REQUEST_PROP_NAME, ModuleConfig::NORMALIZE_REQUEST_PROP_DEFAULT);
     unsigned int site_port = site.getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0);
@@ -134,6 +110,31 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
     else {
         m_hostname = site_name;
     }
+
+
+    // Check for header/variable settings in RequestMap and only if absent fall back to Site info.
+    const PropertySet* mappedProperties = getRequestSettings().first;
+    if (mappedProperties->hasProperty(RequestMapper::USE_HEADERS_PROP_NAME)) {
+        m_useHeaders = mappedProperties->getBool(
+            RequestMapper::USE_HEADERS_PROP_NAME, RequestMapper::USE_HEADERS_PROP_DEFAULT);
+    }
+    else {
+        m_useHeaders = site.getBool(RequestMapper::USE_HEADERS_PROP_NAME, RequestMapper::USE_HEADERS_PROP_DEFAULT);
+    }
+
+    if (mappedProperties->hasProperty(RequestMapper::USE_VARIABLES_PROP_NAME)) {
+        m_useVariables = mappedProperties->getBool(
+            RequestMapper::USE_VARIABLES_PROP_NAME, RequestMapper::USE_VARIABLES_PROP_DEFAULT);
+    }
+    else {
+        m_useVariables = site.getBool(RequestMapper::USE_VARIABLES_PROP_NAME, RequestMapper::USE_VARIABLES_PROP_DEFAULT);
+    }
+
+    // This default matches the previous setting.
+    m_safeHeaderNames = site.getBool(ModuleConfig::SAFE_HEADER_NAMES_PROP_NAME, m_useHeaders);
+
+    string prop(site.getString(ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME, ""));
+    split_to_container(m_roleAttributeNames, prop.c_str());
 
     hr = m_ctx->GetServerVariable("REMOTE_USER", &var, &len);
     if (SUCCEEDED(hr)) {
