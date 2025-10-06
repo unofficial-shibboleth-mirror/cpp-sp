@@ -1,9 +1,11 @@
 <RequestMap>
+        <!--
 	<Host name="sp.example.org">
 		<Path name="secure">
 			<AccessControl>
 				<Rule require="user">jdoe</Rule>
 			</AccessControl>
 		</Path>
-	</Host>
+	</Host>a
+        -->
 </RequestMap>
