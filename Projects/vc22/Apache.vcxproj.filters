@@ -15,12 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\apache\mod_shib_24.cpp">
+    <ClCompile Include="..\..\apache\mod_shib4.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\apache\mod_shib_24.rc">
+    <ResourceCompile Include="..\..\apache\mod_shib4.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

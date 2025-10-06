@@ -1,5 +1,3 @@
-# https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApacheConfig
-
 # RPM installations on platforms with a conf.d directory will
 # result in this file being copied into that directory for you
 # and preserved across upgrades.
@@ -10,7 +8,7 @@
 #
 # Load the Shibboleth module.
 #
-LoadModule shib_module @-PKGLIBDIR-@/mod_shib_24.so
+LoadModule shib_module @-PKGLIBDIR-@/mod_shib4.so
 
 #
 # Turn this on to support "require valid-user" rules from other
