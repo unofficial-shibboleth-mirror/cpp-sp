@@ -225,6 +225,10 @@ string FilesystemSessionCache::cache_create(SPRequest* request, DDF& sessionData
             }
         }
         // If we get here, we're attempting a retry until we exhaust.
+        int e = errno;
+        if (e != EEXIST) {
+            m_spilog.error("error opening new session file (%s), errno=%d", path.c_str(), e);
+        }
     } while (++attempts < 3);
 
     m_spilog.error("failed to write new session after 3 attempts to generate a unique key");
