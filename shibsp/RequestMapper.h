@@ -60,6 +60,7 @@ namespace shibsp {
         static const char POST_LIMIT_PROP_NAME[];
         static const char REDIRECT_ERRORS_PROP_NAME[];
         static const char REDIRECT_TO_SSL_PROP_NAME[];
+        static const char REMOTE_USER_PROP_NAME[];
         static const char REQUIRE_SESSION_PROP_NAME[];
         static const char REQUIRE_LOGOUT_WITH_PROP_NAME[];
         static const char SESSION_COOKIE_NAME_PROP_NAME[];

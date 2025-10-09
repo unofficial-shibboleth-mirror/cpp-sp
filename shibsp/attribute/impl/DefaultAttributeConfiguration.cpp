@@ -359,7 +359,7 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
 
     // Check for REMOTE_USER.
     vector<string> rmids;
-    split_to_container(rmids, settings.first->getString("REMOTE_USER", ""));
+    split_to_container(rmids, settings.first->getString(RequestMapper::REMOTE_USER_PROP_NAME, ""));
     for (const string& rmid : rmids) {
         const char* firstVal = getFirstValue(session, rmid.c_str());
         if (firstVal && *firstVal) {

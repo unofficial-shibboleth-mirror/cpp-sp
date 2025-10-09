@@ -179,6 +179,7 @@ const char RequestMapper::PRESERVE_POST_DATA_PROP_NAME[] =  "preservePostData";
 const char RequestMapper::POST_LIMIT_PROP_NAME[] =          "postLimit";
 const char RequestMapper::REDIRECT_ERRORS_PROP_NAME[] =     "redirectErrors";
 const char RequestMapper::REDIRECT_TO_SSL_PROP_NAME[] =     "redirectToSSL";
+const char RequestMapper::REMOTE_USER_PROP_NAME[] =         "REMOTE_USER";
 const char RequestMapper::REQUIRE_LOGOUT_WITH_PROP_NAME[] = "requireLogoutWith";
 const char RequestMapper::REQUIRE_SESSION_PROP_NAME[] =     "requireSession";
 const char RequestMapper::SESSION_COOKIE_NAME_PROP_NAME[] = "sessionCookieName";
