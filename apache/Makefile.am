@@ -18,4 +18,4 @@ mod_shib4_la_LIBADD = \
   $(PTHREAD_LIBS)
 endif
 
-EXTRA_DIST = mod_shib4.cpp resource.h mod_shib4.rc
+EXTRA_DIST = mod_shib4.cpp mod_shib4.rc

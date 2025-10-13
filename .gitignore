@@ -18,6 +18,7 @@
 *.opensdf
 *.suo
 *.aps
+*.asc
 shibsp.pc
 *~
 *.#*
@@ -57,8 +58,8 @@ x64
 /Build
 /fastcgi/shibauthorizer
 /fastcgi/shibresponder
-/Projects/VC??/apache/mod_shib_24-Debug/
-/Projects/VC??/apache/mod_shib_24-Release/
+/Projects/VC??/apache/mod_shib4-Debug/
+/Projects/VC??/apache/mod_shib4-Release/
 /Projects/VC??/fastcgi/shibauthorizer-Debug/
 /Projects/VC??/fastcgi/shibauthorizer-Release/
 /Projects/VC??/fastcgi/shibresponder-Debug/

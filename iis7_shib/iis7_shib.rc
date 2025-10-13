@@ -31,7 +31,7 @@ BEGIN
         BLOCK "080904b0"
         BEGIN
 #include "..\util\resourceCommon.rci"
-            VALUE "FileDescription", "Shibboleth IIIS7 Native Filter / Extension"
+            VALUE "FileDescription", "Shibboleth IIS Module"
             VALUE "InternalName", "iis7_shib"
             VALUE "OriginalFilename", "iis7_shib.dll"
         END

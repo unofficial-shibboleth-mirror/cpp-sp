@@ -27,7 +27,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
 #include "..\util\resourceCommon.rci"
-            VALUE "FileDescription", "Shibboleth V4 Apache 2.4 Module\0"
+            VALUE "FileDescription", "Shibboleth Apache 2.4 Module\0"
             VALUE "InternalName", "mod_shib4\0"
             VALUE "OriginalFilename", "mod_shib4.so\0"
         END
