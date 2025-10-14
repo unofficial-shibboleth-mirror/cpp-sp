@@ -74,6 +74,8 @@ namespace {
 
         Category& m_log;
         ptree m_pt;
+        const char* m_scopeDelimiter;
+        const char* m_valueDelimiter;
         bool m_urlEncoding,m_exportDuplicates,m_partialRegexMatching;
         map<string,string> m_mappings;
         set<string> m_caseInsensitiveIds;
@@ -97,16 +99,18 @@ AttributeConfiguration::~AttributeConfiguration() {}
 DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathname)
     : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration")), m_urlEncoding(false), m_exportDuplicates(true)
 {
-    static const char EXPORT_DUP_VALUES_PROP_NAME[] = "exportDuplicateValues";
-    static bool EXPORT_DUP_VALUES_PROP_DEFAULT = true;
+    static const char SETTINGS_PROP_SECTION_NAME[] = "settings";
+    static const char MAPPINGS_PROP_SECTION_NAME[] = "mappings";
 
     static const char CASE_INSENSITIVE_ATTRS_PROP_NAME[] = "caseInsensitiveAttributes";
-
     static const char ENCODING_PROP_NAME[] = "encoding";
+    static const char EXPORT_DUP_VALUES_PROP_NAME[] = "exportDuplicateValues";
+    const char SCOPE_DELIMITER_PROP_NAME[] = "scopeDelimiter";
+
+    static bool EXPORT_DUP_VALUES_PROP_DEFAULT = true;
     // Not the default, but the only defined option.
     static const char URL_ENCODING_PROP_VALUE[] = "URL";
-
-    static const char MAPPINGS_PROP_SECTION_NAME[] = "mappings";
+    const char SCOPE_DELIMITER_PROP_DEFAULT[] = "@";
 
     // Populate "built-in" mappings.
     for (const string& name : {"Shib-Application-ID", "Shib-Session-ID", "Shib-Session-Expires", "Shib-Session-Inactivity", "REMOTE_USER"}) {
@@ -118,15 +122,29 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
     }
 
     ini_parser::read_ini(pathname, m_pt);
-    load(m_pt);
 
-    split_to_container(m_caseInsensitiveIds, getString(CASE_INSENSITIVE_ATTRS_PROP_NAME, ""));
+    boost::optional<ptree&> settings = m_pt.get_child_optional(SETTINGS_PROP_SECTION_NAME);
+    if (settings) {
+        // The load is a convenience, but all the settings are captured here in the c'tor.
+        load(settings.get());
+        split_to_container(m_caseInsensitiveIds, getString(CASE_INSENSITIVE_ATTRS_PROP_NAME, ""));
 
-    m_urlEncoding = !strcmp(getString(ENCODING_PROP_NAME, ""), URL_ENCODING_PROP_VALUE);
-    m_exportDuplicates = getBool(EXPORT_DUP_VALUES_PROP_NAME, EXPORT_DUP_VALUES_PROP_DEFAULT);
+        m_scopeDelimiter = getString(SCOPE_DELIMITER_PROP_NAME, SCOPE_DELIMITER_PROP_DEFAULT);
+        m_valueDelimiter = getString(VALUE_DELIMITER_PROP_NAME, VALUE_DELIMITER_PROP_DEFAULT);
+        m_urlEncoding = !strcmp(getString(ENCODING_PROP_NAME, ""), URL_ENCODING_PROP_VALUE);
+        m_exportDuplicates = getBool(EXPORT_DUP_VALUES_PROP_NAME, EXPORT_DUP_VALUES_PROP_DEFAULT);
 
-    m_partialRegexMatching = AgentConfig::getConfig().getAgent().getBool(
-        Agent::PARTIAL_REGEX_MATCHING_PROP_NAME, Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT);
+        m_partialRegexMatching = AgentConfig::getConfig().getAgent().getBool(
+            Agent::PARTIAL_REGEX_MATCHING_PROP_NAME, Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT);
+    }
+    else {
+        // Default settings
+        m_scopeDelimiter = SCOPE_DELIMITER_PROP_DEFAULT;
+        m_valueDelimiter = VALUE_DELIMITER_PROP_DEFAULT;
+        m_urlEncoding = false;
+        m_exportDuplicates = EXPORT_DUP_VALUES_PROP_DEFAULT;
+        m_partialRegexMatching = Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT;
+    }
 
     boost::optional<ptree&> mappings = m_pt.get_child_optional(MAPPINGS_PROP_SECTION_NAME);
     if (!mappings) {
@@ -152,11 +170,6 @@ unique_ptr<AttributeConfiguration> AttributeConfiguration::newAttributeConfigura
 
 bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
 {
-    const char SCOPE_DELIMITER_PROP_NAME[] = "scopeDelimiter";
-    const char SCOPE_DELIMITER_PROP_DEFAULT[] = "@";
-
-    const char* scopeDelimiter = getString(SCOPE_DELIMITER_PROP_NAME, SCOPE_DELIMITER_PROP_DEFAULT);
-
     if (!attributes.islist()) {
         m_log.warn("invalid data supplied for session attributes");
         return false;
@@ -185,7 +198,7 @@ bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
                     const char* lhs = value.getmember("value").string();
                     const char* scope = value.getmember("scope").string();
                     if (lhs && scope && *lhs && *scope) {
-                        string s = string(lhs) + scopeDelimiter + scope;
+                        string s = string(lhs) + m_scopeDelimiter + scope;
                         value.string(s.c_str());
                     } else {
                         value.destroy();
@@ -255,8 +268,7 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
     RequestMapper::Settings settings = request.getRequestSettings();
     const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
 
-    const char* delim = getString(VALUE_DELIMITER_PROP_NAME, VALUE_DELIMITER_PROP_DEFAULT);
-    size_t delim_len = strlen(delim);
+    size_t delim_len = strlen(m_valueDelimiter);
 
     // Default export strategy will include duplicates.
     if (m_exportDuplicates) {
@@ -279,7 +291,7 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
             DDF v = vals.first();
             while (!v.isnull()) {
                 if (!header.empty()) {
-                    header += delim;
+                    header += m_valueDelimiter;
                 }
 
                 if (m_urlEncoding) {
@@ -288,9 +300,9 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
                 }
                 else {
                     string serialized(v.string());
-                    string::size_type pos = serialized.find(delim, string::size_type(0));
+                    string::size_type pos = serialized.find(m_valueDelimiter, string::size_type(0));
                     if (pos != string::npos) {
-                        for (; pos != string::npos; pos = serialized.find(delim, pos)) {
+                        for (; pos != string::npos; pos = serialized.find(m_valueDelimiter, pos)) {
                             serialized.insert(pos, "\\");
                             pos += delim_len + 1;
                         }
@@ -333,16 +345,16 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
             string header;
             for (const string& v : deduped.second) {
                 if (!header.empty())
-                    header += delim;
+                    header += m_valueDelimiter;
                 if (m_urlEncoding) {
                     // If URL-encoding, any semicolons will get escaped anyway.
                     header += encoder.encode(v.c_str());
                 }
                 else {
-                    string::size_type pos = v.find(delim, string::size_type(0));
+                    string::size_type pos = v.find(m_valueDelimiter, string::size_type(0));
                     if (pos != string::npos) {
                         string value(v);
-                        for (; pos != string::npos; pos = value.find(delim, pos)) {
+                        for (; pos != string::npos; pos = value.find(m_valueDelimiter, pos)) {
                             value.insert(pos, "\\");
                             pos += delim_len + 1;
                         }
