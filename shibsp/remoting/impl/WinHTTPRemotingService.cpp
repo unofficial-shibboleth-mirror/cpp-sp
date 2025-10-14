@@ -272,12 +272,6 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
     wstring wURL(utf8ToUtf16(getBaseURL()));
 
     //
-    // Add a trailing back slash if needed
-    //
-    if (wURL.c_str()[wURL.size() - 1] != L'/')
-        wURL += L'/';
-
-    //
     // Split it into little bits
     //
     URL_COMPONENTS components = { 0 };

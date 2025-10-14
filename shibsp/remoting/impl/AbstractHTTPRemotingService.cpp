@@ -47,7 +47,7 @@ const char AbstractHTTPRemotingService::CA_FILE_PROP_NAME[] = "tlsCAFile";
 const char AbstractHTTPRemotingService::REVOCATION_CHECK_PROP_NAME[] = "revocationCheck";
 
 const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_DEFAULT[] = FILE_SECRET_SOURCE;
-const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost:8080/idp/profile/sp";
+const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost:8080/idp/profile/sp/";
 const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "none";
 const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
 unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;
@@ -62,7 +62,11 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     props.load(pt);
 
     m_userAgent = props.getString(USER_AGENT_PROP_NAME, "");
-    m_baseURL = props.getString(BASE_URL_PROP_NAME, BASE_URL_PROP_DEFAULT);    
+    m_baseURL = props.getString(BASE_URL_PROP_NAME, BASE_URL_PROP_DEFAULT);
+    if (m_baseURL.back() != '/') {
+        m_baseURL += '/';
+    }
+
     m_authMethod = getAuthMethod(props.getString(AUTH_METHOD_PROP_NAME, AUTH_METHOD_PROP_DEFAULT));
     m_connectTimeout = props.getUnsignedInt(CONNECT_TIMEOUT_PROP_NAME, CONNECT_TIMEOUT_PROP_DEFAULT);
     m_timeout = props.getUnsignedInt(TIMEOUT_PROP_NAME, TIMEOUT_PROP_DEFAULT);

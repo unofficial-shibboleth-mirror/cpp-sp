@@ -61,7 +61,16 @@ namespace shibsp {
         };
 
         const SecretSource* getSecretSource(bool required=true) const;
+
+        /**
+         * Get the base URL for connection to the hub.
+         * 
+         * <p>This URL will end in a path separator (/).</p>
+         * 
+         * @return the base URL, with a terminating slash
+         */
         const char* getBaseURL() const;
+
         const char* getUserAgent() const;
         void setUserAgent(const char* ua);
         auth_t getAuthMethod() const;
