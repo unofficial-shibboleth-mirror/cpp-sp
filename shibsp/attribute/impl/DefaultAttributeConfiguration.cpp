@@ -78,7 +78,6 @@ namespace {
         // Unused ptree if we configure via inline.
         ptree m_pt;
         const char* m_scopeDelimiter;
-        const char* m_valueDelimiter;
         bool m_urlEncoding,m_exportDuplicates,m_partialRegexMatching;
         map<string,string> m_mappings;
         set<string> m_caseInsensitiveIds;
@@ -88,11 +87,9 @@ namespace {
 
 const char AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_NAME[] = "legacyClassRefAttribute";
 const char AttributeConfiguration::LEGACY_AUTHTIME_ATTRIBUTE_PROP_NAME[] = "legacyAuthnTimeAttribute";
-const char AttributeConfiguration::VALUE_DELIMITER_PROP_NAME[] = "attributeValueDelimiter";
 
 const char AttributeConfiguration::LEGACY_CLASSREF_ATTRIBUTE_PROP_DEFAULT[] = "Shib-AuthnContext-Class";
 const char AttributeConfiguration::LEGACY_AUTHTIME_ATTRIBUTE_PROP_DEFAULT[] = "Shib-Authentication-Instant";
-const char AttributeConfiguration::VALUE_DELIMITER_PROP_DEFAULT[] = ";";
 
 
 AttributeConfiguration::AttributeConfiguration() {}
@@ -147,7 +144,6 @@ void DefaultAttributeConfiguration::init(const ptree& pt)
         split_to_container(m_caseInsensitiveIds, getString(CASE_INSENSITIVE_ATTRS_PROP_NAME, ""));
 
         m_scopeDelimiter = getString(SCOPE_DELIMITER_PROP_NAME, SCOPE_DELIMITER_PROP_DEFAULT);
-        m_valueDelimiter = getString(VALUE_DELIMITER_PROP_NAME, VALUE_DELIMITER_PROP_DEFAULT);
         m_urlEncoding = !strcmp(getString(ENCODING_PROP_NAME, ""), URL_ENCODING_PROP_VALUE);
         m_exportDuplicates = getBool(EXPORT_DUP_VALUES_PROP_NAME, EXPORT_DUP_VALUES_PROP_DEFAULT);
 
@@ -157,7 +153,6 @@ void DefaultAttributeConfiguration::init(const ptree& pt)
     else {
         // Default settings
         m_scopeDelimiter = SCOPE_DELIMITER_PROP_DEFAULT;
-        m_valueDelimiter = VALUE_DELIMITER_PROP_DEFAULT;
         m_urlEncoding = false;
         m_exportDuplicates = EXPORT_DUP_VALUES_PROP_DEFAULT;
         m_partialRegexMatching = Agent::PARTIAL_REGEX_MATCHING_PROP_DEFAULT;
@@ -290,7 +285,9 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
     RequestMapper::Settings settings = request.getRequestSettings();
     const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
 
-    size_t delim_len = strlen(m_valueDelimiter);
+    const char* delim = settings.first->getString(RequestMapper::ATTRIBUTE_VALUE_DELIMITER_PROP_NAME,
+        RequestMapper::ATTRIBUTE_VALUE_DELIMITER_PROP_DEFAULT);
+    size_t delim_len = strlen(delim);
 
     // Default export strategy will include duplicates.
     if (m_exportDuplicates) {
@@ -313,7 +310,7 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
             DDF v = vals.first();
             while (!v.isnull()) {
                 if (!header.empty()) {
-                    header += m_valueDelimiter;
+                    header += delim;
                 }
 
                 if (m_urlEncoding) {
@@ -322,9 +319,9 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
                 }
                 else {
                     string serialized(v.string());
-                    string::size_type pos = serialized.find(m_valueDelimiter, string::size_type(0));
+                    string::size_type pos = serialized.find(delim, string::size_type(0));
                     if (pos != string::npos) {
-                        for (; pos != string::npos; pos = serialized.find(m_valueDelimiter, pos)) {
+                        for (; pos != string::npos; pos = serialized.find(delim, pos)) {
                             serialized.insert(pos, "\\");
                             pos += delim_len + 1;
                         }
@@ -367,16 +364,16 @@ void DefaultAttributeConfiguration::exportAttributes(SPRequest& request, const S
             string header;
             for (const string& v : deduped.second) {
                 if (!header.empty())
-                    header += m_valueDelimiter;
+                    header += delim;
                 if (m_urlEncoding) {
                     // If URL-encoding, any semicolons will get escaped anyway.
                     header += encoder.encode(v.c_str());
                 }
                 else {
-                    string::size_type pos = v.find(m_valueDelimiter, string::size_type(0));
+                    string::size_type pos = v.find(delim, string::size_type(0));
                     if (pos != string::npos) {
                         string value(v);
-                        for (; pos != string::npos; pos = value.find(m_valueDelimiter, pos)) {
+                        for (; pos != string::npos; pos = value.find(delim, pos)) {
                             value.insert(pos, "\\");
                             pos += delim_len + 1;
                         }

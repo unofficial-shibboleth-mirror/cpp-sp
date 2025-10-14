@@ -226,9 +226,8 @@ pair<bool,long> SessionHandler::doJSON(SPRequest& request) const
 pair<bool,long> SessionHandler::doHTML(SPRequest& request) const
 {
     // Default delimiter is semicolon but is configurable.
-    const char* delim = request.getAgent().getAttributeConfiguration(
-        request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME)
-        ).getString(AttributeConfiguration::VALUE_DELIMITER_PROP_NAME, AttributeConfiguration::VALUE_DELIMITER_PROP_DEFAULT);
+    const char* delim = request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_VALUE_DELIMITER_PROP_NAME,
+        RequestMapper::ATTRIBUTE_VALUE_DELIMITER_PROP_DEFAULT);
     size_t delim_len = strlen(delim);
 
     stringstream s;

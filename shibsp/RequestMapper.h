@@ -50,6 +50,7 @@ namespace shibsp {
 
         static const char APPLICATION_ID_PROP_NAME[];
         static const char ATTRIBUTE_CONFIG_ID_PROP_NAME[];
+        static const char ATTRIBUTE_VALUE_DELIMITER_PROP_NAME[];
         static const char AUTH_TYPE_PROP_NAME[];
         static const char CONSISTENT_ADDRESS_PROP_NAME[];
         static const char COOKIE_MAXAGE_PROP_NAME[];
@@ -71,6 +72,7 @@ namespace shibsp {
         static const char USE_VARIABLES_PROP_NAME[];
 
         static const char APPLICATION_ID_PROP_DEFAULT[];
+        static const char ATTRIBUTE_VALUE_DELIMITER_PROP_DEFAULT[];
         static bool CONSISTENT_ADDRESS_PROP_DEFAULT;
         static bool EXPIRE_REDIRECTS_PROP_DEFAULT;
         static unsigned int LIFETIME_PROP_DEFAULT;

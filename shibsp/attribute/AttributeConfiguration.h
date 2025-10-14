@@ -65,10 +65,6 @@ namespace shibsp {
         static const char LEGACY_AUTHTIME_ATTRIBUTE_PROP_NAME[];
         static const char LEGACY_AUTHTIME_ATTRIBUTE_PROP_DEFAULT[];
 
-        /** Delimiter to separate multiple attribute values in exported variables. */
-        static const char VALUE_DELIMITER_PROP_NAME[];
-        static const char VALUE_DELIMITER_PROP_DEFAULT[];
-
         /**
          * Post-process a collection of attributes and values from the hub for use by agent code.
          * 
