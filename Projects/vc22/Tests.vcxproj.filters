@@ -58,6 +58,18 @@
     <Filter Include="Data\util\boospropset">
       <UniqueIdentifier>{adcbf974-e0f1-4c75-8a52-f8c436bb799f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Data\attribute">
+      <UniqueIdentifier>{faa28621-6ab1-4b37-888c-0dcd0679466c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\attribute\impl">
+      <UniqueIdentifier>{41714610-9cf8-477c-b62f-012cf2639aeb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\attribute">
+      <UniqueIdentifier>{951ac87f-d661-4456-88c5-c76825471763}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\attribute\impl">
+      <UniqueIdentifier>{b070466b-e25f-4761-9bc9-dc1415ff3710}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp">
@@ -86,6 +98,9 @@
     </ClCompile>
     <ClCompile Include="..\..\tests\remoting\impl\SecretSourceTests.cpp">
       <Filter>Source Files\Remoting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\attribute\impl\DefaultAttributeConfigurationTests.cpp">
+      <Filter>Source Files\attribute\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -259,6 +274,15 @@
     </None>
     <None Include="..\..\tests\data\util\propertytree\requestmap2.xml">
       <Filter>Data\util\propertytree</Filter>
+    </None>
+    <None Include="..\..\tests\data\attribute\impl\attributes.ini">
+      <Filter>Data\attribute\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\attribute\impl\attributes-bad.ini">
+      <Filter>Data\attribute\impl</Filter>
+    </None>
+    <None Include="..\..\tests\data\attribute\impl\console-agent.ini">
+      <Filter>Data\attribute\impl</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -29,6 +29,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\tests\AgentConfigTests.cpp" />
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp" />
+    <ClCompile Include="..\..\tests\attribute\impl\DefaultAttributeConfigurationTests.cpp" />
     <ClCompile Include="..\..\tests\impl\XMLAccessControlTests.cpp" />
     <ClCompile Include="..\..\tests\impl\XMLRequestMapperTests.cpp" />
     <ClCompile Include="..\..\tests\remoting\impl\RemotingServiceTests.cpp">
@@ -52,6 +53,9 @@
     <ClCompile Include="..\..\tests\util\ReloadableXMLFileTests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\tests\data\attribute\impl\attributes-bad.ini" />
+    <None Include="..\..\tests\data\attribute\impl\attributes.ini" />
+    <None Include="..\..\tests\data\attribute\impl\console-agent.ini" />
     <None Include="..\..\tests\data\console-agent.ini" />
     <None Include="..\..\tests\data\dupproperty_agent.ini" />
     <None Include="..\..\tests\data\dupsection_agent.ini" />
