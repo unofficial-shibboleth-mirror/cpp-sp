@@ -47,7 +47,7 @@ const char AbstractHTTPRemotingService::CA_FILE_PROP_NAME[] = "tlsCAFile";
 const char AbstractHTTPRemotingService::REVOCATION_CHECK_PROP_NAME[] = "revocationCheck";
 
 const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_DEFAULT[] = FILE_SECRET_SOURCE;
-const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost/idp/profile/sp";
+const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost:8080/idp/profile/sp";
 const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "none";
 const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
 unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;

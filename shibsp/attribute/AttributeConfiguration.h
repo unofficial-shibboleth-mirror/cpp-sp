@@ -26,6 +26,8 @@
 #include <memory>
 #include <set>
 
+#include <boost/property_tree/ptree_fwd.hpp>
+
 #ifdef SHIBSP_USE_BOOST_REGEX
 # include <boost/regex_fwd.hpp>
 namespace regexp = boost;
@@ -165,6 +167,15 @@ namespace shibsp {
          * @return the corresponding AttributeConfiguration
          */
         static std::unique_ptr<AttributeConfiguration> newAttributeConfiguration(const char* pathname);
+
+        /**
+         * Create a new AttributeConfiguration based on an existing ptree.
+         * 
+         * @param pt  property tree
+         * 
+         * @return the corresponding AttributeConfiguration
+         */
+        static std::unique_ptr<AttributeConfiguration> newAttributeConfiguration(const boost::property_tree::ptree& pt);
     };
 
 };

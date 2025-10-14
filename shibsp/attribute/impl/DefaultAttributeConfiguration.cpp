@@ -59,6 +59,7 @@ namespace {
     class DefaultAttributeConfiguration : public virtual AttributeConfiguration, public virtual BoostPropertySet {
     public:
         DefaultAttributeConfiguration(const char* pathname);
+        DefaultAttributeConfiguration(const ptree& pt);
         ~DefaultAttributeConfiguration() {}
 
         bool processAttributes(DDF& attributes) const;
@@ -70,9 +71,11 @@ namespace {
         bool hasMatchingValue(const Session& session, const char* attributeId, const regexp::regex& expression) const;
 
     private:
+        void init(const ptree& pt);
         const char* getFirstValue(const Session& session, const char* attributeId) const;
 
         Category& m_log;
+        // Unused ptree if we configure via inline.
         ptree m_pt;
         const char* m_scopeDelimiter;
         const char* m_valueDelimiter;
@@ -96,11 +99,28 @@ AttributeConfiguration::AttributeConfiguration() {}
 
 AttributeConfiguration::~AttributeConfiguration() {}
 
-DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathname)
-    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration")), m_urlEncoding(false), m_exportDuplicates(true)
+DefaultAttributeConfiguration::DefaultAttributeConfiguration(const ptree& pt)
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration"))
 {
-    static const char SETTINGS_PROP_SECTION_NAME[] = "settings";
-    static const char MAPPINGS_PROP_SECTION_NAME[] = "mappings";
+    init(pt);
+}
+
+DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathname)
+    : m_log(Category::getInstance(SHIBSP_LOGCAT ".AttributeConfiguration"))
+{
+
+    if (!pathname) {
+        throw ConfigurationException("No pathname supplied for creating AttrbuteConfiguration.");
+    }
+
+    ini_parser::read_ini(pathname, m_pt);
+    init(m_pt);
+}
+
+void DefaultAttributeConfiguration::init(const ptree& pt)
+{
+    static const char SETTINGS_PROP_SECTION_NAME[] = "attribute-settings";
+    static const char MAPPINGS_PROP_SECTION_NAME[] = "attribute-mappings";
 
     static const char CASE_INSENSITIVE_ATTRS_PROP_NAME[] = "caseInsensitiveAttributes";
     static const char ENCODING_PROP_NAME[] = "encoding";
@@ -112,16 +132,13 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
     static const char URL_ENCODING_PROP_VALUE[] = "URL";
     const char SCOPE_DELIMITER_PROP_DEFAULT[] = "@";
 
+    m_urlEncoding = false;
+    m_exportDuplicates = true;
+
     // Populate "built-in" mappings.
     for (const string& name : {"Shib-Application-ID", "Shib-Session-ID", "Shib-Session-Expires", "Shib-Session-Inactivity", "REMOTE_USER"}) {
         m_mappings[name] = name;
     }
-
-    if (!pathname) {
-        return;
-    }
-
-    ini_parser::read_ini(pathname, m_pt);
 
     boost::optional<ptree&> settings = m_pt.get_child_optional(SETTINGS_PROP_SECTION_NAME);
     if (settings) {
@@ -161,6 +178,11 @@ DefaultAttributeConfiguration::DefaultAttributeConfiguration(const char* pathnam
             m_mappings[child.first] = alias;
         }
     }
+}
+
+unique_ptr<AttributeConfiguration> AttributeConfiguration::newAttributeConfiguration(const ptree& pt)
+{
+    return unique_ptr<AttributeConfiguration>(new DefaultAttributeConfiguration(pt));
 }
 
 unique_ptr<AttributeConfiguration> AttributeConfiguration::newAttributeConfiguration(const char* pathname)

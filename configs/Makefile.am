@@ -16,7 +16,6 @@ CONFIGFILES = \
 	globalLogout.html \
 	partialLogout.html \
 	agent.ini \
-	attributes.ini \
 	handlers.ini \
 	request-map.xml
 

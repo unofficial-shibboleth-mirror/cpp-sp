@@ -229,7 +229,7 @@ void DefaultAgent::doHandlerConfigurations()
         return;
     }
 
-    boost::optional<ptree&> child = m_pt.get_child_optional("handlers");
+    boost::optional<ptree&> child = m_pt.get_child_optional("handler-configurations");
     if (child) {
         for (const auto& keys : *child) {
             boost::optional<string> path = keys.second.get_value_optional<string>();
@@ -239,7 +239,7 @@ void DefaultAgent::doHandlerConfigurations()
             }
             AgentConfig::getConfig().getPathResolver().resolve(*path, PathResolver::SHIBSP_CFG_FILE);
             m_handlerConfigurations[keys.first] = HandlerConfiguration::newHandlerConfiguration(path->c_str());
-            m_log.info("installed '%s' HandlerConfiguration from %s", keys.first.c_str(), path->c_str());
+            m_log.info("installed HandlerConfiguration '%s' from %s", keys.first.c_str(), path->c_str());
         }
     } else {
         string path("handlers.ini");
@@ -256,27 +256,20 @@ void DefaultAgent::doAttributeConfigurations()
         return;
     }
 
-    boost::optional<ptree&> child = m_pt.get_child_optional("attributes");
+    m_attributeConfigurations["default"] = AttributeConfiguration::newAttributeConfiguration(m_pt);
+    m_log.info("installed 'default' AttributeConfiguration");
+
+    boost::optional<ptree&> child = m_pt.get_child_optional("attribute-configurations");
     if (child) {
         for (const auto& keys : *child) {
             boost::optional<string> path = keys.second.get_value_optional<string>();
             if (!path) {
-                m_log.warn("skipping property key with no value in [attributes] section");
+                m_log.warn("skipping property key with no value in [attribute-configurations] section");
                 continue;
             }
             AgentConfig::getConfig().getPathResolver().resolve(*path, PathResolver::SHIBSP_CFG_FILE);
             m_attributeConfigurations[keys.first] = AttributeConfiguration::newAttributeConfiguration(path->c_str());
-            m_log.info("installed '%s' AttributeConfiguration from %s", keys.first.c_str(), path->c_str());
-        }
-    } else {
-        string path("attributes.ini");
-        AgentConfig::getConfig().getPathResolver().resolve(path, PathResolver::SHIBSP_CFG_FILE);
-        if (FileSupport::exists(path.c_str())) {
-            m_attributeConfigurations["default"] = AttributeConfiguration::newAttributeConfiguration(path.c_str());
-            m_log.info("installed 'default' AttributeConfiguration from %s", path.c_str());
-        } else {
-            m_attributeConfigurations["default"] = AttributeConfiguration::newAttributeConfiguration(nullptr);
-            m_log.info("installed empty 'default' AttributeConfiguration");
+            m_log.info("installed AttributeConfiguration '%s' from %s", keys.first.c_str(), path->c_str());
         }
     }
 }
