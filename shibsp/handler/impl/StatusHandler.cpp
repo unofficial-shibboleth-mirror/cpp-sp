@@ -23,6 +23,8 @@
 #include "Agent.h"
 #include "SPRequest.h"
 #include "handler/SecuredHandler.h"
+#include "remoting/ddf.h"
+#include "remoting/RemotingService.h"
 #include "session/SessionCache.h"
 #include "util/CGIParser.h"
 #include "util/Date.h"
@@ -251,18 +253,30 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
             s << "<SessionCache><None/></SessionCache>";
         }
 
+        const RemotingService* remoter = request.getAgent().getRemotingService(false);
+        if (remoter) {
+            DDF in("ping");
+            DDFJanitor jan(in);
+            DDF out = remoter->send(in);
+            out.destroy();
+            s << "<RemotingService><OK/></RemotingService>";
+        }
+        else {
+            s << "<RemotingService><None/></RemotingService>";
+        }
+
         s << "<Status>" << status << "</Status></StatusHandler>";
 
         request.setContentType("text/xml");
         return make_pair(true, request.sendResponse(s));
     }
-    catch (std::exception& ex) {
+    catch (const exception& ex) {
         request.error(string("error while processing request: ") + ex.what());
         request.setContentType("text/xml");
         stringstream msg;
         msg << "<StatusHandler time='" << timestamp << "'>"
             << "<Version Shibboleth='" << PACKAGE_VERSION << "'/>";
-        systemInfo(msg) << "<Status><Exception type='std::exception'>" << ex.what() << "</Exception></Status>"
+        systemInfo(msg) << "<Status><Exception typename='" << typeid(ex).name() << "'>" << ex.what() << "</Exception></Status>"
             << "</StatusHandler>";
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }
