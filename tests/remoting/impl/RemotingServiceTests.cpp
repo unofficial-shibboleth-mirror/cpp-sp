@@ -80,7 +80,7 @@ BOOST_FIXTURE_TEST_CASE(RemotingService_wrong_path, RemotingFixture, * boost::un
 BOOST_FIXTURE_TEST_CASE(RemotingService_ping, RemotingFixture, * boost::unit_test::precondition(testbedRunning()))
 {
     const RemotingService* service = AgentConfig::getConfig().getAgent().getRemotingService();
-    DDF input("/ping");
+    DDF input("ping");
     DDFJanitor injanitor(input);
 
     DDF output = service->send(input);
