@@ -13,7 +13,7 @@
  */
 
 #pragma once
-#include "IIS7_shib.hpp"
+#include "iis.hpp"
 
 class ShibHttpModule : public CHttpModule {
 public:

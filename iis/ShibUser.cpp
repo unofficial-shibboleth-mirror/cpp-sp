@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-#include "IIS7_shib.hpp"
+#include "iis.hpp"
 #include "ShibUser.hpp"
 
 ShibUser::ShibUser(std::wstring name, set<wstring> roles) : m_refCount(1), m_roles(roles), m_username(name)

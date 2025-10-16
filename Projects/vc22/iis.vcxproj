@@ -27,11 +27,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\iis7_shib\iis7_shib.rc" />
+    <ResourceCompile Include="..\..\iis\iis.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\iis7_shib\IIS7Request.cpp" />
-    <ClCompile Include="..\..\iis7_shib\register.cpp">
+    <ClCompile Include="..\..\iis\IIS7Request.cpp" />
+    <ClCompile Include="..\..\iis\register.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)shibsp\$(configuration)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)shibsp\$(configuration)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(ProjectDir)shibsp\$(platform)\$(configuration)</AdditionalIncludeDirectories>
@@ -39,14 +39,14 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)shibsp\$(platform)\$(configuration)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)shibsp\$(platform)\$(configuration)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\iis7_shib\ShibHttpModule.cpp" />
-    <ClCompile Include="..\..\iis7_shib\ShibUser.cpp" />
+    <ClCompile Include="..\..\iis\ShibHttpModule.cpp" />
+    <ClCompile Include="..\..\iis\ShibUser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\iis7_shib\headers\IIS7Request.hpp" />
-    <ClInclude Include="..\..\iis7_shib\headers\IIS7_shib.hpp" />
-    <ClInclude Include="..\..\iis7_shib\headers\ShibHttpModule.hpp" />
-    <ClInclude Include="..\..\iis7_shib\headers\ShibUser.hpp" />
+    <ClInclude Include="..\..\iis\headers\IIS7Request.hpp" />
+    <ClInclude Include="..\..\iis\headers\iis.hpp" />
+    <ClInclude Include="..\..\iis\headers\ShibHttpModule.hpp" />
+    <ClInclude Include="..\..\iis\headers\ShibUser.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -120,34 +120,34 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis7_shib;$(SolutionDir)..\..\iis7_shib\headers;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis;$(SolutionDir)..\..\iis\headers;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(LibraryPath)</LibraryPath>
-    <TargetName>IIS_SHIB4</TargetName>
+    <TargetName>iis_shib4</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis7_shib;$(SolutionDir)..\..\iis7_shib\headers;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis;$(SolutionDir)..\..\iis\headers;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(LibraryPath)</LibraryPath>
-    <TargetName>IIS_SHIB4</TargetName>
+    <TargetName>iis_shib4</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis7_shib;$(SolutionDir)..\..\iis7_shib\headers;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis;$(SolutionDir)..\..\iis\headers;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
-    <TargetName>IIS_SHIB4</TargetName>
+    <TargetName>iis_shib4</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis7_shib;$(SolutionDir)..\..\iis7_shib\headers;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis;$(SolutionDir)..\..\iis\headers;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
-    <TargetName>IIS_SHIB4</TargetName>
+    <TargetName>iis_shib4</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis7_shib;$(SolutionDir)..\..\iis7_shib\headers;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis;$(SolutionDir)..\..\iis\headers;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
-    <TargetName>IIS_SHIB4</TargetName>
+    <TargetName>iis_shib4</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis7_shib;$(SolutionDir)..\..\iis7_shib\headers;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\..\..\boost\;$(SolutionDir)..\..\;$(SolutionDir)..\..\iis;$(SolutionDir)..\..\iis\headers;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
-    <TargetName>IIS_SHIB4</TargetName>
+    <TargetName>iis_shib4</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

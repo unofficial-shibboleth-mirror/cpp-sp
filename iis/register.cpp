@@ -18,7 +18,7 @@
 #define _SCL_SECURE_NO_WARNINGS 1
 
 // Project
-#include "IIS7_shib.hpp"
+#include "iis.hpp"
 #include "ShibHttpModule.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>

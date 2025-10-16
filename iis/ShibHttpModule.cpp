@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-#include "IIS7_shib.hpp"
+#include "iis.hpp"
 
 #include "shibsp/io/HTTPResponse.h"
 

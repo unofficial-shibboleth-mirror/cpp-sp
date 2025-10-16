@@ -15,35 +15,35 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\iis7_shib\iis7_shib.rc">
+    <ResourceCompile Include="..\..\iis\iis.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\iis7_shib\IIS7Request.cpp">
+    <ClCompile Include="..\..\iis\IIS7Request.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\iis7_shib\register.cpp">
+    <ClCompile Include="..\..\iis\register.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\iis7_shib\ShibHttpModule.cpp">
+    <ClCompile Include="..\..\iis\ShibHttpModule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\iis7_shib\ShibUser.cpp">
+    <ClCompile Include="..\..\iis\ShibUser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\iis7_shib\headers\IIS7_shib.hpp">
+    <ClInclude Include="..\..\iis\headers\iis.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\iis7_shib\headers\IIS7Request.hpp">
+    <ClInclude Include="..\..\iis\headers\IIS7Request.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\iis7_shib\headers\ShibHttpModule.hpp">
+    <ClInclude Include="..\..\iis\headers\ShibHttpModule.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\iis7_shib\headers\ShibUser.hpp">
+    <ClInclude Include="..\..\iis\headers\ShibUser.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

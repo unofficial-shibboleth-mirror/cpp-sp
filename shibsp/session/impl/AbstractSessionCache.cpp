@@ -621,7 +621,7 @@ bool AbstractSessionCache::update(SPRequest& request, unique_lock<Session>& sess
             return false;
         }
     }
-    catch (const exception& e) {
+    catch (const exception&) {
         // Should be logged by the SPI.
         data.destroy();
         throw;
