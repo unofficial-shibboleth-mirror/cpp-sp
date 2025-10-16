@@ -25,7 +25,6 @@
 #include "AgentConfig.h"
 #include "SPRequest.h"
 #include "handler/AbstractHandler.h"
-#include "handler/LogoutHandler.h"
 #include "logging/Category.h"
 #include "remoting/RemotingService.h"
 #include "util/CGIParser.h"

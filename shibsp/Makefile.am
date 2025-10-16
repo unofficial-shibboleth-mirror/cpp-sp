@@ -43,9 +43,6 @@ handinclude_HEADERS = \
 	handler/AssertionConsumerService.h \
 	handler/Handler.h \
 	handler/HandlerConfiguration.h \
-	handler/LogoutHandler.h \
-	handler/LogoutInitiator.h \
-	handler/RemotedHandler.h \
 	handler/SecuredHandler.h
 
 ioinclude_HEADERS = \
@@ -94,7 +91,7 @@ noinst_HEADERS = \
 	logging/impl/StringUtil.h \
 	remoting/impl/AbstractRemotingService.h \
 	remoting/impl/AbstractHTTPRemotingService.h \
-    util/Date.h \
+	util/Date.h \
 	util/DirectoryWalker.h \
 	util/IPRange.h \
 	util/Misc.h
@@ -107,14 +104,9 @@ libshibsp_la_SOURCES = \
 	attribute/impl/DefaultAttributeConfiguration.cpp \
 	csprng/impl/csprng.cpp \
 	handler/impl/AbstractHandler.cpp \
-	handler/impl/AdminLogoutInitiator.cpp \
 	handler/impl/AttributeCheckerHandler.cpp \
-	handler/impl/LocalLogoutInitiator.cpp \
 	handler/impl/DefaultHandlerConfiguration.cpp \
-	handler/impl/LogoutHandler.cpp \
-	handler/impl/LogoutInitiator.cpp \
 	handler/impl/MetadataGenerator.cpp \
-	handler/impl/RemotedHandler.cpp \
 	handler/impl/SecuredHandler.cpp \
 	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \
