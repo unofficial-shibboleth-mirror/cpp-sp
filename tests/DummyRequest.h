@@ -45,6 +45,7 @@ namespace shibsp {
         }
         std::string getRemoteUser() const { return m_user; }
         std::string getRemoteAddr() const { return m_addr; }
+        std::string getLocalAddr() const { return ""; }
         std::string getAuthType() const { return ""; }
         long sendResponse(std::istream&, long status) { return status; }
         void clearHeader(const char* name) {}

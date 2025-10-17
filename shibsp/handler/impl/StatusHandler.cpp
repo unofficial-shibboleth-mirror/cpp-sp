@@ -142,6 +142,9 @@ namespace {
         string getRemoteAddr() const {
             return "";
         }
+        string getLocalAddr() const {
+            return "";
+        }
         string getRemoteUser() const {
             return "";
         }
