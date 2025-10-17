@@ -5,6 +5,6 @@
             VALUE "LegalCopyright", "Copyright 2001-2025 Various\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 4.0.0-alpha1\0"
+            VALUE "ProductName", "Shibboleth 4.0.0alpha1\0"
             VALUE "ProductVersion", "4, 0, 0, 0\0"
             VALUE "SpecialBuild", "\0"
