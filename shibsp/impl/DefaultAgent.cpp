@@ -136,7 +136,7 @@ namespace {
 };
 
 namespace shibsp {
-    void SHIBSP_API shibsp::registerAgents() {
+    void SHIBSP_API registerAgents() {
         AgentConfig::getConfig().AgentManager.registerFactory(DEFAULT_AGENT, DefaultAgentFactory);
     }
 };
