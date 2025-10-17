@@ -16,7 +16,7 @@ DIST_SUBDIRS = \
 pkgconfig_DATA = shibsp.pc
 
 EXTRA_DIST = $(DX_CONFIG) \
-	iis7_shib \
+	iis \
 	Projects \
 	config_win32.h \
 	$(GENFILES) \
