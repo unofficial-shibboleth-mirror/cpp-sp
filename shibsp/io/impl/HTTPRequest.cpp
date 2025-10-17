@@ -24,14 +24,9 @@
 
 #include <cstring>
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
-#define BOOST_BIND_GLOBAL_PLACEHOLDERS
-#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/tokenizer.hpp>
 
 using namespace shibsp;
-using namespace boost;
 using namespace std;
 
 GenericRequest::GenericRequest()
@@ -56,7 +51,7 @@ void GenericRequest::absolutize(string& url) const
         const char* scheme = getScheme();
         string root = string(scheme) + "://" + getHostname();
         if (!isDefaultPort())
-            root += ":" + lexical_cast<string>(getPort());
+            root += ":" + boost::lexical_cast<string>(getPort());
         url = root + url;
     }
 }
