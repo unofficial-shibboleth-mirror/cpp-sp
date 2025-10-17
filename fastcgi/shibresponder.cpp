@@ -123,6 +123,10 @@ public:
         const char* s = FCGX_GetParam("REMOTE_ADDR", m_req->envp);
         return s ? s : "";
     }
+    string getLocalAddr() const {
+        const char* s = FCGX_GetParam("LOCAL_ADDR", m_req->envp);
+        return s ? s : "";
+    }
     void log(Priority::PriorityLevel level, const string& msg) const {
         AbstractSPRequest::log(level,msg);
         if (level <= Priority::SHIB_ERROR)

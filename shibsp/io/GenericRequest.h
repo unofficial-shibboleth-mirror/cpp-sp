@@ -145,6 +145,13 @@ namespace shibsp {
         virtual std::string getRemoteAddr() const=0;
 
         /**
+         * Returns the IP address of the server.
+         *
+         * @return the server's IP address
+         */
+        virtual std::string getLocalAddr() const=0;
+
+        /**
          * Converts a relative URL into an absolute one based on the properties of the request.
          *
          * @param url   input URL to convert, will be modified in place

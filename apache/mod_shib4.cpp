@@ -13,7 +13,7 @@
  */
 
 /**
- * shib_module.cpp
+ * mod_shib4.cpp
  *
  * Apache module implementation.
  */
@@ -323,6 +323,9 @@ public:
     if (!ret.empty())
         return ret;
     return m_req->useragent_ip;
+  }
+  string getLocalAddr() const {
+    return m_req->connection->local_ip;
   }
   void log(Priority::Value level, const string& msg) const {
     AbstractSPRequest::log(level,msg);

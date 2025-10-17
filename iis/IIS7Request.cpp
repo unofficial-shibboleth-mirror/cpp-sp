@@ -278,6 +278,17 @@ string IIS7Request::getRemoteAddr() const
     return ret;
 }
 
+string IIS7Request::getLocalAddr() const
+{
+    PCSTR addr;
+    DWORD len;
+    HRESULT hr = m_ctx->GetServerVariable("LOCAL_ADDR", &addr, &len);
+    if (SUCCEEDED(hr)) {
+        return addr;
+    }
+    return "";
+}
+
 string IIS7Request::getSecureHeader(const char* name) const
 {
     if (isUseVariables()) {

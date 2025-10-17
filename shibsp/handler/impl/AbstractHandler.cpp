@@ -144,6 +144,7 @@ DDF AbstractHandler::wrapRequest(const SPRequest& request, const set<string>& he
     in.addmember("content_length").longinteger(request.getContentLength());
     in.addmember("remote_user").string(request.getRemoteUser().c_str());
     in.addmember("remote_addr").string(request.getRemoteAddr().c_str());
+    in.addmember("local_addr").string(request.getLocalAddr().c_str());
     in.addmember("method").string(request.getMethod());
     in.addmember("uri").unsafe_string(request.getRequestURI());
     in.addmember("url").unsafe_string(request.getRequestURL());

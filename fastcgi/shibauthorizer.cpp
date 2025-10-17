@@ -114,6 +114,10 @@ public:
         const char* s = FCGX_GetParam("REMOTE_ADDR", m_req->envp);
         return s ? s : "";
     }
+    string getLocalAddr() const {
+        const char* s = FCGX_GetParam("LOCAL_ADDR", m_req->envp);
+        return s ? s : "";
+    }
     void clearHeader(const char* name) {
         // No need, since we use environment variables.
     }
