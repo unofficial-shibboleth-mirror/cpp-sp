@@ -21,6 +21,7 @@
 #include "internal.h"
 #include "io/HTTPResponse.h"
 
+#include <cstring>
 #include <stdexcept>
 
 #ifndef HAVE_STRCASECMP

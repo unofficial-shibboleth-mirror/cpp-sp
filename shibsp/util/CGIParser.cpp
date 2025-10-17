@@ -25,6 +25,8 @@
 #include "util/CGIParser.h"
 #include "util/URLEncoder.h"
 
+#include <cstring>
+
 using namespace shibsp;
 using namespace std;
 

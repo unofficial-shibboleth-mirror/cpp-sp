@@ -23,6 +23,8 @@
 #include "logging/Category.h"
 #include "util/IPRange.h"
 
+#include <cstring>
+
 #ifdef WIN32
 # include <winsock2.h>
 # include <ws2tcpip.h>
