@@ -159,7 +159,7 @@ void ModuleConfigImpl::doSites(ptree& parent)
         else {
             // This is assumed to be an INI format site section. If not, so be it.
 
-            if (!child.second.get_child_optional(SITE_NAME_PROP_NAME).has_value()) {
+            if (!child.second.get_child_optional(SITE_NAME_PROP_NAME)) {
                 m_log.warn("ignoring Site section (%s) with no '%s' property", child.first.c_str(), SITE_NAME_PROP_NAME);
                 continue;
             }

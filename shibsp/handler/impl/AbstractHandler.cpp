@@ -674,7 +674,7 @@ bool AbstractHandler::getBool(
         if (param && *param) {
             string_to_bool_translator tr;
             boost::optional<bool> ret = tr.get_value(param);
-            if (ret.has_value()) {
+            if (ret) {
                 return ret.get();
             }
         }
