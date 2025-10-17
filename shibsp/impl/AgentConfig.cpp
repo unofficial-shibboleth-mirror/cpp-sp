@@ -36,6 +36,7 @@
 #include "util/PathResolver.h"
 #include "util/URLEncoder.h"
 
+#include <climits>
 #include <ctime>
 #include <stdexcept>
 #include <thread>

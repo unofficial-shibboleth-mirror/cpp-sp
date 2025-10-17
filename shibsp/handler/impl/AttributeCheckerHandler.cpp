@@ -29,6 +29,7 @@
 #include "session/SessionCache.h"
 #include "util/Misc.h"
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 

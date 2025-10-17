@@ -28,6 +28,7 @@
 #include "session/SessionCache.h"
 #include "util/Date.h"
 
+#include <cstring>
 #include <ctime>
 #include <sstream>
 

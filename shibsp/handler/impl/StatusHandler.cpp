@@ -30,6 +30,7 @@
 #include "util/Date.h"
 #include "util/Misc.h"
 
+#include <cstring>
 #include <sstream>
 
 #ifdef HAVE_SYS_UTSNAME_H

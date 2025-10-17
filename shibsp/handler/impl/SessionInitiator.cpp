@@ -30,6 +30,8 @@
 #include "util/Misc.h"
 #include "util/URLEncoder.h"
 
+#include <cstring>
+
 using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
