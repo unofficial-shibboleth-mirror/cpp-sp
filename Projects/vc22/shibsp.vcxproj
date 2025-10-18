@@ -132,12 +132,12 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\logging\impl\WindowsLoggingService.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(intdir)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(intdir)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(intdir)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(intdir)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(intdir)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(intdir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(OutDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(OutDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\platform\iis\ModuleConfig.cpp" />
     <ClCompile Include="..\..\shibsp\remoting\impl\AbstractHTTPRemotingService.cpp" />
@@ -189,41 +189,6 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\shibsp\shibsp.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\..\shibsp\logging\impl\NativeEventLog.mc">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">if not exist $(IntDir) md $(IntDir)
-mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
-rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">if not exist $(IntDir) md $(IntDir)
-mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
-rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">if not exist $(IntDir) md $(IntDir)
-mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
-rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">if not exist $(IntDir) md $(IntDir)
-mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
-rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">if not exist $(IntDir) md $(IntDir)
-mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
-rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">if not exist $(IntDir) md $(IntDir)
-mc.exe -h $(IntDir) -r $(IntDir) $(ProjectDir)..\..\shibsp\logging\impl\%(Filename).mc
-rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res"  $(IntDir)\%(Filename).rc</Command>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)%(Filename).rc;$(IntDir)%(Filename).h</Outputs>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -337,7 +302,8 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -353,7 +319,8 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -367,7 +334,8 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -381,7 +349,8 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -397,7 +366,8 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
@@ -413,7 +383,8 @@ rc.exe /D _UNICODE /D UNICODE /l"0x0409" /nologo /fo"$(IntDir)\%(Filename).res" 
       <DisableSpecificWarnings>4275;4250</DisableSpecificWarnings>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>$(IntDir)\NativeEventLog.res;</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
