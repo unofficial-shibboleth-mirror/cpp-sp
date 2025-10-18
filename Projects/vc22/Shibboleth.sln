@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 22 (identifies itself as version 17)
+# Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 17.11.0.0
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests.vcxproj", "{822C6B8E-EFFC-433A-BBFE-5AD7F76F71F9}"
@@ -9,6 +9,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests.vcxproj", "{
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "shibsp", "shibsp.vcxproj", "{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940} = {22BBF106-8ADC-4E97-A5DE-F9C725B64940}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Apache", "Apache.vcxproj", "{3B02FC93-A6ED-495E-8CAB-CB55C6450445}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -19,6 +22,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "iis", "iis.vcxproj", "{3F4D
 	ProjectSection(ProjectDependencies) = postProject
 		{CA2655D0-D6AA-41B9-BA7F-4967E88CB96C} = {CA2655D0-D6AA-41B9-BA7F-4967E88CB96C}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeLogMessages", "NativeLogMessages.vcxproj", "{22BBF106-8ADC-4E97-A5DE-F9C725B64940}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,6 +81,18 @@ Global
 		{3F4D8EC2-FAFF-493D-AC2C-841CA533F037}.Release|x64.Build.0 = Release|x64
 		{3F4D8EC2-FAFF-493D-AC2C-841CA533F037}.Release|x86.ActiveCfg = Release|Win32
 		{3F4D8EC2-FAFF-493D-AC2C-841CA533F037}.Release|x86.Build.0 = Release|Win32
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Debug|ARM64.ActiveCfg = Debug|x64
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Debug|ARM64.Build.0 = Debug|x64
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Debug|x64.ActiveCfg = Debug|x64
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Debug|x64.Build.0 = Debug|x64
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Debug|x86.ActiveCfg = Debug|Win32
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Debug|x86.Build.0 = Debug|Win32
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Release|ARM64.ActiveCfg = Release|x64
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Release|ARM64.Build.0 = Release|x64
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Release|x64.ActiveCfg = Release|x64
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Release|x64.Build.0 = Release|x64
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Release|x86.ActiveCfg = Release|Win32
+		{22BBF106-8ADC-4E97-A5DE-F9C725B64940}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
