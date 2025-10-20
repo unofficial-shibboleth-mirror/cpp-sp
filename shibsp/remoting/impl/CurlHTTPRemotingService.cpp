@@ -290,7 +290,14 @@ CURL* CurlHTTPRemotingService::checkout() const
         case agent_auth_none:
         case agent_auth_basic:  flag = CURLAUTH_BASIC; break;
         case agent_auth_digest: flag = CURLAUTH_DIGEST; break;
+    #ifdef CURLAUTH_NEGOTIATE
         case agent_auth_gss:    flag = CURLAUTH_NEGOTIATE; break;
+    #else
+        case agent_auth_gss:
+            curl_easy_cleanup(m_handle);
+            throw RemotingException("GSS unsupporyed by this version of curl.);
+            break;
+    #endif
         default:                flag = 0; break;
     }
     SHIB_CURL_SET(CURLOPT_HTTPAUTH, flag);
