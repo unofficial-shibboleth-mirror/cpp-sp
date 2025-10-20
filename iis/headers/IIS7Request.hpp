@@ -61,6 +61,7 @@ protected:
     long  returnDecline();
     long  returnOK();
     string getRemoteAddr() const;
+    string getLocalAddr() const;
     string getSecureHeader(const char* name) const;
     //
     // XMLTooling::GenericRequest
