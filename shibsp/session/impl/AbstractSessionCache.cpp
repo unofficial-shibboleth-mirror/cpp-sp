@@ -710,7 +710,7 @@ void* AbstractSessionCache::cleanup_fn(void* p)
     }
 
     mutex internal_mutex;
-    unique_lock lock(internal_mutex);
+    unique_lock<mutex> lock(internal_mutex);
 
     pcache->m_log.info("cleanup thread started...run every %u secs, timeout after %u secs", cleanupInterval, inprocTimeout);
 

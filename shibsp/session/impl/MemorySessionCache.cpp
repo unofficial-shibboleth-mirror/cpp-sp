@@ -307,7 +307,7 @@ void* MemorySessionCache::memory_cleanup_fn(void* p)
 #endif
 
     mutex internal_mutex;
-    unique_lock lock(internal_mutex);
+    unique_lock<mutex> lock(internal_mutex);
 
     pcache->m_spilog.info("memory back-end cleanup thread started...run every %u secs, timeout after %u secs",
         pcache->m_cleanupInterval, memoryTimeout);

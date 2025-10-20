@@ -554,7 +554,7 @@ void* FilesystemSessionCache::file_cleanup_fn(void* p)
     }
 
     mutex internal_mutex;
-    unique_lock lock(internal_mutex);
+    unique_lock<mutex> lock(internal_mutex);
 
     pcache->m_spilog.info("file cleanup thread started...run every %u secs, purge after %u seconds of disuse",
         pcache->m_cleanupInterval, pcache->m_fileTimeout);

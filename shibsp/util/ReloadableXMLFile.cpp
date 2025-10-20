@@ -157,28 +157,34 @@ pair<bool,ptree*> ReloadableXMLFile::load() noexcept
 
 void ReloadableXMLFile::lock()
 {
+#ifdef HAVE_CXX14
     if (m_lock) {
         m_lock->lock();
     }
+#endif
 }
 
 bool ReloadableXMLFile::try_lock()
 {
+#ifdef HAVE_CXX14
     if (m_lock) {
         return m_lock->try_lock();
-    } else {
-        return true;
     }
+#endif
+    return true;
 }
 
 void ReloadableXMLFile::unlock()
 {
+#ifdef HAVE_CXX14
     if (m_lock)
         m_lock->unlock();
+#endif
 }
 
 void ReloadableXMLFile::lock_shared()
 {
+#ifdef HAVE_CXX14
     if (!m_lock) {
         return;
     }
@@ -201,18 +207,24 @@ void ReloadableXMLFile::lock_shared()
     load();
 
     m_lock->lock_shared();
+#endif
 }
 
 bool ReloadableXMLFile::try_lock_shared()
 {
-    if (m_lock)
+#ifdef HAVE_CXX14
+    if (m_lock) {
         return m_lock->try_lock_shared();
-    else
-        return true;
+    }
+#endif
+    return true;
 }
 
 void ReloadableXMLFile::unlock_shared()
 {
-    if (m_lock)
+#ifdef HAVE_CXX14
+    if (m_lock) {
         m_lock->unlock_shared();
+    }
+#endif
 }
