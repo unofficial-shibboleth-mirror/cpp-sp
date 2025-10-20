@@ -40,7 +40,7 @@ using namespace std;
 
 namespace {
 
-#ifdef HAVE_CXX14
+#ifdef BOOST_FIXTURE_TEST_CASE_WITH_DECOR
 // Used as test decorator for any tests requiring testbed.
 struct testbedRunning {
     boost::test_tools::assertion_result operator()(boost::unit_test::test_unit_id) {
@@ -66,7 +66,7 @@ struct RemotingFixture
 
 /////////////
 
-#ifdef HAVE_CXX14
+#ifdef BOOST_FIXTURE_TEST_CASE_WITH_DECOR
 
 BOOST_FIXTURE_TEST_CASE(RemotingService_startup, RemotingFixture)
 {
