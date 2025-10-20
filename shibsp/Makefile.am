@@ -150,7 +150,7 @@ libshibsp_la_SOURCES = \
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshibsp_la_LDFLAGS = -version-info 13:0:0
+libshibsp_la_LDFLAGS = -version-info 13:0:0 $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LDPATH)
 libshibsp_la_CXXFLAGS = -DSHIBSP_LITE \
     $(AM_CXXFLAGS) \
     $(BOOST_CPPFLAGS) \
@@ -158,7 +158,8 @@ libshibsp_la_CXXFLAGS = -DSHIBSP_LITE \
     $(libcurl_CFLAGS)
 libshibsp_la_LIBADD = \
     $(PTHREAD_LIBS) \
-    $(libcurl_LIBS)
+    $(libcurl_LIBS) \
+    $(BOOST_REGEX_LIBS)
 
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 logdir = ${localstatedir}/log

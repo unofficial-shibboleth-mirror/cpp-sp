@@ -6,7 +6,9 @@ modshib4_LTLIBRARIES = mod_shib4.la
 mod_shib4_la_SOURCES = mod_shib4.cpp
 mod_shib4_la_LDFLAGS = \
   -module -avoid-version \
-  $(APXS24_LDFLAGS)
+  $(APXS24_LDFLAGS) \
+  $(BOOST_REGEX_LDFLAGS) \
+  $(BOOST_REGEX_LDPATH)
 mod_shib4_la_CXXFLAGS = \
   $(AM_CXXFLAGS) \
   $(APXS24_CFLAGS) $(APXS24_INCLUDE) \
@@ -15,7 +17,8 @@ mod_shib4_la_CXXFLAGS = \
 mod_shib4_la_LIBADD = \
   $(APXS24_LIBS) \
   $(top_builddir)/shibsp/libshibsp.la \
-  $(PTHREAD_LIBS)
+  $(PTHREAD_LIBS) \
+  $(BOOST_REGEX_LIBS)
 endif
 
 EXTRA_DIST = mod_shib4.cpp mod_shib4.rc
