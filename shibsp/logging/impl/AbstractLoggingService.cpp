@@ -120,7 +120,8 @@ Category& AbstractLoggingService::getCategory(const std::string& name)
     auto iter = m_priorityMap.find(name);
     Priority::Value prio = iter != end(m_priorityMap) ? iter->second : m_defaultPriority;
     
-    auto map_insert_result = m_categoryMap.insert({name, unique_ptr<Category>(new CategoryImpl(*this, name, prio))});
+    auto map_insert_result = m_categoryMap.insert(
+        make_pair(name, unique_ptr<Category>(new CategoryImpl(*this, name, prio))));
     // The insert result is a pair<iterator,bool> and the map's value is a pair<key.value>, thus....
     return *(map_insert_result.first->second.get());
 }
