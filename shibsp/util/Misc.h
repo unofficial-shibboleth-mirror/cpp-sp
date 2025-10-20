@@ -23,6 +23,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <ctime>
 #include <boost/optional.hpp>
 
 namespace shibsp {
@@ -82,6 +83,12 @@ namespace shibsp {
             }
         }
     };
+
+    /**
+     * ISO format parsers.
+     */
+    SHIBSP_API time_t parseISODuration(const std::string& s);
+    SHIBSP_API time_t parseISODateTime(const std::string& s);
 
     struct FileSupport {
         /**
