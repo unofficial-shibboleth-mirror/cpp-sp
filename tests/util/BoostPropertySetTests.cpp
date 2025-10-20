@@ -116,24 +116,24 @@ BOOST_FIXTURE_TEST_CASE(BoostPropertySet_tree, BPS_Fixture)
     BOOST_CHECK_EQUAL(rootset.getString("foo"), "bar");
     BOOST_CHECK_EQUAL(rootset.getString("zork"), "frobnitz");
     BOOST_CHECK(!rootset.getString(BoostPropertySet::XMLATTR_NODE_NAME));
-    BOOST_CHECK_EQUAL(rootset.getString("one"), nullptr);
+    BOOST_CHECK(!rootset.getString("one"));
 
     BOOST_CHECK_EQUAL(ones[0]->getString("foo"), "baz");
     BOOST_CHECK_EQUAL(ones[0]->getString("zork"), "frobnitz");
     BOOST_CHECK(!ones[0]->getString(BoostPropertySet::XMLATTR_NODE_NAME));
-    BOOST_CHECK_EQUAL(ones[0]->getString("two"), nullptr);
+    BOOST_CHECK(!ones[0]->getString("two"));
 
     BOOST_CHECK_EQUAL(ones[1]->getString("foo", "zork"), "zork");
-    BOOST_CHECK_EQUAL(ones[1]->getString("zork"), nullptr);
+    BOOST_CHECK(!ones[1]->getString("zork"));
     BOOST_CHECK(!ones[1]->getString(BoostPropertySet::XMLATTR_NODE_NAME));
-    BOOST_CHECK_EQUAL(ones[1]->getString("two"), nullptr);
+    BOOST_CHECK(!ones[1]->getString("two"));
 
     BOOST_CHECK_EQUAL(twos[0]->getString("foo"), "baz");
     BOOST_CHECK_EQUAL(twos[0]->getString("zork"), "frobnitz");
     BOOST_CHECK(!twos[0]->getString(BoostPropertySet::XMLATTR_NODE_NAME));
 
     BOOST_CHECK_EQUAL(twos[1]->getString("unset"), "foo zork");
-    BOOST_CHECK_EQUAL(twos[1]->getString("foo"), nullptr);
+    BOOST_CHECK(!twos[1]->getString("foo"));
     BOOST_CHECK_EQUAL(twos[1]->getString("zork"), "zorkmid");
     BOOST_CHECK(!twos[1]->getString(BoostPropertySet::XMLATTR_NODE_NAME));
 }
