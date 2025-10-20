@@ -93,9 +93,6 @@
     <ClCompile Include="..\..\tests\util\ReloadableXMLFileTests.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tests\remoting\impl\RemotingServiceTests.cpp">
-      <Filter>Source Files\Remoting</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tests\remoting\impl\SecretSourceTests.cpp">
       <Filter>Source Files\Remoting</Filter>
     </ClCompile>
