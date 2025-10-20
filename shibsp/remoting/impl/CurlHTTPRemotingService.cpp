@@ -295,7 +295,7 @@ CURL* CurlHTTPRemotingService::checkout() const
     #else
         case agent_auth_gss:
             curl_easy_cleanup(m_handle);
-            throw RemotingException("GSS unsupporyed by this version of curl.);
+            throw RemotingException("GSS unsupporyed by this version of curl.");
             break;
     #endif
         default:                flag = 0; break;
