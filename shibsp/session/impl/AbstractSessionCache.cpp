@@ -533,7 +533,7 @@ unique_lock<Session> AbstractSessionCache::_find(
         return unique_lock<Session>();
     }
 
-    m_log.info("valid session (%s) loaded from persistent store");
+    m_log.info("valid session (%s) loaded from persistent store", key);
 
     // Wrap the object in a local wraper to guard it before it's saved off.
     unique_ptr<BasicSession> newSession(new BasicSession(*this, obj));
