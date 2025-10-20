@@ -78,14 +78,14 @@ BOOST_FIXTURE_TEST_CASE(ModuleConfigTest_xml_invalid, ModuleConfigFixture)
 void validateSites(const ModuleConfig* config)
 {
     // Bad site should be absent.
-    BOOST_CHECK_EQUAL(config->getSiteConfig("bad"), nullptr);
+    BOOST_CHECK(!config->getSiteConfig("bad"));
 
     const PropertySet* one = config->getSiteConfig("1");
     BOOST_CHECK(one);
     BOOST_CHECK_EQUAL(one->getString(ModuleConfig::SITE_NAME_PROP_NAME), "sp.example.org");
-    BOOST_CHECK_EQUAL(one->getString(ModuleConfig::SITE_SCHEME_PROP_NAME), nullptr);
+    BOOST_CHECK(!one->getString(ModuleConfig::SITE_SCHEME_PROP_NAME));
     BOOST_CHECK_EQUAL(one->getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0), 0);
-    BOOST_CHECK_EQUAL(one->getString(ModuleConfig::SITE_ALIASES_PROP_NAME), nullptr);
+    BOOST_CHECK(!one->getString(ModuleConfig::SITE_ALIASES_PROP_NAME));
     BOOST_CHECK(!one->getBool(RequestMapper::USE_HEADERS_PROP_NAME, true));
 
     const PropertySet* two = config->getSiteConfig("2");
@@ -93,12 +93,12 @@ void validateSites(const ModuleConfig* config)
     BOOST_CHECK_EQUAL(two->getString(ModuleConfig::SITE_NAME_PROP_NAME), "sp2.example.org");
     BOOST_CHECK_EQUAL(two->getString(ModuleConfig::SITE_SCHEME_PROP_NAME), "https");
     BOOST_CHECK_EQUAL(two->getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0), 443);
-    BOOST_CHECK_EQUAL(two->getString(ModuleConfig::SITE_ALIASES_PROP_NAME), nullptr);
+    BOOST_CHECK(!two->getString(ModuleConfig::SITE_ALIASES_PROP_NAME));
 
     const PropertySet* three = config->getSiteConfig("3");
     BOOST_CHECK(three);
     BOOST_CHECK_EQUAL(three->getString(ModuleConfig::SITE_NAME_PROP_NAME), "sp3.example.org");
-    BOOST_CHECK_EQUAL(three->getString(ModuleConfig::SITE_SCHEME_PROP_NAME), nullptr);
+    BOOST_CHECK(!three->getString(ModuleConfig::SITE_SCHEME_PROP_NAME));
     BOOST_CHECK_EQUAL(three->getUnsignedInt(ModuleConfig::SITE_PORT_PROP_NAME, 0), 0);
     BOOST_CHECK_EQUAL(three->getString(ModuleConfig::SITE_ALIASES_PROP_NAME), "alt.example.org alt2.example.org");
 }
@@ -119,7 +119,7 @@ BOOST_FIXTURE_TEST_CASE(ModuleConfigTest_xml, ModuleConfigFixture)
     
     BOOST_CHECK(!config->getBool(RequestMapper::USE_VARIABLES_PROP_NAME, true));
     BOOST_CHECK(config->getBool(RequestMapper::USE_HEADERS_PROP_NAME, false));
-    BOOST_CHECK_EQUAL(config->getString(ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME), nullptr);
+    BOOST_CHECK(!config->getString(ModuleConfig::AUTHENTICATED_ROLE_PROP_NAME));
     BOOST_CHECK_EQUAL(config->getString(ModuleConfig::ROLE_ATTRIBUTES_PROP_NAME), "foo bar");
 
     validateSites(config.get());

@@ -156,11 +156,11 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_defaultingId, XMLRequestMapperFi
     request.m_port = 443;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("name"), "sp.example.org");
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
 }
@@ -183,11 +183,11 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_customId, XMLRequestMapperFixtur
     request.m_port = 443;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("name"), "sp.example.org");
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "custom");
 }
@@ -210,13 +210,13 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_no_mapping, XMLRequestMapperFixt
     request.m_port = 80;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
-    BOOST_CHECK_EQUAL(settings.first->getString("name"), nullptr);
+    BOOST_CHECK(!settings.first->getString("name"));
 }
 
 /////////////
@@ -237,14 +237,14 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_HostRegex_mapping_failed, XMLReq
     request.m_port = 443;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
-    BOOST_CHECK_EQUAL(settings.first->getString("name"), nullptr);
-    BOOST_CHECK_EQUAL(settings.first->getString("regex"), nullptr);
+    BOOST_CHECK(!settings.first->getString("name"));
+    BOOST_CHECK(!settings.first->getString("regex"));
     BOOST_CHECK(!settings.first->getBool("requireSession", false));
     BOOST_CHECK(!settings.first->getBool("isPassive", false));
 }
@@ -263,13 +263,13 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_HostRegex_mapping, XMLRequestMap
     request.m_port = 443;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
-    BOOST_CHECK_EQUAL(settings.first->getString("name"), nullptr);
+    BOOST_CHECK(!settings.first->getString("name"));
     BOOST_CHECK_EQUAL(settings.first->getString("regex"), "https\\://sp\\d\\.example\\.org\\:443");
     BOOST_CHECK(!settings.first->getBool("requireSession", false));
     BOOST_CHECK(settings.first->getBool("isPassive", false));
@@ -293,11 +293,11 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_Path_mapping, XMLRequestMapperFi
     request.m_port = 443;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
     BOOST_CHECK_EQUAL(settings.first->getString("name"), "secure");
     BOOST_CHECK(settings.first->getBool("requireSession", false));
@@ -322,11 +322,11 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_nested_Path_mapping, XMLRequestM
     request.m_port = 443;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
     BOOST_CHECK_EQUAL(settings.first->getString("name"), "baz");
     BOOST_CHECK(!settings.first->getBool("requireSession", false));
@@ -351,16 +351,16 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_PathRegex_mapping_failed, XMLReq
     request.m_port = 443;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
     BOOST_CHECK_EQUAL(settings.first->getString("name"), "sp.example.org");
-    BOOST_CHECK_EQUAL(settings.first->getString("regex"), nullptr);
+    BOOST_CHECK(!settings.first->getString("regex"));
     BOOST_CHECK(!settings.first->getBool("requireSession", false));
-    BOOST_CHECK_EQUAL(settings.first->getString("requireSessionWith"), nullptr);
+    BOOST_CHECK(!settings.first->getString("requireSessionWith"));
 }
 
 BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_PathRegex_mapping, XMLRequestMapperFixture)
@@ -377,11 +377,11 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_PathRegex_mapping, XMLRequestMap
     request.m_port = 443;
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
     BOOST_CHECK_EQUAL(settings.first->getString("regex"), "FoLdEr\\d");
     BOOST_CHECK(!settings.first->getBool("requireSession", false));
@@ -407,11 +407,11 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_Query_mapping, XMLRequestMapperF
     request.m_query = "foo=jdoe&bar=baz";
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
     BOOST_CHECK_EQUAL(settings.first->getString("name"), "foo");
     BOOST_CHECK(settings.first->getBool("requireSession", false));
@@ -437,15 +437,15 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_Query_regex_mapping_failed, XMLR
     request.m_query = "baz=jdoe";
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
     BOOST_CHECK_EQUAL(settings.first->getString("name"), "secure");
     BOOST_CHECK(settings.first->getBool("requireSession", false));
-    BOOST_CHECK_EQUAL(settings.first->getString("entityId"), nullptr);
+    BOOST_CHECK(!settings.first->getString("entityId"));
 }
 
 BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_Query_regex_mapping, XMLRequestMapperFixture)
@@ -463,11 +463,11 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_inline_Query_regex_mapping, XMLRequestM
     request.m_query = "baz=jdoe&bar=baz";
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     const RequestMapper::Settings settings = mapper->getSettings(request);
-    BOOST_CHECK_EQUAL(settings.second, nullptr);
+    BOOST_CHECK(!settings.second);
     BOOST_CHECK_EQUAL(settings.first->getString("applicationId"), "default");
     BOOST_CHECK_EQUAL(settings.first->getString("name"), "bar");
     BOOST_CHECK(settings.first->getBool("requireSession", false));
@@ -487,7 +487,7 @@ BOOST_FIXTURE_TEST_CASE(XMLRequestMapper_external_ACL, XMLRequestMapperFixture)
         tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
 
 #ifdef HAVE_CXX14
-    shared_lock locker(*mapper);
+    shared_lock<RequestMapper> locker(*mapper);
 #endif
 
     DummySession session;

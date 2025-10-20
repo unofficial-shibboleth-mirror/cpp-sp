@@ -23,8 +23,6 @@
 #include <map>
 #include <string>
 
-#define DATA_PATH "./data/session/impl/"
-
 namespace shibsp {
 
     class DummyRequest : public AbstractSPRequest {
