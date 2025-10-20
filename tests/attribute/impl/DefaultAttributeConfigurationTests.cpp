@@ -23,6 +23,7 @@
 #include "RequestMapper.h"
 #include "attribute/AttributeConfiguration.h"
 
+#include <iostream>
 #include <memory>
 
 #include <boost/property_tree/ini_parser.hpp>

@@ -23,6 +23,7 @@
 #include "RequestMapper.h"
 #include "platform/iis/ModuleConfig.h"
 
+#include <iostream>
 #include <memory>
 
 #include <boost/property_tree/ini_parser.hpp>
