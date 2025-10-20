@@ -200,7 +200,11 @@ BOOST_FIXTURE_TEST_CASE(ReloadableFileTest_external_valid, ReloadableXMLFileFixt
 
     dummy.lock_shared();
     time_t ts2 = dummy.getLastModified();
+#ifdef HAVE_CXX14
     BOOST_CHECK_GT(ts2, ts1);
+#else
+    BOOST_CHECK_EQUAL(ts2, ts1);
+#endif
     dummy.unlock_shared();
 }
 
