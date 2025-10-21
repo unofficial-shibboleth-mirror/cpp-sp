@@ -22,6 +22,7 @@ shibsptest_SOURCES = \
 	remoting/impl/SecretSourceTests.cpp \
 	session/impl/MemorySessionCacheTests.cpp \
 	session/impl/FilesystemSessionCacheTests.cpp \
+	util/ISOParserTests.cpp \
 	util/PropertyTreeTests.cpp \
 	util/BoostPropertySetTests.cpp \
 	util/ReloadableXMLFileTests.cpp

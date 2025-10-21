@@ -19,9 +19,12 @@
  */
 
 #include "internal.h"
+#include "util/Date.h"
 #include "util/Misc.h"
 
+#include <iomanip>
 #include <set>
+#include <sstream>
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -111,7 +114,17 @@ time_t shibsp::parseISODuration(const string& s)
 
 time_t shibsp::parseISODateTime(const string& s)
 {
-    return 0;
+    if (s.empty() || s.back() != 'Z') {
+        return -1;
+    }
+    
+    tm tmStruct = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
+    istringstream in(s);
+    in >> get_time(&tmStruct, "%Y-%m-%dT%T");
+    if (!in) {
+        return -1;
+    }
+    return timegm(&tmStruct);
 }
 
 bool FileSupport::exists(const char* path)
