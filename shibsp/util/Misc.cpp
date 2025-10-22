@@ -22,7 +22,7 @@
 #include "util/Date.h"
 #include "util/Misc.h"
 
-#include <iomanip>
+#include <ctime>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -114,14 +114,9 @@ time_t shibsp::parseISODuration(const string& s)
 
 time_t shibsp::parseISODateTime(const string& s)
 {
-    if (s.empty() || s.back() != 'Z') {
-        return -1;
-    }
-    
     tm tmStruct = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
-    istringstream in(s);
-    in >> get_time(&tmStruct, "%Y-%m-%dT%T");
-    if (!in) {
+    char* ret = strptime(s.c_str(), "%Y-%m-%dT%TZ", &tmStruct);
+    if (!ret || *ret) {
         return -1;
     }
     return timegm(&tmStruct);
