@@ -389,6 +389,9 @@
     <ClCompile Include="..\..\shibsp\csprng\impl\csprng.cpp">
       <Filter>Source Files\Impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\shibsp\impl\TimeAccessControl.cpp">
+      <Filter>Source Files\Impl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\shibsp\shibsp.rc">

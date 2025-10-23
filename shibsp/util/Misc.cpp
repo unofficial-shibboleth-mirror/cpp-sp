@@ -24,7 +24,10 @@
 
 #include <ctime>
 #include <set>
-#include <sstream>
+#ifdef WIN32
+# include <iomanip>
+# include <sstream>
+#endif
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
@@ -82,7 +85,7 @@ time_t shibsp::parseISODuration(const string& s)
             regexp::regex_search(s, match, notime_parser);
         }
     }
-    catch (const regexp::regex_error& e) {
+    catch (const regexp::regex_error&) {
         return -1;
     }
 
@@ -92,7 +95,7 @@ time_t shibsp::parseISODuration(const string& s)
 
     vector<double> vec = {0,0,0,0,0,0}; // years, months, days, hours, minutes, seconds
 
-    for (size_t i = 1; i < match.size(); ++i) {
+    for (regexp::smatch::size_type i = 1; i < match.size(); ++i) {
 
         if (match[i].matched) {
             string str = match[i];
@@ -100,7 +103,7 @@ time_t shibsp::parseISODuration(const string& s)
             try {
                 vec[i-1] = boost::lexical_cast<long>(str);
             }
-            catch (const boost::bad_lexical_cast& e) {
+            catch (const boost::bad_lexical_cast&) {
                 return 0;
             }
         }
@@ -118,12 +121,25 @@ time_t shibsp::parseISODuration(const string& s)
 
 time_t shibsp::parseISODateTime(const string& s)
 {
-    tm tmStruct = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
+    tm tmStruct;
+    memset(&tmStruct, 0, sizeof(tm));
+
+#ifdef WIN32
+    istringstream in(s);
+    in >> get_time(&tmStruct, "%Y-%m-%dT%TZ");
+    // This is finicky but does seem to detect critical errors, including the
+    // absence of the 'Z' literal, which doesn't set fail but does set eof.
+    if (in.fail() || in.eof()) {
+        return -1;
+    }
+    return _mkgmtime64(&tmStruct);
+#else
     char* ret = strptime(s.c_str(), "%Y-%m-%dT%TZ", &tmStruct);
     if (!ret || *ret) {
         return -1;
     }
     return timegm(&tmStruct);
+#endif
 }
 
 bool FileSupport::exists(const char* path)

@@ -41,6 +41,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS=1;SHIBSP_LITE;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="..\..\tests\util\BoostPropertySetTests.cpp" />
+    <ClCompile Include="..\..\tests\util\ISOParserTests.cpp" />
     <ClCompile Include="..\..\tests\util\PropertyTreeTests.cpp" />
     <ClCompile Include="..\..\tests\util\ReloadableXMLFileTests.cpp" />
   </ItemGroup>

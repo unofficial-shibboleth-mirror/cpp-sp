@@ -99,6 +99,9 @@
     <ClCompile Include="..\..\tests\attribute\impl\DefaultAttributeConfigurationTests.cpp">
       <Filter>Source Files\attribute\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tests\util\ISOParserTests.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\tests\data\console-agent.ini">

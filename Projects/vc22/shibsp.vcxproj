@@ -113,6 +113,7 @@
     <ClCompile Include="..\..\shibsp\impl\AgentConfig.cpp" />
     <ClCompile Include="..\..\shibsp\impl\ChainingAccessControl.cpp" />
     <ClCompile Include="..\..\shibsp\impl\DefaultAgent.cpp" />
+    <ClCompile Include="..\..\shibsp\impl\TimeAccessControl.cpp" />
     <ClCompile Include="..\..\shibsp\impl\XMLAccessControl.cpp" />
     <ClCompile Include="..\..\shibsp\impl\XMLRequestMapper.cpp" />
     <ClCompile Include="..\..\shibsp\io\impl\CookieManager.cpp" />
