@@ -85,9 +85,25 @@ namespace shibsp {
     };
 
     /**
-     * ISO format parsers.
+     * Parses an ISO Duration into number of seconds.
+     * 
+     * <p>This does estimated processing when units like month or year
+     * are used, but is exact otherwise.</p>
+     * 
+     * @param s input string
+     * 
+     * @return the approximate or exact count of seconds, or -1 on error
      */
     SHIBSP_API time_t parseISODuration(const std::string& s);
+
+    /**
+     * Parses an ISO date/time expression that ends in a 'Z', signifying UTC time,
+     * and returns the corresponding epoch in seconds.
+     * 
+     * @param s input string
+     * 
+     * @return the epoch, or -1 if the parser detected an anomaly
+     */
     SHIBSP_API time_t parseISODateTime(const std::string& s);
 
     struct FileSupport {

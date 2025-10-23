@@ -115,6 +115,7 @@ libshibsp_la_SOURCES = \
 	impl/AgentConfig.cpp \
 	impl/DefaultAgent.cpp \
 	impl/ChainingAccessControl.cpp \
+	impl/TimeAccessControl.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
 	io/impl/CookieManager.cpp \

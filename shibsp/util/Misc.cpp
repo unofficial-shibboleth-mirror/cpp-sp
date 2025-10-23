@@ -68,6 +68,10 @@ time_t shibsp::parseISODuration(const string& s)
     static regexp::regex notime_parser("P([[:d:]]+Y)?([[:d:]]+M)?([[:d:]]+D)?");
     static regexp::regex full_parser("P([[:d:]]+Y)?([[:d:]]+M)?([[:d:]]+D)?T([[:d:]]+H)?([[:d:]]+M)?([[:d:]]+S|[[:d:]]+\\.[[:d:]]+S)?");
     
+    if (s.empty()) {
+        return -1;
+    }
+
     regexp::smatch match;
 
     try {
@@ -79,11 +83,11 @@ time_t shibsp::parseISODuration(const string& s)
         }
     }
     catch (const regexp::regex_error& e) {
-        return 0;
+        return -1;
     }
 
     if (match.empty()) {
-        return 0;
+        return -1;
     }
 
     vector<double> vec = {0,0,0,0,0,0}; // years, months, days, hours, minutes, seconds

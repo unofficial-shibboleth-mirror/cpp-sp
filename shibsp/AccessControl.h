@@ -74,6 +74,9 @@ namespace shibsp {
     /** AccessControl based on rudimentary XML syntax. */
     #define XML_ACCESS_CONTROL      "XML"
 
+    /** AccessControl with time-based rules. */
+    #define TIME_ACCESS_CONTROL      "Time"
+
     /** Reserved for Apache-style .htaccess support. */
     #define HT_ACCESS_CONTROL       "htaccess"
 };

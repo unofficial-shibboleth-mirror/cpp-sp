@@ -37,6 +37,7 @@ using namespace std;
 
 namespace shibsp {
     extern AccessControl* SHIBSP_DLLLOCAL XMLAccessControlFactory(ptree& pt, bool deprecationSupport);
+    extern AccessControl* SHIBSP_DLLLOCAL TimeAccessControlFactory(ptree& pt, bool deprecationSupport);
 }
 
 AccessControl::AccessControl()
@@ -90,6 +91,7 @@ void SHIBSP_API shibsp::registerAccessControls()
     AgentConfig& conf=AgentConfig::getConfig();
     conf.AccessControlManager.registerFactory(CHAINING_ACCESS_CONTROL, ChainingAccessControlFactory);
     conf.AccessControlManager.registerFactory(XML_ACCESS_CONTROL, XMLAccessControlFactory);
+    conf.AccessControlManager.registerFactory(TIME_ACCESS_CONTROL, TimeAccessControlFactory);
 }
 
 ChainingAccessControl::ChainingAccessControl(ptree& pt, bool deprecationSupport) : m_op(OP_AND)
