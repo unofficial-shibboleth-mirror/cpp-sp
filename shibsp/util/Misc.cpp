@@ -104,7 +104,7 @@ time_t shibsp::parseISODuration(const string& s)
                 vec[i-1] = boost::lexical_cast<long>(str);
             }
             catch (const boost::bad_lexical_cast&) {
-                return 0;
+                return -1;
             }
         }
     }
