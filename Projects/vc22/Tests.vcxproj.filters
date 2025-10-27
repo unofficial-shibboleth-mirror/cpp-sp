@@ -70,6 +70,9 @@
     <Filter Include="Source Files\attribute\impl">
       <UniqueIdentifier>{b070466b-e25f-4761-9bc9-dc1415ff3710}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Data\impl\acl\time">
+      <UniqueIdentifier>{acf9ec38-be20-4a17-ba33-431febfc2ae1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp">
@@ -101,6 +104,9 @@
     </ClCompile>
     <ClCompile Include="..\..\tests\util\ISOParserTests.cpp">
       <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\impl\TimeAccessControlTests.cpp">
+      <Filter>Source Files\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -284,5 +290,37 @@
     <None Include="..\..\tests\data\attribute\impl\console-agent.ini">
       <Filter>Data\attribute\impl</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\tests\data\impl\acl\time\acl-badxml.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\external-acl-badxml.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-new-time-invalid.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-new-time-valid.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-old-time-invalid.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-old-time-valid.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-timesinceauth.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-year-invalid.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-year-valid.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
+    <Xml Include="..\..\tests\data\impl\acl\time\internal-acl-invalid2.xml">
+      <Filter>Data\impl\acl\time</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

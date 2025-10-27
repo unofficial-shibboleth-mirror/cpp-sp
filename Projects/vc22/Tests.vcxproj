@@ -30,6 +30,7 @@
     <ClCompile Include="..\..\tests\AgentConfigTests.cpp" />
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp" />
     <ClCompile Include="..\..\tests\attribute\impl\DefaultAttributeConfigurationTests.cpp" />
+    <ClCompile Include="..\..\tests\impl\TimeAccessControlTests.cpp" />
     <ClCompile Include="..\..\tests\impl\XMLAccessControlTests.cpp" />
     <ClCompile Include="..\..\tests\impl\XMLRequestMapperTests.cpp" />
     <ClCompile Include="..\..\tests\remoting\impl\SecretSourceTests.cpp">
@@ -120,6 +121,18 @@
   <ItemGroup>
     <None Include="..\..\tests\data\util\propertytree\requestmap1.xml" />
     <None Include="..\..\tests\data\util\propertytree\requestmap2.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\tests\data\impl\acl\time\acl-badxml.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\external-acl-badxml.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-new-time-invalid.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-new-time-valid.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-old-time-invalid.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-old-time-valid.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-timesinceauth.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-year-invalid.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\inline-year-valid.xml" />
+    <Xml Include="..\..\tests\data\impl\acl\time\internal-acl-invalid2.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
