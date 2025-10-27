@@ -44,7 +44,13 @@ class exceptionCheck {
 public:
     exceptionCheck(const string& msg) : m_msg(msg) {}
     bool check_message(const exception& e) {
-        return m_msg.compare(e.what()) == 0;
+        if (m_msg.compare(e.what()) == 0) {
+            return true;
+        }
+        else {
+            cout << "Non-matching message: " << e.what() << endl;
+            return false;
+        }
     }
 private:
     string m_msg;

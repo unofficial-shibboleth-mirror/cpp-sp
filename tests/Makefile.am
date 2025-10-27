@@ -16,6 +16,7 @@ shibsptest_SOURCES = \
 	AgentTestSuite.cpp \
 	AgentConfigTests.cpp \
 	attribute/impl/DefaultAttributeConfigurationtests.cpp \
+	impl/TimeAccessControlTests.cpp \
 	impl/XMLAccessControlTests.cpp \
 	impl/XMLRequestMapperTests.cpp \
 	platform/iis/ModuleConfigTests.cpp \
