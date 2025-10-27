@@ -99,9 +99,10 @@ Rule::Rule(const string& name, const ptree& pt)
 
     // The TimeSinceAuthn rule operates on a Duration inside the element body,
     // which should be the value of the tree.
+
     if (name == TimeSinceAuthn) {
         m_type = TM_AUTHN;
-        if (m_value = parseISODuration(pt.get_value("")) < 0) {
+        if ((m_value = parseISODuration(pt.get_value(""))) < 0) {
             throw ConfigurationException("Unable to parse duration in TimeSinceAuthn rule.");
         }
         return;
@@ -126,7 +127,7 @@ Rule::Rule(const string& name, const ptree& pt)
 
     if (name == Time) {
         m_type = TM_TIME;
-        if (m_value = parseISODateTime(tokens.back()) < 0) {
+        if ((m_value = parseISODateTime(tokens.back())) < 0) {
             throw ConfigurationException("Error parsing timestamp in Time rule.");
         }
         return;
@@ -162,15 +163,24 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
                 return shib_acl_false;
             }
 
-            const char* authtime = const_cast<DDF&>(attr->second).first().string();
-            if (authtime) {
-                if (operand = parseISODateTime(authtime) < 0) {
-                    request.error("Error parsing authentication time from designated Attribute.");
+            DDF val = const_cast<DDF&>(attr->second).first();
+            if (val.isstring()) {
+                const char* authtime = const_cast<DDF&>(attr->second).first().string();
+                if (authtime) {
+                    if (operand = parseISODateTime(authtime) < 0) {
+                       request.error("Error parsing authentication time from designated Attribute.");
+                       return shib_acl_false;
+                    }
                 }
-
+            }
+            else if (val.islong()) {
+                operand = val.longinteger();
+            }
+            if (operand > 0) {
                 if (time(nullptr) - operand <= m_value) {
                     return shib_acl_true;
                 }
+
                 request.debug("elapsed time since authentication exceeds limit");
                 return shib_acl_false;
             }
