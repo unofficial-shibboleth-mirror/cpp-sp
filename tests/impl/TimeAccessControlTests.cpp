@@ -152,7 +152,7 @@ BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_invalid_internal, TimeAccessCon
 }
 
 /////////////
-// Inline ACL test for user rule.
+// Inline ACL test for TimeSinceAuthn rule.
 /////////////
 
 BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_TimeSinceAuthn, TimeAccessControlFixture)
@@ -184,15 +184,13 @@ BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_TimeSinceAuthn, TimeAccessContr
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 }
 
-/*
-
 /////////////
-// Inline ACL test for user regex rule.
+// Inline ACL tests for absolute Time rule.
 /////////////
 
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRegexRule, XMLAccessControlFixture)
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_OldTimeValid, TimeAccessControlFixture)
 {
-    parse("inline-user-regex-acl.xml");
+    parse("inline-old-time-valid.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
@@ -205,23 +203,12 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_UserRegexRule, XMLAccessControlF
     MappableDummyRequest request;
     DummySession session;
 
-    request.m_user = "smith";
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
-
-    request.m_user = "extrajdoe";
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
-
-    request.m_user = "jdoe";
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 }
 
-/////////////
-// Inline ACL test for authnContextClassRef rule.
-/////////////
-
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_ACRule, XMLAccessControlFixture)
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_OldTimeInvalid, TimeAccessControlFixture)
 {
-    parse("inline-ac-acl.xml");
+    parse("inline-old-time-invalid.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
@@ -234,24 +221,12 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_ACRule, XMLAccessControlFixture)
     MappableDummyRequest request;
     DummySession session;
 
-    DDF ac("Shib-AuthnContext-Class");
-    ac.list();
-    ac.add(DDF(nullptr).string("Foo"));
-    session.m_attributes[ac.name()] = ac;
-
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
-
-    ac.add(DDF(nullptr).string("urn:oasis:names:tc:SAML:2.0:ac:classes:TimeSyncToken"));
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 }
 
-/////////////
-// Inline ACL test for attribute rule.
-/////////////
-
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_AttrRule, XMLAccessControlFixture)
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_NewTimeValid, TimeAccessControlFixture)
 {
-    parse("inline-attr-acl.xml");
+    parse("inline-new-time-valid.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
@@ -264,26 +239,12 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_inline_AttrRule, XMLAccessControlFixtur
     MappableDummyRequest request;
     DummySession session;
 
-    DDF affiliation("affiliation");
-    affiliation.list();
-    session.m_attributes[affiliation.name()] = affiliation;
-
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
-
-    affiliation.add(DDF(nullptr).string("staff"));
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
-
-    affiliation.add(DDF(nullptr).string("student"));
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
 }
 
-/////////////
-// External ACL test for OR operator
-/////////////
-
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_OR, XMLAccessControlFixture)
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_NewTimeInvalid, TimeAccessControlFixture)
 {
-    parse("external-or-acl.xml");
+    parse("inline-new-time-invalid.xml");
     BOOST_CHECK_EQUAL(tree.size(), 1);
 
     unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
@@ -296,79 +257,7 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_OR, XMLAccessControlFixture)
     MappableDummyRequest request;
     DummySession session;
 
-    request.m_user = "jdoe";
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
-
-    request.m_user = "smith";
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
-
-    DDF affiliation("affiliation");
-    affiliation.list();
-    affiliation.add(DDF(nullptr).string("student"));
-    session.m_attributes[affiliation.name()] = affiliation;
-
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
-}
-
-/////////////
-// External ACL test for AND operator
-/////////////
-
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_AND, XMLAccessControlFixture)
-{
-    parse("external-and-acl.xml");
-    BOOST_CHECK_EQUAL(tree.size(), 1);
-
-    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
-        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
-
-#ifdef HAVE_CXX14
-    shared_lock locker(*acl);
-#endif
-
-    MappableDummyRequest request;
-    DummySession session;
-
-    request.m_user = "jdoe";
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
-
-    DDF affiliation("affiliation");
-    affiliation.list();
-    affiliation.add(DDF(nullptr).string("student"));
-    session.m_attributes[affiliation.name()] = affiliation;
-
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
-}
-
-/////////////
-// External ACL test for NOT operator
-/////////////
-
-BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_NOT, XMLAccessControlFixture)
-{
-    parse("external-not-acl.xml");
-    BOOST_CHECK_EQUAL(tree.size(), 1);
-
-    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
-        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
-
-#ifdef HAVE_CXX14
-    shared_lock locker(*acl);
-#endif
-
-    MappableDummyRequest request;
-    DummySession session;
-
-    DDF affiliation("affiliation");
-    affiliation.list();
-    session.m_attributes[affiliation.name()] = affiliation;
-
-    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
-
-    affiliation.add(DDF(nullptr).string("student"));
-
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 }
-*/
 
 };
