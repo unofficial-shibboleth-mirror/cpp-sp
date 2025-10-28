@@ -42,6 +42,7 @@ all-data-local: $(BUILTCONFIGFILES)
 install-data-local:	all-data-local
 	$(mkinstalldirs) $(DESTDIR)$(pkgrundir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgcachedir)
+	$(mkinstalldirs) $(DESTDIR)$(pkgcachedir)/sessions
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
 	for f in $(BUILTCONFIGFILES); do \
 		if test ! -f $(DESTDIR)${pkgsysconfdir}/$$f; then \
