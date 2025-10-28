@@ -230,8 +230,14 @@ AccessControl::aclresult_t Rule::authorized(const SPRequest& request, const Sess
 RuleRegex::RuleRegex(const ptree& pt)
     : m_alias(pt.get(REQUIRE_PROP_PATH, "")), m_exp(pt.get_value(""))
 {
-    if (m_alias.empty() || m_exp.empty())
+    if (m_alias.empty() || m_exp.empty()) {
         throw ConfigurationException("Access control rule missing require attribute or element content.");
+    }
+
+    if (m_alias == "authnContextClassRef") {
+        AgentConfig::getConfig().deprecation().warn(
+            "RuleRegex specifying authnContextClassRef is deprecated and will be removed from a future version");
+    }
 
     static const char CASE_SENSITIVE_PROP_PATH[] = "caseSensitive";
     static string_to_bool_translator tr;
