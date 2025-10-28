@@ -26,6 +26,7 @@
 #include "util/PathResolver.h"
 #include "util/ReloadableXMLFile.h"
 
+#include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <boost/property_tree/xml_parser.hpp>

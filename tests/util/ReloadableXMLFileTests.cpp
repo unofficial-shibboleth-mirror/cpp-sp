@@ -25,6 +25,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
+#include <iostream>
 #include <mutex>
 
 #ifdef WIN32
