@@ -23,6 +23,7 @@
 
 #include "AccessControl.h"
 #include "Agent.h"
+#include "AgentConfig.h"
 #include "SPRequest.h"
 #include "attribute/AttributeConfiguration.h"
 #include "logging/Category.h"
@@ -143,6 +144,11 @@ Rule::Rule(const ptree& pt) : m_alias(pt.get(REQUIRE_PROP_PATH, ""))
 {
     if (m_alias.empty()) {
         throw ConfigurationException("Access control rule missing require attribute");
+    }
+
+    if (m_alias == "authnContextClassRef") {
+        AgentConfig::getConfig().deprecation().warn(
+            "Rule specifying authnContextClassRef is deprecated and will be removed from a future version");
     }
 
     string vals = pt.get_value("");
