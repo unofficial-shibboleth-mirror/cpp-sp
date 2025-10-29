@@ -230,8 +230,7 @@ void Override::loadACL(ptree& pt, Category& log)
             acl = pt.get_child_optional(ACCESS_CONTROL_PROP_PATH);
             if (acl) {
                 log.info("building inline XML-based AccessControl provider...");
-                // We need to pass in the parent tree to allow it to walk down to the "expected" inline element.
-                m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, pt, false));
+                m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, acl.get(), false));
             }
             else {
                 acl = pt.get_child_optional(ACCESS_CONTROL_PROVIDER_PROP_PATH);
