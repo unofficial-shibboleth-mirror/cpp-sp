@@ -778,12 +778,12 @@ AccessControl::aclresult_t htAccessControl::doAccessControl(const ShibTargetApac
     try {
         ptree pt;
         xml_parser::read_xml(plugin, pt, xml_parser::no_comments|xml_parser::trim_whitespace);
-        if (pt.size() != 1)
+        if (pt.size() != 1) {
             throw ConfigurationException("AccessControl plugin configuration did not contain the expected XML document.");
+        }
         ptree& pt_root = pt.front().second;
-        string t = pt_root.get("<xmlattr>.type", "");
-        if (t.empty())
-            throw ConfigurationException("Missing type attribute in AccessControl plugin configuration.");
+        // Default to XML type to allow "naked" rules since we have no other types for now (probably ever).
+        string t = pt_root.get("<xmlattr>.type", "XML");
         unique_ptr<AccessControl> aclplugin(AgentConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), pt_root, true));
 #ifdef HAVE_CXX14
         shared_lock<AccessControl> acllock(*aclplugin);
