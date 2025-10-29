@@ -235,14 +235,9 @@ void Override::loadACL(ptree& pt, Category& log)
             else {
                 acl = pt.get_child_optional(ACCESS_CONTROL_PROVIDER_PROP_PATH);
                 if (acl) {
-                    string t(acl->get(TYPE_PROP_PATH, ""));
-                    if (!t.empty()) {
-                        log.info("building AccessControl provider of type %s...", t.c_str());
-                        m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acl.get(), false));
-                    }
-                    else {
-                        throw ConfigurationException("<AccessControlProvider> missing type attribute.");
-                    }
+                    string t(acl->get(TYPE_PROP_PATH, "XML"));
+                    log.info("building AccessControl provider of type %s...", t.c_str());
+                    m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acl.get(), false));
                 }
             }
         }
