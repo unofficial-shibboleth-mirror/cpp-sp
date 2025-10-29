@@ -460,4 +460,149 @@ BOOST_FIXTURE_TEST_CASE(XMLAccessControl_external_NOT, XMLAccessControlFixture)
     BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
 }
 
+/////////////
+// Inline ACL test for TimeSinceAuthn rule.
+/////////////
+
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_TimeSinceAuthn, XMLAccessControlFixture)
+{
+    parse("inline-timesinceauth.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    MappableDummyRequest request;
+    DummySession session;
+
+    // No attribute available.
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+
+    DDF ac("Shib-Authentication-Instant");
+    ac.list();
+    ac.add(DDF(nullptr).longinteger(time(nullptr) - 300));
+    session.m_attributes[ac.name()] = ac;
+    
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+
+    ac.first().longinteger(time(nullptr) - 7200);
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+}
+
+/////////////
+// Inline ACL tests for absolute Time rule.
+/////////////
+
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_OldTimeValid, XMLAccessControlFixture)
+{
+    parse("inline-old-time-valid.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    MappableDummyRequest request;
+    DummySession session;
+
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+}
+
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_OldTimeInvalid, XMLAccessControlFixture)
+{
+    parse("inline-old-time-invalid.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    MappableDummyRequest request;
+    DummySession session;
+
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+}
+
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_NewTimeValid, XMLAccessControlFixture)
+{
+    parse("inline-new-time-valid.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    MappableDummyRequest request;
+    DummySession session;
+
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+}
+
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_NewTimeInvalid, XMLAccessControlFixture)
+{
+    parse("inline-new-time-invalid.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    MappableDummyRequest request;
+    DummySession session;
+
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+}
+
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_YearValid, XMLAccessControlFixture)
+{
+    parse("inline-year-valid.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    MappableDummyRequest request;
+    DummySession session;
+
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_true);
+}
+
+BOOST_FIXTURE_TEST_CASE(TimeAccessControl_inline_YearInvalid, XMLAccessControlFixture)
+{
+    parse("inline-year-invalid.xml");
+    BOOST_CHECK_EQUAL(tree.size(), 1);
+
+    unique_ptr<AccessControl> acl(AgentConfig::getConfig().AccessControlManager.newPlugin(
+        tree.front().second.get<string>("<xmlattr>.type").c_str(), tree.front().second, true));
+
+#ifdef HAVE_CXX14
+    shared_lock locker(*acl);
+#endif
+
+    MappableDummyRequest request;
+    DummySession session;
+
+    BOOST_CHECK_EQUAL(acl->authorized(request, &session), AccessControl::shib_acl_false);
+}
+
 };

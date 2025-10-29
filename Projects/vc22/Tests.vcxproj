@@ -30,7 +30,6 @@
     <ClCompile Include="..\..\tests\AgentConfigTests.cpp" />
     <ClCompile Include="..\..\tests\AgentTestSuite.cpp" />
     <ClCompile Include="..\..\tests\attribute\impl\DefaultAttributeConfigurationTests.cpp" />
-    <ClCompile Include="..\..\tests\impl\TimeAccessControlTests.cpp" />
     <ClCompile Include="..\..\tests\impl\XMLAccessControlTests.cpp" />
     <ClCompile Include="..\..\tests\impl\XMLRequestMapperTests.cpp" />
     <ClCompile Include="..\..\tests\remoting\impl\SecretSourceTests.cpp">

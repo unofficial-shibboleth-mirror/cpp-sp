@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <memory>
 #include <set>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 #ifdef SHIBSP_USE_BOOST_REGEX
@@ -83,6 +85,23 @@ namespace {
         regexp::regex m_re;
     };
 
+    class TimeRule : public AccessControl, public NoOpSharedLockable
+    {
+    public:
+        TimeRule(const string& name, const ptree& pt);
+        ~TimeRule() {}
+
+        aclresult_t authorized(const SPRequest& request, const Session* session) const;
+
+        enum time_type_t {
+            TM_AUTHN, TM_TIME, TM_YEAR, TM_MONTH, TM_DAY, TM_HOUR, TM_MINUTE, TM_SECOND, TM_WDAY
+        };
+    private:
+        time_type_t m_type;
+        enum { OP_LT, OP_LE, OP_EQ, OP_GE, OP_GT } m_op;
+        time_t m_value;
+    };
+
     class Operator : public AccessControl, public NoOpSharedLockable
     {
     public:
@@ -96,10 +115,35 @@ namespace {
         vector<unique_ptr<AccessControl>> m_operands;
     };
 
-    static const char ACCESS_CONTROL_PROP_PATH[] = "AccessControl";
-    static const char REQUIRE_PROP_PATH[] = "<xmlattr>.require";
-    static const char RULE_PROP_PATH[] = "Rule";
-    static const char RULE_REGEX_PROP_PATH[] = "RuleRegex";
+    static const char AND_PROP_PATH[] =             "AND";
+    static const char OR_PROP_PATH[] =              "OR";
+    static const char NOT_PROP_PATH[] =             "NOT";
+    static const char ACCESS_CONTROL_PROP_PATH[] =  "AccessControl";
+    static const char REQUIRE_PROP_PATH[] =         "<xmlattr>.require";
+    static const char RULE_PROP_PATH[] =            "Rule";
+    static const char RULE_REGEX_PROP_PATH[] =      "RuleRegex";
+    static const char TIMESINCEAUTHN_PROP_PATH[] =  "TimeSinceAuthn";
+    static const char TIME_PROP_PATH[] =            "Time";
+    static const char DAY_PROP_PATH[] =             "Day";
+    static const char DAYOFWEEK_PROP_PATH[] =       "DayOfWeek";
+    static const char HOUR_PROP_PATH[] =            "Hour";
+    static const char MINUTE_PROP_PATH[] =          "Minute";
+    static const char MONTH_PROP_PATH[] =           "Month";
+    static const char SECOND_PROP_PATH[] =          "Second";
+    static const char YEAR_PROP_PATH[] =            "Year";
+
+    // Indexed time rules for comparison/lookup in constructors.
+    static map<string,TimeRule::time_type_t> g_timeRules = {
+        { TIMESINCEAUTHN_PROP_PATH, TimeRule::TM_AUTHN },
+        { TIME_PROP_PATH, TimeRule::TM_TIME },
+        { DAY_PROP_PATH, TimeRule::TM_DAY },
+        { DAYOFWEEK_PROP_PATH, TimeRule::TM_WDAY },
+        { HOUR_PROP_PATH, TimeRule::TM_HOUR },
+        { MINUTE_PROP_PATH, TimeRule::TM_MINUTE },
+        { MONTH_PROP_PATH, TimeRule::TM_MONTH },
+        { SECOND_PROP_PATH, TimeRule::TM_SECOND },
+        { YEAR_PROP_PATH, TimeRule::TM_YEAR }
+    };
 
 #if defined (_MSC_VER)
     #pragma warning( push )
@@ -139,6 +183,20 @@ namespace shibsp {
         return new XMLAccessControl(pt);
     }
 };
+
+void SHIBSP_API shibsp::registerAccessControls()
+{
+    AgentConfig& conf=AgentConfig::getConfig();
+    conf.AccessControlManager.registerFactory(XML_ACCESS_CONTROL, XMLAccessControlFactory);
+}
+
+AccessControl::AccessControl()
+{
+}
+
+AccessControl::~AccessControl()
+{
+}
 
 Rule::Rule(const ptree& pt) : m_alias(pt.get(REQUIRE_PROP_PATH, ""))
 {
@@ -236,7 +294,7 @@ RuleRegex::RuleRegex(const ptree& pt)
 
     if (m_alias == "authnContextClassRef") {
         AgentConfig::getConfig().deprecation().warn(
-            "RuleRegex specifying authnContextClassRef is deprecated and will be removed from a future version");
+            "Rule specifying authnContextClassRef is deprecated and will be removed from a future version");
     }
 
     static const char CASE_SENSITIVE_PROP_PATH[] = "caseSensitive";
@@ -308,6 +366,154 @@ AccessControl::aclresult_t RuleRegex::authorized(const SPRequest& request, const
     return shib_acl_false;
 }
 
+TimeRule::TimeRule(const string& name, const ptree& pt)
+{
+    // The TimeSinceAuthn rule operates on a Duration inside the element body,
+    // which should be the value of the tree.
+
+    if (name == TIMESINCEAUTHN_PROP_PATH) {
+        m_type = TM_AUTHN;
+        if ((m_value = parseISODuration(pt.get_value(""))) < 0) {
+            throw ConfigurationException("Unable to parse duration in TimeSinceAuthn rule.");
+        }
+        return;
+    }
+    
+    // Anything else we have to parse the element body.
+    string s = pt.get_value("");
+    boost::trim(s);
+    vector<string> tokens;
+    if (boost::split(tokens, s, boost::is_space(), boost::algorithm::token_compress_on).size() != 2) {
+        throw ConfigurationException("Time-based rule requires element content of the form \"LT|LE|EQ|GE|GT value\".");
+    }
+    string& op = tokens.front();
+    if (op == "LT")         { m_op = OP_LT; }
+    else if (op == "LE")    { m_op = OP_LE; }
+    else if (op == "EQ")    { m_op = OP_EQ; }
+    else if (op == "GE")    { m_op = OP_GE; }
+    else if (op == "GT")    { m_op = OP_GT; }
+    else {
+        throw ConfigurationException("First component of time-based rule must be one of LT, LE, EQ, GE, GT.");
+    }
+
+    if (name == TIME_PROP_PATH) {
+        m_type = g_timeRules[name];
+        if ((m_value = parseISODateTime(tokens.back())) < 0) {
+            throw ConfigurationException("Error parsing timestamp in Time rule.");
+        }
+        return;
+    }
+
+    const auto i = g_timeRules.find(name);
+    if (i != g_timeRules.end()) {
+        m_type = i->second;
+        m_value = boost::lexical_cast<time_t>(tokens.back());
+    }
+    else {
+        throw ConfigurationException("Unrecognized time-based rule.");
+    }
+}
+
+AccessControl::aclresult_t TimeRule::authorized(const SPRequest& request, const Session* session) const
+{
+    time_t operand = 0;
+
+    if (m_type == TM_AUTHN) {
+        if (session) {
+            // Locate the Attribute to be used for accessing the auth timestamp.
+            const AttributeConfiguration& config = request.getAgent().getAttributeConfiguration(
+                request.getRequestSettings().first->getString(RequestMapper::ATTRIBUTE_CONFIG_ID_PROP_NAME));
+            const auto attr = session->getAttributes().find(
+                config.getString(AttributeConfiguration::LEGACY_AUTHTIME_ATTRIBUTE_PROP_NAME,
+                    AttributeConfiguration::LEGACY_AUTHTIME_ATTRIBUTE_PROP_DEFAULT));
+            if (attr == session->getAttributes().end()) {
+                request.debug("Attribute carrying authentication time unnvailable");
+                return shib_acl_false;
+            }
+
+            DDF val = const_cast<DDF&>(attr->second).first();
+            if (val.isstring()) {
+                const char* authtime = const_cast<DDF&>(attr->second).first().string();
+                if (authtime) {
+                    if ((operand = parseISODateTime(authtime)) < 0) {
+                       request.error("Error parsing authentication time from designated Attribute.");
+                       return shib_acl_false;
+                    }
+                }
+            }
+            else if (val.islong()) {
+                operand = val.longinteger();
+            }
+            
+            if (operand > 0) {
+                if (time(nullptr) - operand <= m_value) {
+                    return shib_acl_true;
+                }
+
+                request.debug("elapsed time since authentication exceeds limit");
+                return shib_acl_false;
+            }
+            else {
+                request.debug("Attribute carrying authentication time unnvailable");
+                return shib_acl_false;
+            }
+        }
+        else {
+            request.debug("session unnvailable");
+            return shib_acl_false;
+        }
+    }
+
+    // Extract value from tm struct or time directly.
+    operand = time(nullptr);
+    if (m_type != TM_TIME) {
+#ifndef HAVE_LOCALTIME_R
+        struct tm* ptime = localtime(&operand);
+#else
+        struct tm res;
+        struct tm* ptime = localtime_r(&operand, &res);
+#endif
+        switch (m_type) {
+            case TM_YEAR:
+                operand = ptime->tm_year + 1900;
+                break;
+            case TM_MONTH:
+                operand = ptime->tm_mon + 1;
+                break;
+            case TM_DAY:
+                operand = ptime->tm_mday;
+                break;
+            case TM_HOUR:
+                operand = ptime->tm_hour;
+                break;
+            case TM_MINUTE:
+                operand = ptime->tm_min;
+                break;
+            case TM_SECOND:
+                operand = ptime->tm_sec;
+                break;
+            case TM_WDAY:
+                operand = ptime->tm_wday;
+                break;
+        }
+    }
+
+    // Compare operand to test value in rule using rule operator.
+    switch (m_op) {
+        case OP_LT:
+            return (operand < m_value) ? shib_acl_true : shib_acl_false;
+        case OP_LE:
+            return (operand <= m_value) ? shib_acl_true : shib_acl_false;
+        case OP_EQ:
+            return (operand == m_value) ? shib_acl_true : shib_acl_false;
+        case OP_GE:
+            return (operand >= m_value) ? shib_acl_true : shib_acl_false;
+        case OP_GT:
+            return (operand > m_value) ? shib_acl_true : shib_acl_false;
+    }
+    return shib_acl_false;
+}
+
 Operator::Operator(const string& name, const ptree& pt)
 {
     if (name == "NOT") {
@@ -330,8 +536,17 @@ Operator::Operator(const string& name, const ptree& pt)
         else if (child.first == RULE_REGEX_PROP_PATH) {
             m_operands.push_back(unique_ptr<AccessControl>(new RuleRegex(child.second)));
         }
-        else if (child.first != "<xmlattr>") {
+        else if (child.first == AND_PROP_PATH || child.first == OR_PROP_PATH || child.first == NOT_PROP_PATH) {
             m_operands.push_back(unique_ptr<AccessControl>(new Operator(child.first, child.second)));
+        }
+        else if (g_timeRules.find(child.first) != g_timeRules.end()) {
+            m_operands.push_back(unique_ptr<AccessControl>(new TimeRule(child.first, child.second)));
+        }
+        else if (child.first == "<xmlattr>") {
+            continue;
+        }
+        else {
+            throw ConfigurationException("Unrecognized child element in policy.");
         }
     }
 
@@ -385,9 +600,13 @@ unique_ptr<AccessControl> XMLAccessControl::processChild(const string& name, con
     else if (name == RULE_REGEX_PROP_PATH) {
         return unique_ptr<AccessControl>(new RuleRegex(pt));
     }
-    else {
+    else if (name == AND_PROP_PATH || name == OR_PROP_PATH || name == NOT_PROP_PATH) {
         return unique_ptr<AccessControl>(new Operator(name, pt));
     }
+    else if (g_timeRules.find(name) != g_timeRules.end()) {
+        return unique_ptr<AccessControl>(new TimeRule(name, pt));
+    }
+    throw ConfigurationException("Unrecognized child element in policy.");
 }
 
 pair<bool,ptree*> XMLAccessControl::load() noexcept

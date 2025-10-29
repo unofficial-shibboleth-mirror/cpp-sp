@@ -1,0 +1,5 @@
+<AccessControlProvider type="XML">
+	<AccessControl>
+		<TimeSinceAuthn>PT1H</TimeSinceAuthn>
+	</AccessControl>
+</AccessControlProvider>

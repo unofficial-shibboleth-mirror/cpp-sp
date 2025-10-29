@@ -114,8 +114,6 @@ libshibsp_la_SOURCES = \
 	handler/impl/TokenConsumer.cpp \
 	impl/AgentConfig.cpp \
 	impl/DefaultAgent.cpp \
-	impl/ChainingAccessControl.cpp \
-	impl/TimeAccessControl.cpp \
 	impl/XMLAccessControl.cpp \
 	impl/XMLRequestMapper.cpp \
 	io/impl/CookieManager.cpp \

@@ -263,9 +263,6 @@
     <ClCompile Include="..\..\shibsp\impl\AgentConfig.cpp">
       <Filter>Source Files\Impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\shibsp\impl\ChainingAccessControl.cpp">
-      <Filter>Source Files\Impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\shibsp\impl\XMLAccessControl.cpp">
       <Filter>Source Files\Impl</Filter>
     </ClCompile>
@@ -387,9 +384,6 @@
       <Filter>Source Files\Attribute</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\csprng\impl\csprng.cpp">
-      <Filter>Source Files\Impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\shibsp\impl\TimeAccessControl.cpp">
       <Filter>Source Files\Impl</Filter>
     </ClCompile>
   </ItemGroup>

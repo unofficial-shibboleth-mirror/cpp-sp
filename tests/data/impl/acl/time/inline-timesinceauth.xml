@@ -1,3 +1,0 @@
-<AccessControlProvider type="Time">
-	<TimeSinceAuthn>PT1H</TimeSinceAuthn>
-</AccessControlProvider>

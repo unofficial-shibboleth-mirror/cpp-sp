@@ -1,4 +1,0 @@
-<AccessControlProvider type="Time" operator="AND">
-	<Year>LT 3000</Year>
-</AccessControlProvider>
-
