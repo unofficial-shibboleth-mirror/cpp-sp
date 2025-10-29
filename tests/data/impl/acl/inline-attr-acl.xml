@@ -1,5 +1,3 @@
 <AccessControlProvider type="XML">
-	<AccessControl>
 		<Rule require="affiliation" list="true">member student</Rule>
-	</AccessControl>
 </AccessControlProvider>

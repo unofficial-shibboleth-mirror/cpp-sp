@@ -1,6 +1,4 @@
 <AccessControlProvider type="XML">
-        <AccessControl>
-                <Time>GT 2025-01-22T03:00:00Z</Time>
-        </AccessControl>
+        <Time>GT 2025-01-22T03:00:00Z</Time>
 </AccessControlProvider>
 

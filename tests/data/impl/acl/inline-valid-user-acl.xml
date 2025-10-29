@@ -1,5 +1,3 @@
 <AccessControlProvider type="XML">
-	<AccessControl>
 		<Rule require="valid-user" />
-	</AccessControl>
 </AccessControlProvider>

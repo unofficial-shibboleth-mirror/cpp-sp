@@ -127,10 +127,12 @@ pair<bool,ptree*> ReloadableXMLFile::load() noexcept
     try {
         if (m_source.empty()) {
             m_log.debug("loading inline configuration...");
-            // Data comes from the tree we were handed by locating a subtree of the expected name.
-            const boost::optional<const ptree&> child = m_root.get_child_optional(m_rootElementName);
-            if (!child) {
-                throw xml_parser_error("XML missing expected child element: " + m_rootElementName, "inline", 0);
+            // Optional enforcement of root element as a subtree.
+            if (!m_rootElementName.empty()) {
+                const boost::optional<const ptree&> child = m_root.get_child_optional(m_rootElementName);
+                if (!child) {
+                    throw xml_parser_error("XML missing expected child element: " + m_rootElementName, "inline", 0);
+                }
             }
             // The const_cast is safe because the flag is false,
             // preventing the caller from retaining ownership.
@@ -140,10 +142,12 @@ pair<bool,ptree*> ReloadableXMLFile::load() noexcept
         unique_ptr<ptree> newtree = unique_ptr<ptree>(new ptree());
         xml_parser::read_xml(m_source, *newtree, xml_parser::no_comments|xml_parser::trim_whitespace);
 
-        // Data comes from the tree we were handed by locating a subtree of the expected name.
-        const boost::optional<ptree&> child = newtree->get_child_optional(m_rootElementName);
-        if (!child) {
-            throw xml_parser_error("XML missing expected child element: " + m_rootElementName, m_source, 0);
+        // Optional enforcement of root element as a subtree.
+        if (!m_rootElementName.empty()) {
+            const boost::optional<ptree&> child = newtree->get_child_optional(m_rootElementName);
+            if (!child) {
+                throw xml_parser_error("XML missing expected child element: " + m_rootElementName, m_source, 0);
+            }
         }
 
         return make_pair(true, newtree.release());

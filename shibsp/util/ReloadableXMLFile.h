@@ -77,19 +77,22 @@ namespace shibsp {
          * 
          * <p>In the absence of a "path" key, the configuration is assumed to be
          * inline as the content of the supplied tree and the base class essentially
-         * performs no activity, stubs out locking, etc.</p>
+         * performs no activity, and stubs out locking, etc.</p>
          * 
-         * <p>Note that the root element name specified applies to the content of the
+         * <p>Note that the root element name (if non-empty) applies to the content of the
          * configuration itself and not the element that may be carrying the "path" key
          * specifying an external file (i.e., in that case it's the external content whose
          * root element would be expected to match).</p>
          * 
          * @param pt                    root of property tree defining resource
-         * @param rootElementName       name of expexcted root element of XML configuration
+         * @param rootElementName       name of expexcted root element of XML configuration or empty string
          * @param log                   logging object to use
          */
         ReloadableXMLFile(const std::string& rootElementName, boost::property_tree::ptree& pt, Category& log);
-    
+
+        /**
+         * Destructor.
+         */
         virtual ~ReloadableXMLFile();
 
         /**

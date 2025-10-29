@@ -1,6 +1,4 @@
-<AccessControl>
-	<OR>
-		<Rule require="user">jdoe</Rule>
-		<Rule require="affiliation">student</Rule>
-	</OR>
-</AccessControl>
+<OR>
+	<Rule require="user">jdoe</Rule>
+	<Rule require="affiliation">student</Rule>
+</OR>

@@ -1,6 +1,3 @@
 <AccessControlProvider type="XML">
-		<AccessControl>
-				<Year>LT 3000</Year>
-		</AccessControl>
+		<Year>LT 3000</Year>
 </AccessControlProvider>
-

@@ -1,5 +1,3 @@
 <AccessControlProvider type="XML">
-	<AccessControl>
 		<Rule require="user">jdoe</Rule>
-	</AccessControl>
 </AccessControlProvider>

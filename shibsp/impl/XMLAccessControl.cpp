@@ -153,8 +153,8 @@ namespace {
     class XMLAccessControl : public AccessControl, public ReloadableXMLFile
     {
     public:
-        XMLAccessControl(ptree& pt)
-            : ReloadableXMLFile(ACCESS_CONTROL_PROP_PATH, pt, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML")) {
+        // Does no enforcement of "root" of XML.
+        XMLAccessControl(ptree& pt) : ReloadableXMLFile("", pt, Category::getInstance(SHIBSP_LOGCAT ".AccessControl.XML")) {
             if (!load().second) {
                 throw ConfigurationException("Initial AccessControl configuration was invalid.");
             }
@@ -444,7 +444,7 @@ AccessControl::aclresult_t TimeRule::authorized(const SPRequest& request, const 
             else if (val.islong()) {
                 operand = val.longinteger();
             }
-            
+
             if (operand > 0) {
                 if (time(nullptr) - operand <= m_value) {
                     return shib_acl_true;
@@ -624,9 +624,9 @@ pair<bool,ptree*> XMLAccessControl::load() noexcept
         unique_ptr<AccessControl> authz;
 
         // We have to skip the <xmlattr> node if it appears.
-        // In the inline case, there should be a child element named
+        // In the inline case, there MAY be a child element named
         // AccessControl so we need to step down one level (and again
-        // skip the <xmlattr> node.
+        // skip the <xmlattr> node).
 
         for (const auto& child : *raw.second) {
             if (child.first == "<xmlattr>") {
