@@ -198,6 +198,9 @@ bool AbstractHTTPRemotingService::isRevocationCheck() const
 
 const char* AbstractHTTPRemotingService::getCAFile() const
 {
+    if (m_caFile.empty()) {
+        return nullptr;
+    }
     return m_caFile.c_str();
 }
 
