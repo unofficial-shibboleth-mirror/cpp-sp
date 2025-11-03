@@ -125,11 +125,10 @@ string CookieManager::computeCookieName(const SPRequest& request) const
     string cookieName(request.getRequestSettings().first->getString(m_overrideProperty.c_str(), m_defaultName.c_str()));
 
     // This is just a hex-encode to avoid a dependency on a hashing API.
-    string encode(request.getAgent().getID());
-    encode += request.getRequestSettings().first->getString(
+    string decoration = request.getRequestSettings().first->getString(
         RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT);
 
-    return cookieName + '_' + hex_encode(encode);
+    return cookieName + '_' + hex_encode(decoration);
 }
 
 void CookieManager::outputHeader(SPRequest& request, const char* value, int maxAge) const

@@ -38,30 +38,34 @@ using namespace shibsp;
 using namespace boost::property_tree;
 using namespace std;
 
-const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_NAME[] = "secretSourceType";
-const char AbstractHTTPRemotingService::BASE_URL_PROP_NAME[] = "baseURL";
-const char AbstractHTTPRemotingService::USER_AGENT_PROP_NAME[] = "userAgent";
-const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_NAME[] = "authMethod";
-const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_NAME[] = "authCachingCookie";
-const char AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_NAME[] = "connectTimeout";
-const char AbstractHTTPRemotingService::TIMEOUT_PROP_NAME[] = "timeout";
-const char AbstractHTTPRemotingService::CA_FILE_PROP_NAME[] = "tlsCAFile";
-const char AbstractHTTPRemotingService::REVOCATION_CHECK_PROP_NAME[] = "revocationCheck";
-
-const char AbstractHTTPRemotingService::SECRET_SOURCE_TYPE_PROP_DEFAULT[] = FILE_SECRET_SOURCE;
-const char AbstractHTTPRemotingService::BASE_URL_PROP_DEFAULT[] = "http://localhost:8080/idp/profile/sp/";
-const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "none";
-const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
-unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;
-unsigned int AbstractHTTPRemotingService::TIMEOUT_PROP_DEFAULT = 10;
-const bool AbstractHTTPRemotingService::REVOCATION_CHECK_DEFAULT = false;
-
 AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     : AbstractRemotingService(pt), m_authMethod(agent_auth_none)
 {
     BoostPropertySet props;
     props.load(pt);
 
+    static const char AGENT_ID_PROP_NAME[] = "agentID";
+    static const char SECRET_SOURCE_TYPE_PROP_NAME[] = "secretSourceType";
+    static const char BASE_URL_PROP_NAME[] = "baseURL";
+    static const char USER_AGENT_PROP_NAME[] = "userAgent";
+    static const char AUTH_METHOD_PROP_NAME[] = "authMethod";
+    static const char AUTH_CACHING_COOKIE_PROP_NAME[] = "authCachingCookie";
+    static const char CONNECT_TIMEOUT_PROP_NAME[] = "connectTimeout";
+    static const char TIMEOUT_PROP_NAME[] = "timeout";
+    static const char CA_FILE_PROP_NAME[] = "tlsCAFile";
+    static const char REVOCATION_CHECK_PROP_NAME[] = "revocationCheck";
+
+    static const char AGENT_ID_PROP_DEFAULT[] = "localhost";
+    static const char SECRET_SOURCE_TYPE_PROP_DEFAULT[] = FILE_SECRET_SOURCE;
+    static const char BASE_URL_PROP_DEFAULT[] = "http://localhost:8080/idp/profile/sp/";
+    static const char AUTH_METHOD_PROP_DEFAULT[] = "none";
+    static const char AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
+    static unsigned int CONNECT_TIMEOUT_PROP_DEFAULT = 3;
+    static unsigned int TIMEOUT_PROP_DEFAULT = 10;
+    static const bool REVOCATION_CHECK_DEFAULT = false;
+
+
+    m_agentID = props.getString(AGENT_ID_PROP_NAME, AGENT_ID_PROP_DEFAULT);    
     m_userAgent = props.getString(USER_AGENT_PROP_NAME, "");
     m_baseURL = props.getString(BASE_URL_PROP_NAME, BASE_URL_PROP_DEFAULT);
     if (m_baseURL.back() != '/') {

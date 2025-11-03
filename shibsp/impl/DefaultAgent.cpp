@@ -58,10 +58,6 @@ namespace {
 
         void init();
 
-        const char* getID() const {
-            return m_id.c_str();
-        }
-
         // Agent services.
 
         const RemotingService* getRemotingService(bool required = true) const {
@@ -113,7 +109,6 @@ namespace {
 
         ptree& m_pt;
         Category& m_log;
-        string m_id;
 
         // The order of these members actually matters. If we want to rely on auto-destruction, then
         // anything dependent on anything else has to come later in the object so it will pop first.
@@ -143,22 +138,16 @@ namespace shibsp {
 
 void DefaultAgent::init()
 {
-    static const char AGENT_ID_PROP_NAME[] = "agentID";
     static const char ALLOWED_SCHEMES_PROP_NAME[] = "allowedSchemes";
     static const char EXTRA_AUTH_TYPES_PROP_NAME[] = "extraAuthTypes";
 
     static const char AGENT_ID_PROP_DEFAULT[] = "localhost";
     static const char ALLOWED_SCHEMES_PROP_DEFAULT[] = "https http";
 
-        // First load "global" property tree as this PropertySet.
+    // First load "global" property tree as this PropertySet.
     const boost::optional<ptree&> global = m_pt.get_child_optional("global");
     if (global) {
         load(global.get());
-        m_id = getString(AGENT_ID_PROP_NAME, AGENT_ID_PROP_DEFAULT);
-    }
-
-    if (m_id.empty()) {
-        throw ConfigurationException(string("No ") + AGENT_ID_PROP_NAME + " property in [global] section of configuration.");
     }
 
     const char* prop = getString(ALLOWED_SCHEMES_PROP_NAME, ALLOWED_SCHEMES_PROP_DEFAULT);

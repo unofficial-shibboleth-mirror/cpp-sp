@@ -90,7 +90,7 @@ BOOST_FIXTURE_TEST_CASE(MemorySessionCache_tests, MemoryFixture)
 
     BOOST_CHECK(obj["session"].isnull());
     BOOST_CHECK_EQUAL(key.c_str(), child.name());
-    string cookieName("__Host-shibsession_73702e6578616d706c652e6f7267637573746f6d");
+    string cookieName("__Host-shibsession_637573746f6d");
     string header(cookieName);
     header = header + '=' + key + ".1"; 
     header += "; Path=/; Secure=1; HttpOnly=1; SameSite=None";
@@ -151,7 +151,7 @@ BOOST_FIXTURE_TEST_CASE(MemorySessionCache_testUpdate, MemoryFixture)
     BOOST_CHECK_EQUAL(key.c_str(), child.name());
 
     // Bind session to request with cookie.
-    string cookieName("__Host-shibsession_73702e6578616d706c652e6f7267637573746f6d");
+    string cookieName("__Host-shibsession_637573746f6d");
     string cookie(cookieName);
     cookie = cookie + '=' + key + ".1";
     request.m_requestHeaders["Cookie"] = cookie;

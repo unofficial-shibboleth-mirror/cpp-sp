@@ -202,7 +202,7 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
         setUserAgent(useragent.c_str());
     }
 
-    m_log.info("CurlHTTP RemotingService installed for agent (%s), baseURL (%s)", AgentConfig::getConfig().getAgent().getID(), getBaseURL());
+    m_log.info("CurlHTTP RemotingService installed for agent ID (%s), baseURL (%s)", getAgentID(), getBaseURL());
 
     m_traceFileBase = props.getString(TRACE_FILE_PROP_NAME, "");
     if (!m_traceFileBase.empty()) {
@@ -302,7 +302,7 @@ CURL* CurlHTTPRemotingService::checkout() const
     }
     SHIB_CURL_SET(CURLOPT_HTTPAUTH, flag);
     // Password will be acquired during call.
-    SHIB_CURL_SET(CURLOPT_USERNAME, AgentConfig::getConfig().getAgent().getID());
+    SHIB_CURL_SET(CURLOPT_USERNAME, getAgentID());
 
     attachCachedAuthentication(m_handle);
 

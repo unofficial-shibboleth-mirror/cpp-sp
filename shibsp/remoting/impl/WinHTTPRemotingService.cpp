@@ -241,7 +241,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
 
     m_chunked = props.getBool(CHUNKED_PROP_NAME, defaultChunking);
     //m_ciphers = props.getString(CIPHER_LIST_PROP_NAME, "");
-    m_username = utf8ToUtf16(AgentConfig::getConfig().getAgent().getID());
+    m_username = utf8ToUtf16(getAgentID());
     switch (getAuthMethod()) {
         case agent_auth_basic:  m_authScheme = WINHTTP_AUTH_SCHEME_BASIC; break;
         case agent_auth_digest: m_authScheme = WINHTTP_AUTH_SCHEME_DIGEST; break;
@@ -327,7 +327,7 @@ WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
         throw runtime_error("WinHHHTP failed to initialize: Could not connect");
     }
 
-    m_log.info("WinHTTP RemotingService installed for agent (%s), baseURL (%s)", AgentConfig::getConfig().getAgent().getID(), getBaseURL());
+    m_log.info("WinHTTP RemotingService installed for agent ID (%s), baseURL (%s)", getAgentID(), getBaseURL());
 }
 
 WinHTTPRemotingService::~WinHTTPRemotingService()

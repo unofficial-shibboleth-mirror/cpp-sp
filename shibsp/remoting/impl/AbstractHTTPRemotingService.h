@@ -60,6 +60,7 @@ namespace shibsp {
             agent_auth_tls
         };
 
+        const char* getAgentID() const;
         const SecretSource* getSecretSource(bool required=true) const;
 
         /**
@@ -81,31 +82,13 @@ namespace shibsp {
         bool isRevocationCheck() const;
         const char* getCAFile() const;
 
-        // Property names and defaults.
-        static const char SECRET_SOURCE_TYPE_PROP_NAME[];
-        static const char BASE_URL_PROP_NAME[];
-        static const char USER_AGENT_PROP_NAME[];
-        static const char AUTH_METHOD_PROP_NAME[];
-        static const char AUTH_CACHING_COOKIE_PROP_NAME[];
-        static const char CONNECT_TIMEOUT_PROP_NAME[];
-        static const char TIMEOUT_PROP_NAME[];
-        static const char CA_FILE_PROP_NAME[];
-        static const char REVOCATION_CHECK_PROP_NAME[];
-
-        static const char SECRET_SOURCE_TYPE_PROP_DEFAULT[];
-        static const char BASE_URL_PROP_DEFAULT[];
-        static const char AUTH_METHOD_PROP_DEFAULT[];
-        static const char AUTH_CACHING_COOKIE_PROP_DEFAULT[];
-        static unsigned int CONNECT_TIMEOUT_PROP_DEFAULT;
-        static unsigned int TIMEOUT_PROP_DEFAULT;
-        static const bool REVOCATION_CHECK_DEFAULT;
-
     protected:
         AbstractHTTPRemotingService(boost::property_tree::ptree& pt);
 
     private:
         auth_t getAuthMethod(const char* method);
 
+        std::string m_agentID;
         std::unique_ptr<SecretSource> m_secretSource;
         std::string m_baseURL;
         std::string m_userAgent;
