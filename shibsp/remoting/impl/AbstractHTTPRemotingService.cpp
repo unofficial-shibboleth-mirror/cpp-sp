@@ -30,6 +30,8 @@
 #include <sys/stat.h>
 
 #include <stdexcept>
+
+#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
@@ -92,6 +94,9 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
         } else if (stat_buf.st_size == 0) {
             throw ConfigurationException(string("CA file is empty: ") + m_caFile);
         }
+    }
+    else if (boost::starts_with(m_baseURL, "https://")) {
+        throw ConfigurationException("No tlsCAFile provided for https:// baseURL.");
     }
 
     m_authCachingCookie = props.getString(AUTH_CACHING_COOKIE_PROP_NAME, AUTH_CACHING_COOKIE_PROP_DEFAULT);
