@@ -98,7 +98,6 @@ namespace shibsp {
         static const char AUTH_CACHING_COOKIE_PROP_DEFAULT[];
         static unsigned int CONNECT_TIMEOUT_PROP_DEFAULT;
         static unsigned int TIMEOUT_PROP_DEFAULT;
-        static const char CA_FILE_PROP_DEFAULT[];
         static const bool REVOCATION_CHECK_DEFAULT;
 
     protected:

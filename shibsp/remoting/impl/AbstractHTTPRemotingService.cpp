@@ -52,7 +52,6 @@ const char AbstractHTTPRemotingService::AUTH_METHOD_PROP_DEFAULT[] = "none";
 const char AbstractHTTPRemotingService::AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
 unsigned int AbstractHTTPRemotingService::CONNECT_TIMEOUT_PROP_DEFAULT = 3;
 unsigned int AbstractHTTPRemotingService::TIMEOUT_PROP_DEFAULT = 10;
-const char AbstractHTTPRemotingService::CA_FILE_PROP_DEFAULT[] = "trustlist.pem";
 const bool AbstractHTTPRemotingService::REVOCATION_CHECK_DEFAULT = false;
 
 AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
@@ -79,7 +78,7 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     }
 
 
-    m_caFile = props.getString(CA_FILE_PROP_NAME, CA_FILE_PROP_DEFAULT);
+    m_caFile = props.getString(CA_FILE_PROP_NAME, "");
     if (!m_caFile.empty()) {
         AgentConfig::getConfig().getPathResolver().resolve(m_caFile, PathResolver::SHIBSP_CFG_FILE);
 #ifdef WIN32
