@@ -163,6 +163,12 @@ const char* AbstractHTTPRemotingService::getUserAgent() const
     return m_userAgent.c_str();
 }
 
+const char* AbstractHTTPRemotingService::getAgentID() const
+{
+    return m_agentID.c_str();
+}
+
+
 void AbstractHTTPRemotingService::setUserAgent(const char* ua)
 {
     m_userAgent = ua ? ua : "";
