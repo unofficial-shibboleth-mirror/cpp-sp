@@ -67,6 +67,28 @@ public:
     }
 };
 
+//
+// Log to the event log if there is a chance that Logging hasn't been initialized
+//
+static
+void
+ReportInitializationError(
+    const char* operation,
+    const char* additionalInfo = nullptr
+)
+{
+    string message(operation);
+
+    if (additionalInfo)
+        message += additionalInfo;
+    const char* msgs[2]{ "II7 Initialization" , message.c_str()};
+
+    const HANDLE eventSource = ::RegisterEventSourceA(NULL, SHIB_EVENT_SOURCE_NAME);
+    ::ReportEventA(eventSource, EVENTLOG_ERROR_TYPE, (WORD)SHIBSP_CATEGORY_CRIT, SHIBSP_LOG_CRIT, NULL, 2, 0, msgs, NULL);
+    ::DeregisterEventSource(eventSource);
+
+}
+
 extern "C"
 HRESULT
 __declspec(dllexport)
@@ -84,28 +106,27 @@ RegisterModule(
     }
 
     g_Config = &AgentConfig::getConfig();
-    if (!g_Config->init()) {
-        //
-        // There is a bootstrap issue so we will just log to the Event viewer
-        //
-        HANDLE eventSource = ::RegisterEventSourceA(NULL, SHIB_EVENT_SOURCE_NAME);
-        const char* msgs[2]{ "II7 Initialization" ,"IIS module failed during library initialization"};
-        ::ReportEventA(eventSource, EVENTLOG_ERROR_TYPE, (WORD)SHIBSP_CATEGORY_CRIT, SHIBSP_LOG_CRIT, NULL, 2, 0, msgs, NULL);
-        ::DeregisterEventSource(eventSource);
-        g_Config=nullptr;
-        return E_FAIL;
-    }
 
+    try {
+        if (!g_Config->init(nullptr, nullptr, true)) {
+            ReportInitializationError("IIS module failed during library initialization");
+            g_Config=nullptr;
+            return E_FAIL;
+        }
+    }
+    catch (const exception& ex) {
+
+            ReportInitializationError("IIS module failed during library initialization : ", ex.what());
+            g_Config = nullptr;
+            return E_FAIL;
+    }
 
     try {
         if (!g_Config->start())
             throw runtime_error("unknown error");
     }
     catch (const std::exception& ex) {
-        HANDLE eventSource = ::RegisterEventSourceA(NULL, SHIB_EVENT_SOURCE_NAME);
-        const char* msgs[3]{ "II7 Initialization" ,"IIS module failed during library initialization", ex.what() };
-        ::ReportEventA(eventSource, EVENTLOG_ERROR_TYPE, (WORD)SHIBSP_CATEGORY_CRIT, SHIBSP_LOG_CRIT, NULL, 3, 0, msgs, NULL);
-        ::DeregisterEventSource(eventSource);
+        ReportInitializationError("IIS module failed during library start : ", ex.what());
         g_Config->term();
         g_Config = nullptr;
         return E_FAIL;
