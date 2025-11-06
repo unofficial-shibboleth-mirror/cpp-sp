@@ -117,7 +117,8 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         request.limitRedirect(returnURL);
     }
     else {
-        returnURL = request.getRequestSettings().first->getString("homeURL", "/");
+        returnURL = request.getRequestSettings().first->getString(
+            RequestMapper::HOME_URL_PROP_NAME, RequestMapper::HOME_URL_PROP_DEFAULT);
     }
        
     unique_lock<Session> session;

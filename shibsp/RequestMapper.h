@@ -56,6 +56,7 @@ namespace shibsp {
         static const char COOKIE_MAXAGE_PROP_NAME[];
         static const char EXPIRE_REDIRECTS_PROP_NAME[];
         static const char HANDLER_CONFIG_ID_PROP_NAME[];
+        static const char HOME_URL_PROP_NAME[];
         static const char LIFETIME_PROP_NAME[];
         static const char PRESERVE_POST_DATA_PROP_NAME[];
         static const char POST_LIMIT_PROP_NAME[];
@@ -75,6 +76,7 @@ namespace shibsp {
         static const char ATTRIBUTE_VALUE_DELIMITER_PROP_DEFAULT[];
         static bool CONSISTENT_ADDRESS_PROP_DEFAULT;
         static bool EXPIRE_REDIRECTS_PROP_DEFAULT;
+        static const char HOME_URL_PROP_DEFAULT[];
         static unsigned int LIFETIME_PROP_DEFAULT;
         static bool PRESERVE_POST_DATA_PROP_DEFAULT;
         static unsigned int POST_LIMIT_PROP_DEFAULT;

@@ -90,7 +90,7 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
                 target = param.first->second;
             }
             else {
-                target = getString("homeURL", request, "/", HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
+                target = getString(RequestMapper::HOME_URL_PROP_NAME, request, RequestMapper::HOME_URL_PROP_DEFAULT, HANDLER_PROPERTY_MAP);
             }
             request.limitRedirect(target.c_str());
             return make_pair(true, request.sendRedirect(target.c_str()));
@@ -118,8 +118,8 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             target = s;
         }
         else if (!output.getmember("http.response.data").string()) {
-            // Shouldn't happen, but we can route ourselves to homeURL or /
-            target = getString("homeURL", request, "/", HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
+            // Shouldn't happen, but we can route ourselves to homeURL.
+            target = getString(RequestMapper::HOME_URL_PROP_NAME, request, RequestMapper::HOME_URL_PROP_DEFAULT, HANDLER_PROPERTY_MAP);
             output.addmember("http.redirect").unsafe_string(target.c_str());
         }
 
