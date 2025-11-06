@@ -31,7 +31,11 @@
 
 #include <algorithm>
 #include <memory>
-#include <mutex>
+#include <set>
+#ifdef HAVE_CXX14
+# include <shared_mutex>
+#endif
+#include <string>
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -57,13 +61,13 @@ namespace shibsp {
             try {
                 request.getAgent().getSessionCache()->remove(request);
             }
-            catch (const std::exception&) {
+            catch (const exception&) {
             }
         }
 
         string m_redirectOnFailure;
         bool m_flushSession;
-        vector<string> m_attributes;
+        set<string> m_attributes;
         unique_ptr<AccessControl> m_acl;
     };
 
@@ -80,16 +84,18 @@ namespace shibsp {
 AttributeCheckerHandler::AttributeCheckerHandler(ptree& pt) : AbstractHandler(pt)
 {
     m_redirectOnFailure = getString("redirectOnFailure", "");
-    if (m_redirectOnFailure.empty())
+    if (m_redirectOnFailure.empty()) {
         throw ConfigurationException("AttributeChecker missing required redirectOnFailure setting.");
+    }
 
     m_flushSession = getBool("flushSession", false);
 
     const char* attrs = getString("attributes", "");
     if (attrs) {
         split_to_container(m_attributes, attrs);
-        if (m_attributes.empty())
+        if (m_attributes.empty()) {
             throw ConfigurationException("AttributeChecker unable to parse attributes setting.");
+        }
     }
     else if (hasProperty("path")) {
         Category::getInstance(SHIBSP_LOGCAT ".Handler.AttributeChecker").debug("attempting installation of external AccessControl rule");
@@ -104,9 +110,8 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
 {
     // If the checking passes, we route to the return URL, target URL, or homeURL in that order.
     const char* returnURL = request.getParameter("return");
-    const char* target = request.getParameter("target");
     if (!returnURL) {
-        returnURL = target;
+        returnURL = request.getParameter("target");
     }
     if (returnURL) {
         request.limitRedirect(returnURL);
@@ -118,10 +123,11 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     unique_lock<Session> session;
     try {
         session = request.getSession();
-        if (!session)
+        if (!session) {
             request.warn("AttributeChecker found session unavailable immediately after creation");
+        }
     }
-    catch (const std::exception& ex) {
+    catch (const exception& ex) {
         request.warn(string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
     }
 
@@ -138,7 +144,10 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
             // If that fails, the check succeeds.
             checked = find_if(m_attributes.begin(), m_attributes.end(), absent) == m_attributes.end();
         }
-        else {
+        else if (m_acl) {
+#ifdef HAVE_CXX14
+            shared_lock<AccessControl> acllock(*m_acl);
+#endif
             checked = (m_acl && m_acl->authorized(request, session.mutex()) == AccessControl::shib_acl_true);
         }
     }
