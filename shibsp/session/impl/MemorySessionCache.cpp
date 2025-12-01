@@ -64,7 +64,7 @@ namespace {
             unsigned int timeout=0,
             const char* client_addr=nullptr
             );
-        bool cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data);
+        bool cache_update(SPRequest* request, const char* key, unsigned int version, DDF& sessionData);
         bool cache_touch(SPRequest* request, const char* key, unsigned int version=1, unsigned int timeout=0);
         void cache_remove(SPRequest* request, const char* key);
     
@@ -231,6 +231,31 @@ DDF MemorySessionCache::cache_read(
     return entry->second.first.copy();
 }
 
+bool MemorySessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& sessionData)
+{
+    lock_guard<mutex> locker(m_lock);
+
+    auto entry = m_storage.find(key);
+    if (entry == m_storage.end()) {
+        return false;
+    }
+
+    unsigned int oldver = entry->second.first.getmember("ver").integer();
+    if (oldver == 0) {
+        oldver = 1;
+    }
+
+    if (version != oldver) {
+        return false;
+    }
+
+    sessionData.addmember("ver").integer(++version);
+    entry->second.first.destroy();
+    entry->second.first = sessionData.copy();
+    entry->second.second = time(nullptr);
+    return true;
+}
+
 bool MemorySessionCache::cache_touch(SPRequest* request, const char* key, unsigned int version, unsigned int timeout)
 {
     lock_guard<mutex> locker(m_lock);
@@ -254,31 +279,6 @@ bool MemorySessionCache::cache_touch(SPRequest* request, const char* key, unsign
     }
 
     return false;
-}
-
-bool MemorySessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data)
-{
-    lock_guard<mutex> locker(m_lock);
-
-    auto entry = m_storage.find(key);
-    if (entry == m_storage.end()) {
-        return false;
-    }
-
-    unsigned int oldver = entry->second.first.getmember("ver").integer();
-    if (oldver == 0) {
-        oldver = 1;
-    }
-
-    if (version != oldver) {
-        return false;
-    }
-
-    data.addmember("ver").integer(++version);
-    entry->second.first.destroy();
-    entry->second.first = data.copy();
-    entry->second.second = time(nullptr);
-    return true;
 }
 
 void MemorySessionCache::cache_remove(SPRequest* request, const char* key)

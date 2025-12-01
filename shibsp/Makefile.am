@@ -136,6 +136,7 @@ libshibsp_la_SOURCES = \
 	session/impl/AbstractSessionCache.cpp \
 	session/impl/FilesystemSessionCache.cpp \
 	session/impl/MemorySessionCache.cpp \
+	session/impl/StorageServiceSessionCache.cpp \
 	util/BoostPropertySet.cpp \
 	util/CGIParser.cpp \
 	util/DirectoryWalker.cpp \

@@ -113,12 +113,12 @@ namespace shibsp {
          * @param agent request, if available
          * @param key session key/ID
          * @param version old session version
-         * @param data updated session data
+         * @param sessionData updated session data
          * 
          * @return true iff the session was updated to a version one greater than the input version,
          *      false to signal a version collision such that a newer version was added behind us
          */
-        virtual bool cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data)=0;
+        virtual bool cache_update(SPRequest* request, const char* key, unsigned int version, DDF& sessionData)=0;
 
         /**
          * Informs the storage medium that a session was used at the current point in time.
@@ -133,9 +133,7 @@ namespace shibsp {
          * 
          * @return true iff the session remains valid/available
          */
-        virtual bool cache_touch(
-            SPRequest* request, const char* key, unsigned int version=1, unsigned int timeout=0
-            )=0;
+        virtual bool cache_touch(SPRequest* request, const char* key, unsigned int version=1, unsigned int timeout=0)=0;
 
         /**
          * Delete a session record from the underlying storage medium.

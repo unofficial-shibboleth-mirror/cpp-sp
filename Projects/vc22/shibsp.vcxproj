@@ -175,6 +175,7 @@
     <ClCompile Include="..\..\shibsp\session\impl\AbstractSessionCache.cpp" />
     <ClCompile Include="..\..\shibsp\session\impl\FilesystemSessionCache.cpp" />
     <ClCompile Include="..\..\shibsp\session\impl\MemorySessionCache.cpp" />
+    <ClCompile Include="..\..\shibsp\session\impl\StorageServiceSessionCache.cpp" />
     <ClCompile Include="..\..\shibsp\util\BoostPropertySet.cpp" />
     <ClCompile Include="..\..\shibsp\util\CGIParser.cpp" />
     <ClCompile Include="..\..\shibsp\util\DirectoryWalker.cpp" />

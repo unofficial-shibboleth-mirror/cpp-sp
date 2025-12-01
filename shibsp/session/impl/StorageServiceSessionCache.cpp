@@ -89,49 +89,30 @@ StorageServiceSessionCache::~StorageServiceSessionCache()
 
 string StorageServiceSessionCache::cache_create(SPRequest* request, DDF& sessionData)
 {
-    DDF in("storage");
+    DDF in("session-cache");
     DDFJanitor injanitor(in);
-
-    ostringstream sink;
-    sink << sessionData;
-
+    DDF sessionCopy = sessionData.copy();
+    in.add(sessionCopy.name("session"));
     in.addmember("op").string("C");
-    in.addmember("context").string("sessions");
-    in.addmember("value").string(sink.str());
-    in.addmember("exp").longinteger(time(nullptr) + m_storageTimeout);
+    // setting needs to be forwarded to Hub to preserve last access time
+    in.addmember("storage_timeout").longinteger(m_storageTimeout);
 
-    // Extremely unlikely to collide but we try 3 times just in case.
-
-    int attempts = 0;
-    do {
-        string key = hex_encode(m_rng(string(16,0)));
-        in.addmember("key").string(key);
-
-        try {
-            DDF out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
-            out.destroy();
-            return key;
+    try {
+        DDF out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+        DDFJanitor outJanitor(out);
+        const char* key = out["key"].string();
+        if (!key || !*key) {
+            m_spilog.error("no session key returned from create operation");
+            throw OperationException("No session key returned from create operation.");
         }
-        catch (const OperationException& e) {
-            const char* event = e.getProperty(AgentException::EVENT_PROP_NAME);
-            if (!event || strcmp(event, "DuplicateRecord")) {
-                m_spilog.error("failure storing session via Hub: event (%s): %s",
-                    event ? event : "null", e.what());
-                throw;
-            }
-        }
-        catch (const exception& e) {
-            m_spilog.error("exception attempting to store session via hub: %s", e.what());
-            throw;
-        }
-
-    } while (++attempts < 3);
-
-    m_spilog.error("failed to store new session via Hub after 3 attempts to generate a unique key");
-    throw IOException("Exhausted attempts to generate a unique session key.");
+        return string(key);
+    }
+    catch (const exception& e) {
+        m_spilog.error("exception attempting to store session via Hub: %s", e.what());
+        throw;
+    }
 }
 
-/*
 DDF StorageServiceSessionCache::cache_read(
     SPRequest* request,
     const char* applicationId,
@@ -142,47 +123,67 @@ DDF StorageServiceSessionCache::cache_read(
     const char* client_addr
     )
 {
-    auto entry = m_storage.find(key);
-    if (entry == m_storage.end()) {
-        m_lock.unlock();
-        return DDF();
+    DDF in("session-cache");
+    DDFJanitor injanitor(in);
+
+    in.addmember("op").string("R");
+    // setting needs to be forwarded to Hub to recover last access time
+    in.addmember("storage_timeout").integer(m_storageTimeout);
+    in.addmember("key").string(key);
+
+    // Policy settings to enforce on Hub.
+    if (lifetime) {
+        in.addmember("lifetime").integer(lifetime);
+    }
+    if (timeout) {
+        in.addmember("timeout").integer(timeout);
     }
 
-    time_t now = time(nullptr);
-
-    if (timeout ) {
-        if (entry->second.second + timeout < now) {
-            if (m_spilog.isInfoEnabled()) {
-                string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(entry->second.second)));
-                m_spilog.info("session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
-            }
-            cache_remove(request, key);
+    DDF out;
+    try {
+        out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+    }
+    catch (const OperationException& e) {
+        // Check for policy events.
+        const char* event = e.getProperty(AgentException::EVENT_PROP_NAME);
+        if (event && !strcmp(event, "InvalidSession")) {
+            m_spilog.warn("stored session (%s) was invalid", key);
             return DDF();
         }
+        else if (event && !strcmp(event, "ExpiredSession")) {
+            m_spilog.warn("session (%s) expired due to lifetime or inactivity", key);
+            return DDF();
+        }
+        m_spilog.error("exception attempting to update session (%s) via Hub: %s", key, e.what());
+        throw;
+    }
+    catch (const exception& e) {
+        m_spilog.error("exception attempting to read session (%s) from Hub: %s", key, e.what());
+        throw;
     }
 
-    const char* appId = entry->second.first["app_id"].string();
+    DDFJanitor outjanitor(out);
+
+    DDF sessionData = out["session"];
+    if (sessionData.isnull()) {
+        return sessionData;
+    }
+
+    if (!isSessionDataValid(sessionData)) {
+        m_spilog.error("session data returned from Hub for (%s) was invalid", key);
+        throw IOException("Session data was invalid.");
+    }
+
+    // Check application. We know the member exists due to the previous check.
+    const char* appId = sessionData["app_id"].string();
     if (strcmp(applicationId, appId)) {
         m_spilog.warn("session (%s) issued for application (%s), accessed via application (%s)", key, appId, applicationId);
         return DDF();
     }
 
-    if (lifetime) {
-        time_t start = entry->second.first["ts"].longinteger();
-        if (start + lifetime < now) {
-            if (m_spilog.isInfoEnabled()) {
-                string created(date::format("%FT%TZ", chrono::system_clock::from_time_t(start)));
-                string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(start + lifetime)));
-                m_spilog.info("session (%s) has expired, created (%s), expired (%s)", key, created.c_str(), expired.c_str());
-            }
-            cache_remove(request, key);
-            return DDF();
-        }
-    }
-
     if (client_addr) {
         const char* family = getAddressFamily(client_addr);
-        const char* addr = entry->second.first[family].string();
+        const char* addr = sessionData[family].string();
         if (addr) {
             if (!isAddressMatch(client_addr, addr)) {
                 m_spilog.info("session (%s) use invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
@@ -193,86 +194,135 @@ DDF StorageServiceSessionCache::cache_read(
             // We have to rebind the session to a new address family, requiring an update to the session.
             m_spilog.info("attempting update of session (%s) to rebind to new address (%s)", key, client_addr);
 
-            // Fill in the new address and attempt the update.
-            entry->second.first.addmember(family).string(client_addr);
-            unsigned int oldver = entry->second.first.getmember("ver").integer();
-            entry->second.first.addmember("ver").integer(oldver == 0 ? 2 : oldver + 1);
+            // Fill in the new address and attempt the update. We can do this using the "existing" output
+            // because we have the object janitor'd and the cache_update copies the object internally.
+            sessionData.addmember(family).string(client_addr);
+            try {
+                if (!cache_update(request, key, version, sessionData)) {
+                    // This signals a version mismatch in which the original session we were asked to read
+                    // has already been updated by another thread or process. In this case, we recurse the
+                    // read attempt. This has to terminate eventually...right?
+
+                    // We bump the version once, under the assunption it shouldn't be likely that it's been
+                    // updated behind us more than once...
+                    return cache_read(request, applicationId, key, version + 1, lifetime, timeout, client_addr);
+                }
+            }
+            catch (const exception& ex) {
+                // This is an outright error attempting the update, so we just fail hard.
+                m_spilog.error("exception attempting to update session (%s): %s", key, ex.what());
+                throw;
+            }
         }
+    }    
+
+    // Otherwise return the detached session structure.
+    return sessionData.remove();
+}
+
+bool StorageServiceSessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& sessionData)
+{
+    DDF in("session-cache");
+    DDFJanitor injanitor(in);
+
+    DDF sessionCopy = sessionData.copy();
+    in.add(sessionCopy.name("session"));
+    in.addmember("op").string("U");
+    // setting needs to be forwarded to Hub to set last access time
+    in.addmember("storage_timeout").integer(m_storageTimeout);
+    in.addmember("key").string(key);
+    in.addmember("ver").integer(version);
+
+    DDF out;
+    try {
+        out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+    }
+    catch (const OperationException& e) {
+        // Check for VersionMismatch event.
+        const char* event = e.getProperty(AgentException::EVENT_PROP_NAME);
+        if (event && !strcmp(event, "VersionMismatch")) {
+            return false;
+        }
+        m_spilog.error("exception attempting to update session (%s) via Hub: %s", key, e.what());
+        throw;
+    }
+    catch (const exception& e) {
+        m_spilog.error("exception attempting to update session (%s) via Hub: %s", key, e.what());
+        throw;
     }
 
-    entry->second.second = now;
-    return entry->second.first.copy();
+    DDFJanitor outjanitor(out);
+
+    long newver = out["ver"].integer();
+    if (newver <= version) {
+        m_spilog.error("missing/unexpected version returned from Hub from update of session (%s)", key);
+        throw IOException("Missing/unexpected version returned from Hub from session update.");
+    }
+
+    // Ensure the new version is set accurately.
+    sessionData.addmember("ver").integer(newver);
+    return true;
 }
 
 bool StorageServiceSessionCache::cache_touch(SPRequest* request, const char* key, unsigned int version, unsigned int timeout)
 {
-    auto entry = m_storage.find(key);
-    if (entry != m_storage.end()) {
+    DDF in("session-cache");
+    DDFJanitor injanitor(in);
+    in.addmember("op").string("T");
+    in.addmember("key").string(key);
+    // setting needs to be forwarded to Hub to recover last access time
+    in.addmember("storage_timeout").integer(m_storageTimeout);
+    // Policy settings to enforce on Hub.
+    if (timeout) {
+        in.addmember("timeout").integer(timeout);
+    }
 
-        time_t now = time(nullptr);
-
-        if (timeout && entry->second.second + timeout < now) {
-            if (m_spilog.isInfoEnabled()) {
-                string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(entry->second.second)));
-                m_spilog.info("session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
-            }
-            m_storage.erase(entry);
+    DDF out;
+    try {
+        out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+    }
+    catch (const OperationException& e) {
+        // Check for policy events.
+        const char* event = e.getProperty(AgentException::EVENT_PROP_NAME);
+        if (event && !strcmp(event, "InvalidSession")) {
+            m_spilog.warn("stored session (%s) was invalid", key);
             return false;
         }
-
-        entry->second.second = now;
-        return true;
+        else if (event && !strcmp(event, "ExpiredSession")) {
+            m_spilog.warn("session (%s) expired due to lifetime or inactivity", key);
+            return false;
+        }
+        m_spilog.error("exception attempting to touch session (%s) via Hub: %s", key, e.what());
+        throw;
+    }
+    catch (const exception& e) {
+        m_spilog.error("exception attempting to touch session (%s) via Hub: %s", key, e.what());
+        throw;
     }
 
-    return false;
-}
+    DDFJanitor outjanitor(out);
 
-bool StorageServiceSessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data)
-{
-    auto entry = m_storage.find(key);
-    if (entry == m_storage.end()) {
+    if (out.getmember("ver").integer() < version) {
         return false;
     }
-
-    unsigned int oldver = entry->second.first.getmember("ver").integer();
-    if (oldver == 0) {
-        oldver = 1;
-    }
-
-    if (version != oldver) {
-        return false;
-    }
-
-    data.addmember("ver").integer(++version);
-    entry->second.first.destroy();
-    entry->second.first = data.copy();
-    entry->second.second = time(nullptr);
     return true;
 }
-*/
 
 void StorageServiceSessionCache::cache_remove(SPRequest* request, const char* key)
 {
-    DDF in("storage");
+    DDF in("session-cache");
     DDFJanitor injanitor(in);
 
     in.addmember("op").string("D");
-    in.addmember("context").string("sessions");
     in.addmember("key").string(key);
 
     try {
         DDF out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
         out.destroy();
-    }
-    catch (const OperationException& e) {
-        const char* event = e.getProperty(AgentException::EVENT_PROP_NAME);
-        m_spilog.error("failure deleting session via Hub: event (%s): %s", event ? event : "null", e.what());
-        throw;
+        m_spilog.debug("removed session from storage via Hub (%s)", key);
     }
     catch (const exception& e) {
         m_spilog.error("exception attempting to delete session via hub: %s", e.what());
         throw;
     }
-
-    m_spilog.debug("removed session from storage (%s)", key);
 }

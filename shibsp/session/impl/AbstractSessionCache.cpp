@@ -80,7 +80,7 @@ void SHIBSP_API shibsp::registerSessionCaches()
 {
     AgentConfig::getConfig().SessionCacheManager.registerFactory(FILESYSTEM_SESSION_CACHE, FilesystemSessionCacheFactory);
     AgentConfig::getConfig().SessionCacheManager.registerFactory(MEMORY_SESSION_CACHE, MemorySessionCacheFactory);
-    //AgentConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceSessionCacheFactory);
+    AgentConfig::getConfig().SessionCacheManager.registerFactory(STORAGESERVICE_SESSION_CACHE, StorageServiceSessionCacheFactory);
 }
 
 Session::Session()
@@ -112,6 +112,10 @@ bool AbstractSessionCache::isSessionDataValid(DDF& sessionData)
     // Must be a structure
     // Must have a non-empty string "app_id" member
     // Must have a positive longinteger "ts" member
+
+    if (sessionData.isstruct()) {
+        return false;
+    }
 
     const char* appId = sessionData["app_id"].string();
     if (!appId || !*appId) {

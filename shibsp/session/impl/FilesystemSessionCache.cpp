@@ -380,7 +380,7 @@ DDF FilesystemSessionCache::cache_read(
     return obj;
 }
 
-bool FilesystemSessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& data)
+bool FilesystemSessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& sessionData)
 {
     // The essence of this operation is to grab the "next" version by reserving a new session file under the
     // correct name for the new version.
@@ -430,8 +430,8 @@ bool FilesystemSessionCache::cache_update(SPRequest* request, const char* key, u
     }
 
     // Ensure the new version is set accurately.
-    data.addmember("ver").integer(version);
-    os << data;
+    sessionData.addmember("ver").integer(version);
+    os << sessionData;
     if (os) {
         m_spilog.debug("stored new version of session to file (%s)", path.c_str());
         return true;
@@ -508,7 +508,7 @@ void FilesystemSessionCache::cache_remove(SPRequest* request, const char* key)
             }
         }
         else {
-            m_spilog.debug("removed session file for (%s), version (%u)", key, version);
+            m_spilog.debug("removed file for session (%s), version (%u)", key, version);
         }
     }
 }
