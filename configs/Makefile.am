@@ -2,7 +2,6 @@ AUTOMAKE_OPTIONS = foreign
 
 pkglibdir = ${libdir}/@PACKAGE_NAME@
 pkgwebdir = $(datadir)/@PACKAGE_NAME@
-pkgrundir = $(localstatedir)/run/@PACKAGE_NAME@
 pkgcachedir = $(localstatedir)/cache/@PACKAGE_NAME@
 pkgsysconfdir = $(sysconfdir)/@PACKAGE_NAME@
 pkgsysconf_DATA = \
@@ -29,7 +28,6 @@ do-build-file:
 		-e 's:@-PKGLIBDIR-@:${pkglibdir}:g' \
 		-e 's:@-PKGSYSCONFDIR-@:${pkgsysconfdir}:g' \
 		-e 's:@-PKGWEBDIR-@:${pkgwebdir}:g' \
-		-e 's:@-PKGRUNDIR-@:${pkgrundir}:g' \
 		-e 's:@-PKGCACHEDIR-@:${pkgcachedir}:g'
 	cmp -s ${FILE} ${FILE}.tmp || mv ${FILE}.tmp ${FILE}
 	rm -f ${FILE}.tmp
@@ -40,7 +38,6 @@ apache24.config: ${srcdir}/apache24.config.in Makefile ${top_builddir}/config.st
 all-data-local: $(BUILTCONFIGFILES)
 
 install-data-local:	all-data-local
-	$(mkinstalldirs) $(DESTDIR)$(pkgrundir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgcachedir)
 	$(mkinstalldirs) $(DESTDIR)$(pkgcachedir)/sessions
 	$(mkinstalldirs) $(DESTDIR)$(pkgsysconfdir)
