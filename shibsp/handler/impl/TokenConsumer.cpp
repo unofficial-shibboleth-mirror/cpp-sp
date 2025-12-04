@@ -124,8 +124,12 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         }
 
         // If target is still empty, then this is a POST recovery attempt with the reesource
-        // buried in the form action.
-        
+        // buried in the form action. Assuming it's non-empty, we must sanitize it.
+        // TODO: we have to have some way to sanitize it anyway...
+        if (!target.empty()) {
+            request.limitRedirect(target.c_str());
+            request.absolutize(target);
+        }
 
         SessionCache* cache = request.getAgent().getSessionCache();
         DDF sessionData = output["session"];
