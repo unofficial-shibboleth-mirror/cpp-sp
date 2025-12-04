@@ -74,7 +74,7 @@ long Agent::handleError(Category& log, SPRequest& request, const Session* sessio
 
     AgentException* richEx = dynamic_cast<AgentException*>(ex);
 
-    if (ex) {
+    if (richEx) {
         // Populate target if needed.
         if (!richEx->getProperty("target")) {
             richEx->addProperty("target", request.getRequestURL());
