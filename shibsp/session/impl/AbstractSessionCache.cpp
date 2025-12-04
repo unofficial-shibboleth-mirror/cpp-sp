@@ -113,7 +113,7 @@ bool AbstractSessionCache::isSessionDataValid(DDF& sessionData)
     // Must have a non-empty string "app_id" member
     // Must have a positive longinteger "ts" member
 
-    if (sessionData.isstruct()) {
+    if (!sessionData.isstruct()) {
         return false;
     }
 
