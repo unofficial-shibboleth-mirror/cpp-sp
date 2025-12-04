@@ -73,19 +73,15 @@ long Agent::handleError(Category& log, SPRequest& request, const Session* sessio
     const char* redirectErrors = nullptr;
 
     AgentException* richEx = dynamic_cast<AgentException*>(ex);
-
     if (richEx) {
         // Populate target if needed.
         if (!richEx->getProperty("target")) {
             richEx->addProperty("target", request.getRequestURL());
         }
-
-        if (richEx) {
-            richEx->log(request);
-        }
-        else {
-            request.error(ex->what());
-        }
+        richEx->log(request);
+    }
+    else if (ex) {
+        request.error(ex->what());
     }
 
     // Now look for settings in the request map.
