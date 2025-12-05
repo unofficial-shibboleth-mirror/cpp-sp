@@ -82,9 +82,16 @@ namespace {
     };
 };
 
+// Logging Macros
+#define DEBUG_MARK request, m_spilog, Priority::SHIB_DEBUG
+#define INFO_MARK request, m_spilog, Priority::SHIB_INFO
+#define WARN_MARK request, m_spilog, Priority::SHIB_WARN
+#define ERROR_MARK request, m_spilog, Priority::SHIB_ERROR
+#define CRIT_MARK request, m_spilog, Priority::SHIB_CRIT
+
 static const char MEMORY_CLEANUP_INTERVAL_PROP_NAME[] = "memoryCleanupInterval";
 static unsigned int MEMORY_CLEANUP_INTERVAL_PROP_DEFAULT = 1800;
-    
+
 namespace shibsp {
     SessionCache* SHIBSP_DLLLOCAL MemorySessionCacheFactory(ptree& pt, bool deprecationSupport) {
         return new MemorySessionCache(pt);
@@ -150,7 +157,7 @@ string MemorySessionCache::cache_create(SPRequest* request, DDF& sessionData)
         }
     } while (++attempts < 3);
 
-    m_spilog.error("failed to write new session after 3 attempts to generate a unique key");
+    log(ERROR_MARK, "failed to write new session after 3 attempts to generate a unique key");
     throw IOException("Exhausted attempts to generate a unique session key.");
 }
 
@@ -178,7 +185,7 @@ DDF MemorySessionCache::cache_read(
         if (entry->second.second + timeout < now) {
             if (m_spilog.isInfoEnabled()) {
                 string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(entry->second.second)));
-                m_spilog.info("session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
+                log(INFO_MARK, "session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
             }
             m_lock.unlock();
             cache_remove(request, key);
@@ -188,7 +195,7 @@ DDF MemorySessionCache::cache_read(
 
     const char* appId = entry->second.first["app_id"].string();
     if (strcmp(applicationId, appId)) {
-        m_spilog.warn("session (%s) issued for application (%s), accessed via application (%s)", key, appId, applicationId);
+        log(WARN_MARK, "session (%s) issued for application (%s), accessed via application (%s)", key, appId, applicationId);
         return DDF();
     }
 
@@ -198,7 +205,7 @@ DDF MemorySessionCache::cache_read(
             if (m_spilog.isInfoEnabled()) {
                 string created(date::format("%FT%TZ", chrono::system_clock::from_time_t(start)));
                 string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(start + lifetime)));
-                m_spilog.info("session (%s) has expired, created (%s), expired (%s)", key, created.c_str(), expired.c_str());
+                log(INFO_MARK, "session (%s) has expired, created (%s), expired (%s)", key, created.c_str(), expired.c_str());
             }
             m_lock.unlock();
             cache_remove(request, key);
@@ -211,14 +218,14 @@ DDF MemorySessionCache::cache_read(
         const char* addr = entry->second.first[family].string();
         if (addr) {
             if (!isAddressMatch(client_addr, addr)) {
-                m_spilog.info("session (%s) use invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
+                log(INFO_MARK, "session (%s) use invalid, bound to address (%s), accessed from (%s)", key, addr, client_addr);
                 m_lock.unlock();
                 return DDF();
             }
         }
         else {
             // We have to rebind the session to a new address family, requiring an update to the session.
-            m_spilog.info("attempting update of session (%s) to rebind to new address (%s)", key, client_addr);
+            log(INFO_MARK, "attempting update of session (%s) to rebind to new address (%s)", key, client_addr);
 
             // Fill in the new address and attempt the update.
             entry->second.first.addmember(family).string(client_addr);
@@ -268,7 +275,7 @@ bool MemorySessionCache::cache_touch(SPRequest* request, const char* key, unsign
         if (timeout && entry->second.second + timeout < now) {
             if (m_spilog.isInfoEnabled()) {
                 string ts(date::format("%FT%TZ", chrono::system_clock::from_time_t(entry->second.second)));
-                m_spilog.info("session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
+                log(INFO_MARK, "session (%s) expired for inactivity, timeout (%lu), last access (%s)", key, timeout, ts.c_str());
             }
             m_storage.erase(entry);
             return false;
