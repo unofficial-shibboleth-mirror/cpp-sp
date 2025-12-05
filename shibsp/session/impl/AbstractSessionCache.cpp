@@ -318,7 +318,7 @@ void AbstractSessionCache::log(const SPRequest* request, Category& log, Priority
         request->log(level, formatString, va);
     }
     else {
-        log.log(level, formatString, va);
+        log.logva(level, formatString, va);
     }
     va_end(va);
 }
