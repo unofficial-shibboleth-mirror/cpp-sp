@@ -327,18 +327,8 @@ public:
   string getLocalAddr() const {
     return m_req->connection->local_ip;
   }
-  void log(Priority::Value level, const string& msg) const {
-    AbstractSPRequest::log(level,msg);
-    ap_log_rerror(
-        APLOG_MARK,
-        (level == Priority::SHIB_DEBUG ? APLOG_DEBUG :
-        (level == Priority::SHIB_INFO ? APLOG_INFO :
-        (level == Priority::SHIB_WARN ? APLOG_WARNING :
-        (level == Priority::SHIB_ERROR ? APLOG_ERR : APLOG_CRIT))))|APLOG_NOERRNO,
-        0, m_req,
-        "%s",
-        msg.c_str()
-        );
+  const char* getLogContext() {
+    return m_req->log_id;
   }
   const char* getQueryString() const { return m_req->args; }
   const char* getRequestBody() const {
@@ -826,7 +816,7 @@ AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, 
                     regexp::regex_match(sta.getRemoteUser(), re, match_flags);
             }
             catch (const regexp::regex_error& e) {
-                sta.error(string("htaccess plugin caught exception while parsing regular expression (") + w + "): " + e.what());
+                sta.error("htaccess plugin caught exception while parsing regular expression (%s): %s", w, e.what());
             }
         }
         else if (sta.getRemoteUser() == w) {
@@ -834,9 +824,7 @@ AccessControl::aclresult_t htAccessControl::doUser(const ShibTargetApache& sta, 
         }
 
         if (match) {
-            if (sta.isPriorityEnabled(Priority::SHIB_DEBUG)) {
-                sta.debug(string("htaccess: require user ") + (negated ? "rejecting (" : "accepting (") + sta.getRemoteUser() + ")");
-            }
+            sta.debug("htaccess: require user %s '%s'", negated ? "rejecting" : "accepting", sta.getRemoteUser().c_str());
             return (negated ? shib_acl_false : shib_acl_true);
         }
     }
@@ -862,22 +850,20 @@ bool htAccessControl::checkAttribute(
             regexp::regex exp(toMatch, flags);
             if (attrConfig.hasMatchingValue(session, attributeID, exp)) {
                 if (request.isPriorityEnabled(Priority::SHIB_DEBUG)) {
-                    request.debug(string("htaccess: attribute (") + attributeID + ") matched regexp: " + toMatch);
+                    request.debug("htaccess: attribute (%s) matched regexp: %s", attributeID, toMatch);
                 }
                 return true;
             }
         } catch (const regexp::regex_error& e) {
-            request.error(string("htaccess plugin caught exception while parsing regular expression (") + toMatch + "): " + e.what());
+            request.error("htaccess plugin caught exception while parsing regular expression (%s): %s", toMatch, e.what());
         }
     }
     else if (attrConfig.hasMatchingValue(session, attributeID, toMatch)) {
-        if (request.isPriorityEnabled(Priority::SHIB_DEBUG)) {
-            request.debug(string("htaccess: attribute (") + attributeID + ") matched " + toMatch);
-        }
+        request.debug("htaccess: attribute (%s) matched %s", attributeID, toMatch);
         return true;
     }
-    else if (request.isPriorityEnabled(Priority::SHIB_DEBUG)) {
-        request.debug(string("htaccess: attribute (") + attributeID + ") did not match " + toMatch);
+    else {
+        request.debug("htaccess: attribute (%s) did not match %s", attributeID, toMatch);
     }
     return false;
 }
@@ -1083,7 +1069,7 @@ extern "C" authz_status shib_session_check_authz(request_rec* r, const char*, co
         }
     }
     catch (std::exception& e) {
-        sta.first->warn(string("htaccess: unable to obtain session for access control check: ") +  e.what());
+        sta.first->warn("htaccess: unable to obtain session for access control check: %s", e.what());
     }
 
     sta.first->debug("htaccess: denying shib-access/valid-user rule, no active session");
@@ -1181,7 +1167,7 @@ extern "C" authz_status shib_acclass_check_authz(request_rec* r, const char* req
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
-        sta.first->warn(string("htaccess: unable to obtain session for access control check: ") +  e.what());
+        sta.first->warn("htaccess: unable to obtain session for access control check: %s", e.what());
     }
 
     return AUTHZ_GENERAL_ERROR;
@@ -1205,7 +1191,7 @@ extern "C" authz_status shib_attr_check_authz(request_rec* r, const char* requir
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
-        sta.first->warn(string("htaccess: unable to obtain session for access control check: ") +  e.what());
+        sta.first->warn("htaccess: unable to obtain session for access control check: %s", e.what());
     }
 
     return AUTHZ_GENERAL_ERROR;
@@ -1229,7 +1215,7 @@ extern "C" authz_status shib_plugin_check_authz(request_rec* r, const char* requ
         return session ? AUTHZ_DENIED : AUTHZ_DENIED_NO_USER;
     }
     catch (std::exception& e) {
-        sta.first->warn(string("htaccess: unable to obtain session for access control check: ") +  e.what());
+        sta.first->warn("htaccess: unable to obtain session for access control check: %s", e.what());
     }
 
     return AUTHZ_GENERAL_ERROR;

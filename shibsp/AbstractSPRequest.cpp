@@ -24,6 +24,7 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "logging/Category.h"
+#include "logging/impl/StringUtil.h"
 #include "session/SessionCache.h"
 #include "util/CGIParser.h"
 #include "util/Misc.h"
@@ -437,9 +438,35 @@ void AbstractSPRequest::setAuthType(const char* authtype)
 
 }
 
+const char* AbstractSPRequest::getLogContext() const{
+    return nullptr;
+}
+
 void AbstractSPRequest::log(Priority::Value level, const std::string& msg) const
 {
-    m_log.log(level, msg);
+    if (isPriorityEnabled(level)) {
+        const char* ctx = getLogContext();
+        if (ctx) {
+            m_log.log(level, "%s %s", ctx, msg.c_str());
+        }
+        else {
+            m_log.log(level, msg);
+        }
+    }
+}
+
+void AbstractSPRequest::log(Priority::Value level, const char* formatString, va_list args) const
+{
+    if (isPriorityEnabled(level)) {
+        const char* ctx = getLogContext();
+        if (ctx) {
+            string msg = StringUtil::vform(formatString, args);
+            m_log.log(level, "%s %s", ctx, msg.c_str());
+        }
+        else {
+            m_log.log(level, formatString, args);
+        }
+    }
 }
 
 bool AbstractSPRequest::isPriorityEnabled(Priority::Value level) const
@@ -470,6 +497,56 @@ void SPRequest::error(const string& msg) const
 void SPRequest::crit(const string& msg) const
 {
     log(Priority::SHIB_CRIT, msg);
+}
+
+void SPRequest::debug(const char* formatString, ...) const
+{
+    if (isPriorityEnabled(Priority::SHIB_DEBUG)) {
+        va_list va;
+        va_start(va, formatString);
+        log(Priority::SHIB_DEBUG, formatString, va);
+        va_end(va);
+    }
+}
+
+void SPRequest::info(const char* formatString, ...) const
+{
+    if (isPriorityEnabled(Priority::SHIB_INFO)) {
+        va_list va;
+        va_start(va, formatString);
+        log(Priority::SHIB_INFO, formatString, va);
+        va_end(va);
+    }
+}
+
+void SPRequest::warn(const char* formatString, ...) const
+{
+    if (isPriorityEnabled(Priority::SHIB_WARN)) {
+        va_list va;
+        va_start(va, formatString);
+        log(Priority::SHIB_WARN, formatString, va);
+        va_end(va);
+    }
+}
+
+void SPRequest::error(const char* formatString, ...) const
+{
+    if (isPriorityEnabled(Priority::SHIB_ERROR)) {
+        va_list va;
+        va_start(va, formatString);
+        log(Priority::SHIB_ERROR, formatString, va);
+        va_end(va);
+    }
+}
+
+void SPRequest::crit(const char* formatString, ...) const
+{
+    if (isPriorityEnabled(Priority::SHIB_CRIT)) {
+        va_list va;
+        va_start(va, formatString);
+        log(Priority::SHIB_CRIT, formatString, va);
+        va_end(va);
+    }
 }
 
 string AbstractSPRequest::getCGINameForHeader(const char* name) const

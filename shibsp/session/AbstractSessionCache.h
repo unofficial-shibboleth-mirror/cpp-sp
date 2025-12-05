@@ -148,7 +148,7 @@ namespace shibsp {
              * 
              * @return logging object
              */
-            Category& log() const;
+            Category& logger() const;
 
             /**
              * Access the shutdown state.
@@ -166,8 +166,6 @@ namespace shibsp {
              * @return true iff the data is valid
              */
             static bool isSessionDataValid(DDF& sessionData);
-
-        protected:
             /**
              * Compares two addresses, allowing for the unreliableNetworks fuzzy match option.
              * 
@@ -195,12 +193,21 @@ namespace shibsp {
              */
             static void computeVersionedFilename(std::string& path, unsigned int version);
 
+            /**
+             * Conditionally logs to request API or directly depending on existence of request.
+             * 
+             * @param request request if available
+             * @param log fallback logger
+             * @param level logging level
+             * @param formatString format string
+             */
+            static void log(const SPRequest* request, Category& log, Priority::Value level, const char* formatString, ...);
         private:
             // Split session key and version from cookie values.
             static std::pair<std::string,unsigned int> parseCookieValue(const char* value);
 
             static void* cleanup_fn(void*);
-            void dormant(const std::string& key);
+            void dormant(const SPRequest* request, const std::string& key);
             // Wrapper for finding sessions via varied inputs.
             std::unique_lock<Session> _find(
                 SPRequest* request,

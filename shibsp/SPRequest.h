@@ -26,6 +26,7 @@
 #include <shibsp/io/HTTPResponse.h>
 #include <shibsp/logging/Priority.h>
 
+#include <cstdarg>
 #include <mutex>
 
 namespace shibsp {
@@ -172,11 +173,26 @@ namespace shibsp {
          */
         virtual void log(Priority::Value level, const std::string& msg) const=0;
 
+        /**
+         * Log to native server environment using a formatting string and variable arguments.
+         *
+         * @param level logging level
+         * @param formatString formatting string
+         * @param args message arguments
+         */
+        virtual void log(Priority::Value level, const char* formatString, va_list args) const=0;
+
         void debug(const std::string& msg) const;
         void info(const std::string& msg) const;
         void warn(const std::string& msg) const;
         void error(const std::string& msg) const;
         void crit(const std::string& msg) const;
+
+        void debug(const char* formatString, ...) const;
+        void info(const char* formatString, ...) const;
+        void warn(const char* formatString, ...) const;
+        void error(const char* formatString, ...) const;
+        void crit(const char* formatString, ...) const;
 
         /**
          * Test logging level.

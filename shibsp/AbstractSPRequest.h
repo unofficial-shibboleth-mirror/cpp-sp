@@ -79,6 +79,7 @@ namespace shibsp {
         std::string getSecureHeader(const char* name) const;
         void setAuthType(const char* authtype);
         void log(Priority::Value level, const std::string& msg) const;
+        void log(Priority::Value level, const char* formatString, va_list args) const;
         bool isPriorityEnabled(Priority::Value level) const;
 
     protected:
@@ -89,6 +90,12 @@ namespace shibsp {
          * @return CGI name for input header name
          */ 
         std::string getCGINameForHeader(const char* name) const;
+
+        /**
+         * Optionally overrideable method to return logging context information to prefix
+         * to request-specific logging.
+         */
+        virtual const char* getLogContext() const;
 
     private:
         Category& m_log;
