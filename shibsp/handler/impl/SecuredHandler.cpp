@@ -70,7 +70,7 @@ pair<bool,long> SecuredHandler::run(SPRequest& request, bool isHandler) const
         };
 
         if (find_if(m_acl.begin(), m_acl.end(), contains) == m_acl.end()) {
-            request.log(Priority::SHIB_WARN, string("handler request blocked from invalid address (") + request.getRemoteAddr() + ')');
+            request.warn("handler request blocked from invalid address (%s)", request.getRemoteAddr().c_str());
             istringstream msg("Access Denied");
             return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN));
         }

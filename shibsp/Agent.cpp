@@ -67,7 +67,7 @@ Agent::~Agent()
 {
 }
 
-long Agent::handleError(Category& log, SPRequest& request, const Session* session, exception* ex, bool mayRedirect) const
+long Agent::handleError(SPRequest& request, const Session* session, exception* ex, bool mayRedirect) const
 {
     bool externalParameters = false;
     const char* redirectErrors = nullptr;
@@ -118,8 +118,6 @@ long Agent::handleError(Category& log, SPRequest& request, const Session* sessio
 
 pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
-
     string targetURL = request.getRequestURL();
 
     try {
@@ -140,7 +138,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
                 }
                 else {
                     AgentException ex("Access via unencrypted HTTP was blocked.");
-                    return make_pair(true, handleError(log, request, nullptr, &ex, false));
+                    return make_pair(true, handleError(request, nullptr, &ex, false));
                 }
             }
         }
@@ -186,7 +184,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
             // Lock will release here.
         }
         catch (const exception& e) {
-            log.warn("error during session lookup: %s", e.what());
+            request.warn("error during session lookup: %s", e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
             if (dynamic_cast<const SessionValidationException*>(&e) == nullptr) {
                 throw;
@@ -242,18 +240,16 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
-        log.debug("doAuthentication succeeded");
+        request.debug("doAuthentication succeeded");
         return make_pair(false,0L);
     }
     catch (exception& e) {
-        return make_pair(true, handleError(log, request, nullptr, &e));
+        return make_pair(true, handleError(request, nullptr, &e));
     }
 }
 
 pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
-
     unique_lock<Session> session;
     string targetURL = request.getRequestURL();
 
@@ -279,7 +275,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
                 session = request.getSession(false, false);  // ignore timeout and do not cache
             }
             catch (const exception& e) {
-                log.warn("unable to obtain session to pass to access control provider: %s", e.what());
+                request.warn("unable to obtain session to pass to access control provider: %s", e.what());
             }
 
 #ifdef HAVE_CXX14
@@ -287,15 +283,15 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 #endif
             switch (settings.second->authorized(request, session.mutex())) {
                 case AccessControl::shib_acl_true:
-                    log.debug("access control provider granted access");
+                    request.debug("access control provider granted access");
                     return make_pair(true, request.returnOK());
 
                 case AccessControl::shib_acl_false:
                 {
-                    log.warn("access control provider denied access");
+                    request.warn("access control provider denied access");
                     AgentException ex("Access to resource denied.");
                     ex.setStatusCode(HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN);
-                    return make_pair(true, handleError(log, request, session.mutex(), &ex, false));
+                    return make_pair(true, handleError(request, session.mutex(), &ex, false));
                 }
 
                 default:
@@ -308,14 +304,12 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
         }
     }
     catch (exception& e) {
-        return make_pair(true, handleError(log, request, nullptr, &e));
+        return make_pair(true, handleError(request, nullptr, &e));
     }
 }
 
 pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
-
     unique_lock<Session> session;
     string targetURL = request.getRequestURL();
 
@@ -326,7 +320,7 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
             session = request.getSession(false, false);  // ignore timeout and do not cache
         }
         catch (const exception& e) {
-            log.warn("unable to obtain session to export to request: %s", e.what());
+            request.warn("unable to obtain session to export to request: %s", e.what());
         	// If we have to have a session, then this is a fatal error.
         	if (requireSession) {
         		throw;
@@ -361,14 +355,12 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
         return make_pair(false,0L);
     }
     catch (exception& e) {
-        return make_pair(true, handleError(log, request, session.mutex(), &e));
+        return make_pair(true, handleError(request, session.mutex(), &e));
     }
 }
 
 pair<bool,long> Agent::doHandler(SPRequest& request) const
 {
-    Category& log = Category::getInstance(SHIBSP_LOGCAT ".Agent");
-
     const char* targetURL = request.getRequestURL();
 
     try {
@@ -427,6 +419,6 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
         }
         catch (const exception&) {
         }
-        return make_pair(true, handleError(log, request, session.mutex(), &e));
+        return make_pair(true, handleError(request, session.mutex(), &e));
     }
 }

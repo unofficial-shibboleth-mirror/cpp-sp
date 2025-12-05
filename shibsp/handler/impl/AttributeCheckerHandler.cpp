@@ -129,7 +129,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
         }
     }
     catch (const exception& ex) {
-        request.warn(string("AttributeChecker caught exception accessing session immediately after creation: ") + ex.what());
+        request.warn("AttributeChecker caught exception accessing session immediately after creation: %s", ex.what());
     }
 
     bool checked = false;

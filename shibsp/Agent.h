@@ -183,7 +183,6 @@ namespace shibsp {
 
     private:
         long handleError(
-            Category& log,
             SPRequest& request,
             const Session* session=nullptr,
             std::exception* ex=nullptr,

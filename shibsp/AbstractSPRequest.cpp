@@ -373,7 +373,7 @@ void AbstractSPRequest::limitRedirect(const char* url) const
             redirectLimit = REDIRECT_LIMIT_ALLOW;
         }
         else {
-            m_log.error("unrecognized redirectLimit setting (%s), falling back to 'exact' ", prop);
+            error("unrecognized redirectLimit setting (%s), falling back to 'exact' ", prop);
         }
         prop = getRequestSettings().first->getString("redirectAllow");
         if (prop) {
@@ -423,7 +423,7 @@ void AbstractSPRequest::limitRedirect(const char* url) const
             }
         }
 
-        m_log.warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
+        warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
         throw AgentException("Blocked unacceptable redirect location.");
     }
 }
