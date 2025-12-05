@@ -464,7 +464,7 @@ void AbstractSPRequest::log(Priority::Value level, const char* formatString, va_
             m_log.log(level, "%s %s", ctx, msg.c_str());
         }
         else {
-            m_log.log(level, formatString, args);
+            m_log.logva(level, formatString, args);
         }
     }
 }
