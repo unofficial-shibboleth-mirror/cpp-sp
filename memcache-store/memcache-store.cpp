@@ -53,6 +53,9 @@
 #include <xmltooling/util/Threads.h>
 #include <xmltooling/util/XMLHelper.h>
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/range/algorithm_ext.hpp>
+
 using namespace xmltooling::logging;
 using namespace xmltooling;
 using namespace xercesc;
@@ -141,6 +144,8 @@ namespace {
         void deleteContext(const char* context);
 
     private:
+        string sanitizeKey(const char* key);
+
         Capabilities m_caps;
         bool m_buildMap;
     };
@@ -425,11 +430,18 @@ MemcacheStorageService::MemcacheStorageService(const DOMElement* e)
         m_log.debug("Cache built with buildMap ON");
 }
 
+string MemcacheStorageService::sanitizeKey(const char* key)
+{
+    string s_key = key;
+    remove_erase_if(s_key, is_space());
+    return s_key;
+}
+
 bool MemcacheStorageService::createString(const char* context, const char* key, const char* value, time_t expiration)
 {
     m_log.debug("createString ctx: %s - key: %s", context, key);
 
-    string final_key = string(context) + ':' + string(key);
+    string final_key = string(context) + ':' + sanitizeKey(key);
 
     mc_record rec(value, expiration);
     string final_value;
@@ -466,7 +478,7 @@ bool MemcacheStorageService::createString(const char* context, const char* key, 
             m_log.debug("New context: %s", map_name.c_str());
         }
 
-        contents.push_back(key);
+        contents.push_back(sanitizeKey(key));
         serialize(contents, ser_arr);
         setMemcache(map_name.c_str(), ser_arr, expiration, 0);
         deleteLock(map_name);
@@ -478,7 +490,7 @@ int MemcacheStorageService::readString(const char* context, const char* key, str
 {
     m_log.debug("readString ctx: %s - key: %s", context, key);
 
-    string final_key = string(context) + ":" + string(key);
+    string final_key = string(context) + ":" + sanitizeKey(key);
     uint32_t rec_version;
     string value;
 
@@ -521,7 +533,7 @@ int MemcacheStorageService::updateString(const char* context, const char* key, c
     if (!final_exp)
         want_expiration = &final_exp;
 
-    int read_res = readString(context, key, nullptr, want_expiration, version);
+    int read_res = readString(context, sanitizeKey(key).c_str(), nullptr, want_expiration, version);
 
     if (!read_res) {
         // not found
@@ -534,7 +546,7 @@ int MemcacheStorageService::updateString(const char* context, const char* key, c
     }
 
     // Proceding with update
-    string final_key = string(context) + ':' + string(key);
+    string final_key = string(context) + ':' + sanitizeKey(key);
     mc_record rec(value, final_exp);
     string final_value;
     serialize(rec, final_value);
@@ -547,7 +559,7 @@ bool MemcacheStorageService::deleteString(const char* context, const char* key)
 {
     m_log.debug("deleteString ctx: %s - key: %s", context, key);
   
-    string final_key = string(context) + ':' + string(key);
+    string final_key = string(context) + ':' + sanitizeKey(key);
 
     // Not updating context map, if there is one. There is no need.
     return deleteMemcache(final_key.c_str(), 0);
@@ -612,7 +624,7 @@ void MemcacheStorageService::deleteContext(const char* context)
         m_log.debug("Iterating retrieved session map...");
         for (list<string>::const_iterator iter = contents.begin(); iter != contents.end(); ++iter) {
             string final_key = map_name + ':' + *iter;
-            deleteMemcache(final_key.c_str(), 0);
+            deleteString(context, iter->c_str());
         }
     
         deleteMemcache(map_name.c_str(), 0);
