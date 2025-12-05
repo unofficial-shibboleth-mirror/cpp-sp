@@ -548,7 +548,7 @@ unique_lock<Session> AbstractSessionCache::_find(
         // Note this performs the relevant enforcement for us.
         obj = cache_read(request, applicationId, key, version, lifetime, timeout, client_addr);
         if (obj.isnull()) {
-            log(INFO_MARK, "session (%s) not available in persistent store", key);
+            log(DEBUG_MARK, "session (%s) not available in persistent store", key);
             return unique_lock<Session>();
         }
     }
@@ -557,7 +557,7 @@ unique_lock<Session> AbstractSessionCache::_find(
         return unique_lock<Session>();
     }
 
-    log(INFO_MARK, "valid session (%s) loaded from persistent store", key);
+    log(DEBUG_MARK, "valid session (%s) loaded from persistent store", key);
 
     // Wrap the object in a local wraper to guard it before it's saved off.
     unique_ptr<BasicSession> newSession(new BasicSession(*this, obj));
