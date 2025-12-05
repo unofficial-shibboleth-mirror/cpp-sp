@@ -53,6 +53,7 @@ x64
 /*.gz
 /*.zip
 /*.bz2
+/*.asc
 /build-aux
 /build
 /Build
