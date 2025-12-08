@@ -77,7 +77,7 @@ namespace {
         Category& m_log;
         // Unused ptree if we configure via inline.
         ptree m_pt;
-        const char* m_scopeDelimiter;
+        string m_scopeDelimiter;
         bool m_urlEncoding,m_exportDuplicates,m_partialRegexMatching;
         map<string,string> m_mappings;
         set<string> m_caseInsensitiveIds;
