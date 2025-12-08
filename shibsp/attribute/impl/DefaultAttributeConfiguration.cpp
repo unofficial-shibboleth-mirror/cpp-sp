@@ -224,7 +224,7 @@ bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
                 }
                 else if (value.isint()) {
                     try {
-                        string s(boost::lexical_cast<string>(attr.integer()));
+                        string s(boost::lexical_cast<string>(value.integer()));
                         value.string(s.c_str());
                     } catch (const boost::bad_lexical_cast&) {
                         value.destroy();
@@ -233,11 +233,11 @@ bool DefaultAttributeConfiguration::processAttributes(DDF& attributes) const
                 }
                 else if (value.islong()) {
                     try {
-                        string s(boost::lexical_cast<string>(attr.longinteger()));
+                        string s(boost::lexical_cast<string>(value.longinteger()));
                         value.string(s.c_str());
                     } catch (const boost::bad_lexical_cast&) {
                         value.destroy();
-                        m_log.warn("attribute '%s' value could not be converted from int to string", attr.name());
+                        m_log.warn("attribute '%s' value could not be converted from long to string", attr.name());
                     }
                 }
                 else {

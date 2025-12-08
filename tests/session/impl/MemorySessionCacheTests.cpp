@@ -59,6 +59,11 @@ struct MemoryFixture
         issuer.add(DDF(nullptr).string("https://idp.example.org"));
         attrs.add(issuer);
 
+        DDF authts("Shib-Authentication-Instant");
+        authts.list();
+        authts.add(DDF(nullptr).longinteger(1765202451));
+        attrs.add(authts);
+
         DDF affiliation("affiliation");
         affiliation.list();
         affiliation.add(DDF(nullptr).string("member"));
@@ -103,6 +108,10 @@ BOOST_FIXTURE_TEST_CASE(MemorySessionCache_tests, MemoryFixture)
     unique_lock<Session> session = cache->find(request, true, false);
     BOOST_CHECK(session);
     if (session) {
+        const DDF& attr = session.mutex()->getAttributes().at("Shib-Authentication-Instant");
+        DDF val = const_cast<DDF&>(attr).first();
+        BOOST_CHECK(val.isstring());
+        BOOST_CHECK_EQUAL(val.string(), "1765202451");
         session.unlock();
     }
 
