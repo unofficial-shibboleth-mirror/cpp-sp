@@ -79,8 +79,10 @@ namespace shibsp {
         std::string getAuthCachingCookieValue() const;
         unsigned int getConnectTimeout() const;
         unsigned int getTimeout() const;
-        bool isRevocationCheck() const;
         const char* getCAFile() const;
+        bool isRevocationCheck() const;
+        bool isEnableIP4() const;
+        bool isEnableIP6() const;
 
     protected:
         AbstractHTTPRemotingService(boost::property_tree::ptree& pt);
@@ -99,6 +101,8 @@ namespace shibsp {
         unsigned int m_connectTimeout;
         unsigned int m_timeout;
         bool m_revocationCheck;
+        bool m_enableIP4;
+        bool m_enableIP6;
         /** Shared lock for guarding auth cache value. */
 #if defined(HAVE_CXX17)
         std::unique_ptr<std::shared_mutex> m_authcachelock;

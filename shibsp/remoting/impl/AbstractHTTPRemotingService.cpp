@@ -54,19 +54,24 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     static const char TIMEOUT_PROP_NAME[] = "timeout";
     static const char CA_FILE_PROP_NAME[] = "tlsCAFile";
     static const char REVOCATION_CHECK_PROP_NAME[] = "revocationCheck";
+    static const char ENABLE_IP4_PROP_NAME[] = "enableIP4";
+    static const char ENABLE_IP6_PROP_NAME[] = "enableIP6";
 
     static const char AGENT_ID_PROP_DEFAULT[] = "localhost";
     static const char SECRET_SOURCE_TYPE_PROP_DEFAULT[] = FILE_SECRET_SOURCE;
     static const char BASE_URL_PROP_DEFAULT[] = "http://localhost:8080/idp/profile/sp/";
+    static const char USER_AGENT_PROP_DEFAULT[] = "";
     static const char AUTH_METHOD_PROP_DEFAULT[] = "none";
     static const char AUTH_CACHING_COOKIE_PROP_DEFAULT[] = "__Host-JSESSIONID";
     static unsigned int CONNECT_TIMEOUT_PROP_DEFAULT = 3;
     static unsigned int TIMEOUT_PROP_DEFAULT = 10;
+    static const char CA_FILE_PROP_DEFAULT[] = "";
     static const bool REVOCATION_CHECK_DEFAULT = false;
-
+    static const bool ENABLE_IP4_PROP_DEFAULT = true;
+    static const bool ENABLE_IP6_PROP_DEFAULT = true;
 
     m_agentID = props.getString(AGENT_ID_PROP_NAME, AGENT_ID_PROP_DEFAULT);    
-    m_userAgent = props.getString(USER_AGENT_PROP_NAME, "");
+    m_userAgent = props.getString(USER_AGENT_PROP_NAME, USER_AGENT_PROP_DEFAULT);
     m_baseURL = props.getString(BASE_URL_PROP_NAME, BASE_URL_PROP_DEFAULT);
     if (m_baseURL.back() != '/') {
         m_baseURL += '/';
@@ -76,6 +81,12 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
     m_connectTimeout = props.getUnsignedInt(CONNECT_TIMEOUT_PROP_NAME, CONNECT_TIMEOUT_PROP_DEFAULT);
     m_timeout = props.getUnsignedInt(TIMEOUT_PROP_NAME, TIMEOUT_PROP_DEFAULT);
     m_revocationCheck = props.getBool(REVOCATION_CHECK_PROP_NAME, REVOCATION_CHECK_DEFAULT);
+    m_enableIP4 = props.getBool(ENABLE_IP4_PROP_NAME, ENABLE_IP4_PROP_DEFAULT);
+    m_enableIP6 = props.getBool(ENABLE_IP6_PROP_NAME, ENABLE_IP6_PROP_DEFAULT);
+
+    if (!m_enableIP4 && !m_enableIP6) {
+        throw ConfigurationException("One of IP4 or IP6 must be enabled.");
+    }
 
     if (m_authMethod != agent_auth_none) {
         m_secretSource.reset(AgentConfig::getConfig().SecretSourceManager.newPlugin(
@@ -83,8 +94,7 @@ AbstractHTTPRemotingService::AbstractHTTPRemotingService(ptree& pt)
             );
     }
 
-
-    m_caFile = props.getString(CA_FILE_PROP_NAME, "");
+    m_caFile = props.getString(CA_FILE_PROP_NAME, CA_FILE_PROP_DEFAULT);
     if (!m_caFile.empty()) {
         AgentConfig::getConfig().getPathResolver().resolve(m_caFile, PathResolver::SHIBSP_CFG_FILE);
 #ifdef WIN32
@@ -203,6 +213,16 @@ unsigned int AbstractHTTPRemotingService::getConnectTimeout() const
 unsigned int AbstractHTTPRemotingService::getTimeout() const
 {
     return m_timeout;
+}
+
+bool AbstractHTTPRemotingService::isEnableIP4() const
+{
+    return m_enableIP4;
+}
+
+bool AbstractHTTPRemotingService::isEnableIP6() const
+{
+    return m_enableIP6;
 }
 
 bool AbstractHTTPRemotingService::isRevocationCheck() const

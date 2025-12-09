@@ -187,11 +187,15 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
     static const char CHUNKED_PROP_NAME[] = "chunkedEncoding";
     static const char TRACE_FILE_PROP_NAME[] = "traceFileBase";
 
+    static const char CIPHER_LIST_PROP_DEFAULT[] = "";
+    static bool CHUNKED_PROP_DEFAULT = true;
+    static const char TRACE_FILE_PROP_DEFAULT[] = "";
+
     BoostPropertySet props;
     props.load(pt);
 
-    m_chunked = props.getBool(CHUNKED_PROP_NAME, true);
-    m_ciphers = props.getString(CIPHER_LIST_PROP_NAME, "");
+    m_chunked = props.getBool(CHUNKED_PROP_NAME, CHUNKED_PROP_DEFAULT);
+    m_ciphers = props.getString(CIPHER_LIST_PROP_NAME, CIPHER_LIST_PROP_DEFAULT);
 
     if (getUserAgent() == nullptr) {
         string useragent = string(PACKAGE_NAME) + '/' + PACKAGE_VERSION;
@@ -204,7 +208,7 @@ CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt)
 
     m_log.info("CurlHTTP RemotingService installed for agent ID (%s), baseURL (%s)", getAgentID(), getBaseURL());
 
-    m_traceFileBase = props.getString(TRACE_FILE_PROP_NAME, "");
+    m_traceFileBase = props.getString(TRACE_FILE_PROP_NAME, TRACE_FILE_PROP_DEFAULT);
     if (!m_traceFileBase.empty()) {
         AgentConfig::getConfig().getPathResolver().resolve(m_traceFileBase, PathResolver::SHIBSP_LOG_FILE);
         m_log.warn("tracing enabled (%s), sensitive information *will* be logged; do not share and protect appropriately",
@@ -284,6 +288,14 @@ CURL* CurlHTTPRemotingService::checkout() const
 
     SHIB_CURL_SET(CURLOPT_CONNECTTIMEOUT, getConnectTimeout());
     SHIB_CURL_SET(CURLOPT_TIMEOUT, getTimeout());
+
+    // One of these has to be enabled. Default is for both.
+    if (!isEnableIP6()) {
+        SHIB_CURL_SET(CURLOPT_RESOLVE, CURL_IPRESOLVE_V4);
+    }
+    else if (!isEnableIP4()) {
+        SHIB_CURL_SET(CURLOPT_RESOLVE, CURL_IPRESOLVE_V6);
+    }
 
     long flag=0;
     switch (getAuthMethod()) {
