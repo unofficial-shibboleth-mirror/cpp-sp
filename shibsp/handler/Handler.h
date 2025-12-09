@@ -86,6 +86,9 @@ namespace shibsp {
     /** Handler for metadata generation. */
     #define METADATA_GENERATOR_HANDLER "MetadataGenerator"
 
+    /** Handler for passthrough of requests into Hub flows. */
+    #define PASSTHROUGH_HANDLER "Passthrough"
+
     /** Handler for status information. */
     #define STATUS_HANDLER "Status"
 

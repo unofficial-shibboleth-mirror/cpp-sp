@@ -98,6 +98,7 @@
     <ClCompile Include="..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\DefaultHandlerConfiguration.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\MetadataGenerator.cpp" />
+    <ClCompile Include="..\..\shibsp\handler\impl\Passthrough.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\SecuredHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\SessionHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\SessionInitiator.cpp" />

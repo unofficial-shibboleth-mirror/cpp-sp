@@ -107,6 +107,7 @@ libshibsp_la_SOURCES = \
 	handler/impl/AttributeCheckerHandler.cpp \
 	handler/impl/DefaultHandlerConfiguration.cpp \
 	handler/impl/MetadataGenerator.cpp \
+	handler/impl/Passthrough.cpp \
 	handler/impl/SecuredHandler.cpp \
 	handler/impl/SessionHandler.cpp \
 	handler/impl/SessionInitiator.cpp \

@@ -55,6 +55,7 @@ namespace shibsp {
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutInitiatorFactory;
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LocalLogoutInitiatorFactory;
 
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory PassthroughFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionHandlerFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory StatusHandlerFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionInitiatorFactory;
@@ -91,6 +92,7 @@ void SHIBSP_API shibsp::registerHandlers()
     //conf.HandlerManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
     //conf.HandlerManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
 
+    conf.HandlerManager.registerFactory(PASSTHROUGH_HANDLER, PassthroughFactory);
     conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
     conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
     conf.HandlerManager.registerFactory(SESSION_INITIATOR_HANDLER, SessionInitiatorFactory);

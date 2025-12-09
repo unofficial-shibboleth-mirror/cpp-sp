@@ -248,6 +248,9 @@
     <ClCompile Include="..\..\shibsp\handler\impl\MetadataGenerator.cpp">
       <Filter>Source Files\Handler</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\Passthrough.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\shibsp\handler\impl\SecuredHandler.cpp">
       <Filter>Source Files\Handler</Filter>
     </ClCompile>
