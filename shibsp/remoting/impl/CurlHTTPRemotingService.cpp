@@ -291,10 +291,10 @@ CURL* CurlHTTPRemotingService::checkout() const
 
     // One of these has to be enabled. Default is for both.
     if (!isEnableIP6()) {
-        SHIB_CURL_SET(CURLOPT_RESOLVE, CURL_IPRESOLVE_V4);
+        SHIB_CURL_SET(CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
     }
     else if (!isEnableIP4()) {
-        SHIB_CURL_SET(CURLOPT_RESOLVE, CURL_IPRESOLVE_V6);
+        SHIB_CURL_SET(CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
     }
 
     long flag=0;
