@@ -33,7 +33,7 @@ AbstractRemotingService::AbstractRemotingService(const ptree&) {}
 
 AbstractRemotingService::~AbstractRemotingService() {}
 
-DDF AbstractRemotingService::send(const DDF& in) const
+DDF AbstractRemotingService::send(const DDF& in, bool checkEvent) const
 {
     stringstream instream;
     instream << in;
@@ -43,6 +43,10 @@ DDF AbstractRemotingService::send(const DDF& in) const
 
     DDF output;
     outstream >> output;
+
+    if (!checkEvent) {
+        return output;
+    }
 
     const char* event = output.getmember("event").string();
     if (event && strcmp(event, "success")) {

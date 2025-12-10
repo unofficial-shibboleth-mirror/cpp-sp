@@ -42,7 +42,7 @@ namespace shibsp {
          * @param in    input message to send
          * @return      response from remote service
          */
-        DDF send(const DDF& in) const;
+        DDF send(const DDF& in, bool checkEvent=true) const;
 
     protected:
         AbstractRemotingService(const boost::property_tree::ptree& pt);

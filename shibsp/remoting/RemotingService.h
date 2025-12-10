@@ -42,11 +42,24 @@ namespace shibsp {
 
         /**
          * Send a remoted message and return the response.
+         * 
+         * <p>The second parameter controls error detection. Operations typically
+         * return an event field that will contain either "success" or signal some
+         * error condition. If the flag is true/defaulted, the remoting layer will
+         * examine the field and raise an OperationException containing the detected
+         * event. If the flag is false, no detection occurs and the output is returned
+         * without an exception.</p>
+         * 
+         * <p>Callers that invooke operations that are "expected" to produce
+         * unusual events may use the flag to avoid triggering exceptions on what are
+         * essentially "expected" control paths.</p>
          *
          * @param in    input message to send
+         * @param checkEvent controls whether the event in the output is checked
+         * 
          * @return      response from remote service
          */
-        virtual DDF send(const DDF& in) const=0;
+        virtual DDF send(const DDF& in, bool checkEvent=true) const=0;
     };
 
     /**
