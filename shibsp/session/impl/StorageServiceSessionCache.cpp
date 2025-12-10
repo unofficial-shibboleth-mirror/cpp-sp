@@ -259,14 +259,18 @@ bool StorageServiceSessionCache::cache_update(SPRequest* request, const char* ke
 
     DDFJanitor outjanitor(out);
 
-    long newver = out["ver"].integer();
-    if (newver <= version) {
+    DDF newver = out["ver"];
+    if (newver.isnull()) {
+        log(INFO_MARK, "session (%s) no longer exists", key);
+        throw IOException("Session no longer exists.");
+    }
+    else if (newver.integer() <= (long) version) {
         log(ERROR_MARK, "missing/unexpected version returned from Hub from update of session (%s)", key);
         throw IOException("Missing/unexpected version returned from Hub from session update.");
     }
 
     // Ensure the new version is set accurately.
-    sessionData.addmember("ver").integer(newver);
+    sessionData.addmember("ver").integer(newver.integer());
     return true;
 }
 
@@ -290,13 +294,19 @@ bool StorageServiceSessionCache::cache_touch(SPRequest* request, const char* key
     catch (const OperationException& e) {
         // Check for policy events.
         const char* event = e.getProperty(AgentException::EVENT_PROP_NAME);
-        if (event && !strcmp(event, "InvalidSession")) {
-            log(WARN_MARK, "stored session (%s) was invalid", key);
-            return false;
-        }
-        else if (event && !strcmp(event, "ExpiredSession")) {
-            log(WARN_MARK, "session (%s) expired due to lifetime or inactivity", key);
-            return false;
+        if (event) {
+            if (!strcmp(event, "MissingSession")) {
+                log(INFO_MARK, "stored session (%s) went missing", key);
+                return false;
+            }
+            else if (!strcmp(event, "InvalidSession")) {
+                log(WARN_MARK, "stored session (%s) was invalid", key);
+                return false;
+            }
+            else if (!strcmp(event, "ExpiredSession")) {
+                log(WARN_MARK, "session (%s) expired due to lifetime or inactivity", key);
+                return false;
+            }
         }
         log(ERROR_MARK, "exception attempting to touch session (%s) via Hub: %s", key, e.what());
         throw;
@@ -308,10 +318,10 @@ bool StorageServiceSessionCache::cache_touch(SPRequest* request, const char* key
 
     DDFJanitor outjanitor(out);
 
-    if (out.getmember("ver").integer() < version) {
-        return false;
+    if (out.getmember("key").isstring()) {
+        return true;
     }
-    return true;
+    return false;
 }
 
 void StorageServiceSessionCache::cache_remove(SPRequest* request, const char* key)
@@ -326,6 +336,16 @@ void StorageServiceSessionCache::cache_remove(SPRequest* request, const char* ke
         DDF out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
         out.destroy();
         log(DEBUG_MARK, "removed session from storage via Hub (%s)", key);
+    }
+    catch (const OperationException& e) {
+        // Check for policy events.
+        const char* event = e.getProperty(AgentException::EVENT_PROP_NAME);
+        if (event && !strcmp(event, "MissingSession")) {
+            log(DEBUG_MARK, "stored session (%s) went missing", key);
+            return;
+        }
+        log(ERROR_MARK, "exception attempting to touch session (%s) via Hub: %s", key, e.what());
+        throw;
     }
     catch (const exception& e) {
         log(ERROR_MARK, "exception attempting to delete session via hub: %s", e.what());
