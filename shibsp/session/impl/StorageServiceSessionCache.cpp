@@ -137,10 +137,6 @@ DDF StorageServiceSessionCache::cache_read(
     in.addmember("storage_timeout").integer(m_storageTimeout);
     in.addmember("key").string(key);
 
-    // Policy settings to enforce on Hub.
-    if (lifetime) {
-        in.addmember("lifetime").integer(lifetime);
-    }
     if (timeout) {
         in.addmember("timeout").integer(timeout);
     }
@@ -185,6 +181,20 @@ DDF StorageServiceSessionCache::cache_read(
     if (strcmp(applicationId, appId)) {
         log(WARN_MARK, "session (%s) issued for application (%s), accessed via application (%s)", key, appId, applicationId);
         return DDF();
+    }
+
+    if (lifetime) {
+        time_t now = time(nullptr);
+        time_t start = sessionData["ts"].longinteger();
+        if (start + lifetime < now) {
+            if (m_spilog.isInfoEnabled()) {
+                string created(date::format("%FT%TZ", chrono::system_clock::from_time_t(start)));
+                string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(start + lifetime)));
+                log(INFO_MARK, "session (%s) has expired, created (%s), expired (%s)", key, created.c_str(), expired.c_str());
+            }
+            cache_remove(request, key);
+            return DDF();
+        }
     }
 
     if (client_addr) {
