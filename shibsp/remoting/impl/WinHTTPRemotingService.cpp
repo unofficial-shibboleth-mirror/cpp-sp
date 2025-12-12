@@ -13,7 +13,7 @@
  */
 
  /**
-  * remoting/impl/CurlHTTPRemotingService.cpp
+  * remoting/impl/WinHTTPRemotingService.cpp
   *
   * Base class for HTTP-based remoting.
   */
