@@ -232,7 +232,8 @@ DDF StorageServiceSessionCache::cache_read(
         }
     }    
 
-    // Otherwise return the detached session structure.
+    // Otherwise return the detached session structure after re-installing the key into the root name.
+    sessionData.name(key);
     return sessionData.remove();
 }
 
