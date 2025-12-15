@@ -1,5 +1,5 @@
 AC_PREREQ([2.50])
-AC_INIT([shibboleth],[3.5.1],[https://shibboleth.atlassian.net/jira],[shibboleth-sp])
+AC_INIT([shibboleth],[3.5.2],[https://shibboleth.atlassian.net/jira],[shibboleth-sp])
 AC_CONFIG_SRCDIR(shibsp)
 AC_CONFIG_AUX_DIR(build-aux)
 AC_CONFIG_MACRO_DIR(m4)

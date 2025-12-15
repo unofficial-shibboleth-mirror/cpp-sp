@@ -80,8 +80,8 @@ BEGIN
 #endif
 #endif
             VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Shibboleth 3.5.1\0"
-            VALUE "ProductVersion", "3, 5, 1, 0\0"
+            VALUE "ProductName", "Shibboleth 3.5.2\0"
+            VALUE "ProductVersion", "3, 5, 2, 0\0"
             VALUE "SpecialBuild", "\0"
         END
     END
