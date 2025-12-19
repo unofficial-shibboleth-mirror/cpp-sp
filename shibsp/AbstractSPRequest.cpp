@@ -183,11 +183,13 @@ const std::map<std::string,std::string>& AbstractSPRequest::getCookies() const
 
 const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 {
-    if (!resource)
+    if (!resource) {
         resource = getRequestURL();
+    }
 
-    if (!m_handlerURL.empty() && resource && !strcmp(getRequestURL(), resource))
+    if (!m_handlerURL.empty() && resource && !strcmp(getRequestURL(), resource)) {
         return m_handlerURL.c_str();
+    }
 
     // Check for relative URL.
     string stackresource;
@@ -206,8 +208,10 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
         throw ConfigurationException("Target resource was not an absolute URL.");
     }
 
-    bool ssl_only = getRequestSettings().first->getBool("handlerSSL", true);
-    const char* handler = getRequestSettings().first->getString("handlerURL", "/Shibboleth.sso");
+    bool ssl_only = getRequestSettings().first->getBool(
+        RequestMapper::HANDLER_SSL_PROP_NAME, RequestMapper::HANDLER_SSL_PROP_DEFAULT);
+    const char* handler = getRequestSettings().first->getString(
+        RequestMapper::HANDLER_URL_PROP_NAME, RequestMapper::HANDLER_URL_PROP_DEFAULT);
 
     if (*handler != '/' && strncmp(handler,"http:",5) && strncmp(handler,"https:",6)) {
         throw ConfigurationException(string("Invalid handlerURL property: ") + handler);
@@ -242,14 +246,17 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     const char* colon = strchr(prot, ':');
     colon += 3;
     const char* slash = strchr(colon, '/');
-    if (!path)
+    if (!path) {
         path = slash;
+    }
 
     // Compute the actual protocol and store in member.
-    if (ssl_only)
+    if (ssl_only) {
         m_handlerURL.assign("https://");
-    else
+    }
+    else {
         m_handlerURL.assign(prot, colon-prot);
+    }
 
     // create the "host" from either the colon/slash or from the target string
     // If prot == handler then we're in either #1 or #2, else #3.
@@ -273,8 +280,9 @@ string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) con
     vector<string> locs;
     split_to_container(locs, rawlocs);
 
-    if (index >= locs.size())
+    if (index >= locs.size()) {
         return string();
+    }
 
     const char* resource = getRequestURL();
     if (!resource || (strncasecmp(resource,"http://", 7) && strncasecmp(resource,"https://", 8))) {
@@ -315,8 +323,9 @@ string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) con
     const char* colon=strchr(prot,':');
     colon += 3;
     const char* slash=strchr(colon,'/');
-    if (!path)
+    if (!path) {
         path = slash;
+    }
 
     // Compute the actual protocol and store.
     string notifyURL(prot, colon-prot);
@@ -338,8 +347,9 @@ string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) con
 
 void AbstractSPRequest::limitRedirect(const char* url) const
 {
-    if (!url || *url == '/')
+    if (!url || *url == '/') {
         return;
+    }
 
     enum {
         REDIRECT_LIMIT_NONE,
@@ -352,7 +362,8 @@ void AbstractSPRequest::limitRedirect(const char* url) const
 
     // Derive the active rule.
     vector<string> redirectAllow;
-    const char* prop = getRequestSettings().first->getString("redirectLimit", "exact");
+    const char* prop = getRequestSettings().first->getString(
+        RequestMapper::REDIRECT_LIMIT_PROP_NAME, RequestMapper::REDIRECT_LIMIT_PROP_DEFAULT);
     if (!strcmp(prop, "none")) {
         redirectLimit = REDIRECT_LIMIT_NONE;
     }
@@ -375,7 +386,7 @@ void AbstractSPRequest::limitRedirect(const char* url) const
         else {
             error("unrecognized redirectLimit setting (%s), falling back to 'exact' ", prop);
         }
-        prop = getRequestSettings().first->getString("redirectAllow");
+        prop = getRequestSettings().first->getString(RequestMapper::REDIRECT_ALLOW_PROP_NAME);
         if (prop) {
             split_to_container(redirectAllow, prop);
         }
@@ -423,7 +434,7 @@ void AbstractSPRequest::limitRedirect(const char* url) const
             }
         }
 
-        warn("redirectLimit policy enforced, blocked redirect to (%s)", url);
+        warn("%s policy enforced, blocked redirect to (%s)", RequestMapper::REDIRECT_LIMIT_PROP_NAME, url);
         throw AgentException("Blocked unacceptable redirect location.");
     }
 }
