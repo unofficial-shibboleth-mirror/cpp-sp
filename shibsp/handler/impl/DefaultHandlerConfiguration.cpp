@@ -28,6 +28,7 @@
 #include "logging/Category.h"
 #include "remoting/ddf.h"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
@@ -46,13 +47,15 @@ namespace {
         DefaultHandlerConfiguration(const char* pathname);
         ~DefaultHandlerConfiguration() {}
 
-        const Handler* getHandler(const char* path) const;
+        const Handler* getAbsoluteHandler(SPRequest& request) const;
+        const Handler* getRelativeHandler(const char* path) const;
         const Handler& getSessionInitiator() const;
         DDF getTokenConsumerInfo(const char* handlerURL=nullptr) const;
 
     private:
         ptree m_pt;
-        map<string,unique_ptr<Handler>> m_handlerMap;
+        map<string,unique_ptr<Handler>> m_absoluteHandlerMap;
+        map<string,unique_ptr<Handler>> m_relativeHandlerMap;
         const Handler* m_sessionInitiator;
         DDF m_tokenConsumerConfig;
     };
@@ -89,8 +92,10 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
             throw ConfigurationException("Multiple SessionInitiator handlers were configured, only one is permitted.");
         }
 
+        bool relative = false;
         string handlerPath(child.first);
         if (handlerPath.front() != '/') {
+            relative = true;
             handlerPath = '/' + handlerPath;
         }
 
@@ -100,25 +105,33 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
         unique_ptr<Handler> handler(AgentConfig::getConfig().HandlerManager.newPlugin(
             type.get(), pair<ptree&,const char*>(child.second, handlerPath.c_str()), false));
             
-        m_handlerMap[handlerPath] = std::move(handler);
-        log.info("config (%s) installed %s handler at %s", pathname, type.get().c_str(), handlerPath.c_str());
-
-        // Save off a single SessionInitiator.
-        if (*type == SESSION_INITIATOR_HANDLER) {
-            m_sessionInitiator = m_handlerMap[handlerPath].get();
-        }
-        else if (*type == TOKEN_CONSUMER_HANDLER) {
-            DDF tokenConsumer(nullptr);
-            // String value of DDF is the handler location.
-            tokenConsumer.string(handlerPath.c_str());
-            m_tokenConsumerConfig.add(tokenConsumer);
-
-            // Check for legacy "binding" value to carry along with path as the name of the node.
-            boost::optional<string> legacyBinding = child.second.get_optional<string>(LEGACY_BINDING_PROP_NAME);
-            if (legacyBinding) {
-                tokenConsumer.name(legacyBinding->c_str());
+        if (relative) {
+            // Save off a single SessionInitiator.
+            if (*type == SESSION_INITIATOR_HANDLER) {
+                m_sessionInitiator = handler.get();
             }
+            else if (*type == TOKEN_CONSUMER_HANDLER) {
+                DDF tokenConsumer(nullptr);
+                // String value of DDF is the handler location.
+                tokenConsumer.string(handlerPath);
+                m_tokenConsumerConfig.add(tokenConsumer);
+
+                // Check for legacy "binding" value to carry along with path as the name of the node.
+                boost::optional<string> legacyBinding = child.second.get_optional<string>(LEGACY_BINDING_PROP_NAME);
+                if (legacyBinding) {
+                    tokenConsumer.name(legacyBinding.get());
+                }
+            }
+            m_relativeHandlerMap[handlerPath] = std::move(handler);
         }
+        else if (type.get() != PASSTHROUGH_HANDLER) {
+            throw ConfigurationException("Only Passtrhough handlers may be absolute.");
+        }
+        else {
+            m_absoluteHandlerMap[handlerPath] = std::move(handler);
+        }
+        log.info("config (%s) installed %s %s handler at %s", pathname, relative ? "relative" : "absolute",
+            type.get().c_str(), handlerPath.c_str());
     }
 
     // If a single token consumer with no binding label is installed, convert list to a string node.
@@ -130,13 +143,26 @@ DefaultHandlerConfiguration::DefaultHandlerConfiguration(const char* pathname)
     }
 }
 
-const Handler* DefaultHandlerConfiguration::getHandler(const char* path) const
+const Handler* DefaultHandlerConfiguration::getAbsoluteHandler(SPRequest& request) const
+{
+    // Check for a request URI (minus query string) that matches an absolute handler.
+    string wrapped_uri(request.getRequestURI());
+    wrapped_uri = wrapped_uri.substr(0, wrapped_uri.find(';'));
+    const auto& mapping = m_absoluteHandlerMap.find(wrapped_uri.substr(0, wrapped_uri.find('?')));
+    if (mapping != m_absoluteHandlerMap.end()) {
+        return mapping->second.get();
+    }
+
+    return nullptr;
+}
+
+const Handler* DefaultHandlerConfiguration::getRelativeHandler(const char* path) const
 {
     if (path) {
         string wrap(path);
         wrap = wrap.substr(0, wrap.find(';'));
-        const auto& mapping = m_handlerMap.find(wrap.substr(0, wrap.find('?')));
-        if (mapping != m_handlerMap.end()) {
+        const auto& mapping = m_relativeHandlerMap.find(wrap.substr(0, wrap.find('?')));
+        if (mapping != m_relativeHandlerMap.end()) {
             return mapping->second.get();
         }
     }

@@ -58,6 +58,7 @@ namespace shibsp {
         // property accessors
         const char* name() const;
         DDF& name(const char* n);
+        DDF& name(const std::string& n);
     
         // basic type checking
         bool isnull() const;

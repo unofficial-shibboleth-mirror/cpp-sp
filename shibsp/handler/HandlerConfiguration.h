@@ -24,6 +24,7 @@
 #include <shibsp/base.h>
 
 #include <memory>
+#include <utility>
 
 namespace shibsp {
 
@@ -43,6 +44,15 @@ namespace shibsp {
         virtual ~HandlerConfiguration();
 
         /**
+         * Gets the Handler installed at an absolute path if one is installed.
+         * 
+         * @param path absolute path to map to a Handler
+         * 
+         * @return the Handler configured at the request's location, or null
+         */
+        virtual const Handler* getAbsoluteHandler(SPRequest& request) const=0;
+
+        /**
          * Gets the Handler installed at a particular path, relative to a "base" URL used for
          * triggering all Handlers.
          * 
@@ -50,7 +60,7 @@ namespace shibsp {
          * 
          * @return the Handler configured at the supplied location, or null
          */
-        virtual const Handler* getHandler(const char* path) const=0;
+        virtual const Handler* getRelativeHandler(const char* path) const=0;
 
         /**
          * Gets the Handler used for SSO session initiation.
@@ -75,7 +85,7 @@ namespace shibsp {
          * <p>Legacy configurations designed to avoid externally visible changes may continue
          * to operate multiple handlers to support different SSO bindings or patterns, while
          * newer deployments should avoid this practice and stick to a single location. The
-         * "meta-informatin" required to support this legacy practice will be embedded within
+         * "meta-information" required to support this legacy practice will be embedded within
          * the structure returned.</p>
          * 
          * @param handlerURL the handler base URL with which to prefix the token consumer

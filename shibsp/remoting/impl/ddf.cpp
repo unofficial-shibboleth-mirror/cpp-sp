@@ -201,15 +201,15 @@ const char* DDF::name() const
     return (m_handle) ? m_handle->name : nullptr;
 }
 
-DDF& DDF::name(const char* name)
+DDF& DDF::name(const char* n)
 {
     char trunc_name[MAX_NAME_LEN+1]="";
 
     if (m_handle) {
         if (m_handle->name)
             free(m_handle->name);
-        if (name && *name) {
-            strncpy(trunc_name,name,MAX_NAME_LEN);
+        if (n && *n) {
+            strncpy(trunc_name, n, MAX_NAME_LEN);
             trunc_name[MAX_NAME_LEN]='\0';
             m_handle->name=ddf_strdup(trunc_name);
             if (!m_handle->name)
@@ -219,6 +219,11 @@ DDF& DDF::name(const char* name)
             m_handle->name=nullptr;
     }
     return *this;
+}
+
+DDF& DDF::name(const std::string& n)
+{
+    return name(n.c_str());
 }
 
 bool DDF::isnull() const

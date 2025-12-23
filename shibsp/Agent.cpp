@@ -118,8 +118,6 @@ long Agent::handleError(SPRequest& request, const Session* session, exception* e
 
 pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 {
-    string targetURL = request.getRequestURL();
-
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
 
@@ -143,7 +141,27 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
             }
         }
 
-        const char* handlerURL=request.getHandlerURL(targetURL.c_str());
+        // First check if this is a request to an absolute handler location.
+        const HandlerConfiguration& handlerConfig = request.getAgent().getHandlerConfiguration(
+            request.getRequestSettings().first->getString(RequestMapper::HANDLER_CONFIG_ID_PROP_NAME));
+        const Handler* absolute = handlerConfig.getAbsoluteHandler(request);
+        if (absolute) {
+            // Either dispatch directly or just pass back control based on parameter to this method.
+            if (handler) {
+                pair<bool,long> hret = absolute->run(request);
+                // Did the handler run successfully?
+                if (hret.first) {
+                    return hret;
+                }
+                throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
+            }
+            else {
+                return make_pair(true, request.returnOK());
+            }
+        }
+
+        const char* targetURL = request.getRequestURL();
+        const char* handlerURL=request.getHandlerURL(targetURL);
         if (!handlerURL) {
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
         }
@@ -152,7 +170,19 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
         // directly or just pass back control based on parameter to this method.
         if (boost::contains(targetURL, handlerURL)) {
             if (handler) {
-                return doHandler(request);
+                // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
+                // so the path info is the next character (or null).
+                const Handler* relative = handlerConfig.getRelativeHandler(targetURL + strlen(handlerURL));
+                if (!relative) {
+                    throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
+                }
+
+                pair<bool,long> hret = relative->run(request);
+                // Did the handler run successfully?
+                if (hret.first) {
+                    return hret;
+                }
+                throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
             }
             else {
                 return make_pair(true, request.returnOK());
@@ -186,7 +216,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
         catch (const exception& e) {
             request.warn("error during session lookup: %s", e.what());
             // If it's not a retryable session failure, we throw to the outer handler for reporting.
-            if (dynamic_cast<const SessionValidationException*>(&e) == nullptr) {
+            if (!dynamic_cast<const SessionValidationException*>(&e)) {
                 throw;
             }
         }
@@ -223,10 +253,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
                 return make_pair(true, request.returnOK());
             }
 
-            // No session, but we require one. Initiate a new session.
-            const HandlerConfiguration& handlerConfig = request.getAgent().getHandlerConfiguration(
-                request.getRequestSettings().first->getString(RequestMapper::HANDLER_CONFIG_ID_PROP_NAME));
-
+            // No session, but we require one.
             // Dispatch to SessionInitiator. This MUST handle the request, or we want to fail here.
             // Used to fall through into doExport, but this is a cleaner exit path.
             pair<bool,long> ret = handlerConfig.getSessionInitiator().run(request, false);
@@ -251,8 +278,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 {
     unique_lock<Session> session;
-    string targetURL = request.getRequestURL();
-
+    
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
 
@@ -311,7 +337,6 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 {
     unique_lock<Session> session;
-    string targetURL = request.getRequestURL();
 
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
@@ -361,8 +386,6 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 
 pair<bool,long> Agent::doHandler(SPRequest& request) const
 {
-    const char* targetURL = request.getRequestURL();
-
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
 
@@ -385,27 +408,40 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
             }
         }
 
+        const HandlerConfiguration& handlerConfig = request.getAgent().getHandlerConfiguration(
+            request.getRequestSettings().first->getString(RequestMapper::HANDLER_CONFIG_ID_PROP_NAME));
+
+        // First check if this is a request to an absolute handler location.
+        const Handler* handler = handlerConfig.getAbsoluteHandler(request);
+        if (handler) {
+            pair<bool,long> hret = handler->run(request);
+            // Did the handler run successfully?
+            if (hret.first) {
+                return hret;
+            }
+            throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
+        }
+
+        // Otherwise check for a relative handler.
+        const char* targetURL = request.getRequestURL();
         const char* handlerURL = request.getHandlerURL(targetURL);
         if (!handlerURL) {
             throw ConfigurationException("Cannot determine handler from resource URL, check configuration.");
         }
 
         // Make sure we only process handler requests and advance into the URL to find the handler's path.
-        if (!boost::contains(targetURL, handlerURL))
+        if (!boost::contains(targetURL, handlerURL)) {
             return make_pair(true, request.returnDecline());
+        }
 
         // We dispatch based on our path info. We know the request URL begins with or equals the handler URL,
         // so the path info is the next character (or null).
-
-        const HandlerConfiguration& handlerConfig = request.getAgent().getHandlerConfiguration(
-            request.getRequestSettings().first->getString(RequestMapper::HANDLER_CONFIG_ID_PROP_NAME));
-        const Handler* handler = handlerConfig.getHandler(targetURL + strlen(handlerURL));
+        handler = handlerConfig.getRelativeHandler(targetURL + strlen(handlerURL));
         if (!handler) {
             throw ConfigurationException("Shibboleth handler invoked at an unconfigured location.");
         }
 
         pair<bool,long> hret = handler->run(request);
-
         // Did the handler run successfully?
         if (hret.first) {
             return hret;
