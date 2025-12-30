@@ -1,0 +1,84 @@
+<!-- Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an 'AS IS' BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+     implied.  See the License for the specific language governing
+     permissions and limitations under the License.  -->
+
+<?define UpgradeUUID="20B2C0E2-E377-48D2-881A-3AA29BBFE9C0"?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package Name="Shibboleth SP V4 Windows Agent" Language="1033" Version="$(var.msiVersion)" Manufacturer="The Shibboleth Consortium" UpgradeCode="$(var.UpgradeUUID)" InstallerVersion="310">
+        <SummaryInformation Description="Shibboleth SP V4 Windows Agent" Manufacturer="The Shibboleth Consortium" />
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowSameVersionUpgrades="yes" Schedule="afterInstallInitialize" />
+        <MediaTemplate EmbedCab="yes" />
+
+        <Launch Condition="UCRTBASE_DLL" Message="C run time library not installed" />
+
+        <!-- Properties used by the installer -->
+
+        <Property Id="ARPCONTACT" Value="contact@shibboleth.net" />
+        <Property Id="ARPHELPLINK" Value="https://shibboleth.atlassian.net/wiki/spaces/spagent4" />
+        <Property Id="ARPURLUPDATEINFO" Value="https://shibboleth.atlassian.net/wiki/spaces/spagent4" />
+        <Property Id="ARPURLINFOABOUT" Value="http://shibboleth.net/" />
+        <Property Id="ARPNOMODIFY" Value="TRUE" />
+
+        <!-- Properties we use -->
+
+        <Property Id="UCRTBASE_DLL" Secure="yes">
+            <DirectorySearch Id="UcrtBaseSearch" Depth="0" Path="[System64Folder]">
+                <FileSearch Id="UcrtSearch" Name="ucrtbase.dll" />
+            </DirectorySearch>
+        </Property>
+
+        <!-- Did we squirrel away the installation dir -->
+        <Property Id="OLD_INSTALLDIR" Secure="yes">
+            <RegistrySearch Id="OldInstallDir" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="InstallDir" Type="directory" />
+        </Property>
+
+        <!-- UPGRADINGPRODUCTCODE set in the uninstall if this is an upgrade uninstall -->
+
+        <!-- IISMAJORVERSION if IIS installed.  TODO test -  -->
+        <PropertyRef Id="IISMAJORVERSION"/>
+
+        <!-- ALREADYINSTALLED if we are doing an upgrade -->
+        <Upgrade Id="$(var.UpgradeUUID)">
+            <UpgradeVersion ExcludeLanguages="yes" IncludeMaximum="yes" Maximum="127.255.255" Minimum="0.0.1" OnlyDetect="yes" Property="ALREADYINSTALLED" />
+        </Upgrade>
+
+        <Directory Id="opt" Name="opt">
+            <Directory Id="INSTALLDIR" Name="shibboleth-sp">
+                <Directory Id="etc" Name="etc">
+                    <Directory Id="etcShib" Name="shibboleth-sp"/>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <Feature Id="SPV4" ConfigurableDirectory="INSTALLDIR">
+            <Component Id="SaveInstallDir" Directory = "etcShib" Bitness="always64">
+                <RegistryValue Id="TargetDir64" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="InstallDir" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
+            </Component>
+
+            <Component Id="EtcFiles" Directory = "etcShib">
+                <File Id="agent.ini" KeyPath="yes" Checksum="yes" Source="V:\perforce\SP\cpp-sp\configs\agent.ini"/>
+            </Component>
+        </Feature>
+
+        <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
+
+        <!--        <InstallUISequence>
+             <Custom Action="InheritInstallDir" After="AppSearch" Condition="OLD_INSTALLDIR" />
+             </InstallUISequence> -->
+        <InstallExecuteSequence>
+            <!-- inherit installationDir if there is something to inherit -->
+            <Custom Action="InheritInstallDir" After="AppSearch" Condition="OLD_INSTALLDIR" />
+        </InstallExecuteSequence>
+
+    </Package>
+
+</Wix>
