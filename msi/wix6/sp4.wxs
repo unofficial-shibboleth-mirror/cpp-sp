@@ -69,11 +69,11 @@
         </Directory>
 
         <Feature Id="SPV4" ConfigurableDirectory="INSTALLDIR">
-            <Component Id="SaveInstallDir" Directory = "etcShib" Bitness="always64" Guid="">
+            <Component Id="SaveInstallDir" Directory = "etcShib" Bitness="always64" Guid="{8E940A9F-CD5C-4DE4-87D3-063BF33400D6}">
                 <RegistryValue Id="TargetDir64" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="InstallDir" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
             </Component>
 
-            <Component Id="ConfigFiles" Directory = "etcShib" Guid="">
+            <Component Id="ConfigFiles" Directory = "etcShib" Guid="{4F087264-7775-443B-9F86-B09439437733}">
                 <File Id="agent.ini" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\agent.ini"/>
                 <File Id="apache24.config.in" Checksum="yes" Source="$(var.RootDir)\configs\apache24.config.in"/>
                 <File Id="attrChecker.html" Checksum="yes" Source="$(var.RootDir)\configs\attrChecker.html"/>
@@ -86,7 +86,7 @@
             </Component>
 
 	    <!-- For some reason the id/elif/endif thing isnt working -->
-            <Component Id="LibFiles" Directory = "libShib" Guid="">
+            <Component Id="LibFiles" Directory = "libShib" Guid="{0B2F1FE1-53A8-4F25-A01A-9EBAD9FEDC69}">
 	    <?if $(sys.BUILDARCH) = "x64"?>
                 <File Id="IIS_x64" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\iis_shib4.dll"/>
                 <File Id="IIS_x86" Name="iid_shib4_x86.dll" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\iis_shib4.dll"/>
