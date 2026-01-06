@@ -13,7 +13,8 @@
 <?define UpgradeUUID="20B2C0E2-E377-48D2-881A-3AA29BBFE9C0"?>
 <?define RootDir="V:\perforce\SP\cpp-sp\"?>
 
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+      xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
     <Package Name="Shibboleth SP V4 Windows Agent" Language="1033" Version="$(var.msiVersion)" Manufacturer="The Shibboleth Consortium" UpgradeCode="$(var.UpgradeUUID)" InstallerVersion="310">
         <SummaryInformation Description="Shibboleth SP V4 Windows Agent" Manufacturer="The Shibboleth Consortium" />
         <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowSameVersionUpgrades="yes" Schedule="afterInstallInitialize" />
@@ -52,6 +53,13 @@
             <UpgradeVersion ExcludeLanguages="yes" IncludeMaximum="yes" Maximum="127.255.255" Minimum="0.0.1" OnlyDetect="yes" Property="ALREADYINSTALLED" />
         </Upgrade>
 
+        <!-- WIX_ACCOUNT_* -->
+        <util:QueryWindowsWellKnownSIDs />
+
+        <!-- Who will be running IIS/Apache?  If not supplied on the command line we default it to WIX_ACCOUNT_LOCALSERVICE
+            <Property Id="WEBSERVER_USER" Value=""/>
+        -->
+
         <Directory Id="opt" Name="opt">
             <Directory Id="INSTALLDIR" Name="shibboleth-sp">
                 <Directory Id="etc" Name="etc">
@@ -69,7 +77,36 @@
         </Directory>
 
         <Feature Id="SPV4" ConfigurableDirectory="INSTALLDIR">
+
+            <Component Id="CreateFolders" Guid="{39682338-1733-4EA8-8F0E-4BD2E7119D36}" Condition="NOT WIX_UPGRADE_DETECTED">
+
+            <!-- We need this line to get the KeyPath set -->
+            <CreateFolder/>
+
+                <CreateFolder Directory="etcShib">
+                    <Permission User="[WIX_ACCOUNT_ADMINISTRATORS]" GenericAll="yes" />
+                    <Permission User="[WIX_ACCOUNT_LOCALSYSTEM]" GenericAll="yes" />
+                    <Permission User="[WIX_ACCOUNT_USERS]" GenericAll="no" />
+                    <Permission User="[WEBSERVER_USER]" ReadPermission="yes" GenericRead="yes" GenericExecute="yes" Read="yes" /> -->
+                </CreateFolder>
+
+                <CreateFolder Directory="libShib">
+                    <Permission User="[WIX_ACCOUNT_ADMINISTRATORS]" GenericAll="yes" />
+                    <Permission User="[WIX_ACCOUNT_LOCALSYSTEM]" GenericAll="yes" />
+                    <Permission User="[WIX_ACCOUNT_USERS]" GenericAll="no" />
+                    <Permission User="[WEBSERVER_USER]" ReadPermission="yes" GenericRead="yes" GenericExecute="yes" Read="yes" /> -->
+                </CreateFolder>
+
+                <CreateFolder Directory="varCacheShib">
+                    <Permission User="[WIX_ACCOUNT_ADMINISTRATORS]" GenericAll="yes" />
+                    <Permission User="[WIX_ACCOUNT_LOCALSYSTEM]" GenericAll="yes" />
+                    <Permission User="[WIX_ACCOUNT_USERS]" GenericAll="no" />
+                    <Permission User="[WEBSERVER_USER]" GenericAll="yes" />
+                </CreateFolder>
+            </Component>
+
             <Component Id="SaveInstallDir" Directory = "etcShib" Bitness="always64" Guid="{8E940A9F-CD5C-4DE4-87D3-063BF33400D6}">
+
                 <RegistryValue Id="TargetDir64" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="InstallDir" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
             </Component>
 
@@ -85,9 +122,9 @@
                 <File Id="request_map.xml" Checksum="yes" Source="$(var.RootDir)\configs\request-map.xml"/>
             </Component>
 
-	    <!-- For some reason the id/elif/endif thing isnt working -->
+            <!-- For some reason the id/elif/endif thing isnt working -->
             <Component Id="LibFiles" Directory = "libShib" Guid="{0B2F1FE1-53A8-4F25-A01A-9EBAD9FEDC69}">
-	    <?if $(sys.BUILDARCH) = "x64"?>
+            <?if $(sys.BUILDARCH) = "x64"?>
                 <File Id="IIS_x64" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\iis_shib4.dll"/>
                 <File Id="IIS_x86" Name="iid_shib4_x86.dll" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\iis_shib4.dll"/>
                 <File Id="Mod_shib"  Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\mod_shib4.so"/>
@@ -102,7 +139,9 @@
             </Component>
        </Feature>
 
-        <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
+       <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
+       <CustomAction Id="DefaultWebServerUser" Property="WEBSERVER_USER" Value="[WIX_ACCOUNT_LOCALSERVICE]" />
+
 
         <!--        <InstallUISequence>
              <Custom Action="InheritInstallDir" After="AppSearch" Condition="OLD_INSTALLDIR" />
@@ -110,6 +149,8 @@
         <InstallExecuteSequence>
             <!-- inherit installationDir if there is something to inherit -->
             <Custom Action="InheritInstallDir" After="AppSearch" Condition="OLD_INSTALLDIR" />
+            <!-- Default Web Server account if not specified -->
+            <Custom Action="DefaultWebServerUser" After="InstallInitialize" Condition="WEBSERVER_USER = &quot;&quot;" />
         </InstallExecuteSequence>
 
     </Package>
