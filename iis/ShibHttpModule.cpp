@@ -66,15 +66,10 @@ ShibHttpModule::DoHandler(
     wstring handlerPrefix(output);
     delete[] output;
 
-
-    // Quickly check the URL.
-    // Calling GetScriptName is safe here since we don't care about "visible to other filters" paths, just our path.
-    // This saves us converting from 8 bit ascii up to 16 bit for the compare against something which was only in 16
-    // bits to speed this path.  In V4 we can look at the local request
-    const wstring url(pHttpContext->GetScriptName());
-    if (url.length() < handlerPrefix.length() || !boost::starts_with(url, handlerPrefix))
-        return RQ_NOTIFICATION_CONTINUE;
-
+    //
+    // We used to only call the constructor if we knew the request is for us,
+    // but we cannot tell anymore.
+    //
     IIS7Request handler(pHttpContext, pProvider, false, *site);
 
     pair<bool, long> res = handler.getAgent().doHandler(handler);
