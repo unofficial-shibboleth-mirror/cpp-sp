@@ -110,24 +110,44 @@
                 <RegistryValue Id="TargetDir64" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="InstallDir" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
             </Component>
 
-            <Component Id="ConfigFiles" Directory = "etcShib" Guid="{4F087264-7775-443B-9F86-B09439437733}">
+            <Component Id="Config.agent" Directory = "etcShib" Guid="{4F087264-7775-443B-9F86-B09439437733}">
                 <File Id="agent.ini" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\agent.ini"/>
-                <File Id="apache24.config.in" Checksum="yes" Source="$(var.RootDir)\configs\apache24.config.in"/>
-                <File Id="attrChecker.html" Checksum="yes" Source="$(var.RootDir)\configs\attrChecker.html"/>
-                <File Id="globalLogout.html" Checksum="yes" Source="$(var.RootDir)\configs\globalLogout.html"/>
-                <File Id="handlers.ini" Checksum="yes" Source="$(var.RootDir)\configs\handlers.ini"/>
-                <File Id="iis_config.ini" Checksum="yes" Source="$(var.RootDir)\configs\iis-config.ini"/>
-                <File Id="localLogout.html" Checksum="yes" Source="$(var.RootDir)\configs\localLogout.html"/>
-                <File Id="partialLogout.html" Checksum="yes" Source="$(var.RootDir)\configs\partialLogout.html"/>
-                <File Id="request_map.xml" Checksum="yes" Source="$(var.RootDir)\configs\request-map.xml"/>
+            </Component>
+            <Component Id="Config.apache" Directory = "etcShib" Guid="{C372712D-9C83-4B28-A35A-5A1B0BE09141}">
+                <File Id="apache24.config.in" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\apache24.config.in"/>
+            </Component>
+            <Component Id="Config.atrchecker" Directory = "etcShib" Guid="{8AC41514-78A6-46C2-BAEA-D8966EFE383A}">
+                <File Id="attrChecker.html" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\attrChecker.html"/>
+            </Component>
+            <Component Id="Config.globalogout" Directory = "etcShib" Guid="{AF26926D-604A-4A8A-915A-CE206B953DCF}">
+                <File Id="globalLogout.html" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\globalLogout.html"/>
+            </Component>
+            <Component Id="Config.handler" Directory = "etcShib" Guid="{E9C5EB2F-624E-48A4-A493-87295A6C2DB3}">
+                <File Id="handlers.ini" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\handlers.ini"/>
+            </Component>
+            <Component Id="Config.iis" Directory = "etcShib" Guid="{6BB3FA6A-FB52-48C4-B9C8-92E2E8A2C618}">
+                <File Id="iis_config.ini" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\iis-config.ini"/>
+            </Component>
+            <Component Id="Config.locallogout" Directory = "etcShib" Guid="{CB4DBBF9-4F56-416F-BAC3-C27D4CDAEE9D}">
+                <File Id="localLogout.html" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\localLogout.html"/>
+            </Component>
+            <Component Id="Config.partialogout" Directory = "etcShib" Guid="{9FDE4718-0A65-413A-BCC0-C875530C1EB3}">
+                <File Id="partialLogout.html" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\partialLogout.html"/>
+            </Component>
+            <Component Id="Config.requestmap" Directory = "etcShib" Guid="{3B4B5BDF-84AF-4E05-9341-1501572B1FF5}">
+                <File Id="request_map.xml" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\request-map.xml"/>
             </Component>
 
             <!-- For some reason the id/elif/endif thing isnt working -->
             <Component Id="LibFiles" Directory = "libShib" Guid="{0B2F1FE1-53A8-4F25-A01A-9EBAD9FEDC69}">
             <?if $(sys.BUILDARCH) = "x64"?>
                 <File Id="IIS_x64" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\iis_shib4.dll"/>
-                <File Id="IIS_x86" Name="iid_shib4_x86.dll" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\iis_shib4.dll"/>
-                <File Id="Mod_shib"  Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\mod_shib4.so"/>
+            </Component>
+            <Component Id="IIS_x86" Directory = "libShib" Guid="{BB3CA70D-35F7-43ED-BC69-3EC2B5AE45E8}">
+                <File Id="IIS_x86" KeyPath="yes"  Name="iis_shib4_x86.dll" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\iis_shib4.dll"/>
+            </Component>
+            <Component Id="MOD_SHIB" Directory = "libShib" Guid="{E1EB5565-8429-492E-B27B-02E66B9A03CD}">
+                <File Id="Mod_shib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\mod_shib4.so"/>
             <?endif?>
             <?if $(sys.BUILDARCH) = "arm"?>
                 <File Id="IIS_arm" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\iis_shib4.dll"/>
