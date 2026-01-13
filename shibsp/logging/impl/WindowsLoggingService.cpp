@@ -127,16 +127,3 @@ void WindowsLoggingService::outputMessage(const Category& category, Priority::Va
     const char* msgs[2] {category.getName().c_str(),message};
     ::ReportEventA(m_EventSource, EventTypeFor(priority), EventCategoryFor(priority), EventIdFor(priority), NULL, 2, 0, msgs, NULL);
 }
-
-/* 
- This is the registry setting we need
-
-         <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\ShibbolethSPAgent">
-          <RegistryValue Name="CategoryCount" Type="integer" Value="8" />
-          <RegistryValue Name="TypesSupported" Type="integer" Value="7" />
-          <RegistryValue Name="CategoryMessageFile" Type="string" Value="PATH\TO\NativeLogMessages.dll" />
-          <RegistryValue Name="EventMessageFile" Type="string" Value="PATH\TO\NativeLogMessages.dll" />
-        </RegistryKey>
-      </Component>
-
-*/

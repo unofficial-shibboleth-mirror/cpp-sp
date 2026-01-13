@@ -138,6 +138,24 @@
                 <File Id="request_map.xml" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\request-map.xml"/>
             </Component>
 
+            <Component Id="EventLog" Directory = "libShib" Guid="{7A23A641-C9F3-439A-BA26-265418F9B974}">
+                <?if $(sys.BUILDARCH) = "x64"?>
+                <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\NativeLogMessages.dll"/>
+                <?endif?>
+                <?if $(sys.BUILDARCH) = "arm"?>
+                <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\NativeLogMessages.dll"/>
+                <?endif?>
+                <?if ($(sys.BUILDARCH) != "arm") and ($(sys.BUILDARCH) != "x64") ?>
+                <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\NativeLogMessages.dll"/>
+                <?endif?>
+                <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\ShibbolethSPAgent">
+                    <RegistryValue Name="CategoryCount" Type="integer" Value="8" />
+                    <RegistryValue Name="TypesSupported" Type="integer" Value="7" />
+                    <RegistryValue Name="CategoryMessageFile" Type="string" Value="[#NativeLogMessages]" />
+                    <RegistryValue Name="EventMessageFile" Type="string" Value="[#NativeLogMessages]" />
+                </RegistryKey>
+            </Component>
+
             <!-- For some reason the id/elif/endif thing isnt working -->
             <Component Id="LibFiles" Directory = "libShib" Guid="{0B2F1FE1-53A8-4F25-A01A-9EBAD9FEDC69}">
             <?if $(sys.BUILDARCH) = "x64"?>
