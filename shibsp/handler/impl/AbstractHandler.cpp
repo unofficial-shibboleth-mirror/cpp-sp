@@ -128,7 +128,7 @@ DDF AbstractHandler::wrapRequest(const SPRequest& request, const set<string>& he
     in.addmember("hostname").unsafe_string(request.getHostname());
     in.addmember("port").integer(request.getPort());
     in.addmember("content_type").string(request.getContentType().c_str());
-    if (sendBody) {
+    if (sendBody && !strcmp(request.getMethod(), "POST")) {
         if (request.getContentType().find("application/x-www-form-urlencoded") != string::npos) {
             unsigned int postLimit = getUnsignedInt(RequestMapper::POST_LIMIT_PROP_NAME, request,
                 RequestMapper::POST_LIMIT_PROP_DEFAULT, HANDLER_PROPERTY_FIXED | HANDLER_PROPERTY_MAP);
