@@ -757,11 +757,6 @@ private:
     bool m_partialRegexMatching;
 };
 
-AccessControl* htAccessFactory(const ptree&, bool)
-{
-    return new htAccessControl();
-}
-
 AccessControl::aclresult_t htAccessControl::doAccessControl(const ShibTargetApache& sta, const Session* session, const char* plugin) const
 {
     aclresult_t result = shib_acl_false;

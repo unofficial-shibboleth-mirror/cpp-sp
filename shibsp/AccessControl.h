@@ -70,9 +70,6 @@ namespace shibsp {
 
     /** AccessControl based on XML syntax. */
     #define XML_ACCESS_CONTROL      "XML"
-
-    /** Reserved for Apache-style .htaccess support. */
-    #define HT_ACCESS_CONTROL       "htaccess"
 };
 
 #endif /* __shibsp_acl_h__ */

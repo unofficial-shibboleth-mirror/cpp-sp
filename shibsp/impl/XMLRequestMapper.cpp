@@ -226,28 +226,20 @@ void Override::loadACL(ptree& pt, Category& log)
 
     static const char ACCESS_CONTROL_PROP_PATH[] = "AccessControl";
     static const char ACCESS_CONTROL_PROVIDER_PROP_PATH[] = "AccessControlProvider";
-    static const char HTACCESS_PROP_PATH[] = "htaccess";
     static const char TYPE_PROP_PATH[] = "<xmlattr>.type";
 
     try {
-        boost::optional<ptree&> acl = pt.get_child_optional(HTACCESS_PROP_PATH);
+        boost::optional<ptree&> acl = pt.get_child_optional(ACCESS_CONTROL_PROP_PATH);
         if (acl) {
-            log.info("building Apache htaccess AccessControl provider...");
-            m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(HT_ACCESS_CONTROL, acl.get(), false));
+            log.info("building inline XML-based AccessControl provider...");
+            m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, acl.get(), false));
         }
         else {
-            acl = pt.get_child_optional(ACCESS_CONTROL_PROP_PATH);
+            acl = pt.get_child_optional(ACCESS_CONTROL_PROVIDER_PROP_PATH);
             if (acl) {
-                log.info("building inline XML-based AccessControl provider...");
-                m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(XML_ACCESS_CONTROL, acl.get(), false));
-            }
-            else {
-                acl = pt.get_child_optional(ACCESS_CONTROL_PROVIDER_PROP_PATH);
-                if (acl) {
-                    string t(acl->get(TYPE_PROP_PATH, "XML"));
-                    log.info("building AccessControl provider of type %s...", t.c_str());
-                    m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acl.get(), false));
-                }
+                string t(acl->get(TYPE_PROP_PATH, "XML"));
+                log.info("building AccessControl provider of type %s...", t.c_str());
+                m_acl.reset(AgentConfig::getConfig().AccessControlManager.newPlugin(t.c_str(), acl.get(), false));
             }
         }
     }

@@ -267,8 +267,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
 
         // We're done.  Everything is okay.  Nothing to report.  Nothing to do..
         // Let the caller decide how to proceed.
-        request.debug("doAuthentication succeeded");
-        return make_pair(false,0L);
+        return make_pair(false, 0L);
     }
     catch (exception& e) {
         return make_pair(true, handleError(request, nullptr, &e));
@@ -342,7 +341,7 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
         RequestMapper::Settings settings = request.getRequestSettings();
 
         try {
-            session = request.getSession(false, false);  // ignore timeout and do not cache
+            session = request.getSession(false, false);  // ignore timeout and address check here
         }
         catch (const exception& e) {
             request.warn("unable to obtain session to export to request: %s", e.what());
