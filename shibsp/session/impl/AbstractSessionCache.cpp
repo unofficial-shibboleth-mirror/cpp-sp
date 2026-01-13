@@ -560,6 +560,8 @@ unique_lock<Session> AbstractSessionCache::_find(
     log(DEBUG_MARK, "valid session (%s) loaded from persistent store", key);
 
     // Wrap the object in a local wraper to guard it before it's saved off.
+    // Reset the structure name to carry the session key.
+    obj.name(key);
     unique_ptr<BasicSession> newSession(new BasicSession(*this, obj));
 
     // Lock the cache and check for a race condition with another thread...
