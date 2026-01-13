@@ -95,7 +95,7 @@ StorageServiceSessionCache::~StorageServiceSessionCache()
 
 string StorageServiceSessionCache::cache_create(SPRequest* request, DDF& sessionData)
 {
-    DDF in("session-cache");
+    DDF in = DDF("session-cache").structure();
     DDFJanitor injanitor(in);
     DDF sessionCopy = sessionData.copy();
     in.add(sessionCopy.name("session"));
@@ -129,7 +129,7 @@ DDF StorageServiceSessionCache::cache_read(
     const char* client_addr
     )
 {
-    DDF in("session-cache");
+    DDF in = DDF("session-cache").structure();
     DDFJanitor injanitor(in);
 
     in.addmember("op").string("R");
@@ -232,14 +232,13 @@ DDF StorageServiceSessionCache::cache_read(
         }
     }    
 
-    // Otherwise return the detached session structure after re-installing the key into the root name.
-    sessionData.name(key);
+    // Otherwise return the detached session structure.
     return sessionData.remove();
 }
 
 bool StorageServiceSessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& sessionData)
 {
-    DDF in("session-cache");
+    DDF in = DDF("session-cache").structure();
     DDFJanitor injanitor(in);
 
     DDF sessionCopy = sessionData.copy();
@@ -287,7 +286,7 @@ bool StorageServiceSessionCache::cache_update(SPRequest* request, const char* ke
 
 bool StorageServiceSessionCache::cache_touch(SPRequest* request, const char* key, unsigned int version, unsigned int timeout)
 {
-    DDF in("session-cache");
+    DDF in = DDF("session-cache").structure();
     DDFJanitor injanitor(in);
     in.addmember("op").string("T");
     in.addmember("key").string(key);
@@ -337,7 +336,7 @@ bool StorageServiceSessionCache::cache_touch(SPRequest* request, const char* key
 
 void StorageServiceSessionCache::cache_remove(SPRequest* request, const char* key)
 {
-    DDF in("session-cache");
+    DDF in = DDF("session-cache").structure();
     DDFJanitor injanitor(in);
 
     in.addmember("op").string("D");
