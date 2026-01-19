@@ -190,7 +190,7 @@
        <CustomAction Id="SetIISInstall" Property="QtIISInstall"
                      Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative /image:&quot;[#IIS_lib]&quot; /precondition:&quot;bitness64&quot;"/>
 
-       <CustomAction Id="QtIISUnInstall" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
+       <CustomAction Id="QtIISUnInstall" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" Return="ignore"/>
        <CustomAction Id="SetIISUnInstall" Property="QtIISUnInstall"
                      Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative" />
 
@@ -199,7 +199,7 @@
        <CustomAction Id="SetIISInstall32" Property="QtIISInstall32"
                      Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative32 /image:&quot;[#IIS_x86_lib]&quot; /precondition:&quot;bitness32&quot;" />
 
-       <CustomAction Id="QtIISUnInstall32" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
+       <CustomAction Id="QtIISUnInstall32" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" Return="ignore"/>
        <CustomAction Id="SetIISUnInstall32" Property="QtIISUnInstall32"
                      Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative32" />
        <?endif?>
