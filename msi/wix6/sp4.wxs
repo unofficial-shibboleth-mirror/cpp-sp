@@ -67,7 +67,9 @@
                 </Directory>
                 <Directory Id="var" Name="var">
                     <Directory Id="cache" Name="cache">
-                        <Directory Id="varCacheShib" Name="shibboleth-sp"/>
+                        <Directory Id="varCacheShib" Name="shibboleth-sp">
+                            <Directory Id="varCacheShibSessions" Name="sessions"/>
+                        </Directory>
                     </Directory>
                 </Directory>
                 <Directory Id="lib" Name="lib">
@@ -80,8 +82,8 @@
 
             <Component Id="CreateFolders" Guid="{39682338-1733-4EA8-8F0E-4BD2E7119D36}" Condition="NOT WIX_UPGRADE_DETECTED">
 
-            <!-- We need this line to get the KeyPath set -->
-            <CreateFolder/>
+                <!-- We need this line to get the KeyPath set -->
+                <CreateFolder/>
 
                 <CreateFolder Directory="etcShib">
                     <Permission User="[WIX_ACCOUNT_ADMINISTRATORS]" GenericAll="yes" />
@@ -103,10 +105,12 @@
                     <Permission User="[WIX_ACCOUNT_USERS]" GenericAll="no" />
                     <Permission User="[WEBSERVER_USER]" GenericAll="yes" />
                 </CreateFolder>
+
+                <CreateFolder Directory="varCacheShibSessions"/>
+
             </Component>
 
             <Component Id="SaveInstallDir" Directory = "etcShib" Bitness="always64" Guid="{8E940A9F-CD5C-4DE4-87D3-063BF33400D6}">
-
                 <RegistryValue Id="TargetDir64" Root="HKLM" Key="SOFTWARE\Shibboleth" Name="InstallDir" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
             </Component>
 
@@ -159,16 +163,16 @@
             <!-- For some reason the id/elif/endif thing isnt working -->
             <Component Id="LibFiles" Directory = "libShib" Guid="{0B2F1FE1-53A8-4F25-A01A-9EBAD9FEDC69}">
             <?if $(sys.BUILDARCH) = "x64"?>
-                <File Id="IIS_x64" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\iis_shib4.dll"/>
+                <File Id="IIS_lib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\iis_shib4.dll"/>
             </Component>
             <Component Id="IIS_x86" Directory = "libShib" Guid="{BB3CA70D-35F7-43ED-BC69-3EC2B5AE45E8}">
-                <File Id="IIS_x86" KeyPath="yes"  Name="iis_shib4_x86.dll" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\iis_shib4.dll"/>
+                <File Id="IIS_x86_lib" KeyPath="yes"  Name="iis_shib4_x86.dll" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\iis_shib4.dll"/>
             </Component>
             <Component Id="MOD_SHIB" Directory = "libShib" Guid="{E1EB5565-8429-492E-B27B-02E66B9A03CD}">
                 <File Id="Mod_shib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\mod_shib4.so"/>
             <?endif?>
             <?if $(sys.BUILDARCH) = "arm"?>
-                <File Id="IIS_arm" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\iis_shib4.dll"/>
+                <File Id="IIS_lib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\iis_shib4.dll"/>
             <?endif?>
             <?if ($(sys.BUILDARCH) != "arm") and ($(sys.BUILDARCH) != "x64") ?>
             <!-- We do not want to build pure x86 at this time.  Whine -->
@@ -179,17 +183,56 @@
 
        <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
        <CustomAction Id="DefaultWebServerUser" Property="WEBSERVER_USER" Value="[WIX_ACCOUNT_LOCALSERVICE]" />
+       <CustomAction Id="IISWebServerUser" Property="WEBSERVER_USER" Value="DefaultAppPool" />
 
+       <!-- IIS install/uninstall -->
+       <CustomAction Id="QtIISInstall" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
+       <CustomAction Id="SetIISInstall" Property="QtIISInstall"
+                     Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative /image:&quot;[#IIS_lib]&quot; /precondition:&quot;bitness64&quot;"/>
 
-        <!--        <InstallUISequence>
-             <Custom Action="InheritInstallDir" After="AppSearch" Condition="OLD_INSTALLDIR" />
-             </InstallUISequence> -->
-        <InstallExecuteSequence>
-            <!-- inherit installationDir if there is something to inherit -->
-            <Custom Action="InheritInstallDir" After="AppSearch" Condition="OLD_INSTALLDIR" />
-            <!-- Default Web Server account if not specified -->
-            <Custom Action="DefaultWebServerUser" After="InstallInitialize" Condition="WEBSERVER_USER = &quot;&quot;" />
-        </InstallExecuteSequence>
+       <CustomAction Id="QtIISUnInstall" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
+       <CustomAction Id="SetIISUnInstall" Property="QtIISUnInstall"
+                     Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative" />
+
+       <?if $(sys.BUILDARCH) = "x64"?>
+       <CustomAction Id="QtIISInstall32" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
+       <CustomAction Id="SetIISInstall32" Property="QtIISInstall32"
+                     Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative32 /image:&quot;[#IIS_x86_lib]&quot; /precondition:&quot;bitness32&quot;" />
+
+       <CustomAction Id="QtIISUnInstall32" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
+       <CustomAction Id="SetIISUnInstall32" Property="QtIISUnInstall32"
+                     Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative32" />
+       <?endif?>
+
+       <InstallExecuteSequence>
+           <!-- inherit installationDir if there is something to inherit -->
+           <Custom Action="InheritInstallDir" After="AppSearch" Condition="OLD_INSTALLDIR" />
+           <!-- Default Web Server account if not specified -->
+           <Custom Action="DefaultWebServerUser" After="InstallInitialize" Condition="(WEBSERVER_USER = &quot;&quot;) AND NOT IISMAJORVERSION" />
+           <Custom Action="IISWebServerUser" After="InstallInitialize" Condition="(WEBSERVER_USER = &quot;&quot;) AND IISMAJORVERSION" />
+
+           <!-- IIS Install -->
+           <Custom Action="SetIISInstall" Before="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION"/>
+           <Custom Action="QtIISInstall" After="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION"/>
+
+           <?if $(sys.BUILDARCH) = "x64"?>
+           <Custom Action="SetIISInstall32" Before="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION"/>
+           <Custom Action="QtIISInstall32" After="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION"/>
+           <?endif?>
+
+           <!-- IIS Uninstall -->
+
+           <Custom Action="SetIISUnInstall" Before="StopServices"/>
+           <Custom Action="QtIISUnInstall" After="StopServices"
+		   Condition="Installed AND IISMAJORVERSION AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)"/>
+
+           <?if $(sys.BUILDARCH) = "x64"?>
+           <Custom Action="SetIISUnInstall32" Before="StopServices"/>
+           <Custom Action="QtIISUnInstall32" After="StopServices"
+		   Condition="Installed AND IISMAJORVERSION AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)"/>
+           <?endif?>
+
+       </InstallExecuteSequence>
 
     </Package>
 
