@@ -244,7 +244,8 @@
 		   Condition="Installed AND IISMAJORVERSION AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)"/>
            <?endif?>
 
-       </InstallExecuteSequence>
+           <ScheduleReboot Before="InstallFinalize" Condition="(NOT Installed) AND IISMAJORVERSION" />
+      </InstallExecuteSequence>
 
     </Package>
 
