@@ -106,7 +106,12 @@
                     <Permission User="[WEBSERVER_USER]" GenericAll="yes" />
                 </CreateFolder>
 
-                <CreateFolder Directory="varCacheShibSessions"/>
+                <CreateFolder Directory="varCacheShibSessions">
+                    <Permission User="[WIX_ACCOUNT_ADMINISTRATORS]" GenericAll="yes" />
+                    <Permission User="[WIX_ACCOUNT_LOCALSYSTEM]" GenericAll="yes" />
+                    <Permission User="[WIX_ACCOUNT_USERS]" GenericAll="no" />
+                    <Permission User="[WEBSERVER_USER]" GenericAll="yes" />
+                </CreateFolder>
 
             </Component>
 
@@ -190,6 +195,7 @@
        <CustomAction Id="SetIISInstall" Property="QtIISInstall"
                      Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative /image:&quot;[#IIS_lib]&quot; /precondition:&quot;bitness64&quot;"/>
 
+       <!-- Note that further testing shows that the delete before uninstall may not always be needed, but doing it is benign -->
        <CustomAction Id="QtIISDelete" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" Return="ignore"/>
        <CustomAction Id="SetIISDelete" Property="QtIISDelete"
                      Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; delete module ShibNative" />
