@@ -22,6 +22,7 @@
 #define __shibsp_absremotingservice_h__
 
 #include "remoting/RemotingService.h"
+#include "logging/Category.h"
 
 #include <iostream>
 #include <boost/property_tree/ptree_fwd.hpp>
@@ -43,6 +44,8 @@ namespace shibsp {
          * @return      response from remote service
          */
         DDF send(const DDF& in, bool checkEvent=true) const;
+
+        virtual Category& logger() const = 0;
 
     protected:
         AbstractRemotingService(const boost::property_tree::ptree& pt);
