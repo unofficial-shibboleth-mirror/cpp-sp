@@ -165,6 +165,12 @@
                 </RegistryKey>
             </Component>
 
+            <Component Id="shib64.ico" Directory = "etcShib" Bitness="always64" Guid="{ECDF6D42-5AC2-4029-8263-986362C8255D}" >
+	        <File Id="shib64.ico" KeyPath="yes" Source="$(var.RootDir)\msi\shib.ico" />
+                <RegistryValue Id="DisplayIcon64" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[ProductCode]"
+			       Name="DisplayIcon" Value="[#shib64.ico],0" Type="string" />
+            </Component>
+
             <!-- For some reason the id/elif/endif thing isnt working -->
             <Component Id="LibFiles" Directory = "libShib" Guid="{0B2F1FE1-53A8-4F25-A01A-9EBAD9FEDC69}">
             <?if $(sys.BUILDARCH) = "x64"?>
