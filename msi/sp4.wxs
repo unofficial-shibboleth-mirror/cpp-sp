@@ -15,7 +15,7 @@
 
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
       xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
-    <Package Name="Shibboleth SP V4 Windows Agent" Language="1033" Version="$(var.msiVersion)" Manufacturer="The Shibboleth Consortium" UpgradeCode="$(var.UpgradeUUID)" InstallerVersion="310">
+    <Package Name="Shibboleth SP V4 Windows Agent" Language="1033" Version="$(var.msiVersion)" Manufacturer="The Shibboleth Consortium" UpgradeCode="$(var.UpgradeUUID)" InstallerVersion="500">
         <SummaryInformation Description="Shibboleth SP V4 Windows Agent" Manufacturer="The Shibboleth Consortium" />
         <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowSameVersionUpgrades="yes" Schedule="afterInstallInitialize" />
         <MediaTemplate EmbedCab="yes" />
@@ -151,10 +151,10 @@
                 <?if $(sys.BUILDARCH) = "x64"?>
                 <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\NativeLogMessages.dll"/>
                 <?endif?>
-                <?if $(sys.BUILDARCH) = "arm"?>
+                <?if $(sys.BUILDARCH) = "arm64"?>
                 <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\NativeLogMessages.dll"/>
                 <?endif?>
-                <?if ($(sys.BUILDARCH) != "arm") and ($(sys.BUILDARCH) != "x64") ?>
+                <?if ($(sys.BUILDARCH) != "arm64") and ($(sys.BUILDARCH) != "x64") ?>
                 <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\NativeLogMessages.dll"/>
                 <?endif?>
                 <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\ShibbolethSPAgent">
@@ -182,10 +182,10 @@
             <Component Id="MOD_SHIB" Directory = "libShib" Guid="{E1EB5565-8429-492E-B27B-02E66B9A03CD}">
                 <File Id="Mod_shib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\mod_shib4.so"/>
             <?endif?>
-            <?if $(sys.BUILDARCH) = "arm"?>
+            <?if $(sys.BUILDARCH) = "arm64"?>
                 <File Id="IIS_lib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\iis_shib4.dll"/>
             <?endif?>
-            <?if ($(sys.BUILDARCH) != "arm") and ($(sys.BUILDARCH) != "x64") ?>
+            <?if ($(sys.BUILDARCH) != "arm64") and ($(sys.BUILDARCH) != "x64") ?>
             <!-- We do not want to build pure x86 at this time.  Whine -->
                 <File Id="IIS_bogus" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\NO_SUCH_PATH\Release\iis_shib4.dll"/>
             <?endif?>
