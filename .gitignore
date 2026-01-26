@@ -30,6 +30,7 @@ Makefile.in
 Debug
 Release
 x64
+ARM64
 /aclocal.m4
 /config.h.in
 /config.h
@@ -60,10 +61,6 @@ x64
 /fastcgi/shibresponder
 /Projects/VC??/apache/mod_shib4-Debug/
 /Projects/VC??/apache/mod_shib4-Release/
-/Projects/VC??/fastcgi/shibauthorizer-Debug/
-/Projects/VC??/fastcgi/shibauthorizer-Release/
-/Projects/VC??/fastcgi/shibresponder-Debug/
-/Projects/VC??/fastcgi/shibresponder-Release/
 /Projects/VC??/ipch/
 /Projects/VC??/.vs
 /Projects/VC??/Shibboleth.*.opendb
