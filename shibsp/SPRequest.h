@@ -27,6 +27,7 @@
 #include <shibsp/logging/Priority.h>
 
 #include <cstdarg>
+#include <exception>
 #include <mutex>
 
 namespace shibsp {
@@ -164,6 +165,14 @@ namespace shibsp {
          * @param authtype  AUTH_TYPE value to set or nullptr to clear
          */
         virtual void setAuthType(const char* authtype)=0;
+
+        /**
+         * Log exception to native server environment.
+         * 
+         * @param level logging level
+         * @param e exception
+         */
+        virtual void log(Priority::Value level, const std::exception& e) const=0;
 
         /**
          * Log to native server environment.

@@ -47,25 +47,21 @@ DDF AbstractRemotingService::send(const DDF& in, bool checkEvent) const
     if (!checkEvent) {
         return output;
     }
-
     const char* event = output.getmember("event").string();
     if (event && strcmp(event, "success")) {
-        string message("Send Message Failed: ");
+        string message("Remote operation (");
+        message += in.name() ? in.name() : "unknown";
+        message += ") failed with event: ";
         message += event;
-        OperationException ex("Remote operation was unsuccessful.");
+        OperationException ex(message);
         ex.addProperty(AgentException::EVENT_PROP_NAME, event);
         if (in.name()) {
             ex.addProperty("operation", in.name());
-            message += " operation : ";
-            message += in.name();
         }
         const char* target = output.getmember("target").string();
         if (target) {
             ex.addProperty(AgentException::TARGET_PROP_NAME, target);
-            message += " target : ";
-            message += target;
         }
-        logger().debug(message);
         output.destroy();
         throw ex;
     }

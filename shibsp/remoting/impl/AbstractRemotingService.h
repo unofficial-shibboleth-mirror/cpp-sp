@@ -45,8 +45,6 @@ namespace shibsp {
          */
         DDF send(const DDF& in, bool checkEvent=true) const;
 
-        virtual Category& logger() const = 0;
-
     protected:
         AbstractRemotingService(const boost::property_tree::ptree& pt);
 

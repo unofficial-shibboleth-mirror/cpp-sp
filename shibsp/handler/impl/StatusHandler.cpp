@@ -275,20 +275,13 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
         return make_pair(true, request.sendResponse(s));
     }
 
-    catch (exception& ex) {
-
-        string fullDetails(string(ex.what()));
-        AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
-        if (agent_ex && agent_ex->getProperty(AgentException::EVENT_PROP_NAME)) {
-            fullDetails +=  string(" (") + agent_ex->getProperty(AgentException::EVENT_PROP_NAME) + ")";
-        }
-
-        request.error(string("error while processing request: ") + fullDetails);
+    catch (const exception& ex) {
+        request.log(Priority::SHIB_ERROR, ex);
         request.setContentType("text/xml");
         stringstream msg;
         msg << "<StatusHandler time='" << timestamp << "'>"
             << "<Version Shibboleth='" << PACKAGE_VERSION << "'/>";
-        systemInfo(msg) << "<Status><Exception typename='" << typeid(ex).name() << "'>" << fullDetails << "</Exception></Status>"
+        systemInfo(msg) << "<Status><Exception typename='" << typeid(ex).name() << "'>" << ex.what() << "</Exception></Status>"
             << "</StatusHandler>";
         return make_pair(true, request.sendResponse(msg, HTTPResponse::SHIBSP_HTTP_STATUS_ERROR));
     }

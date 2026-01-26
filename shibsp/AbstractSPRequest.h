@@ -78,6 +78,7 @@ namespace shibsp {
 
         std::string getSecureHeader(const char* name) const;
         void setAuthType(const char* authtype);
+        void log(Priority::Value level, const std::exception& ex) const;
         void log(Priority::Value level, const std::string& msg) const;
         void log(Priority::Value level, const char* formatString, va_list args) const;
         bool isPriorityEnabled(Priority::Value level) const;

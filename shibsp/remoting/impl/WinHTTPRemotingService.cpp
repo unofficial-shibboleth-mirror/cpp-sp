@@ -55,10 +55,6 @@ namespace {
         WinHTTPRemotingService(ptree& pt);
         virtual ~WinHTTPRemotingService();
 
-        Category& logger() const {
-            return m_log;
-        }
-
         bool isChunked() const {
             return m_chunked;
         }

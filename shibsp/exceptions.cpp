@@ -103,17 +103,5 @@ string AgentException::toQueryString() const
 
 void AgentException::log(const SPRequest& request, Priority::Value priority) const
 {
-    ostringstream msg;
-    msg << what() << " [";
-
-    // Dump properties and status code.
-    msg << "status=" << getStatusCode();
-
-    for (const auto& prop : m_props) {
-        msg << ", " << prop.first << '=' << prop.second;
-    }
-
-    msg << ']';
-
-    request.log(priority, msg.str());
+    request.log(priority, *this);
 }

@@ -453,6 +453,29 @@ const char* AbstractSPRequest::getLogContext() const{
     return nullptr;
 }
 
+void AbstractSPRequest::log(Priority::Value level, const exception& e) const
+{
+    const AgentException* rich_ex = dynamic_cast<const AgentException*>(&e);
+    if (rich_ex) {
+        ostringstream msg;
+        msg << e.what() << " [";
+
+        // Dump properties and status code.
+        msg << "status=" << rich_ex->getStatusCode();
+
+        for (const auto& prop : rich_ex->getProperties()) {
+            msg << ", " << prop.first << '=' << prop.second;
+        }
+
+        msg << ']';
+
+        log(level, msg.str());
+    }
+    else {
+        log(level, e.what());
+    }
+}
+
 void AbstractSPRequest::log(Priority::Value level, const std::string& msg) const
 {
     if (isPriorityEnabled(level)) {
