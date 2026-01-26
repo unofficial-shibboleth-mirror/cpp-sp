@@ -10,10 +10,6 @@
      implied.  See the License for the specific language governing
      permissions and limitations under the License.
 
-NOTES:
-      dotnet clean installer.wixporoj
-      dotnet build installer.wixporoj
-
 -->
 
 <Project Sdk="WixToolset.Sdk/6.0.2">
@@ -26,6 +22,8 @@ NOTES:
         <InstallerPlatform>x64</InstallerPlatform>
         <MsiVersion>4.0.0.255</MsiVersion>
         <DefineConstants>msiVersion=$(MsiVersion)</DefineConstants>
+	<InstallerPlatform>$(Platform)</InstallerPlatform>
+	<DefineConstants>RootDir=$(RootDir);msiVersion=$(MsiVersion)</DefineConstants>
         <SuppressIces>ICE61</SuppressIces>
     </PropertyGroup>
 </Project>
