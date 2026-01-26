@@ -222,7 +222,9 @@ StatusCallback(
     }
 };
 
-WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt) : AbstractHTTPRemotingService(pt),
+WinHTTPRemotingService::WinHTTPRemotingService(ptree& pt)
+    : AbstractRemotingService(pt),
+    : AbstractHTTPRemotingService(pt),
     m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService")),
     m_secure(false), m_caChainEngine(nullptr), m_caStore(nullptr),
     m_init(false), m_chunked(defaultChunking)

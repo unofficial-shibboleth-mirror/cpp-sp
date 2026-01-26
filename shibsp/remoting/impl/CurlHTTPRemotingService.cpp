@@ -170,7 +170,9 @@ namespace shibsp {
     }
 };
 
-CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt) : AbstractHTTPRemotingService(pt),
+CurlHTTPRemotingService::CurlHTTPRemotingService(ptree& pt) :
+    AbstractRemotingService(pt),
+    AbstractHTTPRemotingService(pt),
     m_log(Category::getInstance(SHIBSP_LOGCAT ".RemotingService")),
         m_curlInit(false), m_poolsize(20), m_chunked(true)
 {
