@@ -100,12 +100,8 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
     // Not a hook response, so process as a token-consumer operation.
 
     try {
-        DDF input("token-consumer");
+        DDF input = request.getAgent().getRemotingService()->build("token-consumer", request);
         DDFJanitor inputJanitor(input);    
-        input.structure();
-        input.addmember("application").string(
-            request.getRequestSettings().first->getString(
-                RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
 
         DDF wrapped = wrapRequest(request, m_remotedHeaders);
         input.add(wrapped);

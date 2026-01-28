@@ -155,6 +155,13 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
     }
 }
 
+const char* IIS7Request::getRequestID() const
+{
+    // TODO: Use AgentConfig generateRandom if IIS has nothing to use, would store
+    // off in string member and just return that here.
+    return nullptr;
+}
+
 bool IIS7Request::isUseHeaders() const
 {
     return m_useHeaders;

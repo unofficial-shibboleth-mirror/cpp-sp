@@ -52,6 +52,12 @@ namespace shibsp {
         virtual ~SPRequest();
 
         /**
+         * Gets an optional identifier nominally unique to this request to use in
+         * logging/debugging for correlation.
+         */
+        virtual const char* getRequestID() const=0;
+
+        /**
          * Returns the Agent processing the request.
          *
          * @return reference to Agent

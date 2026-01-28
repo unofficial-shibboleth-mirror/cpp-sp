@@ -22,7 +22,6 @@
 #include "exceptions.h"
 #include "AgentConfig.h"
 #include "SPRequest.h"
-#include "csprng/csprng.hpp"
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
 #include "util/Date.h"
@@ -82,7 +81,6 @@ namespace {
 
         Category& m_spilog;
         string m_dir;
-        duthomhas::csprng m_rng;
         time_t m_cleanupInterval;
         unsigned int m_fileTimeout;
         condition_variable m_file_cleanup_wait;
@@ -122,7 +120,7 @@ FilesystemSessionCache::FilesystemSessionCache(const ptree& pt)
         m_dir += '/';
     }
 
-    string testPath = m_dir + hex_encode(m_rng(string(16,0)));
+    string testPath = m_dir + AgentConfig::getConfig().generateRandom(16);
 
     bool failed = true;
 
@@ -204,7 +202,7 @@ string FilesystemSessionCache::cache_create(SPRequest* request, DDF& sessionData
     string path;
     int attempts = 0;
     do {
-        key = hex_encode(m_rng(string(16,0)));
+        key = AgentConfig::getConfig().generateRandom(16);
         path = m_dir + key;
         computeVersionedFilename(path, 1);
         // We attempt an exclusive open to "reserve" the new session file name.

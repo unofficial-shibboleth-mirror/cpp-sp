@@ -30,6 +30,7 @@ namespace shibsp {
         DummyRequest(const char* uri=nullptr) : AbstractSPRequest(SHIBSP_LOGCAT ".DummyRequest"), m_addr("192.168.0.1") {
             setRequestURI(uri);
         }
+        const char* getRequestID() const { return nullptr; }
         const char* getMethod() const { return nullptr; }
         const char* getScheme() const { return m_scheme.c_str(); }
         const char* getHostname() const { return m_hostname.c_str(); }

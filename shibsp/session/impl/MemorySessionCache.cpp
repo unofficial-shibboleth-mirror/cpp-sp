@@ -24,7 +24,7 @@
 
 #include "internal.h"
 #include "exceptions.h"
-#include "csprng/csprng.hpp"
+#include "AgentConfig.h"
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
 #include "util/Date.h"
@@ -72,7 +72,6 @@ namespace {
         static void* memory_cleanup_fn(void*);
 
         Category& m_spilog;
-        duthomhas::csprng m_rng;
         mutex m_lock;
         map<string,pair<DDF,time_t>> m_storage;
 
@@ -150,7 +149,7 @@ string MemorySessionCache::cache_create(SPRequest* request, DDF& sessionData)
 
     int attempts = 0;
     do {
-        string key = hex_encode(m_rng(string(16,0)));
+        string key = AgentConfig::getConfig().generateRandom(16);
         if (m_storage.find(key) == m_storage.end()) {
             m_storage[key] = make_pair(sessionData.copy(), time(nullptr));
             return key;

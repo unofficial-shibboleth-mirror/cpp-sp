@@ -20,7 +20,9 @@
 
 #include "internal.h"
 #include "exceptions.h"
+#include "AgentConfig.h"
 #include "remoting/impl/AbstractRemotingService.h"
+#include "util/Misc.h"
 
 #include <sstream>
 #include <boost/property_tree/ptree.hpp>
@@ -32,6 +34,21 @@ using namespace std;
 AbstractRemotingService::AbstractRemotingService(const ptree&) {}
 
 AbstractRemotingService::~AbstractRemotingService() {}
+
+DDF AbstractRemotingService::build(const char* opname, const char* application, const char* txid) const
+{
+    DDF msg = DDF(opname).structure();
+    if (application) {
+        msg.addmember("application").string(application);
+    }
+    if (txid) {
+        msg.addmember("txid").string(txid);
+    }
+    else {
+        msg.addmember("txid").string(AgentConfig::getConfig().generateRandom(8));
+    }
+    return msg;
+}
 
 DDF AbstractRemotingService::send(const DDF& in, bool checkEvent) const
 {

@@ -37,12 +37,7 @@ namespace shibsp {
     public:
         virtual ~AbstractRemotingService();
 
-        /**
-         * Send a remoted message and return the response.
-         *
-         * @param in    input message to send
-         * @return      response from remote service
-         */
+        DDF build(const char* opname, const char* application=nullptr, const char* txid= nullptr) const;
         DDF send(const DDF& in, bool checkEvent=true) const;
 
     protected:

@@ -21,8 +21,11 @@
 #include "internal.h"
 
 #include "AgentConfig.h"
+#include "SPRequest.h"
+#include "RequestMapper.h"
 #include "remoting/RemotingService.h"
 #include "remoting/SecretSource.h"
+#include "util/PropertySet.h"
 
 using namespace shibsp;
 using namespace boost::property_tree;
@@ -48,3 +51,13 @@ void SHIBSP_API shibsp::registerRemotingServices()
 RemotingService::RemotingService() {}
 
 RemotingService::~RemotingService() {}
+
+DDF RemotingService::build(const char* opname, const SPRequest& request) const
+{
+    // Extracts call metadata from request.
+    return build(
+        opname,
+        request.getRequestSettings().first->getString(
+            RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT),
+        request.getRequestID());
+}

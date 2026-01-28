@@ -25,6 +25,8 @@
 
 namespace shibsp {
 
+    class SHIBSP_API SPRequest;
+
     /**
      * Interface to a remoting service.
      *
@@ -39,6 +41,29 @@ namespace shibsp {
         RemotingService();
     public:
         virtual ~RemotingService();
+
+        /**
+         * Builds a DDF to invoke a remote operation suitable to pass to
+         * the send method.
+         * 
+         * <p>The caller owns the resulting object and it is guaranteed to be a structure.</p>
+         * 
+         * @param opname name of operation
+         * @param application optional application ID to include
+         * @param txid optional transaction identifier to include for debugging
+         */
+        virtual DDF build(const char* opname, const char* application=nullptr, const char* txid=nullptr) const=0;
+
+        /**
+         * Builds a DDF to invoke a remote operation suitable to pass to
+         * the send method.
+         * 
+         * <p>The caller owns the resulting object and it is guaranteed to be a structure.</p>
+         * 
+         * @param opname name of operation
+         * @param request active request from which to obtain information to include in call
+         */
+        virtual DDF build(const char* opname, const SPRequest& request) const;
 
         /**
          * Send a remoted message and return the response.

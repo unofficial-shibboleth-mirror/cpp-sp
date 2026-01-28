@@ -206,6 +206,18 @@ namespace shibsp {
         virtual Agent& getAgent() const=0;
 
         /**
+         * Generates a random string of designated length encoded into hex.
+         * 
+         * <p>The implementation should be reasonably secure, i.e., suitable for generating
+         * session IDs.</p>
+         * 
+         * @param len length of data in bytes to generate before encoding
+         * 
+         * @return hex encoded random data
+         */
+        virtual std::string generateRandom(unsigned int len) const=0;
+
+        /**
          * Helper for deprecation warnings about an at-risk feature or setting.
          */
         shibsp::Category& deprecation() const;

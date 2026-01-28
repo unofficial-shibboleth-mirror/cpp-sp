@@ -292,6 +292,9 @@ public:
     }
     return true;
   }
+  const char* getRequestID() const {
+    return m_req->log_id;
+  }
   const char* getScheme() const {
     return ap_http_scheme(m_req);
   }

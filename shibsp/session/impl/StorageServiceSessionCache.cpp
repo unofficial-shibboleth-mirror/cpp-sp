@@ -27,7 +27,7 @@
 #include "exceptions.h"
 #include "Agent.h"
 #include "AgentConfig.h"
-#include "csprng/csprng.hpp"
+#include "SPRequest.h"
 #include "remoting/RemotingService.h"
 #include "session/AbstractSessionCache.h"
 #include "logging/Category.h"
@@ -62,7 +62,6 @@ namespace {
     
     private:
         Category& m_spilog;
-        duthomhas::csprng m_rng;
         unsigned int m_storageTimeout;
     };
 
@@ -95,7 +94,8 @@ StorageServiceSessionCache::~StorageServiceSessionCache()
 
 string StorageServiceSessionCache::cache_create(SPRequest* request, DDF& sessionData)
 {
-    DDF in = DDF("session-cache").structure();
+    const RemotingService* remoting = AgentConfig::getConfig().getAgent().getRemotingService();
+    DDF in = remoting->build("session-cache", nullptr, request ? request->getRequestID() : nullptr);
     DDFJanitor injanitor(in);
     DDF sessionCopy = sessionData.copy();
     in.add(sessionCopy.name("session"));
@@ -104,7 +104,7 @@ string StorageServiceSessionCache::cache_create(SPRequest* request, DDF& session
     in.addmember("storage_timeout").longinteger(m_storageTimeout);
 
     try {
-        DDF out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+        DDF out = remoting->send(in);
         DDFJanitor outJanitor(out);
         const char* key = out["key"].string();
         if (!key || !*key) {
@@ -129,7 +129,8 @@ DDF StorageServiceSessionCache::cache_read(
     const char* client_addr
     )
 {
-    DDF in = DDF("session-cache").structure();
+    const RemotingService* remoting = AgentConfig::getConfig().getAgent().getRemotingService();
+    DDF in = remoting->build("session-cache", nullptr, request ? request->getRequestID() : nullptr);
     DDFJanitor injanitor(in);
 
     in.addmember("op").string("R");
@@ -143,7 +144,7 @@ DDF StorageServiceSessionCache::cache_read(
 
     DDF out;
     try {
-        out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+        out = remoting->send(in);
     }
     catch (const OperationException& e) {
         // Check for policy events.
@@ -238,7 +239,8 @@ DDF StorageServiceSessionCache::cache_read(
 
 bool StorageServiceSessionCache::cache_update(SPRequest* request, const char* key, unsigned int version, DDF& sessionData)
 {
-    DDF in = DDF("session-cache").structure();
+    const RemotingService* remoting = AgentConfig::getConfig().getAgent().getRemotingService();
+    DDF in = remoting->build("session-cache", nullptr, request ? request->getRequestID() : nullptr);
     DDFJanitor injanitor(in);
 
     DDF sessionCopy = sessionData.copy();
@@ -251,7 +253,7 @@ bool StorageServiceSessionCache::cache_update(SPRequest* request, const char* ke
 
     DDF out;
     try {
-        out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+        out = remoting->send(in);
     }
     catch (const OperationException& e) {
         // Check for VersionMismatch event.
@@ -286,7 +288,8 @@ bool StorageServiceSessionCache::cache_update(SPRequest* request, const char* ke
 
 bool StorageServiceSessionCache::cache_touch(SPRequest* request, const char* key, unsigned int version, unsigned int timeout)
 {
-    DDF in = DDF("session-cache").structure();
+    const RemotingService* remoting = AgentConfig::getConfig().getAgent().getRemotingService();
+    DDF in = remoting->build("session-cache", nullptr, request ? request->getRequestID() : nullptr);
     DDFJanitor injanitor(in);
     in.addmember("op").string("T");
     in.addmember("key").string(key);
@@ -299,7 +302,7 @@ bool StorageServiceSessionCache::cache_touch(SPRequest* request, const char* key
 
     DDF out;
     try {
-        out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+        out = remoting->send(in);
     }
     catch (const OperationException& e) {
         // Check for policy events.
@@ -336,14 +339,15 @@ bool StorageServiceSessionCache::cache_touch(SPRequest* request, const char* key
 
 void StorageServiceSessionCache::cache_remove(SPRequest* request, const char* key)
 {
-    DDF in = DDF("session-cache").structure();
+    const RemotingService* remoting = AgentConfig::getConfig().getAgent().getRemotingService();
+    DDF in = remoting->build("session-cache", nullptr, request ? request->getRequestID() : nullptr);
     DDFJanitor injanitor(in);
 
     in.addmember("op").string("D");
     in.addmember("key").string(key);
 
     try {
-        DDF out = AgentConfig::getConfig().getAgent().getRemotingService()->send(in);
+        DDF out = remoting->send(in);
         out.destroy();
         log(DEBUG_MARK, "removed session from storage via Hub (%s)", key);
     }

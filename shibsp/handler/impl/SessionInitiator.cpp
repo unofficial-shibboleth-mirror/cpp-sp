@@ -154,12 +154,8 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
 
         const PropertySet* settings = request.getRequestSettings().first;
 
-        DDF input("session-initiator");
+        DDF input = request.getAgent().getRemotingService()->build("session-initiator", request);
         DDFJanitor inputJanitor(input);
-
-        input.structure();
-        input.addmember("application").string(settings->getString(
-            RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
         
         // Will be set unless discovery was already attempted.
         if (m_discoveryEnabled && !handler.empty()) {

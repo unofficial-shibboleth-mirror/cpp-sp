@@ -51,11 +51,11 @@ class ShibTargetFCGI : public AbstractSPRequest
     const char* m_body;
     multimap<string,string> m_response_headers;
     int m_port;
-    string m_scheme,m_hostname;
+    string m_scheme,m_hostname,m_id;
 
 public:
     ShibTargetFCGI(FCGX_Request* req, char* post_data, const char* scheme=nullptr, const char* hostname=nullptr, int port=0)
-        : AbstractSPRequest(SHIBSP_LOGCAT ".FastCGI"), m_req(req), m_body(post_data) {
+        : AbstractSPRequest(SHIBSP_LOGCAT ".FastCGI"), m_req(req), m_body(post_data), m_id(AgentConfig::getConfig().generateRandom(8)) {
 
         const char* server_name_str = hostname;
         if (!server_name_str || !*server_name_str)
@@ -82,6 +82,9 @@ public:
 
     ~ShibTargetFCGI() { }
 
+    const char* getRequestID() const {
+        return m_id.c_str();
+    }
     bool isUseHeaders() const {
         return false;
     }

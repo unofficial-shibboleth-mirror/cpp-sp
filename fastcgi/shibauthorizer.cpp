@@ -48,6 +48,7 @@ typedef enum {
 class ShibTargetFCGIAuth : public AbstractSPRequest
 {
     FCGX_Request* m_req;
+    string m_id;
     int m_port;
     string m_scheme,m_hostname;
     multimap<string,string> m_response_headers;
@@ -55,7 +56,7 @@ public:
     map<string,string> m_request_headers;
 
     ShibTargetFCGIAuth(FCGX_Request* req, const char* scheme=nullptr, const char* hostname=nullptr, int port=0)
-            : AbstractSPRequest(SHIBSP_LOGCAT ".FastCGI"), m_req(req) {
+            : AbstractSPRequest(SHIBSP_LOGCAT ".FastCGI"), m_req(req), m_id(AgentConfig::getConfig().generateRandom(8)) {
         const char* server_name_str = hostname;
         if (!server_name_str || !*server_name_str)
             server_name_str = FCGX_GetParam("SERVER_NAME", req->envp);
@@ -81,6 +82,9 @@ public:
 
     ~ShibTargetFCGIAuth() { }
 
+    const char* getRequestID() const {
+        return m_id.c_str();
+    }
     bool isUseHeaders() const {
         return false;
     }

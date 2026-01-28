@@ -259,7 +259,7 @@ pair<bool,long> StatusHandler::run(SPRequest& request, bool isHandler) const
 
         const RemotingService* remoter = request.getAgent().getRemotingService(false);
         if (remoter) {
-            DDF in("ping");
+            DDF in = remoter->build("ping", request);
             DDFJanitor jan(in);
             DDF out = remoter->send(in);
             out.destroy();

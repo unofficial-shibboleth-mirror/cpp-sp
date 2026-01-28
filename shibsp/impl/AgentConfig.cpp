@@ -26,6 +26,7 @@
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
+#include "csprng/csprng.hpp"
 #include "handler/Handler.h"
 #include "io/HTTPResponse.h"
 #include "logging/LoggingService.h"
@@ -86,6 +87,7 @@ namespace shibsp {
 
         LoggingService& getLoggingService() const;
         Agent& getAgent() const;
+        string generateRandom(unsigned int len) const;
 
     private:
         bool _init(const char* inst_prefix=nullptr, const char* config_file=nullptr, bool rethrow=false);
@@ -106,6 +108,7 @@ namespace shibsp {
         vector<void*> m_libhandles;
         unique_ptr<LoggingService> m_logging;
         unique_ptr<Agent> m_agent;
+        mutable duthomhas::csprng m_rng;
     };
     
     static AgentInternalConfig g_agentConfig;
@@ -159,6 +162,11 @@ Agent& AgentInternalConfig::getAgent() const
         return *m_agent;
     }
     throw logic_error("Agent not initialized.");
+}
+
+string AgentInternalConfig::generateRandom(unsigned int len) const
+{
+    return hex_encode(m_rng(string(len, 0)));
 }
 
 bool AgentInternalConfig::init(const char* inst_prefix, const char* config_file, bool rethrow)

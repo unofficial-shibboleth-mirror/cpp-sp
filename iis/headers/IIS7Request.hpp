@@ -48,9 +48,18 @@ public:
     bool isUseHeaders() { return m_useHeaders; }
 
 protected:
-    //
-    // AbstractSP
-    //
+    const char* getRequestID() const;
+    const char* getScheme() const;
+    const char* getHostname() const;
+    int getPort() const;
+    string getContentType() const;
+    long getContentLength() const;
+    string getRemoteUser() const;
+    string getAuthType() const;
+    const char* getRequestBody() const;
+    const char* getQueryString() const;
+    string getHeader(const char* name) const;
+
     bool isUseHeaders() const;
     bool isUseVariables() const;
     void setHeader(const char* name, const char* value);
@@ -63,24 +72,7 @@ protected:
     string getRemoteAddr() const;
     string getLocalAddr() const;
     string getSecureHeader(const char* name) const;
-    //
-    // XMLTooling::GenericRequest
-    //
-    const char* getScheme() const;
-    const char* getHostname() const;
-    int getPort() const;
-    string getContentType() const;
-    long getContentLength() const;
-    string getRemoteUser() const;
-    string getAuthType() const;
-    const char* getRequestBody() const;
-    //
-    // XMLTooing:: HTTPRequest
-    //
-    const char* getQueryString() const;
-    string getHeader(const char* name) const;
 
-    // XMLTooing:: HTTPResponse, GenericResponse
     long sendResponse(istream& in, long status);
     void setResponseHeader(const char* name, const char* value, bool replace=false);
     long sendRedirect(const char* url);

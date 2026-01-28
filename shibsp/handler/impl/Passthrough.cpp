@@ -87,12 +87,8 @@ Passthrough::Passthrough(const ptree& pt, const char* path)
 pair<bool,long> Passthrough::run(SPRequest& request, bool isHandler) const
 {
     try {
-        DDF input(m_operation.c_str());
+        DDF input = request.getAgent().getRemotingService()->build(m_operation.c_str(), request);
         DDFJanitor inputJanitor(input);
-        input.structure();
-        input.addmember("application").string(
-            request.getRequestSettings().first->getString(
-                RequestMapper::APPLICATION_ID_PROP_NAME, RequestMapper::APPLICATION_ID_PROP_DEFAULT));
 
         DDF wrapped = wrapRequest(request, m_remotedHeaders, m_body);
         input.add(wrapped);
