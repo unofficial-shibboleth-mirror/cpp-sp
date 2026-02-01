@@ -42,4 +42,5 @@ ShibCompatValidUser Off
   require shib-session
 </Location>
 
-</IfModule>  # !mod_shib
+</IfModule>
+# !mod_shib
