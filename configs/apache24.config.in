@@ -5,6 +5,9 @@
 # For non-RPM installs, you should copy the relevant contents of
 # this file to a configuration location you control.
 
+# Avoid conflict with SP3 module
+<IfModule !mod_shib>
+
 #
 # Load the Shibboleth module.
 #
@@ -38,3 +41,5 @@ ShibCompatValidUser Off
   ShibRequestSetting requireSession 1
   require shib-session
 </Location>
+
+</IfModule>  # !mod_shib
