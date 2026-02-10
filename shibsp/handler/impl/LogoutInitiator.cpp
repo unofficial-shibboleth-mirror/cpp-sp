@@ -71,8 +71,12 @@ pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
     if (!dest) {
         dest = request.getRequestSettings().first->getString(RequestMapper::LOGOUT_URL_PROP_NAME);
         if (!dest) {
-            dest = request.getRequestSettings().first->getString(RequestMapper::HOME_URL_PROP_NAME,
-                RequestMapper::HOME_URL_PROP_DEFAULT);
+            stringstream s;
+            s << "<html><title>Logout Complete</title><body><h1>Logout Complete</h1>"
+                "<p>If you're seeing this page, the deployer failed to set a logoutURL setting "
+                "to redirect to a custom page for this application.</p>"
+                "</body></html>";
+            return make_pair(true, request.sendResponse(s));
         }
     }
 
