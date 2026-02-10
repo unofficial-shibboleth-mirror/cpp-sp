@@ -449,8 +449,12 @@ void CurlOperation::send(const char* path, istream& in, ostream& out)
     }
 
     if (code != CURLE_OK) {
-        throw RemotingException("Remote request failed at " + url + ": " +
+        long status = 0;
+        curl_easy_getinfo(m_handle, CURLINFO_RESPONSE_CODE, &status);
+        RemotingException ex("Remote request failed at " + url + ": " +
             (curl_errorbuf[0] ? curl_errorbuf : "no further information available"));
+        ex.setStatusCode(status);
+        throw ex;
     }
 
     // This won't prevent every possible failed connection from being kept, but it's something.

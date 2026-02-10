@@ -86,14 +86,14 @@ namespace shibsp {
          * 
          * @return status code
          */
-        int getStatusCode() const noexcept;
+        long getStatusCode() const noexcept;
 
         /**
          * Sets the HTTP status code for the error condition if not the default of 500.
          * 
          * @param code status code
          */
-        void setStatusCode(int code) noexcept;
+        void setStatusCode(long code) noexcept;
 
         /**
          * Gets the properties attached to this exception.
@@ -148,7 +148,7 @@ namespace shibsp {
         static const char TARGET_PROP_NAME[];
 
     private:
-        int m_status;
+        long m_status;
         std::string m_msg;
         std::unordered_map<std::string,std::string> m_props;
     };

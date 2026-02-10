@@ -35,13 +35,13 @@ const char AgentException::HANDLER_TYPE_PROP_NAME[] = "handlerType";
 const char AgentException::EVENT_PROP_NAME[] = "event";
 const char AgentException::TARGET_PROP_NAME[] = "target";
 
-AgentException::AgentException(const char* msg) : m_status(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR)
+AgentException::AgentException(const char* msg) : m_status(0)
 {
     if (msg)
         m_msg = msg;
 }
 
-AgentException::AgentException(const string& msg) : m_status(HTTPResponse::SHIBSP_HTTP_STATUS_ERROR), m_msg(msg)
+AgentException::AgentException(const string& msg) : m_status(0), m_msg(msg)
 {
 }
 
@@ -54,12 +54,12 @@ const char* AgentException::what() const noexcept
     return m_msg.c_str();
 }
 
-int AgentException::getStatusCode() const noexcept
+long AgentException::getStatusCode() const noexcept
 {
     return m_status;
 }
 
-void AgentException::setStatusCode(int code) noexcept
+void AgentException::setStatusCode(long code) noexcept
 {
     m_status = code;
 }

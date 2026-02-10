@@ -497,14 +497,16 @@ void WinHTTPRemotingService::send(const char* path, istream& input, ostream& out
     //
     if (!WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, nullptr, &statusCode, &statusCodeSize, nullptr)) {
         m_log.crit("Send. Failed to Query response from %s : %d", path, GetLastError());
-        throw runtime_error("Send failed");
+        throw RemotingException("Send failed");
     }
     if (statusCode != HTTP_STATUS_OK) {
         //
-        // TODO - something meaningfull
+        // TODO - something meaningful
         //
         m_log.crit("Send. Bad status from %s : %d", path, statusCode);
-        throw RemotingException("Send failed");
+        RemotingException ex("Send failed");
+        ex.setStatusCode(statusCode);
+        throw ex;
     }
 
     DWORD bufferSize = 0;
