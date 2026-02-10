@@ -106,8 +106,33 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         DDF wrapped = wrapRequest(request, m_remotedHeaders);
         input.add(wrapped);
 
-        DDF output = request.getAgent().getRemotingService()->send(input);
+        // Second parameter is false so we can capture any validation errors on
+        // an unsuccessful event result.
+        DDF output = request.getAgent().getRemotingService()->send(input, false);
         DDFJanitor outputJanitor(output);
+
+        // Check event coming back since we bypassed doing this automatically.
+        const char* event = output.getmember("event").string();
+        if (event && strcmp(event, "success")) {
+            DDF validation_errors = output.getmember("validation_errors");
+            if (validation_errors.islist()) {
+                DDF msg = validation_errors.first();
+                while (msg.isstring()) {
+                    if (msg.string()) {
+                        request.warn("token validation error: %s", msg.string());
+                    }
+                    msg = validation_errors.next();
+                }
+            }
+            OperationException ex(string("Remote operation (token-consumer) failed with event: ") + event);
+            ex.addProperty(AgentException::EVENT_PROP_NAME, event);
+            ex.addProperty("operation", input.name());
+            const char* target = output.getmember("target").string();
+            if (target) {
+                ex.addProperty(AgentException::TARGET_PROP_NAME, target);
+            }
+            throw ex;
+        }
 
         const char* s = output.getmember("http.redirect").string();
         if (s) {

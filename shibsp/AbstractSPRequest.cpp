@@ -473,7 +473,9 @@ void AbstractSPRequest::log(Priority::Value level, const exception& e) const
         msg << e.what() << " [";
 
         // Dump properties and status code.
-        msg << "status=" << rich_ex->getStatusCode();
+        if (rich_ex->getStatusCode() != 0) {
+            msg << "status=" << rich_ex->getStatusCode();
+        }
 
         for (const auto& prop : rich_ex->getProperties()) {
             msg << ", " << prop.first << '=' << prop.second;
