@@ -11,9 +11,6 @@ pkgsysconf_DATA = \
 # them from SRCDIR.
 CONFIGFILES = \
 	attrChecker.html \
-	localLogout.html \
-	globalLogout.html \
-	partialLogout.html \
 	agent.ini \
 	handlers.ini \
 	request-map.xml
