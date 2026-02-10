@@ -117,6 +117,12 @@
     <ClInclude Include="..\..\shibsp\handler\Handler.h">
       <Filter>Header Files\Handler</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\LogoutHandler.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\shibsp\handler\LogoutInitiator.h">
+      <Filter>Header Files\Handler</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\shibsp\handler\SecuredHandler.h">
       <Filter>Header Files\Handler</Filter>
     </ClInclude>
@@ -245,7 +251,10 @@
     <ClCompile Include="..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp">
       <Filter>Source Files\Handler</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\shibsp\handler\impl\MetadataGenerator.cpp">
+    <ClCompile Include="..\..\shibsp\handler\impl\LogoutHandler.cpp">
+      <Filter>Source Files\Handler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shibsp\handler\impl\LogoutInitiator.cpp">
       <Filter>Source Files\Handler</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shibsp\handler\impl\Passthrough.cpp">

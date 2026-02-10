@@ -127,7 +127,7 @@ const char* AbstractSPRequest::getRequestURL() const
 
 string AbstractSPRequest::getRemoteAddr() const
 {
-    const char* addr = getRequestSettings().first->getString("REMOTE_ADDR");
+    const char* addr = getRequestSettings().first->getString(RequestMapper::REMOTE_ADDR_PROP_NAME);
     return addr ? getHeader(addr) : "";
 }
 
@@ -275,10 +275,10 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
 
 string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) const
 {
-    // We have to process the underlying setting each call to this method unfortunately.
-    const char* rawlocs = getRequestSettings().first->getString(front ? "frontNotifyURLs" : "backNotifyURLs");
+    // We have to process the underlying setting each call to this method for now.
+    // Given how rarely it would be used, not a big issue.
     vector<string> locs;
-    split_to_container(locs, rawlocs);
+    split_to_container(locs, getRequestSettings().first->getString(RequestMapper::LOGOUT_NOTIFY_PROP_NAME));
 
     if (index >= locs.size()) {
         return string();
@@ -293,10 +293,10 @@ string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) con
 
     // Should never happen...
     if (!handler || (*handler!='/' && strncasecmp(handler, "http:", 5) && strncasecmp(handler, "https:", 6))) {
-        throw ConfigurationException("Invalid Location property in Notify element");
+        throw ConfigurationException("Invalid URL in logoutNotify setting.");
     }
 
-    // The "Location" property can be in one of three formats:
+    // The location can be in one of three formats:
     //
     // 1) a full URI:       http://host/foo/bar
     // 2) a hostless URI:   http:///foo/bar
@@ -347,6 +347,8 @@ string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) con
 
 void AbstractSPRequest::limitRedirect(const char* url) const
 {
+    // TODO: come up with some way to optmize/cache this if possible.
+
     if (!url || *url == '/') {
         return;
     }
@@ -444,9 +446,19 @@ string AbstractSPRequest::getSecureHeader(const char* name) const
     return getHeader(name);
 }
 
+string AbstractSPRequest::getCGINameForHeader(const char* name) const
+{
+    string cgiversion("HTTP_");
+    const char* pch = name;
+    while (*pch) {
+        cgiversion += (isalnum(*pch) ? toupper(*pch) : '_');
+        pch++;
+    }
+    return cgiversion;
+}
+
 void AbstractSPRequest::setAuthType(const char* authtype)
 {
-
 }
 
 const char* AbstractSPRequest::getLogContext() const{
@@ -581,15 +593,4 @@ void SPRequest::crit(const char* formatString, ...) const
         log(Priority::SHIB_CRIT, formatString, va);
         va_end(va);
     }
-}
-
-string AbstractSPRequest::getCGINameForHeader(const char* name) const
-{
-    string cgiversion("HTTP_");
-    const char* pch = name;
-    while (*pch) {
-        cgiversion += (isalnum(*pch) ? toupper(*pch) : '_');
-        pch++;
-    }
-    return cgiversion;
 }

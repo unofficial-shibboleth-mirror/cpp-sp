@@ -43,6 +43,8 @@ handinclude_HEADERS = \
 	handler/AssertionConsumerService.h \
 	handler/Handler.h \
 	handler/HandlerConfiguration.h \
+	handler/LogoutHandler.h \
+	handler/LogoutInitiator.h \
 	handler/SecuredHandler.h
 
 ioinclude_HEADERS = \
@@ -106,7 +108,8 @@ libshibsp_la_SOURCES = \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AttributeCheckerHandler.cpp \
 	handler/impl/DefaultHandlerConfiguration.cpp \
-	handler/impl/MetadataGenerator.cpp \
+	handler/impl/LogoutHandler.cpp \
+	handler/impl/LogoutInitiator.cpp \
 	handler/impl/Passthrough.cpp \
 	handler/impl/SecuredHandler.cpp \
 	handler/impl/SessionHandler.cpp \

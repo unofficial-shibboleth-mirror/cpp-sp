@@ -47,20 +47,15 @@ using namespace std;
 #endif
 
 namespace shibsp {
-    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutFactory;
-    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AttributeCheckerFactory;
-    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory MetadataGeneratorFactory;
-
     //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AdminLogoutInitiatorFactory;
-    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SAML2LogoutInitiatorFactory;
-    //extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LocalLogoutInitiatorFactory;
 
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory AttributeCheckerFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory PassthroughFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionHandlerFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory StatusHandlerFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionInitiatorFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory TokenConsumerFactory;
-
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LogoutInitiatorFactory;
 
     void SHIBSP_DLLLOCAL generateRandomHex(std::string& buf, unsigned int len) {
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -83,20 +78,15 @@ void SHIBSP_API shibsp::registerHandlers()
 {
     AgentConfig& conf=AgentConfig::getConfig();
 
-    //conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
-    //conf.HandlerManager.registerFactory(METADATA_GENERATOR_HANDLER, MetadataGeneratorFactory);
- 
-    //conf.HandlerManager.registerFactory(SAML20_LOGOUT_HANDLER, SAML2LogoutFactory);
-
     //conf.HandlerManager.registerFactory(ADMIN_LOGOUT_INITIATOR, AdminLogoutInitiatorFactory);
-    //conf.HandlerManager.registerFactory(SAML2_LOGOUT_INITIATOR, SAML2LogoutInitiatorFactory);
-    //conf.HandlerManager.registerFactory(LOCAL_LOGOUT_INITIATOR, LocalLogoutInitiatorFactory);
 
+    conf.HandlerManager.registerFactory(ATTR_CHECKER_HANDLER, AttributeCheckerFactory);
     conf.HandlerManager.registerFactory(PASSTHROUGH_HANDLER, PassthroughFactory);
     conf.HandlerManager.registerFactory(STATUS_HANDLER, StatusHandlerFactory);
     conf.HandlerManager.registerFactory(SESSION_HANDLER, SessionHandlerFactory);
     conf.HandlerManager.registerFactory(SESSION_INITIATOR_HANDLER, SessionInitiatorFactory);
     conf.HandlerManager.registerFactory(TOKEN_CONSUMER_HANDLER, TokenConsumerFactory);
+    conf.HandlerManager.registerFactory(LOGOUT_INITIATOR_HANDLER, LogoutInitiatorFactory);
 } 
 
 Handler::Handler()

@@ -21,7 +21,11 @@
 #ifndef __shibsp_logout_h__
 #define __shibsp_logout_h__
 
-#include <shibsp/handler/RemotedHandler.h>
+#include <shibsp/handler/Handler.h>
+
+#include <map>
+#include <string>
+#include <vector>
 
 namespace shibsp {
 
@@ -31,24 +35,25 @@ namespace shibsp {
 #endif
 
     /**
-     * Base class for logout-related handlers.
+     * Base class for logout-related handlers, both when initiating from the
+     * Agent or processing incoming requests or responses from other systems.
      */
-    class SHIBSP_API LogoutHandler
+    class SHIBSP_API LogoutHandler : public virtual Handler
     {
     public:
         virtual ~LogoutHandler();
 
         /**
          * The base method will iteratively attempt front-channel notification
-         * of logout of the current session, and after the final round trip will
-         * perform back-channel notification. Nothing will be done unless the 
-         * handler detects that it is the "top" level logout handler.
-         * If the method returns false, then the specialized class should perform
-         * its work assuming that the notifications are completed.
-         *
-         * Note that the current session is NOT removed from the cache.
+         * of logout of the current session.
          * 
-         * @param request   SP request context
+         * <p>Nothing will be done unless the handler detects that it is the "top" level
+         * logout handler. If the method returns false, then the specialized class should
+         * perform its work assuming that the notifications are completed.</p>
+         *
+         * <p>Note that the current session is NOT removed from the cache.</p>
+         * 
+         * @param request   SP request
          * @param isHandler true iff executing in the context of a direct handler invocation
          * @return  a pair containing a "request completed" indicator and a server-specific response code
          */
@@ -74,17 +79,6 @@ namespace shibsp {
             SPRequest& request, const std::map<std::string,std::string>* params=nullptr
             ) const;
 
-        /**
-         * Perform back-channel logout notifications for an Application.
-         *
-         * @param request       request resulting in method call
-         * @param sessions      array of session keys being logged out
-         * @param local         true iff the logout operation is local to the SP, false iff global
-         * @return  true iff all notifications succeeded
-         */
-        bool notifyBackChannel(
-            const SPRequest& request, const std::vector<std::string>& sessions, bool local
-            ) const;
     };
 
 #if defined (_MSC_VER)

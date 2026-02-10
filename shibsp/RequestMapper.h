@@ -60,12 +60,15 @@ namespace shibsp {
         static const char HANDLER_URL_PROP_NAME[];
         static const char HOME_URL_PROP_NAME[];
         static const char LIFETIME_PROP_NAME[];
+        static const char LOGOUT_NOTIFY_PROP_NAME[];
+        static const char LOGOUT_URL_PROP_NAME[];
         static const char PRESERVE_POST_DATA_PROP_NAME[];
         static const char POST_LIMIT_PROP_NAME[];
         static const char REDIRECT_ALLOW_PROP_NAME[];
         static const char REDIRECT_ERRORS_PROP_NAME[];
         static const char REDIRECT_LIMIT_PROP_NAME[];
         static const char REDIRECT_TO_SSL_PROP_NAME[];
+        static const char REMOTE_ADDR_PROP_NAME[];
         static const char REMOTE_USER_PROP_NAME[];
         static const char REQUIRE_SESSION_PROP_NAME[];
         static const char REQUIRE_LOGOUT_WITH_PROP_NAME[];

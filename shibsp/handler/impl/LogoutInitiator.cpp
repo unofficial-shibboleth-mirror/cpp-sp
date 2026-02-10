@@ -19,14 +19,70 @@
  */
 
 #include "internal.h"
+#include "Agent.h"
+#include "SPRequest.h"
 #include "handler/LogoutInitiator.h"
+#include "session/SessionCache.h"
+
+#include <boost/property_tree/ptree.hpp>
 
 using namespace shibsp;
+using namespace boost::property_tree;
+using namespace std;
 
-LogoutInitiator::LogoutInitiator()
+namespace shibsp {
+    Handler* SHIBSP_DLLLOCAL LogoutInitiatorFactory(const pair<ptree&,const char*>& p, bool)
+    {
+        return new LogoutInitiator(p.first);
+    }
+}
+
+LogoutInitiator::LogoutInitiator(const ptree& pt)
 {
 }
 
 LogoutInitiator::~LogoutInitiator()
 {
+}
+
+pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
+{
+    // Defer to base class first; this will initiate, continue, or complete notification.
+    pair<bool,long> ret = LogoutHandler::run(request, isHandler);
+    if (ret.first) {
+        return ret;
+    }
+
+    unique_lock<Session> session;
+    try {
+        session = request.getSession(false, true);  // don't cache it and ignore all checks
+    }
+    catch (const exception& ex) {
+        request.error("error accessing current session: %s", ex.what());
+    }
+
+    if (session) {
+        session.unlock();
+        request.getAgent().getSessionCache()->remove(request);
+    }
+
+    // Determine return location.
+    const char* dest = request.getParameter("return");
+    if (!dest) {
+        dest = request.getRequestSettings().first->getString(RequestMapper::LOGOUT_URL_PROP_NAME);
+        if (!dest) {
+            dest = request.getRequestSettings().first->getString(RequestMapper::HOME_URL_PROP_NAME,
+                RequestMapper::HOME_URL_PROP_DEFAULT);
+        }
+    }
+
+    // Relative URLs get promoted, absolutes get validated.
+    if (*dest == '/') {
+        string d(dest);
+        request.absolutize(d);
+        return make_pair(true, request.sendRedirect(d.c_str()));
+    } else {
+        request.limitRedirect(dest);
+        return make_pair(true, request.sendRedirect(dest));
+    }
 }

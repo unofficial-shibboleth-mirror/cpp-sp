@@ -15,7 +15,7 @@
 /**
  * @file shibsp/handler/LogoutInitiator.h
  * 
- * Pluggable runtime functionality that handles initiating logout.
+ * Handler that initiates logout.
  */
 
 #ifndef __shibsp_logoutinitiator_h__
@@ -23,17 +23,20 @@
 
 #include <shibsp/handler/LogoutHandler.h>
 
+#include <boost/property_tree/ptree_fwd.hpp>
+
 namespace shibsp {
 
     /**
-     * Pluggable runtime functionality that handles initiating logout.
+     * Marker interface for handlers that can initiate logout.
      */
-    class SHIBSP_API LogoutInitiator : public LogoutHandler
+    class SHIBSP_API LogoutInitiator : public virtual LogoutHandler
     {
-    protected:
-        LogoutInitiator();
     public:
+        LogoutInitiator(const boost::property_tree::ptree& pt);
         virtual ~LogoutInitiator();
+
+        std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
     };
 
 };

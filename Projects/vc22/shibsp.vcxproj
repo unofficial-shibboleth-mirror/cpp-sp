@@ -42,6 +42,8 @@
     <ClInclude Include="..\..\shibsp\handler\AbstractHandler.h" />
     <ClInclude Include="..\..\shibsp\handler\AssertionConsumerService.h" />
     <ClInclude Include="..\..\shibsp\handler\Handler.h" />
+    <ClInclude Include="..\..\shibsp\handler\LogoutHandler.h" />
+    <ClInclude Include="..\..\shibsp\handler\LogoutInitiator.h" />
     <ClInclude Include="..\..\shibsp\handler\SecuredHandler.h" />
     <ClInclude Include="..\..\shibsp\internal.h" />
     <ClInclude Include="..\..\shibsp\io\CookieManager.h" />
@@ -97,7 +99,8 @@
     </ClCompile>
     <ClCompile Include="..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\DefaultHandlerConfiguration.cpp" />
-    <ClCompile Include="..\..\shibsp\handler\impl\MetadataGenerator.cpp" />
+    <ClCompile Include="..\..\shibsp\handler\impl\LogoutHandler.cpp" />
+    <ClCompile Include="..\..\shibsp\handler\impl\LogoutInitiator.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\Passthrough.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\SecuredHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\SessionHandler.cpp" />
