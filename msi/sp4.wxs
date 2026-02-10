@@ -127,20 +127,11 @@
             <Component Id="Config.atrchecker" Directory = "etcShib" Guid="{8AC41514-78A6-46C2-BAEA-D8966EFE383A}">
                 <File Id="attrChecker.html" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\attrChecker.html"/>
             </Component>
-            <Component Id="Config.globalogout" Directory = "etcShib" Guid="{AF26926D-604A-4A8A-915A-CE206B953DCF}">
-                <File Id="globalLogout.html" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\globalLogout.html"/>
-            </Component>
             <Component Id="Config.handler" Directory = "etcShib" Guid="{E9C5EB2F-624E-48A4-A493-87295A6C2DB3}">
                 <File Id="handlers.ini" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\handlers.ini"/>
             </Component>
             <Component Id="Config.iis" Directory = "etcShib" Guid="{6BB3FA6A-FB52-48C4-B9C8-92E2E8A2C618}">
                 <File Id="iis_config.ini" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\iis-config.ini"/>
-            </Component>
-            <Component Id="Config.locallogout" Directory = "etcShib" Guid="{CB4DBBF9-4F56-416F-BAC3-C27D4CDAEE9D}">
-                <File Id="localLogout.html" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\localLogout.html"/>
-            </Component>
-            <Component Id="Config.partialogout" Directory = "etcShib" Guid="{9FDE4718-0A65-413A-BCC0-C875530C1EB3}">
-                <File Id="partialLogout.html" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\partialLogout.html"/>
             </Component>
             <Component Id="Config.requestmap" Directory = "etcShib" Guid="{3B4B5BDF-84AF-4E05-9341-1501572B1FF5}">
                 <File Id="request_map.xml" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\configs\request-map.xml"/>
