@@ -62,6 +62,7 @@ pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
     }
 
     if (session) {
+        request.info("logging out session (%s)", session.mutex()->getID());
         session.unlock();
         request.getAgent().getSessionCache()->remove(request);
     }
