@@ -67,7 +67,7 @@ Agent::~Agent()
 {
 }
 
-long Agent::handleError(SPRequest& request, const Session* session, exception* ex, bool mayRedirect) const
+long Agent::handleError(SPRequest& request, exception* ex, bool mayRedirect) const
 {
     bool externalParameters = false;
     const char* redirectErrors = nullptr;
@@ -77,9 +77,6 @@ long Agent::handleError(SPRequest& request, const Session* session, exception* e
         // Populate target if needed.
         if (!richEx->getProperty("target")) {
             richEx->addProperty("target", request.getRequestURL());
-        }
-        if (session) {
-            richEx->addProperty("session", session->getID());
         }
         if (request.getRequestID()) {
             richEx->addProperty("txid", request.getRequestID());
@@ -104,11 +101,6 @@ long Agent::handleError(SPRequest& request, const Session* session, exception* e
         }
         return request.sendRedirect(loc.c_str());
     }
-
-    // TODO: this probably changes significantly. The status code isn't all that material,
-    // but we could potentially use a custom code to facilitate custom error pages.
-    // The big addition would be exporting exception propertties into the request
-    // so Apache can surface them using its error redirection feature.
 
     istringstream msg("Internal Server Error. Please contact the site administrator.");
     return request.sendResponse(msg, (richEx && richEx->getStatusCode() != 0) ? richEx->getStatusCode() :
@@ -135,7 +127,7 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
                 }
                 else {
                     AgentException ex("Access via unencrypted HTTP was blocked.");
-                    return make_pair(true, handleError(request, nullptr, &ex, false));
+                    return make_pair(true, handleError(request, &ex, false));
                 }
             }
         }
@@ -269,14 +261,12 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
         return make_pair(false, 0L);
     }
     catch (exception& e) {
-        return make_pair(true, handleError(request, nullptr, &e));
+        return make_pair(true, handleError(request, &e));
     }
 }
 
 pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 {
-    unique_lock<Session> session;
-    
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
 
@@ -295,6 +285,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
 
         // Do we have an access control plugin?
         if (settings.second) {
+            unique_lock<Session> session;
             try {
                 session = request.getSession(false, false);  // ignore timeout and do not cache
             }
@@ -315,7 +306,7 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
                     request.warn("access control provider denied access");
                     AgentException ex("Access to resource denied.");
                     ex.setStatusCode(HTTPResponse::SHIBSP_HTTP_STATUS_FORBIDDEN);
-                    return make_pair(true, handleError(request, session.mutex(), &ex, false));
+                    return make_pair(true, handleError(request, &ex, false));
                 }
 
                 default:
@@ -328,17 +319,16 @@ pair<bool,long> Agent::doAuthorization(SPRequest& request) const
         }
     }
     catch (exception& e) {
-        return make_pair(true, handleError(request, nullptr, &e));
+        return make_pair(true, handleError(request, &e));
     }
 }
 
 pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
 {
-    unique_lock<Session> session;
-
     try {
         RequestMapper::Settings settings = request.getRequestSettings();
 
+        unique_lock<Session> session;
         try {
             session = request.getSession(false, false);  // ignore timeout and address check here
         }
@@ -378,7 +368,7 @@ pair<bool,long> Agent::doExport(SPRequest& request, bool requireSession) const
         return make_pair(false,0L);
     }
     catch (exception& e) {
-        return make_pair(true, handleError(request, session.mutex(), &e));
+        return make_pair(true, handleError(request, &e));
     }
 }
 
@@ -447,12 +437,6 @@ pair<bool,long> Agent::doHandler(SPRequest& request) const
         throw ConfigurationException("Configured Shibboleth handler failed to process the request.");
     }
     catch (exception& e) {
-        unique_lock<Session> session;
-        try {
-            session = request.getSession(false, true);   // do not cache
-        }
-        catch (const exception&) {
-        }
-        return make_pair(true, handleError(request, session.mutex(), &e));
+        return make_pair(true, handleError(request, &e));
     }
 }

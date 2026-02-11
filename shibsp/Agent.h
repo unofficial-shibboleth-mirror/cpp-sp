@@ -184,7 +184,6 @@ namespace shibsp {
     private:
         long handleError(
             SPRequest& request,
-            const Session* session=nullptr,
             std::exception* ex=nullptr,
             bool mayRedirect=true
         ) const;
