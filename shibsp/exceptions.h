@@ -114,12 +114,18 @@ namespace shibsp {
         /**
          * Attach a set of named properties to the exception.
          * 
+         * <p>Property data MAY be passed along to error handling resources and/or be
+         * visible in the client, so sensitive data should not be included.</p>
+         * 
          * @param params properties to attach
          */
         void addProperties(const std::unordered_map<std::string,std::string>& props);
 
         /**
          * Attach a single named property.
+         * 
+         * <p>Property data MAY be passed along to error handling resources and/or be
+         * visible in the client, so sensitive data should not be included.</p>
          * 
          * @param name  the property name
          * @param value the property value

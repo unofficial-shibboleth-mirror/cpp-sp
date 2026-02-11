@@ -78,30 +78,28 @@ long Agent::handleError(SPRequest& request, const Session* session, exception* e
         if (!richEx->getProperty("target")) {
             richEx->addProperty("target", request.getRequestURL());
         }
+        if (session) {
+            richEx->addProperty("session", session->getID());
+        }
+        if (request.getRequestID()) {
+            richEx->addProperty("txid", request.getRequestID());
+        }
         richEx->log(request);
     }
     else if (ex) {
         request.error(ex->what());
     }
 
-    // Now look for settings in the request map.
-    try {
-        RequestMapper::Settings settings = request.getRequestSettings();
-        // Not using this yet, probably TBD.
-        externalParameters = settings.first->getBool("externalParameters", false);
-        if (mayRedirect)
-            redirectErrors = settings.first->getString(RequestMapper::REDIRECT_ERRORS_PROP_NAME);
-    }
-    catch (const exception& nested) {
-        request.error(nested.what());
+    // Check for redirection on errors.
+
+    if (mayRedirect) {
+        redirectErrors = request.getRequestSettings().first->getString(RequestMapper::REDIRECT_ERRORS_PROP_NAME);
     }
 
-    // Check for redirection on errors.
     if (mayRedirect && redirectErrors) {
         string loc(redirectErrors);
         request.absolutize(loc);
         if (richEx) {
-            // TODO: alter how this works or what's included.
             loc = loc + '?' + richEx->toQueryString();
         }
         return request.sendRedirect(loc.c_str());
@@ -113,7 +111,8 @@ long Agent::handleError(SPRequest& request, const Session* session, exception* e
     // so Apache can surface them using its error redirection feature.
 
     istringstream msg("Internal Server Error. Please contact the site administrator.");
-    return request.sendResponse(msg, richEx ? richEx->getStatusCode() : HTTPResponse::SHIBSP_HTTP_STATUS_ERROR);
+    return request.sendResponse(msg, (richEx && richEx->getStatusCode() != 0) ? richEx->getStatusCode() :
+        HTTPResponse::SHIBSP_HTTP_STATUS_ERROR);
 }
 
 pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const

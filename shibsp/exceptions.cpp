@@ -27,6 +27,7 @@
 #include "util/URLEncoder.h"
 
 #include <sstream>
+#include <boost/lexical_cast.hpp>
 
 using namespace shibsp;
 using namespace std;
@@ -92,10 +93,19 @@ void AgentException::addProperty(const char* name, const char* value)
 string AgentException::toQueryString() const
 {
     string q;
+
+    if (m_status != 0) {
+        if (!q.empty()) {
+            q += '&';
+        }
+        q += boost::lexical_cast<string>(m_status);
+    }
+
     const URLEncoder& enc = AgentConfig::getConfig().getURLEncoder();
     for (const auto& p : m_props) {
-        if (!q.empty())
+        if (!q.empty()) {
             q += '&';
+        }
         q = q + p.first + '=' + enc.encode(p.second.c_str());
     }
     return q;
