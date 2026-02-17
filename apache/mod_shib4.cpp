@@ -330,9 +330,6 @@ public:
   string getLocalAddr() const {
     return m_req->connection->local_ip;
   }
-  const char* getLogContext() {
-    return m_req->log_id;
-  }
   const char* getQueryString() const { return m_req->args; }
   const char* getRequestBody() const {
     if (m_gotBody || m_req->method_number==M_GET)

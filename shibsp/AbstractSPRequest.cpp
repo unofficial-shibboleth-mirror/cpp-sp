@@ -462,14 +462,18 @@ void AbstractSPRequest::setAuthType(const char* authtype)
 }
 
 const char* AbstractSPRequest::getLogContext() const{
-    return nullptr;
+    return getRequestID();
 }
 
 void AbstractSPRequest::log(Priority::Value level, const exception& e) const
 {
+    const char* ctx = getLogContext();
     const AgentException* rich_ex = dynamic_cast<const AgentException*>(&e);
     if (rich_ex) {
         ostringstream msg;
+        if (ctx) {
+            msg << ctx << ' ';
+        }
         msg << e.what() << " [";
 
         // Dump properties and status code.
@@ -484,6 +488,11 @@ void AbstractSPRequest::log(Priority::Value level, const exception& e) const
         msg << ']';
 
         log(level, msg.str());
+    }
+    else if (ctx) {
+        string s(ctx);
+        s = s + ' ' + e.what();
+        log(level, s);
     }
     else {
         log(level, e.what());
