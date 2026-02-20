@@ -21,6 +21,10 @@
 #include "internal.h"
 #include "util/PathResolver.h"
 
+#ifdef WIN32
+#include <Windows.h>
+#endif
+
 #include <stdexcept>
 
 using namespace shibsp;
