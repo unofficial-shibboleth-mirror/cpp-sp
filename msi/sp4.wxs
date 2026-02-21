@@ -19,7 +19,11 @@
         <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowSameVersionUpgrades="yes" Schedule="afterInstallInitialize" />
         <MediaTemplate EmbedCab="yes" />
 
-        <Launch Condition="UCRTBASE_DLL" Message="C run time library not installed" />
+        <Launch Condition="UCRTBASE_DLL"
+		Message="C run time library not installed" />
+	<!-- The below is "too cute" (IMP is logical implies). See the notes for CPPSP-46 -->
+        <Launch Condition='"$(sys.BUILDARCH)" ~= "x64" IMP WIX_NATIVE_MACHINE = 34404'
+                Message="This package can run only on $(sys.BUILDARCH) machines!" />
 
         <!-- Properties used by the installer -->
 
@@ -54,6 +58,9 @@
 
         <!-- WIX_ACCOUNT_* -->
         <util:QueryWindowsWellKnownSIDs />
+
+        <!-- WIX_NATIVE_MACHINE -->
+        <util:QueryNativeMachine />
 
         <!-- Who will be running IIS/Apache?  If not supplied on the command line we default it to WIX_ACCOUNT_LOCALSERVICE
             <Property Id="WEBSERVER_USER" Value=""/>
