@@ -135,15 +135,7 @@
             </Component>
 
             <Component Id="EventLog" Directory = "libShib" Guid="{7A23A641-C9F3-439A-BA26-265418F9B974}">
-                <?if $(sys.BUILDARCH) = "x64"?>
                 <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\NativeLogMessages.dll"/>
-                <?endif?>
-                <?if $(sys.BUILDARCH) = "arm64"?>
-                <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\NativeLogMessages.dll"/>
-                <?endif?>
-                <?if ($(sys.BUILDARCH) != "arm64") and ($(sys.BUILDARCH) != "x64") ?>
-                <File Id="NativeLogMessages" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\NativeLogMessages.dll"/>
-                <?endif?>
                 <RegistryKey Root="HKLM" Key="SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\ShibbolethSPAgent">
                     <RegistryValue Name="CategoryCount" Type="integer" Value="8" />
                     <RegistryValue Name="TypesSupported" Type="integer" Value="7" />
@@ -159,23 +151,17 @@
             </Component>
 
             <!-- For some reason the id/elif/endif thing isnt working -->
-            <Component Id="LibFiles" Directory = "libShib" Guid="{0B2F1FE1-53A8-4F25-A01A-9EBAD9FEDC69}">
-            <?if $(sys.BUILDARCH) = "x64"?>
+            <Component Id="IIS_x64" Directory = "libShib" Guid="{0B2F1FE1-53A8-4F25-A01A-9EBAD9FEDC69}">
                 <File Id="IIS_lib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\iis_shib4.dll"/>
+            </Component>
+            <Component Id="IIS_ARM64" Directory = "libShib" Guid="{DA7E0866-3D4F-4C19-9F16-AFBDFA01B68C}">
+                <File Id="IIS_arm64_lib" KeyPath="yes" Name="iis_shib4_arm64.dll" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\iis_shib4.dll"/>
             </Component>
             <Component Id="IIS_x86" Directory = "libShib" Guid="{BB3CA70D-35F7-43ED-BC69-3EC2B5AE45E8}">
                 <File Id="IIS_x86_lib" KeyPath="yes"  Name="iis_shib4_x86.dll" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\Release\iis_shib4.dll"/>
             </Component>
             <Component Id="MOD_SHIB" Directory = "libShib" Guid="{E1EB5565-8429-492E-B27B-02E66B9A03CD}">
                 <File Id="Mod_shib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\x64\Release\mod_shib4.so"/>
-            <?endif?>
-            <?if $(sys.BUILDARCH) = "arm64"?>
-                <File Id="IIS_lib" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\ARM64\Release\iis_shib4.dll"/>
-            <?endif?>
-            <?if ($(sys.BUILDARCH) != "arm64") and ($(sys.BUILDARCH) != "x64") ?>
-            <!-- We do not want to build pure x86 at this time.  Whine -->
-                <File Id="IIS_bogus" KeyPath="yes" Checksum="yes" Source="$(var.RootDir)\Projects\vc22\NO_SUCH_PATH\Release\iis_shib4.dll"/>
-            <?endif?>
             </Component>
        </Feature>
 
@@ -196,19 +182,6 @@
        <CustomAction Id="SetIISUnInstall" Property="QtIISUnInstall"
                      Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative" />
 
-       <?if $(sys.BUILDARCH) = "x64"?>
-       <CustomAction Id="QtIISInstall32" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
-       <CustomAction Id="SetIISInstall32" Property="QtIISInstall32"
-                     Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative32 /image:&quot;[#IIS_x86_lib]&quot; /precondition:&quot;bitness32&quot;" />
-
-       <CustomAction Id="QtIISDelete32" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" Return="ignore"/>
-       <CustomAction Id="SetIISDelete32" Property="QtIISDelete32"
-                     Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; delete module ShibNative32" />
-       <CustomAction Id="QtIISUnInstall32" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" Return="ignore"/>
-       <CustomAction Id="SetIISUnInstall32" Property="QtIISUnInstall32"
-                     Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative32" />
-       <?endif?>
-
        <InstallExecuteSequence>
            <!-- inherit installationDir if there is something to inherit -->
            <Custom Action="InheritInstallDir" After="AppSearch" Condition="OLD_INSTALLDIR" />
@@ -220,11 +193,6 @@
            <Custom Action="SetIISInstall" Before="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION"/>
            <Custom Action="QtIISInstall" After="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION"/>
 
-           <?if $(sys.BUILDARCH) = "x64"?>
-           <Custom Action="SetIISInstall32" Before="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION"/>
-           <Custom Action="QtIISInstall32" After="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION"/>
-           <?endif?>
-
            <!-- IIS Uninstall -->
 
            <Custom Action="SetIISDelete" Before="StopServices"/>
@@ -233,15 +201,6 @@
 		   Condition="Installed AND IISMAJORVERSION AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)"/>
            <Custom Action="QtIISUnInstall" After="QtIISDelete"
 		   Condition="Installed AND IISMAJORVERSION AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)"/>
-
-           <?if $(sys.BUILDARCH) = "x64"?>
-           <Custom Action="SetIISDelete32" Before="StopServices"/>
-           <Custom Action="QtIISDelete32" After="StopServices"
-		   Condition="Installed AND IISMAJORVERSION AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)"/>
-           <Custom Action="SetIISUnInstall32" Before="StopServices"/>
-           <Custom Action="QtIISUnInstall32" After="QtIISDelete32"
-		   Condition="Installed AND IISMAJORVERSION AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)"/>
-           <?endif?>
 
            <ScheduleReboot Before="InstallFinalize" Condition="(NOT Installed) AND IISMAJORVERSION" />
       </InstallExecuteSequence>
