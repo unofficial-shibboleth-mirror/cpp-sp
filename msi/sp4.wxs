@@ -164,7 +164,7 @@
 
        <CustomAction Id="InheritInstallDir" Property="INSTALLDIR" Value="[OLD_INSTALLDIR]" />
        <CustomAction Id="DefaultWebServerUser" Property="WEBSERVER_USER" Value="[WIX_ACCOUNT_LOCALSERVICE]" />
-       <CustomAction Id="IISWebServerUser" Property="WEBSERVER_USER" Value="DefaultAppPool" />
+       <CustomAction Id="IISWebServerUser" Property="WEBSERVER_USER" Value="IIS APPPOOL\DefaultAppPool" />
 
        <!-- IIS install/uninstall -->
        <CustomAction Id="QtIISInstall" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_$(sys.BUILDARCHSHORT)" />
