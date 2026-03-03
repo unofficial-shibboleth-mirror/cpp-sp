@@ -19,10 +19,8 @@ REM Build all the DLLS and the msiversion executable
 REM everything for x64
 msbuild -m /property:Platform=x64;Configuration=release /MaxCPUCount Shibboleth.sln /t:iis;NativeLogMessages;MsiVersion;Apache
 
-REM IIS only for Arm and x86
+REM IIS only for Arm64 and x86
 msbuild -m /property:Platform=arm64;Configuration=release /MaxCPUCount Shibboleth.sln /t:iis
-
-REM IIS only for x86
 msbuild -m /property:Platform=x86;Configuration=release /MaxCPUCount Shibboleth.sln /t:iis
 
 FOR /F "delims= tokens=* USEBACKQ" %%F IN (`x64\release\MsiVersion.exe`) DO (
