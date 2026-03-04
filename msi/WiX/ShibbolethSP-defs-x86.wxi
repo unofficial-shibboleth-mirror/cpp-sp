@@ -1,8 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
+﻿<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <!-- ShibbolethSP-noarch -->
 
-  <ComponentRef Id="ProtectInstallDir"/>
+  <ComponentRef Id="ProtectInstallDir" />
   <ComponentRef Id="main.css" />
   <ComponentRef Id="CREDITS.txt" />
   <ComponentRef Id="LICENSE.txt" />
@@ -48,7 +47,7 @@
   <?if $(var.BuildDebug) != "" ?>
   <ComponentRef Id="resolvertest.exe_debug" />
   <ComponentRef Id="mdquery.exe_debug" />
-  <?endif ?>
+  <?endif?>
 
   <ComponentRef Id="adfs.so" />
   <ComponentRef Id="adfs_lite.so" />
@@ -57,7 +56,7 @@
   <ComponentRef Id="mod_shib_22.so" />
   <?if $(var.NSApi) != "" ?>
   <ComponentRef Id="nsapi_shib.dll" />
-  <?endif ?>
+  <?endif?>
   <ComponentRef Id="mod_shib_24.so" />
   <ComponentRef Id="odbc_store.so" />
   <ComponentRef Id="plugins.so" />
@@ -65,7 +64,7 @@
   <?if $(var.FCGI) != "" ?>
   <ComponentRef Id="shibauthorizer.exe" />
   <ComponentRef Id="shibresponder.exe" />
-  <?endif ?>
+  <?endif?>
 
   <?if $(var.BuildDebug) != "" ?>
   <ComponentRef Id="adfs.so_debug" />
@@ -75,7 +74,7 @@
   <ComponentRef Id="mod_shib_22.so_debug" />
   <?if $(var.NSApi) != "" ?>
   <ComponentRef Id="nsapi_shib.dll_debug" />
-  <?endif ?>
+  <?endif?>
   <ComponentRef Id="mod_shib_24.so_debug" />
   <ComponentRef Id="odbc_store.so_debug" />
   <ComponentRef Id="plugins.so_debug" />
@@ -83,10 +82,10 @@
   <?if $(var.FCGI) != "" ?>
   <ComponentRef Id="shibauthorizer.exe_debug" />
   <ComponentRef Id="shibresponder.exe_debug" />
-  <?endif ?>
+  <?endif?>
 
   <ComponentRef Id="shibd.exe_debug" />
-  <?endif ?>
+  <?endif?>
 
   <!-- ShibbolethSP-registry-x32 -->
   <ComponentRef Id="TargetDir" />

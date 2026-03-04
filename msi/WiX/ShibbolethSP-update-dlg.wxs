@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- Licensed to the University Corporation for Advanced Internet
+﻿<!-- Licensed to the University Corporation for Advanced Internet
      Development, Inc. (UCAID) under one or more contributor license
      agreements.  See the NOTICE file distributed with this work for
      additional information regarding copyright ownership. The UCAID
@@ -16,7 +14,7 @@
      implied.  See the License for the specific language governing
      permissions and limitations under the License.  -->
 
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <!-- The dialog to display if we sense an upgrade -->
   <Fragment>
 
@@ -34,7 +32,7 @@
         <!-- Stuff at the bottom: line, Back,Next, [space] Cancel -->
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="1" />
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
-          <Publish Event="NewDialog" Value="WelcomeDlg">1</Publish>
+          <Publish Event="NewDialog" Value="WelcomeDlg" />
         </Control>
 
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Text="&amp;Next" Default="yes">
@@ -42,7 +40,7 @@
         </Control>
 
         <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Text="&amp;Cancel" Cancel="yes">
-          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
         </Control>
       </Dialog>
     </UI>

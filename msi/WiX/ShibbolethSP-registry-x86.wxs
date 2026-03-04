@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- Licensed to the University Corporation for Advanced Internet
+﻿<!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
    agreements.  See the NOTICE file distributed with this work for
    additional information regarding copyright ownership. The UCAID
@@ -16,7 +14,7 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <!--
     This is where we put all the architecture neutral bits of the
     Shibboleth install.  It turns out that it may not be all the
@@ -56,7 +54,7 @@
 
       <!-- pretty icon for the "install programs" page -->
       <Component Id="shib.ico" Guid="{FA0F86A1-0731-4D66-8216-BC74D231B598}">
-        <File KeyPath="yes" Source="$(var.SPBuildDirectory)\cpp-sp\msi\shib.ico" />
+        <File Id="shib.ico" KeyPath="yes" Source="$(var.SPBuildDirectory)\cpp-sp\msi\shib.ico" />
         <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\[ProductCode]" Name="DisplayIcon" Value="[#shib.ico],0" Type="string" />
       </Component>
     </DirectoryRef>

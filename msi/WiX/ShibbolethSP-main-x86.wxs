@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- Licensed to the University Corporation for Advanced Internet
+﻿<!-- Licensed to the University Corporation for Advanced Internet
    Development, Inc. (UCAID) under one or more contributor license
    agreements.  See the NOTICE file distributed with this work for
    additional information regarding copyright ownership. The UCAID
@@ -16,19 +14,18 @@
    implied.  See the License for the specific language governing
    permissions and limitations under the License.  -->
 
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="$(var.ShibbolethId32)" Language="1033" Manufacturer="Shibboleth Consortium" Name="Shibboleth Service Provider" UpgradeCode="$(var.ShibbolethUpgradeCode)" Version="$(var.ShibbolethVersion).$(var.ShibbolethPatchVersion)">
-    <Package Description="Shibboleth SP (x86) V$(var.ShibbolethVersion) Patch Level $(var.ShibbolethPatchVersion)" Compressed="yes" Manufacturer="Shibboleth Consortium" InstallerVersion="400" />
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Language="1033" Manufacturer="Shibboleth Consortium" Name="Shibboleth Service Provider" UpgradeCode="$(var.ShibbolethUpgradeCode)" Version="$(var.ShibbolethVersion).$(var.ShibbolethPatchVersion)" InstallerVersion="400" ProductCode="$(var.ShibbolethId32)"><SummaryInformation Description="Shibboleth SP (x86) V$(var.ShibbolethVersion) Patch Level $(var.ShibbolethPatchVersion)" Manufacturer="Shibboleth Consortium" />
 
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." MigrateFeatures="yes" Schedule="afterInstallExecute" AllowSameVersionUpgrades="yes" />
 
     <PropertyRef Id="SHIB_OLDVERSION" />
 
-    <Condition Message="Shibboleth requires Windows Vista or later.">NOT VersionNT OR (VersionNT &gt;= 600)</Condition>
-    <Condition Message="Shibboleth requires a Windows NT-based operating system.">NOT Version9X</Condition>
-    <Condition Message="You must uninstall very old versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems.">(SHIB_OLDVERSION = "none")</Condition>
+    <Launch Condition="NOT VersionNT OR (VersionNT &gt;= 600)" Message="Shibboleth requires Windows Vista or later." />
+    <Launch Condition="NOT Version9X" Message="Shibboleth requires a Windows NT-based operating system." />
+    <Launch Condition="(SHIB_OLDVERSION = &quot;none&quot;)" Message="You must uninstall very old versions of Shibboleth before using this installer. To uninstall, use the &quot;Change&quot; option from the Add/Remove dialog and then Remove. Attempting to uninstall directly causes the installer to hang on most systems." />
 
-    <Condition Message="For a 32-bit installation on a 64-bit architecture, install the 64-bit MSI but specify 32-bit defaults">NOT VersionNT64</Condition>
+    <Launch Condition="NOT VersionNT64" Message="For a 32-bit installation on a 64-bit architecture, install the 64-bit MSI but specify 32-bit defaults" />
 
     <Media Id="1" Cabinet="product.cab" EmbedCab="yes" />
 
@@ -40,43 +37,13 @@
     <UIRef Id="ShibbolethInstallDir" />
 
     <!-- Files -->
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <!-- The test bit -->
-      <Directory Id="opt" Name="opt">
-        <Directory Id="INSTALLDIR" Name="shibboleth-sp" />
-      </Directory>
-
-      <Directory Id="ProgramFilesFolder" Name="PFiles">
-        <!-- 32 bit merge modules -notionally go to "Program Files (x86)" -->
-        <Merge Id="CurlMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Curl-x86.msm" DiskId="1" />
-        <?if $(var.FCGI) != "" ?>
-        <Merge Id="FastCGIMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\FastCGI-x86.msm" DiskId="1" />
-        <?endif ?>
-        <Merge Id="Log4ShibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Log4Shib-x86.msm" DiskId="1" />
-        <Merge Id="OpenSAMLMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-x86.msm" DiskId="1" />
-        <Merge Id="OpenSAMLMergeModule_schemas" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-schemas.msm" DiskId="1" />
-        <Merge Id="OpenSSLMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSSL-x86.msm" DiskId="1" />
-        <Merge Id="ShibbolethMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-x86.msm" DiskId="1" />
-        <Merge Id="ShibbolethMergeModule_schemas" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-schemas.msm" DiskId="1" />
-        <Merge Id="XercesMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm" DiskId="1" />
-        <Merge Id="XmlSecMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm" DiskId="1" />
-        <Merge Id="ZlibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm" DiskId="1" />
-        <?if $(var.BuildDebug) != "" ?>
-        <Merge Id="Microsoft_DebugCRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x86.msm" DiskId="1" />
-        <?endif ?>
-        <Merge Id="Microsoft_CRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x86.msm" DiskId="1" />
-      </Directory><!--ProgramFilesFolder-->
-
-      <Component Id="SetPath" Guid="{3300B9CD-67AF-4AAC-801D-8C56E5FB4AF5}">
-        <Environment Id="SetPath" Name="PATH" Action="set" Part="last" System="yes" Value="[ProgramFilesFolder]Shibboleth\SP\lib" />
-      </Component>
-    </Directory><!--TARGETDIR-->
+    <!--TARGETDIR-->
 
     <Feature Id="Shibboleth" Title="Shibboleth" Level="1" Display="hidden" ConfigurableDirectory="INSTALLDIR">
       <MergeRef Id="CurlMergeModule_x86" />
       <?if $(var.FCGI) != "" ?>
       <MergeRef Id="FastCGIMergeModule_x86" />
-      <?endif ?>
+      <?endif?>
       <MergeRef Id="Log4ShibMergeModule_x86" />
       <MergeRef Id="OpenSAMLMergeModule_x86" />
       <MergeRef Id="OpenSAMLMergeModule_schemas" />
@@ -89,7 +56,7 @@
 
       <?if $(var.BuildDebug) != "" ?>
       <MergeRef Id="Microsoft_DebugCRT_x86" />
-      <?endif ?>
+      <?endif?>
       <MergeRef Id="Microsoft_CRT_x86" />
 
       <!-- ShibbolethSP-main-x86 -->
@@ -98,8 +65,8 @@
       <?include ShibbolethSP-defs-x86.wxi ?>
 
       <Component Id="shibd.exe" Guid="{2476BB80-9384-4026-86F5-E1569A685187}" Directory="sbin">
-        <File KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe" />
-        <File KeyPath="no"  Checksum="no"  Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.pdb" />
+        <File Id="shibd.exe" KeyPath="yes" Checksum="yes" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.exe" />
+        <File Id="shibd.pdb" KeyPath="no" Checksum="no" Source="$(var.SPBuildDirectory)\cpp-sp\Build\$(var.MsVCVersion)\Release\shibd.pdb" />
         <!-- NOTE - whether this actually happens is predicated in noarch on whether this is an upgrade or not -->
         <ServiceInstall Id="shibd" Name="shibd_Default" DisplayName="Shibboleth Daemon (Default)" Description="Manages shared state and offloads SAML processing from Shibboleth web server modules." Arguments="-stdout &quot;[INSTALLDIR]var\log\shibboleth\stdout.log&quot; -stderr &quot;[INSTALLDIR]var\log\shibboleth\stderr.log&quot;" Type="ownProcess" Start="auto" ErrorControl="ignore" />
         <ServiceControl Id="shibd_Default" Name="shibd_Default" Stop="both" Remove="uninstall" Start="install" Wait="no" />
@@ -117,12 +84,12 @@
          between 32 and 64 bit registration -->
 
     <CustomAction Id="SetQtInstallIIS" Property="QtInstallIIS" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; install module /name:ShibNative /image:&quot;[#iis7_shib.dll]&quot;" />
-    <CustomAction Id="QtInstallIIS" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="deferred" Impersonate="no" />
+    <CustomAction Id="QtInstallIIS" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" BinaryRef="Wix4UtilCA_X86" />
 
     <CustomAction Id="SetQtUninstallIIS" Property="QtUninstallIIS" Value="&quot;[WindowsFolder]\System32\InetSrv\appcmd.exe&quot; uninstall module ShibNative" />
-    <CustomAction Id="QtUninstallIIS" BinaryKey="WixCA" DllEntry="CAQuietExec" Execute="deferred" Impersonate="no" Return="ignore" />
+    <CustomAction Id="QtUninstallIIS" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" BinaryRef="Wix4UtilCA_X86" />
 
-    <CustomAction Id="SetDisplayName" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore"/>
+    <CustomAction Id="SetDisplayName" DllEntry="WixQuietExec" Execute="deferred" Impersonate="no" Return="ignore" BinaryRef="Wix4UtilCA_X86" />
 
     <InstallExecuteSequence>
       <!-- Install IIS if
@@ -130,24 +97,44 @@
            - AND we were told to
            - AND this is NOT an upgrade
         -->
-      <Custom Action="SetQtInstallIIS" Before="InstallFiles">
-        (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
-      </Custom>
-      <Custom Action="QtInstallIIS" After="SetQtInstallIIS">
-        (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
-      </Custom>
+      <Custom Action="SetQtInstallIIS" Before="InstallFiles" Condition="(NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; &quot;#6&quot;) AND INSTALL_IIS7_PLUGIN" />
+      <Custom Action="QtInstallIIS" After="SetQtInstallIIS" Condition="(NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; &quot;#6&quot;) AND INSTALL_IIS7_PLUGIN" />
 
-      <Custom Action="SetQtUninstallIIS" After="StopServices">
-        Installed AND IISMAJORVERSION  AND (IISMAJORVERSION &lt;&gt; "#6") AND (REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)
-      </Custom>
+      <Custom Action="SetQtUninstallIIS" After="StopServices" Condition="Installed AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; &quot;#6&quot;) AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)" />
 
-      <Custom Action="QtUninstallIIS" After="SetQtUninstallIIS">
-          Installed AND IISMAJORVERSION  AND (IISMAJORVERSION &lt;&gt; "#6") AND (REMOVE="ALL") AND (NOT UPGRADINGPRODUCTCODE)
-      </Custom>
+      <Custom Action="QtUninstallIIS" After="SetQtUninstallIIS" Condition="Installed AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; &quot;#6&quot;) AND (REMOVE=&quot;ALL&quot;) AND (NOT UPGRADINGPRODUCTCODE)" />
 
-      <ScheduleReboot Before="InstallFinalize">
-        (NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; "#6") AND INSTALL_IIS7_PLUGIN
-      </ScheduleReboot>
+      <ScheduleReboot Before="InstallFinalize" Condition="(NOT Installed) AND IISMAJORVERSION AND (IISMAJORVERSION &lt;&gt; &quot;#6&quot;) AND INSTALL_IIS7_PLUGIN" />
     </InstallExecuteSequence>
-  </Product>
+  
+      <!-- The test bit -->
+      <Directory Id="opt" Name="opt">
+        <Directory Id="INSTALLDIR" Name="shibboleth-sp" />
+      </Directory>
+
+      <StandardDirectory Id="ProgramFilesFolder">
+        <!-- 32 bit merge modules -notionally go to "Program Files (x86)" -->
+        <Merge Id="CurlMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Curl-x86.msm" DiskId="1" />
+        <?if $(var.FCGI) != "" ?>
+        <Merge Id="FastCGIMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\FastCGI-x86.msm" DiskId="1" />
+        <?endif?>
+        <Merge Id="Log4ShibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Log4Shib-x86.msm" DiskId="1" />
+        <Merge Id="OpenSAMLMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-x86.msm" DiskId="1" />
+        <Merge Id="OpenSAMLMergeModule_schemas" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSAML-schemas.msm" DiskId="1" />
+        <Merge Id="OpenSSLMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\OpenSSL-x86.msm" DiskId="1" />
+        <Merge Id="ShibbolethMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-x86.msm" DiskId="1" />
+        <Merge Id="ShibbolethMergeModule_schemas" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Shibboleth-schemas.msm" DiskId="1" />
+        <Merge Id="XercesMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Xerces-x86.msm" DiskId="1" />
+        <Merge Id="XmlSecMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\XmlSec-x86.msm" DiskId="1" />
+        <Merge Id="ZlibMergeModule_x86" Language="1033" SourceFile="$(var.SPBuildDirectory)\cpp-sp\msi\wix\MergeModules\Zlib-x86.msm" DiskId="1" />
+        <?if $(var.BuildDebug) != "" ?>
+        <Merge Id="Microsoft_DebugCRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_DebugCRT_x86.msm" DiskId="1" />
+        <?endif?>
+        <Merge Id="Microsoft_CRT_x86" Language="1033" SourceFile="$(var.CppMmDir)\Microsoft_$(var.CppVCVersion)_CRT_x86.msm" DiskId="1" />
+      </StandardDirectory><!--ProgramFilesFolder-->
+
+      <Component Id="SetPath" Guid="{3300B9CD-67AF-4AAC-801D-8C56E5FB4AF5}" Directory="TARGETDIR">
+        <Environment Id="SetPath" Name="PATH" Action="set" Part="last" System="yes" Value="[ProgramFilesFolder]Shibboleth\SP\lib" />
+      </Component>
+    </Package>
 </Wix>

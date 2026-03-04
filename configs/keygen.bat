@@ -52,7 +52,7 @@ echo [ext]                                                   >>%CNF%
 if defined ENTITYID (echo subjectAltName=DNS:%FQDN%,URI:%ENTITYID% >>%CNF%) else (echo subjectAltName=DNS:%FQDN% >>%CNF%)
 echo subjectKeyIdentifier=hash                               >>%CNF%
 openssl.exe req -config %CNF% -new -x509 -days %DAYS% -keyout "%OUT%\%PREFIX%-key.pem" -out "%OUT%\%PREFIX%-cert.pem"
-del %CNF%
+rem del %CNF%
 exit /b
 
 :protect

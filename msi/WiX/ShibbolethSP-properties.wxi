@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<!-- Licensed to the University Corporation for Advanced Internet
+﻿<!-- Licensed to the University Corporation for Advanced Internet
      Development, Inc. (UCAID) under one or more contributor license
      agreements.  See the NOTICE file distributed with this work for
      additional information regarding copyright ownership. The UCAID
@@ -20,7 +18,7 @@
      used to drive the install.  The GUI will change them as required,
      but the GUI is not required.  -->
 
-<Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
 
   <!-- Are we installing IIS, if so what extension to used -->
   <Property Id="INSTALL_IIS_PLUGIN" Value="TRUE" Secure="yes" />

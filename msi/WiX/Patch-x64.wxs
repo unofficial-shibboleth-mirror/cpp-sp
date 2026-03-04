@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <PatchCreation Id="{17B36DC5-D54C-4484-9735-0E57B2866153}" CleanWorkingFolder="yes" OutputPath="openssl-101h-on-2.5.3-patch-win64.pcp" WholeFilesOnly="yes">
 
     <!-- Information put into the summary (Details) field -->
