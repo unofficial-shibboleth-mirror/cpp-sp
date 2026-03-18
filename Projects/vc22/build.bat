@@ -14,6 +14,15 @@ rem Clean
 del /s *.obj *.lib *.dll *.exe
 del /s *.obj *.lib *.dll *.exe
 
+if exist kit.zip (
+    del kit.zip
+)
+
+if exist kit {
+   rd /s /q kit
+}
+
+
 REM Build all the DLLS and the msiversion executable
 
 REM everything for x64
@@ -23,21 +32,38 @@ REM IIS only for Arm64 and x86
 msbuild -m /property:Platform=arm64;Configuration=release /MaxCPUCount Shibboleth.sln /t:iis
 msbuild -m /property:Platform=x86;Configuration=release /MaxCPUCount Shibboleth.sln /t:iis
 
-FOR /F "delims= tokens=* USEBACKQ" %%F IN (`x64\release\MsiVersion.exe`) DO (
-   SET MSIVERSION=%%F
-)
+REM Build Kit.
 
-echo MsiVersion derived to be 'MSIVERSION%'
+mkdir kit
+copy ..\..\WindowsInstall\install.bat kit\
 
-cd ..\..\msi
+mkdir kit\dist
+x64\Release\MsiVersion.exe > kit\dist\Version.txt
+echo 1 > kit\dist\InstallerVersion.txt
 
-REM Clean
+mkdir kit\dist\bin
+copy ..\..\WindowsInstall\update.bat kit\dist\bin\
 
-dotnet clean installer.vcxproj /p:targetDir=%BUILD_HOME_DIR%\Projects\VC22\x64
+mkdir kit\dist\lib
+copy x64\Release\iis_shib4.dll kit\dist\lib
+copy x64\Release\mod_shib4.so kit\dist\lib
+copy x64\Release\NativeLogMessages.dll kit\dist\lib
+copy ARM64\Release\iis_shib4.dll kit\dist\lib\iis_shib4_arm64.dll
+copy Release\iis_shib4.dll kit\dist\lib\iis_shib4_x86.dll
 
-REM and Build
+mkdir kit\dist\etc
+copy ..\..\configs\agent.ini kit\dist\etc
+copy ..\..\configs\handlers.ini kit\dist\etc
+copy ..\..\configs\iis-config.ini kit\dist\etc
+copy ..\..\configs\request-map.xml kit\dist\etc
+copy ..\..\WindowsInstall\shib.ico kit\dist
 
-dotnet build installer.vcxproj /p:targetPath=%BUILD_HOME_DIR%\Projects\VC22\x64\;Platform=x64;RootDir=%BUILD_HOME_DIR%;MsiVersion=%MSIVERSION%;Configuration=Release
-move bin\x64\Release\Installer.msi %BUILD_HOME_DIR%\Projects\VC22\Agent.msi
+mkdir kit\dist\dist-bin\
+copy ..\..\WindowsInstall\doupdate.bat kit\dist-bin\bin\
+copy ..\..\WindowsInstall\setreg.bat kit\dist-bin\bin\
 
-:done
+
+
+
+tar -a -c -f kit.zip kit
+
