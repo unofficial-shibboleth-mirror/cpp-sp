@@ -9,11 +9,6 @@
 *.pyc
 *.pyo
 *.rej
-*.msm
-*.wixobj
-*.wixpdb
-*.msi
-*.wixlib
 *.sdf
 *.opensdf
 *.suo
@@ -59,9 +54,6 @@ ARM64
 /Build
 /fastcgi/shibauthorizer
 /fastcgi/shibresponder
-/Projects/VC??/apache/mod_shib4-Debug/
-/Projects/VC??/apache/mod_shib4-Release/
-/Projects/VC??/ipch/
 /Projects/VC??/.vs
 /Projects/VC??/Shibboleth.*.opendb
 /Projects/VC??/Shibboleth.*.db
