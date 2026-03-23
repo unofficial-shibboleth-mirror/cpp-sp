@@ -21,5 +21,10 @@
 
 int main()
 {
-    std::cout << SHIBSP_VERSION_MAJOR << "." << SHIBSP_VERSION_MINOR << "." << SHIBSP_VERSION_REVISION << "." << SHIBSP_VERSION_PATCH << std::endl;
+    if (SHIBSP_VERSION_PATCH != 0) {
+        std::cerr << "SHIB_VERESION_PATCH SHOUKLD BE ZERO" << std::endl; 
+        return 1;
+    }
+    int version = (SHIBSP_VERSION_MAJOR << 24) | (SHIBSP_VERSION_MINOR << 16) | SHIBSP_VERSION_REVISION;
+    std::cout << version << std::endl;
 }

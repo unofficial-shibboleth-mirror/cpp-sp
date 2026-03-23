@@ -40,6 +40,7 @@
 #define SHIBSP_VERSION_REVISION 0
 //
 // For Windows we define a patch version
+// DO NOT USE - There is no situation which requires apatch
 //
 #define SHIBSP_VERSION_PATCH 0
 

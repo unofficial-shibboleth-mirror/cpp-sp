@@ -25,7 +25,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "iis", "iis.vcxproj", "{3F4D
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NativeLogMessages", "NativeLogMessages.vcxproj", "{22BBF106-8ADC-4E97-A5DE-F9C725B64940}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MsiVersion", "MsiVersion.vcxproj", "{B1CAE2D4-063D-4B5D-A796-93C6D9F71CC8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Version", "Version.vcxproj", "{B1CAE2D4-063D-4B5D-A796-93C6D9F71CC8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

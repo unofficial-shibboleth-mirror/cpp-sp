@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MsiVersion\MsiVersion.cpp">
+    <ClCompile Include="Version\Version.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
