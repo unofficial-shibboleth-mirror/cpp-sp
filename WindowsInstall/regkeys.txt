@@ -1,0 +1,23 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730}]
+"DisplayName"="Shibboleth SP Windows Agent"
+"Language"=dword:00000409
+"NoModify"=dword:00000001
+"URLUpdateInfo"="https://shibboleth.atlassian.net/wiki/spaces/spagent4"
+"URLInfoAbout"="http://shibboleth.net/"
+"EstimatedSize"=dword:000001234
+"Size"=""
+"Readme"=""
+"Publisher"="Shibboleth Consortium"
+"NoModify"=dword:00000001
+"HelpTelephone"=""
+"HelpLink"=hex(2):68,00,74,00,74,00,70,00,73,00,3a,00,2f,00,2f,00,73,00,68,00,\
+  69,00,62,00,62,00,6f,00,6c,00,65,00,74,00,68,00,2e,00,61,00,74,00,6c,00,61,\
+  00,73,00,73,00,69,00,61,00,6e,00,2e,00,6e,00,65,00,74,00,2f,00,77,00,69,00,\
+  6b,00,69,00,2f,00,73,00,70,00,61,00,63,00,65,00,73,00,2f,00,73,00,70,00,61,\
+  00,67,00,65,00,6e,00,74,00,34,00,00,00
+"Contact"="contact@shibboleth.net"
+"Comments"=""
+"AuthorizedCDFPrefix"=""
+

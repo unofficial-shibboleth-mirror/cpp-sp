@@ -38,11 +38,14 @@ mkdir kit
 copy ..\..\WindowsInstall\install.bat kit\
 
 mkdir kit\dist
-x64\Release\MsiVersion.exe > kit\dist\Version.txt
+x64\Release\Version.exe > kit\dist\Version.txt
 echo 1 > kit\dist\InstallerVersion.txt
 
 mkdir kit\dist\bin
 copy ..\..\WindowsInstall\update.bat kit\dist\bin\
+copy ..\..\WindowsInstall\uninstall.bat kit\dist\bin\
+copy ..\..\WindowsInstall\setacl.bat kit\dist\bin\
+
 
 mkdir kit\dist\lib
 copy x64\Release\iis_shib4.dll kit\dist\lib
@@ -60,10 +63,6 @@ copy ..\..\WindowsInstall\shib.ico kit\dist
 
 mkdir kit\dist\dist-bin\
 copy ..\..\WindowsInstall\doupdate.bat kit\dist-bin\bin\
-copy ..\..\WindowsInstall\setreg.bat kit\dist-bin\bin\
-
-
-
+copy ..\..\WindowsInstall\regkeys.txt kit\dist-bin\bin\
 
 tar -a -c -f kit.zip kit
-
