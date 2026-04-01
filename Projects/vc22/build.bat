@@ -14,19 +14,15 @@ rem Clean
 del /s *.obj *.lib *.dll *.exe
 del /s *.obj *.lib *.dll *.exe
 
-if exist kit.zip (
-    del kit.zip
-)
+if exist kit.zip del kit.zip
 
-if exist kit {
-   rd /s /q kit
-}
+if exist kit rd /s /q kit
 
 
 REM Build all the DLLS and the msiversion executable
 
 REM everything for x64
-msbuild -m /property:Platform=x64;Configuration=release /MaxCPUCount Shibboleth.sln /t:iis;NativeLogMessages;MsiVersion;Apache
+msbuild -m /property:Platform=x64;Configuration=release /MaxCPUCount Shibboleth.sln /t:iis;NativeLogMessages;Version;Apache
 
 REM IIS only for Arm64 and x86
 msbuild -m /property:Platform=arm64;Configuration=release /MaxCPUCount Shibboleth.sln /t:iis
@@ -43,7 +39,6 @@ echo 1 > kit\dist\InstallerVersion.txt
 
 mkdir kit\dist\bin
 copy ..\..\WindowsInstall\update.bat kit\dist\bin\
-copy ..\..\WindowsInstall\uninstall.bat kit\dist\bin\
 copy ..\..\WindowsInstall\setacl.bat kit\dist\bin\
 
 
@@ -62,7 +57,8 @@ copy ..\..\configs\request-map.xml kit\dist\etc
 copy ..\..\WindowsInstall\shib.ico kit\dist
 
 mkdir kit\dist\dist-bin\
-copy ..\..\WindowsInstall\doupdate.bat kit\dist-bin\bin\
-copy ..\..\WindowsInstall\regkeys.txt kit\dist-bin\bin\
+copy ..\..\WindowsInstall\doupdate.bat kit\dist\dist-bin\
+copy ..\..\WindowsInstall\regkeys.txt kit\dist\dist-bin\
+copy ..\..\WindowsInstall\uninstall.bat kit\dist\dist-bin\
 
 tar -a -c -f kit.zip kit

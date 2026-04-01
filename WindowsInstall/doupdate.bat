@@ -1,9 +1,9 @@
-@echo off
+rem @echo off
 REM Update  SP agent
 
 setlocal
 
-rem Find FQP forK target and root of installation
+rem Find FQP for target and root of installation
 set SAVE_WORKING_DIR=%cd%
 cd %1%
 set TargetDir=%cd%
@@ -18,7 +18,7 @@ Set /a MinorVersion="(%VERSION% >> 16) & 0xFF" > nul:
 Set /a PatchVersion = "%VERSION% & 0xFFFF" > nul:
 set VersionString=%MajorVersion%.%MinorVersion%.%PatchVersion%
 
-if (exist %TargetDir%\lib\shibboleth-sp) (
+if exist %TargetDir%\lib\shibboleth-sp (
   Echo Updating SP Agent Version %VersionString%
 ) else (
   Echo Installing SP Agent Version %VersionString%
@@ -26,26 +26,30 @@ if (exist %TargetDir%\lib\shibboleth-sp) (
 
 rem
 rem use robocopy to copy stuff over
+rem /s recursive
 rem /is copy eveything
 rem /njh No job header
 rem /njs No job summary
-
 echo Copying Distribution to %targetDir%\dist-%VersionString%
-robocopy /is /njs /njh . %targetDir%\dist-%VersionString%\
+mkdir  "%targetDir%\dist-%VersionString%"
+robocopy /s /is /njs /njh . "%targetDir%\dist-%VersionString%"
 
 echo Copying Batch Files to %targetdir%\bin\shibboleth-sp\
-robocopy /is  /njs /njh bin "%targetdir%\bin\shibboleth-sp\"
+mkdir  "%targetdir%\bin\shibboleth-sp\"
+robocopy /is /njs /njh bin "%targetdir%\bin\shibboleth-sp"
 
 echo Copying Dll Files to  %targetdir%\lib\shibboleth-sp\
-robocopy /is  /njs /njh lib "%targetdir%\lib\shibboleth-sp\"
+mkdir "%targetdir%\lib\shibboleth-sp\"
+robocopy /is /njs /njh lib "%targetdir%\lib\shibboleth-sp"
 
-echo Coping new config Files
 rem /xc /xn /xo only new files
 rem  /xc exclude existing files same timestamp different sizes
 rem  /xn exclude newer
 rem  /xo exclude older
 rem Hence /xo /xc /xn means "copy every file where a file of that name isn't there"
-robocopy /xc /xn /xo /njs /njh etc "%targetdir%\etc\shibboleth-sp\"
+echo Copying new config Files
+mkdir "%targetdir%\etc\shibboleth-sp\"
+robocopy /xc /xn /xo /njs /njh etc "%targetdir%\etc\shibboleth-sp"
 
 rem Set registry
 echo "just add code to update registry"
@@ -67,7 +71,3 @@ reg by hand
 reg file called regkeys.txt
 
 
-
-:exit
-cd /d %SAVE_WORKING_DIR%
-exit /b
