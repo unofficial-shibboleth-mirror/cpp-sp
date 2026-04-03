@@ -15,14 +15,14 @@ if "%TargetDir%" == "" set TargetDir=%loc%
 
 rem - Fail if lib or bin exist
 if exist "%TargetDir%\bin\shibboleth-sp" (
-   echo %TargetDir%\bin\shibboleth-sp exists.  Agent may already be installed
-   echo Did you mean %TargetDir%\bin\shibboleth-sp\update ?
-   exit /b
+    echo %TargetDir%\bin\shibboleth-sp exists.  Agent may already be installed
+    echo Did you mean %TargetDir%\bin\shibboleth-sp\update ?
+    exit /b
 )
 if exist "%TargetDir%\lib\shibboleth-sp" (
-   echo %TargetDir%\lib\shibboleth-sp exists.  Agent may already be installed
-   echo Did you mean %TargetDir%\bin\shibboleth-sp\update ?
-   exit /b
+    echo %TargetDir%\lib\shibboleth-sp exists.  Agent may already be installed
+    echo Did you mean %TargetDir%\bin\shibboleth-sp\update ?
+    exit /b
 )
 
 Rem Call generic "install/update" bar file shipped with this release
