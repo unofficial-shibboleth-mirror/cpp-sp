@@ -70,7 +70,7 @@ namespace shibsp {
 
 };
 
-SessionHandler::SessionHandler(const ptree& pt) : SecuredHandler(pt), m_values(false)
+SessionHandler::SessionHandler(const ptree& pt) : AbstractHandler(pt), SecuredHandler(pt), m_values(false)
 {
     static const char CONTENT_TYPE_PROP_NAME[] = "contentType";
     static const char SHOW_ATTRIBUTE_VALUES_PROP_NAME[] = "showAttributeValues";

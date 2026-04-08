@@ -198,7 +198,7 @@ namespace shibsp {
     }
 };
 
-StatusHandler::StatusHandler(const ptree& pt) : SecuredHandler(pt)
+StatusHandler::StatusHandler(const ptree& pt) : AbstractHandler(pt), SecuredHandler(pt)
 {
 }
 

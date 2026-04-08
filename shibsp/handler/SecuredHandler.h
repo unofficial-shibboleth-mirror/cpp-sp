@@ -36,7 +36,7 @@ namespace shibsp {
     /**
      * Pluggable runtime functionality that is protected by simple access control.
      */
-    class SHIBSP_API SecuredHandler : public AbstractHandler
+    class SHIBSP_API SecuredHandler : public virtual AbstractHandler
     {
     protected:
         /**

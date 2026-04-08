@@ -21,11 +21,13 @@
 #ifndef __shibsp_logout_h__
 #define __shibsp_logout_h__
 
-#include <shibsp/handler/Handler.h>
+#include <shibsp/handler/AbstractHandler.h>
 
 #include <map>
 #include <string>
 #include <vector>
+
+#include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
 
@@ -38,7 +40,7 @@ namespace shibsp {
      * Base class for logout-related handlers, both when initiating from the
      * Agent or processing incoming requests or responses from other systems.
      */
-    class SHIBSP_API LogoutHandler : public virtual Handler
+    class SHIBSP_API LogoutHandler : public virtual AbstractHandler
     {
     public:
         virtual ~LogoutHandler();
@@ -60,7 +62,7 @@ namespace shibsp {
         std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     protected:
-        LogoutHandler();
+        LogoutHandler(const boost::property_tree::ptree& pt);
         
         /** Flag indicating whether the subclass is acting as a LogoutInitiator. */
         bool m_initiator;

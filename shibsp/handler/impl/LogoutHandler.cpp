@@ -31,7 +31,7 @@
 using namespace shibsp;
 using namespace std;
 
-LogoutHandler::LogoutHandler() : m_initiator(true)
+LogoutHandler::LogoutHandler(const boost::property_tree::ptree& pt) : AbstractHandler(pt), m_initiator(true)
 {
 }
 
