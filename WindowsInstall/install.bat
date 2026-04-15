@@ -25,12 +25,10 @@ if exist "%TargetDir%\lib\shibboleth-sp" (
     exit /b
 )
 
-Rem Call generic "install/update" bar file shipped with this release
+Rem Call generic "install/update" bat file shipped with this release
 
 mkdir  "%targetDir%"
 cmd /c dist\dist-bin\doupdate.bat "%targetDir%"
-
-Rem TODOODOTODO nativelogmessage into registry
 
 Rem Detect IIS and configure if there
 

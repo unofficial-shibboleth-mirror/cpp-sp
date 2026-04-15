@@ -2,29 +2,30 @@ setlocal
 Rem
 Rem File to uninstall the SP agent
 Rem
+Rem This file is found in a non-standard location of an install
+Rem (/opt/shibboleth-sp/bin, as a peer to /opt/shibboleth-sp/bin/shibboleth-sp)
+Rem (so it doesn't delete itself).  It is really only expected to
+Rem be run from the "uninstall" menu item of the apps and features
+Rem but it is idempotent so can be run any time.
 
-Rem Goto root of install - we are running from %targetDir%\dist-4.x.7\dist-bin\
-
-cd /d %1%
-set TargetDir=%cd%
-
-if not exist "%targetdir%\bin\shibboleth-sp" (
-   echo "No installation found %targetdir%
-   exit /b
-)
+cd /d %~dp0
 
 if exist %SYSTEMROOT%\System32\INETSRV\appcmd.exe (
     echo Uninstalling ShibAgent module from IIS
-    %SYSTEMROOT%\System32\INETSRV\appcmd.exe delete module ShibAgent
-    %SYSTEMROOT%\System32\INETSRV\appcmd.exe uninstall module ShibAgent
+    %SYSTEMROOT%\System32\INETSRV\appcmd.exe delete module ShibAgent 2> nul:
+    %SYSTEMROOT%\System32\INETSRV\appcmd.exe uninstall module ShibAgent  2> nul:
 )
 
-echo Removing %TargetDir%\bin\shibboleth-sp\
-rd /s /q "%TargetDir%\bin\shibboleth-sp"
+echo "Removing bat files"
+rd /s /q shibboleth-sp
 
-echo Removing %TargetDir%\lib\shibboleth-sp\
-rd /s /q "%TargetDir%\lib\shibboleth-sp"
+cd ..\lib
+echo "Removing library files"
+rd /s /q shibboleth-sp
 
-echo Not touching %TargetDir%\etc\shibboleth-sp\
+Echo Not touching configuration files
 
-echo "just add code to remove [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730}]" and reg keys
+Rem remove from "installed apps & Features"
+reg delete HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f
+Rem and from logging
+reg delete HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\ShibbolethSPAgent /f

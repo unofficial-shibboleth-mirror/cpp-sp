@@ -5,10 +5,12 @@ setlocal
 
 Rem Find FQP for target and root of installation
 set SAVE_WORKING_DIR=%cd%
-cd %1%
+cd /d %1%
 set TargetDir=%cd%
 
-cd /d %~dp0..
+cd /d %~dp0
+set SourceDir=%cd%
+cd ..
 echo "Installing from %cd%"
 
 Rem Grab version as string
@@ -37,6 +39,7 @@ robocopy /s /is /njs /njh . "%targetDir%\dist-%VersionString%"
 echo Copying Batch Files to %targetdir%\bin\shibboleth-sp\
 mkdir  "%targetdir%\bin\shibboleth-sp\"
 robocopy /is /njs /njh bin "%targetdir%\bin\shibboleth-sp"
+copy /y dist-bin\uninstall.bat "%targetdir%\bin"
 
 echo Copying Dll Files to  %targetdir%\lib\shibboleth-sp\
 mkdir "%targetdir%\lib\shibboleth-sp\"
@@ -52,22 +55,24 @@ mkdir "%targetdir%\etc\shibboleth-sp\"
 robocopy /xc /xn /xo /njs /njh etc "%targetdir%\etc\shibboleth-sp"
 
 Rem Set registry
-echo "just add code to update registry"
+Rem Firstly the "have I been installed" setting
+
+reg import dist-bin\regkeys.txt
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v DisplayIcon /t REG_SZ /d "%SourceDir%\shib.ico,0"
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v InstallSource /t REG_SZ /d "%SourceDir%"
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v Version /t REG_DWORD /d %Version%
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v DisplayVersion /t REG_SZ /d "%VersionString%"
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v VersionMinor /t REG_DWORD /d %MinorVersion%
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v InstallLocation /t REG_SZ /d "%TargetDir%"
+Rem note double quoting for "
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v UninstallString /t REG_SZ /d "cmd /c ""%targetdir%\bin\uninstall.bat"""
+
+Rem
+Rem now the event viewer
+Rem
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v CategoryCount /t REG_DWORD /d 0
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v TypesSupported /t REG_DWORD /d 7
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v CategoryMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NTEventLogAppender.dll"
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v EventMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NTEventLogAppender.dll"
+
 exit /b
-
-reg by hand
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730}]
-
-"DisplayIcon"="C:\\opt\\shibboleth-sp\\etc\\shibboleth-sp\\shib.ico,0"
-"InstallSource"="C:\\Users\\Administrator\\Desktop\\"
-"DisplayVersion"="4.0.0.0"
-"Version"=dword:04000000
-"VersionMinor"=dword:00000000
-"VersionMajor"=dword:00000004
-"UninstallString"="cmd /c pause"
-"InstallLocation"=""
-
-reg file called regkeys.txt
-
-

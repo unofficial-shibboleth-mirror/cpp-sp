@@ -54,11 +54,11 @@ copy ..\..\configs\agent.ini kit\dist\etc
 copy ..\..\configs\handlers.ini kit\dist\etc
 copy ..\..\configs\iis-config.ini kit\dist\etc
 copy ..\..\configs\request-map.xml kit\dist\etc
-copy ..\..\WindowsInstall\shib.ico kit\dist
 
 mkdir kit\dist\dist-bin\
 copy ..\..\WindowsInstall\doupdate.bat kit\dist\dist-bin\
 copy ..\..\WindowsInstall\regkeys.txt kit\dist\dist-bin\
 copy ..\..\WindowsInstall\uninstall.bat kit\dist\dist-bin\
+copy ..\..\WindowsInstall\shib.ico kit\dist\dist-bin
 
 tar -a -c -f kit.zip kit
