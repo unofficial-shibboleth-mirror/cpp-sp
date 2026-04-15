@@ -1,7 +1,7 @@
 setlocal
-REM
-REM File to uninstall the SP agent
-REM
+Rem
+Rem File to uninstall the SP agent
+Rem
 
 Rem Goto root of install - we are running from %targetDir%\dist-4.x.7\dist-bin\
 

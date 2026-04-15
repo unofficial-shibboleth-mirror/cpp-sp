@@ -1,10 +1,10 @@
-rem @echo off
+Rem @echo off
 
 setlocal
 
-rem fail if parameters is not a distribution
+Rem fail if parameters is not a distribution
 
-rem find kit root
+Rem find kit root
 cd %1%
 set kit_root=%CD%
 
@@ -13,7 +13,7 @@ if not exist "dist\dist-bin\doupdate.bat" (
    exit /b
 )
 
-rem find root of install
+Rem find root of install
 cd %~dp0..\..
 set install_path=%cd%
 

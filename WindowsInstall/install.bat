@@ -1,19 +1,19 @@
-rem @echo off
-REM Install SP agent
+Rem @echo off
+Rem Install SP agent
 
 setlocal
 
-rem Find FQP for root of installation
+Rem Find FQP for root of installation
 set SAVE_WORKING_DIR=%cd%
 cd /d %~dp0
 set SOURCE_DIR=%cd%
 
-rem - Collect targetDir [opt\shibboleth-sp]
+Rem - Collect targetDir [opt\shibboleth-sp]
 set loc=%SystemDrive%\opt\shibboleth-sp
 set /p TargetDir="Location To Install [%loc%] :"
 if "%TargetDir%" == "" set TargetDir=%loc%
 
-rem - Fail if lib or bin exist
+Rem - Fail if lib or bin exist
 if exist "%TargetDir%\bin\shibboleth-sp" (
     echo %TargetDir%\bin\shibboleth-sp exists.  Agent may already be installed
     echo Did you mean %TargetDir%\bin\shibboleth-sp\update ?

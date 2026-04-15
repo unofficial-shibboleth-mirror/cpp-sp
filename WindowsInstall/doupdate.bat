@@ -1,15 +1,15 @@
-rem @echo off
-REM Update  SP agent
+Rem @echo off
+Rem Update SP agent
 
 setlocal
 
-rem Find FQP for target and root of installation
+Rem Find FQP for target and root of installation
 set SAVE_WORKING_DIR=%cd%
 cd %1%
 set TargetDir=%cd%
 
 cd /d %~dp0..
-Echo "Installing from %cd%"
+echo "Installing from %cd%"
 
 Rem Grab version as string
 for /f "delims=" %%a IN (version.txt) do (set /a Version=%%a)
@@ -24,12 +24,12 @@ if exist %TargetDir%\lib\shibboleth-sp (
   Echo Installing SP Agent Version %VersionString%
 )
 
-rem
-rem use robocopy to copy stuff over
-rem /s recursive
-rem /is copy eveything
-rem /njh No job header
-rem /njs No job summary
+Rem
+Rem use robocopy to copy stuff over
+Rem /s recursive
+Rem /is copy eveything
+Rem /njh No job header
+Rem /njs No job summary
 echo Copying Distribution to %targetDir%\dist-%VersionString%
 mkdir  "%targetDir%\dist-%VersionString%"
 robocopy /s /is /njs /njh . "%targetDir%\dist-%VersionString%"
@@ -42,16 +42,16 @@ echo Copying Dll Files to  %targetdir%\lib\shibboleth-sp\
 mkdir "%targetdir%\lib\shibboleth-sp\"
 robocopy /is /njs /njh lib "%targetdir%\lib\shibboleth-sp"
 
-rem /xc /xn /xo only new files
-rem  /xc exclude existing files same timestamp different sizes
-rem  /xn exclude newer
-rem  /xo exclude older
-rem Hence /xo /xc /xn means "copy every file where a file of that name isn't there"
+Rem /xc /xn /xo only new files
+Rem  /xc exclude existing files same timestamp different sizes
+Rem  /xn exclude newer
+Rem  /xo exclude older
+Rem Hence /xo /xc /xn means "copy every file where a file of that name isn't there"
 echo Copying new config Files
 mkdir "%targetdir%\etc\shibboleth-sp\"
 robocopy /xc /xn /xo /njs /njh etc "%targetdir%\etc\shibboleth-sp"
 
-rem Set registry
+Rem Set registry
 echo "just add code to update registry"
 exit /b
 
