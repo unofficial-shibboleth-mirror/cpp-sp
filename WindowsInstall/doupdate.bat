@@ -1,4 +1,4 @@
-Rem @echo off
+@echo off
 Rem Update SP agent
 
 setlocal
@@ -11,7 +11,7 @@ set TargetDir=%cd%
 cd /d %~dp0
 set SourceDir=%cd%
 cd ..
-echo "Installing from %cd%"
+echo Installing from %cd%
 
 Rem Grab version as string
 for /f "delims=" %%a IN (version.txt) do (set /a Version=%%a)
@@ -57,22 +57,22 @@ robocopy /xc /xn /xo /njs /njh etc "%targetdir%\etc\shibboleth-sp"
 Rem Set registry
 Rem Firstly the "have I been installed" setting
 
-reg import dist-bin\regkeys.txt
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v DisplayIcon /t REG_SZ /d "%SourceDir%\shib.ico,0"
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v InstallSource /t REG_SZ /d "%SourceDir%"
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v Version /t REG_DWORD /d %Version%
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v DisplayVersion /t REG_SZ /d "%VersionString%"
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v VersionMinor /t REG_DWORD /d %MinorVersion%
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v InstallLocation /t REG_SZ /d "%TargetDir%"
+reg import dist-bin\regkeys.txt 1> nul:
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v DisplayIcon /t REG_SZ /d "%SourceDir%\shib.ico,0" 1> nul:
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v InstallSource /t REG_SZ /d "%SourceDir%" 1> nul:
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v Version /t REG_DWORD /d %Version% 2> nul:
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v DisplayVersion /t REG_SZ /d "%VersionString%" 1> nul:
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v VersionMinor /t REG_DWORD /d %MinorVersion% 1> nul:
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v InstallLocation /t REG_SZ /d "%TargetDir%" 1> nul:
 Rem note double quoting for "
-reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v UninstallString /t REG_SZ /d "cmd /c ""%targetdir%\bin\uninstall.bat"""
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-4C84-B153-C3B17C34F730} /f /v UninstallString /t REG_SZ /d "cmd /c ""%targetdir%\bin\uninstall.bat""" 1> nul:
 
 Rem
 Rem now the event viewer
 Rem
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v CategoryCount /t REG_DWORD /d 0
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v TypesSupported /t REG_DWORD /d 7
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v CategoryMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NTEventLogAppender.dll"
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v EventMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NTEventLogAppender.dll"
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v CategoryCount /t REG_DWORD /d 0  1> nul:
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v TypesSupported /t REG_DWORD /d 7  1> nul:
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v CategoryMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NTEventLogAppender.dll"  1> nul:
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v EventMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NTEventLogAppender.dll"  1> nul:
 
 exit /b

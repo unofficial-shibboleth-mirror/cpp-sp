@@ -1,4 +1,4 @@
-Rem @echo off
+@echo off
 Rem Install SP agent
 
 setlocal
@@ -27,7 +27,7 @@ if exist "%TargetDir%\lib\shibboleth-sp" (
 
 Rem Call generic "install/update" bat file shipped with this release
 
-mkdir  "%targetDir%"
+if not exist "%targetDir%" mkdir  "%targetDir%"
 cmd /c dist\dist-bin\doupdate.bat "%targetDir%"
 
 Rem Detect IIS and configure if there
