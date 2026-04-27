@@ -76,6 +76,10 @@ DDF AbstractRemotingService::send(const DDF& in, bool checkEvent) const
             ex.addProperty("operation", in.name());
         }
         const char* target = output.getmember("target").string();
+        if (!target) {
+            // Fall back to input target if present.
+            target = in.getmember("target").string();
+        }
         if (target) {
             ex.addProperty(AgentException::TARGET_PROP_NAME, target);
         }
