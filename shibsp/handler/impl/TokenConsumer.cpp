@@ -127,6 +127,10 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             OperationException ex(string("Remote operation (token-consumer) failed with event: ") + event);
             ex.addProperty(AgentException::EVENT_PROP_NAME, event);
             ex.addProperty("operation", input.name());
+            const char* original_event = output.getmember("original_event").string();
+            if (original_event) {
+                ex.addProperty("original_event", original_event);
+            }
             const char* target = output.getmember("target").string();
             if (target) {
                 ex.addProperty(AgentException::TARGET_PROP_NAME, target);
@@ -210,10 +214,13 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         // passive case, because passive SSO doesn't make any sense together with POST recovery.
         // Passive implies requireSession is off, and POST recovery implies it's on.
 
-        const char* event = agent_ex ? agent_ex->getProperty(AgentException::EVENT_PROP_NAME) : nullptr;
+        const char* event = agent_ex ? agent_ex->getProperty(AgentException::EVENT_PROP_NAME) : nullptr;        
         if (event && !strcmp(event, "NoPassive")) {
+            const char* original = agent_ex->getProperty("original_event");
+            if (original) {
+                request.warn("Passive request resulted in error: %s", original);
+            }
             const char* error_target = target.empty() ? agent_ex->getProperty(AgentException::TARGET_PROP_NAME) : target.c_str();
-
             if (error_target) {
                 agent_ex->log(request, Priority::SHIB_WARN);
                 request.limitRedirect(error_target);
@@ -221,7 +228,7 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
                 if (boost::starts_with(error_target, request.getRequestURL())) {
                     request.warn("TokenConsumer target location matched handler, not trapping passive request error");
                 } else {
-                    request.info("trapping TokenConsumer failure and returning to target location for passive request");
+                    request.info("trapping TokenConsumer failure and returning to target location of passive request");
                     return make_pair(true, request.sendRedirect(error_target));
                 }
             }
