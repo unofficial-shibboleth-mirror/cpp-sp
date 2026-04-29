@@ -37,7 +37,7 @@ if exist %SYSTEMROOT%\System32\INETSRV\appcmd.exe (
     %SYSTEMROOT%\System32\INETSRV\appcmd.exe install module /name:ShibAgent /image:"%TargetDir%\lib\shibboleth-sp\iis_shib4.dll"
 )
 
-Rem Aak to update ACLs and if so CALL SETACL
+Rem Ask whether to update ACLs and if so CALL SETACL
 
 :loop
 set /p YesNo="Run SetAcl.bat [Yn] "
