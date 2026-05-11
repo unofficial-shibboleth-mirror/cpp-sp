@@ -864,7 +864,24 @@ bool BasicSession::isValid(SPRequest* request, unsigned int lifetime, unsigned i
     time_t now = time(nullptr);
 
     if (lifetime) {
-        // Enforce session lifetime.
+        // Check for SessionNotOnOrAfter
+        long long notonorafter = m_obj["notonorafter"].longinteger();
+        if (notonorafter > 0 && notonorafter <= now) {
+            if ((request && request->isPriorityEnabled(Priority::SHIB_WARN)) || m_cache.logger().isWarnEnabled()) {
+                string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(notonorafter)));
+                AbstractSessionCache::log(request, m_cache.logger(), Priority::SHIB_WARN,
+                    "session (%s) has expired per NotOnOrAfter policy (%s)", getID(), expired.c_str());
+            }
+            try {
+                m_cache.cache_remove(request, getID());
+            }
+            catch (const exception&) {
+                // Should be logged by SPI.
+            }
+            return false;
+        }
+
+        // Enforce local session lifetime.
         if (getCreation() + lifetime < now) {
             if ((request && request->isPriorityEnabled(Priority::SHIB_WARN)) || m_cache.logger().isWarnEnabled()) {
                 string created(date::format("%FT%TZ", chrono::system_clock::from_time_t(getCreation())));

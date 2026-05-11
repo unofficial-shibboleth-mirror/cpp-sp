@@ -199,6 +199,17 @@ DDF MemorySessionCache::cache_read(
     }
 
     if (lifetime) {
+        time_t notonorafter = entry->second.first["notonorafter"].longinteger();
+        if (notonorafter > 0 && notonorafter <= now) {
+            if (m_spilog.isInfoEnabled()) {
+                string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(notonorafter)));
+                log(INFO_MARK, "session (%s) has expired per NotOnOrAfter policy (%s)", key, expired.c_str());
+            }
+            m_lock.unlock();
+            cache_remove(request, key);
+            return DDF();
+        }
+
         time_t start = entry->second.first["ts"].longinteger();
         if (start + lifetime < now) {
             if (m_spilog.isInfoEnabled()) {

@@ -323,6 +323,17 @@ DDF FilesystemSessionCache::cache_read(
     }
 
     if (lifetime) {
+        time_t notonorafter = obj["notonorafter"].longinteger();
+        if (notonorafter > 0 && notonorafter <= now) {
+            obj.destroy();
+            if ((request && request->isPriorityEnabled(Priority::SHIB_INFO)) || m_spilog.isInfoEnabled()) {
+                string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(notonorafter)));
+                log(INFO_MARK, "session (%s) has expired per NotOnOrAfter policy (%s)", key, expired.c_str());
+            }
+            cache_remove(request, key);
+            return obj;
+        }
+
         time_t start = obj["ts"].longinteger();
         if (start + lifetime < now) {
             obj.destroy();

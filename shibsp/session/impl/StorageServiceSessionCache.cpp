@@ -186,9 +186,20 @@ DDF StorageServiceSessionCache::cache_read(
 
     if (lifetime) {
         time_t now = time(nullptr);
+
+        time_t notonorafter = sessionData["notonorafter"].longinteger();
+        if (notonorafter > 0 && notonorafter <= now) {
+            if ((request && request->isPriorityEnabled(Priority::SHIB_INFO)) || m_spilog.isInfoEnabled()) {
+                string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(notonorafter)));
+                log(INFO_MARK, "session (%s) has expired per NotOnOrAfter policy (%s)", key, expired.c_str());
+            }
+            cache_remove(request, key);
+            return DDF();
+        }
+
         time_t start = sessionData["ts"].longinteger();
         if (start + lifetime < now) {
-            if (m_spilog.isInfoEnabled()) {
+            if ((request && request->isPriorityEnabled(Priority::SHIB_INFO)) || m_spilog.isInfoEnabled()) {
                 string created(date::format("%FT%TZ", chrono::system_clock::from_time_t(start)));
                 string expired(date::format("%FT%TZ", chrono::system_clock::from_time_t(start + lifetime)));
                 log(INFO_MARK, "session (%s) has expired, created (%s), expired (%s)", key, created.c_str(), expired.c_str());
