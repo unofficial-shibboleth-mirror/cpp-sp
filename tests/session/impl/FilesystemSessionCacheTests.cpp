@@ -119,6 +119,37 @@ BOOST_FIXTURE_TEST_CASE(FilesystemSessionCache_invalid_attributes, FilesystemFix
     BOOST_CHECK_EXCEPTION(cache->create(request, child), SessionException, checker.check_message);
 }
 
+BOOST_FIXTURE_TEST_CASE(FilessystemSessionCache_notonorafter, FilesystemFixture)
+{
+    bool started = AgentConfig::getConfig().start();
+    BOOST_CHECK(started);
+
+    DDF obj = createTestData("foo");
+    obj.addmember("session.notonorafter").longinteger(time(nullptr) - 300);
+    DDFJanitor janitor(obj);
+
+    DummyRequest request("https://sp.example.org/secure/index.html");
+    DDF child = obj["session"];
+
+    SessionCache* cache = AgentConfig::getConfig().getAgent().getSessionCache();
+    string key = cache->create(request, child);
+
+    BOOST_CHECK(obj["session"].isnull());
+    BOOST_CHECK_EQUAL(key.c_str(), child.name());
+    string cookieName("__Host-shibsession_637573746f6d");
+    string header(cookieName);
+    header = header + '=' + key + ".1"; 
+    header += "; Path=/; Secure=1; HttpOnly=1; SameSite=None";
+    BOOST_CHECK_EQUAL(request.m_responseHeaders["Set-Cookie"], header);
+
+    string cookie(cookieName);
+    cookie = cookie + '=' + key + ".1";
+    request.m_requestHeaders["Cookie"] = cookie;
+
+    unique_lock<Session> session = cache->find(request, true, false);
+    BOOST_CHECK(!session);
+}
+
 BOOST_FIXTURE_TEST_CASE(FilesystemSessionCache_tests, FilesystemFixture)
 {
     bool started = AgentConfig::getConfig().start();
