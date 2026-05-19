@@ -1,113 +1,137 @@
-@echo off
+Rem @echo off
 
 setlocal
 echo Just add code
-exit /b
 
-REM
-REM EXAMPLE batch file to set restrictive ACLs on a Shibboleth IdP installation.
+Rem
+Rem EXAMPLE batch file to set restrictive ACLs on a Shibboleth Hub installation.
+Rem
+Rem You should consider this a sample rather than set in stone and adapt it for
+Rem your own use
+Rem
 
-REM NEEDS TO BE SP AGENTIFIED
+Rem
+Rem Make a guess for the Server account
+Rem
+Rem Documentation for SIDS
+Rem https://learn.microsoft.com/en-us/windows/win32/secauthz/well-known-sids and
+Rem https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/understand-special-identities-groups#local-service
+Rem
 
-sERVER ACCOUNT:
-REM Default [IIS] IIS APPPOOL\DefaultAppPool
-Rem Defailt (non-iis) "*S-1-5-19" (local_service)
-Administrators: "*S-1-5-32-544"
-Users: "*S-1-5-32-545"
-local_system "*S-1-5-18"
-
-
-REM
-REM You should consider this a sample rather than set in stone and adapt it for
-REM your own use
-REM
-REM Two optional Parameters:
-REM    The first is the ID to be given explicit read access to the configuration
-REM    and write access to the logs.  This could be the OD or a low priv user you
-REM    run the container as
-REM
-REM    The second is the ID to be given ownership of the files.  This finesses an
-REM    issue wherebywhich happen if the owner of the files is not given access.
-REM    The directory tree then becaomes an unmaintainable mess.
-REM
-REM    Defaults to 'Administrators'
-REM
-
-if "%2%" EQU "" (
-   set OWNER_ID=Administrators
-) else (
-   set OWNER_ID=%2%
+if exist %SYSTEMROOT%\System32\INETSRV\appcmd.exe (
+   Set SERVER_ACCOUNT_DEFAULT="IIS APPPOOL\DefaultAppPool"
+) Else (
+   Set SERVER_ACCOUNT_DEFAULT="*S-1-5-19"
+   Rem *S-1-5-19 is "Local Service
 )
 
-REM
-REM First up, take ownership
-REM   /t means recursive
+Rem
+Rem the server account gets GENERIC_READ EXECUTE access to etc and lib and
+Rem GENERIC_ALL access to the var directory
+Rem
 
-echo Setting owner to %OWNER_ID%
-icacls "%~dp0\.." /t /setowner %OWNER_ID% /q
-
-if ERRORLEVEL 1 (
-   echo Error: Could not set ownership
-   goto done
+Set /p SERVER_ACCOUNT="Server Account [%SERVER_ACCOUNT_DEFAULT%] "
+if "%SERVER_ACCOUNT%" == "" (
+   Set SERVER_ACCOUNT=%SERVER_ACCOUNT_DEFAULT%
 )
 
-REM 
+Rem
+Rem Set other sids
+Rem
+Rem Administrators Account and LocalSystem get GENERIC_ALL to the installation
+Rem
+Set ADMINISTRATORS_ACCOUNT="*S-1-5-32-544"
+Set LOCAL_SYSTEM_ACCOUNT="*S-1-5-18"
+Rem
+Rem Users get nothing
+Rem
+Set USERS_ACCOUNT="*S-1-5-32-545"
 
-if "%1%"=="" (
-   REM Set the ACLS Default ACLS
-   REM   /t recursive
-   REM   /inheritance:r Remove inherited ACLS
-   REM   /grant:r ID:(CI)(OI)(F) Full access for ID (replacing any existing)
-   REM   /grant:r ID:(CI)(OI)(F) Full access for ID (replacing any existing, but causing kids to be inherited) DIRECTORIES ONLY
+Rem
+Rem Root of the Install
+Rem This bat file is <Root>\bin\Shibboleth-sp\SetAcl.bat
+Rem
 
-   echo Setting FULL ACL on dirs for SYSTEM and Administrators
-   icacls "%~dp0\.." /t /inheritance:r /grant:r "SYSTEM:(OI)(CI)(F)" "Administrators:(OI)(CI)(F)" /q
-   if ERRORLEVEL 1 (
-      echo Error: Could not set ACL
-      goto done
-   )
+cd /d "%~dp0\..\..\"
+Set INSTALL_ROOT=%CD%
 
-   echo Setting FULL ACL on files for SYSTEM and Administrators
-   icacls "%~dp0\.." /t /inheritance:r /grant:r SYSTEM:F Administrators:F /q
-   if ERRORLEVEL 1 (
-      echo Error: Could not set ACL
-      goto done
-   )
+echo Setting owner to %ADMINISTRATORS_ACCOUNT%
+icacls "%INSTALL_ROOT%" /t /setowner %ADMINISTRATORS_ACCOUNT% /q
 
-) else (
-   REM As above, but add read for the supplied user
-   REM GR=GENERIC_READ RD=READ_DATA/ENUMERATE_DIR X=EXECUTE/TRAVERSE_DIR
+Rem
+Rem Start to lock down
+Rem use Icacls
+Rem https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/icacls
+Rem
+Rem   /t recursive
+Rem   /inheritance:r Remove inherited ACLS
+Rem   /grant:r ID:(CI)(OI)(F) Full access for ID (replacing any existing)
+Rem   /grant:r ID:(CI)(OI)(F) Full access for ID (replacing any existing, but causing kids to be inherited) DIRECTORIES ONLY
+Rem       CI Container Inherit
+Rem       OI Object Inherit
+Rem       N None
+Rem       F Full
+Rem       GR GenericRead
+Rem       RD ReadData/ListDirectory
+Rem       X Execute
 
-   echo Setting FULL ACL with inheritance on dirs for SYSTEM and Administrators, Readonly ACL for %1%
-   icacls "%~dp0\.." /t /inheritance:r /grant:r "SYSTEM:(OI)(CI)(F)" "Administrators:(OI)(CI)(F)" "%1%:(OI)(CI)(GR,RD,X)" /q
-   if ERRORLEVEL 1 (
-      echo Error: Could not set ACL
-      goto done
-   )
 
-   echo Setting FULL ACL with inheritance on files for  SYSTEM and Administrators, Readonly ACL for %1%
-   icacls "%~dp0\.." /t /inheritance:r /grant:r SYSTEM:F Administrators:F "%1%:(GR,RD,X)" /q
-   if ERRORLEVEL 1 (
-      echo Error: Could not set ACL
-      goto done
-   )
+echo Protecting %INSTALL_ROOT%\lib
 
-   REM And the logs
-   echo Setting FULL ACL on logs directory for SYSTEM,  Administrators and %1%
-   icacls "%~dp0\..\logs" /t /inheritance:r /grant:r "SYSTEM:(OI)(CI)(F)" "Administrators:(OI)(CI)(F)" "%1%:(OI)(CI)(F)" /q
-   if ERRORLEVEL 1 (
-      echo Error: Could not set ACL
-      goto done
-   )
+Rem lib
+Rem  Admins:        Everything
+Rem  Local System:  Everything
+Rem  Server:        ReadOnly
+Rem  Esers:         Nothing
+Rem directory first
+icacls "%INSTALL_ROOT%\lib" /t /inheritance:r /grant:r "%ADMINISTRATORS_ACCOUNT%:(OI)(CI)(F)" \
+                       "%LOCAL_SYSTEM_ACCOUNT%:(OI)(CI)(F)" \
+                       "%SERVER_ACCOUNT%:(OI)(CI)(GR,RD,X)" \
+                       "%USERS_ACCOUNT$:(OI)(CI)(N)"
+Rem Files
+icacls "%INSTALL_ROOT%\lib" /t /inheritance:r /grant:r "%ADMINISTRATORS_ACCOUNT%:F" \
+                       "%LOCAL_SYSTEM_ACCOUNT%:F" \
+                       "%SERVER_ACCOUNT%:(GR,RD,X)" \
+                       "%USERS_ACCOUNT$:N"
 
-   echo Setting FULL ACL on logs directory content for SYSTEM,  Administrators and %1%
-   icacls "%~dp0\..\logs" /t /inheritance:r /grant:r SYSTEM:F Administrators:F "%1%:F" /q
-   if ERRORLEVEL 1 (
-      echo Error: Could not set ACL
-      goto done
-   )
-)
+Rem etc - same as lib
+Rem Directories
+icacls "%INSTALL_ROOT%\etc" /t /inheritance:r /grant:r "%ADMINISTRATORS_ACCOUNT%:(OI)(CI)(F)" \
+                       "%LOCAL_SYSTEM_ACCOUNT%:(OI)(CI)(F)" \
+                       "%SERVER_ACCOUNT%:(OI)(CI)(GR,RD,X)" \
+                       "%USERS_ACCOUNT$:(OI)(CI)(N)"
+Rem Lib Files
+icacls "%INSTALL_ROOT%\lib" /t /inheritance:r /grant:r "%ADMINISTRATORS_ACCOUNT%:F" \
+                       "%LOCAL_SYSTEM_ACCOUNT%:F" \
+                       "%SERVER_ACCOUNT%:(GR,RD,X)" \
+                       "%USERS_ACCOUNT$:N"
 
-:done
+Rem bin - same as lib
+Rem Directories
+icacls "%INSTALL_ROOT%\bin" /t /inheritance:r /grant:r "%ADMINISTRATORS_ACCOUNT%:(OI)(CI)(F)" \
+                       "%LOCAL_SYSTEM_ACCOUNT%:(OI)(CI)(F)" \
+                       "%SERVER_ACCOUNT%:(OI)(CI)(GR,RD,X)" \
+                       "%USERS_ACCOUNT$:(OI)(CI)(N)"
+Rem Lib Files
+icacls "%INSTALL_ROOT%\bin" /t /inheritance:r /grant:r "%ADMINISTRATORS_ACCOUNT%:F" \
+                       "%LOCAL_SYSTEM_ACCOUNT%:F" \
+                       "%SERVER_ACCOUNT%:(GR,RD,X)" \
+                       "%USERS_ACCOUNT$:N"
+Rem cache
+Rem  Admins:        Everything
+Rem  Local System:  Everything
+Rem  Server:        Everything
+Rem  Esers:         Nothing
+Rem directory first
+Rem Directories
+icacls "%INSTALL_ROOT%\cache" /t /inheritance:r /grant:r "%ADMINISTRATORS_ACCOUNT%:(OI)(CI)(F)" \
+                       "%LOCAL_SYSTEM_ACCOUNT%:(OI)(CI)(F)" \
+                       "%SERVER_ACCOUNT%:(OI)(CI)(F)" \
+                       "%USERS_ACCOUNT$:(OI)(CI)(N)"
+Rem Lib Files
+icacls "%INSTALL_ROOT%\cache" /t /inheritance:r /grant:r "%ADMINISTRATORS_ACCOUNT%:F" \
+                       "%LOCAL_SYSTEM_ACCOUNT%:F" \
+                       "%SERVER_ACCOUNT%:F" \
+                       "%USERS_ACCOUNT$:N"
 
-exit /b
+
