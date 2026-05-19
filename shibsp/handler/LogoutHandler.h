@@ -23,10 +23,6 @@
 
 #include <shibsp/handler/AbstractHandler.h>
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
@@ -45,42 +41,22 @@ namespace shibsp {
     public:
         virtual ~LogoutHandler();
 
-        /**
-         * The base method will iteratively attempt front-channel notification
-         * of logout of the current session.
-         * 
-         * <p>Nothing will be done unless the handler detects that it is the "top" level
-         * logout handler. If the method returns false, then the specialized class should
-         * perform its work assuming that the notifications are completed.</p>
-         *
-         * <p>Note that the current session is NOT removed from the cache.</p>
-         * 
-         * @param request   SP request
-         * @param isHandler true iff executing in the context of a direct handler invocation
-         * @return  a pair containing a "request completed" indicator and a server-specific response code
-         */
-        std::pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
-
     protected:
         LogoutHandler(const boost::property_tree::ptree& pt);
         
         /** Flag indicating whether the subclass is acting as a LogoutInitiator. */
         bool m_initiator;
 
-        /** Array of query string parameters to preserve across front-channel notifications, if present. */
-        std::vector<std::string> m_preserve;
-
         /**
          * Perform front-channel logout notifications for an Application.
          *
          * @param request       last request from browser
-         * @param params        map of query string parameters to preserve across this notification
-         * @return  indicator of a completed response along with the status code to return from the handler
+         * @param continueOnly  flag indicating whether to initiate notification or only continue/complete it
+         * @param token         optional token string/parameter from Hub when initiating the loop
+         * 
+         * @return indicator of a completed response along with the status code to return from the handler
          */
-        std::pair<bool,long> notifyFrontChannel(
-            SPRequest& request, const std::map<std::string,std::string>* params=nullptr
-            ) const;
-
+        std::pair<bool,long> notifyFrontChannel(SPRequest& request, bool continueOnly=true, const char* token=nullptr) const;
     };
 
 #if defined (_MSC_VER)

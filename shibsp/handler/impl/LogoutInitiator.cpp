@@ -50,11 +50,13 @@ LogoutInitiator::~LogoutInitiator()
 
 pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
 {
-    // Defer to base class first; this will initiate, continue, or complete notification.
-    pair<bool,long> ret = LogoutHandler::run(request, isHandler);
+    // Initiate, continue, or complete notification.
+    pair<bool,long> ret = notifyFrontChannel(request);
     if (ret.first) {
         return ret;
     }
+
+    // Notification has completed (or did not occur).
 
     bool localOnly = getBool("localOnly", false);
 

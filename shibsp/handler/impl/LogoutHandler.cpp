@@ -39,18 +39,12 @@ LogoutHandler::~LogoutHandler()
 {
 }
 
-pair<bool,long> LogoutHandler::run(SPRequest& request, bool isHandler) const
+pair<bool,long> LogoutHandler::notifyFrontChannel(SPRequest& request, bool continueOnly, const char* token) const
 {
-    // If this isn't a LogoutInitiator, we only "continue" a notification loop, rather than starting one.
-    if (!m_initiator && !request.getParameter("notifying"))
+    if (continueOnly && !request.getParameter("notifying")) {
         return make_pair(false,0L);
+    }
 
-    // Try another front-channel notification. No extra parameters and the session is implicit.
-    return notifyFrontChannel(request);
-}
-
-pair<bool,long> LogoutHandler::notifyFrontChannel(SPRequest& request, const map<string,string>* params) const
-{
     // Index of notification point starts at 0.
     unsigned int index = 0;
     const char* param = request.getParameter("index");
@@ -85,19 +79,12 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(SPRequest& request, const map<
         locstr = locstr + "&return=" + encoder.encode(param);
     }
 
-    // We preserve anything we're instructed to directly.
-    if (params) {
-        for (const auto& p : *params) {
-            locstr = locstr + '&' + p.first + '=' + encoder.encode(p.second.c_str());
-        }
+    // Token may come from caller when initiating loop or via the URL.
+    if (!token) {
+        token = request.getParameter("token");
     }
-    else {
-        for (const auto& q : m_preserve) {
-            param = request.getParameter(q.c_str());
-            if (param) {
-                locstr = locstr + '&' + q + '=' + encoder.encode(param);
-            }
-        }
+    if (token) {
+        locstr = locstr + "&token=" + encoder.encode(param);
     }
 
     // Add the notifier's return parameter to the destination location and redirect.

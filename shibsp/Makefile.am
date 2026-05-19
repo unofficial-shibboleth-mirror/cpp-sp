@@ -108,6 +108,7 @@ libshibsp_la_SOURCES = \
 	handler/impl/AbstractHandler.cpp \
 	handler/impl/AttributeCheckerHandler.cpp \
 	handler/impl/DefaultHandlerConfiguration.cpp \
+	handler/impl/LogoutConsumer.cpp \
 	handler/impl/LogoutHandler.cpp \
 	handler/impl/LogoutInitiator.cpp \
 	handler/impl/Passthrough.cpp \
