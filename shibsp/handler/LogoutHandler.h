@@ -43,9 +43,6 @@ namespace shibsp {
 
     protected:
         LogoutHandler(const boost::property_tree::ptree& pt);
-        
-        /** Flag indicating whether the subclass is acting as a LogoutInitiator. */
-        bool m_initiator;
 
         /**
          * Perform front-channel logout notifications for an Application.
