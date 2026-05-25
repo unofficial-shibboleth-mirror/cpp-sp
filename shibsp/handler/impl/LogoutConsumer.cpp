@@ -43,7 +43,7 @@ namespace shibsp {
     class SHIBSP_DLLLOCAL LogoutConsumer : public virtual LogoutHandler
     {
     public:
-        LogoutConsumer(const ptree& pt) : AbstractHandler(pt), LogoutHandler(pt) {}
+        LogoutConsumer(const ptree& pt);
         virtual ~LogoutConsumer() {}
 
         void init(const char* location);    // encapsulates actions that need to run either in the c'tor or setParent
@@ -51,7 +51,9 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
-        pair <bool,long> completeLogout(SPRequest& request, const char* token) const;
+        pair <bool,long> completeLogout(SPRequest& request, bool removeSession, const char* token) const;
+
+        bool m_matchRequired;
     };
 
 #if defined (_MSC_VER)
@@ -62,6 +64,11 @@ namespace shibsp {
     {
         return new LogoutConsumer(p.first);
     }
+}
+
+LogoutConsumer::LogoutConsumer(const ptree& pt) : AbstractHandler(pt), LogoutHandler(pt), m_matchRequired(false)
+{
+    m_matchRequired = getBool("matchRequired", false);
 }
 
 pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
@@ -76,7 +83,7 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
     // In this scenario, we call a completion method to set up the final call to the Hub
     // to produce a logout response message or local redirect.
     if (request.getParameter("notifying")) {
-        return completeLogout(request, request.getParameter("token"));
+        return completeLogout(request, true, request.getParameter("token"));
     }
 
     // With a fresh message inbound from an IdP, we check for an active session to supply the
@@ -110,15 +117,20 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
 
     DDF output;
     try {
-        output = request.getAgent().getRemotingService()->send(input, false);
+        output = request.getAgent().getRemotingService()->send(input);
     }
     catch (exception& ex) {
         AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
         if (agent_ex) {
             agent_ex->addProperty(AgentException::HANDLER_TYPE_PROP_NAME, LOGOUT_CONSUMER_HANDLER);
         }
-        request.error("error invoking logout-consumer operation");
-        request.log(Priority::SHIB_ERROR, ex);
+
+        if (m_matchRequired) {
+            throw;
+        } else {
+            request.error("error invoking logout-consumer operation");
+            request.log(Priority::SHIB_ERROR, ex);
+        }
     }
     DDFJanitor outputJanitor(output);
 
@@ -126,9 +138,19 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
     // from an IdP, allowing that a dozen or more different errors can take place.
     // The request case will potentially feed back a "token" member for use later.
 
-    // If we actually have a session in hand, we need to initiate the notification loop.
+    // If we actually have a session in hand, we may need to initiate the notification loop.
     // Any token provided by the Hub call will be attached to that process.
-    if (session) {
+    // We won't notify, however, if a match was required but not achieved.
+
+    bool effectiveMatch = !m_matchRequired || output["matches"].integer() == 1;
+    if (m_matchRequired) {
+        request.debug("LogoutRequest {} active session", effectiveMatch ? "matched" : "did not match");
+    }
+    else {
+        request.debug("ignoring processing of LogoutRequest for matching purposes");
+    }
+
+    if (session && effectiveMatch) {
         ret = notifyFrontChannel(request, false, output.getmember("token").string());
         if (ret.first) {
             // A loop was started, so we are finished at this stage until we're called back.
@@ -141,13 +163,15 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
 
     // If we get here, either no session existed or no notification was required.
     // We invoke our completion operation with the token from the Hub, if any.
-    return completeLogout(request, output.getmember("token").string());
+    return completeLogout(request, effectiveMatch, output.getmember("token").string());
 }
 
-pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, const char* token) const
+pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, bool removeSession, const char* token) const
 {
-    // Dispose of any active session.
-    request.getAgent().getSessionCache()->remove(request);
+    if (removeSession) {
+        // Dispose of any active session.
+        request.getAgent().getSessionCache()->remove(request);
+    }
 
     DDF output;
 
@@ -157,6 +181,9 @@ pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, const char* 
         DDF input = request.getAgent().getRemotingService()->build("logout-consumer", request);
         DDFJanitor inputJanitor(input);
         input.addmember("token").string(token);
+        if (removeSession) {
+            input.addmember("success").integer(1);
+        }
 
         try {
             output = request.getAgent().getRemotingService()->send(input);
@@ -166,8 +193,13 @@ pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, const char* 
             if (agent_ex) {
                 agent_ex->addProperty(AgentException::HANDLER_TYPE_PROP_NAME, LOGOUT_CONSUMER_HANDLER);
             }
-            request.error("error invoking logout-consumer operation to complete logout request processing");
-            request.log(Priority::SHIB_ERROR, ex);
+            if (removeSession) {
+                request.error("error invoking logout-consumer operation to complete logout request processing");
+                request.log(Priority::SHIB_ERROR, ex);
+            }
+            else {
+                throw;
+            }
         }
     }
 
