@@ -221,7 +221,10 @@ pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, bool removeS
 
     DDF wrapped = output.getmember("http");
     if (wrapped.isstruct()) {
-        return unwrapResponse(request, wrapped, true);
+        pair<bool,long> ret = unwrapResponse(request, wrapped, true);
+        if (ret.first) {
+            return ret;
+        }
     }
 
     const char* dest = output.getmember("target").string();

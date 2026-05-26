@@ -102,7 +102,11 @@ pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
         try {
             DDF output = request.getAgent().getRemotingService()->send(input);
             DDFJanitor outputJanitor(output);
-            return unwrapResponse(request, output);
+            pair<bool,long> ret = unwrapResponse(request, output);
+            if (ret.first) {
+                return ret;
+            }
+            throw AgentException("Wrapped response from Hub did not complete successfully.");
         }
         catch (exception& ex) {
             AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);

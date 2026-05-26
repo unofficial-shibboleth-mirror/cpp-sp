@@ -96,7 +96,11 @@ pair<bool,long> Passthrough::run(SPRequest& request, bool isHandler) const
         DDF output = request.getAgent().getRemotingService()->send(input);
         DDFJanitor outputJanitor(output);
 
-        return unwrapResponse(request, output, m_limitRedirects);
+        pair<bool,long> ret = unwrapResponse(request, output, m_limitRedirects);
+        if (ret.first) {
+            return ret;
+        }
+        throw AgentException("Wrapped response from Hub did not complete successfully.");
     }
     catch (exception& ex) {
         AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
