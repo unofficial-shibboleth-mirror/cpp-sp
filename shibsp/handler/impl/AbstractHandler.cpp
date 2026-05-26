@@ -155,7 +155,7 @@ DDF AbstractHandler::wrapRequest(const SPRequest& request, const set<string>& he
     return in;
 }
 
-pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrappedResponse) const
+pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrappedResponse, bool limitRedirect) const
 {
     DDF http = wrappedResponse["http"];
     DDF h = http["headers"];
@@ -174,6 +174,9 @@ pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrapped
     if (h.isstring()) {
         string dest(h.string());
         request.absolutize(dest);
+        if (limitRedirect) {
+            request.limitRedirect(dest.c_str());
+        }
         return make_pair(true, request.sendRedirect(dest.c_str()));
     }
 

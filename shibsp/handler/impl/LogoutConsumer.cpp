@@ -51,6 +51,7 @@ namespace shibsp {
         pair<bool,long> run(SPRequest& request, bool isHandler=true) const;
 
     private:
+        const char* getHomeURL(SPRequest& request) const;
         pair <bool,long> completeLogout(SPRequest& request, bool removeSession, const char* token) const;
 
         bool m_matchRequired;
@@ -113,6 +114,8 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
     DDF wrapped = wrapRequest(request, emptyHeaderSet, false);
     input.add(wrapped);
 
+    input.addmember("home_url").unsafe_string(getHomeURL(request));
+
     // Call the Hub to process the message, suppressing any errors that occur.
 
     DDF output;
@@ -134,9 +137,16 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
     }
     DDFJanitor outputJanitor(output);
 
-    // There are broadly two cases here, a logout request or a response being processed
+    // There are two cases here, a logout request or a response being processed
     // from an IdP, allowing that a dozen or more different errors can take place.
-    // The request case will potentially feed back a "token" member for use later.
+    // The request case will potentially feed back a "token" member for use later
+    // while the response case will provide a "status" and generally a wrapped response.
+    
+    if (output["status"].isint()) {
+        // Finish up a logout response. The session should be gone and if it wasn't
+        // this is a spurious logout message so we don't act on it.
+        return completeLogout(request, false, nullptr);
+    }
 
     // If we actually have a session in hand, we may need to initiate the notification loop.
     // Any token provided by the Hub call will be attached to that process.
@@ -211,14 +221,34 @@ pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, bool removeS
 
     DDF wrapped = output.getmember("http");
     if (wrapped.isstruct()) {
-        return unwrapResponse(request, wrapped);
+        return unwrapResponse(request, wrapped, true);
     }
 
-    const char* post_logout_url = request.getRequestSettings().first->getString(RequestMapper::LOGOUT_URL_PROP_NAME);
-    if (!post_logout_url) {
-        post_logout_url = request.getRequestSettings().first->getString(
-            RequestMapper::HOME_URL_PROP_NAME, RequestMapper::HOME_URL_PROP_DEFAULT);
+    const char* dest = output.getmember("target").string();
+    if (dest) {
+        // Relative URLs get promoted, absolutes get validated.
+        if (*dest == '/') {
+            string d(dest);
+            request.absolutize(d);
+            return make_pair(true, request.sendRedirect(d.c_str()));
+        } else {
+            request.limitRedirect(dest);
+            return make_pair(true, request.sendRedirect(dest));
+        }
     }
 
-    return make_pair(true, request.sendRedirect(post_logout_url));
+    // If no target from Hub we fall back to our own determination that favors
+    // the logoutURL setting over homeURL.
+    return make_pair(true, request.sendRedirect(getHomeURL(request)));
+}
+
+const char* LogoutConsumer::getHomeURL(SPRequest& request) const
+{
+    const char* dest = request.getRequestSettings().first->getString(RequestMapper::LOGOUT_URL_PROP_NAME);
+    if (dest) {
+        return dest;
+    }
+
+    return request.getRequestSettings().first->getString(RequestMapper::HOME_URL_PROP_NAME,
+        RequestMapper::HOME_URL_PROP_DEFAULT);
 }

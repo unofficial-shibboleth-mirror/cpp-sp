@@ -70,10 +70,13 @@ namespace shibsp {
          * 
          * @param request request to playback response into
          * @param wrappedResponse wrapped response data
+         * @param limitRedirect whether to invoke the redirect limiter in the case of a redirect
          * 
          * @return result of response playback to return from handler
          */
-        virtual std::pair<bool,long> unwrapResponse(SPRequest& request, DDF& wrappedResponse) const;
+        virtual std::pair<bool,long> unwrapResponse(
+            SPRequest& request, DDF& wrappedResponse, bool limitRedirect=false
+            ) const;
 
         /**
          * Bitmask of property sources to read from:

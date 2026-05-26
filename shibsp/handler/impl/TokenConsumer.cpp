@@ -201,7 +201,7 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         }
 
         // Handles all normal cases, including POST recovery.
-        return unwrapResponse(request, output);
+        return unwrapResponse(request, output, true);
     }
     catch (exception& ex) {
         AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);

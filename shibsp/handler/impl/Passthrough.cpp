@@ -96,14 +96,7 @@ pair<bool,long> Passthrough::run(SPRequest& request, bool isHandler) const
         DDF output = request.getAgent().getRemotingService()->send(input);
         DDFJanitor outputJanitor(output);
 
-        if (m_limitRedirects) {
-            const char* url = output.getmember("http.redirect").string();
-            if (url) {
-                request.limitRedirect(url);
-            }
-        }
-
-        return unwrapResponse(request, output);
+        return unwrapResponse(request, output, m_limitRedirects);
     }
     catch (exception& ex) {
         AgentException* agent_ex = dynamic_cast<AgentException*>(&ex);
