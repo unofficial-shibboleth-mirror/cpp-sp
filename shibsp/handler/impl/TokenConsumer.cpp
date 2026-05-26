@@ -90,7 +90,8 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
                 target = param.first->second;
             }
             else {
-                target = getString(RequestMapper::HOME_URL_PROP_NAME, request, RequestMapper::HOME_URL_PROP_DEFAULT, HANDLER_PROPERTY_MAP);
+                target = getString(RequestMapper::HOME_URL_PROP_NAME, request,
+                    RequestMapper::HOME_URL_PROP_DEFAULT, HANDLER_PROPERTY_MAP);
             }
             request.limitRedirect(target.c_str());
             return make_pair(true, request.sendRedirect(target.c_str()));
@@ -105,6 +106,10 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
 
         DDF wrapped = wrapRequest(request, m_remotedHeaders);
         input.add(wrapped);
+
+        input.addmember("home_url").unsafe_string(
+            getString(RequestMapper::HOME_URL_PROP_NAME, request,
+                RequestMapper::HOME_URL_PROP_DEFAULT, HANDLER_PROPERTY_MAP));
 
         // Second parameter is false so we can capture any validation errors on
         // an unsuccessful event result.
