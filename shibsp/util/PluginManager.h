@@ -92,11 +92,15 @@ namespace shibsp {
         T* newPlugin(const Key& type, const Params& p, bool deprecationSupport) const {
             typename std::map<Key, typename PluginManager::Factory*>::const_iterator i=m_map.find(type);
             if (i==m_map.end())
-                throw std::invalid_argument("Unknown " + m_componentType + " plugin type.");
+                throw std::invalid_argument("Unknown " + m_componentType + " plugin type: " + keyToString(type));
             return i->second(p, deprecationSupport);
         }
         
     private:
+        std::string keyToString(const Key& key) const {
+            return key;
+        }
+
         std::string m_componentType;
         std::map<Key, typename PluginManager::Factory*> m_map;
     };
