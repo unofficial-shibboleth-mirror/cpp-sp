@@ -56,6 +56,7 @@ namespace shibsp {
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory SessionInitiatorFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory TokenConsumerFactory;
     extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LogoutInitiatorFactory;
+    extern SHIBSP_DLLLOCAL PluginManager< Handler,string,pair<ptree&,const char*> >::Factory LogoutConsumerFactory;
 
     void SHIBSP_DLLLOCAL generateRandomHex(std::string& buf, unsigned int len) {
         static char DIGITS[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -87,6 +88,7 @@ void SHIBSP_API shibsp::registerHandlers()
     conf.HandlerManager.registerFactory(SESSION_INITIATOR_HANDLER, SessionInitiatorFactory);
     conf.HandlerManager.registerFactory(TOKEN_CONSUMER_HANDLER, TokenConsumerFactory);
     conf.HandlerManager.registerFactory(LOGOUT_INITIATOR_HANDLER, LogoutInitiatorFactory);
+    conf.HandlerManager.registerFactory(LOGOUT_CONSUMER_HANDLER, LogoutConsumerFactory);
 } 
 
 Handler::Handler()
