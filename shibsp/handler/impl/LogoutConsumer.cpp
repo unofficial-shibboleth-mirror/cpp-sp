@@ -154,7 +154,7 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
 
     bool effectiveMatch = !m_matchRequired || output["matches"].integer() == 1;
     if (m_matchRequired) {
-        request.debug("LogoutRequest {} active session", effectiveMatch ? "matched" : "did not match");
+        request.debug("LogoutRequest %s active session", effectiveMatch ? "matched" : "did not match");
     }
     else {
         request.debug("ignoring processing of LogoutRequest for matching purposes");
