@@ -472,13 +472,22 @@ void AbstractSPRequest::log(Priority::Value level, const exception& e) const
         ostringstream msg;
         msg << e.what() << " [";
 
+        bool needComma = false;
+
         // Dump properties and status code.
         if (rich_ex->getStatusCode() != 0) {
             msg << "status=" << rich_ex->getStatusCode();
+            bool needComma = true;
         }
 
         for (const auto& prop : rich_ex->getProperties()) {
-            msg << ", " << prop.first << '=' << prop.second;
+            if (needComma) {
+                msg << ", ";
+            }
+            else {
+                needComma = true;
+            }
+            msg << prop.first << '=' << prop.second;
         }
 
         msg << ']';
