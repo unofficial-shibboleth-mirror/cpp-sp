@@ -152,7 +152,7 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
     // Any token provided by the Hub call will be attached to that process.
     // We won't notify, however, if a match was required but not achieved.
 
-    bool effectiveMatch = !m_matchRequired || output["matches"].integer() == 1;
+    bool effectiveMatch = !m_matchRequired || output["matched"].integer() == 1;
     if (m_matchRequired) {
         request.debug("LogoutRequest %s active session", effectiveMatch ? "matched" : "did not match");
     }
