@@ -221,28 +221,30 @@ pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, bool removeS
 
     DDF wrapped = output.getmember("http");
     if (wrapped.isstruct()) {
-        pair<bool,long> ret = unwrapResponse(request, wrapped, token == nullptr);
+        pair<bool,long> ret = unwrapResponse(request, output, token == nullptr);
         if (ret.first) {
             return ret;
         }
     }
 
+    // If no explicit response from Hub, pull "target" from output if available.
     const char* dest = output.getmember("target").string();
-    if (dest) {
-        // Relative URLs get promoted, absolutes get validated.
-        if (*dest == '/') {
-            string d(dest);
-            request.absolutize(d);
-            return make_pair(true, request.sendRedirect(d.c_str()));
-        } else {
-            request.limitRedirect(dest);
-            return make_pair(true, request.sendRedirect(dest));
-        }
-    }
 
     // If no target from Hub we fall back to our own determination that favors
     // the logoutURL setting over homeURL.
-    return make_pair(true, request.sendRedirect(getHomeURL(request)));
+    if (!dest) {
+        dest = getHomeURL(request);
+    }
+
+    // Relative URLs get promoted, absolutes get validated.
+    if (*dest == '/') {
+        string d(dest);
+        request.absolutize(d);
+        return make_pair(true, request.sendRedirect(d.c_str()));
+    } else {
+        request.limitRedirect(dest);
+        return make_pair(true, request.sendRedirect(dest));
+    }
 }
 
 const char* LogoutConsumer::getHomeURL(SPRequest& request) const
