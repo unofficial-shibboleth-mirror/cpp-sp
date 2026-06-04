@@ -111,13 +111,12 @@ namespace shibsp {
         virtual const char* getHandlerURL(const char* resource=nullptr) const=0;
 
         /**
-         * Returns the designated notification URL, or an empty string if no more locations are specified.
+         * Returns the "next" notification URL, or an empty string if no more locations are specified.
          *
-         * @param front     true iff front channel notification is desired, false iff back channel is desired
-         * @param index     zero-based index of URL to return
+         * @param index zero-based index of URL to return
          * @return  the designated URL, or an empty string
          */
-        virtual std::string getNotificationURL(bool front, unsigned int index) const=0;
+        virtual std::string getNotificationURL(unsigned int index) const=0;
 
         /**
          * Checks a proposed redirect URL against policy settings for legal redirects,

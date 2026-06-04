@@ -73,7 +73,7 @@ namespace shibsp {
         std::vector<const char*>::size_type getParameters(const char* name, std::vector<const char*>& values) const;
         const std::map<std::string,std::string>& getCookies() const;
         const char* getHandlerURL(const char* resource=nullptr) const;
-        std::string getNotificationURL(bool front, unsigned int index) const;
+        std::string getNotificationURL(unsigned int index) const;
         void limitRedirect(const char* url) const;
 
         std::string getSecureHeader(const char* name) const;

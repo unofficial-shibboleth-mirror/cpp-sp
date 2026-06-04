@@ -56,7 +56,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(SPRequest& request, bool conti
     param = request.getParameter("return");
 
     // Fetch the next front notification URL and bump the index for the next round trip.
-    string loc = request.getNotificationURL(true, index++);
+    string loc = request.getNotificationURL(index++);
     if (loc.empty()) {
         return make_pair(false,0L);
     }

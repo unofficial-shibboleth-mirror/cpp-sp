@@ -273,7 +273,7 @@ const char* AbstractSPRequest::getHandlerURL(const char* resource) const
     return m_handlerURL.c_str();
 }
 
-string AbstractSPRequest::getNotificationURL(bool front, unsigned int index) const
+string AbstractSPRequest::getNotificationURL(unsigned int index) const
 {
     // We have to process the underlying setting each call to this method for now.
     // Given how rarely it would be used, not a big issue.
