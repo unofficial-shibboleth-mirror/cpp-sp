@@ -499,7 +499,7 @@ public:
     return DONE;
   }
   long sendRedirect(const char* url) {
-    HTTPResponse::sendRedirect(url);    
+    url = sanitizeURL(url);
     apr_table_set(m_req->headers_out, "Location", url);
 
     if (getRequestSettings().first->getBool(

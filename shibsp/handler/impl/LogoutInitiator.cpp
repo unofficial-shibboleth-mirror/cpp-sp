@@ -132,13 +132,6 @@ pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
         }
     }
 
-    // Relative URLs get promoted, absolutes get validated.
-    if (*dest == '/') {
-        string d(dest);
-        request.absolutize(d);
-        return make_pair(true, request.sendRedirect(d.c_str()));
-    } else {
-        request.limitRedirect(dest);
-        return make_pair(true, request.sendRedirect(dest));
-    }
+    request.limitRedirect(dest);
+    return make_pair(true, request.sendRedirect(dest));
 }

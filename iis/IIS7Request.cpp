@@ -466,7 +466,7 @@ void IIS7Request::setResponseHeader(const char* name, const char* value, bool re
 
 long IIS7Request::sendRedirect(const char* url)
 {
-    HTTPResponse::sendRedirect(url);
+    url = sanitizeURL(url);
     
     if (getRequestSettings().first->getBool(
             RequestMapper::EXPIRE_REDIRECTS_PROP_NAME, RequestMapper::EXPIRE_REDIRECTS_PROP_DEFAULT)) {

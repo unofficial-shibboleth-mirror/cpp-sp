@@ -21,7 +21,7 @@
 #ifndef __shibsp_httpres_h__
 #define __shibsp_httpres_h__
 
-#include <shibsp/io/GenericResponse.h>
+#include <shibsp/base.h>
 
 #include <string>
 #include <vector>
@@ -38,20 +38,22 @@ namespace shibsp {
      * 
      * <p>To supply information to the surrounding web server environment,
      * a shim must be supplied in the form of this interface to adapt the
-     * library to different proprietary server APIs.</p>
+     * library to different proprietary server APIs. Typically this
+     * is done via implementation of SPRequest.</p>
      * 
      * <p>This interface need not be threadsafe.</p>
      */
-    class SHIBSP_API HTTPResponse : public GenericResponse {
+    class SHIBSP_API HTTPResponse {
+        MAKE_NONCOPYABLE(HTTPResponse);
     protected:
         HTTPResponse();
     public:
         virtual ~HTTPResponse();
         
-        void setContentType(const char* type);
-        
         /**
          * Sets, adds, or clears a response header.
+         * 
+         * <p>The default implementation polices name and value for control characters.</p>
          * 
          * @param name  header name
          * @param value value to set, or nullptr to clear
@@ -60,16 +62,39 @@ namespace shibsp {
         virtual void setResponseHeader(const char* name, const char* value, bool replace = false);
 
         /**
+         * Sets or clears the MIME type of the response.
+         * 
+         * @param type the MIME type, or nullptr to clear
+         */
+        virtual void setContentType(const char* type=nullptr);
+
+        /**
+         * Sends a completed response to the client.
+         * 
+         * @param inputStream   reference to source of response data
+         * @param status        transport-specific status to return
+         * @return a result code to return from the calling MessageEncoder
+         */
+        virtual long sendResponse(std::istream& inputStream, long status=SHIBSP_HTTP_STATUS_OK)=0;
+
+        /**
+         * Sends an "error" response to the client along with a
+         * transport-specific error indication.
+         * 
+         * @param inputStream   reference to source of response data
+         * @return a result code to return from the calling MessageEncoder
+         */
+        virtual long sendError(std::istream& inputStream);
+        
+        /**
          * Redirect the client to the specified URL and complete the response.
          * 
          * <p>Any headers previously set will be sent ahead of the redirect.
          *
-         * <p>The URL will be validated with the sanitizeURL method below.
-         *
          * @param url   location to redirect client
          * @return a result code to return
          */
-        virtual long sendRedirect(const char* url);
+        virtual long sendRedirect(const char* url)=0;
         
         /** Some common HTTP status codes. */
         enum status_t {
@@ -82,31 +107,6 @@ namespace shibsp {
             SHIBSP_HTTP_STATUS_NOTFOUND = 404,
             SHIBSP_HTTP_STATUS_ERROR = 500
         };
-        
-        long sendError(std::istream& inputStream);
-
-        using GenericResponse::sendResponse;
-        long sendResponse(std::istream& inputStream);
-
-        /**
-         * Returns a modifiable array of schemes to permit in sanitized URLs.
-         *
-         * <p>Updates to this array must be externally synchronized with any use
-         * of this class or its subclasses.
-         *
-         * @return  a mutable array of strings containing the schemes to permit
-         */
-        static std::vector<std::string>& getAllowedSchemes();
-
-        /**
-         * Manually check for unsafe URLs vulnerable to injection attacks.
-         *
-         * @param url   location to check
-         */
-        static void sanitizeURL(const char* url);
-
-    private:
-        static std::vector<std::string> m_allowedSchemes;
     };
 
 #if defined (_MSC_VER)

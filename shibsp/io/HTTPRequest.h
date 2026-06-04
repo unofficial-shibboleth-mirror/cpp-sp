@@ -21,7 +21,7 @@
 #ifndef __shibsp_httpreq_h__
 #define __shibsp_httpreq_h__
 
-#include <shibsp/io/GenericRequest.h>
+#include <shibsp/base.h>
 
 #include <map>
 
@@ -37,19 +37,124 @@ namespace shibsp {
      * 
      * <p>To supply information from the surrounding web server environment,
      * a shim must be supplied in the form of this interface to adapt the
-     * library to different proprietary server APIs.</p>
+     * library to different proprietary server APIs. Typically this
+     * is done via implementation of SPRequest.</p>
      * 
      * <p>This interface need not be threadsafe.</p>
      */
-    class SHIBSP_API HTTPRequest : public GenericRequest {
+    class SHIBSP_API HTTPRequest {
+        MAKE_NONCOPYABLE(HTTPRequest);
     protected:
         HTTPRequest();
     public:
         virtual ~HTTPRequest();
 
-        bool isSecure() const;
-        bool isDefaultPort() const;
-          
+            /**
+         * Returns the URL scheme of the request (http, https, ftp, ldap, etc.)
+         *
+         * @return the URL scheme
+         */
+        virtual const char* getScheme() const=0;
+
+        /**
+         * Returns true iff the request is over a confidential channel.
+         *
+         * @return confidential channel indicator
+         */
+        virtual bool isSecure() const;
+
+        /**
+         * Returns hostname of service that received request.
+         *
+         * @return hostname of service
+         */
+        virtual const char* getHostname() const=0;
+
+        /**
+         * Returns incoming port.
+         *
+         * @return  incoming port
+         */
+        virtual int getPort() const=0;
+
+        /**
+         * Returns true iff the request port is the default port for the request protocol.
+         *
+         * @return  default port indicator
+         */
+        virtual bool isDefaultPort() const;
+
+        /**
+         * Returns the MIME type of the request, if known.
+         *
+         * @return the MIME type, or an empty string
+         */
+        virtual std::string getContentType() const=0;
+
+        /**
+         * Returns the length of the request body, if known.
+         *
+         * @return the content length, or -1 if unknown
+         */
+        virtual long getContentLength() const=0;
+
+        /**
+         * Returns the raw request body.
+         *
+         * @return the request body, or nullptr
+         */
+        virtual const char* getRequestBody() const=0;
+
+        /**
+         * Returns a decoded named parameter value from the request.
+         * If a parameter has multiple values, only one will be returned.
+         *
+         * @param name  the name of the parameter to return
+         * @return a single parameter value or nullptr
+         */
+        virtual const char* getParameter(const char* name) const=0;
+
+        /**
+         * Returns all of the decoded values of a named parameter from the request.
+         * All values found will be returned.
+         *
+         * @param name      the name of the parameter to return
+         * @param values    a vector in which to return pointers to the decoded values
+         * @return  the number of values returned
+         */
+        virtual std::vector<const char*>::size_type getParameters(
+            const char* name, std::vector<const char*>& values
+            ) const=0;
+
+        /**
+         * Returns the transport-authenticated identity associated with the request,
+         * if authentication is solely handled by the transport.
+         *
+         * @return the authenticated username or an empty string
+         */
+        virtual std::string getRemoteUser() const=0;
+
+        /**
+         * Gets the authentication type associated with the request.
+         *
+         * @return  the authentication type or nullptr
+         */
+        virtual std::string getAuthType() const=0;
+
+        /**
+         * Returns the IP address of the client.
+         *
+         * @return the client's IP address
+         */
+        virtual std::string getRemoteAddr() const=0;
+
+        /**
+         * Returns the IP address of the server.
+         *
+         * @return the server's IP address
+         */
+        virtual std::string getLocalAddr() const=0;
+
         /**
          * Returns the HTTP method of the request (GET, POST, etc.)
          * 

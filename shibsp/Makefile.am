@@ -49,8 +49,6 @@ handinclude_HEADERS = \
 
 ioinclude_HEADERS = \
 	io/CookieManager.h \
-	io/GenericRequest.h \
-	io/GenericResponse.h \
 	io/HTTPRequest.h \
 	io/HTTPResponse.h
 

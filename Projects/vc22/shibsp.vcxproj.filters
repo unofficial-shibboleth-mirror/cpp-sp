@@ -129,12 +129,6 @@
     <ClInclude Include="..\..\shibsp\io\CookieManager.h">
       <Filter>Header Files\IO</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\shibsp\io\GenericRequest.h">
-      <Filter>Header Files\IO</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\shibsp\io\GenericResponse.h">
-      <Filter>Header Files\IO</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\shibsp\io\HTTPRequest.h">
       <Filter>Header Files\IO</Filter>
     </ClInclude>

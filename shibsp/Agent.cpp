@@ -95,9 +95,14 @@ long Agent::handleError(SPRequest& request, exception* ex, bool mayRedirect) con
 
     if (mayRedirect && redirectErrors) {
         string loc(redirectErrors);
-        request.absolutize(loc);
         if (richEx) {
-            loc = loc + '?' + richEx->toQueryString();
+            if (loc.find('?') != string::npos) {
+                loc += '&';
+            }
+            else {
+                loc += '?';
+            }
+            loc += richEx->toQueryString();
         }
         return request.sendRedirect(loc.c_str());
     }
@@ -220,17 +225,20 @@ pair<bool,long> Agent::doAuthentication(SPRequest& request, bool handler) const
                 if (!qstr || !strstr(qstr, "shiblogoutdone=1")) {
                     // First leg of circuit, so we redirect to the logout endpoint specified with this URL as a return location.
                     string selfurl = request.getRequestURL();
-                    if (qstr)
+                    if (qstr) {
                         selfurl += '&';
-                    else
+                    }
+                    else {
                         selfurl += '?';
+                    }
                     selfurl += "shiblogoutdone=1";
                     string loc(requireLogoutWith);
-                    request.absolutize(loc);
-                    if (loc.find('?') != string::npos)
+                    if (loc.find('?') != string::npos) {
                         loc += '&';
-                    else
+                    }
+                    else {
                         loc += '?';
+                    }
                     loc += "return=" + AgentConfig::getConfig().getURLEncoder().encode(selfurl.c_str());
                     return make_pair(true, request.sendRedirect(loc.c_str()));
                 }

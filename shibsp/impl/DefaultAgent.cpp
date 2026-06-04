@@ -22,6 +22,7 @@
 
 #include "exceptions.h"
 #include "version.h"
+#include "AbstractSPRequest.h"
 #include "Agent.h"
 #include "AgentConfig.h"
 #include "RequestMapper.h"
@@ -151,8 +152,8 @@ void DefaultAgent::init()
     }
 
     const char* prop = getString(ALLOWED_SCHEMES_PROP_NAME, ALLOWED_SCHEMES_PROP_DEFAULT);
-    HTTPResponse::getAllowedSchemes().clear();
-    split_to_container(HTTPResponse::getAllowedSchemes(), prop);
+    AbstractSPRequest::getAllowedSchemes().clear();
+    split_to_container(AbstractSPRequest::getAllowedSchemes(), prop);
 
     prop = getString(EXTRA_AUTH_TYPES_PROP_NAME);
     if (prop) {

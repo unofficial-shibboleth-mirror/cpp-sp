@@ -46,6 +46,7 @@ namespace shibsp {
         std::string getRemoteAddr() const { return m_addr; }
         std::string getLocalAddr() const { return ""; }
         std::string getAuthType() const { return ""; }
+        long sendRedirect(const char* url) { return SHIBSP_HTTP_STATUS_MOVED; }
         long sendResponse(std::istream&, long status) { return status; }
         void clearHeader(const char* name) {}
         void setHeader(const char* name, const char* value) {}

@@ -154,9 +154,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     }
 
     if (checked) {
-        string loc(returnURL);
-        request.absolutize(loc);
-        return make_pair(true, request.sendRedirect(loc.c_str()));
+        return make_pair(true, request.sendRedirect(returnURL));
     }
 
     if (m_flushSession && session) {

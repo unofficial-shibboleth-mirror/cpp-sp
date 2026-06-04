@@ -32,43 +32,6 @@
 using namespace shibsp;
 using namespace std;
 
-GenericResponse::GenericResponse()
-{
-}
-
-GenericResponse::~GenericResponse()
-{
-}
-
-vector<string> HTTPResponse::m_allowedSchemes;
-
-vector<string>& HTTPResponse::getAllowedSchemes()
-{
-    return m_allowedSchemes;
-}
-
-void HTTPResponse::sanitizeURL(const char* url)
-{
-    const char* ch;
-    for (ch=url; *ch; ++ch) {
-        if (iscntrl((unsigned char)(*ch)))  // convert to unsigned to allow full range from 00-FF
-            throw domain_error("URL contained a control character.");
-    }
-
-    ch = strchr(url, ':');
-    if (!ch)
-        throw domain_error("URL is missing a colon where expected; improper URL encoding?");
-    string s(url, ch - url);
-
-    for (const string& scheme : m_allowedSchemes) {
-        if (strcasecmp(s.c_str(), scheme.c_str()) == 0) {
-            return;
-        }
-    }
-
-    throw domain_error("URL contains invalid scheme.");
-}
-
 HTTPResponse::HTTPResponse()
 {
 }
@@ -99,18 +62,7 @@ void HTTPResponse::setResponseHeader(const char* name, const char* value, bool)
     }
 }
 
-long HTTPResponse::sendRedirect(const char* url)
-{
-    sanitizeURL(url);
-    return SHIBSP_HTTP_STATUS_MOVED;
-}
-
 long HTTPResponse::sendError(istream& inputStream)
 {
     return sendResponse(inputStream, SHIBSP_HTTP_STATUS_ERROR);
-}
-
-long HTTPResponse::sendResponse(istream& inputStream)
-{
-    return sendResponse(inputStream, SHIBSP_HTTP_STATUS_OK);
 }

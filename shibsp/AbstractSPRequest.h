@@ -59,6 +59,16 @@ namespace shibsp {
     public:
         virtual ~AbstractSPRequest();
 
+        /**
+         * Returns a modifiable array of schemes to permit in sanitized URLs.
+         *
+         * <p>Updates to this array must be externally synchronized with any use
+         * of this class or its subclasses.
+         *
+         * @return  a mutable array of strings containing the schemes to permit
+         */
+        static std::vector<std::string>& getAllowedSchemes();
+
         // Virtual function overrides.
         const Agent& getAgent() const;
         RequestMapper::Settings getRequestSettings() const;
@@ -85,6 +95,16 @@ namespace shibsp {
 
     protected:
         /**
+         * Check for unsafe URLs vulnerable to injection attacks and promote
+         * relative URLs to absolute based on current request.
+         *
+         * @param url   location to check/promote
+         * 
+         * @return sanitized and possibly altered URL
+         */
+        const char* sanitizeURL(const char* url);
+
+        /**
          * Gets the transformed header name constructed from a raw input name by transforming
          * punctuation into underscores and prefixing with "HTTP_".
          * 
@@ -99,15 +119,19 @@ namespace shibsp {
         virtual const char* getLogContext() const;
 
     private:
+        static std::vector<std::string> m_allowedSchemes;
+
         Category& m_log;
         Agent& m_agent;
         mutable RequestMapper* m_mapper;
         mutable RequestMapper::Settings m_settings;
         std::string m_uri;
-        mutable std::string m_url;
+        mutable std::string m_url;        
         mutable std::string m_handlerURL;
         mutable std::unique_ptr<CGIParser> m_parser;
         mutable std::map<std::string,std::string> m_cookieMap;
+        // Holds URL when promoted to absolute.
+        std::string m_absoluteHolder;
     };
 
 #if defined (_MSC_VER)

@@ -47,8 +47,6 @@
     <ClInclude Include="..\..\shibsp\handler\SecuredHandler.h" />
     <ClInclude Include="..\..\shibsp\internal.h" />
     <ClInclude Include="..\..\shibsp\io\CookieManager.h" />
-    <ClInclude Include="..\..\shibsp\io\GenericRequest.h" />
-    <ClInclude Include="..\..\shibsp\io\GenericResponse.h" />
     <ClInclude Include="..\..\shibsp\io\HTTPRequest.h" />
     <ClInclude Include="..\..\shibsp\io\HTTPResponse.h" />
     <ClInclude Include="..\..\shibsp\logging\Category.h" />

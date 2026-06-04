@@ -229,7 +229,8 @@ public:
     }
 
     long sendRedirect(const char* url) {
-        HTTPResponse::sendRedirect(url);
+        url = sanitizeURL(url);
+        
         string hdr=string("Status: 302 Please Wait\r\nLocation: ") + url + "\r\n"
           "Content-Type: text/html\r\n"
           "Content-Length: 40\r\n";

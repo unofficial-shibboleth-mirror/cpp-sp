@@ -174,7 +174,6 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
 
         if (sessionHook) {
             string hook(sessionHook);
-            request.absolutize(hook);
 
             // Compute the return URL. We use a self-referential link plus a hook indicator to break the cycle.
             // The target also must be included.

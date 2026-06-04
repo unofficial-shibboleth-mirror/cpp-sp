@@ -64,6 +64,13 @@ AbstractSPRequest::~AbstractSPRequest()
         m_mapper->unlock_shared();
 }
 
+vector<string> AbstractSPRequest::m_allowedSchemes;
+
+vector<string>& AbstractSPRequest::getAllowedSchemes()
+{
+    return m_allowedSchemes;
+}
+
 const Agent& AbstractSPRequest::getAgent() const
 {
     return m_agent;
@@ -529,6 +536,47 @@ void AbstractSPRequest::log(Priority::Value level, const char* formatString, va_
 bool AbstractSPRequest::isPriorityEnabled(Priority::Value level) const
 {
     return m_log.isPriorityEnabled(level);
+}
+
+const char* AbstractSPRequest::sanitizeURL(const char* url)
+{
+    if (!url) {
+        throw domain_error("URL was null");
+    }
+
+    const char* ch;
+    for (ch=url; *ch; ++ch) {
+        if (iscntrl((unsigned char)(*ch))) {  // convert to unsigned to allow full range from 00-FF
+            throw domain_error("URL contained a control character.");
+        }
+    }
+
+    ch = strchr(url, ':');
+    if (!ch) {
+        throw domain_error("URL is missing a colon where expected; improper URL encoding?");
+    }
+    string s(url, ch - url);
+
+    for (const string& scheme : getAllowedSchemes()) {
+        if (strcasecmp(s.c_str(), scheme.c_str()) == 0) {
+            // Checks out, but absolutize if necessary.
+            if (*url == '/') {
+                // Compute a URL to the root of the site.
+                const char* scheme = getScheme();
+                m_absoluteHolder = string(scheme) + "://" + getHostname();
+                if (!isDefaultPort()) {
+                    m_absoluteHolder += ":" + boost::lexical_cast<string>(getPort());
+                }
+                m_absoluteHolder += url;
+                return m_absoluteHolder.c_str();
+            }
+            else {
+                return url;
+            }
+        }
+    }
+
+    throw domain_error("URL contains invalid scheme.");
 }
 
 void SPRequest::debug(const string& msg) const

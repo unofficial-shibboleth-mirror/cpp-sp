@@ -174,12 +174,10 @@ pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrapped
 
     h = http["redirect"];
     if (h.isstring()) {
-        string dest(h.string());
-        request.absolutize(dest);
         if (limitRedirect) {
-            request.limitRedirect(dest.c_str());
+            request.limitRedirect(h.string());
         }
-        return make_pair(true, request.sendRedirect(dest.c_str()));
+        return make_pair(true, request.sendRedirect(h.string()));
     }
 
     h = http["response"];
