@@ -51,7 +51,7 @@ LogoutInitiator::~LogoutInitiator()
 pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
 {
     // Initiate, continue, or complete notification.
-    pair<bool,long> ret = notifyFrontChannel(request);
+    pair<bool,long> ret = notifyFrontChannel(request, false);
     if (ret.first) {
         return ret;
     }
