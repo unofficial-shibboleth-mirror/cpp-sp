@@ -84,7 +84,7 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(SPRequest& request, bool conti
         token = request.getParameter("token");
     }
     if (token) {
-        locstr = locstr + "&token=" + encoder.encode(param);
+        locstr = locstr + "&token=" + encoder.encode(token);
     }
 
     // Add the notifier's return parameter to the destination location and redirect.
