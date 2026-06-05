@@ -75,7 +75,7 @@ protected:
 
     long sendResponse(istream& in, long status);
     void doResponseHeader(const char* name, const char* value, bool replace=false);
-    long dodRedirect(const char* url);
+    long doRedirect(const char* url);
 
 private:
     void logFatal(const string& operation, HRESULT hr) const;

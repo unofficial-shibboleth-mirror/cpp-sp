@@ -24,6 +24,8 @@
 #include <shibsp/base.h>
 
 #include <map>
+#include <string>
+#include <vector>
 
 namespace shibsp {
 

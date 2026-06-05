@@ -97,6 +97,7 @@
     </ClCompile>
     <ClCompile Include="..\..\shibsp\handler\impl\AttributeCheckerHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\DefaultHandlerConfiguration.cpp" />
+    <ClCompile Include="..\..\shibsp\handler\impl\LogoutConsumer.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\LogoutHandler.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\LogoutInitiator.cpp" />
     <ClCompile Include="..\..\shibsp\handler\impl\Passthrough.cpp" />
