@@ -236,8 +236,7 @@ pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, bool removeS
         dest = getHomeURL(request);
     }
 
-    request.limitRedirect(dest);
-    return make_pair(true, request.sendRedirect(dest));
+    return make_pair(true, request.sendRedirect(dest, true));
 }
 
 const char* LogoutConsumer::getHomeURL(SPRequest& request) const

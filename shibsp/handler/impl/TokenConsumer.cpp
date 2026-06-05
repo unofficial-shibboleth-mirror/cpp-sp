@@ -93,8 +93,7 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
                 target = getString(RequestMapper::HOME_URL_PROP_NAME, request,
                     RequestMapper::HOME_URL_PROP_DEFAULT, HANDLER_PROPERTY_MAP);
             }
-            request.limitRedirect(target.c_str());
-            return make_pair(true, request.sendRedirect(target.c_str()));
+            return make_pair(true, request.sendRedirect(target.c_str(), true));
         }
     }
 
@@ -151,13 +150,6 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             // Shouldn't happen, but we can route ourselves to homeURL.
             target = getString(RequestMapper::HOME_URL_PROP_NAME, request, RequestMapper::HOME_URL_PROP_DEFAULT, HANDLER_PROPERTY_MAP);
             output.addmember("http.redirect").unsafe_string(target.c_str());
-        }
-
-        // If target is still empty, then this is a POST recovery attempt with the reesource
-        // buried in the form action. Assuming it's non-empty, we must sanitize it.
-        // TODO: we have to have some way to sanitize it anyway...
-        if (!target.empty()) {
-            request.limitRedirect(target.c_str());
         }
 
         SessionCache* cache = request.getAgent().getSessionCache();
@@ -231,13 +223,12 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
             const char* error_target = target.empty() ? agent_ex->getProperty(AgentException::TARGET_PROP_NAME) : target.c_str();
             if (error_target) {
                 agent_ex->log(request, Priority::SHIB_WARN);
-                request.limitRedirect(error_target);
                 // Make sure the target isn't a prefix of this handler, to avoid a loop.
                 if (boost::starts_with(error_target, request.getRequestURL())) {
                     request.warn("TokenConsumer target location matched handler, not trapping passive request error");
                 } else {
                     request.info("trapping TokenConsumer failure and returning to target location of passive request");
-                    return make_pair(true, request.sendRedirect(error_target));
+                    return make_pair(true, request.sendRedirect(error_target, true));
                 }
             }
             else {

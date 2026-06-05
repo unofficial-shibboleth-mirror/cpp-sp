@@ -464,10 +464,8 @@ void IIS7Request::setResponseHeader(const char* name, const char* value, bool re
     }
 }
 
-long IIS7Request::sendRedirect(const char* url)
+long IIS7Request::doRedirect(const char* url)
 {
-    url = sanitizeURL(url);
-    
     if (getRequestSettings().first->getBool(
             RequestMapper::EXPIRE_REDIRECTS_PROP_NAME, RequestMapper::EXPIRE_REDIRECTS_PROP_DEFAULT)) {
         setResponseHeader("Expires", "Wed, 01 Jan 1997 12:00:00 GMT", true);

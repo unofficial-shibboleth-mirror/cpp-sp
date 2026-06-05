@@ -538,7 +538,7 @@ bool AbstractSPRequest::isPriorityEnabled(Priority::Value level) const
     return m_log.isPriorityEnabled(level);
 }
 
-const char* AbstractSPRequest::sanitizeURL(const char* url)
+long AbstractSPRequest::sendRedirect(const char* url, bool limit)
 {
     if (!url) {
         throw domain_error("URL was null");
@@ -551,32 +551,41 @@ const char* AbstractSPRequest::sanitizeURL(const char* url)
         }
     }
 
-    ch = strchr(url, ':');
-    if (!ch) {
-        throw domain_error("URL is missing a colon where expected; improper URL encoding?");
+    string holder;
+    if (*url == '/') {
+        // Compute a URL to the root of the site and prefix the relative path with it.
+        const char* scheme = getScheme();
+        holder = string(scheme) + "://" + getHostname();
+        if (!isDefaultPort()) {
+            holder += ":" + boost::lexical_cast<string>(getPort());
+        }
+        holder += url;
+        // Reset parameter to point to internal copy.
+        url = holder.c_str();
     }
-    string s(url, ch - url);
-
-    for (const string& scheme : getAllowedSchemes()) {
-        if (strcasecmp(s.c_str(), scheme.c_str()) == 0) {
-            // Checks out, but absolutize if necessary.
-            if (*url == '/') {
-                // Compute a URL to the root of the site.
-                const char* scheme = getScheme();
-                m_absoluteHolder = string(scheme) + "://" + getHostname();
-                if (!isDefaultPort()) {
-                    m_absoluteHolder += ":" + boost::lexical_cast<string>(getPort());
-                }
-                m_absoluteHolder += url;
-                return m_absoluteHolder.c_str();
+    else {
+        // Absolute now, so check for acceptable scheme.
+        ch = strchr(url, ':');
+        if (!ch) {
+            throw domain_error("URL is missing a colon where expected; improper URL encoding?");
+        }
+        bool valid = false;
+        string s(url, ch - url);
+        for (const string& scheme : getAllowedSchemes()) {
+            if (strcasecmp(s.c_str(), scheme.c_str()) == 0) {
+                valid = true;
             }
-            else {
-                return url;
-            }
+        }
+        if (!valid) {
+            throw domain_error("URL contains invalid scheme.");
         }
     }
 
-    throw domain_error("URL contains invalid scheme.");
+    if (limit) {
+        limitRedirect(url);
+    }
+
+    return doRedirect(url);
 }
 
 void SPRequest::debug(const string& msg) const

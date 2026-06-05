@@ -132,6 +132,5 @@ pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
         }
     }
 
-    request.limitRedirect(dest);
-    return make_pair(true, request.sendRedirect(dest));
+    return make_pair(true, request.sendRedirect(dest, true));
 }

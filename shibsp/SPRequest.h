@@ -119,15 +119,6 @@ namespace shibsp {
         virtual std::string getNotificationURL(unsigned int index) const=0;
 
         /**
-         * Checks a proposed redirect URL against policy settings for legal redirects,
-         * such as same-host restrictions or allowed domains, and raises an exception
-         * in the event of a violation.
-         *
-         * @param url       an absolute URL to validate
-         */
-        virtual void limitRedirect(const char* url) const=0;
-
-        /**
          * Returns a non-spoofable request header value, if possible.
          * Platforms that support environment export can redirect header
          * lookups by overriding this method.

@@ -113,10 +113,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     if (!returnURL) {
         returnURL = request.getParameter("target");
     }
-    if (returnURL) {
-        request.limitRedirect(returnURL);
-    }
-    else {
+    if (!returnURL) {
         returnURL = request.getRequestSettings().first->getString(
             RequestMapper::HOME_URL_PROP_NAME, RequestMapper::HOME_URL_PROP_DEFAULT);
     }
@@ -154,7 +151,7 @@ pair<bool,long> AttributeCheckerHandler::run(SPRequest& request, bool isHandler)
     }
 
     if (checked) {
-        return make_pair(true, request.sendRedirect(returnURL));
+        return make_pair(true, request.sendRedirect(returnURL, true));
     }
 
     if (m_flushSession && session) {

@@ -189,9 +189,7 @@ public:
         return SHIB_RETURN_DONE;
     }
 
-    long sendRedirect(const char* url) {
-        url = sanitizeURL(url);
-        
+    long doRedirect(const char* url) {
         string hdr=string("Status: 302 Please Wait\r\nLocation: ") + url + "\r\n"
           "Content-Type: text/html\r\n"
           "Content-Length: 40\r\n";

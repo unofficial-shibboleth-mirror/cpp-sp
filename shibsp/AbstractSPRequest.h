@@ -84,10 +84,14 @@ namespace shibsp {
         const std::map<std::string,std::string>& getCookies() const;
         const char* getHandlerURL(const char* resource=nullptr) const;
         std::string getNotificationURL(unsigned int index) const;
-        void limitRedirect(const char* url) const;
 
         std::string getSecureHeader(const char* name) const;
         void setAuthType(const char* authtype);
+
+        // Calls doRedirect to perform the actual operation after
+        // sanitzing the URL as required.
+        long sendRedirect(const char* url, bool limit=false);
+
         void log(Priority::Value level, const std::exception& ex) const;
         void log(Priority::Value level, const std::string& msg) const;
         void log(Priority::Value level, const char* formatString, va_list args) const;
@@ -102,7 +106,7 @@ namespace shibsp {
          * 
          * @return sanitized and possibly altered URL
          */
-        const char* sanitizeURL(const char* url);
+        virtual long doRedirect(const char* url)=0;
 
         /**
          * Gets the transformed header name constructed from a raw input name by transforming
@@ -120,6 +124,7 @@ namespace shibsp {
 
     private:
         static std::vector<std::string> m_allowedSchemes;
+        void limitRedirect(const char* url) const;
 
         Category& m_log;
         Agent& m_agent;
@@ -130,8 +135,6 @@ namespace shibsp {
         mutable std::string m_handlerURL;
         mutable std::unique_ptr<CGIParser> m_parser;
         mutable std::map<std::string,std::string> m_cookieMap;
-        // Holds URL when promoted to absolute.
-        std::string m_absoluteHolder;
     };
 
 #if defined (_MSC_VER)

@@ -89,12 +89,17 @@ namespace shibsp {
         /**
          * Redirect the client to the specified URL and complete the response.
          * 
-         * <p>Any headers previously set will be sent ahead of the redirect.
+         * <p>Any headers previously set will be sent ahead of the redirect.</p>
+         * 
+         * <p>The flag, which defaults to false, controls whether the redirect should
+         * be permitted blindly or if true, policed by local redirect-limiting policy.</p>
          *
          * @param url   location to redirect client
+         * @param limit true iff the redirect should be limited and reviewed against policy
+         * 
          * @return a result code to return
          */
-        virtual long sendRedirect(const char* url)=0;
+        virtual long sendRedirect(const char* url, bool limit=false)=0;
         
         /** Some common HTTP status codes. */
         enum status_t {

@@ -229,8 +229,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
                 // Make sure the target isn't the same as this handler, to avoid a loop.
                 if (error_target && strstr(error_target, handlerBaseURL) != error_target) {
                     request.info("trapping SessionInitiator failure and returning to target location");
-                    request.limitRedirect(error_target);
-                    return make_pair(true, request.sendRedirect(error_target));
+                    return make_pair(true, request.sendRedirect(error_target, true));
                 }
             }
         }

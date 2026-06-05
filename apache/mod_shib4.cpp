@@ -498,8 +498,7 @@ public:
         return status;
     return DONE;
   }
-  long sendRedirect(const char* url) {
-    url = sanitizeURL(url);
+  long doRedirect(const char* url) {
     apr_table_set(m_req->headers_out, "Location", url);
 
     if (getRequestSettings().first->getBool(
