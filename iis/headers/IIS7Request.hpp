@@ -74,8 +74,8 @@ protected:
     string getSecureHeader(const char* name) const;
 
     long sendResponse(istream& in, long status);
-    void setResponseHeader(const char* name, const char* value, bool replace=false);
-    long sendRedirect(const char* url);
+    void doResponseHeader(const char* name, const char* value, bool replace=false);
+    long dodRedirect(const char* url);
 
 private:
     void logFatal(const string& operation, HRESULT hr) const;

@@ -88,6 +88,10 @@ namespace shibsp {
         std::string getSecureHeader(const char* name) const;
         void setAuthType(const char* authtype);
 
+        // Calls doResponseHeader to perform actual operation after
+        // sanitizing the name/value.
+        void setResponseHeader(const char* name, const char* value, bool replace = false);
+
         // Calls doRedirect to perform the actual operation after
         // sanitzing the URL as required.
         long sendRedirect(const char* url, bool limit=false);
@@ -98,6 +102,15 @@ namespace shibsp {
         bool isPriorityEnabled(Priority::Value level) const;
 
     protected:
+        /**
+         * Sets or adds a response header.
+         * 
+         * @param name header name
+         * @param value header value
+         * @param replace true iff existing header should be overwritten
+         */
+        virtual void doResponseHeader(const char* name, const char* value, bool replace=false)=0;
+
         /**
          * Check for unsafe URLs vulnerable to injection attacks and promote
          * relative URLs to absolute based on current request.

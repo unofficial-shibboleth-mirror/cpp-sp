@@ -59,7 +59,7 @@ namespace shibsp {
          * @param value value to set, or nullptr to clear
          * @param replace true iff this should replace existing header(s)
          */
-        virtual void setResponseHeader(const char* name, const char* value, bool replace = false);
+        virtual void setResponseHeader(const char* name, const char* value, bool replace = false)=0;
 
         /**
          * Sets or clears the MIME type of the response.

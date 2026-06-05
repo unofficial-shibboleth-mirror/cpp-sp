@@ -45,23 +45,6 @@ void HTTPResponse::setContentType(const char* type)
     setResponseHeader("Content-Type", type);
 }
 
-void HTTPResponse::setResponseHeader(const char* name, const char* value, bool)
-{
-    if (name) {
-        for (const char* ch=name; *ch; ++ch) {
-            if (iscntrl(*ch))
-                throw domain_error("Response header name contained a control character.");
-        }
-    }
-
-    if (value) {
-        for (const char* ch=value; *ch; ++ch) {
-            if (iscntrl(*ch))
-                throw domain_error("Value for response header contained a control character.");
-        }
-    }
-}
-
 long HTTPResponse::sendError(istream& inputStream)
 {
     return sendResponse(inputStream, SHIBSP_HTTP_STATUS_ERROR);

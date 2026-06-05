@@ -538,6 +538,25 @@ bool AbstractSPRequest::isPriorityEnabled(Priority::Value level) const
     return m_log.isPriorityEnabled(level);
 }
 
+void AbstractSPRequest::setResponseHeader(const char* name, const char* value, bool replace)
+{
+    if (name) {
+        for (const char* ch=name; *ch; ++ch) {
+            if (iscntrl(*ch))
+                throw domain_error("Response header name contained a control character.");
+        }
+    }
+
+    if (value) {
+        for (const char* ch=value; *ch; ++ch) {
+            if (iscntrl(*ch))
+                throw domain_error("Value for response header contained a control character.");
+        }
+    }
+
+    doResponseHeader(name, value, replace);
+}
+
 long AbstractSPRequest::sendRedirect(const char* url, bool limit)
 {
     if (!url) {

@@ -50,8 +50,7 @@ namespace shibsp {
         long sendResponse(std::istream&, long status) { return status; }
         void clearHeader(const char* name) {}
         void setHeader(const char* name, const char* value) {}
-        void setResponseHeader(const char* name, const char* value, bool replace=false) {
-            HTTPResponse::setResponseHeader(name, value, replace);
+        void doResponseHeader(const char* name, const char* value, bool replace=false) {
             m_responseHeaders[name] = value ? value : "";
         }
         void setRemoteUser(const char*) {}

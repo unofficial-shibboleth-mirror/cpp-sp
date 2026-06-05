@@ -148,8 +148,7 @@ public:
         return s ? s : "";
     }
 
-    void setResponseHeader(const char* name, const char* value, bool replace = false) {
-        HTTPResponse::setResponseHeader(name, value, replace);
+    void doResponseHeader(const char* name, const char* value, bool replace = false) {
         if (name && *name) {
             // Set for later.
             if (replace || !value)

@@ -448,10 +448,8 @@ long IIS7Request::sendResponse(istream& in, long status)
     return RQ_NOTIFICATION_FINISH_REQUEST;
 }
 
-void IIS7Request::setResponseHeader(const char* name, const char* value, bool replace)
+void IIS7Request::doResponseHeader(const char* name, const char* value, bool replace)
 {
-    HTTPResponse::setResponseHeader(name, value, replace);
-
     size_t sz = value ? strlen(value) : 0;
     if (sz > USHRT_MAX) {
         log(Priority::SHIB_WARN, "Header value overflow");

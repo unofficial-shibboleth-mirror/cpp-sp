@@ -455,8 +455,7 @@ public:
   void setContentType(const char* type) {
       m_req->content_type = apr_psprintf(m_req->pool, "%s", type);
   }
-  void setResponseHeader(const char* name, const char* value, bool replace=false) {
-    HTTPResponse::setResponseHeader(name, value, replace);
+  void doResponseHeader(const char* name, const char* value, bool replace=false) {
     if (name && *name) {
 #ifdef SHIB_DEFERRED_HEADERS
         if (!m_rc) {
