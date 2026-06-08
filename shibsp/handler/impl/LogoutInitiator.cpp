@@ -95,8 +95,7 @@ pair<bool,long> LogoutInitiator::run(SPRequest& request, bool isHandler) const
             input.addmember("target").unsafe_string(dest);
         }
         
-        static set<string> emptyHeaderSet;
-        DDF wrapped = wrapRequest(request, emptyHeaderSet, false);
+        DDF wrapped = wrapRequest(request, getRemotedHeaders(), false);
         input.add(wrapped);
 
         try {

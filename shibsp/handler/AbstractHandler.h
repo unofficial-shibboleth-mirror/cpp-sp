@@ -25,8 +25,9 @@
 #include <shibsp/remoting/ddf.h>
 #include <shibsp/util/BoostPropertySet.h>
 
-#include <string>
 #include <set>
+#include <string>
+
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace shibsp {
@@ -149,9 +150,19 @@ namespace shibsp {
     public:
         virtual ~AbstractHandler();
 
+    protected:
+        /**
+         * Gets the set of request headers to remote to Hub during calls.
+         * 
+         * @return set of request headers to remote
+         */
+        const std::set<std::string>& getRemotedHeaders() const;
+
     private:
         std::string getPostCookieName(const SPRequest& request, const char* relayState) const;
         DDF getPostData(const SPRequest& request) const;
+
+        std::set<std::string> m_remotedHeaders;
     };
 
 #if defined (_MSC_VER)

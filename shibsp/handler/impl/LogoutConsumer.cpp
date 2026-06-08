@@ -110,8 +110,7 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
         }
     }
 
-    static set<string> emptyHeaderSet;
-    DDF wrapped = wrapRequest(request, emptyHeaderSet, false);
+    DDF wrapped = wrapRequest(request, getRemotedHeaders(), false);
     input.add(wrapped);
 
     input.addmember("home_url").unsafe_string(getHomeURL(request));

@@ -99,14 +99,27 @@ Handler::~Handler()
 {
 }
 
-AbstractHandler::AbstractHandler(const ptree& pt) {
+AbstractHandler::AbstractHandler(const ptree& pt) : m_remotedHeaders({ "Cookie" }) {
     load(pt);
+
+    static const char REMOTED_HEADERS_PROP_NAME[] = "remotedHeaders";
+
+    const char* headers = getString(REMOTED_HEADERS_PROP_NAME);
+    if (headers) {
+        split_to_container(m_remotedHeaders, headers);
+        m_remotedHeaders.insert("Cookie");
+    }
+
 }
 
 AbstractHandler::~AbstractHandler()
 {
 }
 
+const set<string>& AbstractHandler::getRemotedHeaders() const
+{
+    return m_remotedHeaders;
+}
 
 const char* Handler::getEventType() const
 {

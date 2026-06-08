@@ -50,7 +50,6 @@ namespace {
 
         string m_path;
         bool m_discoveryEnabled;
-        set<string> m_remotedHeaders;
         vector<string> m_requestMapperSettings;
         vector<string> m_querySettings;
     };
@@ -63,7 +62,7 @@ namespace shibsp {
 };
 
 SessionInitiator::SessionInitiator(const ptree& pt, const char* path)
-    : AbstractHandler(pt), m_path(path), m_discoveryEnabled(true), m_remotedHeaders({ "Cookie" })
+    : AbstractHandler(pt), m_path(path), m_discoveryEnabled(true)
 {
     static const char DISCOVERY_ENABLED_PROP_NAME[] = "discoveryEnabled";
     static const char REQUEST_MAPPER_SETTINGS_PROP_NAME[] = "requestMapperSettings";
@@ -176,7 +175,7 @@ pair<bool,long> SessionInitiator::run(SPRequest& request, bool isHandler) const
             settings->getString(RequestMapper::HANDLER_CONFIG_ID_PROP_NAME)).getTokenConsumerInfo(handlerBaseURL);
         input.add(dup);
 
-        DDF wrapped = wrapRequest(request, m_remotedHeaders,
+        DDF wrapped = wrapRequest(request, getRemotedHeaders(),
             !isHandler && getBool(RequestMapper::PRESERVE_POST_DATA_PROP_NAME,
                                     request,
                                     RequestMapper::PRESERVE_POST_DATA_PROP_DEFAULT,

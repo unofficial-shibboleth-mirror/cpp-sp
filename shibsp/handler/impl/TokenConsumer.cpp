@@ -50,7 +50,6 @@ namespace {
 
     private:
         string m_path;
-        set<string> m_remotedHeaders;
     };
 };
 
@@ -60,16 +59,8 @@ namespace shibsp {
     }
 };
 
-TokenConsumer::TokenConsumer(const ptree& pt, const char* path)
-    : AbstractHandler(pt), m_path(path), m_remotedHeaders({ "Cookie" })
+TokenConsumer::TokenConsumer(const ptree& pt, const char* path) : AbstractHandler(pt), m_path(path)
 {
-    static const char REMOTED_HEADERS_PROP_NAME[] = "remotedHeaders";
-
-    const char* headers = getString(REMOTED_HEADERS_PROP_NAME);
-    if (headers) {
-        split_to_container(m_remotedHeaders, headers);
-        m_remotedHeaders.insert("Cookie");
-    }
 }
 
 pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
@@ -103,7 +94,7 @@ pair<bool,long> TokenConsumer::run(SPRequest& request, bool isHandler) const
         DDF input = request.getAgent().getRemotingService()->build("token-consumer", request);
         DDFJanitor inputJanitor(input);    
 
-        DDF wrapped = wrapRequest(request, m_remotedHeaders);
+        DDF wrapped = wrapRequest(request, getRemotedHeaders());
         input.add(wrapped);
 
         input.addmember("home_url").unsafe_string(
