@@ -111,14 +111,6 @@ namespace shibsp {
         virtual const char* getHandlerURL(const char* resource=nullptr) const=0;
 
         /**
-         * Returns the "next" notification URL, or an empty string if no more locations are specified.
-         *
-         * @param index zero-based index of URL to return
-         * @return  the designated URL, or an empty string
-         */
-        virtual std::string getNotificationURL(unsigned int index) const=0;
-
-        /**
          * Returns a non-spoofable request header value, if possible.
          * Platforms that support environment export can redirect header
          * lookups by overriding this method.

@@ -23,6 +23,7 @@
 #include "AgentConfig.h"
 #include "SPRequest.h"
 #include "handler/LogoutHandler.h"
+#include "util/Misc.h"
 #include "util/URLEncoder.h"
 
 #include <fstream>
@@ -55,11 +56,17 @@ pair<bool,long> LogoutHandler::notifyFrontChannel(SPRequest& request, bool conti
     // "return" is a backwards-compatible "eventual destination" to go back to after logout completes.
     param = request.getParameter("return");
 
-    // Fetch the next front notification URL and bump the index for the next round trip.
-    string loc = request.getNotificationURL(index++);
-    if (loc.empty()) {
-        return make_pair(false,0L);
+    // We have to process the underlying setting each call to this method for now.
+    // Given how rarely it would be used, not a big issue.
+    vector<string> locs;
+    split_to_container(locs, request.getRequestSettings().first->getString(RequestMapper::LOGOUT_NOTIFY_PROP_NAME));
+
+    if (index >= locs.size()) {
+        return make_pair(false, 0L);
     }
+
+    // Fetch the next front notification URL and bump the index for the next round trip.
+    string loc = locs[index++];
 
     const URLEncoder& encoder = AgentConfig::getConfig().getURLEncoder();
 
