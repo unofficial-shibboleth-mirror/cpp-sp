@@ -173,6 +173,10 @@ DDF AbstractHandler::wrapRequest(const SPRequest& request, const set<string>& he
 pair<bool,long> AbstractHandler::unwrapResponse(SPRequest& request, DDF& wrappedResponse, bool limitRedirect) const
 {
     DDF http = wrappedResponse["http"];
+    if (!http.isstruct()) {
+        return make_pair(false, 0L);
+    }
+
     DDF h = http["headers"];
     DDF hdr = h.first();
     while (hdr.isstring()) {

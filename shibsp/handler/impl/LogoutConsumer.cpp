@@ -144,8 +144,24 @@ pair<bool,long> LogoutConsumer::run(SPRequest& request, bool isHandler) const
     if (output["status"].isint()) {
         // Finish up a logout response. The session should be gone and if it wasn't
         // this is a spurious logout message so we don't act on it.
-        return completeLogout(request, false, nullptr);
+
+        // This sequence amounts to:
+        // 1. Try to unwrap a response from the Hub.
+        // 2. Fall back to a target parameter in the output.
+        // 3. Failing that, fall back to logoutURL/homeURL.
+        pair<bool,long> ret = unwrapResponse(request, output, true);
+        if (ret.first) {
+            return ret;
+        }
+
+        const char* dest = output.getmember("target").string();
+        if (!dest) {
+            dest = getHomeURL(request);
+        }
+        return make_pair(true, request.sendRedirect(dest, true));
     }
+
+    // At this point, the presumption is a logout request is being handled.
 
     // If we actually have a session in hand, we may need to initiate the notification loop.
     // Any token provided by the Hub call will be attached to that process.
@@ -218,12 +234,9 @@ pair <bool,long> LogoutConsumer::completeLogout(SPRequest& request, bool removeS
 
     DDFJanitor outputJanitor(output);
 
-    DDF wrapped = output.getmember("http");
-    if (wrapped.isstruct()) {
-        pair<bool,long> ret = unwrapResponse(request, output, token == nullptr);
-        if (ret.first) {
-            return ret;
-        }
+    pair<bool,long> ret = unwrapResponse(request, output, token == nullptr);
+    if (ret.first) {
+        return ret;
     }
 
     // If no explicit response from Hub, pull "target" from output if available.
