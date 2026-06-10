@@ -153,8 +153,16 @@ DDF AbstractHandler::wrapRequest(const SPRequest& request, const set<string>& he
     in.addmember("remote_addr").string(request.getRemoteAddr().c_str());
     in.addmember("local_addr").string(request.getLocalAddr().c_str());
     in.addmember("method").string(request.getMethod());
-    in.addmember("uri").unsafe_string(request.getRequestURI());
-    in.addmember("url").unsafe_string(request.getRequestURL());
+
+    const char* uri = request.getRequestURI();
+    const char* delim = strchr(uri, '?');
+    if (delim) {
+        string truncated(uri, delim - uri);
+        in.addmember("uri").unsafe_string(truncated.c_str());
+    }
+    else {
+        in.addmember("uri").unsafe_string(uri);
+    }
     in.addmember("query").string(request.getQueryString());
 
     if (!headers.empty()) {
