@@ -1,3 +1,4 @@
+@echo off
 setlocal
 Rem
 Rem File to uninstall the SP agent

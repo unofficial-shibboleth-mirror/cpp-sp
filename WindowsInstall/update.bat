@@ -1,5 +1,4 @@
-Rem @echo off
-
+@echo off
 setlocal
 
 Rem fail if parameters is not a distribution

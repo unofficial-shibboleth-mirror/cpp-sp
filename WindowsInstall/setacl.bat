@@ -1,5 +1,4 @@
-Rem @echo off
-
+@echo off
 setlocal
 echo Just add code
 
