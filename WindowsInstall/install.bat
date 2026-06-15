@@ -1,6 +1,13 @@
 @echo off
 Rem Install SP agent
 
+Rem probe for admin
+net session 1> nul 2> nul
+if %errorlevel% NEQ 0 (
+   Echo Cannot install kit.  This command needs to be run with administrative rights.
+   exit /b
+)
+
 setlocal
 
 Rem Find FQP for root of installation

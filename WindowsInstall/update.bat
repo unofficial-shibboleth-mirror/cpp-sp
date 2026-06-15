@@ -1,6 +1,13 @@
 @echo off
 setlocal
 
+Rem probe for admin
+net session 1> nul 2> nul
+if %errorlevel% NEQ 0 (
+   Echo Cannot update installation.  This command needs to be run with administrative rights.
+   exit /b
+)
+
 Rem fail if parameters is not a distribution
 
 Rem find kit root
