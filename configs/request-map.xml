@@ -1,7 +1,7 @@
 <RequestMap>
         <!--
 	<Host name="sp.example.org">
-		<Path name="secure">
+		<Path name="secure" requireSession="true">
 			<AccessControl>
 				<Rule require="user">jdoe</Rule>
 			</AccessControl>
