@@ -9,6 +9,14 @@ Rem (so it doesn't delete itself).  It is really only expected to
 Rem be run from the "uninstall" menu item of the apps and features
 Rem but it is idempotent so can be run any time.
 
+
+Rem probe for admin
+net session 1> nul 2> nul
+if %errorlevel% NEQ 0 (
+   Echo Cannot Uninstall.  This command needs to be run with administrative rights.
+   exit /b
+)
+
 cd /d %~dp0
 
 if exist %SYSTEMROOT%\System32\INETSRV\appcmd.exe (
