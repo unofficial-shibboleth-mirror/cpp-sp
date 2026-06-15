@@ -21,7 +21,7 @@ Set /a PatchVersion = "%VERSION% & 0xFFFF" > nul:
 set VersionString=%MajorVersion%.%MinorVersion%.%PatchVersion%
 
 if exist %TargetDir%\lib\shibboleth-sp (
-  Echo Updating SP Agent Version %VersionString%
+  Echo Updating SP Agent Version to %VersionString%
 ) else (
   Echo Installing SP Agent Version %VersionString%
 )
