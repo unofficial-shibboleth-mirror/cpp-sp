@@ -34,7 +34,7 @@ Rem /njh No job header
 Rem /njs No job summary
 echo Copying Distribution to %targetDir%\dist-%VersionString%
 mkdir  "%targetDir%\dist-%VersionString%"
-robocopy /s /is /njs /njh . "%targetDir%\dist-%VersionString%"
+robocopy /s /is /njs /njh . "%targetDir%\dist-%VersionString%" 0> nul 1> nul
 
 echo Copying Batch Files to %targetdir%\bin\shibboleth-sp\
 mkdir  "%targetdir%\bin\shibboleth-sp\"
