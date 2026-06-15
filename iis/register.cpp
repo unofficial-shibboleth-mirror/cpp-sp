@@ -64,6 +64,12 @@ public:
     {
         Category::getInstance(SHIBSP_LOGCAT ".IIS").info("IIS module is terminating");
         delete this;
+
+        if (g_Config) {
+            AgentConfig* temp = g_Config;
+            g_Config = nullptr;
+            temp->term();
+        }
     }
 };
 
