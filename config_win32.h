@@ -118,7 +118,7 @@
 #define PACKAGE_NAME "shibboleth-sp"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "shibboleth-sp 4.0.0alpha1"
+#define PACKAGE_STRING "shibboleth-sp 4.0.0alpha2"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "shibboleth-sp"
