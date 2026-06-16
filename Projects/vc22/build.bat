@@ -37,8 +37,8 @@ mkdir kit\dist
 x64\Release\Version.exe > kit\dist\Version.txt
 echo 1 > kit\dist\InstallerVersion.txt
 
-mkdir kit\dist\redist
-copy  "%VCINSTALLDIR%\Redist\MSVC\v143\*" kit\dist\redist
+mkdir kit\redist
+copy  "%VCINSTALLDIR%\Redist\MSVC\v143\*" kit\redist
 
 mkdir kit\dist\bin
 copy ..\..\WindowsInstall\update.bat kit\dist\bin\
