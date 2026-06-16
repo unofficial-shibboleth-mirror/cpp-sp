@@ -74,7 +74,8 @@ LoggingServiceSPI::~LoggingServiceSPI() {}
 
 AbstractLoggingService::~AbstractLoggingService() {}
 
-AbstractLoggingService::AbstractLoggingService(const ptree& pt) : m_config(pt)
+AbstractLoggingService::AbstractLoggingService(const ptree& pt)
+    : m_defaultPriority(Priority::PriorityLevel::SHIB_INFO), m_config(pt)
 {
 }
 
