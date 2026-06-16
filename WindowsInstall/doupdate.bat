@@ -73,9 +73,9 @@ reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D9DA52E3-F96E-
 Rem
 Rem now the event viewer
 Rem
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v CategoryCount /t REG_DWORD /d 8  1> nul:
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v TypesSupported /t REG_DWORD /d 7  1> nul:
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v CategoryMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NativeLogMessages.dll"  1> nul:
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\Shibboleth Service Provider" /f /v EventMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NativeLogMessages.dll"  1> nul:
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\ShibbolethSPAgent" /f /v CategoryCount /t REG_DWORD /d 8  1> nul:
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\ShibbolethSPAgent" /f /v TypesSupported /t REG_DWORD /d 7  1> nul:
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\ShibbolethSPAgent" /f /v CategoryMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NativeLogMessages.dll"  1> nul:
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Shibboleth\ShibbolethSPAgent" /f /v EventMessageFile /t REG_SZ /d "%TargetDir%\lib\shibboleth-sp\NativeLogMessages.dll"  1> nul:
 
 exit /b
