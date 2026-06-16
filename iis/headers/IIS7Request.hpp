@@ -33,6 +33,7 @@ private:
     mutable vector<string> m_certs;
     mutable string m_body;
     mutable bool m_gotBody;
+    mutable string m_traceID;
     string m_allhttp;
     set<string> m_roleAttributeNames;
     set<wstring> m_roles;

@@ -30,7 +30,8 @@ using namespace Config;
 IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventProvider, bool checkUser, const PropertySet& site)
     : AbstractSPRequest(SHIBSP_LOGCAT ".IIS"),
         m_ctx(pHttpContext), m_request(pHttpContext->GetRequest()), m_response(pHttpContext->GetResponse()), m_site(site),
-        m_firsttime(true), m_port(0), m_gotBody(false), m_event(pEventProvider)
+        m_firsttime(true), m_port(0), m_gotBody(false), m_event(pEventProvider),
+        m_traceID(AgentConfig::getConfig().generateRandom(8))
 {
     DWORD len;
     PCSTR var;
@@ -157,9 +158,7 @@ IIS7Request::IIS7Request(IHttpContext *pHttpContext, IHttpEventProvider *pEventP
 
 const char* IIS7Request::getRequestID() const
 {
-    // TODO: Use AgentConfig generateRandom if IIS has nothing to use, would store
-    // off in string member and just return that here.
-    return nullptr;
+    return m_traceID.c_str();
 }
 
 bool IIS7Request::isUseHeaders() const
