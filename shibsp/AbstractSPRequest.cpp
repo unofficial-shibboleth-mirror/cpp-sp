@@ -85,7 +85,7 @@ RequestMapper::Settings AbstractSPRequest::getRequestSettings() const
         m_settings = m_mapper->getSettings(*this);
 
         if (m_log.isDebugEnabled()) {
-            m_log.debug("mapped %s to %s", getRequestURL(), m_settings.first->getString("applicationId", ""));
+            debug("mapped %s to %s", getRequestURL(), m_settings.first->getString("applicationId", ""));
         }
     }
     return m_settings;
