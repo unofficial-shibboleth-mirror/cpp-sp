@@ -124,7 +124,7 @@
 #define PACKAGE_TARNAME "shibboleth-sp"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "4.0.0alpha1"
+#define PACKAGE_VERSION "4.0.0alpha2"
 
 /* Define to the necessary symbol if this constant uses a non-standard name on
    your system. */

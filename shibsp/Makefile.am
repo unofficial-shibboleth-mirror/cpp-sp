@@ -153,7 +153,7 @@ libshibsp_la_SOURCES = \
 
 # this is different from the project version
 # http://sources.redhat.com/autobook/autobook/autobook_91.html
-libshibsp_la_LDFLAGS = -version-info 13:0:0 $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LDPATH)
+libshibsp_la_LDFLAGS = -version-info 13:0:1 $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LDPATH)
 libshibsp_la_CXXFLAGS = -DSHIBSP_LITE \
     $(AM_CXXFLAGS) \
     $(BOOST_CPPFLAGS) \
